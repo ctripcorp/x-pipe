@@ -9,8 +9,8 @@
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.ctrip.arch</groupId>
-	<artifactId>xpipe</artifactId>
+	<groupId>com.ctrip.xpipe</groupId>
+	<artifactId>xpipe-parent</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
@@ -18,10 +18,38 @@
 	<properties>
 		<netty.version>4.0.34.Final</netty.version>
 		<junit.version>4.12</junit.version>
+		<log4j.version>2.5</log4j.version>
+		<maven-jar-plugin.version>2.6</maven-jar-plugin.version>
 	</properties>
+
+	<modules>
+		<module>core</module>
+		<module>redis</module>
+	</modules>
 
 	<dependencyManagement>
 		<dependencies>
+			<!-- xpipe related -->
+			<dependency>
+				<groupId>com.ctrip.xpipe</groupId>
+				<artifactId>core</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.ctrip.xpipe</groupId>
+				<artifactId>core</artifactId>
+				<type>test-jar</type>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.ctrip.xpipe</groupId>
+				<artifactId>core</artifactId>
+				<scope>test</scope>
+				<version>${project.version}</version>
+			</dependency>
+			<!-- xpipe related -->
+
+
 			<dependency>
 				<groupId>junit</groupId>
 				<artifactId>junit</artifactId>
@@ -32,11 +60,48 @@
 				<artifactId>netty-all</artifactId>
 				<version>${netty.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-api</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-core</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>${maven-jar-plugin.version}</version>
+					<executions>
+						<execution>
+							<goals>
+								<goal>test-jar</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+		</dependency>
+		<!-- test -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -44,8 +109,4 @@
 		</dependency>
 	</dependencies>
 
-	<modules>
-		<module>core</module>
-		<module>redis</module>
-	</modules>
 </project>
