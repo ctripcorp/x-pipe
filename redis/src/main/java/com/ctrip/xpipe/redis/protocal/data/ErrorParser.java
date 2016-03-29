@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
 import com.ctrip.xpipe.redis.protocal.error.RedisError;
 
 
@@ -14,14 +15,19 @@ import com.ctrip.xpipe.redis.protocal.error.RedisError;
  */
 public class ErrorParser extends AbstractRedisClientProtocol<RedisError>{
 	
+	public ErrorParser() {
+	}
 	
 
+	public ErrorParser(RedisError redisError) {
+		super(redisError);
+	}
+
 	@Override
-	public RedisError parse(InputStream ins) throws IOException {
-		
+	public RedisClietProtocol<RedisError> parse(InputStream ins) throws IOException {
 		
 		String error = readTilCRLFAsString(ins);
-		return new RedisError(error);
+		return new ErrorParser(new RedisError(error));
 	}
 
 	@Override

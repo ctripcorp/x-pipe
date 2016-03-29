@@ -4,12 +4,16 @@ package com.ctrip.xpipe.redis.protocal.cmd;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.LinkedList;
+import java.util.List;
 
+import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.protocal.AbstractRedisCommand;
+import com.ctrip.xpipe.redis.protocal.PsyncObserver;
+import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
 import com.ctrip.xpipe.redis.protocal.data.BulkString;
 import com.ctrip.xpipe.redis.protocal.data.SimpleString;
-import com.ctrip.xpipe.redis.rdb.RdbWriter;
 
 
 /**
@@ -32,19 +36,22 @@ public class Psync extends AbstractRedisCommand{
 	
 	private boolean isFull;
 	
-	private RdbWriter rdbWriter;
+	private InOutPayload rdbPayload;
 	
 	private OutputStream commandOus;
 
-	protected Psync(OutputStream ous, InputStream ins, RdbWriter rdbWriter, OutputStream commandOus) {
-		this(ous, ins, "?", -1L, rdbWriter, commandOus);
+	private List<PsyncObserver> observers = new LinkedList<PsyncObserver>();
+	
+	
+	protected Psync(OutputStream ous, InputStream ins, InOutPayload rdbPayload, OutputStream commandOus) {
+		this(ous, ins, "?", -1L, rdbPayload, commandOus);
 	}
 
-	public Psync(OutputStream ous, InputStream ins, String masterRunId, long offset, RdbWriter rdbWriter, OutputStream commandOus) {
+	public Psync(OutputStream ous, InputStream ins, String masterRunId, long offset, InOutPayload rdbPayload, OutputStream commandOus) {
 		super(ous, ins);
 		this.masterRunIdRequest = masterRunId;
 		this.offsetRequest = offset;
-		this.rdbWriter = rdbWriter;
+		this.rdbPayload = rdbPayload;
 		this.commandOus = commandOus;
 	}
 	
@@ -52,6 +59,11 @@ public class Psync extends AbstractRedisCommand{
 	@Override
 	public String getName() {
 		return "psync";
+	}
+	
+	
+	public void addPsyncObserver(PsyncObserver observer){
+		this.observers.add(observer);
 	}
 
 
@@ -75,46 +87,25 @@ public class Psync extends AbstractRedisCommand{
 	
 	@Override
 	public String toString() {
-		return getName() + " " + masterRunIdRequest + " " + offsetRequest + "";
-	}
-
-	@Override
-	protected void readRedisResponse(int sign) throws IOException {
-
-		String psync = new SimpleString().parse(ins).trim();
 		
-		String []split = splitSpace(psync);
-		if(split.length == 0){
-			throw new RedisRuntimeException("wrong reply:" + psync);
+		String info = getName() + "," + masterRunIdRequest + "," + offsetRequest; 
+		if(!masterRunIdRequest.equals(masterRunId)){
+			info += "," + masterRunId;
 		}
-		
-		if(split[0].equalsIgnoreCase(FULL_SYNC)){
-			isFull = true;
-			if(split.length != 3){
-				throw new RedisRuntimeException("unknown reply:" + psync);
-			}
-			masterRunId = split[1];
-			offset = Long.parseLong(split[2]);
-			if(logger.isInfoEnabled()){
-				logger.info("[readRedisResponse]" + masterRunId + "," + offset);
-			}
-			fullSync();
-		}else if(split[0].equalsIgnoreCase(PARTIAL_SYNC)){
-			isFull = false;
-		}else{
-			throw new RedisRuntimeException("unknown reply:" + psync);
-		}
-
+		return info;
 	}
 
 	private void fullSync() throws IOException {
 		
 		//read rdb
 		try{
-			rdbWriter.beginWrite();
-			new BulkString(rdbWriter).parse(ins);
+			beginReadRdb();
+			rdbPayload.startOutputStream();
+			
+			new BulkString(rdbPayload).parse(ins);
 		}finally{
-			rdbWriter.endWrite();
+			rdbPayload.endOutputStream();
+			endReadRdb();
 		}
 
 		readPropogateCommands(ins);
@@ -131,9 +122,11 @@ public class Psync extends AbstractRedisCommand{
 				
 			}else{
 				commandOus.write(data);
+				notifyIncreaseOffset();
 			}
 		}else{
 			commandOus.write(data);
+			notifyIncreaseOffset();
 		}
 		while(true){
 			data = ins.read();
@@ -143,7 +136,84 @@ public class Psync extends AbstractRedisCommand{
 			}
 			
 			commandOus.write(data);
+			notifyIncreaseOffset();
 		}
 		
 	}
+
+	private void beginReadRdb() {
+		
+		for(PsyncObserver observer : observers){
+			try{
+				observer.beginWriteRdb();
+			}catch(Throwable th){
+				logger.error("[beginReadRdb]" + this, th);
+			}
+		}
+	}
+
+	private void endReadRdb() {
+		for(PsyncObserver observer : observers){
+			try{
+				observer.endWriteRdb();
+			}catch(Throwable th){
+				logger.error("[endReadRdb]" + this, th);
+			}
+		}
+	}
+
+
+	private void notifyFullSync(String masterRunId, long offset) {
+
+		for(PsyncObserver observer : observers){
+			try{
+				observer.setFullSyncInfo(masterRunId, offset);
+			}catch(Throwable th){
+				logger.error("[notifyFullSync]" + this, th);
+			}
+		}
+	}
+
+	private void notifyIncreaseOffset() {
+
+		for(PsyncObserver observer : observers){
+			try{
+				observer.increaseReploffset();
+			}catch(Throwable th){
+				logger.error("[notifyIncreaseOffset]" + this, th);				
+			}
+		}
+	}
+
+	@Override
+	protected void handleRedisResponse(RedisClietProtocol<?> redisClietProtocol) throws IOException {
+		
+		String psync = ((SimpleString)redisClietProtocol).getPayload();
+		
+		String []split = splitSpace(psync);
+		if(split.length == 0){
+			throw new RedisRuntimeException("wrong reply:" + psync);
+		}
+		
+		if(split[0].equalsIgnoreCase(FULL_SYNC)){
+			isFull = true;
+			if(split.length != 3){
+				throw new RedisRuntimeException("unknown reply:" + psync);
+			}
+			masterRunId = split[1];
+			offset = Long.parseLong(split[2]);
+			if(logger.isInfoEnabled()){
+				logger.info("[readRedisResponse]" + masterRunId + "," + offset);
+			}
+			notifyFullSync(masterRunId, offset);
+			fullSync();
+		}else if(split[0].equalsIgnoreCase(PARTIAL_SYNC)){
+			isFull = false;
+		}else{
+			throw new RedisRuntimeException("unknown reply:" + psync);
+		}
+
+		
+	}
+
 }

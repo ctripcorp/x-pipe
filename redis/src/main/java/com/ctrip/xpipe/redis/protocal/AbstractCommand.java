@@ -74,9 +74,15 @@ public abstract class AbstractCommand implements Command{
 	@Override
 	public void request() throws IOException, XpipeException {
 		doRequest();
-		readResponse();
+		if(hasResponse()){
+			readResponse();
+		}
 	}
 	
+	protected boolean hasResponse() {
+		return true;
+	}
+
 	protected abstract void doRequest() throws IOException;
 
 

@@ -27,7 +27,10 @@ public interface RedisClietProtocol<T> extends RedisProtocol{
 	 * @return
 	 * @throws IOException 
 	 */
-	T parse(InputStream ins) throws IOException;
+	RedisClietProtocol<T> parse(InputStream ins) throws IOException;
 	
 	void write(OutputStream ous) throws IOException;
+	
+	
+	T getPayload();
 }

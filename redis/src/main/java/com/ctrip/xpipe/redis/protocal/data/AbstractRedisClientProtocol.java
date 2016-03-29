@@ -133,4 +133,9 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 		return getRequestBytes(charset, null, commands);
 	}
 
+	
+	@Override
+	public T getPayload() {
+		return payload;
+	}
 }

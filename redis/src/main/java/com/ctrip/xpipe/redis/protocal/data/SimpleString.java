@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
+
 
 /**
  * @author wenchao.meng
@@ -20,9 +22,9 @@ public class SimpleString extends AbstractRedisClientProtocol<String>{
 	}
 	
 	@Override
-	public String parse(InputStream ins) throws IOException {
+	public RedisClietProtocol<String> parse(InputStream ins) throws IOException {
 		
-		return readTilCRLFAsString(ins);
+		return new SimpleString(readTilCRLFAsString(ins));
 	}
 
 	@Override

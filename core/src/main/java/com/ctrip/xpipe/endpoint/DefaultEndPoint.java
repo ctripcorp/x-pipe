@@ -13,6 +13,7 @@ public class DefaultEndPoint implements Endpoint{
 	public DefaultEndPoint(String url) {
 		
 		try {
+			this.rawUrl = url;
 			this.uri = new URI(url);
 		} catch (URISyntaxException e) {
 			throw new IllegalArgumentException(url, e);

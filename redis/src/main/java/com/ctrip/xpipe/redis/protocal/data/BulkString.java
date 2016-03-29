@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
 
 
 /**
@@ -12,24 +14,20 @@ import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
  *
  * 2016年3月28日 下午2:35:36
  */
-public class BulkString extends AbstractRedisClientProtocol<InputStream>{
+public class BulkString extends AbstractRedisClientProtocol<InOutPayload>{
 	
-	private OutputStream ousForBulk;
-	
-	public BulkString(InputStream payload){
-		super(payload);
-		
+	public BulkString(){
 	}
 	
-	public BulkString(OutputStream ousForBulk) {
-		this.ousForBulk = ousForBulk;
+	public BulkString(InOutPayload bulkStringPayload) {
+		super(bulkStringPayload);
 	}
 
 	/**
 	 * 返回值暂时没用
 	 */
 	@Override
-	public InputStream parse(InputStream ins) throws IOException {
+	public RedisClietProtocol<InOutPayload> parse(InputStream ins) throws IOException {
 		
 		Long length = readLengthFiled(ins);
 		
@@ -40,16 +38,18 @@ public class BulkString extends AbstractRedisClientProtocol<InputStream>{
 			return null;
 		}
 		
+		OutputStream ous = payload.getOutputStream();
+		
 		for(long i=0; i < length; i++){
 			
 			int data = ins.read();
 			if(data == -1){
 				throw new RedisRuntimeException("[parse][eof found, but we have not got enough bytes]" + length);
 			}
-			ousForBulk.write(data);
+			ous.write(data);
 		}
-		
-		return null;
+		ous.flush();
+		return new BulkString(payload);
 	}
 
 	
@@ -68,4 +68,9 @@ public class BulkString extends AbstractRedisClientProtocol<InputStream>{
 		throw new UnsupportedOperationException();		
 	}
 
+	
+	public static class BlukStringPayload{
+		
+	}
+	
 }
