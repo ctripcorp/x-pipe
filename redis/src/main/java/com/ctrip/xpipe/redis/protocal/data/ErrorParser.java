@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.protocal.data;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
 import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
 import com.ctrip.xpipe.redis.protocal.error.RedisError;
@@ -20,7 +19,7 @@ public class ErrorParser extends AbstractRedisClientProtocol<RedisError>{
 	
 
 	public ErrorParser(RedisError redisError) {
-		super(redisError);
+		super(redisError, true, true);
 	}
 
 	@Override
@@ -31,7 +30,7 @@ public class ErrorParser extends AbstractRedisClientProtocol<RedisError>{
 	}
 
 	@Override
-	protected void doWrite(OutputStream ous) throws IOException {
+	protected byte[] getWriteBytes() {
 		throw new UnsupportedOperationException();
 	}
 

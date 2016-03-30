@@ -20,7 +20,7 @@ public class BulkString extends AbstractRedisClientProtocol<InOutPayload>{
 	}
 	
 	public BulkString(InOutPayload bulkStringPayload) {
-		super(bulkStringPayload);
+		super(bulkStringPayload, false, false);
 	}
 
 	/**
@@ -63,14 +63,10 @@ public class BulkString extends AbstractRedisClientProtocol<InOutPayload>{
 		return Long.parseLong(lengthStr);
 	}
 
-	@Override
-	protected void doWrite(OutputStream ous) throws IOException {
-		throw new UnsupportedOperationException();		
-	}
-
 	
-	public static class BlukStringPayload{
-		
+	@Override
+	protected byte[] getWriteBytes() {
+		throw new UnsupportedOperationException();		
 	}
 	
 }

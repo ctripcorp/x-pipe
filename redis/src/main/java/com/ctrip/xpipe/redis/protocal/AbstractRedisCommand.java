@@ -21,20 +21,6 @@ public abstract class AbstractRedisCommand extends AbstractCommand {
 	protected AbstractRedisCommand(OutputStream ous, InputStream ins) {
 		super(ous, ins);
 	}
-
-	
-	public void writeAndFlush(String ...args) throws IOException{
-		
-		StringBuilder sb = new StringBuilder();
-		for(String arg : args){
-			sb.append(arg);
-			sb.append(" ");
-		}
-		sb.append("\r\n");
-		
-		writeAndFlush(sb.toString());
-	}
-	
 	protected String[] splitSpace(String buff) {
 		
 		return buff.split("\\s+");

@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.protocal.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
+import com.ctrip.xpipe.redis.protocal.data.RequestString;
 
 /**
  * @author wenchao.meng
@@ -55,8 +56,15 @@ public class Replconf extends AbstractRedisCommand{
 	@Override
 	protected void doRequest() throws IOException {
 		
-		writeAndFlush(getName(), replConfType.toString(), argu);
 		
+		boolean logRead = true, logWrite = true;
+		
+		if(replConfType == ReplConfType.ACK){
+			logWrite = false;
+		}
+		
+		RequestString request = new RequestString(logRead, logWrite, getName(), replConfType.toString(), argu);
+		request.write(ous);
 	}
 
 	public enum ReplConfType{

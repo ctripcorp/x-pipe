@@ -20,7 +20,7 @@ import com.ctrip.xpipe.redis.server.impl.DefaultRedisSlaveServer;
  *
  * 2016年3月30日 上午9:00:35
  */
-public class RedisDataSourceTest extends AbstractRedisTest{
+public class RedisSlaveServerTest extends AbstractRedisTest{
 	
 	
 	private String rdbFile = "/data/xpipe/redis/dump.rdb";

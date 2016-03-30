@@ -23,22 +23,45 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 	
 	protected final T payload;
 	
+	protected final boolean logRead;
+
+	protected final boolean logWrite;
+
 	public AbstractRedisClientProtocol() {
-		this(null);
+		this(null, true, true);
 	}
 	
-	public AbstractRedisClientProtocol(T payload) {
+	public AbstractRedisClientProtocol(T payload, boolean logRead, boolean logWrite) {
 		this.payload = payload;
+		this.logRead = logRead;
+		this.logWrite = logWrite;
 	}
 	
 
 	
 	@Override
 	public void write(OutputStream ous) throws IOException {
-		doWrite(ous);
+		
+		byte [] toWrite = getWriteBytes();
+		
+		if(logWrite && logger.isInfoEnabled()){
+			
+			logger.info("[getWriteBytes]" + getPayloadAsString());
+		}
+		ous.write(toWrite);
+		ous.flush();
 	}
 	
-	protected abstract void doWrite(OutputStream ous) throws IOException;
+	protected String getPayloadAsString() {
+		
+		String payloadString = payload.toString();
+		if(payload instanceof String[]){
+			payloadString = StringUtil.join(" ", (String[])payload); 
+		}
+		return  payloadString;
+	}
+
+	protected abstract byte[] getWriteBytes();
 
 	/**
 	 * @param byteBuf
@@ -83,7 +106,7 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 			return null;
 		}
 		String ret = new String(bytes, charset);
-		if(logger.isInfoEnabled()){
+		if(logger.isInfoEnabled() && logRead){
 			logger.info("[readTilCRLFAsString]" + ret.trim());
 		}
 		return ret;
@@ -93,20 +116,6 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 	protected  String readTilCRLFAsString(InputStream ins) throws IOException{
 
 		return readTilCRLFAsString(ins, Codec.defaultCharset);
-	}
-
-
-	public enum CRLF_STATE{
-		CR,
-		CRLF,
-		CONTENT
-	}
-
-	protected void write(OutputStream ous, byte[] commandBytes) throws IOException {
-		if(logger.isInfoEnabled()){
-			logger.info("[write]" + new String(commandBytes, Codec.defaultCharset));
-		}
-		ous.write(commandBytes);
 	}
 
 	protected byte[] getRequestBytes(Byte sign, String ... commands) {
@@ -137,5 +146,13 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 	@Override
 	public T getPayload() {
 		return payload;
+	}
+
+
+
+	public enum CRLF_STATE{
+		CR,
+		CRLF,
+		CONTENT
 	}
 }

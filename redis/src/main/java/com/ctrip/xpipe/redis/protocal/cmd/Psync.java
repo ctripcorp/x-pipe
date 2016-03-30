@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.protocal.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
 import com.ctrip.xpipe.redis.protocal.data.BulkString;
+import com.ctrip.xpipe.redis.protocal.data.RequestString;
 import com.ctrip.xpipe.redis.protocal.data.SimpleString;
 
 
@@ -69,7 +70,8 @@ public class Psync extends AbstractRedisCommand{
 
 	@Override
 	protected void doRequest() throws IOException {
-		writeAndFlush(getName(), masterRunIdRequest, String.valueOf(offsetRequest));
+		RequestString requestString = new RequestString(getName(), masterRunIdRequest, String.valueOf(offsetRequest));
+		requestString.write(ous);
 	}
 
 

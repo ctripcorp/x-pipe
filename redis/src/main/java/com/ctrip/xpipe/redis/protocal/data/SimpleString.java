@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.protocal.data;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
 import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
 
@@ -18,7 +17,11 @@ public class SimpleString extends AbstractRedisClientProtocol<String>{
 	}
 	
 	public SimpleString(String payload) {
-		super(payload);
+		super(payload, true, true);
+	}
+	
+	public SimpleString(String payload, boolean logRead, boolean logWrite) {
+		super(payload, logRead, logWrite);
 	}
 	
 	@Override
@@ -28,8 +31,9 @@ public class SimpleString extends AbstractRedisClientProtocol<String>{
 	}
 
 	@Override
-	protected void doWrite(OutputStream ous) throws IOException {
-		write(ous, getRequestBytes(PLUS_BYTE, payload));
+	protected byte[] getWriteBytes() {
+		
+		return getRequestBytes(PLUS_BYTE, payload);
 	}
 
 

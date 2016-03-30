@@ -29,48 +29,6 @@ public abstract class AbstractCommand implements Command{
 		this.ous = ous;
 		this.ins = ins;
 	}
-
-	protected void writeAndFlush(byte []data) throws IOException{
-		
-		write(data);
-		flush();
-	}
-	
-	protected void write(byte []data) throws IOException {
-		
-		if(logger.isInfoEnabled()){
-			logger.info("[write]" + new String(data, charset).trim());
-		}
-		ous.write(data);
-	}
-	
-	protected void flush() throws IOException {
-		ous.flush();
-	}
-	
-	protected void writeWithCRLFAndFlush(byte []data) throws IOException {
-		
-		write(data);
-		write("\r\n");
-		flush();
-	}
-
-
-	protected void writeAndFlush(String buff) throws IOException{
-		
-		write(buff);
-		flush();
-	}
-	
-	protected void write(String buff) throws IOException {
-		write(buff, charset);
-	}
-	
-	protected void write(String buff, Charset charset) throws IOException{
-		
-		write(buff.getBytes(charset));
-	}
-
 	@Override
 	public void request() throws IOException, XpipeException {
 		doRequest();

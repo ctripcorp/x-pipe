@@ -1,4 +1,6 @@
 target
+TODO
+*.swp
 .settings
 .project
 .classpath
