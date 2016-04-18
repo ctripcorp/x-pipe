@@ -2,6 +2,7 @@ package com.ctrip.xpipe;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
@@ -12,6 +13,7 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
+import com.ctrip.xpipe.utils.CpuUtils;
 
 /**
  * @author wenchao.meng
@@ -23,7 +25,9 @@ public class AbstractTest {
 	protected Logger logger = LogManager.getLogger(getClass());
 	
 	protected ExecutorService executors = Executors.newCachedThreadPool();
-	
+
+	protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(CpuUtils.getCpuCount());
+
 	@Rule
 	public TestName name = new TestName();
 	

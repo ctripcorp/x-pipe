@@ -12,9 +12,9 @@ import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.protocal.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
-import com.ctrip.xpipe.redis.protocal.data.BulkString;
-import com.ctrip.xpipe.redis.protocal.data.RequestString;
-import com.ctrip.xpipe.redis.protocal.data.SimpleString;
+import com.ctrip.xpipe.redis.protocal.protocal.BulkString;
+import com.ctrip.xpipe.redis.protocal.protocal.RequestString;
+import com.ctrip.xpipe.redis.protocal.protocal.SimpleString;
 
 
 /**

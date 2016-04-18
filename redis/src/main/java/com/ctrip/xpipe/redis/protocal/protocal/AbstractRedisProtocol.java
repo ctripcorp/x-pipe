@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.protocal.data;
+package com.ctrip.xpipe.redis.protocal.protocal;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

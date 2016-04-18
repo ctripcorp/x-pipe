@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.protocal.data;
+package com.ctrip.xpipe.redis.protocal.protocal;
 
 import java.io.IOException;
 import java.io.InputStream;

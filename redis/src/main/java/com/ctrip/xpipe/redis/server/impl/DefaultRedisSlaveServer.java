@@ -13,7 +13,6 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.protocal.Command;
-import com.ctrip.xpipe.redis.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.protocal.cmd.Replconf.ReplConfType;
@@ -50,8 +49,8 @@ public class DefaultRedisSlaveServer extends AbstractRedisServer implements Redi
 
 	private ScheduledExecutorService scheduled;
 	
-	public DefaultRedisSlaveServer(Endpoint endpoint, InOutPayload rdbPayload, OutputStream commandOus) {
-		this(endpoint, rdbPayload, commandOus, "?", -1L, RedisProtocol.REDIS_PORT_DEFAULT, null, 3);
+	public DefaultRedisSlaveServer(Endpoint endpoint, InOutPayload rdbPayload, OutputStream commandOus, int slavePort) {
+		this(endpoint, rdbPayload, commandOus, "?", -1L, slavePort, null, 3);
 	}
 	
 	public DefaultRedisSlaveServer(Endpoint endpoint, InOutPayload rdbPayload, OutputStream commandOus, String masterRunId, long masterBeginOffset, int slavePort, ScheduledExecutorService scheduled, int retry) {

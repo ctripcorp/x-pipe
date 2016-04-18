@@ -7,8 +7,8 @@ import java.io.OutputStream;
 
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.protocal.data.ErrorParser;
-import com.ctrip.xpipe.redis.protocal.data.SimpleString;
+import com.ctrip.xpipe.redis.protocal.protocal.ErrorParser;
+import com.ctrip.xpipe.redis.protocal.protocal.SimpleString;
 
 
 /**

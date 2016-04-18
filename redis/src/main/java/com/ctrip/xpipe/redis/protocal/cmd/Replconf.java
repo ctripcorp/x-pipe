@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.protocal.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
-import com.ctrip.xpipe.redis.protocal.data.RequestString;
+import com.ctrip.xpipe.redis.protocal.protocal.RequestString;
 
 /**
  * @author wenchao.meng

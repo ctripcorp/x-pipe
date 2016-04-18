@@ -7,7 +7,7 @@
         </console>
 
         <RollingFile name="RollingFileInfo" fileName="/data/applogs/xpipe/xpipe-test.log"
-                     filePattern="${sys:user.home}/logs/hpaasvc/$${date:yyyy-MM}/info-%d{yyyy-MM-dd}-%i.log">
+                     filePattern="/data/applogs/xpipe/xpipe-test-%d{yyyy-MM-dd}-%i.log">
             <Filters>
                 <ThresholdFilter level="INFO"/>
                 <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>
