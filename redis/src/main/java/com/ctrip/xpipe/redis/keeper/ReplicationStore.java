@@ -12,12 +12,13 @@ import io.netty.channel.FileRegion;
  */
 public interface ReplicationStore extends Closeable{
 
-	void beginRdb(long masterOffset);
+	void beginRdb(String masterRunid, long masterOffset);
 	
 	void writeRdb(ByteBuf byteBuffer);
 	
 	void endRdb();
 	
+	String getMasterRunid();
 	
 	/**
 	 * Zero copy support
