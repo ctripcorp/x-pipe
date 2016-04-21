@@ -2,8 +2,11 @@ package com.ctrip.xpipe.redis;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.UUID;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.server.SimpleFileReplicationStore;
 
 /**
  * @author wenchao.meng
@@ -12,6 +15,24 @@ import com.ctrip.xpipe.AbstractTest;
  */
 public abstract class AbstractRedisTest extends AbstractTest{
 
+	private String rdbFile, commandFile;
+
+	protected ReplicationStore createReplicationStore(){
+		
+		String tmpDir = getTestFileDir();
+		rdbFile = tmpDir + "/" + "rdbFile" + UUID.randomUUID().toString() + ".rdb";
+		commandFile = tmpDir + "/" + "commandFile" + UUID.randomUUID().toString() + ".command";
+		return new SimpleFileReplicationStore(rdbFile, commandFile);
+		
+	}
+	
+	protected String getRdbFile() {
+		return rdbFile;
+	}
+	
+	public String getCommandFile() {
+		return commandFile;
+	}
 	
 	protected String readLine(InputStream ins) throws IOException {
 		

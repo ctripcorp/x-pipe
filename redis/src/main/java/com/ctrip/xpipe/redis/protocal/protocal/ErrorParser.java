@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.protocal.protocal;
 
-import java.io.IOException;
-import java.io.InputStream;
-
-import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
+import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.error.RedisError;
+
+import io.netty.buffer.ByteBuf;
 
 
 /**
@@ -23,9 +22,9 @@ public class ErrorParser extends AbstractRedisClientProtocol<RedisError>{
 	}
 
 	@Override
-	public RedisClietProtocol<RedisError> parse(InputStream ins) throws IOException {
+	public RedisClientProtocol<RedisError> read(ByteBuf byteBuf){
 		
-		String error = readTilCRLFAsString(ins);
+		String error = readTilCRLFAsString(byteBuf);
 		return new ErrorParser(new RedisError(error));
 	}
 

@@ -19,6 +19,7 @@
 		<netty.version>4.0.34.Final</netty.version>
 		<junit.version>4.12</junit.version>
 		<log4j.version>2.5</log4j.version>
+		<commons-io.version>2.4</commons-io.version>
 		<maven-jar-plugin.version>2.6</maven-jar-plugin.version>
 	</properties>
 
@@ -49,7 +50,11 @@
 			</dependency>
 			<!-- xpipe related -->
 
-
+			<dependency>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>${commons-io.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>junit</groupId>
 				<artifactId>junit</artifactId>

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.server;
+package com.ctrip.xpipe.redis.keeper;
 
 
 import com.ctrip.xpipe.api.server.Server;

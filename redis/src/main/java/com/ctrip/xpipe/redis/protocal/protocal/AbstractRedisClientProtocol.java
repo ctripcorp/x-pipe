@@ -4,14 +4,13 @@ package com.ctrip.xpipe.redis.protocal.protocal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.Charset;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
+import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.utils.StringUtil;
+
+import io.netty.buffer.ByteBuf;
 
 
 /**
@@ -19,13 +18,17 @@ import com.ctrip.xpipe.utils.StringUtil;
  *
  * 2016年3月24日 下午6:29:33
  */
-public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtocol implements RedisClietProtocol<T>{
+public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtocol implements RedisClientProtocol<T>{
 	
 	protected final T payload;
 	
 	protected final boolean logRead;
 
 	protected final boolean logWrite;
+
+	private ByteArrayOutputStream baous = new ByteArrayOutputStream();
+	private CRLF_STATE 			  crlfState = CRLF_STATE.CONTENT;
+	
 
 	public AbstractRedisClientProtocol() {
 		this(null, true, true);
@@ -40,7 +43,7 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 
 	
 	@Override
-	public void write(OutputStream ous) throws IOException {
+	public byte[] format(){
 		
 		byte [] toWrite = getWriteBytes();
 		
@@ -48,8 +51,7 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 			
 			logger.info("[getWriteBytes]" + getPayloadAsString());
 		}
-		ous.write(toWrite);
-		ous.flush();
+		return toWrite;
 	}
 	
 	protected String getPayloadAsString() {
@@ -68,40 +70,39 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 	 * @return 结束则返回对应byte[], 否则返回null
 	 * @throws IOException 
 	 */
-	protected byte[] readTilCRLF(InputStream ins) throws IOException {
+	protected byte[] readTilCRLF(ByteBuf byteBuf){
 		
-		ByteArrayOutputStream baous = new ByteArrayOutputStream();
-		CRLF_STATE state = CRLF_STATE.CONTENT;
-		while(true){
+		int readable = byteBuf.readableBytes();
+		for(int i=0; i < readable ;i++){
 			
-			int data = ins.read();
-			if(data == -1){
-				logger.error("[readTilCRLF][EOF]");
-				throw new RedisRuntimeException("expected CRLF, but eof found");
+			byte data = byteBuf.readByte();
+			baous.write(data);
+			switch(data){
+				case '\r':
+					crlfState = CRLF_STATE.CR;
+					break;
+				case '\n':
+					if(crlfState == CRLF_STATE.CR){
+						crlfState = CRLF_STATE.CRLF;
+						break;
+					}
+				default:
+					crlfState = CRLF_STATE.CONTENT;
+					break;
 			}
 			
-			baous.write(data);
-			
-			if(data == '\r'){
-				state = CRLF_STATE.CR;
-			}else if(data == '\n'){
-				if(state == CRLF_STATE.CR){
-					state = CRLF_STATE.CRLF;
-					break;
-				}
-			}else{
-				state = CRLF_STATE.CONTENT;
+			if(crlfState == CRLF_STATE.CRLF){
+				return baous.toByteArray();
 			}
 		}
 		
-		return baous.toByteArray();
-		
+		return null;
 	}
 
 	
-	protected  String readTilCRLFAsString(InputStream ins, Charset charset) throws IOException{
+	protected  String readTilCRLFAsString(ByteBuf byteBuf, Charset charset){
 		
-		byte []bytes = readTilCRLF(ins);
+		byte []bytes = readTilCRLF(byteBuf);
 		if(bytes == null){
 			return null;
 		}
@@ -113,9 +114,18 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 		
 	}
 
-	protected  String readTilCRLFAsString(InputStream ins) throws IOException{
+	protected  String readTilCRLFAsString(ByteBuf byteBuf){
 
-		return readTilCRLFAsString(ins, Codec.defaultCharset);
+		return readTilCRLFAsString(byteBuf, Codec.defaultCharset);
+	}
+
+	protected byte[] getRequestBytes(Byte sign, Integer integer) {
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append((char)sign.byteValue());
+		sb.append(integer);
+		sb.append("\r\n");
+		return sb.toString().getBytes();
 	}
 
 	protected byte[] getRequestBytes(Byte sign, String ... commands) {

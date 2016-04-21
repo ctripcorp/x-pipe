@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.protocal.cmd;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.protocal.AbstractRedisCommand;
-import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
-import com.ctrip.xpipe.redis.protocal.protocal.RequestString;
+import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
+
+import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -19,8 +17,8 @@ public class Replconf extends AbstractRedisCommand{
 	private ReplConfType replConfType;
 	private String argu;
 	
-	public Replconf(ReplConfType replConfType, String argu, OutputStream ous, InputStream ins) {
-		super(ous, ins);
+	public Replconf(ReplConfType replConfType, String argu, Channel channel) {
+		super(channel);
 		this.replConfType = replConfType;
 		this.argu = argu;
 	}
@@ -31,7 +29,7 @@ public class Replconf extends AbstractRedisCommand{
 	}
 
 	@Override
-	protected void handleRedisResponse(RedisClietProtocol<?> redisClietProtocol) throws IOException {
+	protected RESPONSE_STATE handleRedisResponse(RedisClientProtocol<?> redisClietProtocol){
 		
 		switch(replConfType){
 			case LISTENING_PORT:
@@ -42,6 +40,7 @@ public class Replconf extends AbstractRedisCommand{
 			default:
 				throw new IllegalStateException("unkonwn repconf type:" + replConfType);
 		}
+		return RESPONSE_STATE.SUCCESS;
 	}
 	
 	@Override
@@ -54,7 +53,7 @@ public class Replconf extends AbstractRedisCommand{
 	}
 
 	@Override
-	protected void doRequest() throws IOException {
+	protected void doRequest(){
 		
 		
 		boolean logRead = true, logWrite = true;
@@ -63,8 +62,8 @@ public class Replconf extends AbstractRedisCommand{
 			logWrite = false;
 		}
 		
-		RequestString request = new RequestString(logRead, logWrite, getName(), replConfType.toString(), argu);
-		request.write(ous);
+		RequestStringParser request = new RequestStringParser(logRead, logWrite, getName(), replConfType.toString(), argu);
+		writeAndFlush(request.format());
 	}
 
 	public enum ReplConfType{

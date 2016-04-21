@@ -10,11 +10,4 @@ public interface PsyncObserver {
 	void beginWriteRdb();
 	
 	void endWriteRdb();
-	
-	void setFullSyncInfo(String masterRunId, long masterOffset);
-	
-	void increaseReploffset();
-	
-	void increaseReploffset(int n);
-
 }

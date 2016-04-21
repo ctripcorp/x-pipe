@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.protocal;
 
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+
+import io.netty.buffer.ByteBuf;
 
 
 /**
@@ -11,7 +11,7 @@ import java.io.OutputStream;
  *
  * 2016年3月24日 下午6:27:48
  */
-public interface RedisClietProtocol<T> extends RedisProtocol{
+public interface RedisClientProtocol<T> extends RedisProtocol{
 	
 	public static final byte DOLLAR_BYTE = '$';
 	public static final byte ASTERISK_BYTE = '*';
@@ -27,9 +27,11 @@ public interface RedisClietProtocol<T> extends RedisProtocol{
 	 * @return
 	 * @throws IOException 
 	 */
-	RedisClietProtocol<T> parse(InputStream ins) throws IOException;
+	RedisClientProtocol<T> read(ByteBuf byteBuf);
+
 	
-	void write(OutputStream ous) throws IOException;
+	byte[] format();
+	
 	
 	
 	T getPayload();

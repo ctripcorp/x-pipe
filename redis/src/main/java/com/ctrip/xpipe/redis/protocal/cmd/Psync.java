@@ -2,19 +2,21 @@ package com.ctrip.xpipe.redis.protocal.cmd;
 
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
+import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.protocal.AbstractRedisCommand;
+import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.protocal.PsyncObserver;
-import com.ctrip.xpipe.redis.protocal.RedisClietProtocol;
-import com.ctrip.xpipe.redis.protocal.protocal.BulkString;
-import com.ctrip.xpipe.redis.protocal.protocal.RequestString;
-import com.ctrip.xpipe.redis.protocal.protocal.SimpleString;
+import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
+import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 
 
 /**
@@ -29,31 +31,38 @@ public class Psync extends AbstractRedisCommand{
 	public static final String PARTIAL_SYNC = "CONTINUE";
 	
 	
-	private final String masterRunIdRequest; 
+	private final String masterRunidRequest; 
 	private final long offsetRequest; 
 
-	private String masterRunId;
+	private String masterRunid;
 	private long offset;
 	
 	private boolean isFull;
 	
-	private InOutPayload rdbPayload;
+	private BulkStringParser rdbReader;
 	
-	private OutputStream commandOus;
+	private ReplicationStore replicationStore;
 
 	private List<PsyncObserver> observers = new LinkedList<PsyncObserver>();
 	
+	private PSYNC_STATE psyncState = PSYNC_STATE.PSYNC_COMMAND_WAITING_REPONSE; 
 	
-	protected Psync(OutputStream ous, InputStream ins, InOutPayload rdbPayload, OutputStream commandOus) {
-		this(ous, ins, "?", -1L, rdbPayload, commandOus);
+	public static enum PSYNC_STATE{
+		PSYNC_COMMAND_WAITING_REPONSE,
+		READING_RDB,
+		READING_COMMANDS
+	}
+	
+	
+	public Psync(Channel channel, ReplicationStore replicationStore) {
+		this(channel, "?", -1L, replicationStore);
 	}
 
-	public Psync(OutputStream ous, InputStream ins, String masterRunId, long offset, InOutPayload rdbPayload, OutputStream commandOus) {
-		super(ous, ins);
-		this.masterRunIdRequest = masterRunId;
+	public Psync(Channel channel, String masterRunid, long offset, ReplicationStore replicationStore) {
+		super(channel);
+		this.masterRunidRequest = masterRunid;
 		this.offsetRequest = offset;
-		this.rdbPayload = rdbPayload;
-		this.commandOus = commandOus;
+		this.replicationStore = replicationStore;
 	}
 	
 	
@@ -69,14 +78,14 @@ public class Psync extends AbstractRedisCommand{
 
 
 	@Override
-	protected void doRequest() throws IOException {
-		RequestString requestString = new RequestString(getName(), masterRunIdRequest, String.valueOf(offsetRequest));
-		requestString.write(ous);
+	protected void doRequest() {
+		RequestStringParser requestString = new RequestStringParser(getName(), masterRunidRequest, String.valueOf(offsetRequest));
+		writeAndFlush(requestString.format());
 	}
 
 
 	public String getMasterRunId() {
-		return masterRunId;
+		return masterRunid;
 	}
 	
 	public long getOffset() {
@@ -90,61 +99,53 @@ public class Psync extends AbstractRedisCommand{
 	@Override
 	public String toString() {
 		
-		String info = getName() + "," + masterRunIdRequest + "," + offsetRequest; 
-		if(!masterRunIdRequest.equals(masterRunId)){
-			info += "," + masterRunId;
+		String info = getName() + "," + masterRunidRequest + "," + offsetRequest; 
+		if(!masterRunidRequest.equals(masterRunid)){
+			info += "," + masterRunid;
 		}
 		return info;
 	}
-
-	private void fullSync() throws IOException {
+	
+	
+	@Override
+	protected RESPONSE_STATE doHandleResponse(ByteBuf byteBuf) throws XpipeException {
 		
-		//read rdb
-		try{
-			beginReadRdb();
-			rdbPayload.startOutputStream();
-			
-			new BulkString(rdbPayload).parse(ins);
-		}finally{
-			rdbPayload.endOutputStream();
-			endReadRdb();
-		}
-
-		readPropogateCommands(ins);
+		switch(psyncState){
 		
-	}
-
-	private void readPropogateCommands(InputStream ins) throws IOException {
-		//处理结尾\r\n的情况
-		
-		int data = ins.read();
-		if(data == '\r'){
-			data = ins.read();
-			if(data == '\n'){
+			case PSYNC_COMMAND_WAITING_REPONSE:
+				return super.doHandleResponse(byteBuf);
 				
-			}else{
-				commandOus.write(data);
-				notifyIncreaseOffset();
-			}
-		}else{
-			commandOus.write(data);
-			notifyIncreaseOffset();
-		}
-		while(true){
-			data = ins.read();
-			if(data == -1){
-				logger.error("[readPropogateCommands][EOF]");
+			case READING_RDB:
+				if(rdbReader == null){
+					rdbReader = new BulkStringParser(new InOutPayloadReplicationStore(replicationStore));
+					beginReadRdb();
+				}
+				RedisClientProtocol<InOutPayload> payload =  rdbReader.read(byteBuf);
+				if( payload != null){
+					psyncState = PSYNC_STATE.READING_COMMANDS;
+					endReadRdb();
+				}else{
+					break;
+				}
+			case READING_COMMANDS:
+				try {
+					@SuppressWarnings("unused")
+					int n = replicationStore.appendCommands(byteBuf);
+				} catch (IOException e) {
+					logger.error("[doHandleResponse][write commands error]", e);
+				}
 				break;
-			}
-			
-			commandOus.write(data);
-			notifyIncreaseOffset();
+			default:
+				throw new IllegalStateException("unknown state:" + psyncState);
 		}
 		
+		return RESPONSE_STATE.CONTINUE;
 	}
+
 
 	private void beginReadRdb() {
 		
+		replicationStore.beginRdb(masterRunid, offset);
 		for(PsyncObserver observer : observers){
 			try{
 				observer.beginWriteRdb();
@@ -155,6 +156,8 @@ public class Psync extends AbstractRedisCommand{
 	}
 
 	private void endReadRdb() {
+		
+		replicationStore.endRdb();
 		for(PsyncObserver observer : observers){
 			try{
 				observer.endWriteRdb();
@@ -164,33 +167,10 @@ public class Psync extends AbstractRedisCommand{
 		}
 	}
 
-
-	private void notifyFullSync(String masterRunId, long offset) {
-
-		for(PsyncObserver observer : observers){
-			try{
-				observer.setFullSyncInfo(masterRunId, offset);
-			}catch(Throwable th){
-				logger.error("[notifyFullSync]" + this, th);
-			}
-		}
-	}
-
-	private void notifyIncreaseOffset() {
-
-		for(PsyncObserver observer : observers){
-			try{
-				observer.increaseReploffset();
-			}catch(Throwable th){
-				logger.error("[notifyIncreaseOffset]" + this, th);				
-			}
-		}
-	}
-
 	@Override
-	protected void handleRedisResponse(RedisClietProtocol<?> redisClietProtocol) throws IOException {
+	protected RESPONSE_STATE handleRedisResponse(RedisClientProtocol<?> redisClietProtocol) {
 		
-		String psync = ((SimpleString)redisClietProtocol).getPayload();
+		String psync = ((SimpleStringParser)redisClietProtocol).getPayload();
 		
 		String []split = splitSpace(psync);
 		if(split.length == 0){
@@ -202,20 +182,18 @@ public class Psync extends AbstractRedisCommand{
 			if(split.length != 3){
 				throw new RedisRuntimeException("unknown reply:" + psync);
 			}
-			masterRunId = split[1];
+			masterRunid = split[1];
 			offset = Long.parseLong(split[2]);
 			if(logger.isInfoEnabled()){
-				logger.info("[readRedisResponse]" + masterRunId + "," + offset);
+				logger.info("[readRedisResponse]" + masterRunid + "," + offset);
 			}
-			notifyFullSync(masterRunId, offset);
-			fullSync();
+			psyncState = PSYNC_STATE.READING_RDB;
 		}else if(split[0].equalsIgnoreCase(PARTIAL_SYNC)){
-			isFull = false;
+			psyncState = PSYNC_STATE.READING_COMMANDS;
 		}else{
 			throw new RedisRuntimeException("unknown reply:" + psync);
 		}
-
-		
+		return RESPONSE_STATE.CONTINUE;
 	}
 
 }

@@ -1,7 +1,11 @@
 package com.ctrip.xpipe.api.payload;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+
+
+import java.io.IOException;
+import java.nio.channels.WritableByteChannel;
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author wenchao.meng
@@ -11,16 +15,17 @@ import java.io.OutputStream;
 public interface InOutPayload {
 
 
-	void startInputStream();
+	void startInput();
 	
-	InputStream getInputStream();
+	int in(ByteBuf byteBuf) throws IOException;
 	
-	void endInputStream();
+	void endInput();
 	
 
-	void startOutputStream();
+	void startOutput();
+
+	long out(WritableByteChannel writableByteChannel) throws IOException;
 	
-	OutputStream getOutputStream();
-	
-	void endOutputStream();
+	void endOutput();
+
 }

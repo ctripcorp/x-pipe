@@ -1,10 +1,20 @@
 package com.ctrip.xpipe;
 
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -12,6 +22,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
 import com.ctrip.xpipe.utils.CpuUtils;
 
@@ -31,13 +42,50 @@ public class AbstractTest {
 	@Rule
 	public TestName name = new TestName();
 	
+	private Properties properties = new Properties();
+	
 	@Before
-	public void beforeAbstractTest(){
+	public void beforeAbstractTest() throws IOException{
+		
+		logger.info("[begin test]" + name.getMethodName());
 		
 		Thread.setDefaultUncaughtExceptionHandler(new DefaultExceptionHandler());
-		logger.info("[begin test]" + name.getMethodName());
+		InputStream fins = getClass().getClassLoader().getResourceAsStream("xpipe-test.properties");
+		try {
+			properties.load(fins);
+		} finally{
+			if(fins != null){
+				fins.close();
+			}
+		}
+		
+		File file = new File(getTestFileDir());
+		FileUtils.forceDelete(file);
+		file.mkdirs();
 	}
 
+	
+	protected String randomString(){
+		
+		return randomString(1 << 10);
+	}
+	
+	protected String randomString(int length){
+		
+		StringBuilder sb = new StringBuilder();
+		for(int i=0; i < length ; i++){
+			sb.append((char)('a' + (int)(26*Math.random())));
+		}
+		
+		return sb.toString();
+		
+	}
+	
+	
+	protected String getTestFileDir(){
+		return properties.getProperty("test.file.dir");
+		
+	} 
 
 	protected void sleepSeconds(int seconds){
 		sleep(seconds * 1000);
@@ -50,14 +98,51 @@ public class AbstractTest {
 		} catch (InterruptedException e) {
 		}
 	}
-	
-	
-	@After
-	public void afterAbstractTest(){
+
+	protected String readFileAsString(String fileName) {
 		
-		logger.info("[end   test]" + name.getMethodName());
+		return readFileAsString(fileName, Codec.defaultCharset);
 	}
 
+	protected String readFileAsString(String fileName, Charset charset) {
+		
+		FileInputStream fins = null;
+		try {
+			byte []data = new byte[2048];
+			ByteArrayOutputStream baous = new ByteArrayOutputStream();
+			fins = new FileInputStream(new File(fileName));
+			
+			while(true){
+				int size = fins.read(data);
+				if(size > 0){
+					baous.write(data, 0, size);
+				}
+				if(size == -1){
+					break;
+				}
+			}
+			return new String(baous.toByteArray(), charset);
+		} catch (FileNotFoundException e) {
+			logger.error("[readFileAsString]" + fileName, e);
+		} catch (IOException e) {
+			logger.error("[readFileAsString]" + fileName, e);
+		}finally{
+			if(fins != null){
+				try {
+					fins.close();
+				} catch (IOException e) {
+					logger.error("[readFileAsString]", e);
+				}
+			}
+		}
+		return null;
+	}
 	
+	@After
+	public void afterAbstractTest() throws IOException{
 
+		File file = new File(getTestFileDir());
+		FileUtils.forceDelete(file);
+		logger.info("[end   test]" + name.getMethodName());
+	}
 }

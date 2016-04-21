@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.server;
 
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -13,11 +11,10 @@ import org.junit.After;
 import org.junit.Test;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.payload.FileInOutPayload;
 import com.ctrip.xpipe.redis.AbstractRedisTest;
-import com.ctrip.xpipe.redis.server.impl.DefaultRedisSlaveServer;
+import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.server.io.IoAction;
 import com.ctrip.xpipe.redis.server.io.IoActionFactory;
 import com.ctrip.xpipe.redis.server.io.Server;
@@ -51,7 +48,7 @@ public class RedisKeeperTest extends AbstractRedisTest{
 	
 	
 	@Test
-	public void createRedisKeeper() throws IOException{
+	public void createRedisKeeper() throws Exception{
 
 		startKeeperServer(keeperPort);
 		startSlaveClient();
@@ -63,12 +60,11 @@ public class RedisKeeperTest extends AbstractRedisTest{
 		new Server(slave2Port, slave2).start();
 	}
 
-	private void startSlaveClient() throws IOException {
-		
-		InOutPayload rdbPayload = new FileInOutPayload(rdbFile);
-		FileOutputStream command = new FileOutputStream(new File(commandFile));
-		DefaultRedisSlaveServer rds = new DefaultRedisSlaveServer(new DefaultEndPoint(redisMasterUri), rdbPayload, command, keeperPort);
-		executors.execute(rds);
+	private void startSlaveClient() throws Exception {
+
+		ReplicationStore replicationStore = new SimpleFileReplicationStore(rdbFile, commandFile);
+		DefaultRedisKeeperServer rds = new DefaultRedisKeeperServer(new DefaultEndPoint(redisMasterUri), replicationStore, keeperPort);
+		rds.start();
 		
 	}
 	private void startKeeperServer(int keeperPort) throws IOException {

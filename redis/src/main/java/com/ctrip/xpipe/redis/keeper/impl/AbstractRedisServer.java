@@ -1,6 +1,6 @@
-package com.ctrip.xpipe.redis.server.impl;
+package com.ctrip.xpipe.redis.keeper.impl;
 
-import com.ctrip.xpipe.redis.server.RedisServer;
+import com.ctrip.xpipe.redis.keeper.RedisServer;
 import com.ctrip.xpipe.server.AbstractServer;
 
 /**

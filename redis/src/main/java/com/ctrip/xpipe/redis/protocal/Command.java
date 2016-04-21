@@ -1,8 +1,9 @@
 package com.ctrip.xpipe.redis.protocal;
 
-import java.io.IOException;
 
 import com.ctrip.xpipe.exception.XpipeException;
+
+import io.netty.buffer.ByteBuf;
 
 
 
@@ -15,6 +16,21 @@ public interface Command {
 	
 	String getName();
 	
-	void request() throws IOException, XpipeException;
+	void request() throws XpipeException;
+	
+	/**
+	 * @param byteBuf
+	 * @return true，代表
+	 * @throws XpipeException 
+	 */
+	RESPONSE_STATE handleResponse(ByteBuf byteBuf) throws XpipeException;
+	
+	
+	public static enum RESPONSE_STATE{
+		SUCCESS,
+		FAIL_CONTINUE,
+		FAIL_STOP,
+		CONTINUE//go on giving bytebuf
+	}
 	
 }

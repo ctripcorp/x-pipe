@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
 import java.io.Closeable;
+import java.io.IOException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.FileRegion;
@@ -14,7 +15,7 @@ public interface ReplicationStore extends Closeable{
 
 	void beginRdb(String masterRunid, long masterOffset);
 	
-	void writeRdb(ByteBuf byteBuffer);
+	int writeRdb(ByteBuf byteBuffer) throws IOException;
 	
 	void endRdb();
 	
@@ -27,7 +28,7 @@ public interface ReplicationStore extends Closeable{
 	FileRegion getRdbFile();
 	
 
-	void appendCommands(ByteBuf byteBuf);
+	int appendCommands(ByteBuf byteBuf) throws IOException;
 	
 	
 	void addCommandsListener(long offset, CommandsListener commandsListener);

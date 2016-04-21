@@ -1,14 +1,14 @@
 package com.ctrip.xpipe.payload;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.WritableByteChannel;
+
+import io.netty.buffer.ByteBuf;
+
 
 /**
  * @author wenchao.meng
@@ -18,64 +18,67 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 public class FileInOutPayload extends AbstractInOutPayload{
 	
 	public String fileName;
-	
-	private InputStream ins;
-	
-	private OutputStream ous;
+	private FileChannel inFileChannel; 
+	private FileChannel outFileChannel; 
 	
 	public FileInOutPayload(String fileName) {
 		this.fileName = fileName;
 	}
 
+	@SuppressWarnings("resource")
 	@Override
-	public InputStream getInputStream() {
-		return ins;
-	}
-
-	@Override
-	public OutputStream getOutputStream() {
-		return ous;
-	}
-
-	@Override
-	public void startInputStream() {
+	public void startInput() {
 		
 		try {
-			ins = new FileInputStream(new File(fileName));
+			inFileChannel = new RandomAccessFile(fileName, "rw").getChannel();
 		} catch (FileNotFoundException e) {
-			throw new XpipeRuntimeException("file:" + fileName, e);
+			throw new IllegalStateException("file not found:" + fileName, e);
 		}
+	}
+
+	@Override
+	public int in(ByteBuf byteBuf) throws IOException {
 		
+		
+		int readerIndex = byteBuf.readerIndex();
+		int n = inFileChannel.write(byteBuf.nioBuffer());
+		byteBuf.readerIndex(readerIndex + n);
+		return n;
 	}
 
+	
 	@Override
-	public void endInputStream() {
-		if( ins != null ){
-			try {
-				ins.close();
-			} catch (IOException e) {
-				logger.error("[endInputStream]" + fileName, e);
-			}
-		}
-	}
-
-	@Override
-	public void startOutputStream() {
+	public void endInput() {
 		try {
-			ous = new FileOutputStream(new File(fileName));
-		} catch (FileNotFoundException e) {
-			throw new XpipeRuntimeException("file:" + fileName, e);
+			inFileChannel.close();
+		} catch (IOException e) {
+			logger.error("[error closing file]" + fileName, e);
 		}
 	}
 
+	@SuppressWarnings("resource")
 	@Override
-	public void endOutputStream() {
-		if(ous != null){
-			try {
-				ous.close();
-			} catch (IOException e) {
-				logger.error("[endOutputStream]" + fileName, e);
-			}
+	public void startOutput() {
+		
+		try {
+			outFileChannel = new RandomAccessFile(fileName, "rw").getChannel();
+		} catch (FileNotFoundException e) {
+			throw new IllegalStateException("file not found:" + fileName, e);
+		}
+	}
+	
+	@Override
+	public long out(WritableByteChannel writableByteChannel) throws IOException {
+		
+		return outFileChannel.transferTo(0, outFileChannel.size(), writableByteChannel);
+	}
+
+	@Override
+	public void endOutput() {
+		try {
+			outFileChannel.close();
+		} catch (IOException e) {
+			logger.error("[error closing file]" + fileName, e);
 		}
 	}
 }
