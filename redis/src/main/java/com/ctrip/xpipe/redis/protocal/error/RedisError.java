@@ -15,4 +15,7 @@ public class RedisError extends RedisException{
 		super(message);
 	}
 
+	public String errorMessage(){
+		return super.getMessage();
+	}
 }

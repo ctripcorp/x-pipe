@@ -3,6 +3,9 @@ package com.ctrip.xpipe.redis.keeper.netty;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.protocal.Command;
 
@@ -17,6 +20,8 @@ import io.netty.channel.ChannelHandlerContext;
  * 2016年4月21日 下午3:09:44
  */
 public class NettySlaveHandler extends ChannelDuplexHandler{
+
+	private Logger logger = LogManager.getLogger(NettySlaveHandler.class);
 	
 	private RedisKeeperServer redisKeeperServer;
 	
@@ -30,6 +35,11 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		
 		Channel channel = ctx.channel();
+
+		if(logger.isInfoEnabled()){
+			logger.info("[channelActive]" + channel);
+		}
+		
 		Command command  = redisKeeperServer.slaveConnected(channel);
 		commands.put(channel, command);
 		command.request();
@@ -39,6 +49,10 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 	
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+		
+		if(logger.isInfoEnabled()){
+			logger.info("[channelInactive]" + ctx.channel());
+		}
 		
 		redisKeeperServer.slaveDisconntected(ctx.channel());
 		super.channelInactive(ctx);
@@ -50,6 +64,13 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 		Command command = commands.get(ctx.channel());
 		command.handleResponse((ByteBuf)msg);
 		super.channelRead(ctx, msg);
+	}
+	
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		
+		logger.error("[exceptionCaught]" + ctx.channel(), cause);
+		super.exceptionCaught(ctx, cause);
 	}
 
 }

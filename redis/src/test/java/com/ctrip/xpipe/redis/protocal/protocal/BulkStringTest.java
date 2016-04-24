@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.protocal.protocal;
 
+
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
 
@@ -7,9 +8,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
+import com.ctrip.xpipe.payload.AbstractInOutPayload;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 
 
 /**
@@ -19,7 +20,6 @@ import io.netty.buffer.ByteBufAllocator;
  */
 public class BulkStringTest extends AbstractRedisProtocolTest{
 	
-	private ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
 	
 	private BulkStringParser bs = new BulkStringParser(new TestPayload());
 	
@@ -31,24 +31,13 @@ public class BulkStringTest extends AbstractRedisProtocolTest{
 	public void testNoCRLFEnd(){
 
 		String []contents = new String[]{"$" + content.length(), "\r\n", content, "ab"};
-		ByteBuf []byteBufs = new ByteBuf[contents.length];
 		
-		for(int i = 0; i< contents.length;i++){
-			
-			byteBufs[i] = allocator.buffer();
-			byteBufs[i].writeBytes(contents[i].getBytes());
-		}
-		
-		for(ByteBuf byteBuf : byteBufs){
-			bs.read(byteBuf);
-		}
-		
+		parse(bs, contents);
 		assertResult();
 		
-		int lastIndex = contents.length - 1;
-		Assert.assertEquals(contents[lastIndex].length(), byteBufs[lastIndex].readableBytes());
-
+		Assert.assertEquals(content.length(), bs.payload.inputSize());
 	}
+
 	
 	@Test
 	public void testSplit(){
@@ -91,14 +80,10 @@ public class BulkStringTest extends AbstractRedisProtocolTest{
 	}
 
 	
-	class TestPayload implements InOutPayload{
+	class TestPayload  extends AbstractInOutPayload implements InOutPayload{
 
 		@Override
-		public void startInput() {
-		}
-
-		@Override
-		public int in(ByteBuf byteBuf) {
+		public int doIn(ByteBuf byteBuf) {
 			
 			int current = byteBuf.readableBytes();
 			result.writeBytes(byteBuf);
@@ -106,24 +91,8 @@ public class BulkStringTest extends AbstractRedisProtocolTest{
 		}
 
 		@Override
-		public void endInput() {
-			
-		}
-
-		@Override
-		public void startOutput() {
-		}
-		
-		@Override
-		public long out(WritableByteChannel writableByteChannel) throws IOException {
+		public long doOut(WritableByteChannel writableByteChannel) throws IOException {
 			return 0;
 		}
-
-		@Override
-		public void endOutput() {
-			
-		}
 	}
-	
-	
 }

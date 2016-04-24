@@ -11,6 +11,8 @@ import io.netty.buffer.ByteBuf;
  * 2016年3月24日 下午6:31:56
  */
 public class SimpleStringParser extends AbstractRedisClientProtocol<String>{
+	
+	public static final byte[] OK = "+OK\r\n".getBytes();
 
 	public SimpleStringParser() {
 	}
@@ -30,7 +32,18 @@ public class SimpleStringParser extends AbstractRedisClientProtocol<String>{
 		if(data == null){
 			return null;
 		}
-		return new SimpleStringParser(data);
+		
+		int beginIndex = 0;
+		int endIndex = data.length();
+		int dataLength = data.length();
+		if(data.charAt(0) == PLUS_BYTE){
+			beginIndex = 1;
+		}
+		
+		if(data.charAt(dataLength - 2) == '\r' && data.charAt(dataLength - 2) == '\r'){
+			endIndex -= 2;
+		}
+		return new SimpleStringParser(data.substring(beginIndex, endIndex));
 	}
 
 	@Override

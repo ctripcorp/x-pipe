@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.server;
+package com.ctrip.xpipe.redis.tools;
 
 import java.io.File;
 import java.io.FileNotFoundException;

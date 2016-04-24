@@ -1,0 +1,59 @@
+package com.ctrip.xpipe.redis.keeper.handler;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.ctrip.xpipe.redis.keeper.CommandHandler;
+import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.protocal.protocal.RedisErrorParser;
+import com.ctrip.xpipe.utils.StringUtil;
+
+/**
+ * @author wenchao.meng
+ *
+ * 2016年4月22日 上午11:47:11
+ */
+public class CommandHandlerManager extends AbstractCommandHandler{
+
+	private Map<String, CommandHandler>  handlers = new ConcurrentHashMap<String, CommandHandler>();
+
+	public CommandHandlerManager() {
+		initCommands();
+	}
+
+	private void initCommands() {
+		
+		putHandler(new ReplconfHandler());
+		putHandler(new PsyncHandler());
+	}
+
+	private void putHandler(CommandHandler handler) {
+		
+		for(String commandName : handler.getCommands()){
+			
+			handlers.put(commandName, handler);
+		}
+		
+	}
+
+	@Override
+	public String[] getCommands() {		
+		return handlers.keySet().toArray(new String[handlers.size()]);
+	}
+
+	@Override
+	protected void doHandle(String[] args, RedisClient redisClient) {
+		
+		CommandHandler handler = handlers.get(args[0]);
+		if(handler == null){
+			logger.error("[doHandler][no handler found]" + StringUtil.join(" ", args));
+			redisClient.sendMessage(new RedisErrorParser("unsupported command" + args[0]).format());
+			return;
+		}
+		
+		String[] newArgs = new String[args.length - 1];
+		System.arraycopy(args, 1, newArgs, 0, args.length - 1);
+		handler.handle(args, redisClient);
+	}
+
+}

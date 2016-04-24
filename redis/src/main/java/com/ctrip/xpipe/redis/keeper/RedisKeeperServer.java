@@ -12,13 +12,20 @@ import io.netty.channel.Channel;
  */
 public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	
-	long getReploffset();
-	
+	long getBeginReploffset();
+
+	long getEndReploffset();
+
 	Command slaveConnected(Channel channel);
 	
 	void slaveDisconntected(Channel channel);
 	
-	void clientConnected(Channel channel);
+	RedisClient clientConnected(Channel channel);
 	
 	void clientDisConnected(Channel channel);
+	
+	String getKeeperRunid();
+	
+	void addCommandsListener(Long offset, CommandsListener listener);
+	
 }

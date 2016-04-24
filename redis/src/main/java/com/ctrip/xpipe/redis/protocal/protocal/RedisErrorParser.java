@@ -11,13 +11,17 @@ import io.netty.buffer.ByteBuf;
  *
  * 2016年3月28日 下午2:17:45
  */
-public class ErrorParser extends AbstractRedisClientProtocol<RedisError>{
+public class RedisErrorParser extends AbstractRedisClientProtocol<RedisError>{
 	
-	public ErrorParser() {
+	public RedisErrorParser(){
+	}
+	
+	public RedisErrorParser(String errorMessage) {
+		this(new RedisError(errorMessage));
 	}
 	
 
-	public ErrorParser(RedisError redisError) {
+	public RedisErrorParser(RedisError redisError) {
 		super(redisError, true, true);
 	}
 
@@ -25,12 +29,13 @@ public class ErrorParser extends AbstractRedisClientProtocol<RedisError>{
 	public RedisClientProtocol<RedisError> read(ByteBuf byteBuf){
 		
 		String error = readTilCRLFAsString(byteBuf);
-		return new ErrorParser(new RedisError(error));
+		return new RedisErrorParser(new RedisError(error));
 	}
 
 	@Override
 	protected byte[] getWriteBytes() {
-		throw new UnsupportedOperationException();
+		
+		return getRequestBytes(MINUS_BYTE, payload.errorMessage());
 	}
 
 

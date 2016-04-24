@@ -29,9 +29,6 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 		END
 	}
 	
-	public BulkStringParser(){
-	}
-	
 	public BulkStringParser(InOutPayload bulkStringPayload) {
 		super(bulkStringPayload, false, false);
 	}

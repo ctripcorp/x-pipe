@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.data.RedisData;
 /**
  * @author wenchao.meng
  *
- * 2016年3月30日 下午5:15:31
+ * 2016年4月24日 下午9:10:54
  */
 public abstract class AbstractRedisData implements RedisData{
 	

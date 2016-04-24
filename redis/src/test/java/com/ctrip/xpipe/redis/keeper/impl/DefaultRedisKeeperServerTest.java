@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 public class DefaultRedisKeeperServerTest extends AbstractRedisTest{
 	
 	private RedisKeeperServer redisKeeperServer;
+	private String keeperRunid = randomString(runidLength);
 	private Endpoint masterEndpoint = new DefaultEndPoint("redis://127.0.0.1:6379"); 
 	private ReplicationStore replicationStore;
 	private int keeperPort = 7777;
@@ -31,7 +32,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisTest{
 	@Test
 	public void simpleTest() throws Exception{
 		
-		redisKeeperServer = new DefaultRedisKeeperServer(masterEndpoint, replicationStore, keeperPort);
+		redisKeeperServer = new DefaultRedisKeeperServer(masterEndpoint, replicationStore, keeperRunid, keeperPort);
 		redisKeeperServer.start();
 	}
 

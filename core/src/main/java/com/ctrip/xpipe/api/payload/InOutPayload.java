@@ -17,12 +17,16 @@ public interface InOutPayload {
 
 	void startInput();
 	
+	long inputSize();
+	
 	int in(ByteBuf byteBuf) throws IOException;
 	
 	void endInput();
 	
 
 	void startOutput();
+	
+	long outSize();
 
 	long out(WritableByteChannel writableByteChannel) throws IOException;
 	

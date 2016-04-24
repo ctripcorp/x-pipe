@@ -23,7 +23,7 @@ public abstract class AbstractLifecycle implements Lifecycle{
 		doInitialize();
 	}
 	
-	protected void doInitialize() {
+	protected void doInitialize() throws Exception{
 		
 	}
 
@@ -35,7 +35,7 @@ public abstract class AbstractLifecycle implements Lifecycle{
 		doStart();
 	}
 	
-	protected void doStart() {
+	protected void doStart() throws Exception{
 		
 	}
 
@@ -47,7 +47,7 @@ public abstract class AbstractLifecycle implements Lifecycle{
 		doStop();
 	}
 
-	protected void doStop() {
+	protected void doStop() throws Exception{
 		
 	}
 
@@ -59,9 +59,7 @@ public abstract class AbstractLifecycle implements Lifecycle{
 		doDispose();
 	}
 
-	protected void doDispose() {
+	protected void doDispose() throws Exception {
 		
 	}
-
-
 }

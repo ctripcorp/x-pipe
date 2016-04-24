@@ -27,7 +27,7 @@ public class FileInOutPayload extends AbstractInOutPayload{
 
 	@SuppressWarnings("resource")
 	@Override
-	public void startInput() {
+	public void doStartInput() {
 		
 		try {
 			inFileChannel = new RandomAccessFile(fileName, "rw").getChannel();
@@ -37,7 +37,7 @@ public class FileInOutPayload extends AbstractInOutPayload{
 	}
 
 	@Override
-	public int in(ByteBuf byteBuf) throws IOException {
+	public int doIn(ByteBuf byteBuf) throws IOException {
 		
 		
 		int readerIndex = byteBuf.readerIndex();
@@ -48,7 +48,7 @@ public class FileInOutPayload extends AbstractInOutPayload{
 
 	
 	@Override
-	public void endInput() {
+	public void doEndInput() {
 		try {
 			inFileChannel.close();
 		} catch (IOException e) {
@@ -58,7 +58,7 @@ public class FileInOutPayload extends AbstractInOutPayload{
 
 	@SuppressWarnings("resource")
 	@Override
-	public void startOutput() {
+	public void doStartOutput() {
 		
 		try {
 			outFileChannel = new RandomAccessFile(fileName, "rw").getChannel();
@@ -68,13 +68,13 @@ public class FileInOutPayload extends AbstractInOutPayload{
 	}
 	
 	@Override
-	public long out(WritableByteChannel writableByteChannel) throws IOException {
+	public long doOut(WritableByteChannel writableByteChannel) throws IOException {
 		
 		return outFileChannel.transferTo(0, outFileChannel.size(), writableByteChannel);
 	}
 
 	@Override
-	public void endOutput() {
+	public void doEndOutput() {
 		try {
 			outFileChannel.close();
 		} catch (IOException e) {

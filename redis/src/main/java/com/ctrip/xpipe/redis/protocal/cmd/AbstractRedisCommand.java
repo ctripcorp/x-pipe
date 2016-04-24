@@ -6,7 +6,7 @@ import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
-import com.ctrip.xpipe.redis.protocal.protocal.ErrorParser;
+import com.ctrip.xpipe.redis.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.protocal.protocal.IntegerParser;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
 
@@ -58,7 +58,7 @@ public abstract class AbstractRedisCommand extends AbstractCommand {
 						case '\n':
 							break;
 						case RedisClientProtocol.MINUS_BYTE:
-							redisClientProtocol = new ErrorParser();
+							redisClientProtocol = new RedisErrorParser();
 							break;
 						case RedisClientProtocol.ASTERISK_BYTE:
 							throw new UnsupportedOperationException("array not supported yet!");

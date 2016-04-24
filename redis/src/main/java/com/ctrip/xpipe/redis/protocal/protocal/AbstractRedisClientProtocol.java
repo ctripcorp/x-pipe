@@ -47,7 +47,7 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 		
 		byte [] toWrite = getWriteBytes();
 		
-		if(logWrite && logger.isInfoEnabled()){
+		if(logWrite && logger.isDebugEnabled()){
 			
 			logger.info("[getWriteBytes]" + getPayloadAsString());
 		}
@@ -107,7 +107,7 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 			return null;
 		}
 		String ret = new String(bytes, charset);
-		if(logger.isInfoEnabled() && logRead){
+		if(logger.isDebugEnabled() && logRead){
 			logger.info("[readTilCRLFAsString]" + ret.trim());
 		}
 		return ret;

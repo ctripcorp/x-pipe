@@ -60,7 +60,9 @@ public class AbstractTest {
 		}
 		
 		File file = new File(getTestFileDir());
-		FileUtils.forceDelete(file);
+		if(file.exists()){
+			FileUtils.forceDelete(file);
+		}
 		file.mkdirs();
 	}
 

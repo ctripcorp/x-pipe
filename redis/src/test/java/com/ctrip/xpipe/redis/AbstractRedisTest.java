@@ -6,7 +6,9 @@ import java.util.UUID;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.ctrip.xpipe.redis.server.SimpleFileReplicationStore;
+import com.ctrip.xpipe.redis.tools.SimpleFileReplicationStore;
+
+import io.netty.buffer.ByteBufAllocator;
 
 /**
  * @author wenchao.meng
@@ -15,7 +17,11 @@ import com.ctrip.xpipe.redis.server.SimpleFileReplicationStore;
  */
 public abstract class AbstractRedisTest extends AbstractTest{
 
+	protected ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
+
 	private String rdbFile, commandFile;
+	
+	protected static final int runidLength = 40;
 
 	protected ReplicationStore createReplicationStore(){
 		
@@ -54,5 +60,6 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		return sb.toString();
 	}
 
+	
 
 }
