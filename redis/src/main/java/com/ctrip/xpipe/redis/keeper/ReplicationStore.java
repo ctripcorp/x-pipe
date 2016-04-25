@@ -4,7 +4,6 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.FileRegion;
 
 /**
  * @author wenchao.meng
@@ -27,7 +26,7 @@ public interface ReplicationStore extends Closeable {
 	 * @return
 	 * @throws IOException
 	 */
-	FileRegion getRdbFile() throws IOException;
+	RdbFile getRdbFile() throws IOException;
 
 	int appendCommands(ByteBuf byteBuf) throws IOException;
 
