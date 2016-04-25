@@ -75,6 +75,11 @@
 				<artifactId>log4j-core</artifactId>
 				<version>${log4j.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>com.leansoft</groupId>
+				<artifactId>bigqueue</artifactId>
+				<version>0.7.0</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 

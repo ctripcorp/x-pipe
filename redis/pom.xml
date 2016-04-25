@@ -14,7 +14,6 @@
 			<groupId>com.ctrip.xpipe</groupId>
 			<artifactId>core</artifactId>
 		</dependency>
-		
 		<dependency>
 			<groupId>com.ctrip.xpipe</groupId>
 			<artifactId>core</artifactId>
@@ -25,7 +24,16 @@
 			<groupId>io.netty</groupId>
 			<artifactId>netty-all</artifactId>
 		</dependency>
-		
-
+		<dependency>
+			<groupId>com.leansoft</groupId>
+			<artifactId>bigqueue</artifactId>
+		</dependency>
 	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>bulldog</id>
+			<url>https://raw.github.com/bulldog2011/bulldog-repo/master/repo/releases/</url>
+		</repository>
+	</repositories>
 </project>
