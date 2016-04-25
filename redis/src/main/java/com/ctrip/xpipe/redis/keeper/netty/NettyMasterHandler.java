@@ -1,10 +1,17 @@
 package com.ctrip.xpipe.redis.keeper.netty;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -17,12 +24,16 @@ public class NettyMasterHandler extends ChannelDuplexHandler{
 	
 	private static Logger logger = LogManager.getLogger(NettyMasterHandler.class);
 	
-	public RedisKeeperServer redisKeeperServer;
+	private RedisKeeperServer redisKeeperServer;
 	
+	private CommandHandlerManager commandHandlerManager;
 	
-	public NettyMasterHandler(RedisKeeperServer redisKeeperServer) {
+	private Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>(); 
+	
+	public NettyMasterHandler(RedisKeeperServer redisKeeperServer, CommandHandlerManager commandHandlerManager) {
 		
 		this.redisKeeperServer =  redisKeeperServer;
+		this.commandHandlerManager = commandHandlerManager;
 	}
 	
 	
@@ -33,7 +44,8 @@ public class NettyMasterHandler extends ChannelDuplexHandler{
 			logger.info("[channelActive]" + ctx.channel());
 		}
 		
-		redisKeeperServer.clientConnected(ctx.channel());
+		RedisClient redisClient = redisKeeperServer.clientConnected(ctx.channel());
+		redisClients.put(ctx.channel(), redisClient);
 		super.channelActive(ctx);
 	}
 
@@ -46,11 +58,15 @@ public class NettyMasterHandler extends ChannelDuplexHandler{
 		}
 
 		redisKeeperServer.clientDisConnected(ctx.channel());
+		redisClients.remove(ctx.channel());
 		super.channelInactive(ctx);
 	}
 	
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		
+		RedisClient redisClient = redisClients.get(ctx.channel());
+		commandHandlerManager.handle((ByteBuf)msg, redisClient);
 		
 		super.channelRead(ctx, msg);
 	}
@@ -61,6 +77,5 @@ public class NettyMasterHandler extends ChannelDuplexHandler{
 		logger.error("[exceptionCaught]" + ctx.channel(), cause);
 		super.exceptionCaught(ctx, cause);
 	}
-
 
 }

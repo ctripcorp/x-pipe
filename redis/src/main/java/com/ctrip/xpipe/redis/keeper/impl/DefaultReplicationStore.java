@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.RdbFile;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.leansoft.bigqueue.BigQueueImpl;
 import com.leansoft.bigqueue.IBigQueue;
@@ -100,8 +101,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public FileRegion getRdbFile() throws IOException {
-		return new RdbFileRegion(rdbFile);
+	public RdbFile getRdbFile() throws IOException {
+		return null;
 	}
 
 	@Override

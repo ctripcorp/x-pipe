@@ -2,14 +2,15 @@ package com.ctrip.xpipe.redis.protocal.cmd;
 
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.payload.AbstractInOutPayload;
+import com.ctrip.xpipe.redis.keeper.RdbFile;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.FileRegion;
 
 /**
  * @author wenchao.meng
@@ -20,8 +21,7 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 
 	public  ReplicationStore replicationStore;
 	
-	private FileRegion fileRegion;
-	private long position;
+	private RdbFile rdbFile;
 	
 	public InOutPayloadReplicationStore(ReplicationStore replicationStore) {
 		this.replicationStore = replicationStore;
@@ -35,18 +35,16 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	}
 
 	@Override
-	public void doStartOutput() {
-		fileRegion = replicationStore.getRdbFile();
+	public void doStartOutput() throws IOException {
+		
+		rdbFile = replicationStore.getRdbFile();
 	}
 
 	@Override
 	public long doOut(WritableByteChannel writableByteChannel) throws IOException {
 		
-		long n = fileRegion.transferTo(writableByteChannel, position);
-		position += n;
-		if(fileRegion.transfered() >=  fileRegion.count()){
-			fileRegion.release();
-		}
+		FileChannel fileChannel = rdbFile.getRdbFile();
+		long n = rdbFile.getRdbFile().transferTo(0, fileChannel.size(), writableByteChannel);
 		return n;
 	}
 
@@ -54,8 +52,12 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	@Override
 	public void doEndOutput() {
 		
-		if(fileRegion.refCnt() >= 0){
-			fileRegion.release(fileRegion.refCnt());
+		if(rdbFile.getRdbFile() != null){
+			try {
+				rdbFile.getRdbFile().close();
+			} catch (IOException e) {
+				logger.error("[doEndOutput]" + rdbFile.getRdbFile(), e);
+			}
 		}
 	}
 

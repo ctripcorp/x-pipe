@@ -57,12 +57,12 @@ public abstract class AbstractInOutPayload implements InOutPayload{
 	protected void doEndInput(){}
 
 	@Override
-	public void startOutput() {
+	public void startOutput() throws IOException {
 		doStartOutput();
 		outSize.set(0);
 	}
 
-	protected void doStartOutput(){}
+	protected void doStartOutput() throws IOException{}
 	
 
 	@Override

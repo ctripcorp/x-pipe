@@ -24,7 +24,7 @@ public interface InOutPayload {
 	void endInput();
 	
 
-	void startOutput();
+	void startOutput() throws IOException;
 	
 	long outSize();
 

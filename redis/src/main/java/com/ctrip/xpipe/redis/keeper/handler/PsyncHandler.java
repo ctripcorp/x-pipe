@@ -1,7 +1,14 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
+
+import java.io.IOException;
+
+import com.ctrip.xpipe.redis.keeper.RdbFile;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.protocal.cmd.Psync;
+import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.redis.keeper.RedisClient.CLIENT_ROLE;
 import com.ctrip.xpipe.redis.keeper.RedisClient.SLAVE_STATE;
 
@@ -41,13 +48,24 @@ public class PsyncHandler extends AbstractCommandHandler{
 	}
 
 	private void doPartialSync(RedisClient redisClient, Long offset) {
-		
+		redisClient.beginWriteCommands(offset);
 	}
 
 	private void doFullSync(RedisClient redisClient) {
-		
-		redisClient.setSlaveState(SLAVE_STATE.REDIS_REPL_SEND_BULK);
-		
+
+		try {
+			RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+			RdbFile rdbFile = redisKeeperServer.getRdbFile();
+			SimpleStringParser simpleStringParser = new SimpleStringParser(
+					StringUtil.join(" ", Psync.FULL_SYNC, redisKeeperServer.getKeeperRunid(), String.valueOf(rdbFile.getRdboffset())));
+			
+			redisClient.sendMessage(simpleStringParser.format());
+			
+			redisClient.writeRdb(rdbFile);
+			redisClient.setSlaveState(SLAVE_STATE.REDIS_REPL_SEND_BULK);
+		} catch (IOException e) {
+			logger.error("[doFullSync]" + redisClient, e);
+		}
 	}
 
 	@Override

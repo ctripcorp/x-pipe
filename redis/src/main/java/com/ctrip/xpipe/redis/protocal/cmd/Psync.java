@@ -145,7 +145,11 @@ public class Psync extends AbstractRedisCommand{
 
 	private void beginReadRdb() {
 		
-		replicationStore.beginRdb(masterRunid, offset);
+		try {
+			replicationStore.beginRdb(masterRunid, offset);
+		} catch (IOException e) {
+			logger.error("[beginReadRdb]" + masterRunid + "," + offset, e);
+		}
 		for(PsyncObserver observer : observers){
 			try{
 				observer.beginWriteRdb();
@@ -157,7 +161,12 @@ public class Psync extends AbstractRedisCommand{
 
 	private void endReadRdb() {
 		
-		replicationStore.endRdb();
+		try {
+			replicationStore.endRdb();
+		} catch (IOException e) {
+			logger.error("[endReadRdb]", e);
+		}
+		
 		for(PsyncObserver observer : observers){
 			try{
 				observer.endWriteRdb();

@@ -55,7 +55,7 @@ public interface RedisClient {
 	
 	void sendMessage(byte []message);
 	
-	void writeRdb(long rdbBeginOffset);
+	void writeRdb(RdbFile rdbFile);
 	
 	void beginWriteCommands(long beginOffset);
 

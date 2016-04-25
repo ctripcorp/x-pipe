@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import java.io.IOException;
+
 import com.ctrip.xpipe.redis.protocal.Command;
 import com.ctrip.xpipe.redis.protocal.PsyncObserver;
 
@@ -27,5 +29,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	String getKeeperRunid();
 	
 	void addCommandsListener(Long offset, CommandsListener listener);
+
+	RdbFile getRdbFile() throws IOException;
 	
 }

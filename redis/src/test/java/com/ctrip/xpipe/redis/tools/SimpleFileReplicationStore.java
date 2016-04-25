@@ -4,16 +4,22 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.RdbFile;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.FileRegion;
+import io.netty.buffer.Unpooled;
 
 /**
  * just for unit test, write only
@@ -32,6 +38,10 @@ public class SimpleFileReplicationStore implements ReplicationStore{
 	
 	private String masterRunId;
 	private long masterOffset;
+	
+	private ExecutorService executors = Executors.newCachedThreadPool();
+	
+	private Map<CommandsListener, CommandsTask>  listeners = new ConcurrentHashMap<CommandsListener, CommandsTask>();
 	
 	public SimpleFileReplicationStore(String rdbFile, String commandsFile) {
 		this.rdbFile = rdbFile;
@@ -105,8 +115,26 @@ public class SimpleFileReplicationStore implements ReplicationStore{
 	}
 
 	@Override
-	public FileRegion getRdbFile() {
-		return null;
+	public RdbFile getRdbFile() {
+		return new RdbFile() {
+			
+			@Override
+			public long getRdboffset() {
+				return masterOffset;
+			}
+			
+			@SuppressWarnings("resource")
+			@Override
+			public FileChannel getRdbFile() {
+				
+				try {
+					return new RandomAccessFile(new File(rdbFile), "rw").getChannel();
+				} catch (FileNotFoundException e) {
+					logger.error("[getRdbFile]" + rdbFile, e);
+					throw new RuntimeException("[getRdbFile]" + rdbFile, e);
+				}
+			}
+		};
 	}
 
 	@Override
@@ -126,14 +154,18 @@ public class SimpleFileReplicationStore implements ReplicationStore{
 
 	@Override
 	public void addCommandsListener(long offset, CommandsListener commandsListener) {
-		// TODO Auto-generated method stub
 		
+		CommandsTask task = new CommandsTask(offset, commandsListener);
+		listeners.put(commandsListener, task);
+		executors.execute(task);
 	}
 
 	@Override
 	public void removeCommandsListener(CommandsListener commandsListener) {
-		// TODO Auto-generated method stub
 		
+		CommandsTask task = listeners.get(commandsListener);
+		task.setStop(true);
+		listeners.remove(commandsListener);
 	}
 
 	@Override
@@ -143,14 +175,72 @@ public class SimpleFileReplicationStore implements ReplicationStore{
 
 	@Override
 	public long endOffset() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public void delete() {
-		// TODO Auto-generated method stub
 		
 	}
 
+	
+	class CommandsTask implements Runnable{
+		
+		@SuppressWarnings("unused")
+		private long offset;
+		private CommandsListener commandsListener;
+		
+		private volatile boolean stop = false;
+		
+		public CommandsTask(long offset, CommandsListener commandsListener) {
+			
+			this.offset = offset;
+			this.commandsListener = commandsListener;
+					
+		}
+
+		public void setStop(boolean stop) {
+			this.stop = stop;
+		}
+
+		@SuppressWarnings("resource")
+		@Override
+		public void run() {
+			
+			FileChannel fileChannel = null;
+			try{
+				
+				ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+				fileChannel = new RandomAccessFile(commandsFile, "rw").getChannel();
+				while(true){
+					
+					if(stop){
+						if(logger.isInfoEnabled()){
+							logger.info("[run][stop]");
+						}
+						break;
+					}
+					
+					byteBuffer.clear();
+					int size = fileChannel.read(byteBuffer);
+					if(size == -1){
+						break;
+					}
+					byteBuffer.flip();
+					commandsListener.onCommand(Unpooled.wrappedBuffer(byteBuffer));
+				}
+				
+			} catch (IOException e) {
+				logger.error("[run]" + commandsFile, e);
+			}finally{
+				if( fileChannel != null ){
+					try {
+						fileChannel.close();
+					} catch (IOException e) {
+						logger.error("[run]" + commandsFile, e);
+					}
+				}
+			}
+		}
+	} 
 }

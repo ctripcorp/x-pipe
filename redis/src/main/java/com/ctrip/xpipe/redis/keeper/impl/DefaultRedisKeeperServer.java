@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -9,9 +10,11 @@ import java.util.concurrent.TimeUnit;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.RdbFile;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.protocal.Command;
@@ -116,7 +119,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
              public void initChannel(SocketChannel ch) throws Exception {
                  ChannelPipeline p = ch.pipeline();
                  p.addLast(new NettySimpleMessageHandler());
-                 p.addLast(new NettyMasterHandler(DefaultRedisKeeperServer.this));
+                 p.addLast(new NettyMasterHandler(DefaultRedisKeeperServer.this, new CommandHandlerManager()));
              }
          });
         b.bind(keeperPort).sync();
@@ -252,5 +255,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void addCommandsListener(Long offset, CommandsListener commandsListener) {
 		replicationStore.addCommandsListener(offset, commandsListener);
+	}
+
+	@Override
+	public RdbFile getRdbFile() throws IOException {
+		return replicationStore.getRdbFile();
 	}
 }

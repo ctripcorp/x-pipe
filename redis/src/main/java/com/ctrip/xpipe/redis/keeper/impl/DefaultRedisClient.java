@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -8,11 +9,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.RdbFile;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.DefaultChannelProgressivePromise;
+import io.netty.channel.DefaultFileRegion;
 
 /**
  * @author wenchao.meng
@@ -64,6 +72,9 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 
 	@Override
 	public void setSlaveListeningPort(int port) {
+		if(logger.isInfoEnabled()){
+			logger.info("[setSlaveListeningPort]" + this + "," + port);
+		}
 		this.slaveListeningPort = port;
 	}
 
@@ -89,6 +100,11 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 
 	@Override
 	public void ack(Long ackOff) {
+		
+		if(logger.isInfoEnabled()){
+			logger.info("[ack]" + this + "," + ackOff);
+		}
+		
 		this.replAckOff = ackOff;
 		this.replAckTime = System.currentTimeMillis();
 	}
@@ -96,10 +112,10 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 	@Override
 	public void sendMessage(byte[] message) {
 		
-		if(clientRole == CLIENT_ROLE.SLAVE){
+		if(clientRole == CLIENT_ROLE.SLAVE && slaveState == SLAVE_STATE.REDIS_REPL_ONLINE){
 			return;
 		}
-		channel.write(message);
+		channel.writeAndFlush(message);
 	}
 
 	@Override
@@ -112,15 +128,33 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 		return this.replAckTime;
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
-	public String toString() {
-		return channel.toString();
-	}
-
-	@Override
-	public void writeRdb(long rdbBeginOffset) {
-		slaveState = SLAVE_STATE.REDIS_REPL_SEND_BULK;
-		this.rdbBeginOffset = rdbBeginOffset;
+	public void writeRdb(RdbFile rdbFile) {
+		
+		try {
+			
+			slaveState = SLAVE_STATE.REDIS_REPL_SEND_BULK;
+			this.rdbBeginOffset = rdbFile.getRdboffset();
+	    	DefaultChannelProgressivePromise promise = new DefaultChannelProgressivePromise(channel); 
+	    	promise.addListeners(new ChannelFutureListener() {
+				
+				public void operationComplete(ChannelFuture future) throws Exception {
+					if(future.isSuccess()){
+						writeComplete();
+					}else{
+						logger.error("[operationComplete][write fail]" + channel, future.cause());
+					}
+				}
+			});
+	    	
+	    	RequestStringParser parser = new RequestStringParser(String.valueOf((char)RedisClientProtocol.DOLLAR_BYTE)
+	    			+String.valueOf(rdbFile.getRdbFile().size())); 
+	    	channel.writeAndFlush(parser.format());
+			channel.writeAndFlush(new DefaultFileRegion(rdbFile.getRdbFile(), 0, rdbFile.getRdbFile().size()), promise);
+		} catch (IOException e) {
+			logger.error("[writeRdb]" + rdbFile, e);
+		}
 	}
 
 	@Override
@@ -138,13 +172,18 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 				logger.info("[writeComplete][rdbWriteComplete]" + this);
 			}
 			slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
-			beginWriteCommands(rdbBeginOffset);
+			beginWriteCommands(rdbBeginOffset + 1);
 		}
 	}
 
 	@Override
 	public void onCommand(ByteBuf byteBuf) {
 		
-		channel.write(byteBuf);
+		channel.writeAndFlush(byteBuf);
+	}
+	
+	@Override
+	public String toString() {
+		return channel.toString();
 	}
 }
