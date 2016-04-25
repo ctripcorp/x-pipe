@@ -30,7 +30,7 @@ public interface ReplicationStore extends Closeable {
 
 	int appendCommands(ByteBuf byteBuf) throws IOException;
 
-	void addCommandsListener(long offset, CommandsListener commandsListener);
+	void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException;
 
 	void removeCommandsListener(CommandsListener commandsListener);
 
