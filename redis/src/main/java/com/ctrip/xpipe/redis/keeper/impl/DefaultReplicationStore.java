@@ -1,10 +1,16 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFile;
@@ -14,11 +20,15 @@ import io.netty.buffer.ByteBuf;
 
 public class DefaultReplicationStore implements ReplicationStore {
 
-	private File baseDir;
+	private final static Logger logger = LogManager.getLogger(DefaultReplicationStore.class);
 
-	public DefaultReplicationStore(File baseDir) {
-		this.baseDir = baseDir;
-	}
+	private static final String MASTER_RUNID = "master.runid";
+
+	private static final String BEGIN_OFFSET = "begin.offset";
+
+	private static final String META_FILE = "meta.properties";
+
+	private File baseDir;
 
 	private RdbStore rdbStore;
 
@@ -32,6 +42,11 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	private long endOffset;
 
+	public DefaultReplicationStore(File baseDir) throws IOException {
+		this.baseDir = baseDir;
+		loadMeta();
+	}
+
 	@Override
 	public void close() throws IOException {
 		// TODO
@@ -44,9 +59,53 @@ public class DefaultReplicationStore implements ReplicationStore {
 		this.endOffset = masterOffset;
 
 		baseDir.mkdirs();
-		// TODO
-		rdbStore = new DefaultRdbStore(new File(baseDir, masterRunid), beginOffset);
-		cmdStore = new DefaultCommandStore(new File(baseDir, masterRunid + "_cmd"));
+		saveMeta();
+
+		// TODO file naming
+		rdbStore = new DefaultRdbStore(rdbFileOf(masterRunid), beginOffset);
+		cmdStore = new DefaultCommandStore(cmdFileOf(masterRunid));
+	}
+
+	private File cmdFileOf(String masterRunid) {
+		return new File(baseDir, masterRunid + "_cmd");
+	}
+
+	private File rdbFileOf(String masterRunid) {
+		return new File(baseDir, masterRunid);
+	}
+
+	private void saveMeta() throws IOException {
+		Properties props = new Properties();
+		props.setProperty(MASTER_RUNID, masterRunid);
+		props.setProperty(BEGIN_OFFSET, Long.toString(beginOffset));
+
+		// TODO file naming
+		try (FileWriter metaWriter = new FileWriter(new File(baseDir, META_FILE))) {
+			props.store(metaWriter, null);
+		}
+	}
+
+	private void loadMeta() throws IOException {
+		File metaFile = new File(baseDir, META_FILE);
+		if (metaFile.isFile()) {
+			try (FileReader reader = new FileReader(metaFile)) {
+				Properties props = new Properties();
+				props.load(reader);
+
+				masterRunid = props.getProperty(MASTER_RUNID);
+				beginOffset = Long.parseLong(props.getProperty(BEGIN_OFFSET));
+
+				File rdbFile = rdbFileOf(masterRunid);
+				if (rdbFile.isFile()) {
+					endOffset = beginOffset + rdbFile.length() - 1;
+				} else {
+					endOffset = beginOffset - 1;
+				}
+
+				logger.info(String.format("Meta loaded masterRunid=%s, beginOffset=%s, endOffset=%s", masterRunid,
+				      beginOffset, endOffset));
+			}
+		}
 	}
 
 	@Override
