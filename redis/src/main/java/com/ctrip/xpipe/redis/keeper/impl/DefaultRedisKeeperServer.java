@@ -254,7 +254,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void addCommandsListener(Long offset, CommandsListener commandsListener) {
-		replicationStore.addCommandsListener(offset, commandsListener);
+		try {
+	      replicationStore.addCommandsListener(offset, commandsListener);
+      } catch (IOException e) {
+	      // TODO Auto-generated catch block
+	      e.printStackTrace();
+      }
 	}
 
 	@Override
