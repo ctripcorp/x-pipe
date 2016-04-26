@@ -25,14 +25,14 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	
 	protected static final int runidLength = 40;
 
-	protected ReplicationStore createReplicationStore(){
+	protected ReplicationStore createReplicationStore() throws IOException{
 		
 		String tmpDir = getTestFileDir();
 		
 		if(logger.isInfoEnabled()){
 			logger.info("[createReplicationStore]" + tmpDir);
 		}
-		return new DefaultReplicationStore(new File(tmpDir));
+		return new DefaultReplicationStore(new File(tmpDir), 1024 * 1024);
 		
 	}
 	

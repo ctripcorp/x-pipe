@@ -42,8 +42,11 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	private long endOffset;
 
-	public DefaultReplicationStore(File baseDir) throws IOException {
+	private int cmdFileSize;
+
+	public DefaultReplicationStore(File baseDir, int cmdFileSize) throws IOException {
 		this.baseDir = baseDir;
+		this.cmdFileSize = cmdFileSize;
 		loadMeta();
 	}
 
@@ -63,7 +66,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 		// TODO file naming
 		rdbStore = new DefaultRdbStore(rdbFileOf(masterRunid), beginOffset);
-		cmdStore = new DefaultCommandStore(cmdFileOf(masterRunid));
+		cmdStore = new DefaultCommandStore(cmdFileOf(masterRunid), cmdFileSize);
 	}
 
 	private File cmdFileOf(String masterRunid) {
