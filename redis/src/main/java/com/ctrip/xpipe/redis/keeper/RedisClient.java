@@ -61,7 +61,7 @@ public interface RedisClient {
 	
 	void beginWriteCommands(long beginOffset);
 
-	void writeComplete();
+	void writeComplete(RdbFile rdbFile);
 	
 	String []readCommands(ByteBuf byteBuf);
 	

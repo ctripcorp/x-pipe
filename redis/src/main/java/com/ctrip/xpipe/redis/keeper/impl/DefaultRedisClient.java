@@ -136,7 +136,7 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	public void writeRdb(RdbFile rdbFile) {
+	public void writeRdb(final RdbFile rdbFile) {
 		
 		try {
 			
@@ -147,7 +147,7 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 				
 				public void operationComplete(ChannelFuture future) throws Exception {
 					if(future.isSuccess()){
-						writeComplete();
+						writeComplete(rdbFile);
 					}else{
 						logger.error("[operationComplete][write fail]" + channel, future.cause());
 					}
@@ -170,7 +170,7 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 	}
 
 	@Override
-	public void writeComplete() {
+	public void writeComplete(RdbFile rdbFile) {
 		
 		if(slaveState == SLAVE_STATE.REDIS_REPL_SEND_BULK){
 			
@@ -179,6 +179,11 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 			}
 			slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
 			beginWriteCommands(rdbBeginOffset + 1);
+			try {
+				rdbFile.close();
+			} catch (IOException e) {
+				logger.error("[writeComplete]" + rdbFile, e);
+			}
 		}
 	}
 

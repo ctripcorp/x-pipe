@@ -89,7 +89,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
 		CommandNotifier notifier = new DefaultCommandNotifier();
-		notifier.start(cmdStore, offset, commandsListener);
+		notifier.start(cmdStore, offset - beginOffset, commandsListener);
 		cmdListeners.put(commandsListener, notifier);
 	}
 

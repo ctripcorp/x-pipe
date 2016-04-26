@@ -1,13 +1,14 @@
 package com.ctrip.xpipe.redis;
 
 
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.UUID;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.ctrip.xpipe.redis.tools.SimpleFileReplicationStore;
+import com.ctrip.xpipe.redis.keeper.impl.DefaultReplicationStore;
 
 import io.netty.buffer.ByteBufAllocator;
 
@@ -28,14 +29,10 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		
 		String tmpDir = getTestFileDir();
 		
-		rdbFile = tmpDir + "/" + "rdbFile" + UUID.randomUUID().toString() + ".rdb";
-		commandFile = tmpDir + "/" + "commandFile" + UUID.randomUUID().toString() + ".command";
-		
 		if(logger.isInfoEnabled()){
-			logger.info("[createReplicationStore]" + rdbFile + "," + commandFile);
+			logger.info("[createReplicationStore]" + tmpDir);
 		}
-		
-		return new SimpleFileReplicationStore(rdbFile, commandFile);
+		return new DefaultReplicationStore(new File(tmpDir));
 		
 	}
 	
