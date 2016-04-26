@@ -217,6 +217,9 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 					byte sign = byteBuf.getByte(readIndex);
 					if(sign == RedisClientProtocol.ASTERISK_BYTE){
 						redisClientProtocol = new ArrayParser();
+					}else if(sign == '\n'){
+						byteBuf.readByte();
+						return new String[]{"\n"};
 					}else{
 						redisClientProtocol = new SimpleStringParser();
 					}

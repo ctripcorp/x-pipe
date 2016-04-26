@@ -27,6 +27,7 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 		putHandler(new ReplconfHandler());
 		putHandler(new PsyncHandler());
 		putHandler(new PingCommandHandler());
+		putHandler(new LFHandler());
 	}
 
 	private void putHandler(CommandHandler handler) {

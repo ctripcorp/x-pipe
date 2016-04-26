@@ -22,7 +22,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 /**
- * just for unit test, write only
+ * just for unit test
  * @author wenchao.meng
  *
  * 2016年4月21日 上午11:03:53
@@ -118,20 +118,29 @@ public class SimpleFileReplicationStore implements ReplicationStore{
 	public RdbFile getRdbFile() {
 		return new RdbFile() {
 			
+			private RandomAccessFile randomAccessFile;
+			
 			@Override
 			public long getRdboffset() {
 				return masterOffset;
 			}
 			
-			@SuppressWarnings("resource")
 			@Override
 			public FileChannel getRdbFile() {
 				
 				try {
-					return new RandomAccessFile(new File(rdbFile), "rw").getChannel();
+					this.randomAccessFile = new RandomAccessFile(new File(rdbFile), "rw"); 
+					return this.randomAccessFile.getChannel();
 				} catch (FileNotFoundException e) {
 					logger.error("[getRdbFile]" + rdbFile, e);
 					throw new RuntimeException("[getRdbFile]" + rdbFile, e);
+				}
+			}
+
+			@Override
+			public void close() throws IOException {
+				if(this.randomAccessFile != null){
+					this.randomAccessFile.close();
 				}
 			}
 		};

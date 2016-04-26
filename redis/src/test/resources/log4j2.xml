@@ -31,6 +31,8 @@
         </logger>
         <logger name="com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler" level="DEBUG">
         </logger>
+        <logger name="com.ctrip.xpipe.redis.keeper.handler.LFHandler" level="DEBUG">
+        </logger>
         <root level="INFO">
             <appender-ref ref="Console"/>
             <appender-ref ref="RollingFileInfo"/>
