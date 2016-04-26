@@ -36,4 +36,8 @@ public class ByteArrayOutputStreamPayload extends AbstractInOutPayload{
 		return writableByteChannel.write(ByteBuffer.wrap(result));
 	}
 
+	
+	public byte[] getBytes(){
+		return baous.toByteArray();
+	}
 }

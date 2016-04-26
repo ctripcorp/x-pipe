@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  * @author wenchao.meng
  *
@@ -60,5 +62,7 @@ public interface RedisClient {
 	void beginWriteCommands(long beginOffset);
 
 	void writeComplete();
+	
+	String []readCommands(ByteBuf byteBuf);
 	
 }

@@ -27,7 +27,11 @@
         </logger>
         <logger name="org.hibernate" level="INFO">
         </logger>
-        <root level="all">
+        <logger name="io.netty" level="INFO">
+        </logger>
+        <logger name="com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler" level="DEBUG">
+        </logger>
+        <root level="INFO">
             <appender-ref ref="Console"/>
             <appender-ref ref="RollingFileInfo"/>
         </root>

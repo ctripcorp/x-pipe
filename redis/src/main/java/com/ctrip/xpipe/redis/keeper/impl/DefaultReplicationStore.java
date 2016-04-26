@@ -15,7 +15,6 @@ import com.leansoft.bigqueue.IBigQueue;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.FileRegion;
 
 public class DefaultReplicationStore implements ReplicationStore {
 

@@ -65,9 +65,14 @@ public class NettyMasterHandler extends ChannelDuplexHandler{
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		
+		if(logger.isDebugEnabled()){
+			logger.debug(String.format("0X%X, %s", msg.hashCode(), msg.getClass()));
+		}
 		RedisClient redisClient = redisClients.get(ctx.channel());
-		commandHandlerManager.handle((ByteBuf)msg, redisClient);
-		
+		String []args= redisClient.readCommands((ByteBuf)msg);
+		if(args != null){
+			commandHandlerManager.handle(args, redisClient);;
+		}
 		super.channelRead(ctx, msg);
 	}
 

@@ -50,8 +50,8 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 					return null;
 				}
 				
-				if(logger.isInfoEnabled()){
-					logger.info("[parse][length]" + totalLength);
+				if(logger.isDebugEnabled()){
+					logger.debug("[parse][length]" + totalLength);
 				}
 				
 				if(totalLength < 0){
