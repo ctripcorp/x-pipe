@@ -2,32 +2,29 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFile;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.leansoft.bigqueue.BigQueueImpl;
-import com.leansoft.bigqueue.IBigQueue;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 public class DefaultReplicationStore implements ReplicationStore {
 
-	private File baseDir = new File(System.getProperty("user.home"), "tmp/xpipe");
+	private File baseDir;
 
-	private RandomAccessFile rdbAccessFile;
+	public DefaultReplicationStore(File baseDir) {
+		this.baseDir = baseDir;
+	}
 
-	private File rdbFile;
+	private RdbStore rdbStore;
 
-	private IBigQueue cmdQueue;
+	private CommandStore cmdStore;
 
-	// TODO thread safe
-	private List<CommandsListener> cmdListeners = new ArrayList<>();
+	private ConcurrentMap<CommandsListener, CommandNotifier> cmdListeners = new ConcurrentHashMap<>();
 
 	private String masterRunid;
 
@@ -37,7 +34,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public void close() throws IOException {
-		cmdQueue.close();
+		// TODO
 	}
 
 	@Override
@@ -47,32 +44,9 @@ public class DefaultReplicationStore implements ReplicationStore {
 		this.endOffset = masterOffset;
 
 		baseDir.mkdirs();
-		rdbFile = new File(baseDir, masterRunid);
-		rdbAccessFile = new RandomAccessFile(rdbFile, "rw");
-
 		// TODO
-		cmdQueue = new BigQueueImpl(new File(baseDir, "bigqueue").getCanonicalPath(), masterRunid);
-
-		new Thread() {
-			public void run() {
-				while (true) {
-					try {
-						byte[] cmd = cmdQueue.dequeue();
-						if (cmd == null) {
-							Thread.sleep(100);
-						} else {
-							for (CommandsListener listener : cmdListeners) {
-								// TODO
-								listener.onCommand(Unpooled.wrappedBuffer(cmd));
-							}
-						}
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-			}
-		}.start();
+		rdbStore = new DefaultRdbStore(new File(baseDir, masterRunid), beginOffset);
+		cmdStore = new DefaultCommandStore(new File(baseDir, masterRunid + "_cmd"));
 	}
 
 	@Override
@@ -82,7 +56,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		ByteBuffer[] bufs = byteBuffer.nioBuffers();
 		if (bufs != null) {
 			for (ByteBuffer buf : bufs) {
-				wrote += rdbAccessFile.getChannel().write(buf);
+				wrote += rdbStore.write(buf);
 			}
 		}
 
@@ -91,7 +65,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public void endRdb() throws IOException {
-		rdbAccessFile.close();
+		rdbStore.endWrite();
 	}
 
 	@Override
@@ -101,23 +75,22 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public RdbFile getRdbFile() throws IOException {
-		return null;
+		return rdbStore.getRdbFile();
 	}
 
 	@Override
 	public int appendCommands(ByteBuf byteBuf) throws IOException {
-		// TODO transfer to queue
-		byte[] bytes = new byte[byteBuf.readableBytes()];
-		byteBuf.getBytes(0, bytes);
-		cmdQueue.enqueue(bytes);
-		endOffset += bytes.length;
+		int wrote = cmdStore.appendCommands(byteBuf);
+		endOffset += wrote;
 
-		return bytes.length;
+		return wrote;
 	}
 
 	@Override
-	public void addCommandsListener(long offset, CommandsListener commandsListener) {
-		cmdListeners.add(commandsListener);
+	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
+		CommandNotifier notifier = new DefaultCommandNotifier();
+		notifier.start(cmdStore, offset, commandsListener);
+		cmdListeners.put(commandsListener, notifier);
 	}
 
 	@Override
