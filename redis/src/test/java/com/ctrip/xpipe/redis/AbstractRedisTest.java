@@ -32,7 +32,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		if(logger.isInfoEnabled()){
 			logger.info("[createReplicationStore]" + tmpDir);
 		}
-		return new DefaultReplicationStore(new File(tmpDir));
+		return new DefaultReplicationStore(new File(tmpDir), 1024 * 1024);
 		
 	}
 	

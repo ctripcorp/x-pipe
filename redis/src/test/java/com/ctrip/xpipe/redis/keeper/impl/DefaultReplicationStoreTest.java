@@ -19,14 +19,14 @@ public class DefaultReplicationStoreTest {
 
 	@Test
 	public void test() throws Exception {
-		File baseDir = new File(System.getProperty("java.io.tmpdir"), "xpipe" + System.currentTimeMillis());
+		File baseDir = new File(System.getProperty("java.io.tmpdir"), "xpipe");
 		baseDir.deleteOnExit();
 		System.out.println(baseDir.getCanonicalFile());
 
-		DefaultReplicationStore store = new DefaultReplicationStore(baseDir);
-		store.beginRdb("master", 0);
+		DefaultReplicationStore store = new DefaultReplicationStore(baseDir, 15);
+		store.beginRdb("master", -1);
 
-		int cmdCount = 2;
+		int cmdCount = 4;
 		int cmdLen = 10;
 
 		final CountDownLatch latch = new CountDownLatch(cmdCount * cmdLen);
@@ -35,8 +35,9 @@ public class DefaultReplicationStoreTest {
 
 			@Override
 			public void onCommand(ByteBuf byteBuf) {
-				got.append(new String(byteBuf.array(), byteBuf.arrayOffset(), byteBuf.readableBytes()));
-				for (int i = 0; i < byteBuf.array().length; i++) {
+				int len = byteBuf.readableBytes();
+				got.append(new String(byteBuf.array(), byteBuf.arrayOffset(), len));
+				for (int i = 0; i < len; i++) {
 					latch.countDown();
 				}
 			}
