@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.protocal.cmd;
 
 
+import java.io.IOException;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +34,7 @@ public class PsyncTest extends AbstractRedisTest{
 	private boolean isPartial = false;
 
 	@Before
-	public void beforePsyncTest(){
+	public void beforePsyncTest() throws IOException{
 		
 		replicationStore = createReplicationStore();
 		psync = new Psync(null, replicationStore);

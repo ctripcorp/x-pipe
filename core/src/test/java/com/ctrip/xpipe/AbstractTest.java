@@ -24,7 +24,7 @@ import org.junit.rules.TestName;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
-import com.ctrip.xpipe.utils.CpuUtils;
+import com.ctrip.xpipe.utils.OsUtils;
 
 /**
  * @author wenchao.meng
@@ -37,7 +37,7 @@ public class AbstractTest {
 	
 	protected ExecutorService executors = Executors.newCachedThreadPool();
 
-	protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(CpuUtils.getCpuCount());
+	protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(OsUtils.getCpuCount());
 
 	@Rule
 	public TestName name = new TestName();

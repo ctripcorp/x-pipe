@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,8 +21,10 @@ import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.utils.IpUtils;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -49,7 +52,7 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 
 	private RedisKeeperServer redisKeeperServer;
 	
-	private CLIENT_ROLE clientRole = CLIENT_ROLE.SLAVE;
+	private CLIENT_ROLE clientRole = CLIENT_ROLE.NORMAL;
 	
 	private SLAVE_STATE  slaveState;
 	
@@ -116,13 +119,20 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 	}
 
 	@Override
-	public void sendMessage(byte[] message) {
+	public void sendMessage(ByteBuf byteBuf) {
 		
 		if(clientRole == CLIENT_ROLE.SLAVE && slaveState == SLAVE_STATE.REDIS_REPL_ONLINE){
 			return;
 		}
-		channel.writeAndFlush(message);
+		channel.writeAndFlush(byteBuf);
 	}
+
+	@Override
+	public void sendMessage(byte[] bytes) {
+		
+		sendMessage(Unpooled.wrappedBuffer(bytes));
+	}
+
 
 	@Override
 	public Long getAck() {
@@ -288,6 +298,27 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public String info() {
+		
+
+		String info = "";
+		switch(clientRole){
+			case NORMAL:
+				break;
+			case SLAVE:
+				long lag = System.currentTimeMillis() - replAckTime;
+				info = String.format(
+						"ip=%s,port=%d,state=%s,offset=%d,lag=%d" ,
+						IpUtils.getIp(channel.remoteAddress()), ((InetSocketAddress)channel.remoteAddress()).getPort(), 
+						slaveState != null ? slaveState.getDesc() : "null",
+						replAckOff, lag/1000);
+			default:
+				break;
+		}
+		return info;
 	}
 
 }

@@ -1,12 +1,17 @@
 package com.ctrip.xpipe.redis.protocal.protocal;
 
+
 import java.io.IOException;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
+import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
+import com.ctrip.xpipe.payload.StringInOutPayload;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 
 /**
@@ -27,6 +32,11 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 		READING_CR,
 		READING_LF,
 		END
+	}
+	
+	public BulkStringParser(String content){
+		this(new StringInOutPayload(content));
+		
 	}
 	
 	public BulkStringParser(InOutPayload bulkStringPayload) {
@@ -131,7 +141,27 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 
 	
 	@Override
-	protected byte[] getWriteBytes() {
+	protected ByteBuf getWriteByteBuf() {
+		
+		if(payload == null){
+			if(logger.isInfoEnabled()){
+				logger.info("[getWriteBytes][payload null]");
+			}
+			return Unpooled.wrappedBuffer(new byte[0]);
+		}
+		
+		if((payload instanceof StringInOutPayload )|| (payload instanceof ByteArrayOutputStreamPayload)){
+			try {
+				ByteArrayWritableByteChannel channel = new ByteArrayWritableByteChannel();
+				payload.out(channel);
+				byte []content = channel.getResult();
+				String length = String.valueOf((char)DOLLAR_BYTE) + content.length + RedisClientProtocol.CRLF;
+				return Unpooled.wrappedBuffer(length.getBytes(), content, RedisClientProtocol.CRLF.getBytes()); 
+			} catch (IOException e) {
+				logger.error("[getWriteBytes]", e);
+				return Unpooled.wrappedBuffer(new byte[0]);
+			}
+		}
 		throw new UnsupportedOperationException();		
 	}
 	

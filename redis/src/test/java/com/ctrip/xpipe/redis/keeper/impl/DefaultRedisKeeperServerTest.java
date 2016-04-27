@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +26,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisTest{
 	private int keeperPort = 7777;
 	
 	@Before
-	public void beforeDefaultRedisKeeperServerTest(){
+	public void beforeDefaultRedisKeeperServerTest() throws IOException{
 		replicationStore = createReplicationStore();
 		
 	}

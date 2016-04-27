@@ -105,7 +105,7 @@ public abstract class AbstractRedisCommand extends AbstractCommand {
 
 
 
-	protected void writeAndFlush(byte[] format) {
-		channel.writeAndFlush(format);
+	protected void writeAndFlush(ByteBuf byteBuf) {
+		channel.writeAndFlush(byteBuf);
 	}
 }

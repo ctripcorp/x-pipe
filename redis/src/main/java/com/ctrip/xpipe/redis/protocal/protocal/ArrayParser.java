@@ -120,7 +120,7 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	}
 
 	@Override
-	protected byte[] getWriteBytes() {
+	protected ByteBuf getWriteByteBuf() {
 		return null;
 	}
 

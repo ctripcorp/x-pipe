@@ -28,6 +28,7 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 		putHandler(new PsyncHandler());
 		putHandler(new PingCommandHandler());
 		putHandler(new LFHandler());
+		putHandler(new InfoHandler());
 	}
 
 	private void putHandler(CommandHandler handler) {
@@ -54,7 +55,7 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 		CommandHandler handler = handlers.get(args[0].toLowerCase());
 		if(handler == null){
 			logger.error("[doHandler][no handler found]" + StringUtil.join(" ", args));
-			redisClient.sendMessage(new RedisErrorParser("unsupported command" + args[0]).format());
+			redisClient.sendMessage(new RedisErrorParser("unsupported command:" + args[0]).format());
 			return;
 		}
 		

@@ -30,7 +30,7 @@ public interface RedisClientProtocol<T> extends RedisProtocol{
 	RedisClientProtocol<T> read(ByteBuf byteBuf);
 
 	
-	byte[] format();
+	ByteBuf format();
 	
 	
 	

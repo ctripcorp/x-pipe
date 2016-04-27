@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.utils;
 
+import java.util.Properties;
+
 /**
  * @author wenchao.meng
  *
  * 2016年3月29日 下午3:33:17
  */
-public class CpuUtils {
+public class OsUtils {
 	
 	private static final int CPU_COUNT;
 			
@@ -23,4 +25,13 @@ public class CpuUtils {
 		return CPU_COUNT;
 	}
 
+	public static String osInfo(){
+		
+		Properties props=System.getProperties();   
+		String osName = props.getProperty("os.name");   
+		String osArch = props.getProperty("os.arch");   
+		String osVersion = props.getProperty("os.version");
+		
+		return String.format("%s %s %s", osName, osVersion, osArch);
+	}
 }

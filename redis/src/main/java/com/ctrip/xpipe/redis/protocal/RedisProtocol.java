@@ -8,6 +8,8 @@ package com.ctrip.xpipe.redis.protocal;
 public interface RedisProtocol {
 	
 	public static final int REDIS_PORT_DEFAULT = 6379;
+	
+	public static String CRLF = "\r\n";
 
 
 

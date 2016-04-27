@@ -43,15 +43,15 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 
 	
 	@Override
-	public byte[] format(){
+	public ByteBuf format(){
 		
-		byte [] toWrite = getWriteBytes();
+		ByteBuf byteBuf = getWriteByteBuf();
 		
 		if(logWrite && logger.isDebugEnabled()){
 			
 			logger.info("[getWriteBytes]" + getPayloadAsString());
 		}
-		return toWrite;
+		return byteBuf;
 	}
 	
 	protected String getPayloadAsString() {
@@ -63,7 +63,7 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 		return  payloadString;
 	}
 
-	protected abstract byte[] getWriteBytes();
+	protected abstract ByteBuf getWriteByteBuf();
 
 	/**
 	 * @param byteBuf

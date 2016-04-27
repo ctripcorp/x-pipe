@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -12,18 +14,20 @@ import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFile;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.RedisClient.CLIENT_ROLE;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.protocal.Command;
+import com.ctrip.xpipe.redis.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.protocal.cmd.CompositeCommand;
 import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.thread.NamedThreadFactory;
-import com.ctrip.xpipe.utils.CpuUtils;
+import com.ctrip.xpipe.utils.OsUtils;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -51,6 +55,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private Endpoint masterEndpoint;
 	private String keeperRunid;
+	
+	private long keeperStartTime;
 	
 	private ReplicationStore replicationStore;
 
@@ -80,7 +86,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.keeperPort = keeperPort;
 		this.scheduled = scheduled;
 		if(scheduled == null){
-			this.scheduled = Executors.newScheduledThreadPool(CpuUtils.getCpuCount(), new NamedThreadFactory(masterEndpoint.toString()));
+			this.scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(masterEndpoint.toString()));
 		}
 	}
 
@@ -88,6 +94,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
+		keeperStartTime = System.currentTimeMillis();
 		startServer();
 		connectMaster();
 		
@@ -265,5 +272,38 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public RdbFile getRdbFile() throws IOException {
 		return replicationStore.getRdbFile();
+	}
+
+	@Override
+	public Set<RedisClient> allClients() {
+		return new HashSet<>(redisClients.values());
+	}
+
+	@Override
+	public SERVER_ROLE role() {
+		return SERVER_ROLE.KEEPER;
+	}
+
+	@Override
+	public String info() {
+		
+		String info = "os:" + OsUtils.osInfo() + RedisProtocol.CRLF;
+		info += "run_id:" + keeperRunid + RedisProtocol.CRLF;
+		info += "uptime_in_seconds:" + (System.currentTimeMillis() - keeperStartTime)/1000;
+		return info;
+	}
+
+	@Override
+	public Set<RedisClient> slaves() {
+		
+		Set<RedisClient> slaves = new HashSet<RedisClient>();
+		
+		for(RedisClient redisClient : redisClients.values()){
+			
+			if(redisClient.getClientRole() == CLIENT_ROLE.SLAVE){
+				slaves.add(redisClient);
+			}
+		}
+		return slaves;
 	}
 }

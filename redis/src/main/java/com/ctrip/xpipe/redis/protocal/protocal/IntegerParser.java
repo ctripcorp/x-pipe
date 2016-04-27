@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 
 /**
@@ -38,10 +39,8 @@ public class IntegerParser extends AbstractRedisClientProtocol<Integer>{
 	}
 
 	@Override
-	protected byte[] getWriteBytes() {
+	protected ByteBuf getWriteByteBuf() {
 		
-		return getRequestBytes(COLON_BYTE, payload);
+		return Unpooled.wrappedBuffer(getRequestBytes(COLON_BYTE, payload));
 	}
-
-
 }

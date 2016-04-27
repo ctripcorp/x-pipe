@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.protocal.protocal;
 import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 /**
  * @author wenchao.meng
@@ -31,10 +32,8 @@ public class RequestStringParser extends AbstractRedisClientProtocol<String[]>{
 	}
 
 	@Override
-	protected byte[] getWriteBytes() {
+	protected ByteBuf getWriteByteBuf() {
 		
-		return getRequestBytes(payload);
+		return Unpooled.wrappedBuffer(getRequestBytes(payload));
 	}
-
-
 }

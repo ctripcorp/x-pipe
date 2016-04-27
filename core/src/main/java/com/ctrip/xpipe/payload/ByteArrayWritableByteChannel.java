@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.tools;
+package com.ctrip.xpipe.payload;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,10 +27,13 @@ public class ByteArrayWritableByteChannel implements WritableByteChannel{
 	@Override
 	public int write(ByteBuffer src) throws IOException {
 		
-		byte []data = new byte[src.remaining()];
-		src.get(data);
-		baous.write(data);
-		return data.length;
+		int offset = src.arrayOffset();
+		int length = src.remaining();
+		int position = src.position();
+		int limit = src.limit();
+		baous.write(src.array(), offset + position, offset + limit);
+		src.position(limit);
+		return length;
 	}
 	
 	public byte []getResult(){

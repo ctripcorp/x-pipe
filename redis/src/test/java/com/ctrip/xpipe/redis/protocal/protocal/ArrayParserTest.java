@@ -6,7 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
-import com.ctrip.xpipe.redis.tools.ByteArrayWritableByteChannel;
+import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 
 
 /**

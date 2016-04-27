@@ -7,7 +7,7 @@ import io.netty.buffer.ByteBuf;
  *
  * 2016年4月22日 上午11:25:07
  */
-public interface RedisClient {
+public interface RedisClient extends Infoable{
 	
 	public static enum CLIENT_ROLE{
 		NORMAL,
@@ -28,8 +28,16 @@ public interface RedisClient {
 	}
 	
 	public static enum SLAVE_STATE{
-		REDIS_REPL_SEND_BULK,
-		REDIS_REPL_ONLINE
+		REDIS_REPL_SEND_BULK("send_bulk"),
+		REDIS_REPL_ONLINE("online");
+		
+		private String desc;
+		SLAVE_STATE(String desc){
+			this.desc = desc;
+		}
+		public String getDesc() {
+			return desc;
+		}
 		
 	}
 	
@@ -55,7 +63,9 @@ public interface RedisClient {
 	
 	Long getAckTime();
 	
-	void sendMessage(byte []message);
+	void sendMessage(ByteBuf byteBuf);
+	
+	void sendMessage(byte[] bytes);
 	
 	void writeRdb(RdbFile rdbFile);
 	
@@ -64,5 +74,7 @@ public interface RedisClient {
 	void writeComplete(RdbFile rdbFile);
 	
 	String []readCommands(ByteBuf byteBuf);
+
+	String info();
 	
 }

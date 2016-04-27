@@ -8,6 +8,6 @@ import com.ctrip.xpipe.api.server.Server;
  *
  * 2016年3月29日 下午3:24:05
  */
-public interface RedisServer extends Server{
+public interface RedisServer extends Server, Infoable{
 
 }

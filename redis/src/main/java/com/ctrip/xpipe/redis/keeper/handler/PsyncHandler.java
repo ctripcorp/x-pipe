@@ -48,6 +48,9 @@ public class PsyncHandler extends AbstractCommandHandler{
 	}
 
 	private void doPartialSync(RedisClient redisClient, Long offset) {
+		
+		SimpleStringParser simpleStringParser = new SimpleStringParser(Psync.PARTIAL_SYNC);
+		redisClient.sendMessage(simpleStringParser.format());
 		redisClient.beginWriteCommands(offset);
 	}
 
