@@ -27,7 +27,7 @@ public class DefaultRdbStore implements RdbStore {
 
 	@Override
 	public int write(ByteBuffer buf) throws IOException {
-		return channel.write(buf, 0);
+		return channel.write(buf);
 	}
 
 	@Override

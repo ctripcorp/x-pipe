@@ -31,6 +31,10 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	@Override
 	public int doIn(ByteBuf byteBuf) throws IOException {
 		
+		if(logger.isDebugEnabled()){
+			logger.debug("[doIn]" + byteBuf.readableBytes());
+		}
+		
 		return replicationStore.writeRdb(byteBuf);
 	}
 

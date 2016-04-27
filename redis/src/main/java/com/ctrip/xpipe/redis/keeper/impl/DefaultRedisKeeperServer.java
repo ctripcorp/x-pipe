@@ -125,7 +125,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
              @Override
              public void initChannel(SocketChannel ch) throws Exception {
                  ChannelPipeline p = ch.pipeline();
-                 p.addLast(new LoggingHandler(LogLevel.INFO));
+                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
                  p.addLast(new NettySimpleMessageHandler());
                  p.addLast(new NettyMasterHandler(DefaultRedisKeeperServer.this, new CommandHandlerManager()));
              }
