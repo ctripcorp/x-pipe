@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -294,14 +296,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public Set<RedisClient> slaves() {
-		
-		Set<RedisClient> slaves = new HashSet<RedisClient>();
-		
-		for(RedisClient redisClient : redisClients.values()){
-			
-			if(redisClient.getClientRole() == CLIENT_ROLE.SLAVE){
-				slaves.add(redisClient);
+	public Map<Channel, RedisClient> slaves() {
+
+		Map<Channel, RedisClient> slaves = new HashMap<>();
+
+		for (Entry<Channel, RedisClient> entry : redisClients.entrySet()) {
+
+			if (entry.getValue().getClientRole() == CLIENT_ROLE.SLAVE) {
+				slaves.put(entry.getKey(), entry.getValue());
 			}
 		}
 		return slaves;
