@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
 import com.ctrip.xpipe.redis.protocal.Command;
@@ -35,5 +36,5 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	
 	Set<RedisClient> allClients();
 	
-	Set<RedisClient> slaves();
+	Map<Channel, RedisClient> slaves();
 }
