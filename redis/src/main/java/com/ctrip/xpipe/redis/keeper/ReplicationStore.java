@@ -12,7 +12,7 @@ import io.netty.buffer.ByteBuf;
  */
 public interface ReplicationStore extends Closeable {
 
-	void beginRdb(String masterRunid, long masterOffset) throws IOException;
+	void beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException;
 
 	int writeRdb(ByteBuf byteBuffer) throws IOException;
 
@@ -25,9 +25,9 @@ public interface ReplicationStore extends Closeable {
 	 * @return 	masterOffset
 	 * @throws IOException
 	 */
-	long readRdbFile(RdbFileListener rdbFileListener) throws IOException;
+	void readRdbFile(RdbFileListener rdbFileListener) throws IOException;
 	
-	long stopRdbFileRead(RdbFileListener rdbFileListener);
+	long stopReadingRdbFile(RdbFileListener rdbFileListener);
 
 	int appendCommands(ByteBuf byteBuf) throws IOException;
 

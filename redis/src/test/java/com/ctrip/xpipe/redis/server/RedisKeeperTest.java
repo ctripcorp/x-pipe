@@ -18,7 +18,6 @@ import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.server.io.IoAction;
 import com.ctrip.xpipe.redis.server.io.IoActionFactory;
 import com.ctrip.xpipe.redis.server.io.Server;
-import com.ctrip.xpipe.redis.tools.SimpleFileReplicationStore;
 
 /**
  * @author wenchao.meng
@@ -36,8 +35,6 @@ public class RedisKeeperTest extends AbstractRedisTest{
 
 	//as Slave
 	private int keeperPort = 7777;
-	private String rdbFile = "/data/xpipe/redis/dump.rdb";
-	private String commandFile = "/data/xpipe/redis/command.out";
 
 	//real slaves
 	private String slave1Runid = "XXXXde3e7062ca030d439d60095458265aslave1";
@@ -63,7 +60,7 @@ public class RedisKeeperTest extends AbstractRedisTest{
 
 	private void startSlaveClient() throws Exception {
 
-		ReplicationStore replicationStore = new SimpleFileReplicationStore(rdbFile, commandFile);
+		ReplicationStore replicationStore = createReplicationStore();
 		DefaultRedisKeeperServer rds = new DefaultRedisKeeperServer(new DefaultEndPoint(redisMasterUri), replicationStore, keeperRunid, keeperPort);
 		rds.start();
 		

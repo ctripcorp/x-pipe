@@ -46,8 +46,8 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	@Override
 	public long doOut(WritableByteChannel writableByteChannel) throws IOException {
 		
-		replicationStore.readRdbFile(this);
 		this.writableByteChannel = writableByteChannel;
+		replicationStore.readRdbFile(this);
 		return 0;
 	}
 
@@ -55,15 +55,26 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	@Override
 	public void doEndOutput() {
 		
-		replicationStore.stopRdbFileRead(this);
+		replicationStore.stopReadingRdbFile(this);
 	}
 
 
 	@Override
 	public void onFileData(FileChannel fileChannel, long pos, long len) throws IOException {
-		if(writableByteChannel != null){
+		
+		if(writableByteChannel != null && len > 0){
 			fileChannel.transferTo(pos, len, writableByteChannel);
 		}
+		
+		if( len == -1 ){
+			writableByteChannel.close();
+		}
+	}
+
+
+	@Override
+	public void setRdbFileInfo(long rdbFileSize, long rdbFileOffset) {
+		
 	}
 
 }

@@ -289,8 +289,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public long readRdbFile(RdbFileListener rdbFileListener) throws IOException {
-		return replicationStore.readRdbFile(rdbFileListener);
+	public void readRdbFile(RdbFileListener rdbFileListener) throws IOException {
+		replicationStore.readRdbFile(rdbFileListener);
 	}
 	
 	@Override

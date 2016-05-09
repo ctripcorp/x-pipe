@@ -24,6 +24,7 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 	private Long totalLength = 0L;
 	private Long currentLength = 0L;
 	private BULK_STRING_STATE  bulkStringState = BULK_STRING_STATE.READING_LENGTH;
+	private BulkStringParserListener bulkStringParserListener;
 	
 	
 	public enum BULK_STRING_STATE{
@@ -35,12 +36,17 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 	}
 	
 	public BulkStringParser(String content){
-		this(new StringInOutPayload(content));
+		this(new StringInOutPayload(content), null);
 		
 	}
 	
 	public BulkStringParser(InOutPayload bulkStringPayload) {
+		this(bulkStringPayload, null);
+	}
+	
+	public BulkStringParser(InOutPayload bulkStringPayload, BulkStringParserListener bulkStringParserListener) {
 		super(bulkStringPayload, false, false);
+		this.bulkStringParserListener = bulkStringParserListener;
 	}
 
 	/**
@@ -62,6 +68,10 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 				
 				if(logger.isDebugEnabled()){
 					logger.debug("[parse][length]" + totalLength);
+				}
+				
+				if(bulkStringParserListener != null){
+					bulkStringParserListener.onGotLengthFiled(totalLength);
 				}
 				
 				if(totalLength < 0){
@@ -164,5 +174,10 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 		}
 		throw new UnsupportedOperationException();		
 	}
+
 	
+	public static interface BulkStringParserListener{
+		
+		void onGotLengthFiled(long length);
+	}
 }

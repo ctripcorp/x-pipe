@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 import java.util.Map;
-import java.util.Set;
 
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;

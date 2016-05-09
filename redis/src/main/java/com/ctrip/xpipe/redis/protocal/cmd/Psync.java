@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser.BulkStringParserListener;
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
 
@@ -24,7 +25,7 @@ import io.netty.channel.Channel;
  *
  * 2016年3月24日 下午2:24:38
  */
-public class Psync extends AbstractRedisCommand{
+public class Psync extends AbstractRedisCommand implements BulkStringParserListener{
 	
 	
 	public static final String FULL_SYNC = "FULLRESYNC";
@@ -117,8 +118,7 @@ public class Psync extends AbstractRedisCommand{
 				
 			case READING_RDB:
 				if(rdbReader == null){
-					rdbReader = new BulkStringParser(new InOutPayloadReplicationStore(replicationStore));
-					beginReadRdb();
+					rdbReader = new BulkStringParser(new InOutPayloadReplicationStore(replicationStore), this);
 				}
 				RedisClientProtocol<InOutPayload> payload =  rdbReader.read(byteBuf);
 				if( payload != null){
@@ -143,10 +143,10 @@ public class Psync extends AbstractRedisCommand{
 	}
 
 
-	private void beginReadRdb() {
+	private void beginReadRdb(long fileSize) {
 		
 		try {
-			replicationStore.beginRdb(masterRunid, offset);
+			replicationStore.beginRdb(masterRunid, offset, fileSize);
 		} catch (IOException e) {
 			logger.error("[beginReadRdb]" + masterRunid + "," + offset, e);
 		}
@@ -205,4 +205,8 @@ public class Psync extends AbstractRedisCommand{
 		return RESPONSE_STATE.CONTINUE;
 	}
 
+	@Override
+	public void onGotLengthFiled(long length) {
+		beginReadRdb(length);
+	}
 }

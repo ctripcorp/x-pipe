@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import java.nio.channels.FileChannel;
+
 import io.netty.buffer.ByteBuf;
 
 /**
@@ -67,11 +69,13 @@ public interface RedisClient extends Infoable{
 	
 	void sendMessage(byte[] bytes);
 	
-	void writeRdb(RdbFile rdbFile);
-	
 	void beginWriteCommands(long beginOffset);
+	
+	void beginWriteRdb(long rdbFileSize, long rdbFileOffset);
+	
+	void writeFile(FileChannel fileChannel, long pos, long len);
 
-	void writeComplete(RdbFile rdbFile);
+	void rdbWriteComplete();
 	
 	String []readCommands(ByteBuf byteBuf);
 

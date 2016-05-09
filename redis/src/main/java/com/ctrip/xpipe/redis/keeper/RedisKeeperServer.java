@@ -32,7 +32,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	
 	void addCommandsListener(Long offset, CommandsListener listener);
 
-	long readRdbFile(RdbFileListener rdbFileListener) throws IOException;
+	void readRdbFile(RdbFileListener rdbFileListener) throws IOException;
 	
 	Set<RedisClient> allClients();
 	
