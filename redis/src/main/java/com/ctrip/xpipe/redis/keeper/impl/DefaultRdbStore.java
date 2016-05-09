@@ -5,8 +5,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
-import com.ctrip.xpipe.redis.keeper.RdbFile;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultRdbStore implements RdbStore {
 
@@ -16,11 +15,10 @@ public class DefaultRdbStore implements RdbStore {
 
 	private FileChannel channel;
 
-	private long beginOffset;
+	private AtomicBoolean writeDone = new AtomicBoolean(false);
 
-	public DefaultRdbStore(File file, long beginOffset) throws IOException {
+	public DefaultRdbStore(File file) throws IOException {
 		this.file = file;
-		this.beginOffset = beginOffset;
 		writeFile = new RandomAccessFile(file, "rw");
 		channel = writeFile.getChannel();
 	}
@@ -33,11 +31,17 @@ public class DefaultRdbStore implements RdbStore {
 	@Override
 	public void endWrite() throws IOException {
 		writeFile.close();
+		writeDone.set(true);
 	}
 
 	@Override
-	public RdbFile getRdbFile() throws IOException {
-		return new DefaultRdbFile(file, beginOffset);
+	public RandomAccessFile getRdbFile() throws IOException {
+		return new RandomAccessFile(file, "r");
+	}
+
+	@Override
+	public boolean isWriteDone() {
+		return writeDone.get();
 	}
 
 }
