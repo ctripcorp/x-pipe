@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -13,7 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
-import com.ctrip.xpipe.redis.keeper.RdbFile;
+import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 
 import io.netty.buffer.ByteBuf;
@@ -44,6 +46,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	private int cmdFileSize;
 
+	private long rdbFileSize;
+
 	public DefaultReplicationStore(File baseDir, int cmdFileSize) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = cmdFileSize;
@@ -56,16 +60,18 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void beginRdb(String masterRunid, long masterOffset) throws IOException {
+	public void beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException {
 		this.masterRunid = masterRunid;
+		// TODO save master offset
 		this.beginOffset = masterOffset + 1;
 		this.endOffset = masterOffset;
+		this.rdbFileSize = rdbFileSize;
 
 		baseDir.mkdirs();
 		saveMeta();
 
 		// TODO file naming
-		rdbStore = new DefaultRdbStore(rdbFileOf(masterRunid), beginOffset);
+		rdbStore = new DefaultRdbStore(rdbFileOf(masterRunid));
 		cmdStore = new DefaultCommandStore(cmdFileOf(masterRunid), cmdFileSize);
 	}
 
@@ -136,11 +142,6 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public RdbFile getRdbFile() throws IOException {
-		return rdbStore.getRdbFile();
-	}
-
-	@Override
 	public int appendCommands(ByteBuf byteBuf) throws IOException {
 		int wrote = cmdStore.appendCommands(byteBuf);
 		endOffset += wrote;
@@ -174,6 +175,37 @@ public class DefaultReplicationStore implements ReplicationStore {
 	public void delete() {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public void readRdbFile(RdbFileListener rdbFileListener) throws IOException {
+		rdbFileListener.setRdbFileInfo(rdbFileSize, beginOffset - 1); // beginOffset - 1 == masteroffset
+		try (RandomAccessFile rdbFile = rdbStore.getRdbFile()) {
+			try (FileChannel channel = rdbFile.getChannel()) {
+				long start = 0;
+
+				while (!rdbStore.isWriteDone()) {
+					if (channel.size() > start) {
+						rdbFileListener.onFileData(channel, start, channel.size() - start);
+						start = channel.size();
+					} else {
+						// TODO
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+						}
+					}
+				}
+
+				rdbFileListener.onFileData(channel, start, -1L);
+			}
+		}
+	}
+
+	@Override
+	public long stopReadingRdbFile(RdbFileListener rdbFileListener) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }
