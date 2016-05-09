@@ -7,7 +7,7 @@ import java.nio.channels.WritableByteChannel;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.payload.AbstractInOutPayload;
-import com.ctrip.xpipe.redis.keeper.RdbFile;
+import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 
 import io.netty.buffer.ByteBuf;
@@ -17,11 +17,11 @@ import io.netty.buffer.ByteBuf;
  *
  * 2016年4月20日 下午5:19:55
  */
-public class InOutPayloadReplicationStore extends AbstractInOutPayload implements InOutPayload{
+public class InOutPayloadReplicationStore extends AbstractInOutPayload implements InOutPayload, RdbFileListener{
 
 	public  ReplicationStore replicationStore;
 	
-	private RdbFile rdbFile;
+	private WritableByteChannel writableByteChannel;
 	
 	public InOutPayloadReplicationStore(ReplicationStore replicationStore) {
 		this.replicationStore = replicationStore;
@@ -41,27 +41,28 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	@Override
 	public void doStartOutput() throws IOException {
 		
-		rdbFile = replicationStore.getRdbFile();
 	}
 
 	@Override
 	public long doOut(WritableByteChannel writableByteChannel) throws IOException {
 		
-		FileChannel fileChannel = rdbFile.getRdbFile();
-		long n = rdbFile.getRdbFile().transferTo(0, fileChannel.size(), writableByteChannel);
-		return n;
+		replicationStore.readRdbFile(this);
+		this.writableByteChannel = writableByteChannel;
+		return 0;
 	}
 
 
 	@Override
 	public void doEndOutput() {
 		
-		if(rdbFile.getRdbFile() != null){
-			try {
-				rdbFile.getRdbFile().close();
-			} catch (IOException e) {
-				logger.error("[doEndOutput]" + rdbFile.getRdbFile(), e);
-			}
+		replicationStore.stopRdbFileRead(this);
+	}
+
+
+	@Override
+	public void onFileData(FileChannel fileChannel, long pos, long len) throws IOException {
+		if(writableByteChannel != null){
+			fileChannel.transferTo(pos, len, writableByteChannel);
 		}
 	}
 

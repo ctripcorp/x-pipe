@@ -21,12 +21,13 @@ public interface ReplicationStore extends Closeable {
 	String getMasterRunid();
 
 	/**
-	 * Zero copy support
-	 * 
-	 * @return
+	 * @param rdbFileListener
+	 * @return 	masterOffset
 	 * @throws IOException
 	 */
-	RdbFile getRdbFile() throws IOException;
+	long readRdbFile(RdbFileListener rdbFileListener) throws IOException;
+	
+	long stopRdbFileRead(RdbFileListener rdbFileListener);
 
 	int appendCommands(ByteBuf byteBuf) throws IOException;
 

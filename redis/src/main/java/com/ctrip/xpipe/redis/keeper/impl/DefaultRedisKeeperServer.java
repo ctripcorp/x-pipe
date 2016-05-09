@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
-import com.ctrip.xpipe.redis.keeper.RdbFile;
+import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisClient.CLIENT_ROLE;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -52,6 +52,8 @@ import io.netty.handler.logging.LoggingHandler;
 public class DefaultRedisKeeperServer extends AbstractRedisServer implements RedisKeeperServer{
 	
 	public static final int REPLCONF_INTERVAL_MILLI = 1000;
+	
+	private int masterConnectRetryDelaySeconds = 5;
 
 	private Endpoint masterEndpoint;
 	private String keeperRunid;
@@ -61,7 +63,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private ReplicationStore replicationStore;
 
 	private Channel slave;
-	private EventLoopGroup slaveEventLoopGroup;
+	private EventLoopGroup slaveEventLoopGroup = new NioEventLoopGroup();;
 
 	private int retry = 3;
 	private int keeperPort;
@@ -95,6 +97,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doStart() throws Exception {
 		super.doStart();
 		keeperStartTime = System.currentTimeMillis();
+		
 		startServer();
 		connectMaster();
 		
@@ -102,9 +105,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	@Override
 	protected void doStop() throws Exception {
-		super.doStop();
+		
 		stopServer();
 		disConnectWithMaster();
+		super.doStop();
 	}
 	
 
@@ -136,7 +140,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 	private void connectMaster() {
 
-        slaveEventLoopGroup = new NioEventLoopGroup();
         Bootstrap b = new Bootstrap();
         b.group(slaveEventLoopGroup)
          .channel(NioSocketChannel.class)
@@ -150,7 +153,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
              }
          });
 
-		for(int i=0; i < retry ; i++){
+        int i = 0;
+		for(; i < retry ; i++){
 			try{
 				ChannelFuture f = b.connect(masterEndpoint.getHost(), masterEndpoint.getPort());
 		        f.sync();
@@ -158,6 +162,19 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			}catch(Throwable th){
 				logger.error("[connectMaster][fail]" + masterEndpoint, th);
 			}
+		}
+		
+		if(i == retry){
+			
+			if(logger.isInfoEnabled()){
+				logger.info("[connectMaster][fail, retry after "  + masterConnectRetryDelaySeconds + " seconds]" + masterEndpoint);
+			}
+			scheduled.schedule(new Runnable() {
+				@Override
+				public void run() {
+					connectMaster();
+				}
+			}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
 		}
 	}
 
@@ -270,10 +287,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public RdbFile getRdbFile() throws IOException {
-		return replicationStore.getRdbFile();
+	public long readRdbFile(RdbFileListener rdbFileListener) throws IOException {
+		return replicationStore.readRdbFile(rdbFileListener);
 	}
-
+	
 	@Override
 	public Set<RedisClient> allClients() {
 		return new HashSet<>(redisClients.values());
