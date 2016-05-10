@@ -16,7 +16,7 @@ public class DefaultRdbStore implements RdbStore {
 	private FileChannel channel;
 
 	private long rdbFileSize;
-	
+
 	private AtomicReference<Status> status = new AtomicReference<>(Status.Writing);
 
 	public DefaultRdbStore(File file, long rdbFileSize) throws IOException {
@@ -33,9 +33,10 @@ public class DefaultRdbStore implements RdbStore {
 
 	@Override
 	public void endWrite() throws IOException {
+		long actualFileLen = writeFile.length();
 		writeFile.close();
-		
-		if(writeFile.length() == rdbFileSize) {
+
+		if (actualFileLen == rdbFileSize) {
 			status.set(Status.Success);
 		} else {
 			status.set(Status.Fail);

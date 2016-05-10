@@ -35,6 +35,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	private RdbStore rdbStore;
 
+	private RandomAccessFile rdbReadFile;
+
 	private CommandStore cmdStore;
 
 	private ConcurrentMap<CommandsListener, CommandNotifier> cmdListeners = new ConcurrentHashMap<>();
@@ -73,6 +75,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 		// TODO file naming
 		rdbStore = new DefaultRdbStore(rdbFileOf(masterRunid), rdbFileSize);
+		rdbReadFile = rdbStore.getRdbFile();
 		cmdStore = new DefaultCommandStore(cmdFileOf(masterRunid), cmdFileSize);
 	}
 
@@ -183,7 +186,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		// TODO use "selector" to reduce thread
 		new Thread() {
 			public void run() {
-				while (rdbStore == null) {
+				while (rdbReadFile == null) {
 					try {
 						Thread.sleep(100);
 					} catch (InterruptedException e) {
@@ -201,38 +204,35 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	private void doReadRdbFile(RdbFileListener rdbFileListener) throws IOException {
 		rdbFileListener.setRdbFileInfo(rdbFileSize, beginOffset - 1); // beginOffset - 1 == masteroffset
-		try (RandomAccessFile rdbFile = rdbStore.getRdbFile()) {
-			try (FileChannel channel = rdbFile.getChannel()) {
-				long start = 0;
+		FileChannel channel = rdbReadFile.getChannel();
+		long start = 0;
 
-				while (!rdbFileListener.isStop() && (isRdbWriting(rdbStore.getStatus()) || start < channel.size())) {
-					if (channel.size() > start) {
-						long end = channel.size();
-						rdbFileListener.onFileData(channel, start, end - start);
-						start = end;
-					} else {
-						// TODO
-						try {
-							Thread.sleep(100);
-						} catch (InterruptedException e) {
-						}
-					}
-				}
-
-				switch (rdbStore.getStatus()) {
-				case Success:
-					rdbFileListener.onFileData(channel, start, -1L);
-					break;
-
-				case Fail:
-					// TODO
-					rdbFileListener.exception(new Exception(""));
-					break;
-
-				default:
-					break;
+		while (!rdbFileListener.isStop() && (isRdbWriting(rdbStore.getStatus()) || start < channel.size())) {
+			if (channel.size() > start) {
+				long end = channel.size();
+				rdbFileListener.onFileData(channel, start, end - start);
+				start = end;
+			} else {
+				// TODO
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
 				}
 			}
+		}
+
+		switch (rdbStore.getStatus()) {
+		case Success:
+			rdbFileListener.onFileData(channel, start, -1L);
+			break;
+
+		case Fail:
+			// TODO
+			rdbFileListener.exception(new Exception(""));
+			break;
+
+		default:
+			break;
 		}
 	}
 
