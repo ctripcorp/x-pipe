@@ -178,7 +178,20 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void readRdbFile(RdbFileListener rdbFileListener) throws IOException {
+	public void readRdbFile(final RdbFileListener rdbFileListener) throws IOException {
+		// TODO use "selector" to reduce thread
+		new Thread() {
+			public void run() {
+				try {
+					doReadRdbFile(rdbFileListener);
+				} catch (Exception e) {
+					logger.error("Error read rdb file", e);
+				}
+			}
+		}.start();
+	}
+
+	private void doReadRdbFile(RdbFileListener rdbFileListener) throws IOException {
 		rdbFileListener.setRdbFileInfo(rdbFileSize, beginOffset - 1); // beginOffset - 1 == masteroffset
 		try (RandomAccessFile rdbFile = rdbStore.getRdbFile()) {
 			try (FileChannel channel = rdbFile.getChannel()) {
