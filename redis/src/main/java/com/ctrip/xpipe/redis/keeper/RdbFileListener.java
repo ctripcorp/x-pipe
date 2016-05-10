@@ -26,8 +26,6 @@ public interface RdbFileListener {
 	 */
 	void onFileData(FileChannel fileChannel, long pos, long len) throws IOException;
 	
-	void onException(Exception e);
-
 	/**
 	 * @return
 	 */

@@ -226,7 +226,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 				case Fail:
 					// TODO
-					rdbFileListener.onException(new Exception(""));
+					rdbFileListener.exception(new Exception(""));
 					break;
 
 				default:
