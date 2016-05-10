@@ -17,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.impl.RdbStore.Status;
 
 import io.netty.buffer.ByteBuf;
 
@@ -71,7 +72,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		saveMeta();
 
 		// TODO file naming
-		rdbStore = new DefaultRdbStore(rdbFileOf(masterRunid));
+		rdbStore = new DefaultRdbStore(rdbFileOf(masterRunid), rdbFileSize);
 		cmdStore = new DefaultCommandStore(cmdFileOf(masterRunid), cmdFileSize);
 	}
 
@@ -204,7 +205,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 			try (FileChannel channel = rdbFile.getChannel()) {
 				long start = 0;
 
-				while (!rdbFileListener.isStop() && (!rdbStore.isWriteDone() || start < channel.size())) {
+				while (!rdbFileListener.isStop() && (isRdbWriting(rdbStore.getStatus()) || start < channel.size())) {
 					if (channel.size() > start) {
 						long end = channel.size();
 						rdbFileListener.onFileData(channel, start, end - start);
@@ -218,9 +219,29 @@ public class DefaultReplicationStore implements ReplicationStore {
 					}
 				}
 
-				rdbFileListener.onFileData(channel, start, -1L);
+				switch (rdbStore.getStatus()) {
+				case Success:
+					rdbFileListener.onFileData(channel, start, -1L);
+					break;
+
+				case Fail:
+					// TODO
+					rdbFileListener.onException(new Exception(""));
+					break;
+
+				default:
+					break;
+				}
 			}
 		}
+	}
+
+	/**
+	 * @param status
+	 * @return
+	 */
+	private boolean isRdbWriting(Status status) {
+		return status != Status.Fail && status != Status.Success;
 	}
 
 }
