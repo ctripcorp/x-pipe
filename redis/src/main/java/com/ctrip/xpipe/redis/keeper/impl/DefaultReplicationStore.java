@@ -206,8 +206,9 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 				while (!rdbFileListener.isStop() && (!rdbStore.isWriteDone() || start < channel.size())) {
 					if (channel.size() > start) {
-						rdbFileListener.onFileData(channel, start, channel.size() - start);
-						start = channel.size();
+						long end = channel.size();
+						rdbFileListener.onFileData(channel, start, end - start);
+						start = end;
 					} else {
 						// TODO
 						try {
