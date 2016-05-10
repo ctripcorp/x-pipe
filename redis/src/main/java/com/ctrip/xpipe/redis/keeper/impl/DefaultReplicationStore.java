@@ -182,6 +182,13 @@ public class DefaultReplicationStore implements ReplicationStore {
 		// TODO use "selector" to reduce thread
 		new Thread() {
 			public void run() {
+				while (rdbStore == null) {
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+					}
+				}
+
 				try {
 					doReadRdbFile(rdbFileListener);
 				} catch (Exception e) {
