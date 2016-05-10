@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
 import java.util.HashSet;
@@ -9,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.netty.NotClosableFileRegion;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
@@ -23,7 +26,6 @@ import com.ctrip.xpipe.utils.IpUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.DefaultFileRegion;
 
 /**
  * @author wenchao.meng
@@ -295,6 +297,11 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 	@Override
 	public void writeFile(FileChannel fileChannel, long pos, long len) {
 		
-		channel.writeAndFlush(new DefaultFileRegion(fileChannel, pos, len));
+		channel.writeAndFlush(new NotClosableFileRegion(fileChannel, pos, len));
+	}
+
+	@Override
+	public void close() throws IOException {
+		channel.close();
 	}
 }

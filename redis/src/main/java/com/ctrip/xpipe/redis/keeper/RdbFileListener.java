@@ -30,5 +30,11 @@ public interface RdbFileListener {
 	 * @return
 	 */
    boolean isStop();
-
+   
+   /**
+    * meet exception while reading rdb
+	 * @param e
+	 */
+   void exception(Exception e);
+   
 }

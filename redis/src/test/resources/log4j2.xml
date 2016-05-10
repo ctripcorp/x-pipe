@@ -3,7 +3,7 @@
 
     <appenders>
         <console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t]%C{1} %m%n"/>
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
         </console>
 
         <RollingFile name="RollingFileInfo" fileName="/data/applogs/xpipe/xpipe-test.log"
@@ -12,7 +12,7 @@
                 <ThresholdFilter level="INFO"/>
                 <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>
             </Filters>
-            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p]%m%n"/>
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
@@ -29,9 +29,9 @@
         </logger>
         <logger name="io.netty" level="INFO">
         </logger>
+        <!--  
         <logger name="com.ctrip.xpipe.redis.protocal.cmd.InOutPayloadReplicationStore" level="DEBUG">
         </logger>
-        <!--  
         <logger name="com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler" level="DEBUG">
         </logger>
         <logger name="com.ctrip.xpipe.redis.keeper.handler.LFHandler" level="DEBUG">

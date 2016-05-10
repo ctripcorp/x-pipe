@@ -146,6 +146,9 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	private void beginReadRdb(long fileSize) {
 		
 		try {
+			if(logger.isInfoEnabled()){
+				logger.info("[beginReadRdb]" + this + "," + fileSize);
+			}
 			replicationStore.beginRdb(masterRunid, offset, fileSize);
 		} catch (IOException e) {
 			logger.error("[beginReadRdb]" + masterRunid + "," + offset, e);

@@ -73,6 +73,24 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 		}
 	}
 
+	@Override
+	public void exception(Exception e) {
+		
+		logger.error("[exception]", e);
+		
+		if(writableByteChannel != null){
+			
+			if(logger.isInfoEnabled()){
+				logger.info("[exception][close write channel]" + writableByteChannel);
+			}
+			
+			try {
+				writableByteChannel.close();
+			} catch (IOException e1) {
+				logger.error("[exception]", e1);
+			}
+		}
+	}
 
 	@Override
 	public void setRdbFileInfo(long rdbFileSize, long rdbFileOffset) {
@@ -84,5 +102,6 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
    public boolean isStop() {
 	   return stop.get();
    }
+
 
 }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import java.io.Closeable;
 import java.nio.channels.FileChannel;
 
 import io.netty.buffer.ByteBuf;
@@ -9,7 +10,7 @@ import io.netty.buffer.ByteBuf;
  *
  * 2016年4月22日 上午11:25:07
  */
-public interface RedisClient extends Infoable{
+public interface RedisClient extends Infoable, Closeable{
 	
 	public static enum CLIENT_ROLE{
 		NORMAL,

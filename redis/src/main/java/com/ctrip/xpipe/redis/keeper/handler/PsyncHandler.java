@@ -35,8 +35,8 @@ public class PsyncHandler extends AbstractCommandHandler{
 			if((offset > (endOffset + 1)) || (offset < beginOffset)){
 				if(logger.isInfoEnabled()){
 					logger.info("[doHandle][offset out of range, do FullSync]" + beginOffset + "," + endOffset + "," + offset);
-					doFullSync(redisClient);
 				}
+				doFullSync(redisClient);
 			}else{
 				doPartialSync(redisClient, offset);
 			}
@@ -47,6 +47,10 @@ public class PsyncHandler extends AbstractCommandHandler{
 
 	private void doPartialSync(RedisClient redisClient, Long offset) {
 		
+		if(logger.isInfoEnabled()){
+			logger.info("[doPartialSync]" + redisClient);
+		}
+		
 		SimpleStringParser simpleStringParser = new SimpleStringParser(Psync.PARTIAL_SYNC);
 		redisClient.sendMessage(simpleStringParser.format());
 		redisClient.beginWriteCommands(offset);
@@ -55,10 +59,18 @@ public class PsyncHandler extends AbstractCommandHandler{
 	private void doFullSync(RedisClient redisClient) {
 
 		try {
+			if(logger.isInfoEnabled()){
+				logger.info("[doFullSync]" + redisClient);
+			}
 			RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
 			redisKeeperServer.readRdbFile(new DefaultRdbFileListener(redisClient));
 		} catch (IOException e) {
-			logger.error("[doFullSync]" + redisClient, e);
+			logger.error("[doFullSync][close client]" + redisClient, e);
+			try {
+				redisClient.close();
+			} catch (IOException e1) {
+				logger.error("[doFullSync]" + redisClient, e1);
+			}
 		}
 	}
 
@@ -67,5 +79,4 @@ public class PsyncHandler extends AbstractCommandHandler{
 		
 		return new String[]{"psync", "sync"};
 	}
-
 }
