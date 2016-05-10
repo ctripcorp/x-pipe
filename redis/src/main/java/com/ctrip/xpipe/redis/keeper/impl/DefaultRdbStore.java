@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DefaultRdbStore implements RdbStore {
 
@@ -15,10 +15,13 @@ public class DefaultRdbStore implements RdbStore {
 
 	private FileChannel channel;
 
-	private AtomicBoolean writeDone = new AtomicBoolean(false);
+	private long rdbFileSize;
+	
+	private AtomicReference<Status> status = new AtomicReference<>(Status.Writing);
 
-	public DefaultRdbStore(File file) throws IOException {
+	public DefaultRdbStore(File file, long rdbFileSize) throws IOException {
 		this.file = file;
+		this.rdbFileSize = rdbFileSize;
 		writeFile = new RandomAccessFile(file, "rw");
 		channel = writeFile.getChannel();
 	}
@@ -31,7 +34,12 @@ public class DefaultRdbStore implements RdbStore {
 	@Override
 	public void endWrite() throws IOException {
 		writeFile.close();
-		writeDone.set(true);
+		
+		if(writeFile.length() == rdbFileSize) {
+			status.set(Status.Success);
+		} else {
+			status.set(Status.Fail);
+		}
 	}
 
 	@Override
@@ -40,8 +48,8 @@ public class DefaultRdbStore implements RdbStore {
 	}
 
 	@Override
-	public boolean isWriteDone() {
-		return writeDone.get();
+	public Status getStatus() {
+		return status.get();
 	}
 
 }
