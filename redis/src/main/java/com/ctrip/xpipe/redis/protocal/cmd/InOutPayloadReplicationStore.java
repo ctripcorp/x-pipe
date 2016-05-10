@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.protocal.cmd;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.payload.AbstractInOutPayload;
@@ -22,6 +23,8 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	public  ReplicationStore replicationStore;
 	
 	private WritableByteChannel writableByteChannel;
+	
+	private AtomicBoolean stop = new AtomicBoolean(false);
 	
 	public InOutPayloadReplicationStore(ReplicationStore replicationStore) {
 		this.replicationStore = replicationStore;
@@ -54,8 +57,7 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 
 	@Override
 	public void doEndOutput() {
-		
-		replicationStore.stopReadingRdbFile(this);
+		stop.set(true);
 	}
 
 
@@ -76,5 +78,11 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	public void setRdbFileInfo(long rdbFileSize, long rdbFileOffset) {
 		
 	}
+
+
+	@Override
+   public boolean isStop() {
+	   return stop.get();
+   }
 
 }

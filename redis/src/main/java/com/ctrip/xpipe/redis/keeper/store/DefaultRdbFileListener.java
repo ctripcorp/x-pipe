@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import java.nio.channels.FileChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -21,6 +22,8 @@ public class DefaultRdbFileListener implements RdbFileListener{
 	private static Logger logger = LogManager.getLogger(DefaultRdbFileListener.class);
 	
 	private RedisClient redisClient;
+	
+	private AtomicBoolean stop = new AtomicBoolean(false);
 	
 	public DefaultRdbFileListener(RedisClient redisClient) {
 		this.redisClient = redisClient;
@@ -51,4 +54,14 @@ public class DefaultRdbFileListener implements RdbFileListener{
 		redisClient.beginWriteRdb(rdbFileSize, rdbFileOffset);
 
 	}
+	
+	@Override
+   public boolean isStop() {
+	   return stop.get();
+   }
+	
+	public void stop() {
+		stop.set(true);
+	}
+	
 }
