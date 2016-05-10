@@ -24,7 +24,7 @@ public class DefaultReplicationStoreTest {
 		System.out.println(baseDir.getCanonicalFile());
 
 		DefaultReplicationStore store = new DefaultReplicationStore(baseDir, 15);
-		store.beginRdb("master", -1);
+		store.beginRdb("master", -1, -1);
 
 		int cmdCount = 4;
 		int cmdLen = 10;

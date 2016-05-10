@@ -48,7 +48,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 				String msg = String.format("promote %s:%s to master", ip, port);
 				redisClient.sendMessage(new BulkStringParser(msg).format());
 
-				promoteSlaveToMaster(ip, port);
+				promoteSlaveToMaster(redisClient.getRedisKeeperServer(), ip, port);
 			} else {
 				String msg = String.format("%s:%s is not a connected slave", ip, port);
 				redisClient.sendMessage(new BulkStringParser(msg).format());
@@ -63,24 +63,45 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	 * @param ip
 	 * @param port
 	 */
-	private void promoteSlaveToMaster(String ip, int port) {
-		waitUntilSlaveSync();
-		sendSlaveOfCommand(ip, port);
+	private void promoteSlaveToMaster(RedisKeeperServer keeper, String ip, int port) {
+		waitUntilSlaveSync(keeper, ip, port);
+		sendSlaveOfNoOneCommand(ip, port);
+		long masterOffset = queryMasterOffset(ip, port);
+		connectToNewMaster(ip, port, masterOffset);
 	}
 
 	/**
+	 * @param ip
+	 * @param port
+	 * @param masterOffset
+	 */
+	private void connectToNewMaster(String ip, int port, long masterOffset) {
+		// TODO Auto-generated method stub
+
+	}
+
+	/**
+	 * @param ip
+	 * @param port
+	 * @return
+	 */
+	private long queryMasterOffset(String ip, int port) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	/**
+	 * @param keeper
 	 * 
 	 */
-   private void waitUntilSlaveSync() {
-	   // TODO Auto-generated method stub
-	   
-   }
+	private void waitUntilSlaveSync(RedisKeeperServer keeper, String ip, int port) {
+	}
 
 	/**
 	 * @param ip
 	 * @param port
 	 */
-	private void sendSlaveOfCommand(String ip, int port) {
+	private void sendSlaveOfNoOneCommand(String ip, int port) {
 		// TODO reuse event loop group
 		NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup();
 		Bootstrap b = new Bootstrap();
