@@ -184,7 +184,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 			try (FileChannel channel = rdbFile.getChannel()) {
 				long start = 0;
 
-				while (!rdbStore.isWriteDone() || start < channel.size()) {
+				while (!rdbFileListener.isStop() && (!rdbStore.isWriteDone() || start < channel.size())) {
 					if (channel.size() > start) {
 						rdbFileListener.onFileData(channel, start, channel.size() - start);
 						start = channel.size();
@@ -200,12 +200,6 @@ public class DefaultReplicationStore implements ReplicationStore {
 				rdbFileListener.onFileData(channel, start, -1L);
 			}
 		}
-	}
-
-	@Override
-	public long stopReadingRdbFile(RdbFileListener rdbFileListener) {
-		// TODO Auto-generated method stub
-		return 0;
 	}
 
 }

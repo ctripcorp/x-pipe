@@ -27,8 +27,6 @@ public interface ReplicationStore extends Closeable {
 	 */
 	void readRdbFile(RdbFileListener rdbFileListener) throws IOException;
 	
-	long stopReadingRdbFile(RdbFileListener rdbFileListener);
-
 	int appendCommands(ByteBuf byteBuf) throws IOException;
 
 	void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException;
