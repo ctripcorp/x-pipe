@@ -107,6 +107,22 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 		return info;
 	}
 	
+	@Override
+	protected void doConnectionClosed() {
+		super.doConnectionClosed();
+		
+		switch(psyncState){
+			case PSYNC_COMMAND_WAITING_REPONSE:
+				break;
+			case READING_RDB:
+				endReadRdb();
+				break;
+			case READING_COMMANDS:
+				break;
+			default:
+				throw new IllegalStateException("unknown state:" + psyncState);
+		}
+	}
 	
 	@Override
 	protected RESPONSE_STATE doHandleResponse(ByteBuf byteBuf) throws XpipeException {

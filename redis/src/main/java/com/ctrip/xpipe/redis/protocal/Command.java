@@ -25,6 +25,10 @@ public interface Command {
 	 */
 	RESPONSE_STATE handleResponse(ByteBuf byteBuf) throws XpipeException;
 	
+	/**
+	 * do something if connection is closed, but we has not finished reading or writing
+	 */
+	void connectionClosed();
 	
 	public static enum RESPONSE_STATE{
 		SUCCESS,

@@ -54,6 +54,9 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 			logger.info("[channelInactive]" + ctx.channel());
 		}
 		
+		Command command = commands.get(ctx.channel());
+		command.connectionClosed();
+		
 		redisKeeperServer.slaveDisconntected(ctx.channel());
 		super.channelInactive(ctx);
 	}

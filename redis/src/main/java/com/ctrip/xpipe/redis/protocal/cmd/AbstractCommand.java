@@ -46,4 +46,12 @@ public abstract class AbstractCommand implements Command{
 	}
 	
 	protected abstract RESPONSE_STATE doHandleResponse(ByteBuf byteBuf) throws XpipeException;
+	
+	
+	@Override
+	public void connectionClosed() {
+		doConnectionClosed();
+	}
+
+	protected abstract void doConnectionClosed();
 }

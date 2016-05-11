@@ -76,4 +76,8 @@ public class CompositeCommand extends AbstractCommand{
 		requestNextCommand();
 	}
 
+	@Override
+	protected void doConnectionClosed() {
+		currentCommand.connectionClosed();
+	}
 }

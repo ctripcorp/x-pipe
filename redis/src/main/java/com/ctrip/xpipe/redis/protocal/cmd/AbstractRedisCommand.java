@@ -108,4 +108,9 @@ public abstract class AbstractRedisCommand extends AbstractCommand {
 	protected void writeAndFlush(ByteBuf byteBuf) {
 		channel.writeAndFlush(byteBuf);
 	}
+	
+	@Override
+	protected void doConnectionClosed() {
+		
+	}
 }
