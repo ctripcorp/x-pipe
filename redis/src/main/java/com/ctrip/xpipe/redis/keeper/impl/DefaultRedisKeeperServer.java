@@ -98,7 +98,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		this.commandRequester = commandRequester;
 		if(commandRequester == null){
-			this.commandRequester = new DefaultCommandRequester(scheduled);
+			this.commandRequester = new DefaultCommandRequester(this.scheduled);
 		}
 	}
 
