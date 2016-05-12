@@ -344,4 +344,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public CommandRequester getCommandRequester() {
 		return commandRequester;
 	}
+	
+   public ReplicationStore getReplicationStore() {
+	   return replicationStore;
+   }
 }

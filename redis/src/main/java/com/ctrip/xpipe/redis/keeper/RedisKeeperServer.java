@@ -40,4 +40,5 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	
 	CommandRequester getCommandRequester();
 	
+	ReplicationStore getReplicationStore();
 }
