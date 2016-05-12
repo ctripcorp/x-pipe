@@ -3,8 +3,8 @@ package com.ctrip.xpipe.redis.keeper.netty;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.ctrip.xpipe.redis.protocal.Command;
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
-import com.ctrip.xpipe.redis.protocal.cmd.SlaveOfCommand;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
@@ -15,14 +15,17 @@ import io.netty.channel.ChannelHandlerContext;
  *
  *         May 9, 2016 3:05:38 PM
  */
-public class NettySentinelHandler extends ChannelDuplexHandler {
+public class NettyBaseClientHandler extends ChannelDuplexHandler {
 
-	private static Logger logger = LogManager.getLogger(NettySentinelHandler.class);
+	private static Logger logger = LogManager.getLogger(NettyBaseClientHandler.class);
 
 	private CommandRequester commandRequester;
-	
-	public NettySentinelHandler(CommandRequester commandRequester) {
+
+	private Command initCmd;
+
+	public NettyBaseClientHandler(CommandRequester commandRequester, Command initCmd) {
 		this.commandRequester = commandRequester;
+		this.initCmd = initCmd;
 	}
 
 	@Override
@@ -32,8 +35,8 @@ public class NettySentinelHandler extends ChannelDuplexHandler {
 			logger.info("[channelActive]" + ctx.channel());
 		}
 
-		SlaveOfCommand cmd = new SlaveOfCommand();
-		commandRequester.request(ctx.channel(), cmd);
+		commandRequester.request(ctx.channel(), initCmd);
+
 		super.channelActive(ctx);
 	}
 
@@ -54,7 +57,7 @@ public class NettySentinelHandler extends ChannelDuplexHandler {
 			logger.debug(String.format("0X%X, %s", msg.hashCode(), msg.getClass()));
 		}
 
-		commandRequester.handleResponse(ctx.channel(), (ByteBuf)msg);
+		commandRequester.handleResponse(ctx.channel(), (ByteBuf) msg);
 		super.channelRead(ctx, msg);
 	}
 
