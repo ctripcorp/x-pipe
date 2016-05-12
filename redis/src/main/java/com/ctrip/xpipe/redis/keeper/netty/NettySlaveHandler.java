@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.netty;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.protocal.Command;
+import com.ctrip.xpipe.redis.protocal.CommandRequester;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -25,10 +23,12 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 	
 	private RedisKeeperServer redisKeeperServer;
 	
-	private Map<Channel, Command> commands = new ConcurrentHashMap<Channel, Command>();
+	private CommandRequester commandRequester ;
 	
-	public NettySlaveHandler(RedisKeeperServer redisKeeperServer) {
+	public NettySlaveHandler(RedisKeeperServer redisKeeperServer, CommandRequester commandRequester) {
+		
 		this.redisKeeperServer = redisKeeperServer;
+		this.commandRequester = commandRequester;
 	}
 
 	@Override
@@ -40,9 +40,7 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 			logger.info("[channelActive]" + channel);
 		}
 		
-		Command command  = redisKeeperServer.slaveConnected(channel);
-		commands.put(channel, command);
-		command.request();
+		redisKeeperServer.slaveConnected(channel);
 		super.channelActive(ctx);
 	}
 
@@ -54,9 +52,7 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 			logger.info("[channelInactive]" + ctx.channel());
 		}
 		
-		Command command = commands.get(ctx.channel());
-		command.connectionClosed();
-		
+		commandRequester.connectionClosed(ctx.channel());
 		redisKeeperServer.slaveDisconntected(ctx.channel());
 		super.channelInactive(ctx);
 	}
@@ -64,8 +60,7 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		
-		Command command = commands.get(ctx.channel());
-		command.handleResponse((ByteBuf)msg);
+		commandRequester.handleResponse(ctx.channel(), (ByteBuf)msg);
 		super.channelRead(ctx, msg);
 	}
 	

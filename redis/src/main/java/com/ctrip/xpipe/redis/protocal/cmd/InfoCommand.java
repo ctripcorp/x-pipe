@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.protocal.cmd;
 
+
 import com.ctrip.xpipe.exception.XpipeException;
-import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 
 import io.netty.channel.Channel;
 
@@ -15,25 +15,16 @@ public class InfoCommand extends AbstractRedisCommand {
 	/**
 	 * @param channel
 	 */
-	public InfoCommand(Channel channel) {
-		super(channel);
-		// TODO Auto-generated constructor stub
+	public InfoCommand() {
 	}
 
 	@Override
 	public String getName() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	protected RESPONSE_STATE handleRedisResponse(RedisClientProtocol<?> redisClientProtocol) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	protected void doRequest() throws XpipeException {
+	protected void doRequest(Channel channel) throws XpipeException {
 		// TODO Auto-generated method stub
 
 	}

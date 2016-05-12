@@ -80,7 +80,7 @@ public class DefaultRdbFileListener implements RdbFileListener{
 		try {
 			redisClient.close();
 		} catch (IOException e1) {
-			logger.error("[exception]" + redisClient, e);
+			logger.error("[exception]" + redisClient, e1);
 		}
 	}
 }

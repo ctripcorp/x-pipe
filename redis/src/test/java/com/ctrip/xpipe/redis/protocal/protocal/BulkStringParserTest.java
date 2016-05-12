@@ -18,7 +18,7 @@ import io.netty.buffer.ByteBuf;
  *
  * 2016年3月28日 下午2:35:36
  */
-public class BulkStringTest extends AbstractRedisProtocolTest{
+public class BulkStringParserTest extends AbstractRedisProtocolTest{
 	
 	
 	private BulkStringParser bs = new BulkStringParser(new TestPayload());

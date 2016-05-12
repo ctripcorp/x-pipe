@@ -11,6 +11,7 @@ import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.protocal.Command;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -26,26 +27,24 @@ public abstract class AbstractCommand implements Command{
 	protected AbstractCommand(){
 	}
 	@Override
-	public void request() throws XpipeException {
-		doRequest();
+	public void request(Channel channel) throws XpipeException {
+		doRequest(channel);
 	}
 	
-	protected boolean hasResponse() {
-		return true;
-	}
-
-	protected abstract void doRequest() throws XpipeException;
+	protected abstract boolean hasResponse();
+	
+	protected abstract void doRequest(Channel channel) throws XpipeException;
 
 	@Override
-	public RESPONSE_STATE handleResponse(ByteBuf byteBuf) throws XpipeException {
+	public RESPONSE_STATE handleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException {
 		if(!hasResponse()){
 			return RESPONSE_STATE.SUCCESS;
 		}
 		
-		return doHandleResponse(byteBuf);
+		return doHandleResponse(channel, byteBuf);
 	}
 	
-	protected abstract RESPONSE_STATE doHandleResponse(ByteBuf byteBuf) throws XpipeException;
+	protected abstract RESPONSE_STATE doHandleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException;
 	
 	
 	@Override
@@ -54,4 +53,12 @@ public abstract class AbstractCommand implements Command{
 	}
 
 	protected abstract void doConnectionClosed();
+	
+	@Override
+	public void reset() {
+		doReset();
+	}
+	
+	protected abstract void doReset();
 }
+

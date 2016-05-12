@@ -14,7 +14,6 @@ import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser.BulkStringParserListener;
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
-import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -55,12 +54,11 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	}
 	
 	
-	public Psync(Channel channel, ReplicationStore replicationStore) {
-		this(channel, "?", -1L, replicationStore);
+	public Psync(ReplicationStore replicationStore) {
+		this("?", -1L, replicationStore);
 	}
 
-	public Psync(Channel channel, String masterRunid, long offset, ReplicationStore replicationStore) {
-		super(channel);
+	public Psync(String masterRunid, long offset, ReplicationStore replicationStore) {
 		this.masterRunidRequest = masterRunid;
 		this.offsetRequest = offset;
 		this.replicationStore = replicationStore;
@@ -79,9 +77,9 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 
 
 	@Override
-	protected void doRequest() {
+	protected void doRequest(Channel channel) {
 		RequestStringParser requestString = new RequestStringParser(getName(), masterRunidRequest, String.valueOf(offsetRequest));
-		writeAndFlush(requestString.format());
+		writeAndFlush(channel, requestString.format());
 	}
 
 
@@ -125,12 +123,17 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	}
 	
 	@Override
-	protected RESPONSE_STATE doHandleResponse(ByteBuf byteBuf) throws XpipeException {
+	protected RESPONSE_STATE doHandleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException {
 		
 		switch(psyncState){
 		
 			case PSYNC_COMMAND_WAITING_REPONSE:
-				return super.doHandleResponse(byteBuf);
+				Object response = super.readResponse(byteBuf);
+				if(response == null){
+					return null;
+				}
+				handleRedisResponse((String)response);
+				break;
 				
 			case READING_RDB:
 				if(rdbReader == null){
@@ -155,7 +158,7 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 				throw new IllegalStateException("unknown state:" + psyncState);
 		}
 		
-		return RESPONSE_STATE.CONTINUE;
+		return RESPONSE_STATE.GO_ON_READING_BUF;
 	}
 
 
@@ -195,11 +198,11 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 		}
 	}
 
-	@Override
-	protected RESPONSE_STATE handleRedisResponse(RedisClientProtocol<?> redisClietProtocol) {
+	protected void handleRedisResponse(String psync) {
 		
-		String psync = ((SimpleStringParser)redisClietProtocol).getPayload();
-		
+		if(logger.isInfoEnabled()){
+			logger.info("[handleResponse]" + psync);
+		}
 		String []split = splitSpace(psync);
 		if(split.length == 0){
 			throw new RedisRuntimeException("wrong reply:" + psync);
@@ -221,11 +224,15 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 		}else{
 			throw new RedisRuntimeException("unknown reply:" + psync);
 		}
-		return RESPONSE_STATE.CONTINUE;
 	}
 
 	@Override
 	public void onGotLengthFiled(long length) {
 		beginReadRdb(length);
+	}
+	
+	@Override
+	protected void doReset() {
+		psyncState = PSYNC_STATE.PSYNC_COMMAND_WAITING_REPONSE;
 	}
 }

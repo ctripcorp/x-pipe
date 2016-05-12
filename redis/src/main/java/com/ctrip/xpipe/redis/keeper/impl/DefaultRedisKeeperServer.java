@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
@@ -23,8 +24,9 @@ import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.protocal.Command;
+import com.ctrip.xpipe.redis.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.protocal.cmd.CompositeCommand;
+import com.ctrip.xpipe.redis.protocal.cmd.DefaultCommandRequester;
 import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.protocal.cmd.Replconf.ReplConfType;
@@ -70,18 +72,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private int retry = 3;
 	private int keeperPort;
 
-    EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-    EventLoopGroup workerGroup = new NioEventLoopGroup();
+    private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+    private EventLoopGroup workerGroup = new NioEventLoopGroup();
 
 	private Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>(); 
 	
 	private ScheduledExecutorService scheduled;
 	
+	private CommandRequester commandRequester;
+	
 	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, String keeperRunid, int keeperPort) {
-		this(masterEndpoint, replicationStore, keeperRunid, keeperPort, null, 3);
+		this(masterEndpoint, replicationStore, keeperRunid, keeperPort, null, null, 3);
 	}
 	
-	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, String keeperRunid, int keeperPort, ScheduledExecutorService scheduled, int retry) {
+	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, String keeperRunid, int keeperPort, ScheduledExecutorService scheduled, CommandRequester commandRequester, int retry) {
 
 		this.masterEndpoint = masterEndpoint;
 		this.replicationStore = replicationStore;
@@ -91,6 +95,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.scheduled = scheduled;
 		if(scheduled == null){
 			this.scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(masterEndpoint.toString()));
+		}
+		this.commandRequester = commandRequester;
+		if(commandRequester == null){
+			this.commandRequester = new DefaultCommandRequester(scheduled);
 		}
 	}
 
@@ -150,8 +158,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
              @Override
              public void initChannel(SocketChannel ch) throws Exception {
                  ChannelPipeline p = ch.pipeline();
+                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
                  p.addLast(new NettySimpleMessageHandler());
-                 p.addLast(new NettySlaveHandler(DefaultRedisKeeperServer.this));
+                 p.addLast(new NettySlaveHandler(DefaultRedisKeeperServer.this, commandRequester));
              }
          });
 
@@ -195,8 +204,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			@Override
 			public void run() {
 				try{
-					Command command = new Replconf(ReplConfType.ACK, String.valueOf(replicationStore.endOffset()), slave);
-					command.request();
+					Command command = new Replconf(ReplConfType.ACK, String.valueOf(replicationStore.endOffset()));
+					command.request(slave);
 				}catch(Throwable th){
 					logger.error("[run][send replack error]" + DefaultRedisKeeperServer.this, th);
 				}
@@ -208,9 +217,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		Psync psync = null;
 		if(replicationStore.getMasterRunid() == null){
-			psync = new Psync(slave, replicationStore);
+			psync = new Psync(replicationStore);
 		}else{
-			psync = new Psync(slave, replicationStore.getMasterRunid(), replicationStore.endOffset() + 1, replicationStore);
+			psync = new Psync(replicationStore.getMasterRunid(), replicationStore.endOffset() + 1, replicationStore);
 		}
 		psync.addPsyncObserver(this);
 		return psync;
@@ -218,7 +227,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private Command listeningPortCommand(){
 		
-		return new Replconf(ReplConfType.LISTENING_PORT, String.valueOf(keeperPort), slave);
+		return new Replconf(ReplConfType.LISTENING_PORT, String.valueOf(keeperPort));
 	}
 
 
@@ -233,10 +242,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public Command slaveConnected(Channel channel) {
+	public void slaveConnected(Channel channel) {
 		
 		this.slave = channel;
-		return new CompositeCommand(listeningPortCommand(), psyncCommand());
+		try {
+			commandRequester.request(channel, listeningPortCommand());
+			commandRequester.request(channel, psyncCommand());
+		} catch (XpipeException e) {
+			logger.error("[slaveConnected]" + channel, e);
+		}
 	}
 
 	@Override
@@ -324,5 +338,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			}
 		}
 		return slaves;
+	}
+
+	@Override
+	public CommandRequester getCommandRequester() {
+		return commandRequester;
 	}
 }

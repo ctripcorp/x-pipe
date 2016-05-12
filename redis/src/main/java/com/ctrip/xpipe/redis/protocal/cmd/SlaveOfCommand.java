@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.protocal.cmd;
 
 import com.ctrip.xpipe.exception.XpipeException;
-import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 
 import io.netty.channel.Channel;
@@ -16,8 +15,7 @@ public class SlaveOfCommand extends AbstractRedisCommand {
 	/**
 	 * @param channel
 	 */
-	public SlaveOfCommand(Channel channel) {
-		super(channel);
+	public SlaveOfCommand() {
 	}
 
 	@Override
@@ -26,16 +24,9 @@ public class SlaveOfCommand extends AbstractRedisCommand {
 	}
 
 	@Override
-	protected RESPONSE_STATE handleRedisResponse(RedisClientProtocol<?> redisClientProtocol) {
-		// TODO check response and write something to client
-//		String res = ((SimpleStringParser) redisClientProtocol).getPayload();
-		return RESPONSE_STATE.CONTINUE;
-	}
-
-	@Override
-	protected void doRequest() throws XpipeException {
+	protected void doRequest(Channel channel) throws XpipeException {
 		RequestStringParser requestString = new RequestStringParser(getName(), "no", "one");
-		writeAndFlush(requestString.format());
+		writeAndFlush(channel, requestString.format());
 	}
 
 }

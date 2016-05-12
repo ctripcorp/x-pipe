@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.protocal.cmd;
 
 
-import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 
 import io.netty.channel.Channel;
@@ -17,8 +15,7 @@ public class Replconf extends AbstractRedisCommand{
 	private ReplConfType replConfType;
 	private String argu;
 	
-	public Replconf(ReplConfType replConfType, String argu, Channel channel) {
-		super(channel);
+	public Replconf(ReplConfType replConfType, String argu) {
 		this.replConfType = replConfType;
 		this.argu = argu;
 	}
@@ -29,21 +26,6 @@ public class Replconf extends AbstractRedisCommand{
 	}
 
 	@Override
-	protected RESPONSE_STATE handleRedisResponse(RedisClientProtocol<?> redisClietProtocol){
-		
-		switch(replConfType){
-			case LISTENING_PORT:
-			case CAPA:
-				break;
-			case ACK:
-				throw new RedisRuntimeException("should not come here, replconf ack has no response!");
-			default:
-				throw new IllegalStateException("unkonwn repconf type:" + replConfType);
-		}
-		return RESPONSE_STATE.SUCCESS;
-	}
-	
-	@Override
 	protected boolean hasResponse() {
 		
 		if(replConfType == ReplConfType.ACK){
@@ -53,7 +35,7 @@ public class Replconf extends AbstractRedisCommand{
 	}
 
 	@Override
-	protected void doRequest(){
+	protected void doRequest(Channel channel){
 		
 		
 		boolean logRead = true, logWrite = true;
@@ -63,7 +45,7 @@ public class Replconf extends AbstractRedisCommand{
 		}
 		
 		RequestStringParser request = new RequestStringParser(logRead, logWrite, getName(), replConfType.toString(), argu);
-		writeAndFlush(request.format());
+		writeAndFlush(channel, request.format());
 	}
 
 	public enum ReplConfType{

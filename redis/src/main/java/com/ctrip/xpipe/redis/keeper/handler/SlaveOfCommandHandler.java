@@ -65,7 +65,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	 */
 	private void promoteSlaveToMaster(RedisKeeperServer keeper, String ip, int port) {
 		waitUntilSlaveSync(keeper, ip, port);
-		sendSlaveOfNoOneCommand(ip, port);
+		sendSlaveOfNoOneCommand(keeper, ip, port);
 		long masterOffset = queryMasterOffset(ip, port);
 		connectToNewMaster(ip, port, masterOffset);
 	}
@@ -98,10 +98,11 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	}
 
 	/**
+	 * @param keeper 
 	 * @param ip
 	 * @param port
 	 */
-	private void sendSlaveOfNoOneCommand(String ip, int port) {
+	private void sendSlaveOfNoOneCommand(final RedisKeeperServer keeper, String ip, int port) {
 		// TODO reuse event loop group
 		NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup();
 		Bootstrap b = new Bootstrap();
@@ -111,7 +112,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			      public void initChannel(SocketChannel ch) throws Exception {
 				      ChannelPipeline p = ch.pipeline();
 				      p.addLast(new NettySimpleMessageHandler());
-				      p.addLast(new NettySentinelHandler());
+				      p.addLast(new NettySentinelHandler(keeper.getCommandRequester()));
 			      }
 		      });
 

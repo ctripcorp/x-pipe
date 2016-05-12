@@ -27,13 +27,12 @@ public class ByteArrayWritableByteChannel implements WritableByteChannel{
 	@Override
 	public int write(ByteBuffer src) throws IOException {
 		
-		int offset = src.arrayOffset();
-		int length = src.remaining();
-		int position = src.position();
-		int limit = src.limit();
-		baous.write(src.array(), offset + position, offset + limit);
-		src.position(limit);
-		return length;
+		int remain = src.remaining();
+		for(int i=0; i < remain ; i++){
+			baous.write(src.get());
+		}
+		
+		return remain;
 	}
 	
 	public byte []getResult(){

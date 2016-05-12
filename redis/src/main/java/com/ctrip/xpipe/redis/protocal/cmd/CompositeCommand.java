@@ -8,6 +8,7 @@ import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.protocal.Command;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -35,26 +36,33 @@ public class CompositeCommand extends AbstractCommand{
 
 
 	@Override
-	protected RESPONSE_STATE doHandleResponse(ByteBuf byteBuf) throws XpipeException {
+	protected RESPONSE_STATE doHandleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException {
 		
-		RESPONSE_STATE responseState = currentCommand.handleResponse(byteBuf);
+		RESPONSE_STATE responseState = currentCommand.handleResponse(channel, byteBuf);
 		
+		RESPONSE_STATE retState = responseState;
 		switch(responseState){
 		
 			case FAIL_CONTINUE:
 			case SUCCESS:
-				requestNextCommand();
+				Command command = requestNextCommand(channel);
+				if(command == null){
+					retState = RESPONSE_STATE.SUCCESS;
+				}else{
+					retState = RESPONSE_STATE.GO_ON_READING_BUF;
+				}
 				break;
-			case CONTINUE:
+			case GO_ON_READING_BUF:
 				break;
 			case FAIL_STOP:
+				retState = RESPONSE_STATE.FAIL_CONTINUE;
 				break;
 		}
 		
-		return responseState;
+		return retState;
 	}
 	
-	private void requestNextCommand() throws XpipeException {
+	private Command requestNextCommand(Channel channel) throws XpipeException {
 		
 		int index = currentIndex.incrementAndGet();
 		
@@ -63,21 +71,32 @@ public class CompositeCommand extends AbstractCommand{
 			if(logger.isInfoEnabled()){
 				logger.info("[requestNextCommand][game over]");
 			}
-			return;
+			return null;
 		}
 		
 		currentCommand = commands.get(index);
-		currentCommand.request();
+		currentCommand.request(channel);
+		return currentCommand;
 	}
 
 
 	@Override
-	protected void doRequest() throws XpipeException {
-		requestNextCommand();
+	protected void doRequest(Channel channel) throws XpipeException {
+		requestNextCommand(channel);
 	}
 
 	@Override
 	protected void doConnectionClosed() {
 		currentCommand.connectionClosed();
+	}
+
+	@Override
+	protected boolean hasResponse() {
+		return true;
+	}
+
+	@Override
+	protected void doReset() {
+		currentIndex.set(-1);
 	}
 }

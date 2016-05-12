@@ -102,16 +102,14 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 					RedisClientProtocol<?> result = currentParser.read(byteBuf);
 					if(result == null){
 						return null;
-					}else{
-						resultArray[currentIndex] = result.getPayload();
-						currentParser = null;
-						currentIndex++;
-						if(currentIndex == arraySize){
-							return new ArrayParser(resultArray);
-						}
 					}
+					resultArray[currentIndex] = result.getPayload();
+					currentParser = null;
+					currentIndex++;
 				}
-					
+				if(currentIndex == arraySize){
+					return new ArrayParser(resultArray);
+				}
 				break;
 			default:
 				throw new IllegalStateException("unknown state:" + arrayState);

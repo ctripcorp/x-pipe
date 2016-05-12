@@ -72,6 +72,24 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 	 */
 	protected byte[] readTilCRLF(ByteBuf byteBuf){
 		
+		switch(crlfState){
+			case CONTENT:
+			case CR:
+				ByteArrayOutputStream result = _readTilCRLF(byteBuf);
+				
+				if(result == null){
+					break;
+				}
+			case CRLF:
+				return baous.toByteArray();
+				
+		}
+		return null;
+	}
+
+	
+	private ByteArrayOutputStream _readTilCRLF(ByteBuf byteBuf) {
+		
 		int readable = byteBuf.readableBytes();
 		for(int i=0; i < readable ;i++){
 			
@@ -92,14 +110,13 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 			}
 			
 			if(crlfState == CRLF_STATE.CRLF){
-				return baous.toByteArray();
+				return baous;
 			}
 		}
-		
 		return null;
+		
 	}
 
-	
 	protected  String readTilCRLFAsString(ByteBuf byteBuf, Charset charset){
 		
 		byte []bytes = readTilCRLF(byteBuf);

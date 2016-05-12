@@ -41,7 +41,7 @@ public class SimpleStringParser extends AbstractRedisClientProtocol<String>{
 			beginIndex = 1;
 		}
 		
-		if(data.charAt(dataLength - 2) == '\r' && data.charAt(dataLength - 2) == '\r'){
+		if(data.charAt(dataLength - 2) == '\r' && data.charAt(dataLength - 1) == '\n'){
 			endIndex -= 2;
 		}
 		return new SimpleStringParser(data.substring(beginIndex, endIndex));

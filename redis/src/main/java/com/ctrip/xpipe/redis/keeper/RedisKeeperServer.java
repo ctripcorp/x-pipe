@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-import com.ctrip.xpipe.redis.protocal.Command;
+import com.ctrip.xpipe.redis.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.protocal.PsyncObserver;
 
 import io.netty.channel.Channel;
@@ -20,7 +20,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 
 	long getEndReploffset();
 
-	Command slaveConnected(Channel channel);
+	void slaveConnected(Channel channel);
 	
 	void slaveDisconntected(Channel channel);
 	
@@ -37,4 +37,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	Set<RedisClient> allClients();
 	
 	Map<Channel, RedisClient> slaves();
+	
+	CommandRequester getCommandRequester();
+	
 }

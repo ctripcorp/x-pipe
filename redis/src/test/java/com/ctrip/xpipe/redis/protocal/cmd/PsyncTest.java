@@ -37,23 +37,25 @@ public class PsyncTest extends AbstractRedisTest{
 	public void beforePsyncTest() throws IOException{
 		
 		replicationStore = createReplicationStore();
-		psync = new Psync(null, replicationStore);
+		psync = new Psync(replicationStore);
 	}
 
 	@Test
-	public void testPsyncPartialeRight() throws XpipeException{
+	public void testPsyncPartialeRight() throws XpipeException, IOException, InterruptedException{
 
 		isPartial = true;
 		String []data = new String[]{
 				"+" + Psync.PARTIAL_SYNC + "\r\n",
 				commandContent
 		};
-		
+		//create store
+		replicationStore.beginRdb(masterId, masterOffset, 12345);
+		replicationStore.endRdb();
 		runData(data);
 	}
 
 	@Test
-	public void testPsyncFullRight() throws XpipeException{
+	public void testPsyncFullRight() throws XpipeException, IOException, InterruptedException{
 		
 		String []data = new String[]{
 				"+" + Psync.FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n",
@@ -66,7 +68,7 @@ public class PsyncTest extends AbstractRedisTest{
 	}
 
 	@Test
-	public void testPsyncFullWithRdbCrlf() throws XpipeException{
+	public void testPsyncFullWithRdbCrlf() throws XpipeException, IOException, InterruptedException{
 		
 		String []data = new String[]{
 				"+" + Psync.FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n",
@@ -79,7 +81,7 @@ public class PsyncTest extends AbstractRedisTest{
 	}
 
 	@Test
-	public void testPsyncFullWithSplit() throws XpipeException{
+	public void testPsyncFullWithSplit() throws XpipeException, IOException, InterruptedException{
 		
 		String []data = new String[]{
 				"+" + Psync.FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n",
@@ -94,7 +96,7 @@ public class PsyncTest extends AbstractRedisTest{
 		runData(data);
 	}
 
-	private void runData(String []data) throws XpipeException {
+	private void runData(String []data) throws XpipeException, IOException, InterruptedException {
 		
 		ByteBuf []byteBufs = new ByteBuf[data.length];
 		
@@ -107,23 +109,23 @@ public class PsyncTest extends AbstractRedisTest{
 		}
 		
 		for(ByteBuf byteBuf : byteBufs){
-			psync.handleResponse(byteBuf);
+			psync.handleResponse(null, byteBuf);
 		}
 
 		assertResult();
 		
 	}
 
-	private void assertResult() {
+	private void assertResult() throws IOException, InterruptedException {
 		
-		String rdbResult = readFileAsString(getRdbFile());
-		String commandResult = readFileAsString(getCommandFile());
+		String rdbResult = readRdbFileTilEnd(replicationStore);
+		String commandResult = readCommandFileTilEnd(replicationStore);
 		
 		if(!isPartial){
 			Assert.assertEquals(rdbContent, rdbResult);
 			System.out.println(commandContent);
 		}else{
-			Assert.assertEquals(null, rdbResult);
+			Assert.assertTrue(rdbResult == null || rdbResult.length() == 0);
 		}
 		System.out.println(commandResult);
 		Assert.assertEquals(commandContent, commandResult);

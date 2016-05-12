@@ -1,16 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.netty;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.ctrip.xpipe.redis.protocal.Command;
+import com.ctrip.xpipe.redis.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.protocal.cmd.SlaveOfCommand;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -23,7 +19,11 @@ public class NettySentinelHandler extends ChannelDuplexHandler {
 
 	private static Logger logger = LogManager.getLogger(NettySentinelHandler.class);
 
-	private Map<Channel, Command> commands = new ConcurrentHashMap<Channel, Command>();
+	private CommandRequester commandRequester;
+	
+	public NettySentinelHandler(CommandRequester commandRequester) {
+		this.commandRequester = commandRequester;
+	}
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -32,10 +32,8 @@ public class NettySentinelHandler extends ChannelDuplexHandler {
 			logger.info("[channelActive]" + ctx.channel());
 		}
 
-		SlaveOfCommand cmd = new SlaveOfCommand(ctx.channel());
-		commands.put(ctx.channel(), cmd);
-		cmd.request();
-
+		SlaveOfCommand cmd = new SlaveOfCommand();
+		commandRequester.request(ctx.channel(), cmd);
 		super.channelActive(ctx);
 	}
 
@@ -45,9 +43,7 @@ public class NettySentinelHandler extends ChannelDuplexHandler {
 		if (logger.isInfoEnabled()) {
 			logger.info("[channelInactive]" + ctx.channel());
 		}
-
-		commands.remove(ctx.channel());
-
+		commandRequester.connectionClosed(ctx.channel());
 		super.channelInactive(ctx);
 	}
 
@@ -58,9 +54,7 @@ public class NettySentinelHandler extends ChannelDuplexHandler {
 			logger.debug(String.format("0X%X, %s", msg.hashCode(), msg.getClass()));
 		}
 
-		Command command = commands.get(ctx.channel());
-		command.handleResponse((ByteBuf) msg);
-
+		commandRequester.handleResponse(ctx.channel(), (ByteBuf)msg);
 		super.channelRead(ctx, msg);
 	}
 

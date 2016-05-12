@@ -3,8 +3,10 @@ package com.ctrip.xpipe.redis.protocal.cmd;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.protocal.protocal.IntegerParser;
@@ -18,10 +20,8 @@ import io.netty.channel.Channel;
  *
  * 2016年3月24日 下午12:04:13
  */
-public abstract class AbstractRedisCommand extends AbstractCommand {
+public abstract class AbstractRedisCommand extends AbstractRequestResponseCommand {
 	
-	
-	private Channel channel;
 	
 	public static enum COMMAND_RESPONSE_STATE{
 		READING_SIGN,
@@ -34,8 +34,7 @@ public abstract class AbstractRedisCommand extends AbstractCommand {
 	
 	private RedisClientProtocol<?> redisClientProtocol;
 	
-	protected AbstractRedisCommand(Channel channel) {
-		this.channel = channel;
+	protected AbstractRedisCommand() {
 	}
 	protected String[] splitSpace(String buff) {
 		
@@ -43,7 +42,7 @@ public abstract class AbstractRedisCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected RESPONSE_STATE doHandleResponse(ByteBuf byteBuf) throws XpipeException{
+	protected Object readResponse(ByteBuf byteBuf) throws XpipeException{
 
 		switch(commandResponseState){
 		
@@ -61,7 +60,8 @@ public abstract class AbstractRedisCommand extends AbstractCommand {
 							redisClientProtocol = new RedisErrorParser();
 							break;
 						case RedisClientProtocol.ASTERISK_BYTE:
-							throw new UnsupportedOperationException("array not supported yet!");
+							redisClientProtocol = new ArrayParser();
+							break;
 						case RedisClientProtocol.DOLLAR_BYTE:
 							redisClientProtocol = new BulkStringParser(getBulkStringPayload());
 							break;
@@ -87,26 +87,28 @@ public abstract class AbstractRedisCommand extends AbstractCommand {
 			case READING_CONTENT:
 				RedisClientProtocol<?> result = redisClientProtocol.read(byteBuf);
 				if(result != null){
-					return handleRedisResponse(result);
+					return result.getPayload();
 				}
 				break;
 			default:
 				break;
 		}
 		
-		return RESPONSE_STATE.CONTINUE;
+		return null;
 	}
 	
 	protected InOutPayload getBulkStringPayload() {
-		return null;
+		return new ByteArrayOutputStreamPayload();
 	}
 
-	protected abstract RESPONSE_STATE handleRedisResponse(RedisClientProtocol<?> redisClientProtocol);
-
-
-
-	protected void writeAndFlush(ByteBuf byteBuf) {
+	protected void writeAndFlush(Channel channel, ByteBuf byteBuf) {
 		channel.writeAndFlush(byteBuf);
+	}
+	
+	
+	@Override
+	protected void doReset() {
+		commandResponseState = COMMAND_RESPONSE_STATE.READING_SIGN;
 	}
 	
 	@Override
