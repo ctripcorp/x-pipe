@@ -3,11 +3,17 @@ package com.ctrip.xpipe.redis.keeper.handler;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.netty.NettySentinelHandler;
+import com.ctrip.xpipe.redis.keeper.netty.NettyBaseClientHandler;
+import com.ctrip.xpipe.redis.protocal.Command;
+import com.ctrip.xpipe.redis.protocal.CommandRequester;
+import com.ctrip.xpipe.redis.protocal.RequestResponseCommandListener;
+import com.ctrip.xpipe.redis.protocal.cmd.InfoCommand;
+import com.ctrip.xpipe.redis.protocal.cmd.SlaveOfCommand;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.utils.IpUtils;
 
@@ -44,11 +50,12 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			String ip = args[0];
 			int port = Integer.parseInt(args[1]); // already validated
 
-			if (isValidSlave(redisClient.getRedisKeeperServer(), ip, port)) {
+			RedisClient slave = findSlave(redisClient.getRedisKeeperServer(), ip, port);
+			if (slave != null) {
 				String msg = String.format("promote %s:%s to master", ip, port);
 				redisClient.sendMessage(new BulkStringParser(msg).format());
 
-				promoteSlaveToMaster(redisClient.getRedisKeeperServer(), ip, port);
+				promoteSlaveToMaster(slave, ip, port);
 			} else {
 				String msg = String.format("%s:%s is not a connected slave", ip, port);
 				redisClient.sendMessage(new BulkStringParser(msg).format());
@@ -63,11 +70,35 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	 * @param ip
 	 * @param port
 	 */
-	private void promoteSlaveToMaster(RedisKeeperServer keeper, String ip, int port) {
-		waitUntilSlaveSync(keeper, ip, port);
-		sendSlaveOfNoOneCommand(keeper, ip, port);
-		long masterOffset = queryMasterOffset(ip, port);
-		connectToNewMaster(ip, port, masterOffset);
+	private void promoteSlaveToMaster(RedisClient redisClient, String ip, int port) {
+		waitUntilSlaveSync(redisClient, ip, port);
+		final RedisKeeperServer keeper = redisClient.getRedisKeeperServer();
+		SlaveOfCommand slaveOfCmd = new SlaveOfCommand();
+		slaveOfCmd.setCommandListener(new RequestResponseCommandListener() {
+
+			@Override
+			public void onComplete(Channel channel, Object data, Exception e) {
+				if (e == null) {
+					System.out.println(data);
+					InfoCommand infoCmd = new InfoCommand();
+					infoCmd.setCommandListener(new RequestResponseCommandListener() {
+
+						@Override
+						public void onComplete(Channel channel, Object data, Exception e) {
+							System.out.println(data);
+						}
+					});
+
+					keeper.getCommandRequester().schedule(TimeUnit.SECONDS, 3, channel, infoCmd);
+				} else {
+					// TODO
+					logger.error(e);
+				}
+			}
+		});
+
+		sendCommandToRedis(ip, port, keeper.getCommandRequester(), slaveOfCmd);
+		// connectToNewMaster(ip, port, masterOffset);
 	}
 
 	/**
@@ -75,35 +106,41 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	 * @param port
 	 * @param masterOffset
 	 */
-	private void connectToNewMaster(String ip, int port, long masterOffset) {
+	@SuppressWarnings("unused")
+   private void connectToNewMaster(String ip, int port, long masterOffset) {
 		// TODO Auto-generated method stub
 
-	}
-
-	/**
-	 * @param ip
-	 * @param port
-	 * @return
-	 */
-	private long queryMasterOffset(String ip, int port) {
-		// TODO Auto-generated method stub
-		return 0;
 	}
 
 	/**
 	 * @param keeper
 	 * 
 	 */
-	private void waitUntilSlaveSync(RedisKeeperServer keeper, String ip, int port) {
+	private void waitUntilSlaveSync(RedisClient redisClient, String ip, int port) {
+		Long slaveCmdOffset = redisClient.getAck();
+		long masterCmdOffset = redisClient.getRedisKeeperServer().getReplicationStore().endOffset();
+
+		while (slaveCmdOffset == null || slaveCmdOffset != masterCmdOffset) {
+			if (logger.isInfoEnabled()) {
+				logger.info("wait for slave to sync with keeper before promote to master");
+			}
+			// TODO timeout
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+			}
+		}
 	}
 
 	/**
-	 * @param keeper 
+	 * @param keeper
 	 * @param ip
 	 * @param port
+	 * @param commandRequester
 	 */
-	private void sendSlaveOfNoOneCommand(final RedisKeeperServer keeper, String ip, int port) {
+	private void sendCommandToRedis(String ip, int port, final CommandRequester cmdRequester, final Command cmd) {
 		// TODO reuse event loop group
+		// TODO close channel, use channel manager?
 		NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup();
 		Bootstrap b = new Bootstrap();
 		b.group(eventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
@@ -112,7 +149,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			      public void initChannel(SocketChannel ch) throws Exception {
 				      ChannelPipeline p = ch.pipeline();
 				      p.addLast(new NettySimpleMessageHandler());
-				      p.addLast(new NettySentinelHandler(keeper.getCommandRequester()));
+				      p.addLast(new NettyBaseClientHandler(cmdRequester, cmd));
 			      }
 		      });
 
@@ -121,7 +158,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			ChannelFuture f = b.connect(ip, port);
 			f.sync();
 		} catch (Throwable th) {
-			logger.error("[connectSlave][fail]" + port, th);
+			logger.error("[connectRedis][fail]" + port, th);
 		}
 	}
 
@@ -131,7 +168,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	 * @param actualPort
 	 * @return
 	 */
-	private boolean isValidSlave(RedisKeeperServer keeper, String actualIp, int actualPort) {
+	private RedisClient findSlave(RedisKeeperServer keeper, String actualIp, int actualPort) {
 		Map<Channel, RedisClient> slaves = keeper.slaves();
 		for (Entry<Channel, RedisClient> entry : slaves.entrySet()) {
 			if (entry.getKey().remoteAddress() instanceof InetSocketAddress) {
@@ -140,13 +177,13 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 				int expectedPort = entry.getValue().getSlaveListeningPort();
 
 				if (expectedIp.equals(actualIp) && expectedPort == actualPort) {
-					return true;
+					return entry.getValue();
 				}
 			} else {
 				// TODO
 			}
 		}
-		return false;
+		return null;
 	}
 
 	/**
