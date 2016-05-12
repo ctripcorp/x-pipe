@@ -39,6 +39,11 @@ public class DefaultCommandRequester implements CommandRequester{
 	@Override
 	public void request(Channel channel, Command command) throws XpipeException {
 
+		if(!channel.isActive()){
+			logger.warn("[request][channel inactive, discard command]" + channel + "," + command);
+			return;
+		}
+		
 		ChannelCommandRequester channelCommandRequester = getOrCreate(channel);
 		channelCommandRequester.request(command);
 	}

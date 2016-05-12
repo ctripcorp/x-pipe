@@ -97,6 +97,10 @@ public class CompositeCommand extends AbstractCommand{
 
 	@Override
 	protected void doReset() {
+		
 		currentIndex.set(-1);
+		for(Command command : commands){
+			command.reset();
+		}
 	}
 }
