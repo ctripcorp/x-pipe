@@ -22,6 +22,7 @@
 		<log4j.version>2.5</log4j.version>
 		<commons-io.version>2.4</commons-io.version>
 		<maven-jar-plugin.version>2.6</maven-jar-plugin.version>
+		<coveralls-maven-plugin.version>4.1.0</coveralls-maven-plugin.version>
 	</properties>
 
 	<modules>
@@ -120,4 +121,40 @@
 		</dependency>
 	</dependencies>
 
+	<profiles>
+		<profile>
+			<id>travis</id>
+			<activation>
+				<property>
+					<name>env.TRAVIS</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<phase>generate-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<tasks>
+										<echo></echo>
+									</tasks>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.eluder.coveralls</groupId>
+						<artifactId>coveralls-maven-plugin</artifactId>
+						<version>${coveralls-maven-plugin.version}</version>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

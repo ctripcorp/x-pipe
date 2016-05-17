@@ -9,15 +9,11 @@ notification:
     on_failure: always
 
 before_script:
-  - echo "MAVEN_OPTS='-Xmx2g -XX:MaxPermSize=512m'" > ~/.mavenrc
   
 before_install:
-  - pip install --user codecov
 
 after_success:
-  - mvn clean cobertura:cobertura coveralls:report
-  - mvn clean site
-  - codecov
+  - mvn clean
 
 branches:
   only:
