@@ -23,6 +23,7 @@
 		<commons-io.version>2.4</commons-io.version>
 		<maven-jar-plugin.version>2.6</maven-jar-plugin.version>
 		<coveralls-maven-plugin.version>4.1.0</coveralls-maven-plugin.version>
+		<cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
 	</properties>
 
 	<modules>
@@ -142,11 +143,21 @@
 								</goals>
 								<configuration>
 									<tasks>
-										<echo></echo>
+										<echo>haha running...</echo>
 									</tasks>
 								</configuration>
 							</execution>
 						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>cobertura-maven-plugin</artifactId>
+						<version>${cobertura-maven-plugin.version.version}</version>
+						<configuration>
+							<format>xml</format>
+							<maxmem>256m</maxmem>
+							<aggregate>true</aggregate>
+						</configuration>
 					</plugin>
 					<plugin>
 						<groupId>org.eluder.coveralls</groupId>
