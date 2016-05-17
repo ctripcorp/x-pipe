@@ -8,31 +8,18 @@ import io.netty.channel.Channel;
 /**
  * @author marsqing
  *
- *         May 9, 2016 5:42:01 PM
+ *         May 16, 2016 6:46:15 PM
  */
-public class InfoCommand extends AbstractRedisCommand {
-
-	private String args;
-
-	/**
-	 * @param channel
-	 */
-	public InfoCommand() {
-		this("");
-	}
-
-	public InfoCommand(String args) {
-		this.args = args;
-	}
+public class Fsync extends AbstractRedisCommand {
 
 	@Override
 	public String getName() {
-		return "info";
+		return "fsync";
 	}
 
 	@Override
 	protected void doRequest(Channel channel) throws XpipeException {
-		RequestStringParser requestString = new RequestStringParser(getName(), args);
+		RequestStringParser requestString = new RequestStringParser(getName());
 		writeAndFlush(channel, requestString.format());
 	}
 

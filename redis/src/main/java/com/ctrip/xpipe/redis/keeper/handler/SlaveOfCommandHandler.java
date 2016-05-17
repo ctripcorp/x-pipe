@@ -1,19 +1,27 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-
+import java.io.IOException;
+import java.io.StringReader;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.commons.io.IOUtils;
 
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.netty.NettyBaseClientHandler;
 import com.ctrip.xpipe.redis.protocal.Command;
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.protocal.RequestResponseCommandListener;
+import com.ctrip.xpipe.redis.protocal.cmd.Fsync;
 import com.ctrip.xpipe.redis.protocal.cmd.InfoCommand;
+import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.cmd.SlaveOfCommand;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.utils.IpUtils;
@@ -48,15 +56,19 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	@Override
 	protected void doHandle(String[] args, RedisClient redisClient) {
 		if (validateArgs(args)) {
-			String ip = args[0];
-			int port = Integer.parseInt(args[1]); // already validated
+			final String ip = args[0];
+			final int port = Integer.parseInt(args[1]); // already validated
 
-			RedisClient slave = findSlave(redisClient.getRedisKeeperServer(), ip, port);
+			final RedisClient slave = findSlave(redisClient.getRedisKeeperServer(), ip, port);
 			if (slave != null) {
 				String msg = String.format("promote %s:%s to master", ip, port);
 				redisClient.sendMessage(new BulkStringParser(msg).format());
 
-				promoteSlaveToMaster(slave, ip, port);
+				new Thread() {
+					public void run() {
+						promoteSlaveToMaster(slave, ip, port);
+					}
+				}.start();
 			} else {
 				String msg = String.format("%s:%s is not a connected slave", ip, port);
 				redisClient.sendMessage(new BulkStringParser(msg).format());
@@ -71,46 +83,90 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	 * @param ip
 	 * @param port
 	 */
-	private void promoteSlaveToMaster(RedisClient redisClient, String ip, int port) {
+	private void promoteSlaveToMaster(RedisClient redisClient, final String ip, final int port) {
 		waitUntilSlaveSync(redisClient, ip, port);
 		final RedisKeeperServer keeper = redisClient.getRedisKeeperServer();
-		SlaveOfCommand slaveOfCmd = new SlaveOfCommand();
-		slaveOfCmd.setCommandListener(new RequestResponseCommandListener() {
+
+		logger.info("fsync start ");
+		Fsync fsyncCmd = new Fsync();
+		fsyncCmd.setCommandListener(new RequestResponseCommandListener() {
 
 			@Override
 			public void onComplete(Channel channel, Object data, Exception e) {
-				if (e == null) {
-					System.out.println(data);
-					InfoCommand infoCmd = new InfoCommand();
-					infoCmd.setCommandListener(new RequestResponseCommandListener() {
+				System.out.println("fsync done " + data);
+				SlaveOfCommand slaveOfCmd = new SlaveOfCommand();
+				slaveOfCmd.setCommandListener(new RequestResponseCommandListener() {
 
-						@Override
-						public void onComplete(Channel channel, Object data, Exception e) {
-							System.out.println(data);
+					@Override
+					public void onComplete(Channel channel, Object data, Exception e) {
+						if (e == null) {
+							InfoCommand infoServerCmd = new InfoCommand("server");
+							infoServerCmd.setCommandListener(new RequestResponseCommandListener() {
+
+								@Override
+								public void onComplete(Channel channel, Object data, Exception e) {
+									String res = new String(((ByteArrayOutputStreamPayload) data).getBytes());
+									List<String> lines = null;
+									try {
+										lines = IOUtils.readLines(new StringReader(res));
+									} catch (IOException e1) {
+										// TODO
+									}
+
+									final AtomicReference<String> masterId = new AtomicReference<String>();
+									for (String line : lines) {
+										if (line.startsWith("run_id:")) {
+											masterId.set(line.substring("run_id:".length()));
+										}
+									}
+
+									InfoCommand infoLastMasterCmd = new InfoCommand("lastmaster");
+									infoLastMasterCmd.setCommandListener(new RequestResponseCommandListener() {
+
+										@Override
+										public void onComplete(Channel channel, Object data, Exception e) {
+											String res = new String(((ByteArrayOutputStreamPayload) data).getBytes());
+											long offset = 0;
+											try {
+												String[] parts = res.split("\\s");
+												offset = Long.parseLong(parts[2]) + 1;
+												System.out.println(String.format("psync to %s %s", masterId.get(), offset));
+												connectToNewMaster(ip, port, masterId.get(), offset, keeper);
+
+											} catch (Exception ee) {
+												e.printStackTrace();
+											}
+										}
+									});
+
+									keeper.getCommandRequester().schedule(TimeUnit.SECONDS, 3, channel, infoLastMasterCmd);
+								}
+							});
+							sendCommandToRedis(ip, port, keeper.getCommandRequester(), infoServerCmd);
+						} else {
+							// TODO
+							logger.error(e);
 						}
-					});
+					}
+				});
 
-					keeper.getCommandRequester().schedule(TimeUnit.SECONDS, 3, channel, infoCmd);
-				} else {
-					// TODO
-					logger.error(e);
-				}
+				sendCommandToRedis(ip, port, keeper.getCommandRequester(), slaveOfCmd);
 			}
 		});
+		sendCommandToRedis(ip, port, keeper.getCommandRequester(), fsyncCmd);
 
-		sendCommandToRedis(ip, port, keeper.getCommandRequester(), slaveOfCmd);
-		// connectToNewMaster(ip, port, masterOffset);
 	}
 
 	/**
 	 * @param ip
 	 * @param port
 	 * @param masterOffset
+	 * @param keeper
 	 */
-	@SuppressWarnings("unused")
-   private void connectToNewMaster(String ip, int port, long masterOffset) {
-		// TODO Auto-generated method stub
-
+	private void connectToNewMaster(String ip, int port, String masterRunid, long masterOffset, RedisKeeperServer keeper) {
+		logger.info(String.format("connect to new master %s with offset %s", masterRunid, masterOffset));
+		sendCommandToRedis(ip, port, keeper.getCommandRequester(),
+		      new Psync(masterRunid, masterOffset, keeper.getReplicationStore()));
 	}
 
 	/**
