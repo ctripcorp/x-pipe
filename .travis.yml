@@ -1,0 +1,38 @@
+language: java
+jdk:
+  - oraclejdk7
+notification:
+  email:
+    recipients:
+      -  wcmeng@ctrip.com
+    on_success: always
+    on_failure: always
+
+before_script:
+  - echo "MAVEN_OPTS='-Xmx2g -XX:MaxPermSize=512m'" > ~/.mavenrc
+  
+before_install:
+  - pip install --user codecov
+
+after_success:
+  - mvn clean cobertura:cobertura coveralls:report
+  - mvn clean site
+  - codecov
+
+branches:
+  only:
+    - master
+    
+env:
+  global:
+   - "MAVEN_OPTS=-Xmx2g"
+
+addons:
+  coverity_scan:
+    project:
+      name: "ctripcorp/x-pipe"
+      description: "Build submitted via Travis CI"
+    notification_email:  wcmeng@ctrip.com
+    build_command_prepend: "mvn clean"
+    build_command:   "mvn -DskipTests=true compile"
+    branch_pattern: master
