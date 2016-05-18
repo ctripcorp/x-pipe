@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -20,9 +21,9 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 
 	long getEndReploffset();
 
-	void slaveConnected(Channel channel);
+	void masterConnected(Channel channel);
 	
-	void slaveDisconntected(Channel channel);
+	void masterDisconntected(Channel channel);
 	
 	RedisClient clientConnected(Channel channel);
 	
@@ -41,4 +42,16 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	CommandRequester getCommandRequester();
 	
 	ReplicationStore getReplicationStore();
+	
+	void setKeeperServerState(KEEPER_STATE keeperState);
+	
+	void setKeeperServerState(KEEPER_STATE keeperState, Object info);
+	
+	public static enum KEEPER_STATE{
+		
+		NORMAL,
+		BEGIN_PROMOTE_SLAVE,//promote slave to master. 1.should not receive commands, 2. disconnect with master
+		COMMANDS_SEND_FINISH,
+		SLAVE_PROMTED
+	}
 }

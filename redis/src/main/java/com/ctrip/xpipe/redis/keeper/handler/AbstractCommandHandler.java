@@ -17,9 +17,13 @@ public abstract class AbstractCommandHandler implements CommandHandler{
 
 	@Override
 	public void handle(String[] args, RedisClient redisClient) {
-		
 		doHandle(args, redisClient);
 	}
 
 	protected abstract void doHandle(String[] args, RedisClient redisClient);
+	
+	@Override
+	public boolean isLog(String[] args) {
+		return true;
+	}
 }

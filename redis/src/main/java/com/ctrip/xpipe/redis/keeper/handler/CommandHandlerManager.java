@@ -62,6 +62,9 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 		
 		String[] newArgs = new String[args.length - 1];
 		System.arraycopy(args, 1, newArgs, 0, args.length - 1);
+		if(handler.isLog(newArgs)){
+			logger.info("[doHandle]{}", StringUtil.join(" ", args));
+		}
 		handler.handle(newArgs, redisClient);
 	}
 

@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
@@ -26,6 +28,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 	private final static Logger logger = LogManager.getLogger(DefaultReplicationStore.class);
 
 	private static final String MASTER_RUNID = "master.runid";
+	
+	private static final String MASTER_ADDRESS = "master.address";
 
 	private static final String BEGIN_OFFSET = "begin.offset";
 
@@ -42,6 +46,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 	private ConcurrentMap<CommandsListener, CommandNotifier> cmdListeners = new ConcurrentHashMap<>();
 
 	private String masterRunid;
+	
+	private Endpoint masterEndpoint;
 
 	private long beginOffset;
 
@@ -91,6 +97,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		Properties props = new Properties();
 		props.setProperty(MASTER_RUNID, masterRunid);
 		props.setProperty(BEGIN_OFFSET, Long.toString(beginOffset));
+		props.setProperty(MASTER_ADDRESS, masterEndpoint.toString());
 
 		// TODO file naming
 		try (FileWriter metaWriter = new FileWriter(new File(baseDir, META_FILE))) {
@@ -107,6 +114,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 				masterRunid = props.getProperty(MASTER_RUNID);
 				beginOffset = Long.parseLong(props.getProperty(BEGIN_OFFSET));
+				masterEndpoint = new DefaultEndPoint(props.getProperty(MASTER_ADDRESS));
 
 				File rdbFile = rdbFileOf(masterRunid);
 				if (rdbFile.isFile()) {
@@ -242,6 +250,34 @@ public class DefaultReplicationStore implements ReplicationStore {
 	 */
 	private boolean isRdbWriting(Status status) {
 		return status != Status.Fail && status != Status.Success;
+	}
+
+	@Override
+	public void masterChanged(Endpoint newMasterEndpoint, String newMasterRunid, long offsetDelta) {
+		
+		this.setMasterAddress(newMasterEndpoint);
+		this.masterRunid = newMasterRunid;
+		this.beginOffset += offsetDelta;
+		this.endOffset   += offsetDelta;
+		
+		logger.info("[masterChanged]offsetDelta:{}, masterEndpoint:{}, masterRunid:{}, beginOffset:{}, endOffset:{}",
+				offsetDelta,
+				this.masterEndpoint, this.masterRunid, this.beginOffset, this.endOffset);
+		try {
+			saveMeta();
+		} catch (IOException e) {
+			logger.error("[masterChanged][save meta failed]{}{}{}", newMasterEndpoint, newMasterRunid, offsetDelta);
+		}
+	}
+
+	@Override
+	public void setMasterAddress(Endpoint endpoint) {
+		this.masterEndpoint = endpoint;
+	}
+
+	@Override
+	public Endpoint getMasterAddress() {
+		return this.masterEndpoint;
 	}
 
 }

@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient.CLIENT_ROLE;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
+import com.ctrip.xpipe.redis.keeper.handler.SlaveOfCommandHandler.SlavePromotionInfo;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.protocal.Command;
@@ -58,6 +59,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public static final int REPLCONF_INTERVAL_MILLI = 1000;
 	
 	private int masterConnectRetryDelaySeconds = 5;
+	
+	private KEEPER_STATE keeperState = KEEPER_STATE.NORMAL;
 
 	private Endpoint masterEndpoint;
 	private String keeperRunid;
@@ -66,7 +69,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private ReplicationStore replicationStore;
 
-	private Channel slave;
+	private Channel masterChannel;
 	private EventLoopGroup slaveEventLoopGroup = new NioEventLoopGroup();;
 
 	private int retry = 3;
@@ -89,6 +92,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		this.masterEndpoint = masterEndpoint;
 		this.replicationStore = replicationStore;
+		this.replicationStore.setMasterAddress(masterEndpoint);
 		this.keeperRunid = keeperRunid;
 		this.retry = retry;
 		this.keeperPort = keeperPort;
@@ -147,8 +151,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
         b.bind(keeperPort).sync();
     }
 		
+	private void disConnectWithMaster() {
+		if(masterChannel != null){
+			masterChannel.close();
+		}
+	}
 		
 	private void connectMaster() {
+		
+		if(!shouldConnectMaster()){
+			return;
+		}
 
         Bootstrap b = new Bootstrap();
         b.group(slaveEventLoopGroup)
@@ -189,10 +202,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 	}
 
-	private void disConnectWithMaster() {
-		slaveEventLoopGroup.shutdownGracefully();
-	}
-	
 	private void scheduleReplconf() {
 		
 		if(logger.isInfoEnabled()){
@@ -205,7 +214,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			public void run() {
 				try{
 					Command command = new Replconf(ReplConfType.ACK, String.valueOf(replicationStore.endOffset()));
-					command.request(slave);
+					command.request(masterChannel);
 				}catch(Throwable th){
 					logger.error("[run][send replack error]" + DefaultRedisKeeperServer.this, th);
 				}
@@ -242,21 +251,24 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void slaveConnected(Channel channel) {
+	public void masterConnected(Channel channel) {
 		
-		this.slave = channel;
 		try {
+			setKeeperServerState(KEEPER_STATE.NORMAL);
+			this.masterChannel = channel;
 			commandRequester.request(channel, listeningPortCommand());
 			commandRequester.request(channel, psyncCommand());
+			
 		} catch (XpipeException e) {
 			logger.error("[slaveConnected]" + channel, e);
 		}
 	}
 
 	@Override
-	public void slaveDisconntected(Channel channel) {
+	public void masterDisconntected(Channel channel) {
 		connectMaster();
 	}
+
 
 	@Override
 	public RedisClient clientConnected(Channel channel) {
@@ -348,4 +360,55 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
    public ReplicationStore getReplicationStore() {
 	   return replicationStore;
    }
+
+   
+   
+	@Override
+	public void setKeeperServerState(KEEPER_STATE keeperState, Object info) {
+		
+		@SuppressWarnings("unused")
+		KEEPER_STATE oldState = this.keeperState;
+		this.keeperState = keeperState;
+		
+		logger.info("[setKeeperServerState]{},{}" ,keeperState, info);
+
+		switch(keeperState){
+			case NORMAL:
+				break;
+			case BEGIN_PROMOTE_SLAVE:
+				disConnectWithMaster();
+				break;
+			case COMMANDS_SEND_FINISH:
+				break;
+			case SLAVE_PROMTED:
+				SlavePromotionInfo promotionInfo = (SlavePromotionInfo) info;
+				masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
+						, promotionInfo.getNewMasterRunid(), promotionInfo.getNewMasterReplOffset());
+				connectMaster();
+				break;
+			default:
+				throw new IllegalStateException("unkonow state:" + keeperState);
+		}
+		
+	}
+	
+	@Override
+	public void setKeeperServerState(KEEPER_STATE keeperState) {
+		this.setKeeperServerState(keeperState, null);
+	}
+
+	private boolean shouldConnectMaster() {
+		
+		if(keeperState == KEEPER_STATE.BEGIN_PROMOTE_SLAVE || keeperState == KEEPER_STATE.COMMANDS_SEND_FINISH){
+			return false;
+		}
+		
+		return true;
+	}
+
+	public void masterChanged(long keeperOffset, Endpoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
+		
+		this.masterEndpoint = newMasterEndpoint;
+		replicationStore.masterChanged(newMasterEndpoint, newMasterRunid, newMasterReplOffset - keeperOffset);
+	}
 }

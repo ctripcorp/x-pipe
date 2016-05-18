@@ -40,7 +40,7 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 			logger.info("[channelActive]" + channel);
 		}
 		
-		redisKeeperServer.slaveConnected(channel);
+		redisKeeperServer.masterConnected(channel);
 		super.channelActive(ctx);
 	}
 
@@ -53,7 +53,7 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 		}
 		
 		commandRequester.connectionClosed(ctx.channel());
-		redisKeeperServer.slaveDisconntected(ctx.channel());
+		redisKeeperServer.masterDisconntected(ctx.channel());
 		super.channelInactive(ctx);
 	}
 	
