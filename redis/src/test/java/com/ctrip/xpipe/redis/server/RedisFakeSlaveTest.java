@@ -29,6 +29,14 @@ public class RedisFakeSlaveTest extends AbstractRedisTest{
 	private Socket socket;
 
 	@Test
+	public void simpleTest(){
+		
+		logger.info("hello {} {}", new Object[]{"nihao", 1234});
+		logger.info("hello {} {}", "nihao", 1234);
+	}
+	
+	
+	@Test
 	public void testKeeperCreateReplicationLog() throws UnknownHostException, IOException{
 		
 		startFakeSlaveServer();

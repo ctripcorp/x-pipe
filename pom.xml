@@ -48,7 +48,7 @@
 			<dependency>
 				<groupId>com.ctrip.xpipe</groupId>
 				<artifactId>core</artifactId>
-				<scope>test</scope>
+				<type>test</type>
 				<version>${project.version}</version>
 			</dependency>
 			<!-- xpipe related -->
