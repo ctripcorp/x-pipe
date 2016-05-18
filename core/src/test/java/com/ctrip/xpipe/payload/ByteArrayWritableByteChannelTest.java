@@ -15,6 +15,11 @@ import com.ctrip.xpipe.AbstractTest;
  *         2016年4月27日 上午9:37:11
  */
 public class ByteArrayWritableByteChannelTest extends AbstractTest {
+	
+	@Test
+	public void testInfo(){
+		logger.info(System.getProperties());
+	}
 
 	@Test
 	public void testWrite() throws IOException {

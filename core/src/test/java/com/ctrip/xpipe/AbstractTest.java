@@ -63,7 +63,10 @@ public class AbstractTest {
 		if(file.exists()){
 			FileUtils.forceDelete(file);
 		}
-		file.mkdirs();
+		boolean testSucceed = file.mkdirs();
+		if(!testSucceed){
+			throw new IllegalStateException("test dir make failed!" + file);
+		}
 	}
 
 	
@@ -85,7 +88,9 @@ public class AbstractTest {
 	
 	
 	protected String getTestFileDir(){
-		return properties.getProperty("test.file.dir");
+		String userHome = System.getProperty("user.home");
+		String testDir = properties.getProperty("test.file.dir"); 
+		return testDir.replace("~", userHome);
 		
 	} 
 
