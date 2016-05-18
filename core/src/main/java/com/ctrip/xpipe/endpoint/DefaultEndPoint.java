@@ -10,6 +10,9 @@ public class DefaultEndPoint implements Endpoint{
 	private String rawUrl;
 	private URI    uri;
 	
+	public DefaultEndPoint(String ip, int port){
+		this("unknown://" + ip + ":" + port);
+	}
 	public DefaultEndPoint(String url) {
 		
 		try {

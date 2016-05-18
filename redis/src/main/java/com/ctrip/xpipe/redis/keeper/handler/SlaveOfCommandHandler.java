@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.InetSocketAddress;
@@ -11,17 +12,19 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.io.IOUtils;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.KEEPER_STATE;
 import com.ctrip.xpipe.redis.keeper.netty.NettyBaseClientHandler;
 import com.ctrip.xpipe.redis.protocal.Command;
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.protocal.RequestResponseCommandListener;
 import com.ctrip.xpipe.redis.protocal.cmd.Fsync;
 import com.ctrip.xpipe.redis.protocal.cmd.InfoCommand;
-import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.cmd.SlaveOfCommand;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.utils.IpUtils;
@@ -44,6 +47,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 public class SlaveOfCommandHandler extends AbstractCommandHandler {
 
 	private final static String[] COMMANDS = new String[] { "slaveof" };
+	private final static String NO = "no"; 
+	private final static String ONE = "one"; 
 
 	/**
 	 * slave of ip port
@@ -55,28 +60,44 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 
 	@Override
 	protected void doHandle(String[] args, RedisClient redisClient) {
+		
+		String errorMessage = null;
 		if (validateArgs(args)) {
-			final String ip = args[0];
-			final int port = Integer.parseInt(args[1]); // already validated
+			if(args[0].equalsIgnoreCase(NO)){
+				final String ip = args[2];
+				final int port = Integer.parseInt(args[3]); // already validated
+				promotionSlave(redisClient, ip, port);
+				return;
+			}else{
+				errorMessage = "slave connected to keeper, discard command!";
+			}
+		} else {
+			errorMessage = "wrong format";
+		}
+		
+		redisClient.sendMessage(new BulkStringParser(errorMessage).format());
+	}
 
-			final RedisClient slave = findSlave(redisClient.getRedisKeeperServer(), ip, port);
-			if (slave != null) {
+	private void promotionSlave(RedisClient redisClient, final String ip, final int port) {
+		
+		final RedisClient slave = findSlave(redisClient.getRedisKeeperServer(), ip, port);
+		if (slave != null) {
+			RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+
+				redisKeeperServer.setKeeperServerState(KEEPER_STATE.BEGIN_PROMOTE_SLAVE);
 				String msg = String.format("promote %s:%s to master", ip, port);
 				redisClient.sendMessage(new BulkStringParser(msg).format());
-
+				
 				new Thread() {
 					public void run() {
 						promoteSlaveToMaster(slave, ip, port);
 					}
 				}.start();
-			} else {
-				String msg = String.format("%s:%s is not a connected slave", ip, port);
-				redisClient.sendMessage(new BulkStringParser(msg).format());
-			}
-
 		} else {
-			redisClient.sendMessage(new BulkStringParser("wrong format").format());
+			String msg = String.format("%s:%s is not a connected slave", ip, port);
+			redisClient.sendMessage(new BulkStringParser(msg).format());
 		}
+		
 	}
 
 	/**
@@ -126,13 +147,15 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 										@Override
 										public void onComplete(Channel channel, Object data, Exception e) {
 											String res = new String(((ByteArrayOutputStreamPayload) data).getBytes());
-											long offset = 0;
+											long keeperOffset = 0, newMasterOffset = 0;
 											try {
 												String[] parts = res.split("\\s");
-												offset = Long.parseLong(parts[2]) + 1;
-												System.out.println(String.format("psync to %s %s", masterId.get(), offset));
-												connectToNewMaster(ip, port, masterId.get(), offset, keeper);
-
+												keeperOffset = Long.parseLong(parts[1]);
+												newMasterOffset = Long.parseLong(parts[2]);
+												
+												keeper.setKeeperServerState(KEEPER_STATE.SLAVE_PROMTED, 
+														new SlavePromotionInfo(keeperOffset, new DefaultEndPoint(ip, port), 
+																masterId.get(), newMasterOffset));
 											} catch (Exception ee) {
 												e.printStackTrace();
 											}
@@ -157,22 +180,6 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 
 	}
 
-	/**
-	 * @param ip
-	 * @param port
-	 * @param masterOffset
-	 * @param keeper
-	 */
-	private void connectToNewMaster(String ip, int port, String masterRunid, long masterOffset, RedisKeeperServer keeper) {
-		logger.info(String.format("connect to new master %s with offset %s", masterRunid, masterOffset));
-		sendCommandToRedis(ip, port, keeper.getCommandRequester(),
-		      new Psync(masterRunid, masterOffset, keeper.getReplicationStore()));
-	}
-
-	/**
-	 * @param keeper
-	 * 
-	 */
 	private void waitUntilSlaveSync(RedisClient redisClient, String ip, int port) {
 		Long slaveCmdOffset = redisClient.getAck();
 		long masterCmdOffset = redisClient.getRedisKeeperServer().getReplicationStore().endOffset();
@@ -249,17 +256,62 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	 */
 	private boolean validateArgs(String[] args) {
 		try {
-			if (args.length == 2) {
-				if (IpUtils.isValidIpFormat(args[0])) {
-					Integer.parseInt(args[1]);
-					return true;
+			if (args.length == 4) {
+				
+				if(args[0].equalsIgnoreCase(NO) || IpUtils.isValidIpFormat(args[0])){
+					if(args[1].equalsIgnoreCase(ONE) || IpUtils.isPort(args[1])){
+						if (IpUtils.isValidIpFormat(args[2]) && IpUtils.isPort(args[3])) {
+							return true;
+						}
+					}
 				}
+				
 			}
 		} catch (Exception e) {
 			// ignore
 		}
-
 		return false;
 	}
 
+	
+	public static class SlavePromotionInfo{
+		
+		private long keeperOffset;
+		private Endpoint newMasterEndpoint;
+		private String newMasterRunid;
+		private long newMasterReplOffset;
+		
+		public SlavePromotionInfo(long keeperOffset, Endpoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset){
+			this.keeperOffset = keeperOffset;
+			this.newMasterEndpoint = newMasterEndpoint;
+			this.newMasterRunid = newMasterRunid;
+			this.newMasterReplOffset = newMasterReplOffset;
+		}
+		
+
+		public long getKeeperOffset() {
+			return keeperOffset;
+		}
+
+		public Endpoint getNewMasterEndpoint() {
+			return newMasterEndpoint;
+		}
+
+		public String getNewMasterRunid() {
+			return newMasterRunid;
+		}
+
+		public long getNewMasterReplOffset() {
+			return newMasterReplOffset;
+		}
+		
+		@Override
+		public String toString() {
+			return String.format(
+					"keeperOffset:%d, newMasterEndpoint:%s, newMasterRunid:%s, newMasterReplOffset:%d",
+					keeperOffset, newMasterEndpoint.toString(), newMasterRunid, newMasterReplOffset
+					);
+		}
+	}
+	
 }

@@ -32,4 +32,16 @@ public class IpUtils {
 	public static boolean isValidIpFormat(String ip) {
 		return ip != null && IP_PATTERN.matcher(ip).matches();
 	}
+	
+	public static boolean isPort(String str){
+		
+		try{
+			int port = Integer.parseInt(str);
+			if(port > 0 && port <= 65535){
+				return true;
+			}
+		}catch(Exception e){
+		}
+		return false;
+	}
 }

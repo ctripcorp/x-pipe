@@ -11,4 +11,5 @@ public interface CommandHandler {
 	
 	void handle(String []args, RedisClient redisClient);
 	
+	boolean isLog(String []args);	
 }

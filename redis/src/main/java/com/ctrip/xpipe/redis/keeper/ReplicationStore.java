@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper;
 import java.io.Closeable;
 import java.io.IOException;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+
 import io.netty.buffer.ByteBuf;
 
 /**
@@ -52,4 +54,14 @@ public interface ReplicationStore extends Closeable {
 	 */
 	void delete();
 
+	/**
+	 * @param newMasterEndPoint
+	 * @param newMasterId
+	 * @param offsetdelta  newBeginOffset = beginoffset + delta
+	 */
+	void masterChanged(Endpoint newMasterEndpoint, String newMasterRunid, long offsetdelta);
+	
+	void setMasterAddress(Endpoint endpoint);
+	
+	Endpoint getMasterAddress();
 }

@@ -45,4 +45,12 @@ public class ReplconfHandler extends AbstractCommandHandler{
 	}
 	
 
+	@Override
+	public boolean isLog(String[] args) {
+		
+		if(args.length >= 1 && args[0].equalsIgnoreCase("ack")){
+			return false;
+		}
+		return true;
+	}
 }
