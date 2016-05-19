@@ -5,8 +5,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.protocal.ChannelCommandRequester;
@@ -26,7 +26,7 @@ import io.netty.channel.ChannelFutureListener;
  */
 public class DefaultCommandRequester implements CommandRequester{
 	
-	private static Logger logger = LogManager.getLogger(DefaultCommandRequester.class);
+	private static Logger logger = LoggerFactory.getLogger(DefaultCommandRequester.class);
 
 	private Map<Channel, ChannelCommandRequester>  commands = new ConcurrentHashMap<>();
 	

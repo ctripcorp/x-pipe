@@ -168,7 +168,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 							sendCommandToRedis(ip, port, keeper.getCommandRequester(), infoServerCmd);
 						} else {
 							// TODO
-							logger.error(e);
+							logger.error("slaveof command error", e);
 						}
 					}
 				});

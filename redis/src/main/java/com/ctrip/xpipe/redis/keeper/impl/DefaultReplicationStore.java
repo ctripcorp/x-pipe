@@ -11,8 +11,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 
 public class DefaultReplicationStore implements ReplicationStore {
 
-	private final static Logger logger = LogManager.getLogger(DefaultReplicationStore.class);
+	private final static Logger logger = LoggerFactory.getLogger(DefaultReplicationStore.class);
 
 	private static final String MASTER_RUNID = "master.runid";
 	

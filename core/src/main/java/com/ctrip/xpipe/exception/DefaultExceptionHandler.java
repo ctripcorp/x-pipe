@@ -2,8 +2,8 @@ package com.ctrip.xpipe.exception;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * @author wenchao.meng
@@ -12,7 +12,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class DefaultExceptionHandler implements UncaughtExceptionHandler{
 	
-	protected Logger logger = LogManager.getLogger();
+	protected Logger logger = LoggerFactory.getLogger(DefaultExceptionHandler.class);
 
 	@Override
 	public void uncaughtException(Thread t, Throwable e) {

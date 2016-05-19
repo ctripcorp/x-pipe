@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.simple;
 import java.util.Calendar;
 
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.AbstractTest;
 
@@ -13,8 +15,12 @@ import com.ctrip.xpipe.AbstractTest;
  */
 public class SimpleTest extends AbstractTest{
 	
+	private Logger logger = LoggerFactory.getLogger(getClass());
+	
 	@Test
 	public void testFormat(){
+		
+		logger.info("nihaoma");
 		
 		System.out.println(String.format("%,d", 111111111));
 		System.out.println(String.format("%1$s", "a b c"));

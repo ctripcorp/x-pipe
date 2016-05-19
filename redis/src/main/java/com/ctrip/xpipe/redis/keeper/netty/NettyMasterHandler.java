@@ -4,8 +4,8 @@ package com.ctrip.xpipe.redis.keeper.netty;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -23,7 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
  */
 public class NettyMasterHandler extends ChannelDuplexHandler{
 	
-	private static Logger logger = LogManager.getLogger(NettyMasterHandler.class);
+	private static Logger logger = LoggerFactory.getLogger(NettyMasterHandler.class);
 	
 	private RedisKeeperServer redisKeeperServer;
 	

@@ -15,8 +15,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +33,7 @@ import com.ctrip.xpipe.utils.OsUtils;
  */
 public class AbstractTest {
 	
-	protected Logger logger = LogManager.getLogger(getClass());
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	protected ExecutorService executors = Executors.newCachedThreadPool();
 

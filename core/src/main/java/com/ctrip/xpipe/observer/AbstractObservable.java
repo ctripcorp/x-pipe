@@ -3,8 +3,8 @@ package com.ctrip.xpipe.observer;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
@@ -16,7 +16,7 @@ import com.ctrip.xpipe.api.observer.Observer;
  */
 public abstract class AbstractObservable implements Observable{
 	
-	protected Logger logger = LogManager.getLogger(getClass());
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private List<Observer> observers = new LinkedList<>();
 	

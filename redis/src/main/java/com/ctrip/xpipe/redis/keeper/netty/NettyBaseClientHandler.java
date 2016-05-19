@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.netty;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.ctrip.xpipe.redis.protocal.Command;
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
@@ -17,7 +17,7 @@ import io.netty.channel.ChannelHandlerContext;
  */
 public class NettyBaseClientHandler extends ChannelDuplexHandler {
 
-	private static Logger logger = LogManager.getLogger(NettyBaseClientHandler.class);
+	private static Logger logger = LoggerFactory.getLogger(NettyBaseClientHandler.class);
 
 	private CommandRequester commandRequester;
 

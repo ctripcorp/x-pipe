@@ -18,7 +18,7 @@ public class ByteArrayWritableByteChannelTest extends AbstractTest {
 	
 	@Test
 	public void testInfo(){
-		logger.info(System.getProperties());
+		logger.info(System.getProperties().toString());
 	}
 
 	@Test

@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * @author wenchao.meng
@@ -14,7 +14,7 @@ import org.apache.logging.log4j.Logger;
  */
 public abstract class AbstractIoAction implements IoAction{
 
-	protected Logger logger = LogManager.getLogger(getClass());
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	@Override
 	public Object read(InputStream ins) throws IOException {

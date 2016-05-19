@@ -24,10 +24,6 @@
 			<groupId>io.netty</groupId>
 			<artifactId>netty-all</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.leansoft</groupId>
-			<artifactId>bigqueue</artifactId>
-		</dependency>
 	</dependencies>
 
 	<repositories>

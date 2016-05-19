@@ -8,14 +8,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.apache.commons.io.filefilter.PrefixFileFilter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import io.netty.buffer.ByteBuf;
 
 public class DefaultCommandStore implements CommandStore {
 
-	private final static Logger logger = LogManager.getLogger(DefaultCommandStore.class);
+	private final static Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 
 	private File baseDir;
 

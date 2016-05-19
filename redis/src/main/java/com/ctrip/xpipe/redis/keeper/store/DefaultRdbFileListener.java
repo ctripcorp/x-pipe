@@ -5,8 +5,8 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -21,7 +21,7 @@ import com.ctrip.xpipe.utils.StringUtil;
  */
 public class DefaultRdbFileListener implements RdbFileListener{
 	
-	private static Logger logger = LogManager.getLogger(DefaultRdbFileListener.class);
+	private static Logger logger = LoggerFactory.getLogger(DefaultRdbFileListener.class);
 	
 	private RedisClient redisClient;
 	

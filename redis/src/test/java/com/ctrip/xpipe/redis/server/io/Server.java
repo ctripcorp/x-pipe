@@ -8,8 +8,8 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * @author wenchao.meng
@@ -18,7 +18,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class Server {
 	
-	protected Logger logger = LogManager.getLogger(getClass());
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 
 	private int port;
 	private IoActionFactory ioActionFactory;

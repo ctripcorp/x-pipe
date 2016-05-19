@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.protocal.protocal;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.ctrip.xpipe.redis.protocal.RedisProtocol;
 
@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.protocal.RedisProtocol;
  */
 public abstract class AbstractRedisProtocol implements RedisProtocol{
 
-	protected Logger logger = LogManager.getLogger(getClass());
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	
 }

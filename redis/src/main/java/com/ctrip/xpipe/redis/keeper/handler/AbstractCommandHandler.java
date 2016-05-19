@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.ctrip.xpipe.redis.keeper.CommandHandler;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
  */
 public abstract class AbstractCommandHandler implements CommandHandler{
 	
-	protected Logger logger = LogManager.getLogger(getClass());
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Override
 	public void handle(String[] args, RedisClient redisClient) {

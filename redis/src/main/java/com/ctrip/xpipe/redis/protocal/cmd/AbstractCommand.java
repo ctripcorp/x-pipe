@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.protocal.cmd;
 
-
-
 import java.nio.charset.Charset;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.protocal.Command;
@@ -20,7 +18,7 @@ import io.netty.channel.Channel;
  */
 public abstract class AbstractCommand implements Command{
 	
-	protected Logger logger = LogManager.getLogger();
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected Charset charset = Charset.forName("UTF-8");
 	

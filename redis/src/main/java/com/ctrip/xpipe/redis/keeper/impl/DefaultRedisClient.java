@@ -7,8 +7,8 @@ import java.nio.channels.FileChannel;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.netty.NotClosableFileRegion;
@@ -34,7 +34,7 @@ import io.netty.channel.Channel;
  */
 public class DefaultRedisClient implements RedisClient, CommandsListener{
 	
-	private static Logger logger = LogManager.getLogger(DefaultRedisClient.class);
+	private static Logger logger = LoggerFactory.getLogger(DefaultRedisClient.class);
 	
 	private Set<CAPA>  capas = new HashSet<CAPA>(); 
 
