@@ -29,9 +29,9 @@
         </logger>
         <logger name="io.netty" level="INFO">
         </logger>
+        <!--  
         <logger name="io.netty.handler.logging.LoggingHandler" level="DEBUG">
         </logger>
-        <!--  
         <logger name="com.ctrip.xpipe.redis.protocal.cmd.InOutPayloadReplicationStore" level="DEBUG">
         </logger>
         <logger name="com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler" level="DEBUG">
