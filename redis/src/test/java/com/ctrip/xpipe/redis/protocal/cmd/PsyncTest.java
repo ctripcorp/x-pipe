@@ -130,13 +130,4 @@ public class PsyncTest extends AbstractRedisTest{
 		System.out.println(commandResult);
 		Assert.assertEquals(commandContent, commandResult);
 	}
-	
-	@Test
-	public void testReadFile(){
-		
-		String content = readFileAsString("/data/xpipe/file");
-		System.out.println(content);
-		
-	}
-	
 }

@@ -15,6 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
@@ -42,10 +44,15 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		if(logger.isInfoEnabled()){
 			logger.info("[createReplicationStore]" + tmpDir);
 		}
-		return new DefaultReplicationStore(new File(tmpDir), 1024 * 1024);
-		
+		ReplicationStore replicationStore = new DefaultReplicationStore(new File(tmpDir), 1024 * 1024);
+		replicationStore.setMasterAddress(getMasterEndPoint());
+		return replicationStore;
 	}
 	
+	private Endpoint getMasterEndPoint() {
+		return new DefaultEndPoint("redis://127.0.0.1:6379");
+	}
+
 	protected String readRdbFileTilEnd(ReplicationStore replicationStore) throws IOException, InterruptedException {
 		
 		final ByteArrayWritableByteChannel bachannel = new ByteArrayWritableByteChannel();
