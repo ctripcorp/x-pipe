@@ -8,8 +8,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.apache.commons.io.filefilter.PrefixFileFilter;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.ctrip.xpipe.redis.util.OffsetNotifier;
 
 import io.netty.buffer.ByteBuf;
 
@@ -31,6 +33,8 @@ public class DefaultCommandStore implements CommandStore {
 
 	private FilenameFilter fileFilter;
 
+	private OffsetNotifier offsetNotifier;
+
 	public DefaultCommandStore(File file, int maxFileSize) throws IOException {
 		this.baseDir = file.getParentFile();
 		this.fileNamePrefix = file.getName();
@@ -44,6 +48,7 @@ public class DefaultCommandStore implements CommandStore {
 		channel = writeFile.getChannel();
 		// append to file
 		channel.position(channel.size());
+		offsetNotifier = new OffsetNotifier(currentStartOffset + channel.size() - 1);
 	}
 
 	private File fileForStartOffset(long startOffset) {
@@ -78,6 +83,8 @@ public class DefaultCommandStore implements CommandStore {
 			}
 		}
 
+		offsetNotifier.offsetIncreased(currentStartOffset + channel.size());
+
 		return wrote;
 	}
 
@@ -101,7 +108,7 @@ public class DefaultCommandStore implements CommandStore {
 		}
 		long fileStartOffset = extractStartOffset(targetFile);
 		long channelPosition = startOffset - fileStartOffset;
-		return new DefaultCommandReader(targetFile, channelPosition);
+		return new DefaultCommandReader(targetFile, channelPosition, offsetNotifier);
 	}
 
 	private File findFileForOffset(long targetStartOffset) {
@@ -141,11 +148,14 @@ public class DefaultCommandStore implements CommandStore {
 
 		private File curFile;
 
-		public DefaultCommandReader(File curFile, long initChannelPosition) throws IOException {
+		private long curPosition;
+
+		public DefaultCommandReader(File curFile, long initChannelPosition, OffsetNotifier notifier) throws IOException {
 			this.curFile = curFile;
 			readFile = new RandomAccessFile(curFile, "r");
 			channel = readFile.getChannel();
 			channel.position(initChannelPosition);
+			curPosition = extractStartOffset(curFile) + initChannelPosition;
 		}
 
 		@Override
@@ -156,7 +166,17 @@ public class DefaultCommandStore implements CommandStore {
 		@Override
 		public int read(ByteBuffer dst) throws IOException {
 			readNextFileIfNecessary();
-			return channel.read(dst);
+			try {
+				offsetNotifier.await(curPosition + 1);
+			} catch (InterruptedException e) {
+				// TODO
+				return 0;
+			}
+			int read = channel.read(dst);
+			if (read > 0) {
+				curPosition += read;
+			}
+			return read;
 		}
 
 		private void readNextFileIfNecessary() throws IOException {
