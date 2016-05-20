@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,13 +11,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
-import com.ctrip.xpipe.redis.keeper.RedisClient.CLIENT_ROLE;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.handler.SlaveOfCommandHandler.SlavePromotionInfo;
@@ -214,7 +214,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			public void run() {
 				try{
 					Command command = new Replconf(ReplConfType.ACK, String.valueOf(replicationStore.endOffset()));
-					command.request(masterChannel);
+					masterChannel.writeAndFlush(command.request());
 				}catch(Throwable th){
 					logger.error("[run][send replack error]" + DefaultRedisKeeperServer.this, th);
 				}
@@ -253,15 +253,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void masterConnected(Channel channel) {
 		
-		try {
-			setKeeperServerState(KEEPER_STATE.NORMAL);
-			this.masterChannel = channel;
-			commandRequester.request(channel, listeningPortCommand());
-			commandRequester.request(channel, psyncCommand());
-			
-		} catch (XpipeException e) {
-			logger.error("[slaveConnected]" + channel, e);
-		}
+		setKeeperServerState(KEEPER_STATE.NORMAL);
+		this.masterChannel = channel;
+		commandRequester.request(channel, listeningPortCommand());
+		commandRequester.request(channel, psyncCommand());
 	}
 
 	@Override
@@ -275,6 +270,19 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		RedisClient redisClient = new DefaultRedisClient(channel, this);
 		redisClients.put(channel, redisClient);
+		
+		redisClient.addObserver(new Observer() {
+			
+			@Override
+			public void update(Object args, Observable observable) {
+				
+				if(args instanceof RedisSlave){
+					logger.info("[update][redis client become slave]" + observable);
+					redisClients.put(((RedisClient)observable).channel(), (RedisSlave)args);
+				}
+			}
+		});
+		
 		return redisClient;
 	}
 
@@ -339,14 +347,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public Map<Channel, RedisClient> slaves() {
+	public Set<RedisSlave> slaves() {
 
-		Map<Channel, RedisClient> slaves = new HashMap<>();
+		Set<RedisSlave> slaves = new HashSet<>();
 
 		for (Entry<Channel, RedisClient> entry : redisClients.entrySet()) {
 
-			if (entry.getValue().getClientRole() == CLIENT_ROLE.SLAVE) {
-				slaves.put(entry.getKey(), entry.getValue());
+			RedisClient redisClient = entry.getValue();
+			if(entry instanceof RedisSlave){
+				slaves.add((RedisSlave)redisClient);
 			}
 		}
 		return slaves;
@@ -411,4 +420,5 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.masterEndpoint = newMasterEndpoint;
 		replicationStore.masterChanged(newMasterEndpoint, newMasterRunid, newMasterReplOffset - keeperOffset);
 	}
+
 }

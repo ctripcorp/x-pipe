@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.protocal.cmd;
 
-import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 
-import io.netty.channel.Channel;
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author marsqing
@@ -18,9 +17,9 @@ public class Fsync extends AbstractRedisCommand {
 	}
 
 	@Override
-	protected void doRequest(Channel channel) throws XpipeException {
+	protected ByteBuf doRequest(){
 		RequestStringParser requestString = new RequestStringParser(getName());
-		writeAndFlush(channel, requestString.format());
+		return requestString.format();
 	}
 
 }

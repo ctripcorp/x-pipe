@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.FileChannel;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,17 +8,15 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.netty.NotClosableFileRegion;
+import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.ArrayParser;
-import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
-import com.ctrip.xpipe.utils.IpUtils;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -32,47 +27,34 @@ import io.netty.channel.Channel;
  *
  * 2016年4月22日 上午11:30:49
  */
-public class DefaultRedisClient implements RedisClient, CommandsListener{
+public class DefaultRedisClient extends AbstractObservable implements RedisClient{
 	
-	private static Logger logger = LoggerFactory.getLogger(DefaultRedisClient.class);
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private Set<CAPA>  capas = new HashSet<CAPA>(); 
 
 	private int slaveListeningPort;
 	
-	private Channel channel;
+	protected Channel channel;
 	
-	private Long replAckOff;
-	
-	private Long replAckTime;
-
-	private RedisKeeperServer redisKeeperServer;
+	protected RedisKeeperServer redisKeeperServer;
 	
 	private CLIENT_ROLE clientRole = CLIENT_ROLE.NORMAL;
-	
-	private SLAVE_STATE  slaveState;
-	
-	private Long rdbFileOffset;
-	
+
 	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
 
 		this.channel = channel;
 		this.redisKeeperServer = redisKeeperServer;
 	}
 
-	@Override
-	public CLIENT_ROLE getClientRole() {
-		return clientRole;
+	public DefaultRedisClient(DefaultRedisClient redisClient) {
+		this.channel = redisClient.channel;
+		this.redisKeeperServer = redisClient.redisKeeperServer;
 	}
 
 	@Override
 	public RedisKeeperServer getRedisKeeperServer() {
 		return redisKeeperServer;
-	}
-
-	@Override
-	public void setClientRole(CLIENT_ROLE clientRole) {
-		this.clientRole = clientRole;
 	}
 
 	@Override
@@ -93,89 +75,6 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 		return this.slaveListeningPort;
 	}
 
-	@Override
-	public void setSlaveState(SLAVE_STATE slaveState) {
-		this.slaveState = slaveState;
-	}
-
-	@Override
-	public SLAVE_STATE getSlaveState() {
-		return this.slaveState;
-	}
-
-	@Override
-	public void ack(Long ackOff) {
-		
-		if(logger.isDebugEnabled()){
-			logger.debug("[ack]" + this + "," + ackOff);
-		}
-		
-		this.replAckOff = ackOff;
-		this.replAckTime = System.currentTimeMillis();
-	}
-
-	@Override
-	public void sendMessage(ByteBuf byteBuf) {
-		
-		if(clientRole == CLIENT_ROLE.SLAVE && slaveState == SLAVE_STATE.REDIS_REPL_ONLINE){
-			return;
-		}
-		channel.writeAndFlush(byteBuf);
-	}
-
-	@Override
-	public void sendMessage(byte[] bytes) {
-		
-		sendMessage(Unpooled.wrappedBuffer(bytes));
-	}
-
-
-	@Override
-	public Long getAck() {
-		return this.replAckOff;
-	}
-
-	@Override
-	public Long getAckTime() {
-		return this.replAckTime;
-	}
-	
-	@Override
-	public void beginWriteRdb(long rdbFileSize, long rdbFileOffset) {
-		
-		slaveState = SLAVE_STATE.REDIS_REPL_SEND_BULK;
-		this.rdbFileOffset = rdbFileOffset;
-		
-    	RequestStringParser parser = new RequestStringParser(String.valueOf((char)RedisClientProtocol.DOLLAR_BYTE)
-    			+String.valueOf(rdbFileSize)); 
-    	channel.writeAndFlush(parser.format());
-	}
-
-	@Override
-	public void beginWriteCommands(long beginOffset) {
-		
-		redisKeeperServer.addCommandsListener(beginOffset, this);
-	}
-
-	@Override
-	public void rdbWriteComplete() {
-		
-		if(slaveState == SLAVE_STATE.REDIS_REPL_SEND_BULK){
-			
-			if(logger.isInfoEnabled()){
-				logger.info("[writeComplete][rdbWriteComplete]" + this);
-			}
-			slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
-			beginWriteCommands(rdbFileOffset + 1);
-		}
-	}
-
-	@Override
-	public void onCommand(ByteBuf byteBuf) {
-		
-		channel.writeAndFlush(byteBuf);
-	}
-	
 	@Override
 	public String toString() {
 		return channel.toString();
@@ -275,33 +174,47 @@ public class DefaultRedisClient implements RedisClient, CommandsListener{
 
 	@Override
 	public String info() {
-		
+		return "";
+	}
 
-		String info = "";
+	@Override
+	public void close() {
+		channel.close();
+	}
+	
+	@Override
+	public RedisSlave becomeSlave() {
+		
+		RedisSlave redisSlave = null;
 		switch(clientRole){
 			case NORMAL:
+				logger.info("[becomeSlave]" + this);
+				redisSlave = new DefaultRedisSlave(this); 
+				notifyObservers(redisSlave);
 				break;
 			case SLAVE:
-				long lag = System.currentTimeMillis() - replAckTime;
-				info = String.format(
-						"ip=%s,port=%d,state=%s,offset=%d,lag=%d" ,
-						IpUtils.getIp(channel.remoteAddress()), ((InetSocketAddress)channel.remoteAddress()).getPort(), 
-						slaveState != null ? slaveState.getDesc() : "null",
-						replAckOff, lag/1000);
-			default:
+				logger.info("[becomeSlave][already slave]" + this);
 				break;
+			default:
+				throw new IllegalStateException("unknown state:" + clientRole);
 		}
-		return info;
+		return redisSlave;
 	}
 
 	@Override
-	public void writeFile(FileChannel fileChannel, long pos, long len) {
+	public Channel channel() {
+		return channel;
+	}
+
+	@Override
+	public void sendMessage(ByteBuf byteBuf) {
 		
-		channel.writeAndFlush(new NotClosableFileRegion(fileChannel, pos, len));
+		channel.writeAndFlush(byteBuf);
 	}
-
+	
 	@Override
-	public void close() throws IOException {
-		channel.close();
+	public void sendMessage(byte[] bytes) {
+		
+		sendMessage(Unpooled.wrappedBuffer(bytes));
 	}
 }

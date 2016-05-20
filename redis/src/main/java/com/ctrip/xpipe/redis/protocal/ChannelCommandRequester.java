@@ -12,7 +12,7 @@ import io.netty.buffer.ByteBuf;
 public interface ChannelCommandRequester {
 
 	
-	void request(Command command) throws XpipeException;
+	void request(Command command);
 	
 	void handleResponse(ByteBuf byteBuf) throws XpipeException;
 

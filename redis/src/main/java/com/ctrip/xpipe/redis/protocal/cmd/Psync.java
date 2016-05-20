@@ -9,6 +9,7 @@ import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.protocal.CmdContext;
 import com.ctrip.xpipe.redis.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
@@ -16,7 +17,6 @@ import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser.BulkStringParser
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 
 
 /**
@@ -77,9 +77,9 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 
 
 	@Override
-	protected void doRequest(Channel channel) {
+	protected ByteBuf doRequest() {
 		RequestStringParser requestString = new RequestStringParser(getName(), masterRunidRequest, String.valueOf(offsetRequest));
-		writeAndFlush(channel, requestString.format());
+		return requestString.format();
 	}
 
 
@@ -123,7 +123,7 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	}
 	
 	@Override
-	protected RESPONSE_STATE doHandleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException {
+	protected RESPONSE_STATE doHandleResponse(CmdContext cmdContext, ByteBuf byteBuf) throws XpipeException {
 		
 		switch(psyncState){
 		

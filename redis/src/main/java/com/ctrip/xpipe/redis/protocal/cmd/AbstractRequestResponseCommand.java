@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.protocal.cmd;
 
 import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.redis.protocal.CmdContext;
 import com.ctrip.xpipe.redis.protocal.RequestResponseCommand;
 import com.ctrip.xpipe.redis.protocal.RequestResponseCommandListener;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -17,7 +17,7 @@ public abstract class AbstractRequestResponseCommand extends AbstractCommand imp
 	private RequestResponseCommandListener commandListener;
 
 	@Override
-	protected RESPONSE_STATE doHandleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException {
+	protected RESPONSE_STATE doHandleResponse(CmdContext cmdContext, ByteBuf byteBuf) throws XpipeException {
 		
 		Object result = readResponse(byteBuf);
 		if(result == null){
@@ -28,12 +28,12 @@ public abstract class AbstractRequestResponseCommand extends AbstractCommand imp
 		if(commandListener != null){
 			try{
 				if(result instanceof Exception){
-					commandListener.onComplete(channel, null, (Exception)result);
+					commandListener.onComplete(cmdContext, null, (Exception)result);
 				}else{
-					commandListener.onComplete(channel, result, null);
+					commandListener.onComplete(cmdContext, result, null);
 				}
 			}catch(Exception e){
-				logger.error("[doHandleResponse]" + channel, e);
+				logger.error("[doHandleResponse]" + cmdContext, e);
 			}		
 		}
 		return RESPONSE_STATE.SUCCESS;

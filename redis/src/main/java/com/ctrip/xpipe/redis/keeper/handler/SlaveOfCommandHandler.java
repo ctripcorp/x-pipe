@@ -5,8 +5,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -18,8 +17,10 @@ import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.KEEPER_STATE;
 import com.ctrip.xpipe.redis.keeper.netty.NettyBaseClientHandler;
+import com.ctrip.xpipe.redis.protocal.CmdContext;
 import com.ctrip.xpipe.redis.protocal.Command;
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.protocal.RequestResponseCommandListener;
@@ -30,7 +31,6 @@ import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.utils.IpUtils;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -80,8 +80,8 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 
 	private void promotionSlave(RedisClient redisClient, final String ip, final int port) {
 		
-		final RedisClient slave = findSlave(redisClient.getRedisKeeperServer(), ip, port);
-		if (slave != null) {
+		final RedisSlave redisSlave = findSlave(redisClient.getRedisKeeperServer(), ip, port);
+		if (redisSlave != null) {
 			RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
 
 				redisKeeperServer.setKeeperServerState(KEEPER_STATE.BEGIN_PROMOTE_SLAVE);
@@ -90,7 +90,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 				
 				new Thread() {
 					public void run() {
-						promoteSlaveToMaster(slave, ip, port);
+						promoteSlaveToMaster(redisSlave, ip, port);
 					}
 				}.start();
 		} else {
@@ -104,28 +104,29 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	 * @param ip
 	 * @param port
 	 */
-	private void promoteSlaveToMaster(RedisClient redisClient, final String ip, final int port) {
-		waitUntilSlaveSync(redisClient, ip, port);
-		final RedisKeeperServer keeper = redisClient.getRedisKeeperServer();
+	private void promoteSlaveToMaster(RedisSlave redisSlave, final String ip, final int port) {
+		waitUntilSlaveSync(redisSlave, ip, port);
+		final RedisKeeperServer keeper = redisSlave.getRedisKeeperServer();
 
 		logger.info("fsync start ");
 		Fsync fsyncCmd = new Fsync();
 		fsyncCmd.setCommandListener(new RequestResponseCommandListener() {
 
 			@Override
-			public void onComplete(Channel channel, Object data, Exception e) {
-				System.out.println("fsync done " + data);
+			public void onComplete(CmdContext cmdContext, Object data, Exception e) {
+				
+				logger.info("fsync done" + data);
 				SlaveOfCommand slaveOfCmd = new SlaveOfCommand();
 				slaveOfCmd.setCommandListener(new RequestResponseCommandListener() {
 
 					@Override
-					public void onComplete(Channel channel, Object data, Exception e) {
+					public void onComplete(CmdContext cmdContext, Object data, Exception e) {
 						if (e == null) {
 							InfoCommand infoServerCmd = new InfoCommand("server");
 							infoServerCmd.setCommandListener(new RequestResponseCommandListener() {
 
 								@Override
-								public void onComplete(Channel channel, Object data, Exception e) {
+								public void onComplete(CmdContext cmdContext, Object data, Exception e) {
 									String res = new String(((ByteArrayOutputStreamPayload) data).getBytes());
 									List<String> lines = null;
 									try {
@@ -145,7 +146,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 									infoLastMasterCmd.setCommandListener(new RequestResponseCommandListener() {
 
 										@Override
-										public void onComplete(Channel channel, Object data, Exception e) {
+										public void onComplete(CmdContext cmdContext, Object data, Exception e) {
 											String res = new String(((ByteArrayOutputStreamPayload) data).getBytes());
 											long keeperOffset = 0, newMasterOffset = 0;
 											try {
@@ -157,15 +158,14 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 														new SlavePromotionInfo(keeperOffset, new DefaultEndPoint(ip, port), 
 																masterId.get(), newMasterOffset));
 											} catch (Exception ee) {
-												e.printStackTrace();
+												logger.error("[onComplete]", e);
 											}
 										}
 									});
-
-									keeper.getCommandRequester().schedule(TimeUnit.SECONDS, 3, channel, infoLastMasterCmd);
+									cmdContext.schedule(TimeUnit.SECONDS, 3, infoLastMasterCmd);
 								}
 							});
-							sendCommandToRedis(ip, port, keeper.getCommandRequester(), infoServerCmd);
+							cmdContext.sendCommand(infoServerCmd);
 						} else {
 							// TODO
 							logger.error("slaveof command error", e);
@@ -180,9 +180,10 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 
 	}
 
-	private void waitUntilSlaveSync(RedisClient redisClient, String ip, int port) {
-		Long slaveCmdOffset = redisClient.getAck();
-		long masterCmdOffset = redisClient.getRedisKeeperServer().getReplicationStore().endOffset();
+	private void waitUntilSlaveSync(RedisSlave redisSlave, String ip, int port) {
+		
+		Long slaveCmdOffset = redisSlave.getAck();
+		long masterCmdOffset = redisSlave.getRedisKeeperServer().getReplicationStore().endOffset();
 
 		while (slaveCmdOffset == null || slaveCmdOffset != masterCmdOffset) {
 			if (logger.isInfoEnabled()) {
@@ -232,19 +233,16 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	 * @param actualPort
 	 * @return
 	 */
-	private RedisClient findSlave(RedisKeeperServer keeper, String actualIp, int actualPort) {
-		Map<Channel, RedisClient> slaves = keeper.slaves();
-		for (Entry<Channel, RedisClient> entry : slaves.entrySet()) {
-			if (entry.getKey().remoteAddress() instanceof InetSocketAddress) {
-				InetSocketAddress slaveAddr = (InetSocketAddress) entry.getKey().remoteAddress();
-				String expectedIp = slaveAddr.getAddress().getHostAddress();
-				int expectedPort = entry.getValue().getSlaveListeningPort();
+	private RedisSlave findSlave(RedisKeeperServer keeper, String actualIp, int actualPort) {
+		Set<RedisSlave> slaves = keeper.slaves();
+		for (RedisSlave redisSlave : slaves) {
+			
+			InetSocketAddress slaveAddr = (InetSocketAddress) redisSlave.channel().remoteAddress();
+			String expectedIp = slaveAddr.getAddress().getHostAddress();
+			int expectedPort = redisSlave.getSlaveListeningPort();
 
-				if (expectedIp.equals(actualIp) && expectedPort == actualPort) {
-					return entry.getValue();
-				}
-			} else {
-				// TODO
+			if (expectedIp.equals(actualIp) && expectedPort == actualPort) {
+				return redisSlave;
 			}
 		}
 		return null;

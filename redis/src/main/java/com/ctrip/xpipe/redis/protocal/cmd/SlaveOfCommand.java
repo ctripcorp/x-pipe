@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.protocal.cmd;
 
-import com.ctrip.xpipe.exception.XpipeException;
+
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 
-import io.netty.channel.Channel;
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author marsqing
@@ -24,9 +24,9 @@ public class SlaveOfCommand extends AbstractRedisCommand {
 	}
 
 	@Override
-	protected void doRequest(Channel channel) throws XpipeException {
+	protected ByteBuf doRequest() {
 		RequestStringParser requestString = new RequestStringParser(getName(), "no", "one");
-		writeAndFlush(channel, requestString.format());
+		return requestString.format();
 	}
 
 }

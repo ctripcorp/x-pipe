@@ -7,7 +7,7 @@ package com.ctrip.xpipe.api.observer;
  */
 public interface Observable {
 	
-	void addOObserver(Observer observer);
+	void addObserver(Observer observer);
 	
 	void remoteObserver(Observer observer);
 	

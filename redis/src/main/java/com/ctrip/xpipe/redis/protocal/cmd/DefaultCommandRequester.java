@@ -37,7 +37,7 @@ public class DefaultCommandRequester implements CommandRequester{
 	}
 
 	@Override
-	public void request(Channel channel, Command command) throws XpipeException {
+	public void request(Channel channel, Command command){
 
 		if(!channel.isActive()){
 			logger.warn("[request][channel inactive, discard command]" + channel + "," + command);
@@ -48,6 +48,7 @@ public class DefaultCommandRequester implements CommandRequester{
 		channelCommandRequester.request(command);
 	}
 
+
 	private ChannelCommandRequester getOrCreate(Channel channel) {
 		
 		
@@ -56,7 +57,7 @@ public class DefaultCommandRequester implements CommandRequester{
 			synchronized (commands) {
 				channelCommandRequester = commands.get(channel);
 				if(channelCommandRequester == null){
-					channelCommandRequester = new SequenceChannelCommandRequester(channel);
+					channelCommandRequester = new SequenceChannelCommandRequester(channel, this);
 					commands.put(channel, channelCommandRequester);
 					
 					channel.closeFuture().addListener(new ChannelFutureListener() {
@@ -86,7 +87,7 @@ public class DefaultCommandRequester implements CommandRequester{
 			public void run() {
 				try {
 					request(channel, command);
-				} catch (XpipeException e) {
+				} catch (Exception e) {
 					logger.error("[run]" + channel + "," + command, e);
 				}
 			}
@@ -116,4 +117,5 @@ public class DefaultCommandRequester implements CommandRequester{
 		channelCommandRequester.connectionClosed();
 		
 	}
+
 }

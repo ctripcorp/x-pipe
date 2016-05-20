@@ -5,9 +5,9 @@ import java.io.IOException;
 
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
-import com.ctrip.xpipe.redis.keeper.RedisClient.CLIENT_ROLE;
 import com.ctrip.xpipe.redis.keeper.store.DefaultRdbFileListener;
 
 /**
@@ -22,10 +22,20 @@ public class PsyncHandler extends AbstractCommandHandler{
 		
 		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
 		
-		redisClient.setClientRole(CLIENT_ROLE.SLAVE);
+		RedisSlave redisSlave  = redisClient.becomeSlave();
+		if(redisSlave == null){
+			logger.warn("[doHandle][psync client already slave]" + redisClient);
+			try {
+				redisClient.close();
+			} catch (IOException e) {
+				logger.error("[doHandle]" + redisClient, e);
+			}
+			return;
+		}
+		
 		
 		if(args[0].equals("?")){
-			doFullSync(redisClient);
+			doFullSync(redisSlave);
 		}else if(args[0].equals(redisKeeperServer.getKeeperRunid())){
 			
 			Long beginOffset = redisKeeperServer.getBeginReploffset();
@@ -36,40 +46,40 @@ public class PsyncHandler extends AbstractCommandHandler{
 				if(logger.isInfoEnabled()){
 					logger.info("[doHandle][offset out of range, do FullSync]" + beginOffset + "," + endOffset + "," + offset);
 				}
-				doFullSync(redisClient);
+				doFullSync(redisSlave);
 			}else{
-				doPartialSync(redisClient, offset);
+				doPartialSync(redisSlave, offset);
 			}
 		}else{
-			doFullSync(redisClient);
+			doFullSync(redisSlave);
 		}
 	}
 
-	private void doPartialSync(RedisClient redisClient, Long offset) {
+	private void doPartialSync(RedisSlave redisSlave, Long offset) {
 		
 		if(logger.isInfoEnabled()){
-			logger.info("[doPartialSync]" + redisClient);
+			logger.info("[doPartialSync]" + redisSlave);
 		}
 		
 		SimpleStringParser simpleStringParser = new SimpleStringParser(Psync.PARTIAL_SYNC);
-		redisClient.sendMessage(simpleStringParser.format());
-		redisClient.beginWriteCommands(offset);
+		redisSlave.sendMessage(simpleStringParser.format());
+		redisSlave.beginWriteCommands(offset);
 	}
 
-	private void doFullSync(RedisClient redisClient) {
+	private void doFullSync(RedisSlave redisSlave) {
 
 		try {
 			if(logger.isInfoEnabled()){
-				logger.info("[doFullSync]" + redisClient);
+				logger.info("[doFullSync]" + redisSlave);
 			}
-			RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
-			redisKeeperServer.readRdbFile(new DefaultRdbFileListener(redisClient));
+			RedisKeeperServer redisKeeperServer = redisSlave.getRedisKeeperServer();
+			redisKeeperServer.readRdbFile(new DefaultRdbFileListener(redisSlave));
 		} catch (IOException e) {
-			logger.error("[doFullSync][close client]" + redisClient, e);
+			logger.error("[doFullSync][close client]" + redisSlave, e);
 			try {
-				redisClient.close();
+				redisSlave.close();
 			} catch (IOException e1) {
-				logger.error("[doFullSync]" + redisClient, e1);
+				logger.error("[doFullSync]" + redisSlave, e1);
 			}
 		}
 	}

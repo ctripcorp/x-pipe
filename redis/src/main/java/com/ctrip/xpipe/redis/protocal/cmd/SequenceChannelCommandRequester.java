@@ -7,7 +7,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.protocal.ChannelCommandRequester;
+import com.ctrip.xpipe.redis.protocal.CmdContext;
 import com.ctrip.xpipe.redis.protocal.Command;
+import com.ctrip.xpipe.redis.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.protocal.Command.RESPONSE_STATE;
 
 import io.netty.buffer.ByteBuf;
@@ -20,22 +22,23 @@ import io.netty.channel.Channel;
  */
 public class SequenceChannelCommandRequester implements ChannelCommandRequester{
 	
-	private Channel channel;
-	
 	private BlockingQueue<Command> commands = new LinkedBlockingQueue<Command>();
 	
 	private Command currentCommand;
 	
 	private Object currentCommandLock = new Object();
 	
+	private Channel channel;
+	private CommandRequester commandRequester;
 	
-	
-	public SequenceChannelCommandRequester(Channel channel){
+	public SequenceChannelCommandRequester(Channel channel, CommandRequester commandRequester){
 		
 		this.channel = channel;
+		this.commandRequester = commandRequester;
+		
 	}
 
-	public void request(Command command) throws XpipeException {
+	public void request(Command command) {
 		
 		commands.offer(command);
 		
@@ -53,7 +56,7 @@ public class SequenceChannelCommandRequester implements ChannelCommandRequester{
 			throw new IllegalStateException("current command == null");
 		}
 		
-		RESPONSE_STATE responseState = currentCommand.handleResponse(channel, byteBuf);
+		RESPONSE_STATE responseState = currentCommand.handleResponse(new CmdContext(channel, commandRequester), byteBuf);
 		switch(responseState){
 		
 			case SUCCESS:
@@ -66,11 +69,11 @@ public class SequenceChannelCommandRequester implements ChannelCommandRequester{
 		}
 	}
 
-	private void requestNextCommand() throws XpipeException {
+	private void requestNextCommand() {
 		
 		currentCommand = commands.poll();
 		if(currentCommand != null){
-			currentCommand.request(channel);
+			channel.writeAndFlush(currentCommand.request());
 		}
 	}
 

@@ -15,8 +15,8 @@ import io.netty.channel.Channel;
  */
 public interface CommandRequester {
 	
-	void request(Channel channel, Command command) throws XpipeException;
-	
+	void request(Channel channel, Command command);
+
 	void schedule(TimeUnit timeunit, int delay, Channel channel, Command command);
 	
 	void handleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException;

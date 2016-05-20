@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.RedisClient.CAPA;
 import com.ctrip.xpipe.redis.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
@@ -31,7 +32,12 @@ public class ReplconfHandler extends AbstractCommandHandler{
 		}else if("capa".equalsIgnoreCase(args[0])){
 			redisClient.capa(CAPA.of(args[1]));
 		}else if("ack".equalsIgnoreCase(args[0])){
-			redisClient.ack(Long.valueOf(args[1]));
+			
+			if(redisClient instanceof RedisSlave){
+				((RedisSlave)redisClient).ack(Long.valueOf(args[1]));
+			}else{
+				logger.warn("[replconf ack received, but we are not slave]" + redisClient + "," + StringUtil.join(" ", args));
+			}
 			return;
 		}else if("getack".equalsIgnoreCase(args[0])){
 			throw new IllegalStateException("[doHandle][getack not supported]" );

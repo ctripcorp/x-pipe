@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 import com.ctrip.xpipe.redis.keeper.RedisClient;
-import com.ctrip.xpipe.redis.keeper.RedisClient.CLIENT_ROLE;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 
 /**
  * @author wenchao.meng
@@ -18,12 +18,13 @@ public class LFHandler extends AbstractCommandHandler{
 	@Override
 	protected void doHandle(String[] args, RedisClient redisClient) {
 		
-		if(redisClient.getClientRole() == CLIENT_ROLE.SLAVE){
+		if(redisClient instanceof RedisSlave){
 			
 			if(logger.isDebugEnabled()){
 				logger.debug("[doHandle][\\n get]" + redisClient);
 			}
-			redisClient.ack(null);
+			RedisSlave redisSlave = (RedisSlave) redisClient;
+			redisSlave.ack(null);
 		}
 	}
 }

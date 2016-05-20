@@ -21,7 +21,7 @@ public abstract class AbstractObservable implements Observable{
 	private List<Observer> observers = new LinkedList<>();
 	
 	@Override
-	public synchronized void addOObserver(Observer observer) {
+	public synchronized void addObserver(Observer observer) {
 		
 		observers.add(observer);
 		

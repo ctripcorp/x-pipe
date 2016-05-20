@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.protocal.cmd;
 
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 
-import io.netty.channel.Channel;
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author wenchao.meng
@@ -35,7 +35,7 @@ public class Replconf extends AbstractRedisCommand{
 	}
 
 	@Override
-	protected void doRequest(Channel channel){
+	protected ByteBuf doRequest(){
 		
 		
 		boolean logRead = true, logWrite = true;
@@ -45,7 +45,7 @@ public class Replconf extends AbstractRedisCommand{
 		}
 		
 		RequestStringParser request = new RequestStringParser(logRead, logWrite, getName(), replConfType.toString(), argu);
-		writeAndFlush(channel, request.format());
+		return request.format();
 	}
 
 	public enum ReplConfType{

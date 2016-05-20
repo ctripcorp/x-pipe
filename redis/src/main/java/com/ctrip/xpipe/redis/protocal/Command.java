@@ -4,7 +4,6 @@ package com.ctrip.xpipe.redis.protocal;
 import com.ctrip.xpipe.exception.XpipeException;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 
 
 
@@ -18,14 +17,14 @@ public interface Command {
 	
 	String getName();
 	
-	void request(Channel channel) throws XpipeException;
+	ByteBuf request();
 	
 	/**
 	 * @param byteBuf
 	 * @return true，代表
 	 * @throws XpipeException 
 	 */
-	RESPONSE_STATE handleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException;
+	RESPONSE_STATE handleResponse(CmdContext cmdContext, ByteBuf byteBuf) throws XpipeException;
 	
 	/**
 	 * do something if connection is closed, but we has not finished reading or writing

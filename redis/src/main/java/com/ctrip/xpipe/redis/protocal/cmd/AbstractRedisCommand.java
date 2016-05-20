@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.protocal.protocal.IntegerParser;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -101,10 +100,6 @@ public abstract class AbstractRedisCommand extends AbstractRequestResponseComman
 		return new ByteArrayOutputStreamPayload();
 	}
 
-	protected void writeAndFlush(Channel channel, ByteBuf byteBuf) {
-		channel.writeAndFlush(byteBuf);
-	}
-	
 	
 	@Override
 	protected void doReset() {

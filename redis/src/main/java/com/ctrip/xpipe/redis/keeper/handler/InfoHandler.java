@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import java.util.Map;
+import java.util.Set;
 
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
-
-import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -70,11 +69,11 @@ public class InfoHandler extends AbstractCommandHandler{
 			
 			sb.append("# Replication" + RedisProtocol.CRLF);
 			sb.append("role:" + redisKeeperServer.role() + RedisProtocol.CRLF);
-			Map<Channel, RedisClient> slaves = redisKeeperServer.slaves();
+			Set<RedisSlave> slaves = redisKeeperServer.slaves();
 			sb.append("connected_slaves:" + slaves.size() + RedisProtocol.CRLF);
 			int slaveIndex = 0;
-			for(RedisClient client : slaves.values()){
-				sb.append(String.format("slave%d:%s" + RedisProtocol.CRLF, slaveIndex, client.info()));
+			for(RedisSlave slave : slaves){
+				sb.append(String.format("slave%d:%s" + RedisProtocol.CRLF, slaveIndex, slave.info()));
 				slaveIndex++;
 			}
 			

@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
-import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -23,14 +23,14 @@ public class DefaultRdbFileListener implements RdbFileListener{
 	
 	private static Logger logger = LoggerFactory.getLogger(DefaultRdbFileListener.class);
 	
-	private RedisClient redisClient;
+	private RedisSlave redisSlave;
 	
 	private AtomicLong writtenLength = new AtomicLong();
 	
 	private AtomicBoolean stop = new AtomicBoolean(false);
 	
-	public DefaultRdbFileListener(RedisClient redisClient) {
-		this.redisClient = redisClient;
+	public DefaultRdbFileListener(RedisSlave redisSlave) {
+		this.redisSlave = redisSlave;
 	}
 
 	@Override
@@ -39,13 +39,13 @@ public class DefaultRdbFileListener implements RdbFileListener{
 		if(len == -1){
 			
 			if(logger.isInfoEnabled()){
-				logger.info("[rdb write complete]" + redisClient + "," + writtenLength);
+				logger.info("[rdb write complete]" + redisSlave + "," + writtenLength);
 			}
-			redisClient.rdbWriteComplete();
+			redisSlave.rdbWriteComplete();
 			return;
 		}
 		writtenLength.addAndGet(len);
-		redisClient.writeFile(fileChannel, pos, len);
+		redisSlave.writeFile(fileChannel, pos, len);
 	}
 
 	
@@ -57,10 +57,10 @@ public class DefaultRdbFileListener implements RdbFileListener{
 		}
 
 		SimpleStringParser simpleStringParser = new SimpleStringParser(
-				StringUtil.join(" ", Psync.FULL_SYNC, redisClient.getRedisKeeperServer().getKeeperRunid(), String.valueOf(rdbFileOffset)));
-		redisClient.sendMessage(simpleStringParser.format());
+				StringUtil.join(" ", Psync.FULL_SYNC, redisSlave.getRedisKeeperServer().getKeeperRunid(), String.valueOf(rdbFileOffset)));
+		redisSlave.sendMessage(simpleStringParser.format());
 		
-		redisClient.beginWriteRdb(rdbFileSize, rdbFileOffset);
+		redisSlave.beginWriteRdb(rdbFileSize, rdbFileOffset);
 
 	}
 	
@@ -76,11 +76,11 @@ public class DefaultRdbFileListener implements RdbFileListener{
 	@Override
 	public void exception(Exception e) {
 		
-		logger.error("[exception][close client]" + redisClient, e);
+		logger.error("[exception][close client]" + redisSlave, e);
 		try {
-			redisClient.close();
+			redisSlave.close();
 		} catch (IOException e1) {
-			logger.error("[exception]" + redisClient, e1);
+			logger.error("[exception]" + redisSlave, e1);
 		}
 	}
 }

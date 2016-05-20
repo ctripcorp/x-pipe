@@ -1,14 +1,15 @@
 package com.ctrip.xpipe.redis.protocal.cmd;
 
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.redis.protocal.CmdContext;
 import com.ctrip.xpipe.redis.protocal.Command;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -36,16 +37,16 @@ public class CompositeCommand extends AbstractCommand{
 
 
 	@Override
-	protected RESPONSE_STATE doHandleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException {
+	protected RESPONSE_STATE doHandleResponse(CmdContext cmdContext, ByteBuf byteBuf) throws XpipeException {
 		
-		RESPONSE_STATE responseState = currentCommand.handleResponse(channel, byteBuf);
+		RESPONSE_STATE responseState = currentCommand.handleResponse(cmdContext, byteBuf);
 		
 		RESPONSE_STATE retState = responseState;
 		switch(responseState){
 		
 			case FAIL_CONTINUE:
 			case SUCCESS:
-				Command command = requestNextCommand(channel);
+				Command command = requestNextCommand(cmdContext);
 				if(command == null){
 					retState = RESPONSE_STATE.SUCCESS;
 				}else{
@@ -62,7 +63,17 @@ public class CompositeCommand extends AbstractCommand{
 		return retState;
 	}
 	
-	private Command requestNextCommand(Channel channel) throws XpipeException {
+	private Command requestNextCommand(CmdContext cmdContext) throws XpipeException {
+		
+		Command command = nextCommand();
+		if(command != null){
+			cmdContext.sendCommand(command);
+		}
+		return command;
+	}
+
+
+	private Command nextCommand() {
 		
 		int index = currentIndex.incrementAndGet();
 		
@@ -75,14 +86,13 @@ public class CompositeCommand extends AbstractCommand{
 		}
 		
 		currentCommand = commands.get(index);
-		currentCommand.request(channel);
 		return currentCommand;
 	}
 
-
 	@Override
-	protected void doRequest(Channel channel) throws XpipeException {
-		requestNextCommand(channel);
+	protected ByteBuf doRequest() {
+		
+		return nextCommand().request();
 	}
 
 	@Override

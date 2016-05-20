@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.keeper;
 
 
+
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
 
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
@@ -35,9 +35,13 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 
 	void readRdbFile(RdbFileListener rdbFileListener) throws IOException;
 	
+	/**
+	 * include all client roles
+	 * @return
+	 */
 	Set<RedisClient> allClients();
 	
-	Map<Channel, RedisClient> slaves();
+	Set<RedisSlave> slaves();
 	
 	CommandRequester getCommandRequester();
 	

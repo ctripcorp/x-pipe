@@ -6,10 +6,10 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.redis.protocal.CmdContext;
 import com.ctrip.xpipe.redis.protocal.Command;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -25,24 +25,24 @@ public abstract class AbstractCommand implements Command{
 	protected AbstractCommand(){
 	}
 	@Override
-	public void request(Channel channel) throws XpipeException {
-		doRequest(channel);
+	public ByteBuf request() {
+		return doRequest();
 	}
 	
 	protected abstract boolean hasResponse();
 	
-	protected abstract void doRequest(Channel channel) throws XpipeException;
+	protected abstract ByteBuf doRequest();
 
 	@Override
-	public RESPONSE_STATE handleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException {
+	public RESPONSE_STATE handleResponse(CmdContext cmdContext, ByteBuf byteBuf) throws XpipeException {
 		if(!hasResponse()){
 			return RESPONSE_STATE.SUCCESS;
 		}
 		
-		return doHandleResponse(channel, byteBuf);
+		return doHandleResponse(cmdContext, byteBuf);
 	}
 	
-	protected abstract RESPONSE_STATE doHandleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException;
+	protected abstract RESPONSE_STATE doHandleResponse(CmdContext cmdContext, ByteBuf byteBuf) throws XpipeException;
 	
 	
 	@Override
