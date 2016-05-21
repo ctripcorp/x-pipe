@@ -34,6 +34,8 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisTest{
 	@Test
 	public void simpleTest() throws Exception{
 		
+		System.setProperty("DEBUG_DELAY", "true");
+		
 		redisKeeperServer = new DefaultRedisKeeperServer(masterEndpoint, replicationStore, keeperRunid, keeperPort);
 		redisKeeperServer.start();
 	}

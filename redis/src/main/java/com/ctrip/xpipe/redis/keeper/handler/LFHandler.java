@@ -27,4 +27,9 @@ public class LFHandler extends AbstractCommandHandler{
 			redisSlave.ack(null);
 		}
 	}
+
+	@Override
+	public boolean isLog(String[] args) {
+		return false;
+	}
 }

@@ -10,6 +10,7 @@ import java.util.Properties;
 public class OsUtils {
 	
 	private static final int CPU_COUNT;
+	private static long startTime = System.currentTimeMillis();
 			
 	static{
 		
@@ -33,5 +34,24 @@ public class OsUtils {
 		String osVersion = props.getProperty("os.version");
 		
 		return String.format("%s %s %s", osName, osVersion, osArch);
+	}
+
+	
+	/**
+	 * time should be larger than system starttime
+	 * @param strTime
+	 * @return
+	 */
+	public static long getCorrentTime(String strTime){
+		
+		try{
+			Long time = Long.parseLong(strTime);
+			if(time < startTime || time > System.currentTimeMillis()){
+				return -1;
+			}
+			return time;
+		}catch(Exception e){
+			return -1L;
+		}
 	}
 }

@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
 
+import com.ctrip.xpipe.api.monitor.DelayMonitor;
+import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
 import com.ctrip.xpipe.netty.NotClosableFileRegion;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -11,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.utils.OsUtils;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -108,10 +111,39 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 		}
 	}
 
+	
+	
+	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_NETTY");
+	private boolean debugDelay = Boolean.parseBoolean(System.getProperty("DEBUG_DELAY"));
+	
 	@Override
 	public void onCommand(ByteBuf byteBuf) {
 		
+		ByteBuf b2 = byteBuf.duplicate();
+		
+		if(debugDelay){
+			long createTime = getTime(new String(b2.array(), b2.arrayOffset() + b2.readerIndex(), b2.readableBytes()));
+			delayMonitor.addData(createTime);
+		}
 		channel.writeAndFlush(byteBuf);
+	}
+
+	/**
+	 * can only support key or value with currentTimeMillis
+	 * @param data
+	 * @return
+	 */
+	private long getTime(String data) {
+		
+		long time = -1;
+		String []parts = data.split("\r\n");
+		for(String part : parts){
+				time = OsUtils.getCorrentTime(part);
+				if(time > 0){
+					break;
+				}
+		}
+		return time;
 	}
 
 	@Override
@@ -126,4 +158,5 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 				replAckOff, lag/1000, ((InetSocketAddress)channel.remoteAddress()).getPort());
 		return info;
 	}
+	
 }
