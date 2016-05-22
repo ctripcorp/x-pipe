@@ -1,11 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.netty;
 
 
+
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.protocal.CommandRequester;
+import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisMaster;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -21,14 +22,10 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 
 	private Logger logger = LoggerFactory.getLogger(NettySlaveHandler.class);
 	
-	private RedisKeeperServer redisKeeperServer;
+	private RedisMaster redisMaster;
 	
-	private CommandRequester commandRequester ;
-	
-	public NettySlaveHandler(RedisKeeperServer redisKeeperServer, CommandRequester commandRequester) {
-		
-		this.redisKeeperServer = redisKeeperServer;
-		this.commandRequester = commandRequester;
+	public NettySlaveHandler(DefaultRedisMaster redisMaster) {
+		this.redisMaster = redisMaster;
 	}
 
 	@Override
@@ -40,7 +37,7 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 			logger.info("[channelActive]" + channel);
 		}
 		
-		redisKeeperServer.masterConnected(channel);
+		redisMaster.masterConnected(channel);
 		super.channelActive(ctx);
 	}
 
@@ -52,15 +49,14 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 			logger.info("[channelInactive]" + ctx.channel());
 		}
 		
-		commandRequester.connectionClosed(ctx.channel());
-		redisKeeperServer.masterDisconntected(ctx.channel());
+		redisMaster.masterDisconntected(ctx.channel());
 		super.channelInactive(ctx);
 	}
 	
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		
-		commandRequester.handleResponse(ctx.channel(), (ByteBuf)msg);
+		redisMaster.handleResponse(ctx.channel(), (ByteBuf)msg);
 		super.channelRead(ctx, msg);
 	}
 	

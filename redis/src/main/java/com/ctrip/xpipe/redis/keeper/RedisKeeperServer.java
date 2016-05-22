@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
-import com.ctrip.xpipe.redis.protocal.PsyncObserver;
 
 import io.netty.channel.Channel;
 
@@ -15,16 +14,16 @@ import io.netty.channel.Channel;
  *
  * 2016年3月29日 下午3:09:23
  */
-public interface RedisKeeperServer extends RedisServer, PsyncObserver{
+public interface RedisKeeperServer extends RedisServer{
+	
+	int getListeningPort();
+	
+	RedisMaster getRedisMaster();
 	
 	long getBeginReploffset();
 
 	long getEndReploffset();
 
-	void masterConnected(Channel channel);
-	
-	void masterDisconntected(Channel channel);
-	
 	RedisClient clientConnected(Channel channel);
 	
 	void clientDisConnected(Channel channel);

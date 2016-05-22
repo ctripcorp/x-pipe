@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.observer.Observable;
@@ -18,34 +17,26 @@ import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.handler.SlaveOfCommandHandler.SlavePromotionInfo;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
-import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
-import com.ctrip.xpipe.redis.protocal.Command;
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.protocal.cmd.DefaultCommandRequester;
-import com.ctrip.xpipe.redis.protocal.cmd.Psync;
-import com.ctrip.xpipe.redis.protocal.cmd.Replconf;
-import com.ctrip.xpipe.redis.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.thread.NamedThreadFactory;
 import com.ctrip.xpipe.utils.OsUtils;
 
-import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
@@ -56,23 +47,15 @@ import io.netty.handler.logging.LoggingHandler;
  */
 public class DefaultRedisKeeperServer extends AbstractRedisServer implements RedisKeeperServer{
 	
-	public static final int REPLCONF_INTERVAL_MILLI = 1000;
-	
-	private int masterConnectRetryDelaySeconds = 5;
-	
 	private KEEPER_STATE keeperState = KEEPER_STATE.NORMAL;
 
-	private Endpoint masterEndpoint;
+	private RedisMaster redisMaster;
 	private String keeperRunid;
 	
 	private long keeperStartTime;
 	
 	private ReplicationStore replicationStore;
 
-	private Channel masterChannel;
-	private EventLoopGroup slaveEventLoopGroup = new NioEventLoopGroup();;
-
-	private int retry = 3;
 	private int keeperPort;
 
     private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
@@ -85,25 +68,24 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private CommandRequester commandRequester;
 	
 	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, String keeperRunid, int keeperPort) {
-		this(masterEndpoint, replicationStore, keeperRunid, keeperPort, null, null, 3);
+		this(masterEndpoint, replicationStore, keeperRunid, keeperPort, null, null);
 	}
 	
-	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, String keeperRunid, int keeperPort, ScheduledExecutorService scheduled, CommandRequester commandRequester, int retry) {
-
-		this.masterEndpoint = masterEndpoint;
+	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, String keeperRunid, int keeperPort, ScheduledExecutorService scheduled, CommandRequester commandRequester) {
+		
 		this.replicationStore = replicationStore;
-		this.replicationStore.setMasterAddress(masterEndpoint);
 		this.keeperRunid = keeperRunid;
-		this.retry = retry;
 		this.keeperPort = keeperPort;
-		this.scheduled = scheduled;
 		if(scheduled == null){
-			this.scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(masterEndpoint.toString()));
+			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(masterEndpoint.toString()));
+		}
+		this.scheduled = scheduled;
+		
+		if(commandRequester == null){
+			commandRequester = new DefaultCommandRequester(this.scheduled);
 		}
 		this.commandRequester = commandRequester;
-		if(commandRequester == null){
-			this.commandRequester = new DefaultCommandRequester(this.scheduled);
-		}
+		this.redisMaster = new DefaultRedisMaster(this, masterEndpoint, replicationStore, this.scheduled, this.commandRequester);
 	}
 
 	
@@ -113,15 +95,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		keeperStartTime = System.currentTimeMillis();
 		
 		startServer();
-		connectMaster();
+		redisMaster.startReplication();
 		
 	}
 	
 	@Override
 	protected void doStop() throws Exception {
 		
+		redisMaster.stopReplication();
 		stopServer();
-		disConnectWithMaster();
 		super.doStop();
 	}
 	
@@ -151,119 +133,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
         b.bind(keeperPort).sync();
     }
 		
-	private void disConnectWithMaster() {
-		if(masterChannel != null){
-			masterChannel.close();
-		}
-	}
-		
-	private void connectMaster() {
-		
-		if(!shouldConnectMaster()){
-			return;
-		}
-
-        Bootstrap b = new Bootstrap();
-        b.group(slaveEventLoopGroup)
-         .channel(NioSocketChannel.class)
-         .option(ChannelOption.TCP_NODELAY, true)
-         .handler(new ChannelInitializer<SocketChannel>() {
-             @Override
-             public void initChannel(SocketChannel ch) throws Exception {
-                 ChannelPipeline p = ch.pipeline();
-                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
-                 p.addLast(new NettySimpleMessageHandler());
-                 p.addLast(new NettySlaveHandler(DefaultRedisKeeperServer.this, commandRequester));
-             }
-         });
-
-        int i = 0;
-		for(; i < retry ; i++){
-			try{
-				ChannelFuture f = b.connect(masterEndpoint.getHost(), masterEndpoint.getPort());
-		        f.sync();
-		        break;
-			}catch(Throwable th){
-				logger.error("[connectMaster][fail]" + masterEndpoint, th);
-			}
-		}
-		
-		if(i == retry){
-			
-			if(logger.isInfoEnabled()){
-				logger.info("[connectMaster][fail, retry after "  + masterConnectRetryDelaySeconds + " seconds]" + masterEndpoint);
-			}
-			scheduled.schedule(new Runnable() {
-				@Override
-				public void run() {
-					connectMaster();
-				}
-			}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
-		}
-	}
-
-	private void scheduleReplconf() {
-		
-		if(logger.isInfoEnabled()){
-			logger.info("[scheduleReplconf]" + this);
-		}
-		
-		scheduled.scheduleWithFixedDelay(new Runnable() {
-			
-			@Override
-			public void run() {
-				try{
-					Command command = new Replconf(ReplConfType.ACK, String.valueOf(replicationStore.endOffset()));
-					masterChannel.writeAndFlush(command.request());
-				}catch(Throwable th){
-					logger.error("[run][send replack error]" + DefaultRedisKeeperServer.this, th);
-				}
-			}
-		}, REPLCONF_INTERVAL_MILLI, REPLCONF_INTERVAL_MILLI, TimeUnit.MILLISECONDS);
-	}
-
-	private Command psyncCommand(){
-		
-		Psync psync = null;
-		if(replicationStore.getMasterRunid() == null){
-			psync = new Psync(replicationStore);
-		}else{
-			psync = new Psync(replicationStore.getMasterRunid(), replicationStore.endOffset() + 1, replicationStore);
-		}
-		psync.addPsyncObserver(this);
-		return psync;
-	}
-
-	private Command listeningPortCommand(){
-		
-		return new Replconf(ReplConfType.LISTENING_PORT, String.valueOf(keeperPort));
-	}
-
-
-	@Override
-	public void beginWriteRdb() {
-		
-	}
-
-	@Override
-	public void endWriteRdb() {
-		scheduleReplconf();
-	}
-
-	@Override
-	public void masterConnected(Channel channel) {
-		
-		setKeeperServerState(KEEPER_STATE.NORMAL);
-		this.masterChannel = channel;
-		commandRequester.request(channel, listeningPortCommand());
-		commandRequester.request(channel, psyncCommand());
-	}
-
-	@Override
-	public void masterDisconntected(Channel channel) {
-		connectMaster();
-	}
-
 
 	@Override
 	public RedisClient clientConnected(Channel channel) {
@@ -294,7 +163,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public String toString() {
-		return "master:" + this.masterEndpoint + ",masterRunId:" + replicationStore.getMasterRunid() + ",offset:" + replicationStore.endOffset();
+		return "master:" + this.redisMaster + ",masterRunId:" + replicationStore.getMasterRunid() + ",offset:" + replicationStore.endOffset();
 	}
 
 	@Override
@@ -370,8 +239,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	   return replicationStore;
    }
 
-   
-   
 	@Override
 	public void setKeeperServerState(KEEPER_STATE keeperState, Object info) {
 		
@@ -385,15 +252,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			case NORMAL:
 				break;
 			case BEGIN_PROMOTE_SLAVE:
-				disConnectWithMaster();
+				redisMaster.stopReplication();
 				break;
 			case COMMANDS_SEND_FINISH:
 				break;
 			case SLAVE_PROMTED:
 				SlavePromotionInfo promotionInfo = (SlavePromotionInfo) info;
-				masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
+				this.redisMaster = masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
 						, promotionInfo.getNewMasterRunid(), promotionInfo.getNewMasterReplOffset());
-				connectMaster();
+				redisMaster.startReplication();
 				break;
 			default:
 				throw new IllegalStateException("unkonow state:" + keeperState);
@@ -406,19 +273,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.setKeeperServerState(keeperState, null);
 	}
 
-	private boolean shouldConnectMaster() {
+	public RedisMaster masterChanged(long keeperOffset, Endpoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
 		
-		if(keeperState == KEEPER_STATE.BEGIN_PROMOTE_SLAVE || keeperState == KEEPER_STATE.COMMANDS_SEND_FINISH){
-			return false;
-		}
-		
-		return true;
+		replicationStore.masterChanged(newMasterEndpoint, newMasterRunid, newMasterReplOffset - keeperOffset);
+		return new DefaultRedisMaster(this, newMasterEndpoint, replicationStore, scheduled, commandRequester);
 	}
 
-	public void masterChanged(long keeperOffset, Endpoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
-		
-		this.masterEndpoint = newMasterEndpoint;
-		replicationStore.masterChanged(newMasterEndpoint, newMasterRunid, newMasterReplOffset - keeperOffset);
+	@Override
+	public int getListeningPort() {
+		return this.keeperPort;
+	}
+
+	@Override
+	public RedisMaster getRedisMaster() {
+		return redisMaster;
 	}
 
 }
