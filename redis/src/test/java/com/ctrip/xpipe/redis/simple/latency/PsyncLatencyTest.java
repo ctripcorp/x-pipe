@@ -22,11 +22,11 @@ import io.netty.handler.logging.LoggingHandler;
  *
  * May 22, 2016 2:43:51 PM
  */
-public class LatencyTest extends AbstractLifecycle{
+public class PsyncLatencyTest extends AbstractLifecycle{
 	
 	private InetSocketAddress master = new InetSocketAddress("127.0.0.1", 6379);
 
-//	private InetSocketAddress dest = new InetSocketAddress("127.0.0.1", 6379);
+//	private InetSocketAddress dest = new InetSocketAddress("127.0.0.1", 6479);
 
 	private InetSocketAddress dest = new InetSocketAddress("127.0.0.1", 7777);
 
@@ -37,7 +37,7 @@ public class LatencyTest extends AbstractLifecycle{
 
 	public static void main(String[] args) throws Exception {
 		
-		new LatencyTest().start();
+		new PsyncLatencyTest().start();
 	}
 	
 	@Override

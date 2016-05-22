@@ -27,21 +27,26 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	
 	private Long replAckOff;
 	
-	private Long replAckTime;
+	private Long replAckTime = System.currentTimeMillis();
 
 	private SLAVE_STATE  slaveState;
 	
 	private Long rdbFileOffset;
+	
+	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_NETTY", 5000);
+	private boolean debugDelay = Boolean.parseBoolean(System.getProperty("DEBUG_DELAY"));
 
 	
 	public DefaultRedisSlave(RedisClient redisClient){
 		super((DefaultRedisClient)redisClient);
 		this.setSlaveListeningPort(redisClient.getSlaveListeningPort());
+		delayMonitor.setDelayInfo(redisClient.channel().remoteAddress().toString());
 		
 	}
 
 	public DefaultRedisSlave(Channel channel, RedisKeeperServer redisKeeperServer) {
 		super(channel, redisKeeperServer);
+		delayMonitor.setDelayInfo(channel.remoteAddress().toString());
 	}
 
 	@Override
@@ -111,8 +116,6 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 		}
 	}
 
-	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_NETTY", 5000);
-	private boolean debugDelay = Boolean.parseBoolean(System.getProperty("DEBUG_DELAY"));
 	
 	@Override
 	public void onCommand(ByteBuf byteBuf) {

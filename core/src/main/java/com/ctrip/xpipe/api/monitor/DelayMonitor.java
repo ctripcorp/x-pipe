@@ -12,4 +12,6 @@ public interface DelayMonitor {
 	
 	String getDelayType();
 	
+	void setDelayInfo(String info);
+	
 }

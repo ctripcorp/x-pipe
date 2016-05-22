@@ -354,7 +354,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		for (Entry<Channel, RedisClient> entry : redisClients.entrySet()) {
 
 			RedisClient redisClient = entry.getValue();
-			if(entry instanceof RedisSlave){
+			if(redisClient instanceof RedisSlave){
 				slaves.add((RedisSlave)redisClient);
 			}
 		}

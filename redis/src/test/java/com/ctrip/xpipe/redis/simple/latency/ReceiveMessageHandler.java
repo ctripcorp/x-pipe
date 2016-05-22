@@ -1,5 +1,12 @@
 package com.ctrip.xpipe.redis.simple.latency;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ctrip.xpipe.api.monitor.DelayMonitor;
 import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisSlave;
@@ -16,10 +23,12 @@ import io.netty.channel.ChannelHandlerContext;
  * May 22, 2016 2:57:02 PM
  */
 public class ReceiveMessageHandler extends ChannelDuplexHandler{
-	
+
+	private Logger logger = LoggerFactory.getLogger(getClass());
 	private String runId;
 	private long startOffset;
 	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_PSYNC", 50000);
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(4);
 	
 	public ReceiveMessageHandler(String runId, long startOffset) {
 		this.runId = runId;
@@ -28,9 +37,22 @@ public class ReceiveMessageHandler extends ChannelDuplexHandler{
 	}
 	
 	@Override
-	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+	public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+		
 		super.channelActive(ctx);
+		
 		ctx.channel().writeAndFlush(Unpooled.wrappedBuffer(String.format("psync %s %d\r\n", runId, startOffset).getBytes()));
+		scheduled.scheduleAtFixedRate(new Runnable() {
+			
+			@Override
+			public void run() {
+				try{
+					ctx.channel().writeAndFlush(Unpooled.wrappedBuffer(String.format("replconf ack 0\r\n", runId, startOffset).getBytes()));
+				}catch(Exception e){
+					logger.error("[run]", e);
+				}
+			}
+		}, 5, 1, TimeUnit.SECONDS);
 	}
 	
 	@Override
