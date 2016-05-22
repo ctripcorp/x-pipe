@@ -111,9 +111,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 		}
 	}
 
-	
-	
-	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_NETTY");
+	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_NETTY", 5000);
 	private boolean debugDelay = Boolean.parseBoolean(System.getProperty("DEBUG_DELAY"));
 	
 	@Override
@@ -122,7 +120,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 		ByteBuf b2 = byteBuf.duplicate();
 		
 		if(debugDelay){
-			long createTime = getTime(new String(b2.array(), b2.arrayOffset() + b2.readerIndex(), b2.readableBytes()));
+			long createTime = getTime(b2);
 			delayMonitor.addData(createTime);
 		}
 		channel.writeAndFlush(byteBuf);
@@ -130,10 +128,12 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 
 	/**
 	 * can only support key or value with currentTimeMillis
-	 * @param data
+	 * @param b2
 	 * @return
 	 */
-	private long getTime(String data) {
+	public static long getTime(ByteBuf byteBuf) {
+		
+		String data = new String(byteBuf.array(), byteBuf.arrayOffset() + byteBuf.readerIndex(), byteBuf.readableBytes());
 		
 		long time = -1;
 		String []parts = data.split("\r\n");

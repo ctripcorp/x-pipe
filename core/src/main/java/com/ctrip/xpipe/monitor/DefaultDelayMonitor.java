@@ -26,8 +26,15 @@ public class DefaultDelayMonitor implements DelayMonitor, Runnable{
 	private long previousDelay = 0, previousNum = 0;
 	private String delayType;
 
+	private long infoDelta = 1000;
+
 	public DefaultDelayMonitor(String delayType) {
+		this(delayType, 1000);
+	}
+
+	public DefaultDelayMonitor(String delayType, long infoDelta) {
 		this.delayType = delayType;
+		this.infoDelta = infoDelta;
 		scheduled = Executors.newScheduledThreadPool(4);
 		scheduled.scheduleAtFixedRate(this, 0, 5, TimeUnit.SECONDS);
 	}
@@ -42,7 +49,7 @@ public class DefaultDelayMonitor implements DelayMonitor, Runnable{
 		
 		long current = System.currentTimeMillis(); 
 		long delta =  current - lastTime;
-		if(delta > 1000){
+		if(delta > infoDelta){
 			logger.info("{} - {} = {}", current, lastTime, delta);
 		}
 		if(delta > 0){
