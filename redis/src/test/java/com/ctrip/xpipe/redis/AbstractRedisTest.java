@@ -44,7 +44,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		if(logger.isInfoEnabled()){
 			logger.info("[createReplicationStore]" + tmpDir);
 		}
-		ReplicationStore replicationStore = new DefaultReplicationStore(new File(tmpDir), 1024 * 1024);
+		ReplicationStore replicationStore = new DefaultReplicationStore(new File(tmpDir), 1024 * 1024 * 1024);
 		replicationStore.setMasterAddress(getMasterEndPoint());
 		return replicationStore;
 	}

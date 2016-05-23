@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.simple.latency;
 
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
@@ -34,10 +35,11 @@ public class SetGetLatencyTest extends AbstractLatencyTest{
 
 	@Override
 	protected void doStart() throws Exception {
+		super.doStart();
 		
 		flushAll();
 		executors.execute(new Send(master));
-		executors.execute(new Receive(dest));
+//		executors.execute(new Receive(dest));
 	}
 	
 	private void flushAll() {
@@ -106,6 +108,7 @@ public class SetGetLatencyTest extends AbstractLatencyTest{
 						}
 						continue;
 					}
+					
 					delayMonitor.addData(Long.valueOf(value));
 					break;
 				}

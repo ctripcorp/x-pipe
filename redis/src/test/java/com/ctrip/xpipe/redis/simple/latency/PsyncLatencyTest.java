@@ -49,6 +49,8 @@ public class PsyncLatencyTest extends AbstractLatencyTest{
 
 	@Override
 	protected void doStart() throws Exception {
+		
+		super.doStart();
 		startSendMessage();
 		startGetLatency();
 	}
