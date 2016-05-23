@@ -14,6 +14,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.AbstractRedisTest;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.impl.DefaultKeeperMeta;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.server.io.IoAction;
 import com.ctrip.xpipe.redis.server.io.IoActionFactory;
@@ -61,7 +62,7 @@ public class RedisKeeperTest extends AbstractRedisTest{
 	private void startSlaveClient() throws Exception {
 
 		ReplicationStore replicationStore = createReplicationStore();
-		DefaultRedisKeeperServer rds = new DefaultRedisKeeperServer(new DefaultEndPoint(redisMasterUri), replicationStore, keeperRunid, keeperPort);
+		DefaultRedisKeeperServer rds = new DefaultRedisKeeperServer(new DefaultEndPoint(redisMasterUri), replicationStore, new DefaultKeeperMeta(keeperPort, keeperRunid, "keeperName"));
 		rds.start();
 		
 	}

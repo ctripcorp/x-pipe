@@ -15,7 +15,7 @@ public interface RdbFileListener {
 	 * @param rdbFileSize
 	 * @param rdbFileOffset
 	 */
-	void setRdbFileInfo(long rdbFileSize, long rdbFileOffset);
+	void setRdbFileInfo(long rdbFileSize, long rdbFileKeeperOffset);
 	
 	/**
 	 * 

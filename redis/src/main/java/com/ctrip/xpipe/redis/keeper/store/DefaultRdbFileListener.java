@@ -50,17 +50,17 @@ public class DefaultRdbFileListener implements RdbFileListener{
 
 	
 	@Override
-	public void setRdbFileInfo(long rdbFileSize, long rdbFileOffset) {
+	public void setRdbFileInfo(long rdbFileSize, long rdbFileKeeperOffset) {
 		
 		if(logger.isInfoEnabled()){
-			logger.info("[setRdbFileInfo]rdbFileSize:" + rdbFileSize + ",rdbFileOffset:" + rdbFileOffset);
+			logger.info("[setRdbFileInfo]rdbFileSize:" + rdbFileSize + ",rdbFileOffset:" + rdbFileKeeperOffset);
 		}
 
 		SimpleStringParser simpleStringParser = new SimpleStringParser(
-				StringUtil.join(" ", Psync.FULL_SYNC, redisSlave.getRedisKeeperServer().getKeeperRunid(), String.valueOf(rdbFileOffset)));
+				StringUtil.join(" ", Psync.FULL_SYNC, redisSlave.getRedisKeeperServer().getKeeperRunid(), String.valueOf(rdbFileKeeperOffset)));
 		redisSlave.sendMessage(simpleStringParser.format());
 		
-		redisSlave.beginWriteRdb(rdbFileSize, rdbFileOffset);
+		redisSlave.beginWriteRdb(rdbFileSize, rdbFileKeeperOffset);
 
 	}
 	

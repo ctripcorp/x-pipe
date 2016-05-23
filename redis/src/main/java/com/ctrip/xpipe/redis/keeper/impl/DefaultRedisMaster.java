@@ -211,4 +211,8 @@ public class DefaultRedisMaster implements RedisMaster{
 	}
 
 
+	@Override
+	public String toString() {
+		return endpoint.toString();
+	}
 }

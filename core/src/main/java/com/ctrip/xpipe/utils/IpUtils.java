@@ -1,7 +1,14 @@
 package com.ctrip.xpipe.utils;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
+import java.net.SocketException;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -43,5 +50,33 @@ public class IpUtils {
 		}catch(Exception e){
 		}
 		return false;
+	}
+	
+	public static InetAddress getFistNonLocalIpv4ServerAddress(){
+		
+		try {
+			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+			while(interfaces.hasMoreElements()){
+				 NetworkInterface current = interfaces.nextElement();
+//				 System.out.println(current);
+//				 System.out.println(current.getInterfaceAddresses());
+				 if(current.isLoopback()){
+					 continue;
+				 }
+				 List<InterfaceAddress> addresses = current.getInterfaceAddresses();
+				 if(addresses.size() == 0){
+					 continue;
+				 }
+				 for(InterfaceAddress interfaceAddress : addresses){
+					InetAddress address = interfaceAddress.getAddress();
+					 if(address instanceof Inet4Address){
+						 return address;
+					 }
+				 }
+			}
+		} catch (SocketException e) {
+		}
+		
+		throw new IllegalStateException("[can not find a qualified address]");
 	}
 }

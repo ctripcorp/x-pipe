@@ -20,10 +20,8 @@ public interface RedisKeeperServer extends RedisServer{
 	
 	RedisMaster getRedisMaster();
 	
-	long getBeginReploffset();
-
-	long getEndReploffset();
-
+	KeeperRepl getKeeperRepl();
+	
 	RedisClient clientConnected(Channel channel);
 	
 	void clientDisConnected(Channel channel);

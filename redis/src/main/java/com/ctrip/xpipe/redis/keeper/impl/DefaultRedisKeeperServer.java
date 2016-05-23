@@ -14,6 +14,8 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.KeeperMeta;
+import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -50,13 +52,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private KEEPER_STATE keeperState = KEEPER_STATE.NORMAL;
 
 	private RedisMaster redisMaster;
-	private String keeperRunid;
 	
 	private long keeperStartTime;
 	
 	private ReplicationStore replicationStore;
 
-	private int keeperPort;
+	private KeeperMeta keeperMeta;
 
     private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -67,15 +68,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private CommandRequester commandRequester;
 	
-	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, String keeperRunid, int keeperPort) {
-		this(masterEndpoint, replicationStore, keeperRunid, keeperPort, null, null);
+	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, KeeperMeta keeperMeta) {
+		this(masterEndpoint, replicationStore, keeperMeta, null, null);
 	}
 	
-	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, String keeperRunid, int keeperPort, ScheduledExecutorService scheduled, CommandRequester commandRequester) {
+	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, KeeperMeta keeperMeta, ScheduledExecutorService scheduled, CommandRequester commandRequester) {
 		
 		this.replicationStore = replicationStore;
-		this.keeperRunid = keeperRunid;
-		this.keeperPort = keeperPort;
+		this.keeperMeta = keeperMeta;
 		if(scheduled == null){
 			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(masterEndpoint.toString()));
 		}
@@ -130,7 +130,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
                  p.addLast(new NettyMasterHandler(DefaultRedisKeeperServer.this, new CommandHandlerManager()));
              }
          });
-        b.bind(keeperPort).sync();
+        b.bind(keeperMeta.getKeeperPort()).sync();
     }
 		
 
@@ -169,17 +169,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public String getKeeperRunid() {
 		
-		return this.keeperRunid;
+		return this.keeperMeta.getKeeperRunid();
 	}
 
+	
 	@Override
-	public long getBeginReploffset() {
-		return replicationStore.beginOffset();
-	}
-
-	@Override
-	public long getEndReploffset() {
-		return replicationStore.endOffset();
+	public KeeperRepl getKeeperRepl() {
+		return new DefaultKeeperRepl(replicationStore);
 	}
 
 	@Override
@@ -210,7 +206,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public String info() {
 		
 		String info = "os:" + OsUtils.osInfo() + RedisProtocol.CRLF;
-		info += "run_id:" + keeperRunid + RedisProtocol.CRLF;
+		info += "run_id:" + keeperMeta.getKeeperRunid() + RedisProtocol.CRLF;
 		info += "uptime_in_seconds:" + (System.currentTimeMillis() - keeperStartTime)/1000;
 		return info;
 	}
@@ -281,7 +277,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public int getListeningPort() {
-		return this.keeperPort;
+		return keeperMeta.getKeeperPort();
 	}
 
 	@Override

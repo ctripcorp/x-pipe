@@ -100,7 +100,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	@Override
 	public void beginWriteCommands(long beginOffset) {
 		
-		redisKeeperServer.addCommandsListener(beginOffset, this);
+		redisKeeperServer.getKeeperRepl().addCommandsListener(beginOffset, this);
 	}
 
 	@Override

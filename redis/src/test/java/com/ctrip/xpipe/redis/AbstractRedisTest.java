@@ -46,6 +46,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		}
 		ReplicationStore replicationStore = new DefaultReplicationStore(new File(tmpDir), 1024 * 1024 * 1024);
 		replicationStore.setMasterAddress(getMasterEndPoint());
+		replicationStore.setKeeperBeginOffset(100);
 		return replicationStore;
 	}
 	

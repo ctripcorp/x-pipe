@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="info">
+
+    <appenders>
+        <console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
+        </console>
+
+        <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe/xpipe-test.log"
+                     filePattern="target/applogs/xpipe/xpipe-test-%d{yyyy-MM-dd}-%i.log">
+            <Filters>
+                <ThresholdFilter level="INFO"/>
+                <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>
+            </Filters>
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+        </RollingFile>
+
+    </appenders>
+
+    <loggers>
+        <!--过滤掉spring和hibernate的一些无用的debug信息-->
+        <logger name="org.springframework" level="INFO">
+        </logger>
+        <logger name="org.hibernate" level="INFO">
+        </logger>
+        <logger name="io.netty" level="INFO">
+        </logger>
+        <!--  
+        <logger name="io.netty.handler.logging.LoggingHandler" level="DEBUG">
+        </logger>
+        <logger name="com.ctrip.xpipe.redis.protocal.cmd.InOutPayloadReplicationStore" level="DEBUG">
+        </logger>
+        <logger name="com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler" level="DEBUG">
+        </logger>
+        <logger name="com.ctrip.xpipe.redis.keeper.handler.LFHandler" level="DEBUG">
+        </logger>
+        -->
+        <root level="INFO">
+            <appender-ref ref="Console"/>
+            <appender-ref ref="RollingFileInfo"/>
+        </root>
+    </loggers>
+
+</configuration>

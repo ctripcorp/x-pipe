@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 import java.io.IOException;
 
+import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -38,8 +39,9 @@ public class PsyncHandler extends AbstractCommandHandler{
 			doFullSync(redisSlave);
 		}else if(args[0].equals(redisKeeperServer.getKeeperRunid())){
 			
-			Long beginOffset = redisKeeperServer.getBeginReploffset();
-			Long endOffset = redisKeeperServer.getEndReploffset();
+			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
+			Long beginOffset = keeperRepl.getBeginOffset();
+			Long endOffset = keeperRepl.getEndOffset();
 			Long offset = Long.valueOf(args[1]);
 			
 			if((offset > (endOffset + 1)) || (offset < beginOffset)){

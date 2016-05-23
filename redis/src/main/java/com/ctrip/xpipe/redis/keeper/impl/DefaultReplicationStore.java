@@ -49,6 +49,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 	
 	private Endpoint masterEndpoint;
 
+	private long keeperBeginOffset = 2;
+	
 	private long beginOffset;
 
 	private long endOffset;
@@ -211,7 +213,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	private void doReadRdbFile(RdbFileListener rdbFileListener) throws IOException {
-		rdbFileListener.setRdbFileInfo(rdbFileSize, beginOffset - 1); // beginOffset - 1 == masteroffset
+		rdbFileListener.setRdbFileInfo(rdbFileSize, keeperBeginOffset - 1); // beginOffset - 1 == masteroffset
 		FileChannel channel = rdbReadFile.getChannel();
 		long start = 0;
 
@@ -280,4 +282,15 @@ public class DefaultReplicationStore implements ReplicationStore {
 		return this.masterEndpoint;
 	}
 
+	@Override
+	public void setKeeperBeginOffset(long keeperBeginOffset) {
+		
+		this.keeperBeginOffset = keeperBeginOffset;
+	}
+
+	@Override
+	public long getKeeperBeginOffset() {
+		
+		return keeperBeginOffset;
+	}
 }

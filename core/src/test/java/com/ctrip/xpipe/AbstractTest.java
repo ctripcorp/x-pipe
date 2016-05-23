@@ -145,6 +145,11 @@ public class AbstractTest {
 		return null;
 	}
 	
+	
+	protected String currentTestName(){
+		return name.getMethodName();
+	} 
+	
 	@After
 	public void afterAbstractTest() throws IOException{
 

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 import java.util.Set;
 
+import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -77,8 +78,10 @@ public class InfoHandler extends AbstractCommandHandler{
 				slaveIndex++;
 			}
 			
-			long beginOffset = redisKeeperServer.getBeginReploffset(), endOffset = redisKeeperServer.getEndReploffset();
-			sb.append("master_repl_offset:" + redisKeeperServer.getEndReploffset() + RedisProtocol.CRLF);
+			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
+			
+			long beginOffset = keeperRepl.getBeginOffset(), endOffset = keeperRepl.getEndOffset();
+			sb.append("master_repl_offset:" + endOffset + RedisProtocol.CRLF);
 			sb.append("repl_backlog_active:1" + RedisProtocol.CRLF);
 			sb.append("repl_backlog_size:" + (endOffset - beginOffset + 1) + RedisProtocol.CRLF);
 			sb.append("repl_backlog_first_byte_offset:" + beginOffset+ RedisProtocol.CRLF);

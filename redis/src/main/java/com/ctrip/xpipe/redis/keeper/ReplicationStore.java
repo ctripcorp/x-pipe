@@ -64,4 +64,8 @@ public interface ReplicationStore extends Closeable {
 	void setMasterAddress(Endpoint endpoint);
 	
 	Endpoint getMasterAddress();
+	
+	void setKeeperBeginOffset(long offset);
+	
+	long getKeeperBeginOffset();
 }
