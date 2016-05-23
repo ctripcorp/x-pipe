@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.simple.latency;
 
+
 import java.net.InetSocketAddress;
 
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.redis.simple.latency.netty.ReceiveMessageHandler;
+import com.ctrip.xpipe.redis.simple.latency.netty.SetMessageHandler;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -22,13 +24,8 @@ import io.netty.handler.logging.LoggingHandler;
  *
  * May 22, 2016 2:43:51 PM
  */
-public class PsyncLatencyTest extends AbstractLifecycle{
+public class PsyncLatencyTest extends AbstractLatencyTest{
 	
-	private InetSocketAddress master = new InetSocketAddress("127.0.0.1", 6379);
-
-//	private InetSocketAddress dest = new InetSocketAddress("127.0.0.1", 6479);
-
-	private InetSocketAddress dest = new InetSocketAddress("127.0.0.1", 7777);
 
 	private String runId = "?";
 	
@@ -37,9 +34,19 @@ public class PsyncLatencyTest extends AbstractLifecycle{
 
 	public static void main(String[] args) throws Exception {
 		
-		new PsyncLatencyTest().start();
+		new PsyncLatencyTest(
+				new InetSocketAddress("127.0.0.1", 6379),
+//				new InetSocketAddress("127.0.0.1", 6379)
+//				new InetSocketAddress("127.0.0.1", 6479)
+				new InetSocketAddress("127.0.0.1", 7777)
+				).start();
 	}
-	
+
+	public PsyncLatencyTest(InetSocketAddress master, InetSocketAddress dest) {
+		super(master, dest);
+	}
+
+
 	@Override
 	protected void doStart() throws Exception {
 		startSendMessage();
@@ -78,10 +85,9 @@ public class PsyncLatencyTest extends AbstractLifecycle{
                  ChannelPipeline p = ch.pipeline();
                  p.addLast(new LoggingHandler(LogLevel.DEBUG));
                  p.addLast(new NettySimpleMessageHandler());
-                 p.addLast(new SetMessageHandler());
+                 p.addLast(new SetMessageHandler(PsyncLatencyTest.this));
              }
          });
-        
         b.connect(master);
 	}
 

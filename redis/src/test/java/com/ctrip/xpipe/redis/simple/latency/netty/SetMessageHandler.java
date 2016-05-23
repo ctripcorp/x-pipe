@@ -1,9 +1,8 @@
-package com.ctrip.xpipe.redis.simple.latency;
+package com.ctrip.xpipe.redis.simple.latency.netty;
 
 
 
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicLong;
+import com.ctrip.xpipe.redis.simple.latency.PsyncLatencyTest;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -17,11 +16,11 @@ import io.netty.channel.ChannelHandlerContext;
  */
 public class SetMessageHandler extends ChannelDuplexHandler{
 	
-	private AtomicLong count = new AtomicLong();
+	PsyncLatencyTest psyncLatencyTest;
 	
-	private final long total = 1 << 30;
-	
-	private ScheduledFuture<?> future = null;
+	public SetMessageHandler(PsyncLatencyTest psyncLatencyTest) {
+		this.psyncLatencyTest = psyncLatencyTest;
+	}
 		
 	@Override
 	public void channelActive(final ChannelHandlerContext ctx) throws Exception {
@@ -39,9 +38,8 @@ public class SetMessageHandler extends ChannelDuplexHandler{
 
 	private void sendMessage(Channel channel) {
 		
-		long currentCount = count.incrementAndGet();
-		if(currentCount > total){
-			future.cancel(false);
+		long currentCount = psyncLatencyTest.increase();
+		if(currentCount < 0){
 			return;
 		}
 		String data = String.format("set %d %d\r\n", currentCount, System.currentTimeMillis());

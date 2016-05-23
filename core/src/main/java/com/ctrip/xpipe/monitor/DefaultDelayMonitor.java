@@ -65,10 +65,11 @@ public class DefaultDelayMonitor implements DelayMonitor, Runnable{
 		long currentNum = totalNum.get();
 		
 		long deltaNum = currentNum - previousNum;
+		
 		if(deltaNum  > 0 ){
+			double avgDelay =  (double)(currentDelay - previousDelay)/deltaNum;
 			logger.info(String.format("%d - %d = %d, %d - %d = %d", currentDelay,previousDelay, currentDelay - previousDelay, currentNum, previousNum, currentNum - previousNum));
-			logger.info("{}", (currentDelay - previousDelay)/deltaNum);
-			logger.info("[delay]{}-{} {}", getDelayType(), delayInfo == null ? "" :delayInfo, (currentDelay - previousDelay)/deltaNum);
+			logger.info("[delay]{}-{} {}", getDelayType(), delayInfo == null ? "" :delayInfo, String.format("%.2f", avgDelay));
 		}
 		
 		previousDelay = currentDelay;
