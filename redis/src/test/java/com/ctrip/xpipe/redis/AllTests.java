@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.protocal.cmd.PsyncTest;
 import com.ctrip.xpipe.redis.protocal.protocal.ArrayParserTest;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParserTest;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParserTest;
+import com.ctrip.xpipe.redis.util.OffsetNotifierTest;
 
 /**
  * @author wenchao.meng
@@ -19,7 +20,8 @@ import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParserTest;
 	PsyncTest.class,
 	SimpleStringParserTest.class,
 	BulkStringParserTest.class,
-	ArrayParserTest.class
+	ArrayParserTest.class,
+	OffsetNotifierTest.class
 })
 public class AllTests {
 

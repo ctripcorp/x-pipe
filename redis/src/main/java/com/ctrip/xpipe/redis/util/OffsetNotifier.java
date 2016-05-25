@@ -34,6 +34,11 @@ public class OffsetNotifier {
 	public void await(long startOffset) throws InterruptedException {
 		sync.acquireSharedInterruptibly(startOffset);
 	}
+	
+	public void await(long startOffset, long miliSeconds) throws InterruptedException{
+		sync.tryAcquireSharedNanos(startOffset, miliSeconds * (1000*1000));
+		
+	}
 
 	public void offsetIncreased(long newOffset) {
 		sync.releaseShared(newOffset);
