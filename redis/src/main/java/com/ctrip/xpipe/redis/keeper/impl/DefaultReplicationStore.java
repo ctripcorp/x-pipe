@@ -11,8 +11,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -25,10 +25,10 @@ import io.netty.buffer.ByteBuf;
 
 public class DefaultReplicationStore implements ReplicationStore {
 
-	private final static Logger logger = LoggerFactory.getLogger(DefaultReplicationStore.class);
+	private final static Logger log = LoggerFactory.getLogger(DefaultReplicationStore.class);
 
 	private static final String MASTER_RUNID = "master.runid";
-	
+
 	private static final String MASTER_ADDRESS = "master.address";
 
 	private static final String BEGIN_OFFSET = "begin.offset";
@@ -46,11 +46,11 @@ public class DefaultReplicationStore implements ReplicationStore {
 	private ConcurrentMap<CommandsListener, CommandNotifier> cmdListeners = new ConcurrentHashMap<>();
 
 	private String masterRunid;
-	
+
 	private Endpoint masterEndpoint;
 
 	private long keeperBeginOffset = 2;
-	
+
 	private long beginOffset;
 
 	private long endOffset;
@@ -72,6 +72,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public void beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException {
+		log.info("Begin RDB masterRunid:{}, masterOffset:{}, rdbFileSize:{}", masterRunid, masterOffset, rdbFileSize);
+
 		this.masterRunid = masterRunid;
 		// TODO save master offset
 		this.beginOffset = masterOffset + 1;
@@ -125,7 +127,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 					endOffset = beginOffset - 1;
 				}
 
-				logger.info(String.format("Meta loaded masterRunid=%s, beginOffset=%s, endOffset=%s", masterRunid,
+				log.info(String.format("Meta loaded masterRunid=%s, beginOffset=%s, endOffset=%s", masterRunid,
 				      beginOffset, endOffset));
 			}
 		}
@@ -206,7 +208,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 				try {
 					doReadRdbFile(rdbFileListener);
 				} catch (Exception e) {
-					logger.error("Error read rdb file", e);
+					log.error("Error read rdb file", e);
 				}
 			}
 		}.start();
@@ -256,19 +258,18 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public void masterChanged(Endpoint newMasterEndpoint, String newMasterRunid, long offsetDelta) {
-		
+
 		this.setMasterAddress(newMasterEndpoint);
 		this.masterRunid = newMasterRunid;
 		this.beginOffset += offsetDelta;
-		this.endOffset   += offsetDelta;
-		
-		logger.info("[masterChanged]offsetDelta:{}, masterEndpoint:{}, masterRunid:{}, beginOffset:{}, endOffset:{}",
-				offsetDelta,
-				this.masterEndpoint, this.masterRunid, this.beginOffset, this.endOffset);
+		this.endOffset += offsetDelta;
+
+		log.info("[masterChanged]offsetDelta:{}, masterEndpoint:{}, masterRunid:{}, beginOffset:{}, endOffset:{}",
+		      offsetDelta, this.masterEndpoint, this.masterRunid, this.beginOffset, this.endOffset);
 		try {
 			saveMeta();
 		} catch (IOException e) {
-			logger.error("[masterChanged][save meta failed]{}{}{}", newMasterEndpoint, newMasterRunid, offsetDelta);
+			log.error("[masterChanged][save meta failed]{}{}{}", newMasterEndpoint, newMasterRunid, offsetDelta);
 		}
 	}
 
@@ -284,13 +285,13 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public void setKeeperBeginOffset(long keeperBeginOffset) {
-		
+
 		this.keeperBeginOffset = keeperBeginOffset;
 	}
 
 	@Override
 	public long getKeeperBeginOffset() {
-		
+
 		return keeperBeginOffset;
 	}
 }

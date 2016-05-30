@@ -1,0 +1,183 @@
+package com.ctrip.xpipe.redis.metaserver;
+
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import javax.annotation.PostConstruct;
+
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
+import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.recipes.locks.LockInternals;
+import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
+import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
+import org.apache.curator.retry.RetryNTimes;
+import org.apache.zookeeper.WatchedEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.unidal.tuple.Pair;
+
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.entity.Cluster;
+import com.ctrip.xpipe.redis.keeper.entity.Keeper;
+import com.ctrip.xpipe.redis.keeper.entity.Redis;
+import com.ctrip.xpipe.redis.keeper.entity.Shard;
+import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
+
+/**
+ * @author marsqing
+ *
+ *         May 25, 2016 5:24:27 PM
+ */
+@Component
+public class DefaultMetaServer implements MetaServer, Lifecycle {
+
+	private static Logger log = LoggerFactory.getLogger(DefaultMetaServer.class);
+
+	private ConcurrentMap<Pair<String, String>, Pair<Keeper, Redis>> shardState = new ConcurrentHashMap<>();
+
+	private KeeperConfig config;
+
+	private CuratorFramework client;
+
+	public DefaultMetaServer() {
+		// TODO
+		config = new DefaultKeeperConfig();
+	}
+
+	@Override
+	public void watchCluster(Cluster cluster) throws Exception {
+		observeLeader(cluster);
+	}
+
+	@Override
+	public Keeper getActiveKeeper(String clusterId, String shardId) {
+		Pair<Keeper, Redis> state = shardState.get(new Pair<>(clusterId, shardId));
+		return state == null ? null : state.getKey();
+	}
+
+	@Override
+	public Redis getRedisMaster(String clusterId, String shardId) {
+		Pair<Keeper, Redis> state = shardState.get(new Pair<>(clusterId, shardId));
+		return state == null ? null : state.getValue();
+	}
+
+	private void initializeZk() throws Exception {
+		// TODO pass in client
+		Builder builder = CuratorFrameworkFactory.builder();
+
+		builder.connectionTimeoutMs(config.getZkConnectionTimeoutMillis());
+		builder.connectString(config.getZkConnectionString());
+		builder.maxCloseWaitMs(config.getZkCloseWaitMillis());
+		builder.namespace(config.getZkNamespace());
+		builder.retryPolicy(new RetryNTimes(config.getZkRetries(), config.getSleepMsBetweenRetries()));
+		builder.sessionTimeoutMs(config.getZkSessionTimeoutMillis());
+
+		client = builder.build();
+		client.start();
+		client.blockUntilConnected();
+	}
+
+	private void observeLeader(final Cluster cluster) throws Exception {
+
+		for (final Shard shard : cluster.getShards()) {
+
+			updateRedisMaster(cluster.getId(), shard);
+
+			final String leaderLatchPath = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), cluster.getId(),
+			      shard.getId());
+
+			List<String> children = client.getChildren().usingWatcher(new CuratorWatcher() {
+
+				@Override
+				public void process(WatchedEvent event) throws Exception {
+					updateShardLeader(client.getChildren().usingWatcher(this).forPath(leaderLatchPath), leaderLatchPath,
+					      cluster.getId(), shard.getId());
+				}
+			}).forPath(leaderLatchPath);
+
+			updateShardLeader(children, leaderLatchPath, cluster.getId(), shard.getId());
+		}
+	}
+
+	/**
+	 * @param id
+	 * @param shard
+	 */
+	private void updateRedisMaster(String clusterId, Shard shard) {
+		for (Redis redis : shard.getRedises()) {
+			if (redis.isMaster()) {
+				shardState.put(new Pair<>(clusterId, shard.getId()), new Pair<>((Keeper) null, redis));
+			}
+		}
+	}
+
+	private LockInternalsSorter sorter = new LockInternalsSorter() {
+		@Override
+		public String fixForSorting(String str, String lockName) {
+			return StandardLockInternalsDriver.standardFixForSorting(str, lockName);
+		}
+	};
+
+	private void updateShardLeader(List<String> children, String leaderLatchPath, String clusterId, String shardId)
+	      throws Exception {
+		if (children != null && !children.isEmpty()) {
+			List<String> sortedChildren = LockInternals.getSortedChildren("latch-", sorter, children);
+			String leaderId = new String(client.getData().forPath(leaderLatchPath + "/" + sortedChildren.get(0)));
+
+			Keeper keeper = new Keeper();
+			keeper.setActive(true);
+			// TODO
+			String[] parts = leaderId.split(":");
+			if (parts.length != 2) {
+				throw new RuntimeException("Error leader data in zk: " + leaderId);
+			}
+			keeper.setIp(parts[0]);
+			keeper.setPort(Integer.parseInt(parts[1]));
+
+			Pair<String, String> key = new Pair<>(clusterId, shardId);
+			Pair<Keeper, Redis> state = shardState.get(key);
+			if (state == null) {
+				log.error("Unnown shard {} {}", clusterId, shardId);
+				// TODO omit unknown shard?
+			} else {
+				log.info("{} become active keeper of cluster:{} shard:{}", leaderId, clusterId, shardId);
+				state.setKey(keeper);
+			}
+		}
+	}
+
+	@Override
+	public void initialize() throws Exception {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	@PostConstruct
+	public void start() throws Exception {
+		initializeZk();
+		// TODO
+		Cluster cluster = DefaultSaxParser
+		      .parse(getClass().getResourceAsStream("/com/ctrip/xpipe/redis/keeper/keeper6666.xml")).getClusters().get(0);
+		watchCluster(cluster);
+	}
+
+	@Override
+	public void stop() throws Exception {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void dispose() throws Exception {
+		// TODO Auto-generated method stub
+
+	}
+
+}
