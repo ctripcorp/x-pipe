@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wizard package="com.ctrip.xpipe.redis">
+   <model package="com.ctrip.xpipe.redis.keeper" name="keeper">
+      <sample-model>src/test/resources/keeper.xml</sample-model>
+   </model>
+</wizard>

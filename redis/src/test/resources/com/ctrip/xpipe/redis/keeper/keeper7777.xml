@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<xpipe>
+	<cluster id="cluster1">
+		<shard id="shard1">
+			<keeper ip="127.0.0.1" port="7777" active="false" />
+			<redis ip="127.0.0.1" port="6379" master="true" />
+		</shard>
+	</cluster>
+</xpipe>

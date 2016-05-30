@@ -22,6 +22,7 @@
 		<slf4j.version>1.7.21</slf4j.version>
 		<log4j.version>2.5</log4j.version>
 		<commons-io.version>2.4</commons-io.version>
+		<curator.version>2.7.1</curator.version>
 		<maven-jar-plugin.version>2.6</maven-jar-plugin.version>
 		<coveralls-maven-plugin.version>4.1.0</coveralls-maven-plugin.version>
 		<cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
@@ -88,6 +89,63 @@
 				<groupId>org.apache.logging.log4j</groupId>
 				<artifactId>log4j-core</artifactId>
 				<version>${log4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.curator</groupId>
+				<artifactId>curator-recipes</artifactId>
+				<version>${curator.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.unidal.framework</groupId>
+				<artifactId>foundation-service</artifactId>
+				<version>2.4.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.curator</groupId>
+				<artifactId>curator-test</artifactId>
+				<version>2.7.1</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.glassfish.jersey.media</groupId>
+				<artifactId>jersey-media-multipart</artifactId>
+				<version>2.19</version>
+			</dependency>
+			<dependency>
+				<groupId>org.glassfish.jersey.media</groupId>
+				<artifactId>jersey-media-json-jackson</artifactId>
+				<version>2.19</version>
+			</dependency>
+			<dependency>
+				<groupId>org.glassfish.jersey.containers</groupId>
+				<artifactId>jersey-container-servlet</artifactId>
+				<version>2.19</version>
+			</dependency>
+			<dependency>
+				<groupId>org.glassfish.jersey.containers</groupId>
+				<artifactId>jersey-container-servlet-core</artifactId>
+				<version>2.19</version>
+			</dependency>
+			<dependency>
+				<groupId>org.unidal.framework</groupId>
+				<artifactId>test-framework</artifactId>
+				<version>2.4.0</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>javax.servlet</groupId>
+				<artifactId>javax.servlet-api</artifactId>
+				<version>3.0.1</version>
+			</dependency>
+			<dependency>
+    			<groupId>org.springframework</groupId>
+    			<artifactId>spring-web</artifactId>
+    			<version>4.2.6.RELEASE</version>
+			</dependency>
+			<dependency>
+				<groupId>com.alibaba</groupId>
+				<artifactId>fastjson</artifactId>
+				<version>1.2.12</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

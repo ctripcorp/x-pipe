@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <file path="keeper-codegen.xml" />
+  <file path="keeper-model.xml" />
+</manifest>
+
