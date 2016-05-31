@@ -245,7 +245,7 @@
 	<repositories>
 		<repository>
 			<id>internal.repo</id>
-			<url>https://raw.github.com/ctripcorp/x-pipe/mvn_repo</url>
+			<url>https://raw.github.com/ctripcorp/x-pipe/mvn_repo/</url>
 		</repository>
 	</repositories>
 	
