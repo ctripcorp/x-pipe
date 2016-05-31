@@ -2,8 +2,8 @@
 <xpipe>
 	<cluster id="cluster01">
 		<shard id="shard01">
-			<keeper ip="1.1.1.1" port="8888" active="true" />
-			<keeper ip="2.2.2.2" port="9999" active="false" />
+			<keeper id="40x" ip="1.1.1.1" port="8888" active="true" />
+			<keeper id="40x" ip="2.2.2.2" port="9999" active="false" />
 			<redis ip="3.3.3.3" port="1234" master="true" />
 			<redis ip="4.4.4.4" port="1234" master="false" />
 		</shard>

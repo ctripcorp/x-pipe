@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -53,6 +52,7 @@ public class OneBoxTest {
 
 	@Test
 	public void startKeeper7777() throws Exception {
+		
 		Xpipe xpipe = DefaultSaxParser.parse(this.getClass().getResourceAsStream("keeper7777.xml"));
 		Cluster cluster = xpipe.getClusters().get(0);
 
@@ -92,8 +92,7 @@ public class OneBoxTest {
 					private void startKeeper() throws Exception {
 						System.out.println("Start keeper " + keeper);
 						int runidLength = 20;
-						String keeperRunid = UUID.randomUUID().toString().substring(0, runidLength);
-						keeperRunid = keeperRunid + keeperRunid;
+						String keeperRunid = keeper.getId();
 						Endpoint masterEndpoint = new DefaultEndPoint(String.format("redis://%s:%s", master.getIp(),
 						      master.getPort()));
 

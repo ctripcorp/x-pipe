@@ -41,7 +41,7 @@ public class DefaultMetaService implements MetaService {
 	@Override
 	public Keeper getActiveKeeper(String clusterId, String shardId) {
 		// TODO
-		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s", clusterId, shardId),
+		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/keeper/master", clusterId, shardId),
 		      null);
 
 		// TODO

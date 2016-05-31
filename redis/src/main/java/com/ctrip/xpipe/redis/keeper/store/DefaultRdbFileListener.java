@@ -58,6 +58,8 @@ public class DefaultRdbFileListener implements RdbFileListener{
 
 		SimpleStringParser simpleStringParser = new SimpleStringParser(
 				StringUtil.join(" ", Psync.FULL_SYNC, redisSlave.getRedisKeeperServer().getKeeperRunid(), String.valueOf(rdbFileKeeperOffset)));
+		
+		logger.info("[setRdbFileInfo]{},{}", simpleStringParser.getPayload(), redisSlave);
 		redisSlave.sendMessage(simpleStringParser.format());
 		
 		redisSlave.beginWriteRdb(rdbFileSize, rdbFileKeeperOffset);

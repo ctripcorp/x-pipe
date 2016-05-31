@@ -43,7 +43,10 @@ public class MetaResource extends BaseRecource {
 		Keeper keeper = metaServer.getActiveKeeper(clusterId, shardId);
 
 		if ("plain".equals(format)) {
-			String plainRes = String.format("%s:%s", keeper.getIp(), keeper.getPort());
+			String plainRes = "";
+			if(keeper != null) {
+				plainRes = String.format("%s:%s", keeper.getIp(), keeper.getPort());
+			}
 			return Response.status(Status.OK).entity(plainRes).build();
 		} else {
 			return Response.status(Status.OK).entity(keeper).build();
