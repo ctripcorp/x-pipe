@@ -138,9 +138,9 @@
 				<version>3.0.1</version>
 			</dependency>
 			<dependency>
-    			<groupId>org.springframework</groupId>
-    			<artifactId>spring-web</artifactId>
-    			<version>4.2.6.RELEASE</version>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-web</artifactId>
+				<version>4.2.6.RELEASE</version>
 			</dependency>
 			<dependency>
 				<groupId>com.alibaba</groupId>
@@ -249,4 +249,10 @@
 		</repository>
 	</repositories>
 	
+	<pluginRepositories>
+		<pluginRepository>
+			<id>maven-plugins</id>
+			<url>https://raw.github.com/ctripcorp/x-pipe/mvn_repo/</url>
+		</pluginRepository>
+	</pluginRepositories>
 </project>
