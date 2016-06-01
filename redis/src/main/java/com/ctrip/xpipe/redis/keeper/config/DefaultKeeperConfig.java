@@ -61,4 +61,9 @@ public class DefaultKeeperConfig implements KeeperConfig {
 		return 2000;
 	}
 
+	@Override
+   public int getRedisCommandFileSize() {
+	   return 1024 * 1024 * 1024;
+   }
+
 }
