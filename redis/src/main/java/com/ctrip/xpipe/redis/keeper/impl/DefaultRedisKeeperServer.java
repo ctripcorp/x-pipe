@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.KeeperMeta;
@@ -22,6 +23,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.handler.SlaveOfCommandHandler.SlavePromotionInfo;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
@@ -55,7 +57,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private long keeperStartTime;
 	
-	private ReplicationStore replicationStore;
+	private ReplicationStoreManager replicationStoreManager;
 
 	private KeeperMeta keeperMeta;
 
@@ -67,14 +69,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private ScheduledExecutorService scheduled;
 	
 	private CommandRequester commandRequester;
-	
-	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, KeeperMeta keeperMeta) {
-		this(masterEndpoint, replicationStore, keeperMeta, null, null);
+
+	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStoreManager replicationStoreManager, KeeperMeta keeperMeta) {
+		this(masterEndpoint, replicationStoreManager, keeperMeta, null, null);
 	}
 	
-	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, KeeperMeta keeperMeta, ScheduledExecutorService scheduled, CommandRequester commandRequester) {
+	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStoreManager replicationStoreManager, KeeperMeta keeperMeta, ScheduledExecutorService scheduled, CommandRequester commandRequester) {
 		
-		this.replicationStore = replicationStore;
+		this.replicationStoreManager = replicationStoreManager;
 		this.keeperMeta = keeperMeta;
 		if(scheduled == null){
 			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(masterEndpoint.toString()));
@@ -85,7 +87,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			commandRequester = new DefaultCommandRequester(this.scheduled);
 		}
 		this.commandRequester = commandRequester;
-		this.redisMaster = new DefaultRedisMaster(this, masterEndpoint, replicationStore, this.scheduled, this.commandRequester);
+		this.redisMaster = new DefaultRedisMaster(this, masterEndpoint, replicationStoreManager, this.scheduled, this.commandRequester);
 	}
 
 	
@@ -163,7 +165,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public String toString() {
-		return "master:" + this.redisMaster + ",masterRunId:" + replicationStore.getMasterRunid() + ",offset:" + replicationStore.endOffset();
+		return "master:" + this.redisMaster;
 	}
 
 	@Override
@@ -175,13 +177,26 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	@Override
 	public KeeperRepl getKeeperRepl() {
-		return new DefaultKeeperRepl(replicationStore);
+		
+		return new DefaultKeeperRepl(getCurrentReplicationStore());
 	}
+	
+	
+	protected ReplicationStore getCurrentReplicationStore(){
+		
+		try {
+			return replicationStoreManager.getCurrent();
+		} catch (IOException e) {
+			logger.error("[getCurrentReplicationStore]" + this, e);
+			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
+		}
+	}
+
 
 	@Override
 	public void addCommandsListener(Long offset, CommandsListener commandsListener) {
 		try {
-			replicationStore.addCommandsListener(offset, commandsListener);
+			getCurrentReplicationStore().addCommandsListener(offset, commandsListener);
 		} catch (IOException e) {
 			logger.error("[addCommandsListener]" + offset +"," + commandsListener, e);
 		}
@@ -189,7 +204,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void readRdbFile(RdbFileListener rdbFileListener) throws IOException {
-		replicationStore.readRdbFile(rdbFileListener);
+		getCurrentReplicationStore().readRdbFile(rdbFileListener);
 	}
 	
 	@Override
@@ -232,7 +247,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 	
    public ReplicationStore getReplicationStore() {
-	   return replicationStore;
+	   return getCurrentReplicationStore();
    }
 
 	@Override
@@ -271,8 +286,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	public RedisMaster masterChanged(long keeperOffset, Endpoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
 		
-		replicationStore.masterChanged(newMasterEndpoint, newMasterRunid, newMasterReplOffset - keeperOffset);
-		return new DefaultRedisMaster(this, newMasterEndpoint, replicationStore, scheduled, commandRequester);
+		getCurrentReplicationStore().masterChanged(newMasterEndpoint, newMasterRunid, newMasterReplOffset - keeperOffset);
+		return new DefaultRedisMaster(this, newMasterEndpoint, replicationStoreManager, scheduled, commandRequester);
 	}
 
 	@Override
@@ -285,4 +300,26 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return redisMaster;
 	}
 
+	@Override
+	public void beginWriteRdb() {
+	}
+
+	@Override
+	public void endWriteRdb() {
+		
+	}
+
+	@Override
+	public void reFullSync() {
+		
+		
+		for(RedisSlave redisSlave : slaves()){
+			try {
+				logger.info("[reFullSync][close slave]{}", redisSlave);
+				redisSlave.close();
+			} catch (IOException e) {
+				logger.error("[beginWriteRdb][close slaves]", e);
+			}
+		}
+	}
 }

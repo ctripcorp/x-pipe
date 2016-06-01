@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -8,10 +9,12 @@ import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.KEEPER_STATE;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.protocal.Command;
@@ -46,12 +49,11 @@ public class DefaultRedisMaster implements RedisMaster{
 	
 	public static final int REPLCONF_INTERVAL_MILLI = 1000;
 	
-
 	private RedisKeeperServer redisKeeperServer;
 	
 	private int masterConnectRetryDelaySeconds = 5;
 	private int retry = 3;
-	private ReplicationStore replicationStore;
+	private ReplicationStoreManager replicationStoreManager;
 	private Endpoint endpoint;
 	private ScheduledExecutorService scheduled;
 	private CommandRequester commandRequester;
@@ -61,10 +63,10 @@ public class DefaultRedisMaster implements RedisMaster{
 
 	private volatile boolean stop = false;
 	
-	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, Endpoint endpoint, ReplicationStore replicationStore, ScheduledExecutorService scheduled, CommandRequester commandRequester){
+	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, Endpoint endpoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, CommandRequester commandRequester){
 		
 		this.redisKeeperServer = redisKeeperServer;
-		this.replicationStore = replicationStore;
+		this.replicationStoreManager = replicationStoreManager;
 		this.endpoint = endpoint;
 		this.scheduled = scheduled;
 		this.commandRequester = commandRequester;
@@ -78,7 +80,6 @@ public class DefaultRedisMaster implements RedisMaster{
 			return;
 		}
 		
-		this.replicationStore.setMasterAddress(this.endpoint);
 		connectWithMaster();
 		
 	}
@@ -144,8 +145,20 @@ public class DefaultRedisMaster implements RedisMaster{
 	@Override
 	public void beginWriteRdb() {
 		
+		getCurrentReplicationStore().setMasterAddress(endpoint);
 	}
 
+	
+	protected ReplicationStore getCurrentReplicationStore(){
+		
+		try {
+			return replicationStoreManager.getCurrent();
+		} catch (IOException e) {
+			logger.error("[getCurrentReplicationStore]" + this, e);
+			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
+		}
+	}
+	
 	@Override
 	public void endWriteRdb() {
 		scheduleReplconf();
@@ -175,13 +188,9 @@ public class DefaultRedisMaster implements RedisMaster{
 
 	private Command psyncCommand(){
 		
-		Psync psync = null;
-		if(replicationStore.getMasterRunid() == null){
-			psync = new Psync(replicationStore);
-		}else{
-			psync = new Psync(replicationStore.getMasterRunid(), replicationStore.endOffset() + 1, replicationStore);
-		}
+		Psync psync = new Psync(replicationStoreManager);
 		psync.addPsyncObserver(this);
+		psync.addPsyncObserver(redisKeeperServer);
 		return psync;
 	}
 
@@ -201,7 +210,7 @@ public class DefaultRedisMaster implements RedisMaster{
 			@Override
 			public void run() {
 				try{
-					Command command = new Replconf(ReplConfType.ACK, String.valueOf(replicationStore.endOffset()));
+					Command command = new Replconf(ReplConfType.ACK, String.valueOf(getCurrentReplicationStore().endOffset()));
 					masterChannel.writeAndFlush(command.request());
 				}catch(Throwable th){
 					logger.error("[run][send replack error]" + DefaultRedisMaster.this, th);
@@ -215,4 +224,10 @@ public class DefaultRedisMaster implements RedisMaster{
 	public String toString() {
 		return endpoint.toString();
 	}
+
+	@Override
+	public void reFullSync() {
+		
+	}
+
 }

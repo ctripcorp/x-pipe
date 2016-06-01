@@ -64,6 +64,7 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 
 		logger.error("[exceptionCaught]" + ctx.channel(), cause);
+		ctx.channel().close();
 		super.exceptionCaught(ctx, cause);
 	}
 
