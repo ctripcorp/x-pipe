@@ -11,14 +11,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.io.IOUtils;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.KEEPER_STATE;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.netty.NettyBaseClientHandler;
 import com.ctrip.xpipe.redis.protocal.CmdContext;
 import com.ctrip.xpipe.redis.protocal.Command;
@@ -275,11 +274,11 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	public static class SlavePromotionInfo{
 		
 		private long keeperOffset;
-		private Endpoint newMasterEndpoint;
+		private DefaultEndPoint newMasterEndpoint;
 		private String newMasterRunid;
 		private long newMasterReplOffset;
 		
-		public SlavePromotionInfo(long keeperOffset, Endpoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset){
+		public SlavePromotionInfo(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset){
 			this.keeperOffset = keeperOffset;
 			this.newMasterEndpoint = newMasterEndpoint;
 			this.newMasterRunid = newMasterRunid;
@@ -291,7 +290,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			return keeperOffset;
 		}
 
-		public Endpoint getNewMasterEndpoint() {
+		public DefaultEndPoint getNewMasterEndpoint() {
 			return newMasterEndpoint;
 		}
 

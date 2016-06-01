@@ -10,7 +10,6 @@ import org.apache.curator.retry.RetryNTimes;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.keeper.cluster.ElectContext;
 import com.ctrip.xpipe.redis.keeper.cluster.KeeperStarter;
@@ -92,7 +91,7 @@ public class OneBoxTest {
 					private void startKeeper() throws Exception {
 						System.out.println("Start keeper " + keeper);
 						String keeperRunid = keeper.getId();
-						Endpoint masterEndpoint = new DefaultEndPoint(String.format("redis://%s:%s", master.getIp(),
+						DefaultEndPoint masterEndpoint = new DefaultEndPoint(String.format("redis://%s:%s", master.getIp(),
 						      master.getPort()));
 
 						ReplicationStore replicationStore = createReplicationStore(masterEndpoint, storeDir);
@@ -145,7 +144,7 @@ public class OneBoxTest {
 		return client;
 	}
 
-	private ReplicationStore createReplicationStore(Endpoint masterEndpoint, File storeDir) throws IOException {
+	private ReplicationStore createReplicationStore(DefaultEndPoint masterEndpoint, File storeDir) throws IOException {
 		ReplicationStore replicationStore = new DefaultReplicationStore(storeDir, 1024 * 1024 * 1024);
 		replicationStore.setMasterAddress(masterEndpoint);
 		replicationStore.setKeeperBeginOffset(100);

@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.keeper;
 import java.io.Closeable;
 import java.io.IOException;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 
 import io.netty.buffer.ByteBuf;
 
@@ -59,11 +59,11 @@ public interface ReplicationStore extends Closeable {
 	 * @param newMasterId
 	 * @param offsetdelta  newBeginOffset = beginoffset + delta
 	 */
-	void masterChanged(Endpoint newMasterEndpoint, String newMasterRunid, long offsetdelta);
+	void masterChanged(DefaultEndPoint newMasterEndpoint, String newMasterRunid, long offsetdelta);
 	
-	void setMasterAddress(Endpoint endpoint);
+	void setMasterAddress(DefaultEndPoint endpoint);
 	
-	Endpoint getMasterAddress();
+	DefaultEndPoint getMasterAddress();
 	
 	void setKeeperBeginOffset(long offset);
 	
@@ -75,11 +75,11 @@ public interface ReplicationStore extends Closeable {
 	
 	ReplicationStoreMeta getReplicationStoreMeta();
 	
-	ReplicationStoreMeta getReplicationStoreMeta(String name);
+	ReplicationStoreMeta getReplicationStoreMeta(String name) throws IOException;
 	
-	void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta);
+	void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException;
 	
-	void changeMetaTo(String name);
+	void changeMetaTo(String name) throws IOException;
 	
 	/**
 	 * check if this store is newly borned

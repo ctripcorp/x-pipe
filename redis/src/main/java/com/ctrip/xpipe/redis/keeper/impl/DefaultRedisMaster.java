@@ -6,13 +6,13 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.KEEPER_STATE;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.KEEPER_STATE;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.protocal.Command;
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
@@ -52,7 +52,7 @@ public class DefaultRedisMaster implements RedisMaster{
 	private int masterConnectRetryDelaySeconds = 5;
 	private int retry = 3;
 	private ReplicationStore replicationStore;
-	private Endpoint endpoint;
+	private DefaultEndPoint endpoint;
 	private ScheduledExecutorService scheduled;
 	private CommandRequester commandRequester;
 	private EventLoopGroup slaveEventLoopGroup = new NioEventLoopGroup();
@@ -61,7 +61,7 @@ public class DefaultRedisMaster implements RedisMaster{
 
 	private volatile boolean stop = false;
 	
-	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, Endpoint endpoint, ReplicationStore replicationStore, ScheduledExecutorService scheduled, CommandRequester commandRequester){
+	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, ReplicationStore replicationStore, ScheduledExecutorService scheduled, CommandRequester commandRequester){
 		
 		this.redisKeeperServer = redisKeeperServer;
 		this.replicationStore = replicationStore;

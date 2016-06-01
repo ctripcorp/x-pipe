@@ -9,9 +9,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.KeeperMeta;
@@ -68,11 +68,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private CommandRequester commandRequester;
 	
-	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, KeeperMeta keeperMeta) {
+	public DefaultRedisKeeperServer(DefaultEndPoint masterEndpoint, ReplicationStore replicationStore, KeeperMeta keeperMeta) {
 		this(masterEndpoint, replicationStore, keeperMeta, null, null);
 	}
 	
-	public DefaultRedisKeeperServer(Endpoint masterEndpoint, ReplicationStore replicationStore, KeeperMeta keeperMeta, ScheduledExecutorService scheduled, CommandRequester commandRequester) {
+	public DefaultRedisKeeperServer(DefaultEndPoint masterEndpoint, ReplicationStore replicationStore, KeeperMeta keeperMeta, ScheduledExecutorService scheduled, CommandRequester commandRequester) {
 		
 		this.replicationStore = replicationStore;
 		this.keeperMeta = keeperMeta;
@@ -269,7 +269,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.setKeeperServerState(keeperState, null);
 	}
 
-	public RedisMaster masterChanged(long keeperOffset, Endpoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
+	public RedisMaster masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
 		
 		replicationStore.masterChanged(newMasterEndpoint, newMasterRunid, newMasterReplOffset - keeperOffset);
 		return new DefaultRedisMaster(this, newMasterEndpoint, replicationStore, scheduled, commandRequester);
