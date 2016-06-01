@@ -68,4 +68,17 @@ public interface ReplicationStore extends Closeable {
 	void setKeeperBeginOffset(long offset);
 	
 	long getKeeperBeginOffset();
+	
+	void setActive(boolean active);
+	
+	boolean isActive();
+	
+	ReplicationStoreMeta getReplicationStoreMeta();
+	
+	ReplicationStoreMeta getReplicationStoreMeta(String name);
+	
+	void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta);
+	
+	void changeMetaTo(String name);
+
 }
