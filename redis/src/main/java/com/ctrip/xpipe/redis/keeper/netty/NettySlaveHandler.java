@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.netty;
 
 
-
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -23,6 +22,7 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 	private Logger logger = LoggerFactory.getLogger(NettySlaveHandler.class);
 	
 	private RedisMaster redisMaster;
+	private int retryReadTimes = 3;
 	
 	public NettySlaveHandler(DefaultRedisMaster redisMaster) {
 		this.redisMaster = redisMaster;
@@ -56,7 +56,15 @@ public class NettySlaveHandler extends ChannelDuplexHandler{
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		
-		redisMaster.handleResponse(ctx.channel(), (ByteBuf)msg);
+		ByteBuf byteBuf = (ByteBuf) msg;
+		
+		for(int i = 0; i < retryReadTimes ; i++){
+			redisMaster.handleResponse(ctx.channel(), byteBuf);
+			if(byteBuf.readableBytes() <= 0){
+				break;
+			}
+		}
+		
 		super.channelRead(ctx, msg);
 	}
 	

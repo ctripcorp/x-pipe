@@ -49,6 +49,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	
 	void setKeeperServerState(KEEPER_STATE keeperState, Object info);
 	
+	CLUSTER_ROLE getClusterRole();
+	
 	public static enum KEEPER_STATE{
 		
 		NORMAL,

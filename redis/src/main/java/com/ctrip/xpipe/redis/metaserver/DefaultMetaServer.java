@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.metaserver;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -163,8 +164,8 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 	public void start() throws Exception {
 		initializeZk();
 		// TODO
-		Cluster cluster = DefaultSaxParser
-		      .parse(getClass().getResourceAsStream("/com/ctrip/xpipe/redis/keeper/keeper6666.xml")).getClusters().get(0);
+		InputStream ins = getClass().getClassLoader().getResourceAsStream("keeper6666.xml");
+		Cluster cluster = DefaultSaxParser.parse(ins).getClusters().get(0);
 		watchCluster(cluster);
 	}
 

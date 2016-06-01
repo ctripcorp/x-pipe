@@ -9,15 +9,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.CLUSTER_ROLE;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
-import com.ctrip.xpipe.redis.keeper.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -26,6 +26,10 @@ import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.cluster.ElectContext;
+import com.ctrip.xpipe.redis.keeper.cluster.LeaderElector;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.entity.Keeper;
 import com.ctrip.xpipe.redis.keeper.entity.Redis;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
@@ -57,6 +61,8 @@ import io.netty.handler.logging.LoggingHandler;
  */
 public class DefaultRedisKeeperServer extends AbstractRedisServer implements RedisKeeperServer, Observer{
 	
+	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER"; 
+	
 	private KEEPER_STATE keeperState = KEEPER_STATE.NORMAL;
 	
 	private CLUSTER_ROLE clusterRole = CLUSTER_ROLE.UNKNOWN;
@@ -69,8 +75,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private long keeperStartTime;
 	
 	private ReplicationStoreManager replicationStoreManager;
-
-	private KeeperMeta keeperMeta;
 
     private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -88,11 +92,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private Keeper activeKeeper, currentKeeper;
 	private Redis  clusterRedisMaster;
 	
+	private LeaderElector leaderElector;
+
+	public DefaultRedisKeeperServer(String clusterId, String shardId, Keeper currentKeeper, ReplicationStoreManager replicationStoreManager, 
+			MetaServiceManager metaServiceManager){
+		this(clusterId, shardId, currentKeeper, replicationStoreManager, metaServiceManager, null, null);
+	}
+
 	public DefaultRedisKeeperServer(String clusterId, String shardId, Keeper currentKeeper, ReplicationStoreManager replicationStoreManager, 
 			MetaServiceManager metaServiceManager, 
 			ScheduledExecutorService scheduled, 
 			CommandRequester commandRequester){
-		
 		this.clusterId = clusterId;
 		this.shardId = shardId;
 		this.currentKeeper = currentKeeper;
@@ -106,20 +116,35 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			commandRequester = new DefaultCommandRequester(this.scheduled);
 		}
 		this.commandRequester = commandRequester;
+		
+	}
+	
+	private LeaderElector createLeaderElector(){
+		
+		KeeperConfig config = new DefaultKeeperConfig();
+		String leaderElectionZKPath = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), clusterId, shardId);
+		String leaderElectionID = String.format("%s:%s", currentKeeper.getIp(), currentKeeper.getPort());
+		ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);
+		LeaderElector elector = new LeaderElector(config, ctx);
+		return elector;
 	}
 
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
+		
+		this.leaderElector = createLeaderElector();
+		this.leaderElector.initialize();
 		metaServiceManager.addObserver(this);
 		metaServiceManager.addShard(clusterId, shardId);
 	}
 	
 	@Override
 	protected void doDispose() throws Exception {
-
+		
 		metaServiceManager.remoteObserver(this);
 		metaServiceManager.removeShard(clusterId, shardId);
+		this.leaderElector.dispose();
 		super.doDispose();
 	}
 
@@ -128,9 +153,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doStart() throws Exception {
 		super.doStart();
 		keeperStartTime = System.currentTimeMillis();
+		this.leaderElector.start();
 		
 		startServer();
-		redisMaster.startReplication();
+		tryReplicationMaster();
 	}
 	
 	@Override
@@ -155,58 +181,146 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	private void gotRedisMasterInfo(Redis clusterRedisMaster) {
+		
 		if(!clusterRedisMaster.getMaster()){
 			throw new IllegalStateException("redis not master:" + clusterRedisMaster);
 		}
 		
-		if(this.clusterRedisMaster == null){
-			
-			logger.info("[gotRedisMasterInfo][new master]{}", clusterRedisMaster);
-			this.clusterRedisMaster  = clusterRedisMaster;
-			Endpoint endpoint = new DefaultEndPoint(clusterRedisMaster.getIp(), clusterRedisMaster.getPort());
-			this.keeperRedisMaster = new DefaultRedisMaster(this, endpoint, replicationStoreManager, scheduled, commandRequester);
-			tryReplicationMaster();
+		if(this.clusterRedisMaster != null && this.clusterRedisMaster.equals(clusterRedisMaster)){
 			return;
 		}
-		//TODO ask keepermaster again about redis master information
-		if(!this.clusterRedisMaster.equals(clusterRedisMaster)){
-			
-			logger.info("[gotRedisMasterInfo][master changed]{} -> {}", this.clusterRedisMaster, clusterRedisMaster);
-			this.clusterRedisMaster = clusterRedisMaster;
-		}
 		
+		Redis old = this.clusterRedisMaster;
+		this.clusterRedisMaster  = clusterRedisMaster;
+		if(this.clusterRedisMaster == null){
+			logger.info("[gotRedisMasterInfo][new master]{}", clusterRedisMaster);
+			tryReplicationMaster();
+		}else{
+			//TODO ask keepermaster again about redis master information
+			logger.info("[gotRedisMasterInfo][master changed]{} -> {}", old, clusterRedisMaster);
+			
+		}
 	}
 
 	private void tryReplicationMaster() {
 		
+		if(getPhaseName().equals(Startable.PHASE_NAME_BEGIN) || getPhaseName().equals(Startable.PHASE_NAME_END)){
+			if(clusterRole == CLUSTER_ROLE.UNKNOWN){
+				logger.info("[tryReplicationMaster][role unknown]{}", this);
+				return;
+			}
+			doReplicationMaster();
+		}else{
+			logger.info("[tryReplicationMaster][not started yet]{}", this);
+		}
+	}
+
+	private void doReplicationMaster() {
+
+		DefaultEndPoint endpoint = null;
 		
+		switch(clusterRole){
+			case ACTIVE:
+				if(clusterRedisMaster == null){
+					logger.info("[doReplicationMaster][clusterRedisMaster not found]{}", this);
+					return;
+				}
+				endpoint = new DefaultEndPoint(clusterRedisMaster.getIp(), clusterRedisMaster.getPort());
+				break;
+			case BACKUP:
+				endpoint = new DefaultEndPoint(activeKeeper.getIp(), activeKeeper.getPort());
+				break;
+			case UNKNOWN:
+				throw new IllegalStateException("clusterRole unknown, can not replication." + this);
+		}
+		this.keeperRedisMaster = new DefaultRedisMaster(this, endpoint, replicationStoreManager, scheduled, commandRequester);
+		this.keeperRedisMaster.startReplication();
 	}
 
 	private void gotActiveKeeperInfo(Keeper activeKeeper) {
+		
 		if(!activeKeeper.isActive()){
 			throw new IllegalStateException("keeper not active:" + activeKeeper);
 		}
 		
-		if(this.activeKeeper == null){
-			logger.info("[gotActiveKeeperInfo][new activeKeeper]{}", activeKeeper);
-			this.activeKeeper = activeKeeper;
-			tryReplicationMaster();
+		if(this.activeKeeper != null && this.activeKeeper.equals(activeKeeper)){
 			return;
 		}
 		
-		if(!this.activeKeeper.equals(activeKeeper)){
+		if(this.activeKeeper == null){
+			logger.info("[gotActiveKeeperInfo][new activeKeeper]{}", activeKeeper);
+		}else{
 			logger.info("[gotActiveKeeperInfo][activeKeeper changed]{} -> {}", this.activeKeeper, activeKeeper);
-			this.activeKeeper = activeKeeper;
 		}
+		
+		this.activeKeeper = activeKeeper;
+		
+		if(this.activeKeeper.getIp().equals(currentKeeper.getIp()) && this.activeKeeper.getPort().equals(currentKeeper.getPort())){
+			setClusterRole(CLUSTER_ROLE.ACTIVE);
+		}else{
+			setClusterRole(CLUSTER_ROLE.BACKUP);
+		}
+	}
+		
+
+	protected void setClusterRole(CLUSTER_ROLE clusterRole){
+
+		CLUSTER_ROLE previous = this.clusterRole;
+		this.clusterRole = clusterRole;
+		
+		switch(previous){
+			case ACTIVE:
+				if(clusterRole == CLUSTER_ROLE.BACKUP){
+					fromActiveToBackup();
+				}else if(clusterRole == CLUSTER_ROLE.UNKNOWN){
+					throw new IllegalStateException("can not change state from backuo to unknown");
+				}
+				break;
+			case BACKUP:
+				if(clusterRole == CLUSTER_ROLE.ACTIVE){
+					fromBackupToActive();
+				}else if(clusterRole == CLUSTER_ROLE.UNKNOWN){
+					throw new IllegalStateException("can not change state from backuo to unknown");
+				}
+				break;
+			case UNKNOWN:
+				tryReplicationMaster();
+				break;
+			default:
+				throw new IllegalStateException("unknown cluster role:" + clusterRole);
+		}
+	}
+	
+	private void fromBackupToActive() {
+		
+		try {
+			keeperRedisMaster.stopReplication();
+			logger.info("[fromBackupToActive]{}", this);
+			ReplicationStore replicationStore = getCurrentReplicationStore();
+			replicationStore.changeMetaTo(BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME);
+			doReplicationMaster();
+		} catch (IOException e) {
+			logger.error("[fromBackupToActive][failed]", e);
+		}
+	}
+	
+	private void fromActiveToBackup() {
+		//TODO
+		logger.info("[fromActiveToBackup]{}", this);
+		
 	}
 
 	@Override
 	protected void doStop() throws Exception {
 		
-		redisMaster.stopReplication();
+		if(keeperRedisMaster != null){
+			keeperRedisMaster.stopReplication();
+		}
 		stopServer();
 		super.doStop();
+		this.leaderElector.stop();
 	}
+	
 	
 
 	private void stopServer() {
@@ -231,7 +345,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
                  p.addLast(new NettyMasterHandler(DefaultRedisKeeperServer.this, new CommandHandlerManager()));
              }
          });
-        b.bind(keeperMeta.getKeeperPort()).sync();
+        b.bind(currentKeeper.getPort()).sync();
     }
 		
 
@@ -264,13 +378,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public String toString() {
-		return "master:" + this.redisMaster;
+		return "master:" + this.keeperRedisMaster;
 	}
 
 	@Override
 	public String getKeeperRunid() {
 		
-		return this.keeperMeta.getKeeperRunid();
+		return this.currentKeeper.getId();
 	}
 
 	
@@ -320,7 +434,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public String info() {
 		
 		String info = "os:" + OsUtils.osInfo() + RedisProtocol.CRLF;
-		info += "run_id:" + keeperMeta.getKeeperRunid() + RedisProtocol.CRLF;
+		info += "run_id:" + currentKeeper.getId() + RedisProtocol.CRLF;
 		info += "uptime_in_seconds:" + (System.currentTimeMillis() - keeperStartTime)/1000;
 		return info;
 	}
@@ -362,15 +476,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			case NORMAL:
 				break;
 			case BEGIN_PROMOTE_SLAVE:
-				redisMaster.stopReplication();
+				keeperRedisMaster.stopReplication();
 				break;
 			case COMMANDS_SEND_FINISH:
 				break;
 			case SLAVE_PROMTED:
 				SlavePromotionInfo promotionInfo = (SlavePromotionInfo) info;
-				this.redisMaster = masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
+				this.keeperRedisMaster = masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
 						, promotionInfo.getNewMasterRunid(), promotionInfo.getNewMasterReplOffset());
-				redisMaster.startReplication();
+				keeperRedisMaster.startReplication();
 				break;
 			default:
 				throw new IllegalStateException("unkonow state:" + keeperState);
@@ -383,7 +497,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.setKeeperServerState(keeperState, null);
 	}
 
-	public RedisMaster masterChanged(long keeperOffset, Endpoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
+	public RedisMaster masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
 		
 		getCurrentReplicationStore().masterChanged(newMasterEndpoint, newMasterRunid, newMasterReplOffset - keeperOffset);
 		return new DefaultRedisMaster(this, newMasterEndpoint, replicationStoreManager, scheduled, commandRequester);
@@ -391,12 +505,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public int getListeningPort() {
-		return keeperMeta.getKeeperPort();
+		return currentKeeper.getPort();
 	}
 
 	@Override
 	public RedisMaster getRedisMaster() {
-		return redisMaster;
+		return keeperRedisMaster;
 	}
 
 	@Override
@@ -420,6 +534,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				logger.error("[beginWriteRdb][close slaves]", e);
 			}
 		}
+	}
+
+	@Override
+	public CLUSTER_ROLE getClusterRole() {
+		return this.clusterRole;
 	}
 
 }

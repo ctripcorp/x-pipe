@@ -88,10 +88,11 @@ public class AbstractTest {
 	
 	
 	protected String getTestFileDir(){
+		
 		String userHome = System.getProperty("user.home");
 		String testDir = properties.getProperty("test.file.dir"); 
-		return testDir.replace("~", userHome);
-		
+		String result = testDir.replace("~", userHome);
+		return result + "/" + currentTestName();
 	} 
 
 	protected void sleepSeconds(int seconds){

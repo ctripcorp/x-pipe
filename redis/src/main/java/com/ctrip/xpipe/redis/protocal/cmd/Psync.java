@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.protocal.protocal.BulkStringParser.BulkStringParserListener;
 import com.ctrip.xpipe.redis.protocal.protocal.RequestStringParser;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBuf;
 
@@ -54,6 +55,7 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	public Psync(ReplicationStoreManager replicationStoreManager) {
 		
 		this.replicationStoreManager = replicationStoreManager;
+		currentReplicationStore = getCurrentReplicationStore();
 	}
 	
 	
@@ -71,15 +73,21 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	@Override
 	protected ByteBuf doRequest() {
 		
-		currentReplicationStore = getCurrentReplicationStore();
-		String masterRunidRequest = currentReplicationStore.getMasterRunid();
-		long   offset = currentReplicationStore.endOffset() + 1;
+		String masterRunidRequest = null;
 		
+		if(currentReplicationStore == null){
+			masterRunidRequest = "?";
+			offset = -1;
+		}else{
+			masterRunidRequest = currentReplicationStore.getMasterRunid();
+			offset = currentReplicationStore.endOffset() + 1;
+		}
 		if(masterRunidRequest == null){
 			masterRunidRequest = "?";
 			offset = -1;
 		}
 		RequestStringParser requestString = new RequestStringParser(getName(), masterRunidRequest, String.valueOf(offset));
+		logger.info("[doRequest]", StringUtil.join(" ", requestString.getPayload()));
 		return requestString.format();
 	}
 
@@ -216,20 +224,23 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 			psyncState = PSYNC_STATE.READING_RDB;
 			
 			
-			if(!currentReplicationStore.isFresh()){
+			if(currentReplicationStore== null || !currentReplicationStore.isFresh()){
 				
 				logger.info("[handleResponse][full sync][replication store out of time, destroy]{}", currentReplicationStore);
 				
 				ReplicationStore oldStore = currentReplicationStore;
-				try {
-					oldStore.close();
-				} catch (IOException e) {
-					logger.error("[handleRedisReponse]" + oldStore, e);
+				long newKeeperBeginOffset = 2;
+				if(oldStore != null){
+					try {
+						oldStore.close();
+					} catch (IOException e) {
+						logger.error("[handleRedisReponse]" + oldStore, e);
+					}
+					newKeeperBeginOffset = oldStore.getKeeperBeginOffset() + (oldStore.endOffset() - oldStore.beginOffset()) + 1;
+					oldStore.delete();
 				}
-				long newKeeperBeginOffset = oldStore.getKeeperBeginOffset() + (oldStore.endOffset() - oldStore.beginOffset()) + 1;
 				currentReplicationStore = createNewReplicationStore();
 				currentReplicationStore.setKeeperBeginOffset(newKeeperBeginOffset);
-				replicationStoreManager.destroy(oldStore);
 				notifyReFullSync();
 			}
 		}else if(split[0].equalsIgnoreCase(PARTIAL_SYNC)){

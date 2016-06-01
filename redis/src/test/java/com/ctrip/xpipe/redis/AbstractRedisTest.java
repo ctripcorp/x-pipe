@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis;
 
 
-
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,13 +13,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.ctrip.xpipe.redis.keeper.impl.DefaultReplicationStore;
+import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.impl.DefaultReplicationStoreManager;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -36,22 +33,30 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	protected ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
 
 	protected static final int runidLength = 40;
-
-	protected ReplicationStore createReplicationStore() throws IOException{
-		
-		String tmpDir = getTestFileDir();
-		
-		if(logger.isInfoEnabled()){
-			logger.info("[createReplicationStore]" + tmpDir);
-		}
-		ReplicationStore replicationStore = new DefaultReplicationStore(new File(tmpDir), 1024 * 1024 * 1024);
-		replicationStore.setMasterAddress(getMasterEndPoint());
-		replicationStore.setKeeperBeginOffset(100);
-		return replicationStore;
-	}
 	
-	private Endpoint getMasterEndPoint() {
-		return new DefaultEndPoint("redis://127.0.0.1:6379");
+
+	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId){
+
+		String tmpDir = getTestFileDir();
+
+		return new DefaultReplicationStoreManager(clusterId, shardId, new File(tmpDir));
+	}
+
+	
+	protected ReplicationStoreManager createReplicationStoreManager(){
+
+		String tmpDir = getTestFileDir();
+
+		return new DefaultReplicationStoreManager(getClusterId(), getShardId(), new File(tmpDir));
+	}
+
+	protected String getClusterId() {
+		return "unit-cluster";
+	}
+
+	protected String getShardId() {
+		
+		return "unit-shard";
 	}
 
 	protected String readRdbFileTilEnd(ReplicationStore replicationStore) throws IOException, InterruptedException {

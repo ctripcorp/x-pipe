@@ -6,7 +6,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.keeper.ReplicationStoreMeta;
 
 /**
  * @author wenchao.meng
@@ -30,6 +32,23 @@ public class SimpleTest extends AbstractTest{
 		Calendar calendar = Calendar.getInstance();
 		System.out.println(calendar);
 //		logger.printf(Level.INFO, "%2$tm %2$te,%2$tY", calendar);
+		
+	}
+	
+	@Test
+	public void testJson(){
+		
+		ReplicationStoreMeta meta = new ReplicationStoreMeta();
+		meta.setActive(true);
+		meta.setBeginOffset(100);
+		meta.setMasterRunid("abdc");
+		
+		String json = JSON.toJSONString(meta);
+		
+		System.out.println(json);
+		
+		meta = JSON.parseObject(null, ReplicationStoreMeta.class);
+		System.out.println(meta);
 		
 	}
 

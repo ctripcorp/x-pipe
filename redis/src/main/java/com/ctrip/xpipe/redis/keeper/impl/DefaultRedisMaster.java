@@ -7,18 +7,26 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.alibaba.fastjson.JSON;
+import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.redis.keeper.CLUSTER_ROLE;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.KEEPER_STATE;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.KEEPER_STATE;
+import com.ctrip.xpipe.redis.keeper.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
+import com.ctrip.xpipe.redis.protocal.CmdContext;
 import com.ctrip.xpipe.redis.protocal.Command;
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
+import com.ctrip.xpipe.redis.protocal.RequestResponseCommandListener;
+import com.ctrip.xpipe.redis.protocal.cmd.KinfoCommand;
 import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.protocal.cmd.Replconf.ReplConfType;
@@ -53,8 +61,11 @@ public class DefaultRedisMaster implements RedisMaster{
 	
 	private int masterConnectRetryDelaySeconds = 5;
 	private int retry = 3;
+
 	private ReplicationStoreManager replicationStoreManager;
-	private Endpoint endpoint;
+
+	private DefaultEndPoint endpoint;
+	
 	private ScheduledExecutorService scheduled;
 	private CommandRequester commandRequester;
 	private EventLoopGroup slaveEventLoopGroup = new NioEventLoopGroup();
@@ -63,7 +74,7 @@ public class DefaultRedisMaster implements RedisMaster{
 
 	private volatile boolean stop = false;
 	
-	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, Endpoint endpoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, CommandRequester commandRequester){
+	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, CommandRequester commandRequester){
 		
 		this.redisKeeperServer = redisKeeperServer;
 		this.replicationStoreManager = replicationStoreManager;
@@ -152,7 +163,11 @@ public class DefaultRedisMaster implements RedisMaster{
 	protected ReplicationStore getCurrentReplicationStore(){
 		
 		try {
-			return replicationStoreManager.getCurrent();
+			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
+			if(replicationStore == null){
+				replicationStore = replicationStoreManager.create();
+			}
+			return replicationStore;
 		} catch (IOException e) {
 			logger.error("[getCurrentReplicationStore]" + this, e);
 			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
@@ -181,9 +196,57 @@ public class DefaultRedisMaster implements RedisMaster{
 		
 		this.masterChannel = channel;
 		commandRequester.request(channel, listeningPortCommand());
-		commandRequester.request(channel, psyncCommand());
+		if(redisKeeperServer.getClusterRole() == CLUSTER_ROLE.BACKUP){
+			commandRequester.request(channel, kinfoCommand());
+		}else{
+			commandRequester.request(channel, psyncCommand());
+		}
 		
 		redisKeeperServer.setKeeperServerState(KEEPER_STATE.NORMAL);
+	}
+
+	private Command kinfoCommand() {
+		
+		KinfoCommand kinfoCommand = new KinfoCommand();
+		kinfoCommand.setCommandListener(new RequestResponseCommandListener() {
+			
+			@Override
+			public void onComplete(CmdContext cmdContext, Object data, Exception e) {
+				
+				if(e != null){
+					logger.error("[onComplete]" + data, e);
+					cmdContext.schedule(TimeUnit.SECONDS, 1, kinfoCommand());
+					return;
+				}
+				
+				ByteArrayOutputStreamPayload payload = (ByteArrayOutputStreamPayload) data;
+				String buff = new String(payload.getBytes(), Codec.defaultCharset);
+				
+				logger.info("[onComplete]{}", buff);
+				
+				ReplicationStoreMeta meta = null;
+				try{
+					meta = JSON.parseObject(buff, ReplicationStoreMeta.class);
+				}catch(Exception e1){
+					logger.error("[onComplete]" + cmdContext + "," + buff, e1);
+				}
+				
+				if(meta != null && meta.getMasterRunid() != null){
+					try {
+						getCurrentReplicationStore().saveMeta(DefaultRedisKeeperServer.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME, meta);
+						cmdContext.sendCommand(psyncCommand());
+					} catch (IOException e1) {
+						logger.error("[onComplete]" + cmdContext + "," + buff, e1);
+						throw new XpipeRuntimeException("[kinfo][cmd error]" + buff, e1);
+					}
+					
+				}else{
+					cmdContext.schedule(TimeUnit.SECONDS, 1, kinfoCommand());
+				}
+			}
+		});
+		
+		return kinfoCommand;
 	}
 
 	private Command psyncCommand(){

@@ -10,6 +10,7 @@ import org.junit.Test;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.AbstractRedisTest;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -24,6 +25,8 @@ public class PsyncTest extends AbstractRedisTest{
 	
 	private ByteBufAllocator allocator  = ByteBufAllocator.DEFAULT;
 	private Psync psync;
+	
+	private ReplicationStoreManager replicationStoreManager;
 	private ReplicationStore replicationStore;
 
 	private String masterId = randomString(40);
@@ -36,8 +39,9 @@ public class PsyncTest extends AbstractRedisTest{
 	@Before
 	public void beforePsyncTest() throws IOException{
 		
-		replicationStore = createReplicationStore();
-		psync = new Psync(replicationStore);
+		replicationStoreManager = createReplicationStoreManager();
+		replicationStore = replicationStoreManager.create();
+		psync = new Psync(replicationStoreManager);
 	}
 
 	@Test
