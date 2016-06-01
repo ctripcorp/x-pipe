@@ -80,5 +80,10 @@ public interface ReplicationStore extends Closeable {
 	void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta);
 	
 	void changeMetaTo(String name);
-
+	
+	/**
+	 * check if this store is newly borned
+	 * @return
+	 */
+	boolean isFresh();
 }
