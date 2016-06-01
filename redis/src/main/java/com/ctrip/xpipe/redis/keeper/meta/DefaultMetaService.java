@@ -105,6 +105,7 @@ public class DefaultMetaService implements MetaService {
 		});
 	}
 
+	@SuppressWarnings("unused")
 	private String post(final String path, final Map<String, String> requestParams, final Object payload) {
 		Pair<Integer, String> codeAndRes = pollMetaServer(new Function<String, Pair<Integer, String>>() {
 
