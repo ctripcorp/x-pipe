@@ -91,7 +91,6 @@ public class OneBoxTest {
 
 					private void startKeeper() throws Exception {
 						System.out.println("Start keeper " + keeper);
-						int runidLength = 20;
 						String keeperRunid = keeper.getId();
 						Endpoint masterEndpoint = new DefaultEndPoint(String.format("redis://%s:%s", master.getIp(),
 						      master.getPort()));
