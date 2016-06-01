@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import java.io.IOException;
+
 /**
  * @author wenchao.meng
  *
@@ -10,14 +12,16 @@ public interface ReplicationStoreManager {
 	/**
 	 * create new replication store
 	 * @return
+	 * @throws IOException 
 	 */
-	ReplicationStore create();
+	ReplicationStore create() throws IOException;
 	
 	/**
 	 * get the newest replication store
 	 * @return
+	 * @throws IOException 
 	 */
-	ReplicationStore getCurrent();
+	ReplicationStore getCurrent() throws IOException;
 	
 	
 	void destroy(ReplicationStore replicationStore);

@@ -57,4 +57,9 @@ public interface KeeperConfig {
 	 */
    int getMetaServerReadTimeout();
 
+	/**
+	 * @return
+	 */
+   int getRedisCommandFileSize();
+
 }
