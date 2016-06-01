@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
@@ -50,7 +49,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		return replicationStore;
 	}
 	
-	private Endpoint getMasterEndPoint() {
+	private DefaultEndPoint getMasterEndPoint() {
 		return new DefaultEndPoint("redis://127.0.0.1:6379");
 	}
 

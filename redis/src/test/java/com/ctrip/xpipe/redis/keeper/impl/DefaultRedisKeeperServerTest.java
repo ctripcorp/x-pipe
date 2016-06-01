@@ -6,7 +6,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.AbstractRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -21,7 +20,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisTest{
 	
 	private RedisKeeperServer redisKeeperServer;
 	private String keeperRunid = randomString(runidLength);
-	private Endpoint masterEndpoint = new DefaultEndPoint("redis://127.0.0.1:6379"); 
+	private DefaultEndPoint masterEndpoint = new DefaultEndPoint("redis://127.0.0.1:6379"); 
 	private ReplicationStore replicationStore;
 	private int keeperPort = 7777;
 	
