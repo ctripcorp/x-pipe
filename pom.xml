@@ -238,35 +238,33 @@
 					</plugin>
 				</plugins>
 			</build>
+			<repositories>
+				<repository>
+					<id>central</id>
+					<url>http://repo1.maven.org/maven2</url>
+				</repository>
+				<repository>
+					<id>unidal</id>
+					<url>https://raw.github.com/ctripcorp/x-pipe/mvn_repo/</url>
+					<releases>
+						<checksumPolicy>ignore</checksumPolicy>
+					</releases>
+				</repository>
+			</repositories>
+
+			<pluginRepositories>
+				<pluginRepository>
+					<id>central</id>
+					<url>http://repo1.maven.org/maven2</url>
+				</pluginRepository>
+				<pluginRepository>
+					<id>unidal</id>
+					<url>https://raw.github.com/ctripcorp/x-pipe/mvn_repo/</url>
+					<releases>
+						<checksumPolicy>ignore</checksumPolicy>
+					</releases>
+				</pluginRepository>
+			</pluginRepositories>
 		</profile>
 	</profiles>
-
-
-	<repositories>
-		<repository>
-			<id>central</id>
-			<url>http://repo1.maven.org/maven2</url>
-		</repository>
-		<repository>
-			<id>unidal</id>
-			<url>https://raw.github.com/ctripcorp/x-pipe/mvn_repo/</url>
-			<releases>
-				<checksumPolicy>ignore</checksumPolicy>
-			</releases>
-		</repository>
-	</repositories>
-
-	<pluginRepositories>
-		<pluginRepository>
-			<id>central</id>
-			<url>http://repo1.maven.org/maven2</url>
-		</pluginRepository>
-		<pluginRepository>
-			<id>unidal</id>
-			<url>https://raw.github.com/ctripcorp/x-pipe/mvn_repo/</url>
-			<releases>
-				<checksumPolicy>ignore</checksumPolicy>
-			</releases>
-		</pluginRepository>
-	</pluginRepositories>
 </project>
