@@ -3,7 +3,11 @@ package com.ctrip.xpipe.lifecycle;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
+import com.ctrip.xpipe.api.lifecycle.Disposable;
+import com.ctrip.xpipe.api.lifecycle.Initializable;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.lifecycle.Startable;
+import com.ctrip.xpipe.api.lifecycle.Stoppable;
 
 /**
  * @author wenchao.meng
@@ -14,13 +18,19 @@ public abstract class AbstractLifecycle implements Lifecycle{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
+	private String phaseName = null;
+	
 	@Override
 	public void initialize() throws Exception {
-		
-		if(logger.isInfoEnabled()){
-			logger.info("[initialize]" + this);
+		try{
+			if(logger.isInfoEnabled()){
+				logger.info("[initialize]" + this);
+			}
+			this.phaseName = Initializable.PHASE_NAME_BEGIN;
+			doInitialize();
+		}finally{
+			this.phaseName = Initializable.PHASE_NAME_END;
 		}
-		doInitialize();
 	}
 	
 	protected void doInitialize() throws Exception{
@@ -29,10 +39,15 @@ public abstract class AbstractLifecycle implements Lifecycle{
 
 	@Override
 	public void start() throws Exception {
-		if(logger.isInfoEnabled()){
-			logger.info("[start]" + this);
+		try{
+			if(logger.isInfoEnabled()){
+				logger.info("[start]" + this);
+			}
+			this.phaseName = Startable.PHASE_NAME_BEGIN;
+			doStart();
+		}finally{
+			this.phaseName = Startable.PHASE_NAME_BEGIN;
 		}
-		doStart();
 	}
 	
 	protected void doStart() throws Exception{
@@ -41,10 +56,15 @@ public abstract class AbstractLifecycle implements Lifecycle{
 
 	@Override
 	public void stop() throws Exception {
-		if(logger.isInfoEnabled()){
-			logger.info("[stop]" + this);
+		try{
+			if(logger.isInfoEnabled()){
+				logger.info("[stop]" + this);
+			}
+			this.phaseName = Stoppable.PHASE_NAME_BEGIN;
+			doStop();
+		}finally{
+			this.phaseName = Stoppable.PHASE_NAME_END;
 		}
-		doStop();
 	}
 
 	protected void doStop() throws Exception{
@@ -53,13 +73,23 @@ public abstract class AbstractLifecycle implements Lifecycle{
 
 	@Override
 	public void dispose() throws Exception {
-		if(logger.isInfoEnabled()){
-			logger.info("[dispose]" + this);
+		try{
+			if(logger.isInfoEnabled()){
+				logger.info("[dispose]" + this);
+			}
+			this.phaseName = Disposable.PHASE_NAME_BEGIN;
+			doDispose();
+		}finally{
+			this.phaseName = Disposable.PHASE_NAME_BEGIN;
 		}
-		doDispose();
 	}
 
 	protected void doDispose() throws Exception {
 		
+	}
+
+	protected String getPhaseName(){
+		
+		return this.phaseName;
 	}
 }

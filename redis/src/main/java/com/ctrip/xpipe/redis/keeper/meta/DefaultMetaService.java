@@ -19,6 +19,7 @@ import org.unidal.tuple.Pair;
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.entity.Keeper;
+import com.ctrip.xpipe.redis.keeper.entity.Redis;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 
@@ -37,6 +38,21 @@ public class DefaultMetaService implements MetaService {
 
 	@Autowired
 	private MetaServerLocator metaServerLocator;
+
+	@Override
+	public Redis getRedisMaster(String clusterId, String shardId) {
+		
+		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/redis/master", clusterId, shardId),
+			      null);
+
+			// TODO
+		if (codeAndRes == null) {
+			return null;
+		} else {
+			return JSON.parseObject(codeAndRes.getValue(), Redis.class);
+		}
+	}
+
 
 	@Override
 	public Keeper getActiveKeeper(String clusterId, String shardId) {

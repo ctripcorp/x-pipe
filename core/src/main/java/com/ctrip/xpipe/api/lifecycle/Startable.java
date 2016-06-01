@@ -7,5 +7,9 @@ package com.ctrip.xpipe.api.lifecycle;
  */
 public interface Startable {
 
+	public static final String PHASE_NAME_BEGIN = "starting";
+	
+	public static final String PHASE_NAME_END = "started";
+
 	void start() throws Exception;
 }

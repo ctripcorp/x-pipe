@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.meta;
 
 import com.ctrip.xpipe.redis.keeper.entity.Keeper;
+import com.ctrip.xpipe.redis.keeper.entity.Redis;
 
 /**
  * @author marsqing
@@ -10,5 +11,7 @@ import com.ctrip.xpipe.redis.keeper.entity.Keeper;
 public interface MetaService {
 
 	Keeper getActiveKeeper(String clusterId, String shardId);
+	
+	Redis  getRedisMaster(String clusterId, String shardId);
 	
 }
