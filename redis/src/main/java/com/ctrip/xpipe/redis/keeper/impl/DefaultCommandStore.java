@@ -77,11 +77,14 @@ public class DefaultCommandStore implements CommandStore {
 
 		int wrote = 0;
 		ByteBuffer[] buffers = byteBuf.nioBuffers();
+		// TODO ensure all read
 		if (buffers != null) {
 			for (ByteBuffer buf : buffers) {
 				wrote += channel.write(buf);
 			}
 		}
+		
+		byteBuf.readerIndex(byteBuf.writerIndex());
 
 		offsetNotifier.offsetIncreased(currentStartOffset + channel.size());
 
