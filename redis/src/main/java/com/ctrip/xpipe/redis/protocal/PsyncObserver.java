@@ -13,4 +13,6 @@ public interface PsyncObserver {
 	void beginWriteRdb();
 	
 	void endWriteRdb();
+	
+	void onContinue();
 }

@@ -28,7 +28,12 @@ public class PsyncHandler extends AbstractCommandHandler{
 			case BACKUP:
 			case UNKNOWN:
 				logger.error("[doHandle][server state not right, close connection.]" + redisKeeperServer.getClusterRole());
-				break;
+				try {
+					redisClient.close();
+				} catch (IOException e) {
+					logger.error("[doHandle][close redisClient]" + redisClient, e);
+				}
+				return;
 			case ACTIVE:
 				break;
 			default:

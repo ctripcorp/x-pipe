@@ -246,10 +246,19 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 		}else if(split[0].equalsIgnoreCase(PARTIAL_SYNC)){
 			
 			psyncState = PSYNC_STATE.READING_COMMANDS;
+			notifyContinue();
 		}else{
 			throw new RedisRuntimeException("unknown reply:" + psync);
 		}
 	}
+
+	private void notifyContinue() {
+		
+		for(PsyncObserver observer : observers){
+			observer.onContinue();
+		}
+	}
+
 
 	private void notifyReFullSync() {
 		

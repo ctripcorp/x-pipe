@@ -100,6 +100,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	@Override
 	public void beginWriteCommands(long beginOffset) {
 		
+		slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
 		redisKeeperServer.getKeeperRepl().addCommandsListener(beginOffset, this);
 	}
 
@@ -111,7 +112,6 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 			if(logger.isInfoEnabled()){
 				logger.info("[writeComplete][rdbWriteComplete]" + this);
 			}
-			slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
 			beginWriteCommands(rdbFileOffset + 1);
 		}
 	}

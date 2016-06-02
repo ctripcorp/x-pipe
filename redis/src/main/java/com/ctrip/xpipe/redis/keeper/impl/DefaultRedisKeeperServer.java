@@ -551,4 +551,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return this.clusterRole;
 	}
 
+	@Override
+	public void onContinue() {
+	}
+
 }

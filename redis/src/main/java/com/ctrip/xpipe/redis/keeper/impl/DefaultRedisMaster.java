@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -71,6 +72,7 @@ public class DefaultRedisMaster implements RedisMaster{
 	private EventLoopGroup slaveEventLoopGroup = new NioEventLoopGroup();
 
 	private Channel masterChannel;
+	private ScheduledFuture<?> replConfFuture; 
 
 	private volatile boolean stop = false;
 	
@@ -89,7 +91,7 @@ public class DefaultRedisMaster implements RedisMaster{
 		if(this.masterChannel != null && this.masterChannel.isOpen()){
 			logger.warn("[startReplication][channel alive, don't do replication]{}", this.masterChannel);
 			return;
-		}
+		} 
 		
 		logger.info("[startReplication]{}", this.endpoint);
 		
@@ -101,9 +103,14 @@ public class DefaultRedisMaster implements RedisMaster{
 	public void stopReplication() {
 		
 		logger.info("[stopReplication]{}", this.endpoint);
+		
 		this.stop = true; 
 		if(masterChannel != null && masterChannel.isOpen()){
 			masterChannel.disconnect();
+		}
+		if(replConfFuture != null){
+			replConfFuture.cancel(true);
+			replConfFuture = null;
 		}
 	}
 
@@ -271,11 +278,12 @@ public class DefaultRedisMaster implements RedisMaster{
 			logger.info("[scheduleReplconf]" + this);
 		}
 		
-		scheduled.scheduleWithFixedDelay(new Runnable() {
+		replConfFuture = scheduled.scheduleWithFixedDelay(new Runnable() {
 			
 			@Override
 			public void run() {
 				try{
+					logger.debug("[run][send ack]{}", masterChannel);
 					Command command = new Replconf(ReplConfType.ACK, String.valueOf(getCurrentReplicationStore().endOffset()));
 					masterChannel.writeAndFlush(command.request());
 				}catch(Throwable th){
@@ -294,6 +302,11 @@ public class DefaultRedisMaster implements RedisMaster{
 	@Override
 	public void reFullSync() {
 		
+	}
+
+	@Override
+	public void onContinue() {
+		scheduleReplconf();
 	}
 
 }

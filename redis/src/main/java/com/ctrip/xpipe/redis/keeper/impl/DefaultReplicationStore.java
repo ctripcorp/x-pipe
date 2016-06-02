@@ -327,10 +327,19 @@ public class DefaultReplicationStore implements ReplicationStore {
 	public void changeMetaTo(String name) throws IOException {
 		ReplicationStoreMeta meta = getReplicationStoreMeta(name);
 
+		
 		if (meta != null) {
+			ReplicationStoreMeta old = getReplicationStoreMeta();
+			long length = endOffset() - beginOffset();
+			long newEndOffset = meta.getBeginOffset() + length;
+
 			metaRef.set(meta);
+			endOffset.set(newEndOffset);
+			log.info("[changeMetaTo][cmdFile length, new endoffset]{},{}", length, newEndOffset);
+			log.info("[changeMetaTo]{}", old);
+			log.info("[changeMetaTo]{}", meta);
 		} else {
-			// TODO
+			throw new IllegalStateException("can not find meta:" + name);
 		}
 	}
 
