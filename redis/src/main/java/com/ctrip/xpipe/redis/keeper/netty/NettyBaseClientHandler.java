@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.netty;
 
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 
+import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.protocal.Command;
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
@@ -15,9 +14,7 @@ import io.netty.channel.ChannelHandlerContext;
  *
  *         May 9, 2016 3:05:38 PM
  */
-public class NettyBaseClientHandler extends ChannelDuplexHandler {
-
-	private static Logger logger = LoggerFactory.getLogger(NettyBaseClientHandler.class);
+public class NettyBaseClientHandler extends AbstractNettyHandler {
 
 	private CommandRequester commandRequester;
 
@@ -31,21 +28,13 @@ public class NettyBaseClientHandler extends ChannelDuplexHandler {
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 
-		if (logger.isInfoEnabled()) {
-			logger.info("[channelActive]" + ctx.channel());
-		}
-
 		commandRequester.request(ctx.channel(), initCmd);
-
 		super.channelActive(ctx);
 	}
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 
-		if (logger.isInfoEnabled()) {
-			logger.info("[channelInactive]" + ctx.channel());
-		}
 		commandRequester.connectionClosed(ctx.channel());
 		super.channelInactive(ctx);
 	}
@@ -56,16 +45,15 @@ public class NettyBaseClientHandler extends ChannelDuplexHandler {
 		if (logger.isDebugEnabled()) {
 			logger.debug(String.format("0X%X, %s", msg.hashCode(), msg.getClass()));
 		}
-
-		commandRequester.handleResponse(ctx.channel(), (ByteBuf) msg);
+		
+		byteBufReadPolicy.read(ctx.channel(), (ByteBuf)msg, new ByteBufReadAction() {
+			
+			@Override
+			public void read(Channel channel, ByteBuf byteBuf) throws XpipeException {
+				commandRequester.handleResponse(channel, byteBuf);
+			}
+		});
 		super.channelRead(ctx, msg);
-	}
-
-	@Override
-	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-
-		logger.error("[exceptionCaught]" + ctx.channel(), cause);
-		super.exceptionCaught(ctx, cause);
 	}
 
 }
