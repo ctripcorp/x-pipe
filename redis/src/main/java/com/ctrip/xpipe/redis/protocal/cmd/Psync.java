@@ -87,7 +87,7 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 			offset = -1;
 		}
 		RequestStringParser requestString = new RequestStringParser(getName(), masterRunidRequest, String.valueOf(offset));
-		logger.info("[doRequest]", StringUtil.join(" ", requestString.getPayload()));
+		logger.info("[doRequest]{}", StringUtil.join(" ", requestString.getPayload()));
 		return requestString.format();
 	}
 

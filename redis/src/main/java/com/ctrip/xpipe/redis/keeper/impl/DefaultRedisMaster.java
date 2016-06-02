@@ -91,6 +91,8 @@ public class DefaultRedisMaster implements RedisMaster{
 			return;
 		}
 		
+		logger.info("[startReplication]{}", this.endpoint);
+		
 		connectWithMaster();
 		
 	}
@@ -98,6 +100,7 @@ public class DefaultRedisMaster implements RedisMaster{
 	@Override
 	public void stopReplication() {
 		
+		logger.info("[stopReplication]{}", this.endpoint);
 		this.stop = true; 
 		if(masterChannel != null && masterChannel.isOpen()){
 			masterChannel.disconnect();

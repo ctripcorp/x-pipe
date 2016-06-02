@@ -23,6 +23,18 @@ public class PsyncHandler extends AbstractCommandHandler{
 		
 		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
 		
+		//TODO  backup slower than redis slave, try wait...
+		switch(redisKeeperServer.getClusterRole()){
+			case BACKUP:
+			case UNKNOWN:
+				logger.error("[doHandle][server state not right, close connection.]" + redisKeeperServer.getClusterRole());
+				break;
+			case ACTIVE:
+				break;
+			default:
+				throw new IllegalStateException("cluster role ilegal:" + redisKeeperServer.getClusterRole());
+		}
+		
 		RedisSlave redisSlave  = redisClient.becomeSlave();
 		if(redisSlave == null){
 			logger.warn("[doHandle][psync client already slave]" + redisClient);

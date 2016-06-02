@@ -266,45 +266,51 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void setClusterRole(CLUSTER_ROLE clusterRole){
 
 		CLUSTER_ROLE previous = this.clusterRole;
-		this.clusterRole = clusterRole;
 		
 		switch(previous){
 			case ACTIVE:
 				if(clusterRole == CLUSTER_ROLE.BACKUP){
-					fromActiveToBackup();
+					prepareFromActiveToBackup();
+					this.clusterRole = clusterRole;
 				}else if(clusterRole == CLUSTER_ROLE.UNKNOWN){
 					throw new IllegalStateException("can not change state from backuo to unknown");
 				}
 				break;
 			case BACKUP:
 				if(clusterRole == CLUSTER_ROLE.ACTIVE){
-					fromBackupToActive();
+					prepareFromBackupToActive();
+					this.clusterRole = clusterRole;
+					doReplicationMaster();
 				}else if(clusterRole == CLUSTER_ROLE.UNKNOWN){
 					throw new IllegalStateException("can not change state from backuo to unknown");
 				}
 				break;
 			case UNKNOWN:
+				this.clusterRole = clusterRole;
 				tryReplicationMaster();
 				break;
 			default:
 				throw new IllegalStateException("unknown cluster role:" + clusterRole);
 		}
+		
 	}
 	
-	private void fromBackupToActive() {
+	private void prepareFromBackupToActive() {
 		
 		try {
-			keeperRedisMaster.stopReplication();
+			
+			if(keeperRedisMaster != null){
+				keeperRedisMaster.stopReplication();
+			}
 			logger.info("[fromBackupToActive]{}", this);
 			ReplicationStore replicationStore = getCurrentReplicationStore();
 			replicationStore.changeMetaTo(BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME);
-			doReplicationMaster();
 		} catch (IOException e) {
 			logger.error("[fromBackupToActive][failed]", e);
 		}
 	}
 	
-	private void fromActiveToBackup() {
+	private void prepareFromActiveToBackup() {
 		//TODO
 		logger.info("[fromActiveToBackup]{}", this);
 		
@@ -398,7 +404,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected ReplicationStore getCurrentReplicationStore(){
 		
 		try {
-			return replicationStoreManager.getCurrent();
+			ReplicationStore replicationStore = replicationStoreManager.getCurrent(); 
+			if(replicationStore == null){
+				replicationStore = replicationStoreManager.create();
+			}
+			return replicationStore;
 		} catch (IOException e) {
 			logger.error("[getCurrentReplicationStore]" + this, e);
 			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
