@@ -134,11 +134,12 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 			keeper.setActive(true);
 			// TODO
 			String[] parts = leaderId.split(":");
-			if (parts.length != 2) {
+			if (parts.length != 3) {
 				throw new RuntimeException("Error leader data in zk: " + leaderId);
 			}
 			keeper.setIp(parts[0]);
 			keeper.setPort(Integer.parseInt(parts[1]));
+			keeper.setId(parts[2]);
 		}
 
 		Pair<String, String> key = new Pair<>(clusterId, shardId);
