@@ -182,7 +182,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	private void waitUntilSlaveSync(RedisSlave redisSlave, String ip, int port) {
 		
 		Long slaveCmdOffset = redisSlave.getAck();
-		long masterCmdOffset = redisSlave.getRedisKeeperServer().getReplicationStore().endOffset();
+		long masterCmdOffset = redisSlave.getRedisKeeperServer().getKeeperRepl().getEndOffset();
 
 		while (slaveCmdOffset == null || slaveCmdOffset != masterCmdOffset) {
 			if (logger.isInfoEnabled()) {

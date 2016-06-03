@@ -26,6 +26,7 @@ import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.cluster.ElectContext;
 import com.ctrip.xpipe.redis.keeper.cluster.LeaderElector;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
@@ -512,7 +513,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	public RedisMaster masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
 		
-		getCurrentReplicationStore().masterChanged(newMasterEndpoint, newMasterRunid, newMasterReplOffset - keeperOffset);
+		ReplicationStore replicationStore = getCurrentReplicationStore();
+		ReplicationStoreMeta meta = replicationStore.getReplicationStoreMeta();
+		long delta = (meta.getKeeperBeginOffset() - meta.getBeginOffset()) + newMasterReplOffset - keeperOffset;
+		replicationStore.masterChanged(newMasterEndpoint, newMasterRunid, delta);
 		return new DefaultRedisMaster(this, newMasterEndpoint, replicationStoreManager, scheduled, commandRequester);
 	}
 
