@@ -263,7 +263,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 		
 
-	protected void setClusterRole(CLUSTER_ROLE clusterRole){
+	protected void setClusterRole(final CLUSTER_ROLE clusterRole){
 
 		CLUSTER_ROLE previous = this.clusterRole;
 		
@@ -293,6 +293,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				throw new IllegalStateException("unknown cluster role:" + clusterRole);
 		}
 		
+		if(previous != this.clusterRole){
+			notifyObservers(new ClusterRoleChanged(previous, this.clusterRole));
+		}
 	}
 	
 	private void prepareFromBackupToActive() {
@@ -553,6 +556,26 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void onContinue() {
+	}
+	
+	public class ClusterRoleChanged{
+		
+		private CLUSTER_ROLE previous, current;
+		public ClusterRoleChanged(CLUSTER_ROLE previous, CLUSTER_ROLE current) {
+			this.previous = previous;
+			this.current = current;
+		}
+		public CLUSTER_ROLE getPrevious() {
+			return previous;
+		}
+		public CLUSTER_ROLE getCurrent() {
+			return current;
+		}
+		
+		@Override
+		public String toString() {
+			return previous + "->" + current;
+		}
 	}
 
 }

@@ -3,10 +3,14 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 import java.io.IOException;
 
+import com.ctrip.xpipe.api.lifecycle.Releasable;
+import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer.ClusterRoleChanged;
 import com.ctrip.xpipe.redis.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
@@ -20,7 +24,7 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultRdbFileListener;
 public class PsyncHandler extends AbstractCommandHandler{
 	
 	@Override
-	protected void doHandle(String[] args, RedisClient redisClient) {
+	protected void doHandle(final String[] args, final RedisClient redisClient) {
 		
 		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
 		boolean shouldContinue = false;
@@ -30,6 +34,7 @@ public class PsyncHandler extends AbstractCommandHandler{
 			case BACKUP:
 				logger.error("[doHandle][server state backup, ask slave to wait.]" + redisKeeperServer.getClusterRole());
 				redisClient.sendMessage(RedisProtocol.CRLF.getBytes());
+				redisKeeperServer.addObserver(new PsyncClusterStateObserver(args, redisClient));
 				break;
 			case UNKNOWN:
 				logger.error("[doHandle][server state unknown, close connection.]" + redisKeeperServer.getClusterRole());
@@ -117,5 +122,54 @@ public class PsyncHandler extends AbstractCommandHandler{
 	public String[] getCommands() {
 		
 		return new String[]{"psync", "sync"};
+	}
+	
+	class PsyncClusterStateObserver implements Observer, Releasable{
+		
+		private String []args;
+		private RedisClient redisClient;
+		
+		public PsyncClusterStateObserver(String []args, RedisClient redisClient) {
+			
+			this.args = args;
+			this.redisClient = redisClient;
+		}
+		
+		@Override
+		public void update(Object updateArgs, Observable observable) {
+			
+			logger.info("[update]{},{},{}", redisClient, updateArgs, observable);
+			
+			if(updateArgs instanceof ClusterRoleChanged){
+				ClusterRoleChanged changed = (ClusterRoleChanged) updateArgs;
+				switch(changed.getCurrent()){
+					case ACTIVE:
+						try {
+							PsyncHandler.this.doHandle(args, redisClient);
+							release();
+						} catch (Exception e1) {
+							logger.error("[update]" + redisClient + "," + changed, e1);
+						}
+						break;
+					case BACKUP:
+						break;
+					case UNKNOWN:
+					default:
+						try {
+							redisClient.close();
+						} catch (IOException e) {
+							logger.error("[state changed][wrong state, close client]" + changed, e);
+						}
+						throw new IllegalStateException();
+				}
+			}
+			
+		}
+
+		@Override
+		public void release() throws Exception {
+			this.redisClient.getRedisKeeperServer().remoteObserver(this);
+		}
+		
 	}
 }

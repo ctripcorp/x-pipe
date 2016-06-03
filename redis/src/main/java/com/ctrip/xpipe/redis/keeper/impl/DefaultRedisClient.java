@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
@@ -21,6 +22,8 @@ import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 /**
  * @author wenchao.meng
@@ -40,7 +43,7 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	protected RedisKeeperServer redisKeeperServer;
 	
 	private CLIENT_ROLE clientRole = CLIENT_ROLE.NORMAL;
-
+	
 	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
 
 		this.channel = channel;
@@ -216,5 +219,18 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	public void sendMessage(byte[] bytes) {
 		
 		sendMessage(Unpooled.wrappedBuffer(bytes));
+	}
+	
+	public void addChannelCloseReleaseResources(final Releasable releasable){
+		
+		channel.closeFuture().addListener(new ChannelFutureListener() {
+			
+			@Override
+			public void operationComplete(ChannelFuture future) throws Exception {
+				
+				logger.info("[channel close][release resource]{}", releasable);
+				releasable.release();
+			}
+		});
 	}
 }

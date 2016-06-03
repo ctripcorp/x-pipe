@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper;
 
 import java.io.Closeable;
 
+import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 
 import io.netty.buffer.ByteBuf;
@@ -64,5 +65,7 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole{
 	void sendMessage(ByteBuf byteBuf);
 	
 	void sendMessage(byte[] bytes);
+	
+	void addChannelCloseReleaseResources(Releasable releasable);
 
 }
