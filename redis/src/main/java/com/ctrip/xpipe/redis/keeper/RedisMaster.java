@@ -14,6 +14,8 @@ import io.netty.channel.Channel;
 public interface RedisMaster extends RedisRole, PsyncObserver{
 	
 	void startReplication();
+	
+	boolean isStarted();
 
 	void stopReplication();
 

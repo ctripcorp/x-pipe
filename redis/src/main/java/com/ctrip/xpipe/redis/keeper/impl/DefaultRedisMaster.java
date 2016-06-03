@@ -74,7 +74,7 @@ public class DefaultRedisMaster implements RedisMaster{
 	private Channel masterChannel;
 	private ScheduledFuture<?> replConfFuture; 
 
-	private volatile boolean stop = false;
+	private volatile boolean started = false;
 	
 	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, CommandRequester commandRequester){
 		
@@ -94,17 +94,24 @@ public class DefaultRedisMaster implements RedisMaster{
 		} 
 		
 		logger.info("[startReplication]{}", this.endpoint);
-		
+		started = true;
 		connectWithMaster();
 		
 	}
+
+	
+	@Override
+	public boolean isStarted() {
+		return this.started;
+	}
+
 
 	@Override
 	public void stopReplication() {
 		
 		logger.info("[stopReplication]{}", this.endpoint);
 		
-		this.stop = true; 
+		this.started = false; 
 		if(masterChannel != null && masterChannel.isOpen()){
 			masterChannel.disconnect();
 		}
@@ -117,7 +124,7 @@ public class DefaultRedisMaster implements RedisMaster{
 
 	private void connectWithMaster() {
 		
-		if(stop){
+		if(!started){
 			logger.info("[connectWithMaster][do not connect, is stopped!!]{}", endpoint);
 			return;
 		}

@@ -216,7 +216,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 	}
 
-	private void doReplicationMaster() {
+	private synchronized void doReplicationMaster() {
+
+		if(keeperRedisMaster != null && keeperRedisMaster.isStarted()){
+			logger.info("[doReplicationMaster][already started]{}", this);
+			return;
+		}
 
 		DefaultEndPoint endpoint = null;
 		
