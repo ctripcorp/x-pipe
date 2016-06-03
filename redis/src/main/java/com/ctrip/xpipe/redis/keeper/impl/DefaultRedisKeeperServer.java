@@ -193,7 +193,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		Redis old = this.clusterRedisMaster;
 		this.clusterRedisMaster  = clusterRedisMaster;
-		if(this.clusterRedisMaster == null){
+		if(old == null){
 			logger.info("[gotRedisMasterInfo][new master]{}", clusterRedisMaster);
 			tryReplicationMaster();
 		}else{
