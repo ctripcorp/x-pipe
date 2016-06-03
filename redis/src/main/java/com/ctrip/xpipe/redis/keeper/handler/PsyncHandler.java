@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.store.DefaultRdbFileListener;
@@ -22,22 +23,31 @@ public class PsyncHandler extends AbstractCommandHandler{
 	protected void doHandle(String[] args, RedisClient redisClient) {
 		
 		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+		boolean shouldContinue = false;
 		
 		//TODO  backup slower than redis slave, try wait...
 		switch(redisKeeperServer.getClusterRole()){
 			case BACKUP:
+				logger.error("[doHandle][server state backup, ask slave to wait.]" + redisKeeperServer.getClusterRole());
+				redisClient.sendMessage(RedisProtocol.CRLF.getBytes());
+				break;
 			case UNKNOWN:
-				logger.error("[doHandle][server state not right, close connection.]" + redisKeeperServer.getClusterRole());
+				logger.error("[doHandle][server state unknown, close connection.]" + redisKeeperServer.getClusterRole());
 				try {
 					redisClient.close();
 				} catch (IOException e) {
 					logger.error("[doHandle][close redisClient]" + redisClient, e);
 				}
-				return;
+				break;
 			case ACTIVE:
+				shouldContinue = true;
 				break;
 			default:
 				throw new IllegalStateException("cluster role ilegal:" + redisKeeperServer.getClusterRole());
+		}
+		
+		if(!shouldContinue){
+			return;
 		}
 		
 		RedisSlave redisSlave  = redisClient.becomeSlave();
