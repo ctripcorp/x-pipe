@@ -123,7 +123,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		KeeperConfig config = new DefaultKeeperConfig();
 		String leaderElectionZKPath = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), clusterId, shardId);
-		String leaderElectionID = String.format("%s:%s", currentKeeper.getIp(), currentKeeper.getPort());
+		String leaderElectionID = String.format("%s:%s:%s", currentKeeper.getIp(), currentKeeper.getPort(), currentKeeper.getId());
 		ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);
 		LeaderElector elector = new LeaderElector(config, ctx);
 		return elector;
