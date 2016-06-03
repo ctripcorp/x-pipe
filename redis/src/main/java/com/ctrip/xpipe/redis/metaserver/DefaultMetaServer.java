@@ -90,15 +90,13 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 
 			updateRedisMaster(cluster.getId(), shard);
 
-			final String leaderLatchPath = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), cluster.getId(),
-			      shard.getId());
+			final String leaderLatchPath = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), cluster.getId(), shard.getId());
 
 			List<String> children = client.getChildren().usingWatcher(new CuratorWatcher() {
 
 				@Override
 				public void process(WatchedEvent event) throws Exception {
-					updateShardLeader(client.getChildren().usingWatcher(this).forPath(leaderLatchPath), leaderLatchPath,
-					      cluster.getId(), shard.getId());
+					updateShardLeader(client.getChildren().usingWatcher(this).forPath(leaderLatchPath), leaderLatchPath, cluster.getId(), shard.getId());
 				}
 			}).forPath(leaderLatchPath);
 
@@ -125,13 +123,14 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 		}
 	};
 
-	private void updateShardLeader(List<String> children, String leaderLatchPath, String clusterId, String shardId)
-	      throws Exception {
+	private void updateShardLeader(List<String> children, String leaderLatchPath, String clusterId, String shardId) throws Exception {
+		Keeper keeper = null;
+
 		if (children != null && !children.isEmpty()) {
 			List<String> sortedChildren = LockInternals.getSortedChildren("latch-", sorter, children);
 			String leaderId = new String(client.getData().forPath(leaderLatchPath + "/" + sortedChildren.get(0)));
 
-			Keeper keeper = new Keeper();
+			keeper = new Keeper();
 			keeper.setActive(true);
 			// TODO
 			String[] parts = leaderId.split(":");
@@ -140,15 +139,20 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 			}
 			keeper.setIp(parts[0]);
 			keeper.setPort(Integer.parseInt(parts[1]));
+		}
 
-			Pair<String, String> key = new Pair<>(clusterId, shardId);
-			Pair<Keeper, Redis> state = shardState.get(key);
-			if (state == null) {
-				log.error("Unnown shard {} {}", clusterId, shardId);
-				// TODO omit unknown shard?
-			} else {
-				log.info("{} become active keeper of cluster:{} shard:{}", leaderId, clusterId, shardId);
+		Pair<String, String> key = new Pair<>(clusterId, shardId);
+		Pair<Keeper, Redis> state = shardState.get(key);
+		if (state == null) {
+			log.error("Unnown shard {} {}", clusterId, shardId);
+			// TODO omit unknown shard?
+		} else {
+			if (keeper != null) {
+				log.info("{} become active keeper of cluster:{} shard:{}", keeper, clusterId, shardId);
 				state.setKey(keeper);
+			} else {
+				log.info("all keeper of cluster:{} shard:{} is down", clusterId, shardId);
+				state.setKey(null);
 			}
 		}
 	}
