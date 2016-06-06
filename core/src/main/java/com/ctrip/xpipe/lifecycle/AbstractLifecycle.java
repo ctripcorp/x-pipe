@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import com.ctrip.xpipe.api.lifecycle.Disposable;
 import com.ctrip.xpipe.api.lifecycle.Initializable;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.lifecycle.LifecycleController;
+import com.ctrip.xpipe.api.lifecycle.LifecycleState;
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
 
@@ -18,18 +20,31 @@ public abstract class AbstractLifecycle implements Lifecycle{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
-	private String phaseName = null;
+	private LifecycleState lifecycleState;
+	private LifecycleController LifecycleController;
+	
+	public AbstractLifecycle() {
+		this.lifecycleState = new DefaultLifecycleState(this);
+		this.LifecycleController  = new DefaultLifecycleController();
+	}
+	
+	
 	
 	@Override
 	public void initialize() throws Exception {
 		try{
-			if(logger.isInfoEnabled()){
-				logger.info("[initialize]" + this);
+			
+			String phaseName = lifecycleState.getPhaseName();
+			if(!LifecycleController.canInitialize(phaseName)){
+				logger.error("[initialize][can not init]" + this);
+				throw new IllegalStateException("can not initialize" + this);
 			}
-			this.phaseName = Initializable.PHASE_NAME_BEGIN;
+			
+
+			lifecycleState.setPhaseName(Initializable.PHASE_NAME_BEGIN);
 			doInitialize();
 		}finally{
-			this.phaseName = Initializable.PHASE_NAME_END;
+			lifecycleState.setPhaseName(Initializable.PHASE_NAME_END);
 		}
 	}
 	
@@ -40,13 +55,16 @@ public abstract class AbstractLifecycle implements Lifecycle{
 	@Override
 	public void start() throws Exception {
 		try{
-			if(logger.isInfoEnabled()){
-				logger.info("[start]" + this);
+			String phaseName = lifecycleState.getPhaseName();
+			if(!LifecycleController.canStart(phaseName)){
+				logger.error("[initialize][can not start]" + this);
+				throw new IllegalStateException("can not start" + this);
 			}
-			this.phaseName = Startable.PHASE_NAME_BEGIN;
+			lifecycleState.setPhaseName(Startable.PHASE_NAME_BEGIN);
+
 			doStart();
 		}finally{
-			this.phaseName = Startable.PHASE_NAME_BEGIN;
+			lifecycleState.setPhaseName(Startable.PHASE_NAME_END);
 		}
 	}
 	
@@ -57,13 +75,16 @@ public abstract class AbstractLifecycle implements Lifecycle{
 	@Override
 	public void stop() throws Exception {
 		try{
-			if(logger.isInfoEnabled()){
-				logger.info("[stop]" + this);
+			String phaseName = lifecycleState.getPhaseName();
+			if(!LifecycleController.canStop(phaseName)){
+				logger.error("[initialize][can not stop]" + this);
+				throw new IllegalStateException("can not stop" + this);
 			}
-			this.phaseName = Stoppable.PHASE_NAME_BEGIN;
+			
+			lifecycleState.setPhaseName(Stoppable.PHASE_NAME_BEGIN);
 			doStop();
 		}finally{
-			this.phaseName = Stoppable.PHASE_NAME_END;
+			lifecycleState.setPhaseName(Stoppable.PHASE_NAME_BEGIN);
 		}
 	}
 
@@ -74,13 +95,16 @@ public abstract class AbstractLifecycle implements Lifecycle{
 	@Override
 	public void dispose() throws Exception {
 		try{
-			if(logger.isInfoEnabled()){
-				logger.info("[dispose]" + this);
+			
+			String phaseName = lifecycleState.getPhaseName();
+			if(!LifecycleController.canDispose(phaseName)){
+				logger.error("[initialize][can not dispose]" + this);
+				throw new IllegalStateException("can not dispose" + this);
 			}
-			this.phaseName = Disposable.PHASE_NAME_BEGIN;
+			lifecycleState.setPhaseName(Disposable.PHASE_NAME_BEGIN);
 			doDispose();
 		}finally{
-			this.phaseName = Disposable.PHASE_NAME_BEGIN;
+			lifecycleState.setPhaseName(Disposable.PHASE_NAME_BEGIN);
 		}
 	}
 
@@ -88,8 +112,14 @@ public abstract class AbstractLifecycle implements Lifecycle{
 		
 	}
 
-	protected String getPhaseName(){
+	public LifecycleState getLifecycleState(){
 		
-		return this.phaseName;
+		return this.lifecycleState;
+	}
+	
+	@Override
+	public String toString() {
+		
+		return getClass().getSimpleName() + ", phase:" + lifecycleState.getPhaseName();
 	}
 }

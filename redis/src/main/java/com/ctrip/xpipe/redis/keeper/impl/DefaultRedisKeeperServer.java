@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.ctrip.xpipe.api.lifecycle.Startable;
+import com.ctrip.xpipe.api.lifecycle.LifecycleState;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -205,7 +205,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private void tryReplicationMaster() {
 		
-		if(getPhaseName().equals(Startable.PHASE_NAME_BEGIN) || getPhaseName().equals(Startable.PHASE_NAME_END)){
+		LifecycleState lifecycleState = getLifecycleState();
+		if(lifecycleState.isStarting() || lifecycleState.isStarted()){
 			if(clusterRole == CLUSTER_ROLE.UNKNOWN){
 				logger.info("[tryReplicationMaster][role unknown]{}", this);
 				return;
