@@ -13,7 +13,7 @@ before_script:
 before_install:
 
 after_success:
-  - mvn clean cobertura:cobertura coveralls:report
+  - mvn clean generate-resources cobertura:cobertura coveralls:report
 
 branches:
   only:
