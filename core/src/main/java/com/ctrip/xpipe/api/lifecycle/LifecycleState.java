@@ -33,4 +33,9 @@ public interface LifecycleState {
 	
 	void setPhaseName(String name);
 	
+	/**
+	 * rollback to previous state
+	 */
+	void rollback(Exception e);
+	
 }

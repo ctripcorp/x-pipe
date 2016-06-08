@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.lifecycle.LifecycleStateAware;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.protocal.PsyncObserver;
 
@@ -11,14 +13,8 @@ import io.netty.channel.Channel;
  *
  * May 20, 2016 3:54:13 PM
  */
-public interface RedisMaster extends RedisRole, PsyncObserver{
+public interface RedisMaster extends RedisRole, PsyncObserver, Lifecycle, LifecycleStateAware{
 	
-	void startReplication();
-	
-	boolean isStarted();
-
-	void stopReplication();
-
 	/**
 	 * @param channel
 	 * @param msg

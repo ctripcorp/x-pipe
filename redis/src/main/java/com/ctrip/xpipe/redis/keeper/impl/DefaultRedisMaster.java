@@ -13,6 +13,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.keeper.CLUSTER_ROLE;
@@ -52,7 +53,7 @@ import io.netty.handler.logging.LoggingHandler;
  *
  * May 22, 2016 6:36:21 PM
  */
-public class DefaultRedisMaster implements RedisMaster{
+public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -73,8 +74,6 @@ public class DefaultRedisMaster implements RedisMaster{
 
 	private Channel masterChannel;
 	private ScheduledFuture<?> replConfFuture; 
-
-	private volatile boolean started = false;
 	
 	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, CommandRequester commandRequester){
 		
@@ -86,6 +85,11 @@ public class DefaultRedisMaster implements RedisMaster{
 	}
 
 	@Override
+	protected void doStart() throws Exception {
+		super.doStart();
+		startReplication();
+	}
+	
 	public void startReplication() {
 		
 		if(this.masterChannel != null && this.masterChannel.isOpen()){
@@ -94,24 +98,21 @@ public class DefaultRedisMaster implements RedisMaster{
 		} 
 		
 		logger.info("[startReplication]{}", this.endpoint);
-		started = true;
 		connectWithMaster();
 		
 	}
 
-	
 	@Override
-	public boolean isStarted() {
-		return this.started;
+	protected void doStop() throws Exception {
+		super.doStop();
+		stopReplication();
 	}
+	
 
-
-	@Override
 	public void stopReplication() {
 		
 		logger.info("[stopReplication]{}", this.endpoint);
 		
-		this.started = false; 
 		if(masterChannel != null && masterChannel.isOpen()){
 			masterChannel.disconnect();
 		}
@@ -124,7 +125,7 @@ public class DefaultRedisMaster implements RedisMaster{
 
 	private void connectWithMaster() {
 		
-		if(!started){
+		if(!(getLifecycleState().isStarting()  || getLifecycleState().isStarted())){
 			logger.info("[connectWithMaster][do not connect, is stopped!!]{}", endpoint);
 			return;
 		}

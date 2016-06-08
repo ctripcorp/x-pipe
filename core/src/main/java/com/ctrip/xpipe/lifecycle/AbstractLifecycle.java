@@ -8,6 +8,7 @@ import com.ctrip.xpipe.api.lifecycle.Initializable;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.LifecycleController;
 import com.ctrip.xpipe.api.lifecycle.LifecycleState;
+import com.ctrip.xpipe.api.lifecycle.LifecycleStateAware;
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
 
@@ -16,7 +17,7 @@ import com.ctrip.xpipe.api.lifecycle.Stoppable;
  *
  * 2016年4月21日 下午4:59:41
  */
-public abstract class AbstractLifecycle implements Lifecycle{
+public abstract class AbstractLifecycle implements Lifecycle, LifecycleStateAware{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -39,12 +40,12 @@ public abstract class AbstractLifecycle implements Lifecycle{
 				logger.error("[initialize][can not init]" + this);
 				throw new IllegalStateException("can not initialize" + this);
 			}
-			
-
 			lifecycleState.setPhaseName(Initializable.PHASE_NAME_BEGIN);
 			doInitialize();
-		}finally{
 			lifecycleState.setPhaseName(Initializable.PHASE_NAME_END);
+		}catch(Exception e){
+			lifecycleState.rollback(e);
+			throw e;
 		}
 	}
 	
@@ -60,14 +61,15 @@ public abstract class AbstractLifecycle implements Lifecycle{
 				logger.error("[initialize][can not start]" + this);
 				throw new IllegalStateException("can not start" + this);
 			}
+			
 			lifecycleState.setPhaseName(Startable.PHASE_NAME_BEGIN);
-
 			doStart();
-		}finally{
 			lifecycleState.setPhaseName(Startable.PHASE_NAME_END);
+		}catch(Exception e){
+			lifecycleState.rollback(e);
+			throw e;
 		}
 	}
-	
 	protected void doStart() throws Exception{
 		
 	}
@@ -83,8 +85,10 @@ public abstract class AbstractLifecycle implements Lifecycle{
 			
 			lifecycleState.setPhaseName(Stoppable.PHASE_NAME_BEGIN);
 			doStop();
-		}finally{
 			lifecycleState.setPhaseName(Stoppable.PHASE_NAME_BEGIN);
+		}catch(Exception e){
+			lifecycleState.rollback(e);
+			throw e;
 		}
 	}
 
@@ -103,8 +107,10 @@ public abstract class AbstractLifecycle implements Lifecycle{
 			}
 			lifecycleState.setPhaseName(Disposable.PHASE_NAME_BEGIN);
 			doDispose();
-		}finally{
 			lifecycleState.setPhaseName(Disposable.PHASE_NAME_BEGIN);
+		}catch(Exception e){
+			lifecycleState.rollback(e);
+			throw e;
 		}
 	}
 
@@ -112,6 +118,7 @@ public abstract class AbstractLifecycle implements Lifecycle{
 		
 	}
 
+	@Override
 	public LifecycleState getLifecycleState(){
 		
 		return this.lifecycleState;

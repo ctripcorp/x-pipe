@@ -22,7 +22,9 @@ public class DefaultLifecycleState implements LifecycleState{
 	private static final Logger logger = LoggerFactory.getLogger(DefaultLifecycleState.class);
 	
 	private AtomicReference<String> phaseName = new AtomicReference<>();
-	
+
+	private AtomicReference<String> previoisPhaseName = new AtomicReference<>();
+
 	private Lifecycle lifecycle;
 	
 	public DefaultLifecycleState(Lifecycle lifecycle) {
@@ -117,7 +119,9 @@ public class DefaultLifecycleState implements LifecycleState{
 
 	@Override
 	public void setPhaseName(String name) {
+		
 		logger.info("[setPhaseName]{} --> {}", lifecycle, name);
+		previoisPhaseName.set(phaseName.get());
 		phaseName.set(name);
 	}
 
@@ -125,6 +129,16 @@ public class DefaultLifecycleState implements LifecycleState{
 	@Override
 	public String toString() {
 		return String.format("%s, %s", lifecycle.toString(), phaseName);
+	}
+
+	/**
+	 * only support rollback once
+	 */
+	@Override
+	public void rollback(Exception e) {
+		
+		logger.info("[rollback]{},{} -> {}, reason:{}", this, phaseName, previoisPhaseName, e.getMessage());
+		phaseName.set(previoisPhaseName.get());
 	}
 
 }

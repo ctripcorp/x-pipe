@@ -142,9 +142,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	@Override
 	protected void doDispose() throws Exception {
+
+		if(this.keeperRedisMaster != null){
+			this.keeperRedisMaster.dispose();
+		}
 		
 		metaServiceManager.remoteObserver(this);
 		metaServiceManager.removeShard(clusterId, shardId);
+		
 		this.leaderElector.dispose();
 		super.doDispose();
 	}
@@ -219,7 +224,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private synchronized void doReplicationMaster() {
 
-		if(keeperRedisMaster != null && keeperRedisMaster.isStarted()){
+		if(keeperRedisMaster != null && keeperRedisMaster.getLifecycleState().isStarted()){
 			logger.info("[doReplicationMaster][already started]{}", this);
 			return;
 		}
@@ -240,8 +245,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			case UNKNOWN:
 				throw new IllegalStateException("clusterRole unknown, can not replication." + this);
 		}
-		this.keeperRedisMaster = new DefaultRedisMaster(this, endpoint, replicationStoreManager, scheduled, commandRequester);
-		this.keeperRedisMaster.startReplication();
+		
+		try {
+			this.keeperRedisMaster = new DefaultRedisMaster(this, endpoint, replicationStoreManager, scheduled, commandRequester);
+			this.keeperRedisMaster.initialize();
+			this.keeperRedisMaster.start();
+		} catch (Exception e) {
+			logger.error("[doReplicationMaster]" + this + "," + keeperRedisMaster, e);
+		}
 	}
 
 	private void gotActiveKeeperInfo(Keeper activeKeeper) {
@@ -310,12 +321,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		try {
 			
 			if(keeperRedisMaster != null){
-				keeperRedisMaster.stopReplication();
+				keeperRedisMaster.stop();
 			}
 			logger.info("[fromBackupToActive]{}", this);
 			ReplicationStore replicationStore = getCurrentReplicationStore();
 			replicationStore.changeMetaTo(BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME);
 		} catch (IOException e) {
+			logger.error("[fromBackupToActive][failed]", e);
+		} catch (Exception e) {
 			logger.error("[fromBackupToActive][failed]", e);
 		}
 	}
@@ -330,11 +343,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doStop() throws Exception {
 		
 		if(keeperRedisMaster != null){
-			keeperRedisMaster.stopReplication();
+			keeperRedisMaster.stop();
 		}
 		stopServer();
-		super.doStop();
 		this.leaderElector.stop();
+		
+		super.doStop();
 	}
 	
 	
@@ -496,15 +510,24 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			case NORMAL:
 				break;
 			case BEGIN_PROMOTE_SLAVE:
-				keeperRedisMaster.stopReplication();
+				try {
+					keeperRedisMaster.stop();
+				} catch (Exception e) {
+					logger.error("[setKeeperServerState]" + keeperState + "," + this, e);
+				}
 				break;
 			case COMMANDS_SEND_FINISH:
 				break;
 			case SLAVE_PROMTED:
-				SlavePromotionInfo promotionInfo = (SlavePromotionInfo) info;
-				this.keeperRedisMaster = masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
-						, promotionInfo.getNewMasterRunid(), promotionInfo.getNewMasterReplOffset());
-				keeperRedisMaster.startReplication();
+				try {
+					SlavePromotionInfo promotionInfo = (SlavePromotionInfo) info;
+					this.keeperRedisMaster = masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
+							, promotionInfo.getNewMasterRunid(), promotionInfo.getNewMasterReplOffset());
+					keeperRedisMaster.initialize();
+					keeperRedisMaster.start();
+				} catch (Exception e) {
+					logger.error("[setKeeperServerState]" + keeperState + "," + this, e);
+				}
 				break;
 			default:
 				throw new IllegalStateException("unkonow state:" + keeperState);
