@@ -593,7 +593,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	public class ClusterRoleChanged{
 		
-		private CLUSTER_ROLE previous, current;
+		private final CLUSTER_ROLE previous, current;
 		public ClusterRoleChanged(CLUSTER_ROLE previous, CLUSTER_ROLE current) {
 			this.previous = previous;
 			this.current = current;
