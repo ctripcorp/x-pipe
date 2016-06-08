@@ -17,10 +17,10 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.entity.Cluster;
-import com.ctrip.xpipe.redis.keeper.entity.Keeper;
-import com.ctrip.xpipe.redis.keeper.entity.Shard;
-import com.ctrip.xpipe.redis.keeper.entity.Xpipe;
+import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
+import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
 import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
 import com.ctrip.xpipe.redis.spring.KeeperContextConfig;
@@ -58,20 +58,20 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisTest{
 
 	private void startKeeper(String keeperConfigFile) throws Exception {
 		
-		Xpipe xpipe = DefaultSaxParser.parse(getClass().getClassLoader().getResourceAsStream(keeperConfigFile));
-		Cluster cluster = xpipe.getClusters().get(0);
+		XpipeMeta xpipe = DefaultSaxParser.parse(getClass().getClassLoader().getResourceAsStream(keeperConfigFile));
+		ClusterMeta cluster = xpipe.getClusters().get(0);
 
 		DefaultKeeperConfig config = new DefaultKeeperConfig();
 		setupZkNodes(cluster, config);
 		startKeepers(cluster);
 	}
 
-   private void startKeepers(final Cluster cluster) throws Exception {
+   private void startKeepers(final ClusterMeta cluster) throws Exception {
 
-		for (final Shard shard : cluster.getShards()) {
+		for (final ShardMeta shard : cluster.getShards()) {
 			
 			int index = 0;
-			for (final Keeper keeper : shard.getKeepers()) {
+			for (final KeeperMeta keeper : shard.getKeepers()) {
 				
 				File storeDir = new File(getTestFileDir() + "/" + index);
 				logger.info("[startKeepers]{},{},{}", cluster.getId(), shard.getId(), storeDir);
@@ -85,9 +85,9 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisTest{
 		}
 	}
 
-	private void setupZkNodes(Cluster cluster, KeeperConfig config) throws Exception {
+	private void setupZkNodes(ClusterMeta cluster, KeeperConfig config) throws Exception {
 		CuratorFramework client = initializeZK(config);
-		for (Shard shard : cluster.getShards()) {
+		for (ShardMeta shard : cluster.getShards()) {
 			String path = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), cluster.getId(), shard.getId());
 			client.newNamespaceAwareEnsurePath(path).ensure(client.getZookeeperClient());
 		}

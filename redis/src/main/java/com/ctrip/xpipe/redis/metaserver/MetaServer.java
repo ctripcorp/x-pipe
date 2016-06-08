@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.redis.metaserver;
 
+
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-import com.ctrip.xpipe.redis.keeper.entity.Cluster;
-import com.ctrip.xpipe.redis.keeper.entity.Keeper;
-import com.ctrip.xpipe.redis.keeper.entity.Redis;
+import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 
 /**
  * @author marsqing
@@ -12,13 +13,13 @@ import com.ctrip.xpipe.redis.keeper.entity.Redis;
  */
 public interface MetaServer extends Lifecycle {
 
-	Keeper getActiveKeeper(String clusterId, String shardId);
+	KeeperMeta getActiveKeeper(String clusterId, String shardId);
 
-	Redis getRedisMaster(String clusterId, String shardId);
+	RedisMeta getRedisMaster(String clusterId, String shardId);
 
 	/**
 	 * @param cluster
 	 * @throws Exception 
 	 */
-	void watchCluster(Cluster cluster) throws Exception;
+	void watchCluster(ClusterMeta cluster) throws Exception;
 }

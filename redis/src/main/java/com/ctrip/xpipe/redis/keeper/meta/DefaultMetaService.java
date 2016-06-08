@@ -18,8 +18,8 @@ import org.unidal.tuple.Pair;
 
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.entity.Keeper;
-import com.ctrip.xpipe.redis.keeper.entity.Redis;
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 
@@ -40,7 +40,7 @@ public class DefaultMetaService implements MetaService {
 	private MetaServerLocator metaServerLocator;
 
 	@Override
-	public Redis getRedisMaster(String clusterId, String shardId) {
+	public RedisMeta getRedisMaster(String clusterId, String shardId) {
 		
 		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/redis/master", clusterId, shardId),
 			      null);
@@ -49,13 +49,13 @@ public class DefaultMetaService implements MetaService {
 		if (codeAndRes == null) {
 			return null;
 		} else {
-			return JSON.parseObject(codeAndRes.getValue(), Redis.class);
+			return JSON.parseObject(codeAndRes.getValue(), RedisMeta.class);
 		}
 	}
 
 
 	@Override
-	public Keeper getActiveKeeper(String clusterId, String shardId) {
+	public KeeperMeta getActiveKeeper(String clusterId, String shardId) {
 		// TODO
 		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/keeper/master", clusterId, shardId),
 		      null);
@@ -64,7 +64,7 @@ public class DefaultMetaService implements MetaService {
 		if (codeAndRes == null) {
 			return null;
 		} else {
-			return JSON.parseObject(codeAndRes.getValue(), Keeper.class);
+			return JSON.parseObject(codeAndRes.getValue(), KeeperMeta.class);
 		}
 	}
 

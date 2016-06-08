@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.cluster;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.ctrip.xpipe.redis.keeper.entity.Keeper;
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 
 /**
@@ -17,9 +18,9 @@ public class KeeperStarter {
 	@Autowired
 	private MetaService metaService;
 
-	public void waitUntilActive(String clusterId, String shardId, Keeper keeper) {
+	public void waitUntilActive(String clusterId, String shardId, KeeperMeta keeper) {
 		while (true) {
-			Keeper activeKeeper = metaService.getActiveKeeper(clusterId, shardId);
+			KeeperMeta activeKeeper = metaService.getActiveKeeper(clusterId, shardId);
 			if (activeKeeper != null && activeKeeper.getIp().equals(keeper.getIp())
 			      && activeKeeper.getPort().equals(keeper.getPort())) {
 				return;

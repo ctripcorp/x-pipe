@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.observer.AbstractObservable;
-import com.ctrip.xpipe.redis.keeper.entity.Keeper;
-import com.ctrip.xpipe.redis.keeper.entity.Redis;
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 import com.ctrip.xpipe.utils.OsUtils;
 
 
@@ -104,8 +104,12 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 		@Override
 		public void doRun() {
 			
-			Keeper keeper = metaService.getActiveKeeper(clusterId, shardId);
+			KeeperMeta keeper = metaService.getActiveKeeper(clusterId, shardId);
 			if(keeper != null){
+				if(!keeper.isActive()){
+					logger.error("[doRun][keeper not active]" + keeper);
+					return;
+				}
 				notifyObservers(new MetaUpdateInfo(clusterId, shardId, keeper));
 			}
 		}
@@ -120,8 +124,12 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 		@Override
 		public void doRun() {
 			
-			Redis redis = metaService.getRedisMaster(clusterId, shardId);
+			RedisMeta redis = metaService.getRedisMaster(clusterId, shardId);
 			if(redis != null){
+				if(!redis.isMaster()){
+					logger.error("[doRun][redis not master]" + redis);
+					return;
+				}
 				notifyObservers(new MetaUpdateInfo(clusterId, shardId, redis));
 			}
 		}

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.metaserver;
 
+
 import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,10 +25,10 @@ import org.unidal.tuple.Pair;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.entity.Cluster;
-import com.ctrip.xpipe.redis.keeper.entity.Keeper;
-import com.ctrip.xpipe.redis.keeper.entity.Redis;
-import com.ctrip.xpipe.redis.keeper.entity.Shard;
+import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
+import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
 import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
 
 /**
@@ -40,7 +41,7 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 
 	private static Logger log = LoggerFactory.getLogger(DefaultMetaServer.class);
 
-	private ConcurrentMap<Pair<String, String>, Pair<Keeper, Redis>> shardState = new ConcurrentHashMap<>();
+	private ConcurrentMap<Pair<String, String>, Pair<KeeperMeta, RedisMeta>> shardState = new ConcurrentHashMap<>();
 
 	private KeeperConfig config;
 
@@ -52,19 +53,19 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 	}
 
 	@Override
-	public void watchCluster(Cluster cluster) throws Exception {
+	public void watchCluster(ClusterMeta cluster) throws Exception {
 		observeLeader(cluster);
 	}
 
 	@Override
-	public Keeper getActiveKeeper(String clusterId, String shardId) {
-		Pair<Keeper, Redis> state = shardState.get(new Pair<>(clusterId, shardId));
+	public KeeperMeta getActiveKeeper(String clusterId, String shardId) {
+		Pair<KeeperMeta, RedisMeta> state = shardState.get(new Pair<>(clusterId, shardId));
 		return state == null ? null : state.getKey();
 	}
 
 	@Override
-	public Redis getRedisMaster(String clusterId, String shardId) {
-		Pair<Keeper, Redis> state = shardState.get(new Pair<>(clusterId, shardId));
+	public RedisMeta getRedisMaster(String clusterId, String shardId) {
+		Pair<KeeperMeta, RedisMeta> state = shardState.get(new Pair<>(clusterId, shardId));
 		return state == null ? null : state.getValue();
 	}
 
@@ -84,9 +85,9 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 		client.blockUntilConnected();
 	}
 
-	private void observeLeader(final Cluster cluster) throws Exception {
+	private void observeLeader(final ClusterMeta cluster) throws Exception {
 
-		for (final Shard shard : cluster.getShards()) {
+		for (final ShardMeta shard : cluster.getShards()) {
 
 			updateRedisMaster(cluster.getId(), shard);
 
@@ -108,10 +109,10 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 	 * @param id
 	 * @param shard
 	 */
-	private void updateRedisMaster(String clusterId, Shard shard) {
-		for (Redis redis : shard.getRedises()) {
+	private void updateRedisMaster(String clusterId, ShardMeta shard) {
+		for (RedisMeta redis : shard.getRedises()) {
 			if (redis.isMaster()) {
-				shardState.put(new Pair<>(clusterId, shard.getId()), new Pair<>((Keeper) null, redis));
+				shardState.put(new Pair<>(clusterId, shard.getId()), new Pair<>((KeeperMeta) null, redis));
 			}
 		}
 	}
@@ -124,13 +125,13 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 	};
 
 	private void updateShardLeader(List<String> children, String leaderLatchPath, String clusterId, String shardId) throws Exception {
-		Keeper keeper = null;
+		KeeperMeta keeper = null;
 
 		if (children != null && !children.isEmpty()) {
 			List<String> sortedChildren = LockInternals.getSortedChildren("latch-", sorter, children);
 			String leaderId = new String(client.getData().forPath(leaderLatchPath + "/" + sortedChildren.get(0)));
 
-			keeper = new Keeper();
+			keeper = new KeeperMeta();
 			keeper.setActive(true);
 			// TODO
 			String[] parts = leaderId.split(":");
@@ -143,7 +144,7 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 		}
 
 		Pair<String, String> key = new Pair<>(clusterId, shardId);
-		Pair<Keeper, Redis> state = shardState.get(key);
+		Pair<KeeperMeta, RedisMeta> state = shardState.get(key);
 		if (state == null) {
 			log.error("Unnown shard {} {}", clusterId, shardId);
 			// TODO omit unknown shard?
@@ -170,7 +171,7 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 		initializeZk();
 		// TODO
 		InputStream ins = getClass().getClassLoader().getResourceAsStream("keeper6666.xml");
-		Cluster cluster = DefaultSaxParser.parse(ins).getClusters().get(0);
+		ClusterMeta cluster = DefaultSaxParser.parse(ins).getClusters().get(0);
 		watchCluster(cluster);
 	}
 

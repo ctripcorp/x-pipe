@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.metaserver.rest.resource;
 
 import javax.inject.Singleton;
+
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -15,8 +16,8 @@ import javax.ws.rs.core.Response.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.redis.keeper.entity.Keeper;
-import com.ctrip.xpipe.redis.keeper.entity.Redis;
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 import com.ctrip.xpipe.redis.metaserver.MetaServer;
 
 @Path("/api/v1")
@@ -26,7 +27,7 @@ public class MetaResource extends BaseRecource {
 
 	private Logger log = LoggerFactory.getLogger(MetaResource.class);
 
-	private Redis master = new Redis();
+	private RedisMeta master = new RedisMeta();
 
 	public MetaResource() {
 		master.setMaster(true);
@@ -40,7 +41,7 @@ public class MetaResource extends BaseRecource {
 	      @QueryParam("version") @DefaultValue("0") long version,
 	      @QueryParam("format") @DefaultValue("json") String format) {
 		MetaServer metaServer = getSpringContext().getBean(MetaServer.class);
-		Keeper keeper = metaServer.getActiveKeeper(clusterId, shardId);
+		KeeperMeta keeper = metaServer.getActiveKeeper(clusterId, shardId);
 
 		if ("plain".equals(format)) {
 			String plainRes = "";
