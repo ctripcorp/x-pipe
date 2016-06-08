@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
 import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
 import com.ctrip.xpipe.redis.spring.KeeperContextConfig;
 

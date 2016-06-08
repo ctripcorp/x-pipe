@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.impl;
+package com.ctrip.xpipe.redis.keeper.store;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +21,7 @@ import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreMeta;
-import com.ctrip.xpipe.redis.keeper.impl.RdbStore.Status;
+import com.ctrip.xpipe.redis.keeper.store.RdbStore.Status;
 
 import io.netty.buffer.ByteBuf;
 

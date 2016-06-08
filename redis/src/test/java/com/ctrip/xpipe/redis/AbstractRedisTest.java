@@ -18,7 +18,7 @@ import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.keeper.impl.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;

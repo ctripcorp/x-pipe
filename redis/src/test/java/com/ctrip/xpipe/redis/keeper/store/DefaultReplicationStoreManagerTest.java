@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.impl;
+package com.ctrip.xpipe.redis.keeper.store;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -11,6 +11,7 @@ import org.junit.Test;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.AbstractRedisTest;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.impl;
+package com.ctrip.xpipe.redis.keeper.store;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.impl;
+package com.ctrip.xpipe.redis.keeper.store;
 
 import java.io.IOException;
 
