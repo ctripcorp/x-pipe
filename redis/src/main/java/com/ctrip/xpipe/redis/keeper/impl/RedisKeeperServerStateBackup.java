@@ -17,7 +17,6 @@ import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.handler.PsyncHandler;
-import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer.KeeperServerStateChanged;
 import com.ctrip.xpipe.redis.protocal.RedisProtocol;
 
 /**

@@ -7,6 +7,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.nio.charset.Charset;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -23,7 +25,10 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.lifecycle.LifecycleRegistry;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
+import com.ctrip.xpipe.lifecycle.DefaultLifecycleRedistry;
 import com.ctrip.xpipe.utils.OsUtils;
 
 /**
@@ -38,11 +43,14 @@ public class AbstractTest {
 	protected ExecutorService executors = Executors.newCachedThreadPool();
 
 	protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(OsUtils.getCpuCount());
+	
+	private LifecycleRegistry lifecycleRegistry = new DefaultLifecycleRedistry();
 
 	@Rule
 	public TestName name = new TestName();
 	
 	private Properties properties = new Properties();
+	
 	
 	@Before
 	public void beforeAbstractTest() throws IOException{
@@ -69,7 +77,14 @@ public class AbstractTest {
 		}
 	}
 
-	
+	protected void initRegistry() throws Exception{
+		lifecycleRegistry.initialize();
+	}
+
+	protected void startRegistry() throws Exception{
+		lifecycleRegistry.start();
+	}
+
 	protected String randomString(){
 		
 		return randomString(1 << 10);
@@ -146,14 +161,60 @@ public class AbstractTest {
 		return null;
 	}
 	
+	protected void add(Lifecycle lifecycle) throws Exception{
+		this.lifecycleRegistry.add(lifecycle);
+	}
+
+	protected void remove(Lifecycle lifecycle) throws Exception{
+		this.lifecycleRegistry.remove(lifecycle);
+	}
+
 	
 	protected String currentTestName(){
 		return name.getMethodName();
 	} 
+
 	
+	/**
+	 * find an available port from min to max
+	 * @param min
+	 * @param max
+	 * @return
+	 */
+	protected int randomPort(int min, int max) {
+
+		int i = min;
+		for(;i<=max;i++){
+			
+			try(ServerSocket s = new ServerSocket()){
+				s.bind(new InetSocketAddress(i));
+				break;
+			} catch (IOException e) {
+			}
+		}
+		
+		return i;
+	}
+
+	protected Integer randomInt() {
+		
+		return (int)(Math.random() * Integer.MAX_VALUE);
+	}
+
+
 	@After
 	public void afterAbstractTest() throws IOException{
-
+		
+		try {
+			if(lifecycleRegistry.getLifecycleState().canStop()){
+				lifecycleRegistry.stop();
+			}
+			if(lifecycleRegistry.getLifecycleState().canDispose()){
+				lifecycleRegistry.dispose();
+			}
+		} catch (Exception e) {
+			logger.error("[afterAbstractTest]", e);
+		}
 		File file = new File(getTestFileDir());
 		FileUtils.forceDelete(file);
 		logger.info("[end   test]" + name.getMethodName());

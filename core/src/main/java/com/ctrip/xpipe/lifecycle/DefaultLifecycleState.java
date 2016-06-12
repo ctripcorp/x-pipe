@@ -141,4 +141,23 @@ public class DefaultLifecycleState implements LifecycleState{
 		phaseName.set(previoisPhaseName.get());
 	}
 
+	@Override
+	public boolean canInitialize() {
+		return isEmpty() || isDisposed();
+	}
+
+	@Override
+	public boolean canStart() {
+		return isInitialized() || isStopped();
+	}
+
+	@Override
+	public boolean canStop() {
+		return isStarted();
+	}
+
+	@Override
+	public boolean canDispose() {
+		return isInitialized() || isStopped();
+	}
 }

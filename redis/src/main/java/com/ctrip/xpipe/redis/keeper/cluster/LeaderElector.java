@@ -8,6 +8,7 @@ import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.retry.RetryNTimes;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.util.XpipeThreadFactory;
 
@@ -16,7 +17,7 @@ import com.ctrip.xpipe.redis.util.XpipeThreadFactory;
  *
  *         May 25, 2016 11:01:39 AM
  */
-public class LeaderElector implements Lifecycle {
+public class LeaderElector extends AbstractLifecycle implements Lifecycle {
 
 	private KeeperConfig config;
 
@@ -30,13 +31,14 @@ public class LeaderElector implements Lifecycle {
 	}
 
 	@Override
-	public void initialize() throws Exception {
-		// TODO Auto-generated method stub
-
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
 	}
 
 	@Override
-	public void start() throws Exception {
+	public void doStart() throws Exception {
+		super.doStart();
+		
 		CuratorFramework client = initializeZK();
 
 		latch = new LeaderLatch(client, ctx.getLeaderElectionZKPath(), ctx.getLeaderElectionID());
@@ -74,14 +76,18 @@ public class LeaderElector implements Lifecycle {
 	}
 
 	@Override
-	public void stop() throws Exception {
-		// TODO Auto-generated method stub
+	public void doStop() throws Exception {
+		super.doStop();
+		if(latch != null){
+			latch.close();
+		}
 
 	}
 
 	@Override
-	public void dispose() throws Exception {
-		latch.close();
+	public void doDispose() throws Exception {
+		
+		super.doDispose();
 	}
 
 }

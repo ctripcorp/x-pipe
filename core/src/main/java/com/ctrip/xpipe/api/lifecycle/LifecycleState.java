@@ -38,4 +38,12 @@ public interface LifecycleState {
 	 */
 	void rollback(Exception e);
 	
+	boolean canInitialize();
+	
+	boolean canStart();
+	
+	boolean canStop();
+	
+	boolean canDispose();
+	
 }

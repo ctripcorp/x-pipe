@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper;
+package com.ctrip.xpipe.redis.metaserver;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;

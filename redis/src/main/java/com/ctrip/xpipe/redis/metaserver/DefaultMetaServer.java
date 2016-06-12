@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
@@ -37,7 +38,7 @@ import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
  *         May 25, 2016 5:24:27 PM
  */
 @Component
-public class DefaultMetaServer implements MetaServer, Lifecycle {
+public class DefaultMetaServer extends AbstractLifecycle implements MetaServer, Lifecycle {
 
 	private static Logger log = LoggerFactory.getLogger(DefaultMetaServer.class);
 
@@ -160,14 +161,16 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 	}
 
 	@Override
-	public void initialize() throws Exception {
-		// TODO Auto-generated method stub
-
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+		
 	}
 
 	@Override
 	@PostConstruct
-	public void start() throws Exception {
+	public void doStart() throws Exception {
+		super.doStart();
+		
 		initializeZk();
 		// TODO
 		InputStream ins = getClass().getClassLoader().getResourceAsStream("keeper6666.xml");
@@ -176,15 +179,13 @@ public class DefaultMetaServer implements MetaServer, Lifecycle {
 	}
 
 	@Override
-	public void stop() throws Exception {
-		// TODO Auto-generated method stub
-
+	protected void doStop() throws Exception {
+		super.doStop();
 	}
 
 	@Override
-	public void dispose() throws Exception {
-		// TODO Auto-generated method stub
-
+	protected void doDispose() throws Exception {
+		super.doDispose();
 	}
 
 }

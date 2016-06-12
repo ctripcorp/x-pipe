@@ -8,10 +8,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.exception.XpipeException;
-import com.ctrip.xpipe.redis.AbstractRedisTest;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -21,7 +20,7 @@ import io.netty.buffer.ByteBufAllocator;
  *
  * 2016年4月21日 下午3:11:30
  */
-public class PsyncTest extends AbstractRedisTest{
+public class PsyncTest extends AbstractRedisKeeperTest{
 	
 	
 	private ByteBufAllocator allocator  = ByteBufAllocator.DEFAULT;
@@ -44,16 +43,6 @@ public class PsyncTest extends AbstractRedisTest{
 		replicationStore = replicationStoreManager.create();
 		
 		psync = new Psync(createKeeperMeta(), replicationStoreManager);
-	}
-
-	private KeeperMeta createKeeperMeta() {
-		
-		KeeperMeta keeperMeta = new KeeperMeta();
-		keeperMeta.setActive(true);
-		keeperMeta.setId(randomString(40));
-		keeperMeta.setIp("localhost");
-		keeperMeta.setPort(0);//change if needed
-		return keeperMeta;
 	}
 
 	@Test

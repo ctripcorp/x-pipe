@@ -10,10 +10,8 @@ import org.apache.curator.retry.RetryNTimes;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import com.ctrip.xpipe.redis.AbstractRedisTest;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -21,27 +19,19 @@ import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
 import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
-import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
-import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
-import com.ctrip.xpipe.redis.spring.KeeperContextConfig;
 
 /**
  * @author wenchao.meng
  *
  * 2016年4月21日 下午5:42:29
  */
-public class DefaultRedisKeeperServerTest extends AbstractRedisTest{
-
-	protected AnnotationConfigApplicationContext springCtx;
-	
-	protected MetaServiceManager metaServiceManager;
+public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest{
 	
 	@Before
-	public void beforeDefaultRedisKeeperServerTest(){
-		
-		springCtx = new AnnotationConfigApplicationContext(KeeperContextConfig.class);
-		metaServiceManager = springCtx.getBean(MetaServiceManager.class);
+	public void beforeDefaultRedisKeeperServerTest() throws Exception{
+		initRegistry();
+		startRegistry();
 	}
 
 	@Test
@@ -76,11 +66,8 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisTest{
 				
 				File storeDir = new File(getTestFileDir() + "/" + index);
 				logger.info("[startKeepers]{},{},{}", cluster.getId(), shard.getId(), storeDir);
-				ReplicationStoreManager  replicationStoreManager = new DefaultReplicationStoreManager(cluster.getId(), 
-						shard.getId(), storeDir);
-				RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(cluster.getId(), shard.getId(), keeper, replicationStoreManager, metaServiceManager);
-				redisKeeperServer.initialize();
-				redisKeeperServer.start();
+				ReplicationStoreManager  replicationStoreManager = createReplicationStoreManager(cluster.getId(), shard.getId(), storeDir);
+				createRedisKeeperServer(cluster.getId(), shard.getId(), keeper, replicationStoreManager, metaServiceManager);
 				index++;
 			}
 		}

@@ -404,27 +404,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return this.currentKeeperMeta;
 	}
 
-	public class KeeperServerStateChanged{
-		
-		private final RedisKeeperServerState previous, current;
-		
-		public KeeperServerStateChanged(RedisKeeperServerState previous, RedisKeeperServerState current) {
-			this.previous = previous;
-			this.current = current;
-		}
-		public RedisKeeperServerState getPrevious() {
-			return previous;
-		}
-		public RedisKeeperServerState getCurrent() {
-			return current;
-		}
-		
-		@Override
-		public String toString() {
-			return previous + "->" + current;
-		}
-	}
-
 	@Override
 	public void stopAndDisposeMaster() {
 
