@@ -295,7 +295,6 @@ import sun.misc.Unsafe;
  * @since 1.5
  * @author Doug Lea
  */
-@SuppressWarnings("restriction")
 public abstract class AbstractQueuedSynchronizer
     extends AbstractOwnableSynchronizer
     implements java.io.Serializable {
