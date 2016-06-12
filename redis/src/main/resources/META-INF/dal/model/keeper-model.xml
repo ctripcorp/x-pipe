@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model model-package="com.ctrip.xpipe.redis.keeper" enable-sax-parser="true">
-  <entity name="keeper_meta">
+<model model-package="com.ctrip.xpipe.redis.keeper" enable-sax-parser="true" class-suffix="Meta">
+  <entity name="keeper">
     <attribute name="active" primitive="true" />
   </entity>
-  <entity name="redis_meta">
+  <entity name="redis">
     <attribute name="master" primitive="true" />
   </entity>
 </model>
