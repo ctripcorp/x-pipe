@@ -1,10 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <model model-package="com.ctrip.xpipe.redis.keeper" enable-sax-parser="true" class-suffix="Meta">
+  <entity name="xpipe">
+    <entity-ref name="dc" type="map" />
+  </entity>
+  <entity name="dc">
+    <attribute name="id" key="true" />
+    <entity-ref name="cluster" type="map" />
+  </entity>
+  <entity name="cluster">
+    <attribute name="id" key="true" />
+    <entity-ref name="shard" type="map" />
+  </entity>
+  <entity name="shard">
+    <attribute name="id" key="true" />
+  </entity>
   <entity name="keeper">
     <attribute name="active" primitive="true" />
   </entity>
   <entity name="redis">
     <attribute name="master" primitive="true" />
+    <attribute name="shard-active" value-type="boolean" primitive="true" />
   </entity>
 </model>
 

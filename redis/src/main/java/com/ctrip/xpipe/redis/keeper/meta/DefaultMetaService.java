@@ -67,6 +67,19 @@ public class DefaultMetaService implements MetaService {
 			return JSON.parseObject(codeAndRes.getValue(), KeeperMeta.class);
 		}
 	}
+	
+	@Override
+	public KeeperMeta getUpstreamKeeper(String clusterId, String shardId) {
+		// TODO
+		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/keeper/upstream", clusterId, shardId), null);
+
+		// TODO
+		if (codeAndRes == null) {
+			return null;
+		} else {
+			return JSON.parseObject(codeAndRes.getValue(), KeeperMeta.class);
+		}
+	}
 
 	public Pair<Integer, String> getRequestToMetaServer(final String path, final Map<String, String> requestParams) {
 		return pollMetaServer(new Function<String, Pair<Integer, String>>() {
