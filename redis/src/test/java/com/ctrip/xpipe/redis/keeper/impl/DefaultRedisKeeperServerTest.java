@@ -50,7 +50,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest{
 	private void startKeeper(String keeperConfigFile) throws Exception {
 		
 		XpipeMeta xpipe = DefaultSaxParser.parse(getClass().getClassLoader().getResourceAsStream(keeperConfigFile));
-		ClusterMeta cluster = xpipe.getClusters().get(0);
+		ClusterMeta cluster = xpipe.getDcs().get("jq").getClusters().get("cluster1");
 
 		DefaultKeeperConfig config = new DefaultKeeperConfig();
 		setupZkNodes(cluster, config);
@@ -59,7 +59,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest{
 
    private void startKeepers(final ClusterMeta cluster) throws Exception {
 
-		for (final ShardMeta shard : cluster.getShards()) {
+		for (final ShardMeta shard : cluster.getShards().values()) {
 			
 			int index = 0;
 			for (final KeeperMeta keeper : shard.getKeepers()) {
@@ -75,7 +75,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest{
 
 	private void setupZkNodes(ClusterMeta cluster, KeeperConfig config) throws Exception {
 		CuratorFramework client = initializeZK(config);
-		for (ShardMeta shard : cluster.getShards()) {
+		for (ShardMeta shard : cluster.getShards().values()) {
 			String path = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), cluster.getId(), shard.getId());
 			client.newNamespaceAwareEnsurePath(path).ensure(client.getZookeeperClient());
 		}

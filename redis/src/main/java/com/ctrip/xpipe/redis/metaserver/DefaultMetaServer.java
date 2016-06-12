@@ -88,7 +88,7 @@ public class DefaultMetaServer extends AbstractLifecycle implements MetaServer, 
 
 	private void observeLeader(final ClusterMeta cluster) throws Exception {
 
-		for (final ShardMeta shard : cluster.getShards()) {
+		for (final ShardMeta shard : cluster.getShards().values()) {
 
 			updateRedisMaster(cluster.getId(), shard);
 
@@ -174,7 +174,7 @@ public class DefaultMetaServer extends AbstractLifecycle implements MetaServer, 
 		initializeZk();
 		// TODO
 		InputStream ins = getClass().getClassLoader().getResourceAsStream("keeper6666.xml");
-		ClusterMeta cluster = DefaultSaxParser.parse(ins).getClusters().get(0);
+		ClusterMeta cluster = DefaultSaxParser.parse(ins).getDcs().get("jq").getClusters().get("cluster1");
 		watchCluster(cluster);
 	}
 
