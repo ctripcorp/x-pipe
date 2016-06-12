@@ -11,6 +11,7 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.protocal.CmdContext;
 import com.ctrip.xpipe.redis.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.protocal.RedisClientProtocol;
@@ -40,6 +41,8 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	
 	private String masterRunid;
 	private long   offset;
+	
+	private KeeperMeta keeperMeta;
 
 	private List<PsyncObserver> observers = new LinkedList<PsyncObserver>();
 	
@@ -52,8 +55,9 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	}
 	
 	
-	public Psync(ReplicationStoreManager replicationStoreManager) {
+	public Psync(KeeperMeta keeperMeta, ReplicationStoreManager replicationStoreManager) {
 		
+		this.keeperMeta = keeperMeta;
 		this.replicationStoreManager = replicationStoreManager;
 		currentReplicationStore = getCurrentReplicationStore();
 	}
@@ -240,7 +244,7 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 					oldStore.delete();
 				}
 				currentReplicationStore = createNewReplicationStore();
-				currentReplicationStore.setKeeperBeginOffset(newKeeperBeginOffset);
+				currentReplicationStore.setKeeperMeta(keeperMeta.getId(), newKeeperBeginOffset);
 				notifyReFullSync();
 			}
 		}else if(split[0].equalsIgnoreCase(PARTIAL_SYNC)){

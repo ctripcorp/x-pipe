@@ -55,17 +55,32 @@ public interface ReplicationStore extends Closeable {
 	void delete();
 
 	/**
+	 * redis failover
 	 * @param newMasterEndPoint
 	 * @param newMasterId
 	 * @param offsetdelta  newBeginOffset = beginoffset + delta
 	 */
 	void masterChanged(DefaultEndPoint newMasterEndpoint, String newMasterRunid, long offsetdelta);
 	
+	/**
+	 * keeper backup -> active
+	 * @param name
+	 * @throws IOException
+	 */
+	void changeMetaTo(String name) throws IOException;
+	
+	/**
+	 * keeper active -> backup
+	 * @throws IOException 
+	 */
+	void changeMetaToKeeper() throws IOException;
+
+	
 	void setMasterAddress(DefaultEndPoint endpoint);
 	
 	DefaultEndPoint getMasterAddress();
 	
-	void setKeeperBeginOffset(long offset);
+	void setKeeperMeta(String keeperRunid, long offset);
 	
 	long getKeeperBeginOffset();
 	
@@ -79,7 +94,6 @@ public interface ReplicationStore extends Closeable {
 	
 	void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException;
 	
-	void changeMetaTo(String name) throws IOException;
 	
 	/**
 	 * check if this store is newly borned

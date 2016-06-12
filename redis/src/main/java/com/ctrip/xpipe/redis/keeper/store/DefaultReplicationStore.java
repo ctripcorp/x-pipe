@@ -43,7 +43,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	private ConcurrentMap<CommandsListener, CommandNotifier> cmdListeners = new ConcurrentHashMap<>();
 
-	private AtomicLong endOffset = new AtomicLong();
+	private AtomicLong commandsLength = new AtomicLong();
 
 	private int cmdFileSize;
 
@@ -80,7 +80,6 @@ public class DefaultReplicationStore implements ReplicationStore {
 		meta.setBeginOffset(masterOffset + 1);
 		meta.setRdbFile(UUID.randomUUID().toString());
 		meta.setRdbFileSize(rdbFileSize);
-		this.endOffset.set(masterOffset);
 
 		baseDir.mkdirs();
 		saveMeta();
@@ -110,14 +109,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 			metaRef.set(JSON.parseObject(IO.INSTANCE.readFrom(metaFile, "utf-8"), ReplicationStoreMeta.class));
 			ReplicationStoreMeta meta = metaRef.get();
 
-			File rdbFile = rdbFileOf(meta.getMasterRunid());
-			if (rdbFile.isFile()) {
-				endOffset.set(meta.getBeginOffset() + rdbFile.length() - 1);
-			} else {
-				endOffset.set(meta.getBeginOffset() - 1);
-			}
-
-			log.info("Meta loaded: {}, endOffset: {}", meta, endOffset);
+			log.info("Meta loaded: {}", meta);
 		} else {
 			metaRef.set(new ReplicationStoreMeta());
 		}
@@ -150,7 +142,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public int appendCommands(ByteBuf byteBuf) throws IOException {
 		int wrote = cmdStore.appendCommands(byteBuf);
-		endOffset.addAndGet(wrote);
+		commandsLength.addAndGet(wrote);
 
 		return wrote;
 	}
@@ -174,7 +166,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public long endOffset() {
-		return endOffset.get();
+		return beginOffset() + cmdStore.totalLength() - 1;
 	}
 
 	@Override
@@ -256,10 +248,9 @@ public class DefaultReplicationStore implements ReplicationStore {
 		newMeta.setBeginOffset(metaRef.get().getBeginOffset() + offsetDelta);
 
 		metaRef.set(newMeta);
-		this.endOffset.addAndGet(offsetDelta);
 
 		log.info("[masterChanged]offsetDelta:{}, masterEndpoint:{}, masterRunid:{}, beginOffset:{}, endOffset:{}", offsetDelta, newMeta.getMasterAddress(),
-				newMeta.getMasterRunid(), newMeta.getBeginOffset(), endOffset.get());
+				newMeta.getMasterRunid(), newMeta.getBeginOffset(), endOffset());
 		try {
 			saveMeta();
 		} catch (IOException e) {
@@ -277,11 +268,14 @@ public class DefaultReplicationStore implements ReplicationStore {
 		return metaRef.get().getMasterAddress();
 	}
 
+	
 	@Override
-	public void setKeeperBeginOffset(long keeperBeginOffset) {
+	public void setKeeperMeta(String keeperRunid, long keeperBeginOffset) {
 
+		metaRef.get().setKeeperRunid(keeperRunid);
 		metaRef.get().setKeeperBeginOffset(keeperBeginOffset);
 	}
+	
 
 	@Override
 	public long getKeeperBeginOffset() {
@@ -324,27 +318,47 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void changeMetaTo(String name) throws IOException {
-		ReplicationStoreMeta meta = getReplicationStoreMeta(name);
-
+	public void changeMetaToKeeper() throws IOException {
 		
-		if (meta != null) {
-			ReplicationStoreMeta old = getReplicationStoreMeta();
-			long length = endOffset() - beginOffset();
-			long newEndOffset = meta.getBeginOffset() + length;
+		log.info("[changeMetaToKeeper]");
+		
+		ReplicationStoreMeta meta = new ReplicationStoreMeta(metaRef.get());
+		meta.setBeginOffset(meta.getKeeperBeginOffset());
+		meta.setMasterRunid(meta.getKeeperRunid());
 
-			metaRef.set(meta);
-			endOffset.set(newEndOffset);
-			log.info("[changeMetaTo][cmdFile length, new endoffset]{},{}", length, newEndOffset);
-			log.info("[changeMetaTo]{}", old);
-			log.info("[changeMetaTo]{}", meta);
-		} else {
+		changeMetaTo(meta);
+	}
+
+	private void changeMetaTo(ReplicationStoreMeta meta) throws IOException{
+		
+
+		ReplicationStoreMeta old = getReplicationStoreMeta();
+		long length = endOffset() - beginOffset();
+		long newEndOffset = meta.getBeginOffset() + length;
+
+		metaRef.set(meta);
+		log.info("[changeMetaTo][cmdFile length, new endoffset]{},{}", length, newEndOffset);
+		log.info("[changeMetaTo]{}", old);
+		log.info("[changeMetaTo]{}", meta);
+		
+		saveMeta();
+
+	}
+	
+	
+	@Override
+	public void changeMetaTo(String name) throws IOException {
+		
+		ReplicationStoreMeta meta = getReplicationStoreMeta(name);
+		if(meta == null){
 			throw new IllegalStateException("can not find meta:" + name);
 		}
+		changeMetaTo(meta);
 	}
 
 	@Override
 	public boolean isFresh() {
 		return metaRef.get().getMasterRunid() == null;
 	}
+
 }

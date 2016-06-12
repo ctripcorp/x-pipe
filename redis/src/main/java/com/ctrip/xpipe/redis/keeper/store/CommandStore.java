@@ -11,5 +11,7 @@ public interface CommandStore {
 	CommandReader beginRead(long startOffset) throws IOException;
 
 	void close();
-
+	
+	
+	long totalLength();
 }

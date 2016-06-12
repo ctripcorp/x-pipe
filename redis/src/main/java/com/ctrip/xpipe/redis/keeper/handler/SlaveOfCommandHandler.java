@@ -16,7 +16,7 @@ import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.KEEPER_STATE;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.netty.NettyBaseClientHandler;
 import com.ctrip.xpipe.redis.protocal.CmdContext;
@@ -83,7 +83,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 		if (redisSlave != null) {
 			RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
 
-				redisKeeperServer.setKeeperServerState(KEEPER_STATE.BEGIN_PROMOTE_SLAVE);
+				redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.BEGIN_PROMOTE_SLAVE);
 				String msg = String.format("promote %s:%s to master", ip, port);
 				redisClient.sendMessage(new BulkStringParser(msg).format());
 				
@@ -153,8 +153,8 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 												keeperOffset = Long.parseLong(parts[1]);
 												newMasterOffset = Long.parseLong(parts[2]);
 												
-												keeper.setKeeperServerState(KEEPER_STATE.SLAVE_PROMTED, 
-														new SlavePromotionInfo(keeperOffset, new DefaultEndPoint(ip, port), 
+												keeper.getRedisKeeperServerState().setPromotionState(
+														PROMOTION_STATE.SLAVE_PROMTED, new SlavePromotionInfo(keeperOffset, new DefaultEndPoint(ip, port), 
 																masterId.get(), newMasterOffset));
 											} catch (Exception ee) {
 												logger.error("[onComplete]", e);

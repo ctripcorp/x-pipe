@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.keeper;
 
-
-
 import java.io.IOException;
 import java.util.Set;
 
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.protocal.PsyncObserver;
 
@@ -18,8 +17,6 @@ import io.netty.channel.Channel;
 public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	
 	int getListeningPort();
-	
-	RedisMaster getRedisMaster();
 	
 	KeeperRepl getKeeperRepl();
 	
@@ -44,14 +41,22 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	CommandRequester getCommandRequester();
 	
 	ReplicationStore getReplicationStore();
+		
+	String getClusterId();
 	
-	void setKeeperServerState(KEEPER_STATE keeperState);
+	String getShardId();
 	
-	void setKeeperServerState(KEEPER_STATE keeperState, Object info);
+	void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState);
 	
-	CLUSTER_ROLE getClusterRole();
+	RedisKeeperServerState getRedisKeeperServerState();
 	
-	public static enum KEEPER_STATE{
+	KeeperMeta getCurrentKeeperMeta();
+	
+	void reconnectMaster();
+	
+	void stopAndDisposeMaster();
+	
+	public static enum PROMOTION_STATE{
 		
 		NORMAL,
 		BEGIN_PROMOTE_SLAVE,//promote slave to master. 1.should not receive commands, 2. disconnect with master

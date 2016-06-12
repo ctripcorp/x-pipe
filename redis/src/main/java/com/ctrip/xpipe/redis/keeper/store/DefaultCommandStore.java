@@ -11,6 +11,7 @@ import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.util.OffsetNotifier;
 
 import io.netty.buffer.ByteBuf;
@@ -34,7 +35,7 @@ public class DefaultCommandStore implements CommandStore {
 	private FilenameFilter fileFilter;
 
 	private OffsetNotifier offsetNotifier;
-
+	
 	public DefaultCommandStore(File file, int maxFileSize) throws IOException {
 		this.baseDir = file.getParentFile();
 		this.fileNamePrefix = file.getName();
@@ -91,6 +92,17 @@ public class DefaultCommandStore implements CommandStore {
 		return wrote;
 	}
 
+	@Override
+	public long totalLength() {
+		
+		try {
+			return currentStartOffset + channel.size();
+		} catch (IOException e) {
+			throw new XpipeRuntimeException("[totalLength]getFileLength error" + channel, e);
+		}
+	}
+
+	
 	private void rotateFileIfNenessary() throws IOException {
 		if (writeFile.length() >= maxFileSize) {
 			currentStartOffset += writeFile.length();
@@ -195,4 +207,5 @@ public class DefaultCommandStore implements CommandStore {
 			}
 		}
 	}
+
 }

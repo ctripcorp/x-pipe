@@ -12,11 +12,15 @@ public class ReplicationStoreMeta {
 	private String masterRunid;
 	private DefaultEndPoint masterAddress;
 	private long beginOffset;
-	private long keeperBeginOffset;
-	private boolean active;
 	private String rdbFile;
 	private long rdbFileSize;
+	
+	private boolean active;
 
+	private long keeperBeginOffset;
+	private String keeperRunid;
+
+	
 	public ReplicationStoreMeta() {
 
 	}
@@ -34,10 +38,12 @@ public class ReplicationStoreMeta {
 		this.masterRunid = proto.masterRunid;
 		this.masterAddress = proto.masterAddress;
 		this.beginOffset = proto.beginOffset;
-		this.keeperBeginOffset = proto.keeperBeginOffset;
 		this.active = proto.active;
 		this.rdbFile = proto.rdbFile;
 		this.rdbFileSize = proto.rdbFileSize;
+		
+		this.keeperBeginOffset = proto.keeperBeginOffset;
+		this.keeperRunid = proto.keeperRunid;
 	}
 
 	/**
@@ -105,8 +111,16 @@ public class ReplicationStoreMeta {
 
 	@Override
 	public String toString() {
-		return "ReplicationStoreMeta [masterRunid=" + masterRunid + ", masterAddress=" + masterAddress + ", beginOffset=" + beginOffset + ", keeperBeginOffset="
+		return "ReplicationStoreMeta [masterRunid=" + masterRunid + ", masterAddress=" + masterAddress + ", beginOffset=" + beginOffset + ", keeperRunid:" + keeperRunid + ", keeperBeginOffset="
 				+ keeperBeginOffset + ", active=" + active + ", rdbFile=" + rdbFile + ", rdbFileSize=" + rdbFileSize + "]";
+	}
+
+	public String getKeeperRunid() {
+		return keeperRunid;
+	}
+
+	public void setKeeperRunid(String keeperRunid) {
+		this.keeperRunid = keeperRunid;
 	}
 
 }

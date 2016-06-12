@@ -10,19 +10,19 @@ import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
-import com.ctrip.xpipe.redis.keeper.CLUSTER_ROLE;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.KEEPER_STATE;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreMeta;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.protocal.CmdContext;
 import com.ctrip.xpipe.redis.protocal.Command;
@@ -214,13 +214,11 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		
 		this.masterChannel = channel;
 		commandRequester.request(channel, listeningPortCommand());
-		if(redisKeeperServer.getClusterRole() == CLUSTER_ROLE.BACKUP){
+		if(redisKeeperServer.getRedisKeeperServerState().sendKinfo()){
 			commandRequester.request(channel, kinfoCommand());
 		}else{
 			commandRequester.request(channel, psyncCommand());
 		}
-		
-		redisKeeperServer.setKeeperServerState(KEEPER_STATE.NORMAL);
 	}
 
 	private Command kinfoCommand() {
@@ -269,7 +267,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	private Command psyncCommand(){
 		
-		Psync psync = new Psync(replicationStoreManager);
+		Psync psync = new Psync(redisKeeperServer.getCurrentKeeperMeta(), replicationStoreManager);
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
 		return psync;
@@ -309,12 +307,18 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	@Override
 	public void reFullSync() {
-		
+		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.NORMAL);
 	}
 
 	@Override
 	public void onContinue() {
+		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.NORMAL);
 		scheduleReplconf();
+	}
+
+	@Override
+	public Endpoint masterEndPoint() {
+		return this.endpoint;
 	}
 
 }

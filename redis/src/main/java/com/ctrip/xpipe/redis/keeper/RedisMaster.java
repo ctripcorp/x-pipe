@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.LifecycleStateAware;
 import com.ctrip.xpipe.exception.XpipeException;
@@ -31,7 +32,7 @@ public interface RedisMaster extends RedisRole, PsyncObserver, Lifecycle, Lifecy
 	 * @param channel
 	 */
 	void masterConnected(Channel channel);
-	
-	
+
+	Endpoint masterEndPoint();
 	
 }
