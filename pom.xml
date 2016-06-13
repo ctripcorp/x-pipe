@@ -36,6 +36,7 @@
 	<modules>
 		<module>core</module>
 		<module>redis</module>
+		<module>services</module>
 	</modules>
 
 	<dependencyManagement>
@@ -220,7 +221,7 @@
 			</activation>
 			<modules>
 				<module>services</module>
-			</modules>			
+			</modules>
 		</profile>
 
 		<profile>

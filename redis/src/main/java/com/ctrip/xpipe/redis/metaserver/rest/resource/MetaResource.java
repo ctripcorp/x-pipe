@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.metaserver.rest.resource;
 
-
 import javax.inject.Singleton;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -22,6 +21,7 @@ import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
 import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.keeper.meta.ShardStatus;
 import com.ctrip.xpipe.redis.metaserver.MetaHolder;
 import com.ctrip.xpipe.redis.metaserver.MetaServer;
 import com.ctrip.xpipe.utils.ServicesUtil;
@@ -32,16 +32,27 @@ import com.ctrip.xpipe.utils.ServicesUtil;
 public class MetaResource extends BaseRecource {
 
 	private Logger log = LoggerFactory.getLogger(MetaResource.class);
-	
+
 	private static final FoundationService foundationService = ServicesUtil.getFoundationService();
+
+	@Path("/{clusterId}/{shardId}")
+	@GET
+	public Response getClusterStatus(@PathParam("clusterId") String clusterId, @PathParam("shardId") String shardId,
+			@QueryParam("version") @DefaultValue("0") long version) {
+		// TODO merge and update cluster status on demand
+
+		KeeperMeta activeKeeper = doGetActiveKeeper(clusterId, shardId);
+		RedisMeta redisMaster = doGetRedisMaster(clusterId, shardId);
+		KeeperMeta upstreamKeeper = doGetUpstreamKeeper(clusterId, shardId);
+
+		return Response.status(Status.OK).entity(new ShardStatus(activeKeeper, upstreamKeeper, redisMaster)).build();
+	}
 
 	@Path("/{clusterId}/{shardId}/keeper/master")
 	@GET
 	public Response getActiveKeeper(@PathParam("clusterId") String clusterId, @PathParam("shardId") String shardId,
 			@QueryParam("version") @DefaultValue("0") long version, @QueryParam("format") @DefaultValue("json") String format) {
-		// TODO call getBean only once
-		MetaServer metaServer = getSpringContext().getBean(MetaServer.class);
-		KeeperMeta keeper = metaServer.getActiveKeeper(clusterId, shardId);
+		KeeperMeta keeper = doGetActiveKeeper(clusterId, shardId);
 
 		if (keeper == null) {
 			return Response.status(Status.OK).entity("").build();
@@ -55,9 +66,22 @@ public class MetaResource extends BaseRecource {
 		}
 	}
 
+	private KeeperMeta doGetActiveKeeper(String clusterId, String shardId) {
+		// TODO call getBean only once
+		MetaServer metaServer = getSpringContext().getBean(MetaServer.class);
+		KeeperMeta keeper = metaServer.getActiveKeeper(clusterId, shardId);
+		return keeper;
+	}
+
 	@Path("/{clusterId}/{shardId}/keeper/upstream")
 	@GET
 	public Response getUpstreamKeeper(@PathParam("clusterId") String clusterId, @PathParam("shardId") String shardId) {
+		KeeperMeta upstreamKeeper = doGetUpstreamKeeper(clusterId, shardId);
+
+		return Response.status(Status.OK).entity(upstreamKeeper).build();
+	}
+
+	private KeeperMeta doGetUpstreamKeeper(String clusterId, String shardId) {
 		MetaHolder metaHolder = getSpringContext().getBean(MetaHolder.class);
 		XpipeMeta meta = metaHolder.getMeta();
 
@@ -88,8 +112,7 @@ public class MetaResource extends BaseRecource {
 				}
 			}
 		}
-
-		return Response.status(Status.OK).entity(upstreamKeeper).build();
+		return upstreamKeeper;
 	}
 
 	@Path("/{clusterId}/{shardId}/redis/master")
@@ -97,8 +120,7 @@ public class MetaResource extends BaseRecource {
 	public Response getRedisMaster(@PathParam("clusterId") String clusterId, @PathParam("shardId") String shardId,
 			@QueryParam("version") @DefaultValue("0") long version, @QueryParam("format") @DefaultValue("json") String format) {
 
-		MetaHolder metaHolder = getSpringContext().getBean(MetaHolder.class);
-		RedisMeta master = findRedisMaster(metaHolder.getMeta(), clusterId, shardId);
+		RedisMeta master = doGetRedisMaster(clusterId, shardId);
 
 		if (master == null) {
 			return Response.status(Status.OK).entity("").build();
@@ -110,6 +132,12 @@ public class MetaResource extends BaseRecource {
 				return Response.status(Status.OK).entity(master).build();
 			}
 		}
+	}
+
+	private RedisMeta doGetRedisMaster(String clusterId, String shardId) {
+		MetaHolder metaHolder = getSpringContext().getBean(MetaHolder.class);
+		RedisMeta master = findRedisMaster(metaHolder.getMeta(), clusterId, shardId);
+		return master;
 	}
 
 	private RedisMeta findRedisMaster(XpipeMeta meta, String clusterId, String shardId) {

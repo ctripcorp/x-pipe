@@ -62,4 +62,9 @@ public interface KeeperConfig {
 	 */
    int getRedisCommandFileSize();
 
+	/**
+	 * @return
+	 */
+	int getMetaRefreshIntervalMillis();
+
 }

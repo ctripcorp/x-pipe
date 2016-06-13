@@ -166,7 +166,12 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public long endOffset() {
-		return beginOffset() + cmdStore.totalLength() - 1;
+		if (cmdStore == null) {
+			// TODO
+			return -2L;
+		} else {
+			return beginOffset() + cmdStore.totalLength() - 1;
+		}
 	}
 
 	@Override
@@ -268,14 +273,12 @@ public class DefaultReplicationStore implements ReplicationStore {
 		return metaRef.get().getMasterAddress();
 	}
 
-	
 	@Override
 	public void setKeeperMeta(String keeperRunid, long keeperBeginOffset) {
 
 		metaRef.get().setKeeperRunid(keeperRunid);
 		metaRef.get().setKeeperBeginOffset(keeperBeginOffset);
 	}
-	
 
 	@Override
 	public long getKeeperBeginOffset() {
@@ -319,9 +322,9 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public void changeMetaToKeeper() throws IOException {
-		
+
 		log.info("[changeMetaToKeeper]");
-		
+
 		ReplicationStoreMeta meta = new ReplicationStoreMeta(metaRef.get());
 		meta.setBeginOffset(meta.getKeeperBeginOffset());
 		meta.setMasterRunid(meta.getKeeperRunid());
@@ -329,8 +332,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		changeMetaTo(meta);
 	}
 
-	private void changeMetaTo(ReplicationStoreMeta meta) throws IOException{
-		
+	private void changeMetaTo(ReplicationStoreMeta meta) throws IOException {
 
 		ReplicationStoreMeta old = getReplicationStoreMeta();
 		long length = endOffset() - beginOffset();
@@ -340,17 +342,16 @@ public class DefaultReplicationStore implements ReplicationStore {
 		log.info("[changeMetaTo][cmdFile length, new endoffset]{},{}", length, newEndOffset);
 		log.info("[changeMetaTo]{}", old);
 		log.info("[changeMetaTo]{}", meta);
-		
+
 		saveMeta();
 
 	}
-	
-	
+
 	@Override
 	public void changeMetaTo(String name) throws IOException {
-		
+
 		ReplicationStoreMeta meta = getReplicationStoreMeta(name);
-		if(meta == null){
+		if (meta == null) {
 			throw new IllegalStateException("can not find meta:" + name);
 		}
 		changeMetaTo(meta);
