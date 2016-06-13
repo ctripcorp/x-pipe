@@ -147,7 +147,7 @@ public class DefaultLifecycleState extends DefaultLifecycleController implements
 
 	@Override
 	public boolean canInitialize() {
-		return lifecycleController.canDispose(getPhaseName());
+		return lifecycleController.canInitialize(getPhaseName());
 	}
 
 	@Override
