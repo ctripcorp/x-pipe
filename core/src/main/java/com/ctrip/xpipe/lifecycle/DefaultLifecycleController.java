@@ -31,7 +31,7 @@ public class DefaultLifecycleController implements LifecycleController{
 	public boolean canStop(String phaseName) {
 		
 		return phaseName != null  && 
-				(phaseName.equals(Startable.PHASE_NAME_BEGIN));
+				(phaseName.equals(Startable.PHASE_NAME_END));
 	}
 
 	@Override
