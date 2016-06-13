@@ -20,7 +20,7 @@ public class KeeperStarter {
 
 	public void waitUntilActive(String clusterId, String shardId, KeeperMeta keeper) {
 		while (true) {
-			KeeperMeta activeKeeper = metaService.getActiveKeeper(clusterId, shardId);
+			KeeperMeta activeKeeper = metaService.getShardStatus(clusterId, shardId).getActiveKeeper();
 			if (activeKeeper != null && activeKeeper.getIp().equals(keeper.getIp())
 			      && activeKeeper.getPort().equals(keeper.getPort())) {
 				return;

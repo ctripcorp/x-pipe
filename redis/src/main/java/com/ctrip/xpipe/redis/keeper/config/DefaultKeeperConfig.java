@@ -62,8 +62,13 @@ public class DefaultKeeperConfig implements KeeperConfig {
 	}
 
 	@Override
-   public int getRedisCommandFileSize() {
-	   return 1024 * 1024 * 1024;
-   }
+	public int getRedisCommandFileSize() {
+		return 1024 * 1024 * 1024;
+	}
+
+	@Override
+	public int getMetaRefreshIntervalMillis() {
+		return 3000;
+	}
 
 }
