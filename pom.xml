@@ -37,6 +37,7 @@
 	<modules>
 		<module>core</module>
 		<module>redis</module>
+		<module>services</module>
 	</modules>
 
 	<dependencyManagement>
