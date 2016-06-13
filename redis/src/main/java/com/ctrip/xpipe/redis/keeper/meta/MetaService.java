@@ -15,5 +15,7 @@ public interface MetaService {
 	RedisMeta getRedisMaster(String clusterId, String shardId);
 
 	KeeperMeta getUpstreamKeeper(String clusterId, String shardId);
+	
+	String getActiveDc();
 
 }

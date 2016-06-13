@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.metaserver.rest.resource;
 
+
 import javax.inject.Singleton;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -14,7 +15,7 @@ import javax.ws.rs.core.Response.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.framework.foundation.Foundation;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.keeper.entity.DcMeta;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
@@ -23,6 +24,7 @@ import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
 import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.metaserver.MetaHolder;
 import com.ctrip.xpipe.redis.metaserver.MetaServer;
+import com.ctrip.xpipe.utils.ServicesUtil;
 
 @Path("/api/v1")
 @Singleton
@@ -30,6 +32,8 @@ import com.ctrip.xpipe.redis.metaserver.MetaServer;
 public class MetaResource extends BaseRecource {
 
 	private Logger log = LoggerFactory.getLogger(MetaResource.class);
+	
+	private static final FoundationService foundationService = ServicesUtil.getFoundationService();
 
 	@Path("/{clusterId}/{shardId}/keeper/master")
 	@GET
@@ -57,7 +61,7 @@ public class MetaResource extends BaseRecource {
 		MetaHolder metaHolder = getSpringContext().getBean(MetaHolder.class);
 		XpipeMeta meta = metaHolder.getMeta();
 
-		String thisDc = Foundation.server().getDataCenter();
+		String thisDc = ServicesUtil.getFoundationService().getDataCenter();
 		ShardMeta activeShard = null;
 		for (DcMeta dc : meta.getDcs().values()) {
 			if (thisDc.equals(dc.getId())) {
@@ -114,7 +118,7 @@ public class MetaResource extends BaseRecource {
 		for (RedisMeta redis : shard.getRedises()) {
 			if (redis.isMaster()) {
 				// TODO
-				redis.setShardActive(Foundation.server().getDataCenter().equals(shard.getActiveDc()));
+				redis.setShardActive(foundationService.getDataCenter().equals(shard.getActiveDc()));
 				return redis;
 			}
 		}
@@ -123,21 +127,21 @@ public class MetaResource extends BaseRecource {
 	}
 
 	private ShardMeta findShard(XpipeMeta meta, String clusterId, String shardId) {
-		DcMeta dc = meta.findDc(Foundation.server().getDataCenter());
+		DcMeta dc = meta.findDc(foundationService.getDataCenter());
 		if (dc == null) {
-			log.warn("Meta for DC {} not found", Foundation.server().getDataCenter());
+			log.warn("Meta for DC {} not found", foundationService.getDataCenter());
 			return null;
 		}
 
 		ClusterMeta cluster = dc.findCluster(clusterId);
 		if (cluster == null) {
-			log.warn("Meta for cluster {}, DC {} not found", clusterId, Foundation.server().getDataCenter());
+			log.warn("Meta for cluster {}, DC {} not found", clusterId, foundationService.getDataCenter());
 			return null;
 		}
 
 		ShardMeta shard = cluster.findShard(shardId);
 		if (shard == null) {
-			log.warn("Meta for shard {}, cluster {}, DC {} not found", shardId, clusterId, Foundation.server().getDataCenter());
+			log.warn("Meta for shard {}, cluster {}, DC {} not found", shardId, clusterId, foundationService.getDataCenter());
 			return null;
 		}
 		return shard;

@@ -5,7 +5,7 @@ package com.ctrip.xpipe.api.lifecycle;
  *
  * Jun 6, 2016
  */
-public interface LifecycleState {
+public interface LifecycleState{
 	
 	/**
 	 * just created!
@@ -37,13 +37,13 @@ public interface LifecycleState {
 	 * rollback to previous state
 	 */
 	void rollback(Exception e);
-	
+
 	boolean canInitialize();
-	
+
 	boolean canStart();
-	
+
 	boolean canStop();
-	
+
 	boolean canDispose();
-	
+
 }

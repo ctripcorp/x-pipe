@@ -25,8 +25,8 @@ public abstract class AbstractLifecycle implements Lifecycle, LifecycleStateAwar
 	private LifecycleController LifecycleController;
 	
 	public AbstractLifecycle() {
-		this.lifecycleState = new DefaultLifecycleState(this);
 		this.LifecycleController  = new DefaultLifecycleController();
+		this.lifecycleState = new DefaultLifecycleState(this, LifecycleController);
 	}
 	
 	

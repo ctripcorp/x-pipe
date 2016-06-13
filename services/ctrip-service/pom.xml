@@ -1,0 +1,36 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.ctrip.xpipe</groupId>
+		<artifactId>services</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<!-- ctrip related infrastructure -->
+	<artifactId>ctrip-service</artifactId>
+
+
+	<properties>
+		<cat.version>1.5.1</cat.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.ctrip.xpipe</groupId>
+			<artifactId>core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.dianping.cat</groupId>
+			<artifactId>cat-client</artifactId>
+			<version>${cat.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.ctrip.xpipe</groupId>
+			<artifactId>core</artifactId>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+
+</project>

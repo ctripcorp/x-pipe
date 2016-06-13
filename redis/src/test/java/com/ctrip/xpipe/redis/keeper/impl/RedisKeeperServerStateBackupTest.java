@@ -9,8 +9,6 @@ import org.junit.Test;
 
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 
-
-
 /**
  * @author wenchao.meng
  *
@@ -48,14 +46,10 @@ public class RedisKeeperServerStateBackupTest extends AbstractRedisKeeperServerS
 	@Test
 	public void testBackupBackup(){
 		
-		
 		KeeperMeta newKeeperMeta = createKeeperMeta();
 		newKeeperMeta.setPort(keeperMeta.getPort() + 1);
 		update(newKeeperMeta, backup);
-		
 	}
-
-	
 
 	@After
 	public void afterRedisKeeperServerStateTest(){

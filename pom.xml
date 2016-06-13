@@ -31,7 +31,6 @@
 		<spring.version>4.2.6.RELEASE</spring.version>
 		<servlet-api.version>3.0.1</servlet-api.version>
 		<jersey.version>2.19</jersey.version>
-		<cat.version>1.5.1</cat.version>
 	</properties>
 
 	<modules>
@@ -136,11 +135,6 @@
 				<artifactId>fastjson</artifactId>
 				<version>${fastjson.version}</version>
 			</dependency>
-			<dependency>
-				<groupId>com.dianping.cat</groupId>
-				<artifactId>cat-client</artifactId>
-				<version>${cat.version}</version>
-			</dependency>
 
 			<!-- unit test -->
 			<dependency>
@@ -215,6 +209,20 @@
 	</dependencies>
 
 	<profiles>
+
+		<profile>
+			<id>services</id>
+			<activation>
+				<property>
+					<name>buildServices</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<modules>
+				<module>services</module>
+			</modules>			
+		</profile>
+
 		<profile>
 			<id>travis</id>
 			<activation>

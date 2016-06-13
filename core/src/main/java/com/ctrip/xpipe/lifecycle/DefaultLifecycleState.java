@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.api.lifecycle.Disposable;
 import com.ctrip.xpipe.api.lifecycle.Initializable;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.lifecycle.LifecycleController;
 import com.ctrip.xpipe.api.lifecycle.LifecycleState;
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
@@ -17,7 +18,7 @@ import com.ctrip.xpipe.api.lifecycle.Stoppable;
  *
  * Jun 6, 2016
  */
-public class DefaultLifecycleState implements LifecycleState{
+public class DefaultLifecycleState extends DefaultLifecycleController implements LifecycleState{
 	
 	private static final Logger logger = LoggerFactory.getLogger(DefaultLifecycleState.class);
 	
@@ -27,8 +28,11 @@ public class DefaultLifecycleState implements LifecycleState{
 
 	private Lifecycle lifecycle;
 	
-	public DefaultLifecycleState(Lifecycle lifecycle) {
+	private LifecycleController lifecycleController;
+	
+	public DefaultLifecycleState(Lifecycle lifecycle, LifecycleController lifecycleController) {
 		this.lifecycle = lifecycle;
+		this.lifecycleController = lifecycleController;
 	}
 
 	@Override
@@ -143,21 +147,21 @@ public class DefaultLifecycleState implements LifecycleState{
 
 	@Override
 	public boolean canInitialize() {
-		return isEmpty() || isDisposed();
+		return lifecycleController.canDispose(getPhaseName());
 	}
 
 	@Override
 	public boolean canStart() {
-		return isInitialized() || isStopped();
+		return lifecycleController.canStart(getPhaseName());
 	}
 
 	@Override
 	public boolean canStop() {
-		return isStarted();
+		return lifecycleController.canStop(getPhaseName());
 	}
 
 	@Override
 	public boolean canDispose() {
-		return isInitialized() || isStopped();
+		return lifecycleController.canDispose(getPhaseName());
 	}
 }

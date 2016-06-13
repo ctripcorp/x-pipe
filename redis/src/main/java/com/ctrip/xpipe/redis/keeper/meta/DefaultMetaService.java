@@ -243,4 +243,9 @@ public class DefaultMetaService implements MetaService {
 		}
 	}
 
+	@Override
+	public String getActiveDc() {
+		return "jq";
+	}
+
 }
