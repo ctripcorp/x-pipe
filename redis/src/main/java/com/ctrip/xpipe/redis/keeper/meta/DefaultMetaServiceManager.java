@@ -104,7 +104,7 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 		@Override
 		public void doRun() {
 			
-			KeeperMeta keeper = metaService.getActiveKeeper(clusterId, shardId);
+			KeeperMeta keeper = metaService.getShardStatus(clusterId, shardId).getActiveKeeper();
 			if(keeper != null){
 				if(!keeper.isActive()){
 					logger.error("[doRun][keeper not active]" + keeper);
@@ -124,7 +124,7 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 		@Override
 		public void doRun() {
 			
-			RedisMeta redis = metaService.getRedisMaster(clusterId, shardId);
+			RedisMeta redis = metaService.getShardStatus(clusterId, shardId).getRedisMaster();
 			if(redis != null){
 				if(!redis.isMaster()){
 					logger.error("[doRun][redis not master]" + redis);

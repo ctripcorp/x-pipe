@@ -32,7 +32,7 @@ public class ServicesUtil {
 			
 			result = service;
 			i++;
-			logger.info("{}", service);
+			logger.debug("{}", service);
 		}
 		
 		if(i > 1){

@@ -6,8 +6,16 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,9 +25,15 @@ import org.unidal.helper.Files.IO;
 import org.unidal.tuple.Pair;
 
 import com.alibaba.fastjson.JSON;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
+import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
+import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
+import com.ctrip.xpipe.redis.util.XpipeThreadFactory;
+import com.ctrip.xpipe.utils.ServicesUtil;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 
@@ -31,7 +45,9 @@ import com.google.common.base.Function;
 @Component
 public class DefaultMetaService implements MetaService {
 
-	private Logger log = LoggerFactory.getLogger(DefaultMetaService.class);
+	private static Logger log = LoggerFactory.getLogger(DefaultMetaService.class);
+
+	private static final FoundationService foundationService = ServicesUtil.getFoundationService();
 
 	@Autowired
 	private KeeperConfig config;
@@ -39,13 +55,68 @@ public class DefaultMetaService implements MetaService {
 	@Autowired
 	private MetaServerLocator metaServerLocator;
 
-	@Override
-	public RedisMeta getRedisMaster(String clusterId, String shardId) {
-		
-		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/redis/master", clusterId, shardId),
-			      null);
+	private ConcurrentMap<Pair<String, String>, ShardStatus> shardStatuses = new ConcurrentHashMap<>();
 
+	@PostConstruct
+	public void init() {
+		// TODO
+		new MetaRefresher().run();
+
+		ScheduledExecutorService tp = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("MetaRefresher", true));
+		tp.scheduleWithFixedDelay(new MetaRefresher(), 0, config.getMetaRefreshIntervalMillis(), TimeUnit.MILLISECONDS);
+	}
+
+	@Override
+	public ShardStatus getShardStatus(String clusterId, String shardId) {
+		return shardStatuses.get(new Pair<>(clusterId, shardId));
+	}
+
+	private class MetaRefresher implements Runnable {
+
+		private List<ShardMeta> shards = new ArrayList<>();
+
+		public MetaRefresher() {
 			// TODO
+			XpipeMeta xpipe;
+			try {
+				xpipe = DefaultSaxParser.parse(this.getClass().getResourceAsStream("/metaserver.xml"));
+				shards.add(xpipe.findDc(foundationService.getDataCenter()).findCluster("cluster1").findShard("shard1"));
+			} catch (Exception e) {
+			}
+		}
+
+		@Override
+		public void run() {
+			// TODO
+			for (ShardMeta shard : shards) {
+				try {
+					String clusterId = shard.parent().getId();
+					String shardId = shard.getId();
+					Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s", clusterId, shardId), null);
+
+					if (codeAndRes == null) {
+						// TODO
+						continue;
+					} else {
+						if (codeAndRes.getKey() == 200) {
+							shardStatuses.put(new Pair<>(clusterId, shardId), JSON.parseObject(codeAndRes.getValue(), ShardStatus.class));
+						}
+					}
+				} catch (Throwable e) {
+					// TODO
+					log.warn("Error update shard status from meta server", e);
+				}
+			}
+		}
+
+	}
+
+	@Deprecated
+	public RedisMeta getRedisMaster(String clusterId, String shardId) {
+
+		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/redis/master", clusterId, shardId), null);
+
+		// TODO
 		if (codeAndRes == null) {
 			return null;
 		} else {
@@ -53,12 +124,10 @@ public class DefaultMetaService implements MetaService {
 		}
 	}
 
-
-	@Override
+	@Deprecated
 	public KeeperMeta getActiveKeeper(String clusterId, String shardId) {
 		// TODO
-		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/keeper/master", clusterId, shardId),
-		      null);
+		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/keeper/master", clusterId, shardId), null);
 
 		// TODO
 		if (codeAndRes == null) {
@@ -67,8 +136,8 @@ public class DefaultMetaService implements MetaService {
 			return JSON.parseObject(codeAndRes.getValue(), KeeperMeta.class);
 		}
 	}
-	
-	@Override
+
+	@Deprecated
 	public KeeperMeta getUpstreamKeeper(String clusterId, String shardId) {
 		// TODO
 		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/keeper/upstream", clusterId, shardId), null);
@@ -231,9 +300,9 @@ public class DefaultMetaService implements MetaService {
 		StringBuilder sb = new StringBuilder();
 		for (Map.Entry<String, String> entry : properties.entrySet()) {
 			sb.append(URLEncoder.encode(entry.getKey(), Charsets.UTF_8.name()))//
-			      .append("=")//
-			      .append(URLEncoder.encode(entry.getValue(), Charsets.UTF_8.name()))//
-			      .append("&");
+					.append("=")//
+					.append(URLEncoder.encode(entry.getValue(), Charsets.UTF_8.name()))//
+					.append("&");
 		}
 
 		if (sb.length() > 0) {
@@ -241,11 +310,6 @@ public class DefaultMetaService implements MetaService {
 		} else {
 			return null;
 		}
-	}
-
-	@Override
-	public String getActiveDc() {
-		return "jq";
 	}
 
 }
