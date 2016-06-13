@@ -32,12 +32,18 @@ public class ServicesUtil {
 			
 			result = service;
 			i++;
-			logger.info("{}", service);
+			logger.info("[load]{}, {}", service.getClass(), service);
+		}
+		
+		if(i == 0){
+			throw new IllegalStateException("service not found:" + clazz.getClass().getSimpleName() + ", "
+					+ "if you work in ctrip, add ctrip-service project in your classpath, otherwise implement your own service");
 		}
 		
 		if(i > 1){
 			throw new IllegalStateException("service found more than once");
 		}
+		
 		return result;
 	}
 }
