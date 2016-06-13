@@ -40,4 +40,16 @@ public class ShardStatus {
 		return redisMaster;
 	}
 
+	public void setActiveKeeper(KeeperMeta activeKeeper) {
+		this.activeKeeper = activeKeeper;
+	}
+
+	public void setUpstreamKeeper(KeeperMeta upstreamKeeper) {
+		this.upstreamKeeper = upstreamKeeper;
+	}
+
+	public void setRedisMaster(RedisMeta redisMaster) {
+		this.redisMaster = redisMaster;
+	}
+
 }
