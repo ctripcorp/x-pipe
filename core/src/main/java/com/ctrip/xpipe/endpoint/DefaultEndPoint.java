@@ -15,7 +15,7 @@ public class DefaultEndPoint implements Endpoint{
 	}
 	
 	public DefaultEndPoint(String ip, int port){
-		this("unknown://" + ip + ":" + port);
+		this("redis://" + ip + ":" + port);
 	}
 	public DefaultEndPoint(String url) {
 		

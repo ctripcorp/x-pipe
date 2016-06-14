@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
+import com.ctrip.xpipe.redis.keeper.meta.ShardStatus;
 
 /**
  * @author wenchao.meng
@@ -19,28 +20,30 @@ public class RedisKeeperServerStateUnknown extends AbstractRedisKeeperServerStat
 	}
 
 	@Override
-	public Endpoint getMaster() {
+	protected Endpoint doGetMaster(ShardStatus shardStatus) {
 		return null;
 	}
+
 
 	@Override
 	protected void becomeBackup() {
 		
-		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, getActiveKeeperMeta(), getMasterRedisMeta()));
-		redisKeeperServer.reconnectMaster();
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, getShardStatus()));
+		reconnectMaster();
 	}
 
 	@Override
 	protected void becomeActive() {
 		
-		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, getActiveKeeperMeta(), getMasterRedisMeta()));
-		redisKeeperServer.reconnectMaster();
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, getShardStatus()));
+		reconnectMaster();
 	}
 
 	@Override
-	protected void masterRedisMetaChanged() {
+	protected void keeperMasterChanged() {
+		
 		//nothing to do
-		logger.info("[masterRedisMetaChanged][nothing to do]");
+		logger.info("[keeperMasterChanged][nothing to do]");
 	}
 
 	@Override
@@ -60,5 +63,6 @@ public class RedisKeeperServerStateUnknown extends AbstractRedisKeeperServerStat
 		
 		return false;
 	}
+
 
 }

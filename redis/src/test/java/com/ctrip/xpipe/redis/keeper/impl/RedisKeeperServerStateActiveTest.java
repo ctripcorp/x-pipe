@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.keeper.meta.ShardStatus;
 
 
 
@@ -22,33 +23,47 @@ public class RedisKeeperServerStateActiveTest extends AbstractRedisKeeperServerS
 	
 	@Before
 	public void beforeRedisKeeperServerStateTest() throws Exception{
-
-		active = new RedisKeeperServerStateActive(redisKeeperServer, 
-				redisKeeperServer.getCurrentKeeperMeta(), redisMasterMeta);
+		
+		ShardStatus shardStatus = createShardStatus(redisKeeperServer.getCurrentKeeperMeta(), null, redisMasterMeta);
+		active = new RedisKeeperServerStateActive(redisKeeperServer,  shardStatus);
 	}
+
 
 	@Test
 	public void getMaster(){
 		
 		Assert.assertEquals(redisMasterMeta.getIp(), active.getMaster().getHost());
 		Assert.assertEquals(redisMasterMeta.getPort(), (Integer)active.getMaster().getPort());
-	}
+		
+		KeeperMeta upstreamKeeper = createKeeperMeta();
+		upstreamKeeper.setPort(redisMasterMeta.getPort() + 1);
+		ShardStatus newStatus = createShardStatus(redisKeeperServer.getCurrentKeeperMeta(), upstreamKeeper, null);
+		
+		update(newStatus, active);
+
+		Assert.assertEquals(upstreamKeeper.getIp(), active.getMaster().getHost());
+		Assert.assertEquals(upstreamKeeper.getPort(), (Integer)active.getMaster().getPort());
+}
 	
 	@Test
 	public void testActiveActive(){
 		
-		update(redisKeeperServer.getCurrentKeeperMeta(), active);
+		update(active.getShardStatus(), active);
 		
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void testActiveBackup(){
 		
 		
 		KeeperMeta keeperMeta = createKeeperMeta();
 		keeperMeta.setPort(redisKeeperServer.getCurrentKeeperMeta().getPort() + 1);
 		
-		update(keeperMeta, active);
+		ShardStatus newStatus = createShardStatus(keeperMeta, active.getShardStatus().getUpstreamKeeper(), active.getShardStatus().getRedisMaster());
+		
+		update(newStatus, active);
+		
+		Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
 	}
 
 	

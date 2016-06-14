@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import java.io.IOException;
 
 import org.slf4j.Logger;
@@ -15,8 +16,8 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.handler.PsyncHandler;
+import com.ctrip.xpipe.redis.keeper.meta.ShardStatus;
 import com.ctrip.xpipe.redis.protocal.RedisProtocol;
 
 /**
@@ -30,15 +31,16 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		super(redisKeeperServer);
 	}
 	
-	public RedisKeeperServerStateBackup(RedisKeeperServer redisKeeperServer, KeeperMeta  activeKeeperMeta, RedisMeta masterRedisMeta) {
-		super(redisKeeperServer, activeKeeperMeta, masterRedisMeta);
+	public RedisKeeperServerStateBackup(RedisKeeperServer redisKeeperServer, ShardStatus shardStatus) {
+		super(redisKeeperServer, shardStatus);
 	}
 
 
+	
 	@Override
-	public Endpoint getMaster() {
-		
-		KeeperMeta meta = getActiveKeeperMeta();
+	protected Endpoint doGetMaster(ShardStatus shardStatus) {
+
+		KeeperMeta meta = shardStatus.getActiveKeeper();
 		if(meta == null){
 			return null;
 		}
@@ -48,28 +50,31 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 	@Override
 	protected void becomeBackup() {
 		//keeper master changed
-		redisKeeperServer.reconnectMaster();
+		reconnectMaster();
 	}
 
 	@Override
 	protected void becomeActive() {
 		
 		try {
-			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, getActiveKeeperMeta(), getMasterRedisMeta()));
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, getShardStatus()));
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 			replicationStore.changeMetaTo(DefaultRedisKeeperServer.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME);
-			redisKeeperServer.reconnectMaster();
+			reconnectMaster();
 		} catch (IOException e) {
 			logger.error("[becomeActive]" + this, e);
 		}
 	}
 
-	@Override
-	protected void masterRedisMetaChanged() {
-		//nothing to do
-		logger.info("[masterRedisMetaChanged][nothing to do]");
-	}
 
+	@Override
+	protected void keeperMasterChanged() {
+		
+		//nothing to do
+		logger.info("[keeperMasterChanged][nothing to do]");
+	}
+	
+	
 	@Override
 	public void setPromotionState(PROMOTION_STATE promotionState, Object promitionInfo) {
 		throw new IllegalStateException("state backup, promotion unsupported!");

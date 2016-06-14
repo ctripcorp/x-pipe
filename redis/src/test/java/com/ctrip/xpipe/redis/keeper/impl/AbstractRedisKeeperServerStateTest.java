@@ -4,7 +4,9 @@ import org.junit.Before;
 
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
+import com.ctrip.xpipe.redis.keeper.meta.ShardStatus;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaServiceManager.MetaUpdateInfo;
 
 /**
@@ -17,12 +19,13 @@ public class AbstractRedisKeeperServerStateTest extends AbstractRedisKeeperTest{
 	protected RedisKeeperServer redisKeeperServer;
 
 	protected RedisMeta redisMasterMeta;
-
+	
 	
 	@Before
 	public void beforeAbstractRedisKeeperServerStateTest() throws Exception{
 		
 		initRegistry();
+		
 		redisMasterMeta = createRedisMeta();
 		redisKeeperServer = createRedisKeeperServer();
 	}
@@ -34,4 +37,9 @@ public class AbstractRedisKeeperServerStateTest extends AbstractRedisKeeperTest{
 		
 		state.update(updateInfo, null);
 	}
+	
+	protected ShardStatus createShardStatus(KeeperMeta activeKeeper, KeeperMeta upstreamKeeper, RedisMeta redisMaster) {
+		return new ShardStatus(activeKeeper, upstreamKeeper, redisMaster);
+	}
+	
 }

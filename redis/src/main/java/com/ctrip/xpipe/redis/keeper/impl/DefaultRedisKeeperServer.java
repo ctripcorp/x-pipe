@@ -172,14 +172,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 	
 	@Override
-	public void reconnectMaster() {
+	public synchronized void reconnectMaster() {
+		
 
 		Endpoint target = redisKeeperServerState.getMaster();
-		if(target == null){
-			logger.info("[reconnectMaster][target null]{}, {}", this, redisKeeperServerState);
-			return;
-		}
-		if(keeperRedisMaster != null){
+		
+		logger.info("[reconnectMaster]{} -> {}", this, target);
+
+		if(keeperRedisMaster != null && target != null){
 			Endpoint current = keeperRedisMaster.masterEndPoint();
 			if(current.getHost().equals(target.getHost()) && current.getPort() == target.getPort()){
 				logger.info("[reconnectMaster][master the same]{},{}", current, target);
@@ -188,6 +188,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		
 		stopAndDisposeMaster();
+		if(target == null){
+			logger.info("[reconnectMaster][target null][close master connection]{}, {}", this, redisKeeperServerState);
+			return;
+		}
 		initAndStartMaster(target);
 	}
 
@@ -256,7 +260,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public String toString() {
-		return currentKeeperMeta.toString();
+		return String.format("rediskeeperserver:%s:%d", currentKeeperMeta.getIp(), currentKeeperMeta.getPort());
 	}
 
 	@Override
