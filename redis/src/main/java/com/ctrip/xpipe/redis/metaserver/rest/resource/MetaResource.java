@@ -85,7 +85,7 @@ public class MetaResource extends BaseRecource {
 		MetaHolder metaHolder = getSpringContext().getBean(MetaHolder.class);
 		XpipeMeta meta = metaHolder.getMeta();
 
-		String thisDc = ServicesUtil.getFoundationService().getDataCenter();
+		String thisDc = foundationService.getDataCenter();
 		ShardMeta activeShard = null;
 		for (DcMeta dc : meta.getDcs().values()) {
 			if (thisDc.equals(dc.getId())) {

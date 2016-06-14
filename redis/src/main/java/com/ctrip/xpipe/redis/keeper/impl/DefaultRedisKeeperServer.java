@@ -128,8 +128,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
-		this.redisKeeperServerState = new RedisKeeperServerStateUnknown(this);
+	 	this.redisKeeperServerState = new RedisKeeperServerStateUnknown(this); 
 		metaServiceManager.addShard(clusterId, shardId);
+
 	}
 	
 	@Override
@@ -256,7 +257,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public String toString() {
-		return currentKeeperMeta.toString();
+		return String.format("%s(%s:%d)", getClass().getSimpleName(), currentKeeperMeta.getIp(), currentKeeperMeta.getPort());
 	}
 
 	@Override

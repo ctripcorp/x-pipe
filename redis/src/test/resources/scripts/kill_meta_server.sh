@@ -1,0 +1,1 @@
+lsof -i:$1 -nP | awk '/java/{print $2}' | xargs kill -9

@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.redis.metaserver;
 
+import java.io.IOException;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
+import org.junit.After;
 import org.junit.Test;
 import org.unidal.test.jetty.JettyServer;
 
@@ -17,22 +20,22 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
  *         May 30, 2016 3:26:13 PM
  */
 public class StartMetaServer extends JettyServer {
-
+	
+	private int zkPort = 2181;
+	private int serverPort = 9747;
+	
 	@Test
 	public void start() throws Exception {
 		startZk();
 		setupZkNodes();
 
 		startServer();
-
-		System.out.println("Press any key to exit...");
-		System.in.read();
 	}
 
 	@SuppressWarnings("resource")
 	private void startZk() {
 		try {
-			new TestingServer(2181).start();
+			new TestingServer(zkPort).start();
 		} catch (Exception e) {
 		}
 	}
@@ -67,8 +70,21 @@ public class StartMetaServer extends JettyServer {
 	}
 
 	@Override
-	protected int getServerPort() {
-		return 9747;
+	public int getServerPort() {
+		return serverPort;
 	}
-
+	
+	public void setServerPort(int serverPort) {
+		this.serverPort = serverPort;
+	}
+	
+	public int getZkPort() {
+		return zkPort;
+	}
+	
+	@After
+	public void afterStartMetaServer() throws IOException{
+		System.out.println("Press any key to exit...");
+		System.in.read();
+	}
 }
