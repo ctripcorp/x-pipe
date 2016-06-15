@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.metaserver;
 
-
-import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -19,6 +17,7 @@ import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.WatchedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
@@ -30,7 +29,7 @@ import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
-import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
+import com.ctrip.xpipe.utils.ServicesUtil;
 
 /**
  * @author marsqing
@@ -41,6 +40,9 @@ import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
 public class DefaultMetaServer extends AbstractLifecycle implements MetaServer, Lifecycle {
 
 	private static Logger log = LoggerFactory.getLogger(DefaultMetaServer.class);
+
+	@Autowired
+	MetaHolder metaHolder;
 
 	private ConcurrentMap<Pair<String, String>, Pair<KeeperMeta, RedisMeta>> shardState = new ConcurrentHashMap<>();
 
@@ -147,7 +149,7 @@ public class DefaultMetaServer extends AbstractLifecycle implements MetaServer, 
 		Pair<String, String> key = new Pair<>(clusterId, shardId);
 		Pair<KeeperMeta, RedisMeta> state = shardState.get(key);
 		if (state == null) {
-			log.error("Unnown shard {} {}", clusterId, shardId);
+			log.error("Unknown shard {} {}", clusterId, shardId);
 			// TODO omit unknown shard?
 		} else {
 			if (keeper != null) {
@@ -163,18 +165,17 @@ public class DefaultMetaServer extends AbstractLifecycle implements MetaServer, 
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
-		
+
 	}
 
 	@Override
 	@PostConstruct
 	public void doStart() throws Exception {
 		super.doStart();
-		
+
 		initializeZk();
 		// TODO
-		InputStream ins = getClass().getClassLoader().getResourceAsStream("keeper6666.xml");
-		ClusterMeta cluster = DefaultSaxParser.parse(ins).getDcs().get("jq").getClusters().get("cluster1");
+		ClusterMeta cluster = metaHolder.getMeta().findDc(ServicesUtil.getFoundationService().getDataCenter()).getClusters().get("cluster1");
 		watchCluster(cluster);
 	}
 

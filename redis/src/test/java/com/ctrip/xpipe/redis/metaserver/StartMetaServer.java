@@ -68,7 +68,7 @@ public class StartMetaServer extends JettyServer {
 
 	@Override
 	protected int getServerPort() {
-		return 9747;
+		return Integer.parseInt(System.getProperty("metaServerPort", "9747"));
 	}
 
 }

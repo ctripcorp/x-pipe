@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<xpipe>
+	<dc id="jq">
+		<cluster id="cluster1">
+			<shard id="shard1" active-dc="jq">
+				<redis ip="127.0.0.1" port="6379" master="true" />
+			</shard>
+		</cluster>
+	</dc>
+	
+	<dc id="oy">
+		<cluster id="cluster1">
+			<shard id="shard1" active-dc="jq">
+			</shard>
+		</cluster>
+	</dc>
+</xpipe>

@@ -5,8 +5,10 @@ package com.ctrip.xpipe.redis.metaserver;
 
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
+import com.ctrip.xpipe.utils.ServicesUtil;
 
 /**
  * @author marsqing
@@ -20,7 +22,8 @@ public class DefaultMetaHolder implements MetaHolder {
 
 	public DefaultMetaHolder() throws Exception {
 		// TODO
-		meta = DefaultSaxParser.parse(this.getClass().getResourceAsStream("/metaserver.xml"));
+		FoundationService foundationService = ServicesUtil.getFoundationService();
+		meta = DefaultSaxParser.parse(this.getClass().getResourceAsStream(String.format("/metaserver--%s.xml", foundationService.getDataCenter())));
 	}
 
 	@Override

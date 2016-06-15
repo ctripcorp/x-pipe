@@ -32,7 +32,7 @@ public class ServicesUtil {
 			
 			result = service;
 			i++;
-			logger.info("[load]{}, {}", service.getClass(), service);
+			logger.debug("[load]{}, {}", service.getClass(), service);
 		}
 		
 		if(i == 0){

@@ -6,8 +6,16 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +25,15 @@ import org.unidal.helper.Files.IO;
 import org.unidal.tuple.Pair;
 
 import com.alibaba.fastjson.JSON;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
+import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
+import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
+import com.ctrip.xpipe.redis.util.XpipeThreadFactory;
+import com.ctrip.xpipe.utils.ServicesUtil;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 
@@ -29,7 +45,9 @@ import com.google.common.base.Function;
 @Component
 public class DefaultMetaService implements MetaService {
 
-	private static Logger logger = LoggerFactory.getLogger(DefaultMetaService.class);
+	private static Logger log = LoggerFactory.getLogger(DefaultMetaService.class);
+
+	private static final FoundationService foundationService = ServicesUtil.getFoundationService();
 
 	@Autowired
 	private KeeperConfig config;
@@ -37,19 +55,103 @@ public class DefaultMetaService implements MetaService {
 	@Autowired
 	private MetaServerLocator metaServerLocator;
 
+	private ConcurrentMap<Pair<String, String>, ShardStatus> shardStatuses = new ConcurrentHashMap<>();
+
+	@PostConstruct
+	public void init() {
+		// TODO
+		MetaRefresher refresher = new MetaRefresher();
+		refresher.run();
+
+		ScheduledExecutorService tp = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("MetaRefresher", true));
+		tp.scheduleWithFixedDelay(refresher, 0, config.getMetaRefreshIntervalMillis(), TimeUnit.MILLISECONDS);
+	}
+
 	@Override
 	public ShardStatus getShardStatus(String clusterId, String shardId) {
-		
-		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s", clusterId, shardId), null);
+		return shardStatuses.get(new Pair<>(clusterId, shardId));
+	}
 
-		if (codeAndRes == null || codeAndRes.getKey() != 200) {
-			logger.error("[getShardStatus]{}", codeAndRes);
+	private class MetaRefresher implements Runnable {
+
+		private List<ShardMeta> shards = new ArrayList<>();
+
+		public MetaRefresher() {
+			// TODO
+			XpipeMeta xpipe;
+			try {
+				String dc = foundationService.getDataCenter();
+				xpipe = DefaultSaxParser.parse(this.getClass().getResourceAsStream(String.format("/metaserver--%s.xml", dc)));
+				shards.add(xpipe.findDc(dc).findCluster("cluster1").findShard("shard1"));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		@Override
+		public void run() {
+			// TODO
+			for (ShardMeta shard : shards) {
+				try {
+					String clusterId = shard.parent().getId();
+					String shardId = shard.getId();
+					Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s", clusterId, shardId), null);
+
+					if (codeAndRes == null) {
+						// TODO
+						continue;
+					} else {
+						if (codeAndRes.getKey() == 200) {
+							shardStatuses.put(new Pair<>(clusterId, shardId), JSON.parseObject(codeAndRes.getValue(), ShardStatus.class));
+						}
+					}
+				} catch (Throwable e) {
+					// TODO
+					log.warn("Error update shard status from meta server", e);
+				}
+			}
+		}
+
+	}
+
+	@Deprecated
+	public RedisMeta getRedisMaster(String clusterId, String shardId) {
+
+		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/redis/master", clusterId, shardId), null);
+
+		// TODO
+		if (codeAndRes == null) {
 			return null;
 		} else {
-			return JSON.parseObject(codeAndRes.getValue(), ShardStatus.class);
+			return JSON.parseObject(codeAndRes.getValue(), RedisMeta.class);
 		}
 	}
 
+	@Deprecated
+	public KeeperMeta getActiveKeeper(String clusterId, String shardId) {
+		// TODO
+		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/keeper/master", clusterId, shardId), null);
+
+		// TODO
+		if (codeAndRes == null) {
+			return null;
+		} else {
+			return JSON.parseObject(codeAndRes.getValue(), KeeperMeta.class);
+		}
+	}
+
+	@Deprecated
+	public KeeperMeta getUpstreamKeeper(String clusterId, String shardId) {
+		// TODO
+		Pair<Integer, String> codeAndRes = getRequestToMetaServer(String.format("/api/v1/%s/%s/keeper/upstream", clusterId, shardId), null);
+
+		// TODO
+		if (codeAndRes == null) {
+			return null;
+		} else {
+			return JSON.parseObject(codeAndRes.getValue(), KeeperMeta.class);
+		}
+	}
 
 	public Pair<Integer, String> getRequestToMetaServer(final String path, final Map<String, String> requestParams) {
 		return pollMetaServer(new Function<String, Pair<Integer, String>>() {
@@ -86,8 +188,8 @@ public class DefaultMetaService implements MetaService {
 
 				} catch (Exception e) {
 					// ignore
-					if (logger.isDebugEnabled()) {
-						logger.debug("Poll meta server error.", e);
+					if (log.isDebugEnabled()) {
+						log.debug("Poll meta server error.", e);
 					}
 					return null;
 				} finally {
@@ -146,16 +248,16 @@ public class DefaultMetaService implements MetaService {
 						is = conn.getInputStream();
 						return new Pair<Integer, String>(statusCode, IO.INSTANCE.readFrom(is, Charsets.UTF_8.name()));
 					} else {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Response error while posting meta server error({url={}, status={}}).", url, statusCode);
+						if (log.isDebugEnabled()) {
+							log.debug("Response error while posting meta server error({url={}, status={}}).", url, statusCode);
 						}
 						return new Pair<Integer, String>(statusCode, null);
 					}
 
 				} catch (Exception e) {
 					// ignore
-					if (logger.isDebugEnabled()) {
-						logger.debug("Post meta server error.", e);
+					if (log.isDebugEnabled()) {
+						log.debug("Post meta server error.", e);
 					}
 					return null;
 				} finally {
