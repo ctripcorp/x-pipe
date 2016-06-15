@@ -212,5 +212,13 @@ public class DefaultMetaService implements MetaService {
 			return null;
 		}
 	}
+	
+	public void setConfig(KeeperConfig config) {
+		this.config = config;
+	}
+	
+	public void setMetaServerLocator(MetaServerLocator metaServerLocator) {
+		this.metaServerLocator = metaServerLocator;
+	}
 
 }

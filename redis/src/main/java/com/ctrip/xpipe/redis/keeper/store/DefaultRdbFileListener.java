@@ -36,7 +36,6 @@ public class DefaultRdbFileListener implements RdbFileListener{
 	@Override
 	public void onFileData(FileChannel fileChannel, long pos, long len) {
 		
-		logger.info("[onFileData]{}, {}", pos, len);
 		if(len == -1){
 			
 			if(logger.isInfoEnabled()){

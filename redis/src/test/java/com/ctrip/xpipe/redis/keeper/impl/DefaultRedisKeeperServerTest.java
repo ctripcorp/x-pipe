@@ -67,7 +67,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest{
 				File storeDir = new File(getTestFileDir() + "/" + index);
 				logger.info("[startKeepers]{},{},{}", cluster.getId(), shard.getId(), storeDir);
 				ReplicationStoreManager  replicationStoreManager = createReplicationStoreManager(cluster.getId(), shard.getId(), storeDir);
-				createRedisKeeperServer(cluster.getId(), shard.getId(), keeper, replicationStoreManager, metaServiceManager);
+				createRedisKeeperServer(keeper, replicationStoreManager, metaServiceManager);
 				index++;
 			}
 		}

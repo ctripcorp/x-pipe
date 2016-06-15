@@ -11,7 +11,7 @@
 			</shard>
 		</cluster>
 	</dc>
-	<dc id="jq">
+	<dc id="fq">
 		<cluster id="cluster1">
 			<shard id="shard1" active-dc="jq">
 				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="7777" active="false" />

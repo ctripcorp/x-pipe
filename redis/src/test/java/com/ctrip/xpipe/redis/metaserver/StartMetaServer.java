@@ -82,6 +82,10 @@ public class StartMetaServer extends JettyServer {
 		return zkPort;
 	}
 	
+	public void setZkPort(int zkPort) {
+		this.zkPort = zkPort;
+	}
+	
 	@After
 	public void afterStartMetaServer() throws IOException{
 		System.out.println("Press any key to exit...");

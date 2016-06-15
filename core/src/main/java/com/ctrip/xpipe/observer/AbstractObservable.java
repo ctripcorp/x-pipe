@@ -27,7 +27,7 @@ public abstract class AbstractObservable implements Observable{
 		
 	}
 
-	public void remoteObserver(Observer observer) {
+	public synchronized void remoteObserver(Observer observer) {
 		
 		observers.remove(observer);
 	}
@@ -35,10 +35,16 @@ public abstract class AbstractObservable implements Observable{
 	
 	protected void notifyObservers(Object arg){
 		
-		for(Observer observer : observers){
+		Object []tmpObservers;
+		
+		synchronized (observers) {
+			tmpObservers = observers.toArray();
+		}
+		
+		for(Object observer : tmpObservers){
 			
 			try{
-				observer.update(arg, this);
+				((Observer)observer).update(arg, this);
 			}catch(Exception e){
 				logger.error("[notifyObservers]" + observer, e);
 			}

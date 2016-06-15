@@ -65,6 +65,10 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 		return metaInfo.getShardStatus();
 	}
 
+	
+	public void setMetaService(MetaService metaService) {
+		this.metaService = metaService;
+	}
 
 	private MetaInfo getMetaInfo(String clusterId, String shardId) {
 		

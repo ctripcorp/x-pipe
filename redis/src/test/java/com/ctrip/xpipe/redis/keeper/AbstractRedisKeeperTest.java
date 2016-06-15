@@ -11,14 +11,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.xml.sax.SAXException;
 
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.AbstractRedisTest;
+import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.keeper.entity.DcMeta;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
+import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
+import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
 import com.ctrip.xpipe.redis.spring.KeeperContextConfig;
 
 import io.netty.buffer.ByteBuf;
@@ -31,6 +37,8 @@ import io.netty.buffer.ByteBuf;
 public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected MetaServiceManager metaServiceManager;
+	
+	private String keeperConfigFile = "keeper6666.xml";
 
 	protected AnnotationConfigApplicationContext springCtx;
 
@@ -56,12 +64,26 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected KeeperMeta createKeeperMeta(int port) {
 
-		KeeperMeta keeperMeta = new KeeperMeta();
-		keeperMeta.setIp("127.0.0.1");
-		keeperMeta.setPort(port);
-		keeperMeta.setActive(true);
-		keeperMeta.setId(randomString(40));
-		return keeperMeta;
+		try {
+			
+			XpipeMeta xpipe = DefaultSaxParser.parse(getClass().getClassLoader().getResourceAsStream(keeperConfigFile));
+			for(DcMeta dcMeta : xpipe.getDcs().values()){
+				for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
+					for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+						for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
+							keeperMeta.setPort(port);
+							keeperMeta.setActive(true);
+							keeperMeta.setId(randomString(40));
+							return keeperMeta;
+						}
+					}
+				}
+			}
+		} catch (SAXException | IOException e) {
+			throw new IllegalStateException(e);
+		}
+		
+		return null;
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta) throws Exception {
@@ -70,13 +92,13 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		String shardId = getShardId();
 
 		ReplicationStoreManager replicationStoreManager = createReplicationStoreManager(clusterId, shardId);
-		return createRedisKeeperServer(clusterId, shardId, keeperMeta, replicationStoreManager, metaServiceManager);
+		return createRedisKeeperServer(keeperMeta, replicationStoreManager, metaServiceManager);
 	}
 
-	protected RedisKeeperServer createRedisKeeperServer(String clusterId, String shardId, KeeperMeta keeper,
+	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper,
 			ReplicationStoreManager replicationStoreManager, MetaServiceManager metaServiceManager) throws Exception {
 
-		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(clusterId, shardId, keeper,
+		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper,
 				replicationStoreManager, metaServiceManager);
 
 		add(redisKeeperServer);

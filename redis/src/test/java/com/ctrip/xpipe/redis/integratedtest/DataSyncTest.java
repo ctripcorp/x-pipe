@@ -12,13 +12,11 @@ import org.junit.Test;
  *
  * Jun 13, 2016
  */
-public class DataSyncTest extends AbstractIntegratedTest{
+public class DataSyncTest extends AbstractSingleDcTest{
 	
 	
 	@Test
-	public void simpleTest() throws IOException{
-		
-		
+	public void simpleTest() throws Exception{
 		
 	}
 	
