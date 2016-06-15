@@ -89,7 +89,6 @@
 			<plugin>
 				<groupId>org.unidal.maven.plugins</groupId>
 				<artifactId>codegen-maven-plugin</artifactId>
-				<version>2.4.2</version>
 				<executions>
 					<execution>
 						<id>generate dal model files</id>

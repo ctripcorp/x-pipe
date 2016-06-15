@@ -170,7 +170,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		final List<ByteBuf> buffs = new LinkedList<>();
 		final AtomicInteger size = new AtomicInteger();
 
-		replicationStore.addCommandsListener(replicationStore.beginOffset(), new CommandsListener() {
+		replicationStore.addCommandsListener(0, new CommandsListener() {
 
 			@Override
 			public void onCommand(ByteBuf byteBuf) {

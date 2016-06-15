@@ -26,8 +26,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	
 	String getKeeperRunid();
 	
-	void addCommandsListener(Long offset, CommandsListener listener);
-
 	void readRdbFile(RdbFileListener rdbFileListener) throws IOException;
 	
 	/**
@@ -60,7 +58,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 		
 		NORMAL,
 		BEGIN_PROMOTE_SLAVE,//promote slave to master. 1.should not receive commands, 2. disconnect with master
-		COMMANDS_SEND_FINISH,
-		SLAVE_PROMTED
+		SLAVE_PROMTED,
+		REPLICATION_META_EXCHAGED
+		
 	}
 }

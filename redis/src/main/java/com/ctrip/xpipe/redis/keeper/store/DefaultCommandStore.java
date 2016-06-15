@@ -126,12 +126,15 @@ public class DefaultCommandStore implements CommandStore {
 		return new DefaultCommandReader(targetFile, channelPosition, offsetNotifier);
 	}
 
-	private File findFileForOffset(long targetStartOffset) {
+	private File findFileForOffset(long targetStartOffset) throws IOException {
+		
+		rotateFileIfNenessary();
+		
 		File[] files = baseDir.listFiles((FilenameFilter) fileFilter);
 		for (File file : files) {
 			long startOffset = extractStartOffset(file);
 			if (targetStartOffset >= startOffset
-			      && (file.length() == 0 || targetStartOffset < startOffset + file.length())) {
+			      && (targetStartOffset < startOffset + file.length() || targetStartOffset < startOffset + maxFileSize)) {
 				return file;
 			}
 		}
@@ -206,6 +209,16 @@ public class DefaultCommandStore implements CommandStore {
 				}
 			}
 		}
+	}
+
+	@Override
+	public boolean await(long offset, int timeMilli) throws InterruptedException {
+		return offsetNotifier.await(offset, timeMilli);
+	}
+
+	@Override
+	public void await(long offset) throws InterruptedException {
+		offsetNotifier.await(offset);
 	}
 
 }

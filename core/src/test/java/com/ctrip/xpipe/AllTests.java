@@ -1,13 +1,14 @@
 package com.ctrip.xpipe;
 
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import com.ctrip.xpipe.Lifecycle.DefaultLifecycleControllerTest;
 import com.ctrip.xpipe.Lifecycle.DefaultLifecycleStateTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
-import com.ctrip.xpipe.lifecycle.DefaultLifecycleController;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
 
@@ -22,7 +23,7 @@ import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
 	ByteArrayOutputStreamPayloadTest.class,
 	ByteArrayWritableByteChannelTest.class,
 	TestAbstractLifecycle.class,
-	DefaultLifecycleController.class,
+	DefaultLifecycleControllerTest.class,
 	DefaultLifecycleStateTest.class
 })
 public class AllTests {

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
@@ -16,7 +17,6 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
-import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -173,14 +173,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 	
 	@Override
-	public void reconnectMaster() {
+	public synchronized void reconnectMaster() {
+		
 
 		Endpoint target = redisKeeperServerState.getMaster();
-		if(target == null){
-			logger.info("[reconnectMaster][target null]{}, {}", this, redisKeeperServerState);
-			return;
-		}
-		if(keeperRedisMaster != null){
+		
+		logger.info("[reconnectMaster]{} -> {}", this, target);
+
+		if(keeperRedisMaster != null && target != null){
 			Endpoint current = keeperRedisMaster.masterEndPoint();
 			if(current.getHost().equals(target.getHost()) && current.getPort() == target.getPort()){
 				logger.info("[reconnectMaster][master the same]{},{}", current, target);
@@ -189,6 +189,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		
 		stopAndDisposeMaster();
+		if(target == null){
+			logger.info("[reconnectMaster][target null][close master connection]{}, {}", this, redisKeeperServerState);
+			return;
+		}
 		initAndStartMaster(target);
 	}
 
@@ -285,16 +289,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		} catch (IOException e) {
 			logger.error("[getCurrentReplicationStore]" + this, e);
 			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
-		}
-	}
-
-
-	@Override
-	public void addCommandsListener(Long offset, CommandsListener commandsListener) {
-		try {
-			getCurrentReplicationStore().addCommandsListener(offset, commandsListener);
-		} catch (IOException e) {
-			logger.error("[addCommandsListener]" + offset +"," + commandsListener, e);
 		}
 	}
 

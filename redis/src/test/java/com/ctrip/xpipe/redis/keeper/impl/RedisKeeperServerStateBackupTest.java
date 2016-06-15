@@ -8,6 +8,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.keeper.meta.ShardStatus;
+
 
 /**
  * @author wenchao.meng
@@ -17,29 +19,35 @@ import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 public class RedisKeeperServerStateBackupTest extends AbstractRedisKeeperServerStateTest{
 	
 	private RedisKeeperServerStateBackup backup;
-	private KeeperMeta keeperMeta;
+	private KeeperMeta activeKeeperMeta;
 	
 	@Before
 	public void beforeRedisKeeperServerStateTest() throws Exception{
 
-		keeperMeta = createKeeperMeta();
-		keeperMeta.setPort(redisKeeperServer.getCurrentKeeperMeta().getPort() + 1);
+		activeKeeperMeta = createKeeperMeta();
+		activeKeeperMeta.setPort(redisKeeperServer.getCurrentKeeperMeta().getPort() + 1);
 		
-		backup = new RedisKeeperServerStateBackup(redisKeeperServer, 
-				keeperMeta, redisMasterMeta);
+		ShardStatus shardStatus = createShardStatus(activeKeeperMeta, null, redisMasterMeta);
+		backup = new RedisKeeperServerStateBackup(redisKeeperServer, shardStatus);
 	}
 
 	@Test
 	public void getMaster(){
 		
-		Assert.assertEquals(keeperMeta.getIp(), backup.getMaster().getHost());
-		Assert.assertEquals(keeperMeta.getPort(), (Integer)backup.getMaster().getPort());
+		Assert.assertEquals(activeKeeperMeta.getIp(), backup.getMaster().getHost());
+		Assert.assertEquals(activeKeeperMeta.getPort(), (Integer)backup.getMaster().getPort());
 	}
 	
-	@Test(expected = IllegalStateException.class)
+	@Test
 	public void testBackupActive(){
-		
-		update(redisKeeperServer.getCurrentKeeperMeta(), backup);
+
+		ShardStatus shardStatus = createShardStatus(redisKeeperServer.getCurrentKeeperMeta(), null, backup.getShardStatus().getRedisMaster());
+		try{
+			update(shardStatus, backup);
+			Assert.fail();
+		}catch(Exception e){
+		}
+		Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateActive);
 		
 	}
 
@@ -47,8 +55,10 @@ public class RedisKeeperServerStateBackupTest extends AbstractRedisKeeperServerS
 	public void testBackupBackup(){
 		
 		KeeperMeta newKeeperMeta = createKeeperMeta();
-		newKeeperMeta.setPort(keeperMeta.getPort() + 1);
-		update(newKeeperMeta, backup);
+		newKeeperMeta.setPort(activeKeeperMeta.getPort() + 1);
+		
+		ShardStatus shardStatus = createShardStatus(newKeeperMeta, null, backup.getShardStatus().getRedisMaster());
+		update(shardStatus, backup);
 	}
 
 	@After

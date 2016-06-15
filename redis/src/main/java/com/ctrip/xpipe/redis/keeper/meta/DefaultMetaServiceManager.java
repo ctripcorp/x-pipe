@@ -12,10 +12,7 @@ import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.observer.AbstractObservable;
-import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 import com.ctrip.xpipe.utils.OsUtils;
-
 
 /**
  * @author wenchao.meng
@@ -30,47 +27,54 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 	@Autowired
 	private MetaService  metaService;
 	
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount() * 10);
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount());
 	
-	private Map<String, Pair<ScheduledFuture<?>, ScheduledFuture<?>>>  workers = new ConcurrentHashMap<>();
+	private Map<Pair<String, String>, MetaInfo>  metaInfos = new ConcurrentHashMap<>();
 	
-
 	@Override
 	public synchronized void removeShard(String clusterId, String shardId) {
 		
-		Pair<ScheduledFuture<?>, ScheduledFuture<?>> worker  = workers.remove(getKey(clusterId, shardId));
-		if(worker == null){
-			logger.info("[removeShard][notexist]{}, {}", clusterId, shardId);
+		MetaInfo metaInfo  = metaInfos.remove(getKey(clusterId, shardId));
+		if(metaInfo == null){
+			logger.warn("[removeShard][notexist]{}, {}", clusterId, shardId);
 			return;
 		}
-		
-		worker.getKey().cancel(false);
-		worker.getValue().cancel(false);
+		metaInfo.getFuture().cancel(true);
 	}
 
 	@Override
 	public synchronized void addShard(String clusterId, String shardId) {
 		
-		Pair<ScheduledFuture<?>, ScheduledFuture<?>> worker = getWorker(clusterId, shardId);
-		if(worker != null){
+		MetaInfo metaInfo = getMetaInfo(clusterId, shardId);
+		if(metaInfo != null){
 			logger.info("[addShard][already exist]{}, {}", clusterId, shardId);
 			return;
 		}
 		
-		ScheduledFuture<?> futureKeeper = scheduled.scheduleWithFixedDelay(new KeeperWorker(clusterId, shardId), 0, META_GET_INTERVAL, TimeUnit.SECONDS);
-		ScheduledFuture<?> futureRedis = scheduled.scheduleWithFixedDelay(new RedisWorker(clusterId, shardId), 0, META_GET_INTERVAL, TimeUnit.SECONDS);;
-		workers.put(getKey(clusterId, shardId), new Pair<ScheduledFuture<?>, ScheduledFuture<?>>(futureKeeper, futureRedis));
+		ScheduledFuture<?> futureShard = scheduled.scheduleWithFixedDelay(new ShardWorker(clusterId, shardId), 0, META_GET_INTERVAL, TimeUnit.SECONDS);
+		metaInfos.put(getKey(clusterId, shardId), new MetaInfo(futureShard));
+	}
+	
+	@Override
+	public ShardStatus getShardStatus(String clusterId, String shardId) {
+		
+		MetaInfo metaInfo = getMetaInfo(clusterId, shardId);
+		if( metaInfo == null){
+			return null;
+		}
+		return metaInfo.getShardStatus();
 	}
 
-	private Pair<ScheduledFuture<?>, ScheduledFuture<?>> getWorker(String clusterId, String shardId) {
+
+	private MetaInfo getMetaInfo(String clusterId, String shardId) {
 		
-		String key = getKey(clusterId, shardId);
-		return workers.get(key);
+		Pair<String, String> key = getKey(clusterId, shardId);
+		return metaInfos.get(key);
 		
 	}
 
-	private String getKey(String clusterId, String shardId) {
-		return clusterId + "-" + shardId;
+	private Pair<String, String> getKey(String clusterId, String shardId) {
+		return new Pair<>(clusterId, shardId);
 	}
 	
 	abstract class AbstractWorker implements Runnable{
@@ -95,45 +99,32 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 		public abstract void doRun();
 	}
 
-	class KeeperWorker extends AbstractWorker{
+	class ShardWorker extends AbstractWorker{
 
-		public KeeperWorker(String clusterId, String shardId) {
+		public ShardWorker(String clusterId, String shardId) {
 			super(clusterId, shardId);
 		}
 
 		@Override
 		public void doRun() {
 			
-			KeeperMeta keeper = metaService.getShardStatus(clusterId, shardId).getActiveKeeper();
-			if(keeper != null){
-				if(!keeper.isActive()){
-					logger.error("[doRun][keeper not active]" + keeper);
-					return;
-				}
-				notifyObservers(new MetaUpdateInfo(clusterId, shardId, keeper));
+			ShardStatus shardStatus = metaService.getShardStatus(clusterId, shardId);
+			if(shardStatus == null){
+				logger.warn("[doRun][shardStatus null]{}, {}", clusterId, shardId);
+				return;
 			}
-		}
-	}
-	
-	class RedisWorker extends AbstractWorker{
-
-		public RedisWorker(String clusterId, String shardId) {
-			super(clusterId, shardId);
-		}
-
-		@Override
-		public void doRun() {
 			
-			RedisMeta redis = metaService.getShardStatus(clusterId, shardId).getRedisMaster();
-			if(redis != null){
-				if(!redis.isMaster()){
-					logger.error("[doRun][redis not master]" + redis);
-					return;
-				}
-				notifyObservers(new MetaUpdateInfo(clusterId, shardId, redis));
+			MetaInfo metaInfo = getMetaInfo(clusterId, shardId);
+			
+			if(metaInfo == null){
+				return;
+			}
+
+			if(metaInfo.updateIfNotEqual(shardStatus)){
+				logger.info("[doRun][shardStatusChanged]{}", shardStatus);
+				notifyObservers(new MetaUpdateInfo(clusterId, shardId, shardStatus));
 			}
 		}
-		
 	}
 	
 	public static class MetaUpdateInfo{
@@ -160,5 +151,35 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 			return info;
 		}
 	}
-
+	
+	
+	public static class MetaInfo{
+		
+		private ShardStatus shardStatus;
+		private final ScheduledFuture<?> future;
+		
+		public MetaInfo(ScheduledFuture<?> future){
+			this.future = future;
+		}
+		
+		public boolean updateIfNotEqual(ShardStatus shardStatus) {
+			if(shardStatus == null){
+				return false;
+			}
+			
+			if(this.shardStatus == null || !this.shardStatus.equals(shardStatus)){
+				this.shardStatus = shardStatus;
+				return true;
+			}
+			return false;
+		}
+		
+		public ScheduledFuture<?> getFuture() {
+			return future;
+		}
+		
+		public ShardStatus getShardStatus() {
+			return shardStatus;
+		}
+	}
 }

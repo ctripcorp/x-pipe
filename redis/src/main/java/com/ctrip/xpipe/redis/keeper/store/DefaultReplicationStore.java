@@ -8,7 +8,6 @@ import java.nio.channels.FileChannel;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -42,8 +41,6 @@ public class DefaultReplicationStore implements ReplicationStore {
 	private CommandStore cmdStore;
 
 	private ConcurrentMap<CommandsListener, CommandNotifier> cmdListeners = new ConcurrentHashMap<>();
-
-	private AtomicLong commandsLength = new AtomicLong();
 
 	private int cmdFileSize;
 
@@ -142,7 +139,6 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public int appendCommands(ByteBuf byteBuf) throws IOException {
 		int wrote = cmdStore.appendCommands(byteBuf);
-		commandsLength.addAndGet(wrote);
 
 		return wrote;
 	}
@@ -150,7 +146,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
 		CommandNotifier notifier = new DefaultCommandNotifier();
-		notifier.start(cmdStore, offset - metaRef.get().getBeginOffset(), commandsListener);
+		notifier.start(cmdStore, offset, commandsListener);
 		cmdListeners.put(commandsListener, notifier);
 	}
 
@@ -340,8 +336,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 		metaRef.set(meta);
 		log.info("[changeMetaTo][cmdFile length, new endoffset]{},{}", length, newEndOffset);
-		log.info("[changeMetaTo]{}", old);
-		log.info("[changeMetaTo]{}", meta);
+		log.info("[changeMetaTo][old]{}", old);
+		log.info("[changeMetaTo][new]{}", meta);
 
 		saveMeta();
 
@@ -360,6 +356,17 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public boolean isFresh() {
 		return metaRef.get().getMasterRunid() == null;
+	}
+
+	@Override
+	public boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException {
+		
+		return cmdStore.await(offset, timeMilli);
+	}
+
+	@Override
+	public void awaitCommandsOffset(long offset) throws InterruptedException {
+		cmdStore.await(offset);
 	}
 
 }

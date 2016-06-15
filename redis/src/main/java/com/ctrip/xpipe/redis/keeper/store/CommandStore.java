@@ -10,6 +10,10 @@ public interface CommandStore {
 
 	CommandReader beginRead(long startOffset) throws IOException;
 
+	boolean await(long offset, int timeMilli) throws InterruptedException;
+
+	void await(long offset) throws InterruptedException;
+
 	void close();
 	
 	

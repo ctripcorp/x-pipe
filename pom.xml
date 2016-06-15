@@ -32,12 +32,12 @@
 		<servlet-api.version>3.0.1</servlet-api.version>
 		<jersey.version>2.19</jersey.version>
 		<commons-exec.version>1.3</commons-exec.version>
+		<unidal.codegen.version>2.4.2</unidal.codegen.version>
 	</properties>
 
 	<modules>
 		<module>core</module>
 		<module>redis</module>
-		<module>services</module>
 	</modules>
 
 	<dependencyManagement>
@@ -184,6 +184,11 @@
 							</goals>
 						</execution>
 					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.unidal.maven.plugins</groupId>
+					<artifactId>codegen-maven-plugin</artifactId>
+					<version>${unidal.codegen.version}</version>
 				</plugin>
 			</plugins>
 		</pluginManagement>

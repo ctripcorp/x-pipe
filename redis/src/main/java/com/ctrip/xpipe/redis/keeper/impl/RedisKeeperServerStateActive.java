@@ -9,9 +9,10 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
-import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.handler.SlaveOfCommandHandler.SlavePromotionInfo;
+import com.ctrip.xpipe.redis.keeper.meta.ShardStatus;
+
 
 /**
  * @author wenchao.meng
@@ -26,28 +27,34 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		super(redisKeeperServer);
 	}
 	
-	public RedisKeeperServerStateActive(RedisKeeperServer redisKeeperServer, KeeperMeta  activeKeeperMeta, RedisMeta masterRedisMeta) {
-		super(redisKeeperServer, activeKeeperMeta, masterRedisMeta);
+	public RedisKeeperServerStateActive(RedisKeeperServer redisKeeperServer, ShardStatus shardStatus) {
+		super(redisKeeperServer, shardStatus);
 	}
 
+	
 	@Override
-	public Endpoint getMaster() {
-
-		RedisMeta meta = getMasterRedisMeta();
-		if(meta == null){
-			return null;
+	protected Endpoint doGetMaster(ShardStatus shardStatus) {
+		
+		if(shardStatus.getRedisMaster() != null){
+			return new DefaultEndPoint(shardStatus.getRedisMaster().getIp(), shardStatus.getRedisMaster().getPort());
 		}
-		return new DefaultEndPoint(meta.getIp(), meta.getPort());
+		
+		if(shardStatus.getUpstreamKeeper() != null){
+			return new DefaultEndPoint(shardStatus.getUpstreamKeeper().getIp(), shardStatus.getUpstreamKeeper().getPort());
+		}
+		
+		return null;
 	}
-
+	
+	
 	@Override
 	protected void becomeBackup() {
 		//active changed!
 		try {
 			logger.info("[becomeBackup][active->backup] {}", this);
-			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, getActiveKeeperMeta(), getMasterRedisMeta()));
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, getShardStatus()));
 			redisKeeperServer.getReplicationStore().changeMetaToKeeper();
-			redisKeeperServer.reconnectMaster();
+			reconnectMaster();
 		} catch (IOException e) {
 			logger.error("[becomeBackup]" + this, e);
 		}
@@ -60,10 +67,14 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		logger.info("[becomeActive][nothing to do]");
 	}
 
+	
 	@Override
-	protected void masterRedisMetaChanged() {
-		redisKeeperServer.reconnectMaster();
+	protected void keeperMasterChanged() {
+
+		reconnectMaster();
 	}
+
+
 
 	
 	
@@ -82,20 +93,24 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 			case BEGIN_PROMOTE_SLAVE:
 				redisKeeperServer.stopAndDisposeMaster();
 				break;
-			case COMMANDS_SEND_FINISH:
-				break;
 			case SLAVE_PROMTED:
 				SlavePromotionInfo promotionInfo = (SlavePromotionInfo) info;
-				masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
+				RedisMeta newMaster = masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
 							, promotionInfo.getNewMasterRunid(), promotionInfo.getNewMasterReplOffset());
+				this.promotionState = PROMOTION_STATE.REPLICATION_META_EXCHAGED;
+				
+				//TODO should be called!!
+				this.getShardStatus().setRedisMaster(newMaster);
+				reconnectMaster();
 				break;
+			case REPLICATION_META_EXCHAGED:
+				throw new IllegalStateException("state should no be changed outside:" + promotionState);
 			default:
 				throw new IllegalStateException("unkonow state:" + promotionState);
 		}
-		
 	}
 	
-	public void masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
+	public RedisMeta masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
 		
 		ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 		ReplicationStoreMeta meta = replicationStore.getReplicationStoreMeta();
@@ -107,11 +122,22 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		redisMeta.setPort(newMasterEndpoint.getPort());
 		redisMeta.setMaster(true);
 		
-		this.setRedisMasterMeta(redisMeta);//invoke reconnect with master
+		return redisMeta;
 	}
 
 	@Override
 	public boolean psync(RedisClient redisClient, String []args) {
 		return true;
 	}
+	
+	@Override
+	protected void reconnectMaster() {
+		
+		if(promotionState == PROMOTION_STATE.NORMAL || promotionState == PROMOTION_STATE.REPLICATION_META_EXCHAGED){
+			super.reconnectMaster();
+		}else{
+			logger.warn("[reconnectMaster][can reconnect][promotioning...]{}, {}", promotionState, this.redisKeeperServer);
+		}
+	}
+
 }

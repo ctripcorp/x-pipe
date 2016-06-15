@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.store.DefaultRdbFileListener;
@@ -17,6 +18,8 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultRdbFileListener;
  * 2016年4月22日 上午11:49:02
  */
 public class PsyncHandler extends AbstractCommandHandler{
+	
+	public static final int WAIT_OFFSET_TIME_MILLI = 60 * 1000;
 	
 	@Override
 	protected void doHandle(final String[] args, final RedisClient redisClient) {
@@ -46,19 +49,49 @@ public class PsyncHandler extends AbstractCommandHandler{
 			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 			Long beginOffset = keeperRepl.getBeginOffset();
 			Long endOffset = keeperRepl.getEndOffset();
-			Long offset = Long.valueOf(args[1]);
+			Long offsetRequest = Long.valueOf(args[1]);
 			
-			if((offset > (endOffset + 1)) || (offset < beginOffset)){
-				if(logger.isInfoEnabled()){
-					logger.info("[doHandle][offset out of range, do FullSync]" + beginOffset + "," + endOffset + "," + offset);
-				}
+			if(offsetRequest < beginOffset){
+				logger.info("[doHandle][offset < beginOffset][begin, end, request]{}, {}, {}" , beginOffset , endOffset);
 				doFullSync(redisSlave);
+			}else if(offsetRequest > endOffset +1){
+				
+				logger.info("[run][wait for offset]{}, {} > {} + 1", redisSlave, offsetRequest, endOffset);
+				waitForoffset(args, redisSlave, offsetRequest);
 			}else{
-				doPartialSync(redisSlave, offset);
+				doPartialSync(redisSlave, offsetRequest);
 			}
 		}else{
 			doFullSync(redisSlave);
 		}
+	}
+
+	/**
+	 * wait until the request offset received
+	 * @param redisClient 
+	 * @param args 
+	 * @param offset
+	 */
+	private void waitForoffset(final String[] args, final RedisSlave redisSlave, final Long offsetRequest) {
+		
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				
+				try {
+					ReplicationStore replicationStore = redisSlave.getRedisKeeperServer().getReplicationStore();
+					boolean result = replicationStore.awaitCommandsOffset(offsetRequest - replicationStore.getKeeperBeginOffset() - 1, WAIT_OFFSET_TIME_MILLI);
+					if(result){
+						logger.info("[waitForoffset][wait succeed]{}", redisSlave);
+						doPartialSync(redisSlave, offsetRequest);
+						return;
+					}
+				} catch (InterruptedException e) {
+				}
+				logger.info("[run][offset wait failed]{}", redisSlave);
+				doFullSync(redisSlave);
+			}
+		}).start();;
 	}
 
 	private void doPartialSync(RedisSlave redisSlave, Long offset) {
