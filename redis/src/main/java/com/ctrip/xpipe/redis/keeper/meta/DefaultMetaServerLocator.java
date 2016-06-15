@@ -16,7 +16,9 @@ public class DefaultMetaServerLocator implements MetaServerLocator {
 	@Override
 	public List<String> getMetaServerList() {
 		// TODO
-		return Arrays.asList("127.0.0.1:9747");
+		String ip = System.getProperty("metaServerIp", "127.0.0.1");
+		String port = System.getProperty("metaServerPort", "9747");
+		return Arrays.asList(ip + ":" + port);
 	}
 
 }

@@ -19,12 +19,27 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 public class StartMetaServer extends JettyServer {
 
 	@Test
-	public void start() throws Exception {
+	public void start9747() throws Exception {
 		startZk();
 		setupZkNodes();
 
 		startServer();
 
+		System.out.println("Press any key to exit...");
+		System.in.read();
+	}
+	
+	@Test
+	public void start9748() throws Exception {
+		System.setProperty("idc", "oy");
+		System.setProperty("metaServerPort", "9748");
+		System.setProperty("zkNamespace", "xpipe2");
+		
+		startZk();
+		setupZkNodes();
+		
+		startServer();
+		
 		System.out.println("Press any key to exit...");
 		System.in.read();
 	}
@@ -68,7 +83,7 @@ public class StartMetaServer extends JettyServer {
 
 	@Override
 	protected int getServerPort() {
-		return 9747;
+		return Integer.parseInt(System.getProperty("metaServerPort", "9747"));
 	}
 
 }
