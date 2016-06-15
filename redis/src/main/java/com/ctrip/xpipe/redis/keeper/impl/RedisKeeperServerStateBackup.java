@@ -57,9 +57,9 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 	protected void becomeActive() {
 		
 		try {
-			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, getShardStatus()));
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 			replicationStore.changeMetaTo(DefaultRedisKeeperServer.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME);
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, getShardStatus()));
 			reconnectMaster();
 		} catch (IOException e) {
 			logger.error("[becomeActive]" + this, e);
@@ -90,6 +90,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 	public boolean psync(RedisClient redisClient, String []args) {
 		
 		logger.info("[osync][server state backup, ask slave to wait]{}, {}", redisClient, this);
+		
 		redisClient.sendMessage(RedisProtocol.CRLF.getBytes());
 		redisKeeperServer.addObserver(new PsyncKeeperServerStateObserver(args, redisClient));
 		return false;

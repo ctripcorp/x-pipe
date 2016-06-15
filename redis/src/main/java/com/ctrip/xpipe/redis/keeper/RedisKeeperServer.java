@@ -26,8 +26,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	
 	String getKeeperRunid();
 	
-	void addCommandsListener(Long offset, CommandsListener listener);
-
 	void readRdbFile(RdbFileListener rdbFileListener) throws IOException;
 	
 	/**

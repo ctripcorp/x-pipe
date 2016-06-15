@@ -124,7 +124,7 @@ public class DefaultLifecycleState extends DefaultLifecycleController implements
 	@Override
 	public void setPhaseName(String name) {
 		
-		logger.info("[setPhaseName]{} --> {}", lifecycle, name);
+		logger.info("[setPhaseName]{}({}) --> {}", lifecycle, lifecycle.getClass().getSimpleName(), name);
 		previoisPhaseName.set(phaseName.get());
 		phaseName.set(name);
 	}

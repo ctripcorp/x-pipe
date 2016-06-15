@@ -42,7 +42,7 @@ public class DefaultKeeperRepl implements KeeperRepl{
 	public void addCommandsListener(long offset, CommandsListener commandsListener){
 		
 		try {
-			long replicationStoreOffset = replicationStore.beginOffset() + (offset - replicationStore.getKeeperBeginOffset());
+			long replicationStoreOffset = offset - replicationStore.getKeeperBeginOffset();
 			replicationStore.addCommandsListener(replicationStoreOffset, commandsListener);
 		} catch (IOException e) {
 			logger.error("[addCommandsListener]" + offset, e);

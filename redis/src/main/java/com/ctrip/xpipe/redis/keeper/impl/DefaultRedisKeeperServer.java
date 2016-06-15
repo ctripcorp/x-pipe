@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
@@ -16,7 +17,6 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
-import com.ctrip.xpipe.redis.keeper.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -288,16 +288,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		} catch (IOException e) {
 			logger.error("[getCurrentReplicationStore]" + this, e);
 			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
-		}
-	}
-
-
-	@Override
-	public void addCommandsListener(Long offset, CommandsListener commandsListener) {
-		try {
-			getCurrentReplicationStore().addCommandsListener(offset, commandsListener);
-		} catch (IOException e) {
-			logger.error("[addCommandsListener]" + offset +"," + commandsListener, e);
 		}
 	}
 

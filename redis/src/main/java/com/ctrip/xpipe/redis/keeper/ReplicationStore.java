@@ -41,6 +41,10 @@ public interface ReplicationStore extends Closeable {
 	 * @return
 	 */
 	long beginOffset();
+	
+	boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException;
+
+	void awaitCommandsOffset(long offset) throws InterruptedException;
 
 	/**
 	 * the last byte offset
