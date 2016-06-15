@@ -24,49 +24,64 @@ import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
 /**
  * @author wenchao.meng
  *
- * 2016年4月21日 下午5:42:29
+ *         2016年4月21日 下午5:42:29
  */
-public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest{
-	
+public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest {
+
 	@Before
-	public void beforeDefaultRedisKeeperServerTest() throws Exception{
+	public void beforeDefaultRedisKeeperServerTest() throws Exception {
 		initRegistry();
 		startRegistry();
 	}
 
 	@Test
+	public void startKeeper4444() throws Exception {
+
+		startKeeper("keeper4444.xml", "oy");
+	}
+
+	@Test
+	public void startKeeper5555() throws Exception {
+
+		startKeeper("keeper5555.xml", "oy");
+	}
+
+	@Test
 	public void startKeeper6666() throws Exception {
-		
-		startKeeper("keeper6666.xml");
+
+		startKeeper("keeper6666.xml", "jq");
 	}
 
 	@Test
 	public void startKeeper7777() throws Exception {
 
-		startKeeper("keeper7777.xml");
+		startKeeper("keeper7777.xml", "jq");
 	}
 
+	private void startKeeper(String keeperConfigFile, String dc) throws Exception {
 
-	private void startKeeper(String keeperConfigFile) throws Exception {
-		
 		XpipeMeta xpipe = DefaultSaxParser.parse(getClass().getClassLoader().getResourceAsStream(keeperConfigFile));
-		ClusterMeta cluster = xpipe.getDcs().get("jq").getClusters().get("cluster1");
+		ClusterMeta cluster = xpipe.findDc(dc).findCluster("cluster1");
+
+		if (cluster == null) {
+			throw new RuntimeException("wrong keeper config");
+		}
 
 		DefaultKeeperConfig config = new DefaultKeeperConfig();
 		setupZkNodes(cluster, config);
 		startKeepers(cluster);
 	}
 
-   private void startKeepers(final ClusterMeta cluster) throws Exception {
+	private void startKeepers(final ClusterMeta cluster) throws Exception {
 
 		for (final ShardMeta shard : cluster.getShards().values()) {
-			
+
 			int index = 0;
 			for (final KeeperMeta keeper : shard.getKeepers()) {
-				
+
 				File storeDir = new File(getTestFileDir() + "/" + index);
 				logger.info("[startKeepers]{},{},{}", cluster.getId(), shard.getId(), storeDir);
-				ReplicationStoreManager  replicationStoreManager = createReplicationStoreManager(cluster.getId(), shard.getId(), storeDir);
+				ReplicationStoreManager replicationStoreManager = createReplicationStoreManager(cluster.getId(), shard.getId(), storeDir);
 				createRedisKeeperServer(cluster.getId(), shard.getId(), keeper, replicationStoreManager, metaServiceManager);
 				index++;
 			}
@@ -99,8 +114,8 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest{
 	}
 
 	@After
-	public void afterOneBoxTest() throws IOException{
-		
+	public void afterOneBoxTest() throws IOException {
+
 		System.out.println("Press any key to exit");
 		System.in.read();
 	}
