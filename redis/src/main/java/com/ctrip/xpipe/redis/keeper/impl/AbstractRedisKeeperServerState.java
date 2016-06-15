@@ -167,7 +167,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	@Override
 	public String toString() {
 		
-		return String.format("redisKeeperServer:%s, shardInfo:%s", redisKeeperServer, shardStatus.toString());
+		return String.format("redisKeeperServer:%s, shardInfo:%s", redisKeeperServer, shardStatus);
 	}
 	
 	@Override
