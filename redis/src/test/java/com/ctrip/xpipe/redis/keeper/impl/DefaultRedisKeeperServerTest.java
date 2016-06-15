@@ -37,12 +37,18 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest {
 	@Test
 	public void startKeeper4444() throws Exception {
 
+		System.setProperty("idc", "oy");
+		System.setProperty("metaServerPort", "9748");
+		System.setProperty("zkNamespace", "xpipe2");
 		startKeeper("keeper4444.xml", "oy");
 	}
 
 	@Test
 	public void startKeeper5555() throws Exception {
 
+		System.setProperty("idc", "oy");
+		System.setProperty("metaServerPort", "9748");
+		System.setProperty("zkNamespace", "xpipe2");
 		startKeeper("keeper5555.xml", "oy");
 	}
 
