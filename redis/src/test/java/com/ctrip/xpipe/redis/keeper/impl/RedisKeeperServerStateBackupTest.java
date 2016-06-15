@@ -46,9 +46,9 @@ public class RedisKeeperServerStateBackupTest extends AbstractRedisKeeperServerS
 			update(shardStatus, backup);
 			Assert.fail();
 		}catch(Exception e){
+			e.printStackTrace();
 		}
-		Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateActive);
-		
+				
 	}
 
 	@Test

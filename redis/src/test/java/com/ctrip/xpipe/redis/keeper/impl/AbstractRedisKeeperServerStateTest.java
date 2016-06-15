@@ -31,9 +31,9 @@ public class AbstractRedisKeeperServerStateTest extends AbstractRedisKeeperTest{
 	}
 	
 
-	protected void update(Object args, AbstractRedisKeeperServerState state) {
+	protected void update(ShardStatus shardStatus, AbstractRedisKeeperServerState state) {
 
-		MetaUpdateInfo updateInfo = new MetaUpdateInfo(getClusterId(), getShardId(), args);
+		MetaUpdateInfo updateInfo = new MetaUpdateInfo(redisKeeperServer.getClusterId(), redisKeeperServer.getShardId(), shardStatus);
 		
 		state.update(updateInfo, null);
 	}
