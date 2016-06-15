@@ -28,7 +28,8 @@ public class DefaultKeeperConfig implements KeeperConfig {
 
 	@Override
 	public String getZkNamespace() {
-		return "xpipe";
+		// TODO
+		return System.getProperty("zkNamespace", "xpipe");
 	}
 
 	@Override

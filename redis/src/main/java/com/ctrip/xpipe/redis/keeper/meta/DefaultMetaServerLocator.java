@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.meta;
 
-import java.util.LinkedList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -13,24 +13,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class DefaultMetaServerLocator implements MetaServerLocator {
 	
-	private List<String> metaServerList = new LinkedList<>();
-	
+	private String address = System.getProperty("metaServerIp", "127.0.0.1") + ":"  + System.getProperty("metaServerPort", "9747");  
+		
 	public DefaultMetaServerLocator() {
 		
-		metaServerList.add("127.0.0.1:9747");
 	}
 
 	@Override
 	public List<String> getMetaServerList() {
 		
-		return metaServerList;
+		return Arrays.asList(address);
 	}
 	
-	public void clear(){
-		metaServerList.clear();
+	public void setAddress(String address) {
+		this.address = address;
 	}
 
-	public void add(String metaServer){
-		metaServerList.add(metaServer);
-	}
 }

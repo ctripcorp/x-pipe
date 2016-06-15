@@ -97,6 +97,7 @@ public class AbstractIntegratedTest extends AbstractRedisTest{
 
 	protected void startDc(String dc) throws Exception{
 		
+		System.setProperty("idc", dc);
 		DcMeta dcMeta = xpipeMeta.getDcs().get(dc);
 		DcInfo dcInfo =  dcs.get(dc); 
 		if(dcMeta == null || dcInfo == null){
@@ -126,8 +127,7 @@ public class AbstractIntegratedTest extends AbstractRedisTest{
 	private MetaServiceManager createMetaServiceManager(DcInfo dcInfo) {
 		
 		DefaultMetaServerLocator metaServerLocator = new DefaultMetaServerLocator();
-		metaServerLocator.clear();
-		metaServerLocator.add("localhost:" + dcInfo.getMetaServerPort());
+		metaServerLocator.setAddress(String.format("%s:%d", "localhost", dcInfo.getMetaServerPort()));
 		
 		DefaultMetaService metaService = new DefaultMetaService();
 		metaService.setConfig(new DefaultKeeperConfig());

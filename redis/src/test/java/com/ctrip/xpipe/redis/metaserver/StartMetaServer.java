@@ -25,11 +25,28 @@ public class StartMetaServer extends JettyServer {
 	private int serverPort = 9747;
 	
 	@Test
-	public void start() throws Exception {
+	public void start9747() throws Exception {
+		start();
+	}
+	
+	@Test
+	public void start9748() throws Exception {
+		
+		System.setProperty("idc", "oy");
+		System.setProperty("zkNamespace", "xpipe2");
+		
+		this.serverPort = 9748;
+		
+		start();
+	}
+	
+	public void start() throws Exception{
+		
 		startZk();
 		setupZkNodes();
 
 		startServer();
+		
 	}
 
 	@SuppressWarnings("resource")
@@ -69,15 +86,6 @@ public class StartMetaServer extends JettyServer {
 		return "/";
 	}
 
-	@Override
-	public int getServerPort() {
-		return serverPort;
-	}
-	
-	public void setServerPort(int serverPort) {
-		this.serverPort = serverPort;
-	}
-	
 	public int getZkPort() {
 		return zkPort;
 	}
@@ -85,10 +93,19 @@ public class StartMetaServer extends JettyServer {
 	public void setZkPort(int zkPort) {
 		this.zkPort = zkPort;
 	}
+
+	protected int getServerPort() {
+		return serverPort;
+	}
 	
+	public void setServerPort(int serverPort) {
+		this.serverPort = serverPort;
+	}
+
 	@After
 	public void afterStartMetaServer() throws IOException{
 		System.out.println("Press any key to exit...");
 		System.in.read();
 	}
+	
 }
