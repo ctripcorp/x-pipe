@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.ctrip.xpipe.redis.foundation;
+package com.ctrip.xpipe.foundation;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
