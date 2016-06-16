@@ -9,10 +9,17 @@ import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
 import org.junit.After;
 import org.junit.Test;
+import org.unidal.helper.Files.IO;
 import org.unidal.test.jetty.JettyServer;
 
-import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.core.CoreConfig;
+import com.ctrip.xpipe.redis.core.DefaultCoreConfig;
+import com.ctrip.xpipe.redis.foundation.IdcUtil;
+import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.keeper.entity.DcMeta;
+import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
+import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
+import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
 
 /**
  * @author marsqing
@@ -20,33 +27,76 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
  *         May 30, 2016 3:26:13 PM
  */
 public class StartMetaServer extends JettyServer {
-	
-	private int zkPort = 2181;
-	private int serverPort = 9747;
-	
+
+	private int zkPort = IdcUtil.JQ_ZK_PORT;
+	private int serverPort = IdcUtil.JQ_METASERVER_PORT;
+
 	@Test
 	public void start9747() throws Exception {
-		start();
+		startZk();
+		String meta = IO.INSTANCE.readFrom(getClass().getResourceAsStream("/metaserver--jq.xml"), "utf-8");
+		start(connectToZk("127.0.0.1:" + zkPort), meta);
 	}
-	
+
 	@Test
 	public void start9748() throws Exception {
+		this.zkPort = IdcUtil.OY_ZK_PORT;
+		this.serverPort = IdcUtil.OY_METASERVER_PORT;
 		
-		System.setProperty("idc", "oy");
-		System.setProperty("zkNamespace", "xpipe2");
-		
-		this.serverPort = 9748;
-		
-		start();
-	}
-	
-	public void start() throws Exception{
+		IdcUtil.setToOY();
 		
 		startZk();
-		setupZkNodes();
+
+		String meta = IO.INSTANCE.readFrom(getClass().getResourceAsStream("/metaserver--oy.xml"), "utf-8");
+		start(connectToZk("127.0.0.1:" + zkPort), meta);
+	}
+
+	public void start(CuratorFramework client, DcMeta meta) throws Exception {
+		start(client, extractDcMeta(meta));
+	}
+
+	private String extractDcMeta(DcMeta meta) throws Exception {
+		XpipeMeta xpipe = new XpipeMeta();
+		DcMeta dc = new DcMeta();
+		xpipe.addDc(dc);
+
+		dc.setId(meta.getId());
+
+		for (ClusterMeta cluster : meta.getClusters().values()) {
+			ClusterMeta clusterClone = new ClusterMeta();
+			dc.addCluster(clusterClone);
+
+			clusterClone.setId(cluster.getId());
+
+			for (ShardMeta shard : cluster.getShards().values()) {
+				ShardMeta shardClone = new ShardMeta();
+				clusterClone.addShard(shardClone);
+
+				shardClone.setId(shard.getId());
+				shardClone.setActiveDc(shard.getActiveDc());
+
+				for (RedisMeta redis : shard.getRedises()) {
+					RedisMeta redisClone = new RedisMeta();
+					shardClone.addRedis(redisClone);
+
+					redisClone.setIp(redis.getIp());
+					redisClone.setMaster(redis.getMaster());
+					redisClone.setPort(redis.getPort());
+					redisClone.setShardActive(redis.getShardActive());
+
+				}
+			}
+		}
+
+		return xpipe.toString();
+	}
+
+	public void start(CuratorFramework client, String meta) throws Exception {
+		setupZkNodes(client);
+		IdcUtil.updateMeta(client, meta);
 
 		startServer();
-		
+
 	}
 
 	@SuppressWarnings("resource")
@@ -57,22 +107,23 @@ public class StartMetaServer extends JettyServer {
 		}
 	}
 
-	private void setupZkNodes() throws Exception {
-		KeeperConfig config = new DefaultKeeperConfig();
-		CuratorFramework client = initializeZK(config);
+	private void setupZkNodes(CuratorFramework client) throws Exception {
+		CoreConfig config = new DefaultCoreConfig();
+
 		String path = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), "cluster1", "shard1");
 		client.newNamespaceAwareEnsurePath(path).ensure(client.getZookeeperClient());
+		client.newNamespaceAwareEnsurePath("/meta").ensure(client.getZookeeperClient());
 	}
 
-	private CuratorFramework initializeZK(KeeperConfig config) throws InterruptedException {
+	private CuratorFramework connectToZk(String connectString) throws InterruptedException {
 		Builder builder = CuratorFrameworkFactory.builder();
 
-		builder.connectionTimeoutMs(config.getZkConnectionTimeoutMillis());
-		builder.connectString(config.getZkConnectionString());
-		builder.maxCloseWaitMs(config.getZkCloseWaitMillis());
-		builder.namespace(config.getZkNamespace());
-		builder.retryPolicy(new RetryNTimes(3, config.getSleepMsBetweenRetries()));
-		builder.sessionTimeoutMs(config.getZkSessionTimeoutMillis());
+		builder.connectionTimeoutMs(3000);
+		builder.connectString(connectString);
+		builder.maxCloseWaitMs(3000);
+		builder.namespace("xpipe");
+		builder.retryPolicy(new RetryNTimes(3, 1000));
+		builder.sessionTimeoutMs(5000);
 
 		CuratorFramework client = builder.build();
 		client.start();
@@ -89,7 +140,7 @@ public class StartMetaServer extends JettyServer {
 	public int getZkPort() {
 		return zkPort;
 	}
-	
+
 	public void setZkPort(int zkPort) {
 		this.zkPort = zkPort;
 	}
@@ -97,15 +148,15 @@ public class StartMetaServer extends JettyServer {
 	protected int getServerPort() {
 		return serverPort;
 	}
-	
+
 	public void setServerPort(int serverPort) {
 		this.serverPort = serverPort;
 	}
 
 	@After
-	public void afterStartMetaServer() throws IOException{
+	public void afterStartMetaServer() throws IOException {
 		System.out.println("Press any key to exit...");
 		System.in.read();
 	}
-	
+
 }
