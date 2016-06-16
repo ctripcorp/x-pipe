@@ -17,12 +17,13 @@ public class DataSyncTest extends AbstractSingleDcTest{
 	
 	@Test
 	public void simpleTest() throws Exception{
-		
+
+		sendMessageToMasterAndTestSlaveRedis();
 	}
+	
 	
 	@After
 	public void afterStartMetaServer() throws IOException{
-		System.out.println("Press any key to exit...");
-		System.in.read();
+		
 	}
 }

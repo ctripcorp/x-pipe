@@ -29,7 +29,7 @@ public abstract class AbstractLifecycleObservable extends AbstractLifecycle impl
 		
 	}
 
-	public void remoteObserver(Observer observer) {
+	public void removeObserver(Observer observer) {
 		
 		observers.remove(observer);
 	}
@@ -37,10 +37,16 @@ public abstract class AbstractLifecycleObservable extends AbstractLifecycle impl
 	
 	protected void notifyObservers(Object arg){
 		
-		for(Observer observer : observers){
+		Object []tmpObservers;
+		
+		synchronized (observers) {
+			tmpObservers = observers.toArray();
+		}
+		
+		for(Object observer : tmpObservers){
 			
 			try{
-				observer.update(arg, this);
+				((Observer)observer).update(arg, this);
 			}catch(Exception e){
 				logger.error("[notifyObservers]" + observer, e);
 			}

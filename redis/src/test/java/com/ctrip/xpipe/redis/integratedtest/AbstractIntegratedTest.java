@@ -53,7 +53,9 @@ public class AbstractIntegratedTest extends AbstractRedisTest{
 	private String redis_template = "conf/redis_template.conf";
 	private StartMetaServer startMetaServer;
 	
-	private Map<String, DcInfo>  dcs = new ConcurrentHashMap<>();  
+	private Map<String, DcInfo>  dcs = new ConcurrentHashMap<>();
+	
+	private int testMessageCount = 10000;
 	
 	private XpipeMeta xpipeMeta;
 		
@@ -97,6 +99,9 @@ public class AbstractIntegratedTest extends AbstractRedisTest{
 
 	protected void startDc(String dc) throws Exception{
 		
+
+		logger.info(remarkableMessage("[startDc]{}"), dc);
+
 		System.setProperty("idc", dc);
 		DcMeta dcMeta = xpipeMeta.getDcs().get(dc);
 		DcInfo dcInfo =  dcs.get(dc); 
@@ -108,12 +113,11 @@ public class AbstractIntegratedTest extends AbstractRedisTest{
 		
 		MetaServiceManager metaServiceManager = createMetaServiceManager(dcInfo);
 		
-		logger.info("[startDc]{}\n\n", dc);
 		
 		for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
-			logger.info("[startCluster]{}", clusterMeta.getId());
+			logger.info(remarkableMessage("[startCluster]{}"), clusterMeta.getId());
 			for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-				logger.info("[startShard]{}", shardMeta.getId());
+				logger.info(remarkableMessage("[startShard]{}"), shardMeta.getId());
 				for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
 					startKeeper(dcInfo, keeperMeta, metaServiceManager);
 				}
@@ -140,7 +144,7 @@ public class AbstractIntegratedTest extends AbstractRedisTest{
 
 	private void startRedis(DcInfo dcInfo, RedisMeta redisMeta) throws ExecuteException, IOException {
 		
-		logger.info("[startRedis]{}, {}", dcInfo, redisMeta);
+		logger.info(remarkableMessage("[startRedis]{}, {}"), dcInfo, redisMeta);
 		
 		File testDir = new File(getTestFileDir());
 		File redisDir = new File(testDir, "redisconfig");
@@ -199,10 +203,10 @@ public class AbstractIntegratedTest extends AbstractRedisTest{
 
 	private void startKeeper(DcInfo dcInfo, KeeperMeta keeperMeta, MetaServiceManager metaServiceManager) throws Exception {
 		
-		logger.info("[startKeeper]{}, {}", dcInfo, keeperMeta);
+		logger.info(remarkableMessage("[startKeeper]{}, {}"), dcInfo, keeperMeta);
 		ReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
 				keeperMeta.parent().parent().getId(), keeperMeta.parent().getId(), 
-				new File(getTestFileDir() + "/" + keeperMeta.getPort()));
+				new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort()));
 		
 		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperMeta,replicationStoreManager, metaServiceManager);
 		add(redisKeeperServer);
@@ -215,7 +219,7 @@ public class AbstractIntegratedTest extends AbstractRedisTest{
 
 	protected void startMetaServer(DcInfo dcInfo) throws Exception {
 		
-		logger.info("[startMetaServer]{}", dcInfo);
+		logger.info(remarkableMessage("[startMetaServer]{}"), dcInfo);
 		startMetaServer = new StartMetaServer();
 		startMetaServer.setZkPort(dcInfo.getZkPort());
 		startMetaServer.setServerPort(dcInfo.getMetaServerPort());
@@ -256,10 +260,10 @@ public class AbstractIntegratedTest extends AbstractRedisTest{
 		return xpipeMeta;
 	}
 	
-	@After
-	public void afterAbstractIntegratedTest(){
-		
+	public int getTestMessageCount() {
+		return testMessageCount;
 	}
+	
 	
 	public static class DcInfo{
 		
@@ -283,5 +287,10 @@ public class AbstractIntegratedTest extends AbstractRedisTest{
 		public String toString() {
 			return String.format("zkPort:%d, metaServerPort:%d", zkPort, metaServerPort);
 		}
+	}
+
+	@After
+	public void afterAbstractIntegratedTest(){
+		
 	}
 }

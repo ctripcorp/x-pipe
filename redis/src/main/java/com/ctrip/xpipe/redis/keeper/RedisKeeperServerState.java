@@ -22,5 +22,6 @@ public interface RedisKeeperServerState extends Observer{
 	boolean sendKinfo();
 	
 	boolean psync(RedisClient redisClient, String []args);
-
+	
+	boolean isActive();
 }

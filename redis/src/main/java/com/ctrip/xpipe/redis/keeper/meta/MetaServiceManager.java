@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.meta;
 
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 
 /**
  * @author wenchao.meng
@@ -9,10 +10,10 @@ import com.ctrip.xpipe.api.observer.Observable;
  */
 public interface MetaServiceManager extends Observable{
 	
-	void addShard(String clusterId, String shardId);
+	void add(RedisKeeperServer redisKeeperServer);
 
 	ShardStatus getShardStatus(String clusterId, String shardId);
 	
-	void removeShard(String clusterId, String shardId);
+	void remove(RedisKeeperServer redisKeeperServer);
 
 }

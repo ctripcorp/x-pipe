@@ -99,10 +99,10 @@ public class PsyncHandler extends AbstractCommandHandler{
 		if(logger.isInfoEnabled()){
 			logger.info("[doPartialSync]" + redisSlave);
 		}
-		
 		SimpleStringParser simpleStringParser = new SimpleStringParser(Psync.PARTIAL_SYNC);
 		redisSlave.sendMessage(simpleStringParser.format());
 		redisSlave.beginWriteCommands(offset);
+		redisSlave.partialSync();
 	}
 
 	private void doFullSync(RedisSlave redisSlave) {

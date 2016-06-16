@@ -27,7 +27,7 @@ public abstract class AbstractObservable implements Observable{
 		
 	}
 
-	public synchronized void remoteObserver(Observer observer) {
+	public synchronized void removeObserver(Observer observer) {
 		
 		observers.remove(observer);
 	}

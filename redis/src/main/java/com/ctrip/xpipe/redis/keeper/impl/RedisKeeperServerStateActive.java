@@ -140,4 +140,9 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		}
 	}
 
+	@Override
+	public boolean isActive() {
+		return true;
+	}
+
 }

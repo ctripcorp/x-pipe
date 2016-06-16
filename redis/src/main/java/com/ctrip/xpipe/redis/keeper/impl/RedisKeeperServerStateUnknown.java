@@ -64,5 +64,8 @@ public class RedisKeeperServerStateUnknown extends AbstractRedisKeeperServerStat
 		return false;
 	}
 
-
+	@Override
+	public boolean isActive() {
+		return false;
+	}
 }

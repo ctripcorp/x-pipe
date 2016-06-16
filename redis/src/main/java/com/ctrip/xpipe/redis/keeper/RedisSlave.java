@@ -2,13 +2,15 @@ package com.ctrip.xpipe.redis.keeper;
 
 import java.nio.channels.FileChannel;
 
+import com.ctrip.xpipe.api.server.PartialAware;
+
 
 /**
  * @author wenchao.meng
  *
  * May 20, 2016 3:55:37 PM
  */
-public interface RedisSlave extends RedisClient{
+public interface RedisSlave extends RedisClient, PartialAware{
 	
 	void setSlaveState(SLAVE_STATE slaveState);
 	
@@ -28,5 +30,6 @@ public interface RedisSlave extends RedisClient{
 
 	void rdbWriteComplete();
 
+	void partialSync();
 
 }

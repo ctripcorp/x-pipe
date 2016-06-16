@@ -3,9 +3,19 @@ package com.ctrip.xpipe.redis;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
+
+import org.junit.Assert;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
+
 import io.netty.buffer.ByteBufAllocator;
+import redis.clients.jedis.Jedis;
 
 /**
  * @author wenchao.meng
@@ -39,6 +49,49 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		return sb.toString();
 	}
 
-	
+
+	protected Jedis createJedis(RedisMeta redisMeta) {
+		
+		Jedis jedis = new Jedis(redisMeta.getIp(), redisMeta.getPort()); 
+		logger.info("[createJedis]{}", jedis);
+		return jedis;
+	}
+
+	protected void assertRedisEquals(RedisMeta redisMaster, List<RedisMeta> redisSlaves) {
+		
+		Map<String, String> values = new HashMap<>(); 
+		Jedis jedis = createJedis(redisMaster);
+		Set<String> keys = jedis.keys("*");
+		for(String key : keys){
+			values.put(key, jedis.get(key));
+		}
+
+		for(RedisMeta redisSlave : redisSlaves){
+			
+			Jedis slave = createJedis(redisSlave);
+			Assert.assertEquals(values.size(), slave.keys("*").size());
+			
+			for(Entry<String, String> entry : values.entrySet()){
+				
+				String realValue = slave.get(entry.getKey());
+				Assert.assertEquals(entry.getValue(), realValue);
+			}
+		}
+		
+		
+	}
+
+	protected void sendRandomMessage(RedisMeta redisMeta, int count) {
+		
+		Jedis jedis = createJedis(redisMeta);
+		
+		logger.info("[sendRandomMessage][begin]{}", jedis);
+		for(int i=0; i < count; i++){
+			jedis.set(String.valueOf(i), randomString());
+			jedis.incr("incr");
+		}
+		logger.info("[sendRandomMessage][end  ]{}", jedis);
+	}
+
 
 }

@@ -89,7 +89,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 	@Override
 	public boolean psync(RedisClient redisClient, String []args) {
 		
-		logger.info("[osync][server state backup, ask slave to wait]{}, {}", redisClient, this);
+		logger.info("[psync][server state backup, ask slave to wait]{}, {}", redisClient, this);
 		
 		redisClient.sendMessage(RedisProtocol.CRLF.getBytes());
 		redisKeeperServer.addObserver(new PsyncKeeperServerStateObserver(args, redisClient));
@@ -126,7 +126,12 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 
 		@Override
 		public void release() throws Exception {
-			this.redisClient.getRedisKeeperServer().remoteObserver(this);
+			this.redisClient.getRedisKeeperServer().removeObserver(this);
 		}
+	}
+
+	@Override
+	public boolean isActive() {
+		return false;
 	}
 }

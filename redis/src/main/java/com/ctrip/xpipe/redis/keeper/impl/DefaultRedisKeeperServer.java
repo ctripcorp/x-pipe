@@ -129,7 +129,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = new RedisKeeperServerStateUnknown(this); 
-		metaServiceManager.addShard(clusterId, shardId);
+		metaServiceManager.add(this);
 
 	}
 	
@@ -140,8 +140,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			this.keeperRedisMaster.dispose();
 		}
 		
-		metaServiceManager.removeShard(clusterId, shardId);
-		
+		metaServiceManager.remove(this);
 		this.leaderElector.dispose();
 		super.doDispose();
 	}
@@ -150,8 +149,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
-		
-		metaServiceManager.addObserver(this.redisKeeperServerState);
 		
 		keeperStartTime = System.currentTimeMillis();
 		this.leaderElector.start();
@@ -165,7 +162,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			keeperRedisMaster.stop();
 		}
 		
-		metaServiceManager.remoteObserver(redisKeeperServerState);
 		this.leaderElector.stop();
 		
 		stopServer();
@@ -388,9 +384,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		this.redisKeeperServerState = redisKeeperServerState;
 		
-		this.metaServiceManager.remoteObserver(previous);
-		this.metaServiceManager.addObserver(redisKeeperServerState);
-		
 		notifyObservers(new KeeperServerStateChanged(previous, redisKeeperServerState));
 	}
 
@@ -417,4 +410,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public RedisKeeperServerState getRedisKeeperServerState() {
 		return this.redisKeeperServerState;
 	}
+
+	@Override
+	public void update(Object args, Observable observable) {
+		redisKeeperServerState.update(args, observable);
+	}
+
+	@Override
+	public RedisMaster getRedisMaster() {
+		return keeperRedisMaster;
+	}
+
 }

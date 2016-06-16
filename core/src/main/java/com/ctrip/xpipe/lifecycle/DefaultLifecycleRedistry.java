@@ -98,4 +98,18 @@ public class DefaultLifecycleRedistry extends AbstractLifecycle implements Lifec
 			lifecycle.dispose();
 		}
 	}
+
+	@Override
+	public List<Lifecycle> getLifecycles(Class<?> clazz) {
+		
+		List<Lifecycle> result = new LinkedList<>();
+		
+		for(Lifecycle lifecycle : components){
+			if(clazz.isAssignableFrom(lifecycle.getClass())){
+				result.add(lifecycle);
+			}
+		}
+		
+		return result;
+	}
 }

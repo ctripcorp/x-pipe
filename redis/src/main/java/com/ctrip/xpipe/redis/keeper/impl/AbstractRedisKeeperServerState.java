@@ -55,7 +55,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		
 		if(args instanceof MetaUpdateInfo){
 			
-			logger.info("{}", args);
+			logger.info("{}, {}", args);
 
 			MetaUpdateInfo metaUpdateInfo = (MetaUpdateInfo) args;
 			if(!redisKeeperServer.getClusterId().equals(metaUpdateInfo.getClusterId()) || !redisKeeperServer.getShardId().equals(metaUpdateInfo.getShardId())){
@@ -103,17 +103,17 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		boolean changed = false;
 
 		if(!ObjectUtils.equals(oldUpstreamKeeper,  upstreamKeeper)){
-			logger.info("[cmpKeeperMaster][upstream changed]{} --> {}", oldUpstreamKeeper, upstreamKeeper);
+			logger.info("[cmpKeeperMaster][upstream changed]{}, {} --> {}", redisKeeperServer, oldUpstreamKeeper, upstreamKeeper);
 			changed = true;
 		}
 		
 		if(!ObjectUtils.equals(oldMaterRedisMeta, redisMaster)){
-			logger.info("[cmpKeeperMaster][redis master changed]{} --> {}", oldMaterRedisMeta, redisMaster);
+			logger.info("[cmpKeeperMaster][redis master changed]{}, {} --> {}", redisKeeperServer, oldMaterRedisMeta, redisMaster);
 			changed = true;
 		}
 		
 		if(!changed){
-			logger.info("[cmpKeeperMaster][not changed]");
+			logger.debug("[cmpKeeperMaster][not changed]");
 			return;
 		}
 		

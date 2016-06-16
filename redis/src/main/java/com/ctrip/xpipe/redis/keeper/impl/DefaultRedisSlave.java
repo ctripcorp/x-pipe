@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
 
 import com.ctrip.xpipe.api.monitor.DelayMonitor;
+import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
 import com.ctrip.xpipe.netty.NotClosableFileRegion;
 import com.ctrip.xpipe.redis.keeper.CommandsListener;
@@ -30,6 +31,8 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	private Long replAckTime = System.currentTimeMillis();
 
 	private SLAVE_STATE  slaveState;
+	
+	private PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 	
 	private Long rdbFileOffset;
 	
@@ -89,6 +92,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	@Override
 	public void beginWriteRdb(long rdbFileSize, long rdbFileOffset) {
 		
+		partialState = PARTIAL_STATE.FULL;
 		slaveState = SLAVE_STATE.REDIS_REPL_SEND_BULK;
 		this.rdbFileOffset = rdbFileOffset;
 		
@@ -160,6 +164,16 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 				slaveState != null ? slaveState.getDesc() : "null",
 				replAckOff, lag/1000, ((InetSocketAddress)channel.remoteAddress()).getPort());
 		return info;
+	}
+
+	@Override
+	public PARTIAL_STATE partialState() {
+		return partialState;
+	}
+
+	@Override
+	public void partialSync() {
+		partialState = PARTIAL_STATE.PARTIAL;
 	}
 	
 }

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.api.lifecycle;
 
+import java.util.List;
+
 /**
  * lifecycle component container
  * @author wenchao.meng
@@ -13,6 +15,6 @@ public interface LifecycleRegistry extends Lifecycle{
 	
 	void remove(Lifecycle lifecycle) throws Exception;
 	
-	
+	List<Lifecycle>  getLifecycles(Class<?> clazz);
 
 }

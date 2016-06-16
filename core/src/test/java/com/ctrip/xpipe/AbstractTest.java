@@ -168,6 +168,10 @@ public class AbstractTest {
 	protected void remove(Lifecycle lifecycle) throws Exception{
 		this.lifecycleRegistry.remove(lifecycle);
 	}
+	
+	public LifecycleRegistry getLifecycleRegistry() {
+		return lifecycleRegistry;
+	}
 
 	
 	protected String currentTestName(){
@@ -201,7 +205,15 @@ public class AbstractTest {
 		return (int)(Math.random() * Integer.MAX_VALUE);
 	}
 
+	protected String remarkableMessage(String msg) {
+		return String.format("\r\n--------------------------------------------------%s--------------------------------------------------\r\n", msg);
+	}
 
+	protected void waitForAnyKeyToExit() throws IOException{
+		System.out.println("type any key to exit..................");
+		System.in.read();
+	}
+	
 	@After
 	public void afterAbstractTest() throws IOException{
 		

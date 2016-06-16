@@ -6,12 +6,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.observer.AbstractObservable;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.utils.OsUtils;
 
 /**
@@ -32,27 +34,61 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 	private Map<Pair<String, String>, MetaInfo>  metaInfos = new ConcurrentHashMap<>();
 	
 	@Override
-	public synchronized void removeShard(String clusterId, String shardId) {
+	public void add(RedisKeeperServer redisKeeperServer) {
+		
+		String clusterId = redisKeeperServer.getClusterId();
+		String shardId = redisKeeperServer.getShardId();
+		
+		addObserver(redisKeeperServer);
+		
+		synchronized (metaInfos) {
+			MetaInfo metaInfo = getOrAddShard(clusterId, shardId);
+			metaInfo.increase();
+		}
+		
+		
+	}
+
+	@Override
+	public void remove(RedisKeeperServer redisKeeperServer) {
+		
+		String clusterId = redisKeeperServer.getClusterId();
+		String shardId = redisKeeperServer.getShardId();
+		removeObserver(redisKeeperServer);
+
+		synchronized (metaInfos) {
+			MetaInfo metaInfo = metaInfos.get(getKey(clusterId, shardId));
+			int current = metaInfo.release();
+			if(current == 0){
+				removeShard(clusterId, shardId);
+			}
+		}
+	}
+
+	
+	private void removeShard(String clusterId, String shardId) {
 		
 		MetaInfo metaInfo  = metaInfos.remove(getKey(clusterId, shardId));
 		if(metaInfo == null){
 			logger.warn("[removeShard][notexist]{}, {}", clusterId, shardId);
 			return;
 		}
+		logger.info("[removeShard]{}, {}", clusterId , shardId);
 		metaInfo.getFuture().cancel(true);
 	}
 
-	@Override
-	public synchronized void addShard(String clusterId, String shardId) {
+	private MetaInfo getOrAddShard(String clusterId, String shardId) {
 		
 		MetaInfo metaInfo = getMetaInfo(clusterId, shardId);
-		if(metaInfo != null){
-			logger.info("[addShard][already exist]{}, {}", clusterId, shardId);
-			return;
+		if(metaInfo == null){
+			
+			logger.info("[getOrAddShard][addShard]{}, {}", clusterId, shardId);
+			ScheduledFuture<?> futureShard = scheduled.scheduleWithFixedDelay(new ShardWorker(clusterId, shardId), 0, META_GET_INTERVAL, TimeUnit.SECONDS);
+			metaInfo = new MetaInfo(futureShard);
+			metaInfos.put(getKey(clusterId, shardId), metaInfo);
 		}
 		
-		ScheduledFuture<?> futureShard = scheduled.scheduleWithFixedDelay(new ShardWorker(clusterId, shardId), 0, META_GET_INTERVAL, TimeUnit.SECONDS);
-		metaInfos.put(getKey(clusterId, shardId), new MetaInfo(futureShard));
+		return metaInfo;
 	}
 	
 	@Override
@@ -161,6 +197,7 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 		
 		private ShardStatus shardStatus;
 		private final ScheduledFuture<?> future;
+		private AtomicInteger count = new AtomicInteger();
 		
 		public MetaInfo(ScheduledFuture<?> future){
 			this.future = future;
@@ -185,5 +222,14 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 		public ShardStatus getShardStatus() {
 			return shardStatus;
 		}
+		
+		public int increase(){
+			return count.incrementAndGet();
+		}
+		
+		public int release(){
+			return count.decrementAndGet();
+		}
 	}
+
 }

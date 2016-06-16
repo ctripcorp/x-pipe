@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
@@ -47,7 +49,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
-
 /**
  * @author wenchao.meng
  *
@@ -56,6 +57,8 @@ import io.netty.handler.logging.LoggingHandler;
 public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
+	
+	private volatile PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 	
 	public static final int REPLCONF_INTERVAL_MILLI = 1000;
 	
@@ -171,11 +174,6 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		
 	}
 
-	@Override
-	public void beginWriteRdb() {
-		
-		getCurrentReplicationStore().setMasterAddress(endpoint);
-	}
 
 	
 	protected ReplicationStore getCurrentReplicationStore(){
@@ -192,10 +190,6 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		}
 	}
 	
-	@Override
-	public void endWriteRdb() {
-		scheduleReplconf();
-	}
 
 	@Override
 	public void handleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException {
@@ -311,7 +305,20 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	}
 
 	@Override
+	public void beginWriteRdb() {
+		
+		partialState = PARTIAL_STATE.FULL;
+		getCurrentReplicationStore().setMasterAddress(endpoint);
+	}
+
+	@Override
+	public void endWriteRdb() {
+		scheduleReplconf();
+	}
+
+	@Override
 	public void onContinue() {
+		partialState = PARTIAL_STATE.PARTIAL;
 		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.NORMAL);
 		scheduleReplconf();
 	}
@@ -319,6 +326,12 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public Endpoint masterEndPoint() {
 		return this.endpoint;
+	}
+
+	@Override
+	public PARTIAL_STATE partialState() {
+		
+		return partialState;
 	}
 
 }
