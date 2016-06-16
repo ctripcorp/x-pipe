@@ -18,6 +18,7 @@ after_success:
 branches:
   only:
     - master
+    - coverity_scan
     
 env:
   global:
@@ -32,4 +33,4 @@ addons:
     notification_email:  wcmeng@ctrip.com
     build_command_prepend: "mvn clean"
     build_command:   "mvn -DskipTests=true compile"
-    branch_pattern: master
+    branch_pattern: coverity_scan
