@@ -1,19 +1,16 @@
 package com.ctrip.xpipe.redis.metaserver;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.PostConstruct;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.recipes.locks.LockInternals;
 import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
-import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.WatchedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,14 +18,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.redis.core.CoreConfig;
+import com.ctrip.xpipe.redis.core.zk.ZkClient;
 import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.keeper.entity.DcMeta;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
+import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.keeper.meta.ShardStatus;
 import com.ctrip.xpipe.utils.ServicesUtil;
 
 /**
@@ -37,22 +36,59 @@ import com.ctrip.xpipe.utils.ServicesUtil;
  *         May 25, 2016 5:24:27 PM
  */
 @Component
-public class DefaultMetaServer extends AbstractLifecycle implements MetaServer, Lifecycle {
+public class DefaultMetaServer implements MetaServer {
 
 	private static Logger log = LoggerFactory.getLogger(DefaultMetaServer.class);
 
 	@Autowired
 	MetaHolder metaHolder;
 
-	private ConcurrentMap<Pair<String, String>, Pair<KeeperMeta, RedisMeta>> shardState = new ConcurrentHashMap<>();
+	@Autowired
+	private CoreConfig config;
 
-	private KeeperConfig config;
+	@Autowired
+	private ZkClient zkClient;
 
-	private CuratorFramework client;
+	private ConcurrentMap<Pair<String, String>, ShardStatus> shardStatuses = new ConcurrentHashMap<>();
 
-	public DefaultMetaServer() {
-		// TODO
-		config = new DefaultKeeperConfig();
+	private FoundationService foundationService;
+
+	@PostConstruct
+	public void initialize() throws Exception {
+		foundationService = ServicesUtil.getFoundationService();
+
+		Map<String, ClusterMeta> clusters = metaHolder.getMeta().findDc(foundationService.getDataCenter()).getClusters();
+
+		for (ClusterMeta cluster : clusters.values()) {
+			for (ShardMeta shard : cluster.getShards().values()) {
+				shardStatuses.put(new Pair<>(cluster.getId(), shard.getId()), new ShardStatus());
+				updateRedisMaster(cluster.getId(), shard);
+				updateUpstreamKeeper(cluster.getId(), shard.getId());
+			}
+		}
+
+		// TODO watch and update cluster from zk
+		for (ClusterMeta cluster : clusters.values()) {
+			watchCluster(cluster);
+		}
+	}
+
+	@Override
+	public KeeperMeta getActiveKeeper(String clusterId, String shardId) {
+		ShardStatus status = shardStatuses.get(new Pair<>(clusterId, shardId));
+		return status == null ? null : status.getActiveKeeper();
+	}
+
+	@Override
+	public RedisMeta getRedisMaster(String clusterId, String shardId) {
+		ShardStatus status = shardStatuses.get(new Pair<>(clusterId, shardId));
+		return status == null ? null : status.getRedisMaster();
+	}
+
+	@Override
+	public KeeperMeta getUpstreamKeeper(String clusterId, String shardId) {
+		ShardStatus status = shardStatuses.get(new Pair<>(clusterId, shardId));
+		return status == null ? null : status.getUpstreamKeeper();
 	}
 
 	@Override
@@ -60,63 +96,71 @@ public class DefaultMetaServer extends AbstractLifecycle implements MetaServer, 
 		observeLeader(cluster);
 	}
 
-	@Override
-	public KeeperMeta getActiveKeeper(String clusterId, String shardId) {
-		Pair<KeeperMeta, RedisMeta> state = shardState.get(new Pair<>(clusterId, shardId));
-		return state == null ? null : state.getKey();
+	private void updateRedisMaster(String clusterId, ShardMeta shard) {
+		ShardStatus shardStatus = shardStatuses.get(new Pair<>(clusterId, shard.getId()));
+
+		if (shardStatus != null) {
+			for (RedisMeta redis : shard.getRedises()) {
+				if (redis.isMaster()) {
+					shardStatus.setRedisMaster(redis);
+				}
+			}
+		}
 	}
 
-	@Override
-	public RedisMeta getRedisMaster(String clusterId, String shardId) {
-		Pair<KeeperMeta, RedisMeta> state = shardState.get(new Pair<>(clusterId, shardId));
-		return state == null ? null : state.getValue();
-	}
+	private void updateUpstreamKeeper(String clusterId, String shardId) {
+		ShardStatus shardStatus = shardStatuses.get(new Pair<>(clusterId, shardId));
 
-	private void initializeZk() throws Exception {
-		// TODO pass in client
-		Builder builder = CuratorFrameworkFactory.builder();
+		if (shardStatuses != null) {
+			XpipeMeta meta = metaHolder.getMeta();
 
-		builder.connectionTimeoutMs(config.getZkConnectionTimeoutMillis());
-		builder.connectString(config.getZkConnectionString());
-		builder.maxCloseWaitMs(config.getZkCloseWaitMillis());
-		builder.namespace(config.getZkNamespace());
-		builder.retryPolicy(new RetryNTimes(config.getZkRetries(), config.getSleepMsBetweenRetries()));
-		builder.sessionTimeoutMs(config.getZkSessionTimeoutMillis());
+			String thisDc = foundationService.getDataCenter();
+			ShardMeta activeShard = null;
+			for (DcMeta dc : meta.getDcs().values()) {
+				if (thisDc.equals(dc.getId())) {
+					// upstream keeper should locate in another dc
+					continue;
+				}
 
-		client = builder.build();
-		client.start();
-		client.blockUntilConnected();
+				ClusterMeta cluster = dc.findCluster(clusterId);
+				if (cluster != null) {
+					ShardMeta shard = cluster.findShard(shardId);
+					if (shard != null && dc.getId().equals(shard.getActiveDc())) {
+						activeShard = shard;
+						break;
+					}
+				}
+			}
+
+			KeeperMeta upstreamKeeper = null;
+			if (activeShard != null) {
+				for (KeeperMeta keeper : activeShard.getKeepers()) {
+					if (keeper.isActive()) {
+						upstreamKeeper = keeper;
+						break;
+					}
+				}
+			}
+
+			shardStatus.setUpstreamKeeper(upstreamKeeper);
+		}
 	}
 
 	private void observeLeader(final ClusterMeta cluster) throws Exception {
 
 		for (final ShardMeta shard : cluster.getShards().values()) {
-
-			updateRedisMaster(cluster.getId(), shard);
-
 			final String leaderLatchPath = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), cluster.getId(), shard.getId());
 
-			List<String> children = client.getChildren().usingWatcher(new CuratorWatcher() {
+			List<String> children = zkClient.get().getChildren().usingWatcher(new CuratorWatcher() {
 
 				@Override
 				public void process(WatchedEvent event) throws Exception {
-					updateShardLeader(client.getChildren().usingWatcher(this).forPath(leaderLatchPath), leaderLatchPath, cluster.getId(), shard.getId());
+					updateShardLeader(zkClient.get().getChildren().usingWatcher(this).forPath(leaderLatchPath), leaderLatchPath, cluster.getId(),
+							shard.getId());
 				}
 			}).forPath(leaderLatchPath);
 
 			updateShardLeader(children, leaderLatchPath, cluster.getId(), shard.getId());
-		}
-	}
-
-	/**
-	 * @param id
-	 * @param shard
-	 */
-	private void updateRedisMaster(String clusterId, ShardMeta shard) {
-		for (RedisMeta redis : shard.getRedises()) {
-			if (redis.isMaster()) {
-				shardState.put(new Pair<>(clusterId, shard.getId()), new Pair<>((KeeperMeta) null, redis));
-			}
 		}
 	}
 
@@ -132,7 +176,7 @@ public class DefaultMetaServer extends AbstractLifecycle implements MetaServer, 
 
 		if (children != null && !children.isEmpty()) {
 			List<String> sortedChildren = LockInternals.getSortedChildren("latch-", sorter, children);
-			String leaderId = new String(client.getData().forPath(leaderLatchPath + "/" + sortedChildren.get(0)));
+			String leaderId = new String(zkClient.get().getData().forPath(leaderLatchPath + "/" + sortedChildren.get(0)));
 
 			keeper = new KeeperMeta();
 			keeper.setActive(true);
@@ -147,46 +191,19 @@ public class DefaultMetaServer extends AbstractLifecycle implements MetaServer, 
 		}
 
 		Pair<String, String> key = new Pair<>(clusterId, shardId);
-		Pair<KeeperMeta, RedisMeta> state = shardState.get(key);
-		if (state == null) {
+		ShardStatus shardStatus = shardStatuses.get(key);
+		if (shardStatus == null) {
 			log.error("Unknown shard {} {}", clusterId, shardId);
 			// TODO omit unknown shard?
 		} else {
 			if (keeper != null) {
 				log.info("{} become active keeper of cluster:{} shard:{}", keeper, clusterId, shardId);
-				state.setKey(keeper);
+				shardStatus.setActiveKeeper(keeper);
 			} else {
 				log.info("all keeper of cluster:{} shard:{} is down", clusterId, shardId);
-				state.setKey(null);
+				shardStatus.setActiveKeeper(null);
 			}
 		}
-	}
-
-	@Override
-	protected void doInitialize() throws Exception {
-		super.doInitialize();
-
-	}
-
-	@Override
-	@PostConstruct
-	public void doStart() throws Exception {
-		super.doStart();
-
-		initializeZk();
-		// TODO
-		ClusterMeta cluster = metaHolder.getMeta().findDc(ServicesUtil.getFoundationService().getDataCenter()).getClusters().get("cluster1");
-		watchCluster(cluster);
-	}
-
-	@Override
-	protected void doStop() throws Exception {
-		super.doStop();
-	}
-
-	@Override
-	protected void doDispose() throws Exception {
-		super.doDispose();
 	}
 
 }

@@ -21,15 +21,21 @@ public class FakeFoundationService implements FoundationService {
 
 	private static AtomicBoolean logged = new AtomicBoolean(false);
 
+	private static String dataCenter = "jq";
+
+	public static void setDataCenter(String dataCenter) {
+		FakeFoundationService.dataCenter = dataCenter;
+	}
+
 	public FakeFoundationService() {
 		if (logged.compareAndSet(false, true)) {
-			log.info("data center is {}", System.getProperty("idc", "jq"));
+			log.info("data center is {}", dataCenter);
 		}
 	}
 
 	@Override
 	public String getDataCenter() {
-		return System.getProperty("idc", "jq");
+		return dataCenter;
 	}
 
 }

@@ -6,10 +6,10 @@ import org.springframework.context.annotation.Configuration;
 /**
  * @author marsqing
  *
- * May 26, 2016 6:23:55 PM
+ *         May 26, 2016 6:23:55 PM
  */
 @Configuration
-@ComponentScan("com.ctrip.xpipe.redis.metaserver")
+@ComponentScan({ "com.ctrip.xpipe.redis.core", "com.ctrip.xpipe.redis.metaserver" })
 public class MetaServerContextConfig {
 
 }

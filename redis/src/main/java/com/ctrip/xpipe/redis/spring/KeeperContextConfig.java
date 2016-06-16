@@ -6,10 +6,10 @@ import org.springframework.context.annotation.Configuration;
 /**
  * @author marsqing
  *
- * May 26, 2016 6:23:55 PM
+ *         May 26, 2016 6:23:55 PM
  */
 @Configuration
-@ComponentScan("com.ctrip.xpipe.redis.keeper")
+@ComponentScan({ "com.ctrip.xpipe.redis.core", "com.ctrip.xpipe.redis.keeper" })
 public class KeeperContextConfig {
 
 }
