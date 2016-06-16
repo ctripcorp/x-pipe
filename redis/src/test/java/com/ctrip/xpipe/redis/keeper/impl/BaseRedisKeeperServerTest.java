@@ -1,20 +1,17 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
 import org.apache.curator.retry.RetryNTimes;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
+import com.ctrip.xpipe.redis.core.CoreConfig;
+import com.ctrip.xpipe.redis.core.DefaultCoreConfig;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.ShardMeta;
@@ -26,7 +23,7 @@ import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
  *
  *         2016年4月21日 下午5:42:29
  */
-public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest {
+public class BaseRedisKeeperServerTest extends AbstractRedisKeeperTest {
 
 	@Before
 	public void beforeDefaultRedisKeeperServerTest() throws Exception {
@@ -34,37 +31,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest {
 		startRegistry();
 	}
 
-	@Test
-	public void startKeeper4444() throws Exception {
-
-		System.setProperty("idc", "oy");
-		System.setProperty("metaServerPort", "9748");
-		System.setProperty("zkNamespace", "xpipe2");
-		startKeeper("keeper4444.xml", "oy");
-	}
-
-	@Test
-	public void startKeeper5555() throws Exception {
-
-		System.setProperty("idc", "oy");
-		System.setProperty("metaServerPort", "9748");
-		System.setProperty("zkNamespace", "xpipe2");
-		startKeeper("keeper5555.xml", "oy");
-	}
-
-	@Test
-	public void startKeeper6666() throws Exception {
-
-		startKeeper("keeper6666.xml", "jq");
-	}
-
-	@Test
-	public void startKeeper7777() throws Exception {
-
-		startKeeper("keeper7777.xml", "jq");
-	}
-
-	private void startKeeper(String keeperConfigFile, String dc) throws Exception {
+	protected void startKeeper(String keeperConfigFile, String dc) throws Exception {
 
 		XpipeMeta xpipe = DefaultSaxParser.parse(getClass().getClassLoader().getResourceAsStream(keeperConfigFile));
 		ClusterMeta cluster = xpipe.findDc(dc).findCluster("cluster1");
@@ -73,7 +40,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest {
 			throw new RuntimeException("wrong keeper config");
 		}
 
-		DefaultKeeperConfig config = new DefaultKeeperConfig();
+		DefaultCoreConfig config = new DefaultCoreConfig();
 		setupZkNodes(cluster, config);
 		startKeepers(cluster);
 	}
@@ -87,14 +54,14 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest {
 
 				File storeDir = new File(getTestFileDir() + "/" + index);
 				logger.info("[startKeepers]{},{},{}", cluster.getId(), shard.getId(), storeDir);
-				ReplicationStoreManager  replicationStoreManager = createReplicationStoreManager(cluster.getId(), shard.getId(), storeDir);
+				ReplicationStoreManager replicationStoreManager = createReplicationStoreManager(cluster.getId(), shard.getId(), storeDir);
 				createRedisKeeperServer(keeper, replicationStoreManager, metaServiceManager);
 				index++;
 			}
 		}
 	}
 
-	private void setupZkNodes(ClusterMeta cluster, KeeperConfig config) throws Exception {
+	private void setupZkNodes(ClusterMeta cluster, CoreConfig config) throws Exception {
 		CuratorFramework client = initializeZK(config);
 		for (ShardMeta shard : cluster.getShards().values()) {
 			String path = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), cluster.getId(), shard.getId());
@@ -102,7 +69,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest {
 		}
 	}
 
-	private CuratorFramework initializeZK(KeeperConfig config) throws InterruptedException {
+	private CuratorFramework initializeZK(CoreConfig config) throws InterruptedException {
 		Builder builder = CuratorFrameworkFactory.builder();
 
 		builder.connectionTimeoutMs(config.getZkConnectionTimeoutMillis());
@@ -117,12 +84,5 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest {
 		client.blockUntilConnected();
 
 		return client;
-	}
-
-	@After
-	public void afterOneBoxTest() throws IOException {
-
-		System.out.println("Press any key to exit");
-		System.in.read();
 	}
 }
