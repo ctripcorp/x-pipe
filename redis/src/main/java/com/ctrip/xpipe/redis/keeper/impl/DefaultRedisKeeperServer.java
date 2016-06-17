@@ -18,7 +18,6 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.core.CoreConfig;
 import com.ctrip.xpipe.redis.core.DefaultCoreConfig;
-import com.ctrip.xpipe.redis.core.zk.ZkClient;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -30,6 +29,7 @@ import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.cluster.ElectContext;
 import com.ctrip.xpipe.redis.keeper.cluster.LeaderElector;
+import com.ctrip.xpipe.redis.keeper.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
@@ -86,24 +86,25 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private KeeperMeta currentKeeperMeta;
 	private LeaderElector leaderElector;
-	private ZkClient zkClient;
+
+	private LeaderElectorManager leaderElectorManager;
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, ReplicationStoreManager replicationStoreManager, 
-			MetaServiceManager metaServiceManager, ZkClient zkClient){
-		this(currentKeeperMeta, replicationStoreManager, metaServiceManager, null, null, zkClient);
+			MetaServiceManager metaServiceManager, LeaderElectorManager leaderElectorManager){
+		this(currentKeeperMeta, replicationStoreManager, metaServiceManager, null, null, leaderElectorManager);
 	}
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, ReplicationStoreManager replicationStoreManager, 
 			MetaServiceManager metaServiceManager, 
 			ScheduledExecutorService scheduled, 
 			CommandRequester commandRequester,
-			ZkClient zkClient){
+			LeaderElectorManager leaderElectorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
 		this.shardId = currentKeeperMeta.parent().getId();
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.replicationStoreManager = replicationStoreManager;
 		this.metaServiceManager = metaServiceManager;
-		this.zkClient = zkClient;
+		this.leaderElectorManager = leaderElectorManager;
 		if(scheduled == null){
 			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(clusterId + "-" + shardId));
 		}
@@ -121,8 +122,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		String leaderElectionZKPath = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), clusterId, shardId);
 		String leaderElectionID = String.format("%s:%s:%s", currentKeeperMeta.getIp(), currentKeeperMeta.getPort(), currentKeeperMeta.getId());
 		ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);
-		LeaderElector elector = new LeaderElector(ctx, zkClient.get());
-		return elector;
+		return leaderElectorManager.createLeaderElector(ctx);
 	}
 
 	@Override

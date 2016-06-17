@@ -5,13 +5,12 @@ package com.ctrip.xpipe.redis.metaserver;
 
 import java.io.ByteArrayInputStream;
 
-import javax.annotation.PostConstruct;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.zk.ZkClient;
 import com.ctrip.xpipe.redis.keeper.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.keeper.transform.DefaultSaxParser;
@@ -23,7 +22,7 @@ import com.ctrip.xpipe.redis.metaserver.config.MetaServerConfig;
  *         Jun 12, 2016 3:13:52 PM
  */
 @Component
-public class DefaultMetaHolder implements MetaHolder {
+public class DefaultMetaHolder extends AbstractLifecycle implements MetaHolder {
 
 	private static Logger log = LoggerFactory.getLogger(DefaultMetaHolder.class);
 
@@ -35,8 +34,7 @@ public class DefaultMetaHolder implements MetaHolder {
 
 	private XpipeMeta meta;
 
-	@PostConstruct
-	private void initialize() throws Exception {
+	protected void doStart() throws Exception {
 		String path = config.getZkMetaStoragePath();
 		byte[] metaBytes = zkClient.get().getData().forPath(path);
 		if (metaBytes == null || metaBytes.length == 0) {

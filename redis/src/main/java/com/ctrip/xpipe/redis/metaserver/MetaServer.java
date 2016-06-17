@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.metaserver;
 
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
@@ -9,7 +10,7 @@ import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
  *
  *         May 25, 2016 2:37:05 PM
  */
-public interface MetaServer {
+public interface MetaServer extends TopElement {
 
 	KeeperMeta getActiveKeeper(String clusterId, String shardId);
 

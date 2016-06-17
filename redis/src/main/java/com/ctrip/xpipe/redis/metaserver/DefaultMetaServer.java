@@ -5,8 +5,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.recipes.locks.LockInternals;
 import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
@@ -19,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.CoreConfig;
 import com.ctrip.xpipe.redis.core.zk.ZkClient;
 import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
@@ -36,7 +35,7 @@ import com.ctrip.xpipe.utils.ServicesUtil;
  *         May 25, 2016 5:24:27 PM
  */
 @Component
-public class DefaultMetaServer implements MetaServer {
+public class DefaultMetaServer extends AbstractLifecycle implements MetaServer {
 
 	private static Logger log = LoggerFactory.getLogger(DefaultMetaServer.class);
 
@@ -53,8 +52,11 @@ public class DefaultMetaServer implements MetaServer {
 
 	private FoundationService foundationService;
 
-	@PostConstruct
-	public void initialize() throws Exception {
+	@Override
+	protected void doStart() throws Exception {
+		metaHolder.start();
+		zkClient.start();
+		
 		foundationService = ServicesUtil.getFoundationService();
 
 		Map<String, ClusterMeta> clusters = metaHolder.getMeta().findDc(foundationService.getDataCenter()).getClusters();

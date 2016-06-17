@@ -51,8 +51,8 @@ public class StartMetaServer extends JettyServer {
 		start(connectToZk("127.0.0.1:" + zkPort), meta);
 	}
 
-	public void start(CuratorFramework client, DcMeta meta) throws Exception {
-		start(client, extractDcMeta(meta));
+	public void start(DcMeta meta) throws Exception {
+		start(connectToZk("127.0.0.1:" + zkPort), extractDcMeta(meta));
 	}
 
 	private String extractDcMeta(DcMeta meta) throws Exception {

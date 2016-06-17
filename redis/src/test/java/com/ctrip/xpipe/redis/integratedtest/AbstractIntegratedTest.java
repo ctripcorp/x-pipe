@@ -17,11 +17,9 @@ import org.xml.sax.SAXException;
 
 import com.ctrip.xpipe.foundation.FakeFoundationService;
 import com.ctrip.xpipe.redis.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.DefaultCoreConfig;
-import com.ctrip.xpipe.redis.core.zk.DefaultZkClient;
-import com.ctrip.xpipe.redis.core.zk.ZkClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.keeper.entity.DcMeta;
@@ -107,6 +105,8 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 		startMetaServer(dcMeta, dcInfo);
 
 		MetaServiceManager metaServiceManager = createMetaServiceManager(dcInfo);
+		
+		LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcInfo);
 
 		logger.info("[startDc]{}\n\n", dc);
 
@@ -115,13 +115,17 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 			for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 				logger.info(remarkableMessage("[startShard]{}"), shardMeta.getId());
 				for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-					startKeeper(dcInfo, keeperMeta, metaServiceManager, dcInfo.getZkClient());
+					startKeeper(dcInfo, keeperMeta, metaServiceManager, leaderElectorManager);
 				}
 				for (RedisMeta redisMeta : shardMeta.getRedises()) {
 					startRedis(dcInfo, redisMeta);
 				}
 			}
 		}
+	}
+
+	private LeaderElectorManager createLeaderElectorManager(DcInfo dcInfo) {
+		return getRegistry().getComponent(LeaderElectorManager.class);
 	}
 
 	private MetaServiceManager createMetaServiceManager(DcInfo dcInfo) {
@@ -197,14 +201,14 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 		return dstFile;
 	}
 
-	private void startKeeper(DcInfo dcInfo, KeeperMeta keeperMeta, MetaServiceManager metaServiceManager, ZkClient zkClient) throws Exception {
+	private void startKeeper(DcInfo dcInfo, KeeperMeta keeperMeta, MetaServiceManager metaServiceManager, LeaderElectorManager leaderElectorManager) throws Exception {
 
 		logger.info(remarkableMessage("[startKeeper]{}, {}"), dcInfo, keeperMeta);
 		ReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
 				keeperMeta.parent().parent().getId(), keeperMeta.parent().getId(), 
 				new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort()));
 
-		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperMeta, replicationStoreManager, metaServiceManager, zkClient);
+		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperMeta, replicationStoreManager, metaServiceManager, leaderElectorManager);
 		add(redisKeeperServer);
 	}
 
@@ -222,7 +226,7 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 		startMetaServer = new StartMetaServer();
 		startMetaServer.setZkPort(dcInfo.getZkPort());
 		startMetaServer.setServerPort(dcInfo.getMetaServerPort());
-		startMetaServer.start(dcInfo.getZkClient().get(), dcMeta);
+		startMetaServer.start(dcMeta);
 	}
 
 	protected void stopServerListeningPort(int listenPort) throws ExecuteException, IOException {
@@ -248,7 +252,6 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 
 		private int metaServerPort;
 		private int zkPort;
-		private DefaultZkClient zkClient;
 
 		public DcInfo(int metaServerPort, int zkPort) throws Exception {
 			this.metaServerPort = metaServerPort;
@@ -262,20 +265,6 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 
 		public int getZkPort() {
 			return zkPort;
-		}
-
-		public synchronized DefaultZkClient getZkClient() throws Exception {
-			
-			if(zkClient != null){
-				return zkClient;
-			}
-			// TODO remove this when this test migrate to spring
-			zkClient = new DefaultZkClient();
-			DefaultCoreConfig config = new DefaultCoreConfig();
-			config.setZkConnectionString("127.0.0.1:" + zkPort);
-			zkClient.setConfig(config);
-			zkClient.initializeZk();
-			return zkClient;
 		}
 
 		@Override
