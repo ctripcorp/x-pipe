@@ -25,5 +25,9 @@ public class DefaultLeaderElectorManager extends AbstractLifecycle implements To
 	public LeaderElector createLeaderElector(ElectContext ctx) {
 		return new DefaultLeaderElector(ctx, zkClient.get());
 	}
+	
+	public void setZkClient(ZkClient zkClient) {
+		this.zkClient = zkClient;
+	}
 
 }

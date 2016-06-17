@@ -24,6 +24,5 @@ public class DataSyncTest extends AbstractSingleDcTest{
 	
 	@After
 	public void afterStartMetaServer() throws IOException{
-		
 	}
 }

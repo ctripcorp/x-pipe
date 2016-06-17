@@ -25,6 +25,11 @@ public class DefaultLeaderElector extends AbstractLifecycle implements LeaderEle
 	}
 
 	@Override
+	protected void doStart() throws Exception {
+		elect();
+	}
+	
+	@Override
 	public void elect() throws Exception {
 
 		latch = new LeaderLatch(zkClient, ctx.getLeaderElectionZKPath(), ctx.getLeaderElectionID());

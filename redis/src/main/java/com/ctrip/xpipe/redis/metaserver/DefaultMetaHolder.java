@@ -34,6 +34,7 @@ public class DefaultMetaHolder extends AbstractLifecycle implements MetaHolder {
 
 	private XpipeMeta meta;
 
+	@Override
 	protected void doStart() throws Exception {
 		String path = config.getZkMetaStoragePath();
 		byte[] metaBytes = zkClient.get().getData().forPath(path);

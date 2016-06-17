@@ -51,11 +51,18 @@ public class DefaultMetaServer extends AbstractLifecycle implements MetaServer {
 	private ConcurrentMap<Pair<String, String>, ShardStatus> shardStatuses = new ConcurrentHashMap<>();
 
 	private FoundationService foundationService;
+	
+	@Override
+	protected void doInitialize() throws Exception {
+		metaHolder.initialize();
+		zkClient.initialize();
+	}
 
 	@Override
 	protected void doStart() throws Exception {
-		metaHolder.start();
+		
 		zkClient.start();
+		metaHolder.start();
 		
 		foundationService = ServicesUtil.getFoundationService();
 
@@ -73,6 +80,19 @@ public class DefaultMetaServer extends AbstractLifecycle implements MetaServer {
 		for (ClusterMeta cluster : clusters.values()) {
 			watchCluster(cluster);
 		}
+	}
+	
+	@Override
+	protected void doStop() throws Exception {
+		metaHolder.stop();
+		zkClient.stop();
+	}
+	
+	@Override
+	protected void doDispose() throws Exception {
+		
+		metaHolder.dispose();;
+		zkClient.dispose();;
 	}
 
 	@Override

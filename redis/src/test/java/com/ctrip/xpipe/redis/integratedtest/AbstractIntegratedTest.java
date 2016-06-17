@@ -17,8 +17,11 @@ import org.xml.sax.SAXException;
 
 import com.ctrip.xpipe.foundation.FakeFoundationService;
 import com.ctrip.xpipe.redis.AbstractRedisTest;
+import com.ctrip.xpipe.redis.core.DefaultCoreConfig;
+import com.ctrip.xpipe.redis.core.zk.DefaultZkClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.cluster.DefaultLeaderElectorManager;
 import com.ctrip.xpipe.redis.keeper.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
@@ -124,8 +127,21 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 		}
 	}
 
-	private LeaderElectorManager createLeaderElectorManager(DcInfo dcInfo) {
-		return getRegistry().getComponent(LeaderElectorManager.class);
+	private LeaderElectorManager createLeaderElectorManager(DcInfo dcInfo) throws Exception {
+		
+		DefaultLeaderElectorManager leaderElectorManager = new DefaultLeaderElectorManager();
+		
+		
+		DefaultZkClient zkClient = new DefaultZkClient();
+		DefaultCoreConfig coreConfig = new DefaultCoreConfig();
+		coreConfig.setZkConnectionString("localhost:" + dcInfo.getZkPort());
+		zkClient.setConfig(coreConfig);
+		zkClient.initialize();
+		zkClient.start();
+		
+		
+		leaderElectorManager.setZkClient(zkClient);
+		return leaderElectorManager;
 	}
 
 	private MetaServiceManager createMetaServiceManager(DcInfo dcInfo) {
@@ -266,6 +282,7 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 		public int getZkPort() {
 			return zkPort;
 		}
+		
 
 		@Override
 		public String toString() {
