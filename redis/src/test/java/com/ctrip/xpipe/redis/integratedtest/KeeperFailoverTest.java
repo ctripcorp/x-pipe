@@ -44,7 +44,6 @@ public class KeeperFailoverTest extends AbstractSingleDcTest{
 
 	@After
 	public void afterKeeperFailOverTest() throws IOException{
-		waitForAnyKeyToExit();
 	}
 
 }

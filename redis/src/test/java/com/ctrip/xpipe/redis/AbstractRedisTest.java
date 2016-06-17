@@ -1,18 +1,25 @@
 package com.ctrip.xpipe.redis;
 
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import org.apache.commons.exec.CommandLine;
+import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.ExecuteException;
+import org.apache.curator.test.TestingServer;
 import org.junit.Assert;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.keeper.entity.RedisMeta;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBufAllocator;
 import redis.clients.jedis.Jedis;
@@ -93,5 +100,33 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		logger.info("[sendRandomMessage][end  ]{}", jedis);
 	}
 
+
+	@SuppressWarnings("resource")
+	protected void startZk(int zkPort) {
+		try {
+			logger.info(remarkableMessage("[startZK]{}"), zkPort);
+			new TestingServer(zkPort).start();
+		} catch (Exception e) {
+		}
+	}
+
+	protected void executeCommands(String... args) throws ExecuteException, IOException {
+
+		DefaultExecutor executor = new DefaultExecutor();
+		executor.execute(CommandLine.parse(StringUtil.join(" ", args)));
+	}
+
+	protected void executeScript(String file, String... args) throws ExecuteException, IOException {
+
+		URL url = getClass().getClassLoader().getResource(file);
+		if (url == null) {
+			url = getClass().getClassLoader().getResource("scripts/" + file);
+			if (url == null) {
+				throw new FileNotFoundException(file);
+			}
+		}
+		DefaultExecutor executor = new DefaultExecutor();
+		executor.execute(CommandLine.parse("sh -v " + url.getFile() + " " + StringUtil.join(" ", args)));
+	}
 
 }
