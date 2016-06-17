@@ -16,7 +16,7 @@ import org.xml.sax.SAXException;
 
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.zk.ZkClient;
+import com.ctrip.xpipe.redis.keeper.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.keeper.entity.DcMeta;
 import com.ctrip.xpipe.redis.keeper.entity.KeeperMeta;
@@ -113,7 +113,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			ReplicationStoreManager replicationStoreManager, MetaServiceManager metaServiceManager) throws Exception {
 
 		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper,
-				replicationStoreManager, metaServiceManager, getRegistry().getComponent(ZkClient.class));
+				replicationStoreManager, metaServiceManager, getRegistry().getComponent(LeaderElectorManager.class));
 
 		add(redisKeeperServer);
 		return redisKeeperServer;

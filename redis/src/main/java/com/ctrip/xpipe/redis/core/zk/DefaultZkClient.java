@@ -3,8 +3,6 @@
  */
 package com.ctrip.xpipe.redis.core.zk;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
@@ -12,6 +10,7 @@ import org.apache.curator.retry.RetryNTimes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.CoreConfig;
 import com.ctrip.xpipe.redis.util.XpipeThreadFactory;
 
@@ -21,15 +20,15 @@ import com.ctrip.xpipe.redis.util.XpipeThreadFactory;
  *         Jun 16, 2016 12:05:57 PM
  */
 @Component
-public class DefaultZkClient implements ZkClient {
+public class DefaultZkClient extends AbstractLifecycle implements ZkClient {
 
 	@Autowired
 	CoreConfig config;
 
 	private CuratorFramework client;
 
-	@PostConstruct
-	public void initializeZk() throws Exception {
+	@Override
+	protected void doStart() throws Exception {
 		Builder builder = CuratorFrameworkFactory.builder();
 
 		builder.connectionTimeoutMs(config.getZkConnectionTimeoutMillis());
