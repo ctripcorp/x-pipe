@@ -76,9 +76,17 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 	}
 
 
+	@SuppressWarnings("unchecked")
 	@Override
 	protected <T> Map<String, T> doGetComponents(Class<T> clazz) {
-		return null;
+		
+		Map<String, T> result = new HashMap<>();
+		for(Entry<String, Object> entry : components.entrySet()){
+			if(clazz.isAssignableFrom(entry.getValue().getClass())){
+				result.put(entry.getKey(), (T) entry.getValue());
+			}
+		}
+		return result;
 	}
 
 	@Override
@@ -106,5 +114,17 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 	@Override
 	public Map<String, Object> allComponents() {
 		return new HashMap<>(components);
+	}
+
+	@Override
+	public Map<String, Lifecycle> lifecycleCallable() {
+		Map<String, Lifecycle> result = new HashMap<>();
+		
+		for(Entry<String, Object> entry : components.entrySet()){
+			if(entry.getValue() instanceof Lifecycle){
+				result.put(entry.getKey(), (Lifecycle)entry.getValue());
+			}
+		}
+		return result;
 	}
 }

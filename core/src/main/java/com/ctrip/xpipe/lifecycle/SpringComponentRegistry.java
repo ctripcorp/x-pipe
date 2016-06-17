@@ -3,9 +3,10 @@ package com.ctrip.xpipe.lifecycle;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 
 
 /**
@@ -13,15 +14,14 @@ import org.springframework.context.ApplicationContextAware;
  *
  * Jun 17, 2016
  */
-public class SpringComponentRegistry extends AbstractComponentRegistry implements ApplicationContextAware{
+public class SpringComponentRegistry extends AbstractComponentRegistry{
 	
 	private ApplicationContext applicationContext;
-
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+	
+	public SpringComponentRegistry(ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
-		
 	}
+
 
 	@Override
 	public Object getComponent(String name) {
@@ -60,6 +60,23 @@ public class SpringComponentRegistry extends AbstractComponentRegistry implement
 		String []names = applicationContext.getBeanDefinitionNames();
 		for(String name : names){
 			result.put(name, applicationContext.getBean(name));
+		}
+		return result;
+	}
+
+	@Override
+	public Map<String, Lifecycle> lifecycleCallable() {
+		
+		Map<String, Lifecycle> result = new HashMap<>();
+		
+		String []names = applicationContext.getBeanDefinitionNames();
+		for(String name : names){
+			
+			Object bean = applicationContext.getBean(name);
+			//only call topelement in spring
+			if(bean instanceof Lifecycle && bean instanceof TopElement){
+				result.put(name, (Lifecycle)bean);
+			}
 		}
 		return result;
 	}

@@ -12,9 +12,8 @@ import org.springframework.context.annotation.Configuration;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
-
-
 
 /**
  * @author wenchao.meng
@@ -27,17 +26,21 @@ public class SpringComponentRegistryTest extends AbstractTest{
 	@Test
 	public void test() throws Exception{
 		
-		@SuppressWarnings("resource")
 		ApplicationContext applicationContext = new AnnotationConfigApplicationContext(TestFactory.class);
 		
-		ComponentRegistry componentRegistry = applicationContext.getBean(ComponentRegistry.class);
+		ComponentRegistry componentRegistry = new SpringComponentRegistry(applicationContext);
 
 		componentRegistry.initialize();
 		componentRegistry.start();
 		
 		Map<String, Lifecycle> objects = componentRegistry.getComponents(Lifecycle.class);
 		for(Lifecycle lifecycle : objects.values()){
-			Assert.assertTrue(lifecycle.getLifecycleState().isStarted());
+			
+			if(lifecycle instanceof TopElement){
+				Assert.assertTrue(lifecycle.getLifecycleState().isStarted());
+			}else{
+				Assert.assertTrue(lifecycle.getLifecycleState().isEmpty());
+			}
 		}
 		
 	}
@@ -52,7 +55,7 @@ public class SpringComponentRegistryTest extends AbstractTest{
 
 		@Bean
 		public Lifecycle create2(){
-			return new NoOpLifecycleObject();
+			return new TopNoOpLifecycleObject();
 		}
 
 		@Bean
@@ -60,10 +63,10 @@ public class SpringComponentRegistryTest extends AbstractTest{
 			return new Object();
 		}
 		
-		@Bean
-		public SpringComponentRegistry createRegistry(){
-			return new SpringComponentRegistry();
-		}
 	}
-
+	
+	
+	public static class TopNoOpLifecycleObject extends NoOpLifecycleObject implements TopElement{
+		
+	}
 }

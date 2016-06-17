@@ -1,6 +1,7 @@
 package com.ctrip.xpipe;
 
 
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -86,7 +87,10 @@ public class AbstractTest {
 	private ComponentRegistry getSpringRegistry() {
 		
 		ApplicationContext applicationContext = createSpringContext();
-		return applicationContext.getBean(SpringComponentRegistry.class);
+		if(applicationContext != null){
+			return new SpringComponentRegistry(applicationContext);
+		}
+		return null;
 	}
 
 	/**

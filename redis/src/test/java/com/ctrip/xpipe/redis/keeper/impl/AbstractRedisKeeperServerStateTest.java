@@ -24,8 +24,6 @@ public class AbstractRedisKeeperServerStateTest extends AbstractRedisKeeperTest{
 	@Before
 	public void beforeAbstractRedisKeeperServerStateTest() throws Exception{
 		
-		initRegistry();
-		
 		redisMasterMeta = createRedisMeta();
 		redisKeeperServer = createRedisKeeperServer();
 	}

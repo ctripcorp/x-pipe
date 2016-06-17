@@ -57,12 +57,9 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		
-		for(Object component : allComponents().values()){
-			if(component instanceof Lifecycle){
-				Lifecycle lifecycle = (Lifecycle) component;
-				if(lifecycle.getLifecycleState().canInitialize()){
-					lifecycle.initialize();
-				}
+		for(Lifecycle lifecycle : lifecycleCallable().values()){
+			if(lifecycle.getLifecycleState().canInitialize()){
+				lifecycle.initialize();
 			}
 		}
 	}
@@ -71,12 +68,9 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	protected void doStart() throws Exception {
 		super.doStart();
 		
-		for(Object component : allComponents().values()){
-			if(component instanceof Lifecycle){
-				Lifecycle lifecycle = (Lifecycle) component;
-				if(lifecycle.getLifecycleState().canStart()){
-					lifecycle.start();
-				}
+		for(Lifecycle lifecycle : lifecycleCallable().values()){
+			if(lifecycle.getLifecycleState().canStart()){
+				lifecycle.start();
 			}
 		}
 	}
@@ -85,13 +79,10 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	@Override
 	protected void doStop() throws Exception {
 		
-		for(Object component : allComponents().values()){
-			if(component instanceof Lifecycle){
-				Lifecycle lifecycle = (Lifecycle) component;
+		for(Lifecycle lifecycle : lifecycleCallable().values()){
 				if(lifecycle.getLifecycleState().canStop()){
 					lifecycle.stop();
 				}
-			}
 		}
 		super.doStop();
 		
@@ -100,12 +91,9 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	@Override
 	protected void doDispose() throws Exception {
 
-		for(Object component : allComponents().values()){
-			if(component instanceof Lifecycle){
-				Lifecycle lifecycle = (Lifecycle) component;
-				if(lifecycle.getLifecycleState().canDispose()){
-					lifecycle.dispose();
-				}
+		for(Lifecycle lifecycle : lifecycleCallable().values()){
+			if(lifecycle.getLifecycleState().canDispose()){
+				lifecycle.dispose();
 			}
 		}
 		super.doDispose();

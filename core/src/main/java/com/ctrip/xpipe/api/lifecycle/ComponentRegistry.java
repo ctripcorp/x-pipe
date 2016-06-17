@@ -26,7 +26,6 @@ public interface ComponentRegistry extends Lifecycle{
 	
 	Map<String, Object> allComponents();
 	
-	
-	
+	Map<String, Lifecycle> lifecycleCallable();
 	
 }

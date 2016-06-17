@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 
 /**
  * @author wenchao.meng
@@ -75,5 +76,52 @@ public class DefaultRegistry extends AbstractComponentRegistry{
 			result.putAll(springRegistry.allComponents());
 		}
 		return result;
+	}
+
+	@Override
+	public Map<String, Lifecycle> lifecycleCallable() {
+		
+		Map<String, Lifecycle>  result = new HashMap<>();
+		result.putAll(createdRegistry.lifecycleCallable());
+		if(springRegistry != null){
+			result.putAll(springRegistry.lifecycleCallable());
+		}
+		return result;
+	}
+	
+	@Override
+	protected void doInitialize() throws Exception {
+		
+		createdRegistry.initialize();
+		if(springRegistry != null){
+			springRegistry.initialize();
+		}
+	}
+	
+	@Override
+	protected void doStart() throws Exception {
+		
+		createdRegistry.start();
+		if(springRegistry != null){
+			springRegistry.start();
+		}
+	}
+	
+	@Override
+	protected void doStop() throws Exception {
+		
+		createdRegistry.stop();
+		if(springRegistry != null){
+			springRegistry.stop();
+		}
+	}
+	
+	@Override
+	protected void doDispose() throws Exception {
+
+		createdRegistry.dispose();
+		if(springRegistry != null){
+			springRegistry.dispose();
+		}
 	}
 }
