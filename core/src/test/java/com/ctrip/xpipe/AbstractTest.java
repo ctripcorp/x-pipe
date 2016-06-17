@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.slf4j.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -26,9 +27,11 @@ import org.junit.rules.TestName;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-import com.ctrip.xpipe.api.lifecycle.LifecycleRegistry;
+import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
-import com.ctrip.xpipe.lifecycle.DefaultLifecycleRedistry;
+import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
+import com.ctrip.xpipe.lifecycle.DefaultRegistry;
+import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.utils.OsUtils;
 
 /**
@@ -44,7 +47,7 @@ public class AbstractTest {
 
 	protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(OsUtils.getCpuCount());
 	
-	private LifecycleRegistry lifecycleRegistry = new DefaultLifecycleRedistry();
+	private ComponentRegistry componentRegistry;
 
 	@Rule
 	public TestName name = new TestName();
@@ -56,6 +59,9 @@ public class AbstractTest {
 	public void beforeAbstractTest() throws IOException{
 		
 		logger.info("[begin test]" + name.getMethodName());
+		
+		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
+		
 		
 		Thread.setDefaultUncaughtExceptionHandler(new DefaultExceptionHandler());
 		InputStream fins = getClass().getClassLoader().getResourceAsStream("xpipe-test.properties");
@@ -77,12 +83,28 @@ public class AbstractTest {
 		}
 	}
 
+	private ComponentRegistry getSpringRegistry() {
+		
+		ApplicationContext applicationContext = createSpringContext();
+		return applicationContext.getBean(SpringComponentRegistry.class);
+	}
+
+	/**
+	 * to be overriden by subclasses
+	 * @return
+	 */
+	protected  ApplicationContext createSpringContext() {
+		return null;
+	}
+
 	protected void initRegistry() throws Exception{
-		lifecycleRegistry.initialize();
+		
+		componentRegistry.initialize();
 	}
 
 	protected void startRegistry() throws Exception{
-		lifecycleRegistry.start();
+		
+		componentRegistry.start();
 	}
 
 	protected String randomString(){
@@ -162,15 +184,15 @@ public class AbstractTest {
 	}
 	
 	protected void add(Lifecycle lifecycle) throws Exception{
-		this.lifecycleRegistry.add(lifecycle);
+		this.componentRegistry.add(lifecycle);
 	}
 
 	protected void remove(Lifecycle lifecycle) throws Exception{
-		this.lifecycleRegistry.remove(lifecycle);
+		this.componentRegistry.remove(lifecycle);
 	}
 	
-	public LifecycleRegistry getLifecycleRegistry() {
-		return lifecycleRegistry;
+	public ComponentRegistry getRegistry() {
+		return componentRegistry;
 	}
 
 	
@@ -218,11 +240,11 @@ public class AbstractTest {
 	public void afterAbstractTest() throws IOException{
 		
 		try {
-			if(lifecycleRegistry.getLifecycleState().canStop()){
-				lifecycleRegistry.stop();
+			if(componentRegistry.getLifecycleState().canStop()){
+				componentRegistry.stop();
 			}
-			if(lifecycleRegistry.getLifecycleState().canDispose()){
-				lifecycleRegistry.dispose();
+			if(componentRegistry.getLifecycleState().canDispose()){
+				componentRegistry.dispose();
 			}
 		} catch (Exception e) {
 			logger.error("[afterAbstractTest]", e);

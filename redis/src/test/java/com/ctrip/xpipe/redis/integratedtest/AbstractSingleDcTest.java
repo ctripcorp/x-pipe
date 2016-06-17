@@ -4,10 +4,10 @@ package com.ctrip.xpipe.redis.integratedtest;
 import java.awt.IllegalComponentStateException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.keeper.entity.DcMeta;
@@ -103,12 +103,11 @@ public class AbstractSingleDcTest extends AbstractIntegratedTest{
 	
 	public RedisKeeperServer getRedisKeeperServerActive(){
 		
-		List<Lifecycle> redisKeeperServers = getLifecycleRegistry().getLifecycles(RedisKeeperServer.class);
+		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
 		
-		for(Lifecycle server : redisKeeperServers){
-			RedisKeeperServer redisKeeperServer = (RedisKeeperServer) server;
-			if(redisKeeperServer.getRedisKeeperServerState().isActive()){
-				return redisKeeperServer;
+		for(RedisKeeperServer server : redisKeeperServers.values()){
+			if(server.getRedisKeeperServerState().isActive()){
+				return server;
 			}
 		}
 		return null;

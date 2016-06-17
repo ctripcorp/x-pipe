@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.xml.sax.SAXException;
 
@@ -41,16 +42,25 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	
 	private String keeperConfigFile = "keeper6666.xml";
 
-	protected AnnotationConfigApplicationContext springCtx;
-
 	private int keeperServerPortMin = 7777, keeperServerPortMax = 7877;
 
 	@Before
-	public void beforeAbstractRedisKeeperTest() {
+	public void beforeAbstractRedisKeeperTest() throws Exception {
+		
 		doIdcInit();
-		springCtx = new AnnotationConfigApplicationContext(KeeperContextConfig.class);
-		metaServiceManager = springCtx.getBean(MetaServiceManager.class);
+		initRegistry();
+		
+		metaServiceManager = getRegistry().getComponent(MetaServiceManager.class);
+		
 	}
+	
+	@Override
+	protected ApplicationContext createSpringContext() {
+		
+		return new AnnotationConfigApplicationContext(KeeperContextConfig.class);
+	}
+	
+	
 
 	protected void doIdcInit() {
 	}
@@ -103,7 +113,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			ReplicationStoreManager replicationStoreManager, MetaServiceManager metaServiceManager) throws Exception {
 
 		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper,
-				replicationStoreManager, metaServiceManager, springCtx.getBean(ZkClient.class));
+				replicationStoreManager, metaServiceManager, getRegistry().getComponent(ZkClient.class));
 
 		add(redisKeeperServer);
 		return redisKeeperServer;
