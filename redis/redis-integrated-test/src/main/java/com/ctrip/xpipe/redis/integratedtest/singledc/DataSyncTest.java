@@ -18,11 +18,7 @@ public class DataSyncTest extends AbstractSingleDcTest{
 	@Test
 	public void simpleTest() throws Exception{
 		
-		try{
-			sendMessageToMasterAndTestSlaveRedis();
-		}catch(Throwable e){
-			e.printStackTrace();
-		}
+		sendMessageToMasterAndTestSlaveRedis();
 	}
 	
 	
