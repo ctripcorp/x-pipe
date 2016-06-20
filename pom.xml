@@ -48,17 +48,33 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<groupId>com.ctrip.xpipe.redis</groupId>
+				<artifactId>redis-core</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.ctrip.xpipe.redis</groupId>
+				<artifactId>redis-keeper</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.ctrip.xpipe.redis</groupId>
+				<artifactId>redis-meta</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
 				<groupId>com.ctrip.xpipe</groupId>
 				<artifactId>core</artifactId>
 				<type>test-jar</type>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>com.ctrip.xpipe</groupId>
-				<artifactId>core</artifactId>
-				<type>test</type>
+				<groupId>com.ctrip.xpipe.redis</groupId>
+				<artifactId>redis-core</artifactId>
+				<type>test-jar</type>
 				<version>${project.version}</version>
 			</dependency>
+
 			<!-- xpipe related -->
 
 			<dependency>
@@ -189,6 +205,19 @@
 						</execution>
 					</executions>
 				</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.0.0</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 				<plugin>
 					<groupId>org.unidal.maven.plugins</groupId>
 					<artifactId>codegen-maven-plugin</artifactId>

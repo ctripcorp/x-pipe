@@ -14,6 +14,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
+import com.ctrip.xpipe.utils.OffsetNotifierTest;
 
 /**
  * @author wenchao.meng
@@ -29,7 +30,8 @@ import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
 	DefaultLifecycleControllerTest.class,
 	DefaultLifecycleStateTest.class,
 	CreatedComponentRedistryTest.class,
-	SpringComponentRegistryTest.class
+	SpringComponentRegistryTest.class,
+	OffsetNotifierTest.class
 })
 public class AllTests {
 
