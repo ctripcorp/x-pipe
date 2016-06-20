@@ -13,6 +13,6 @@ public class RestApplication extends ResourceConfig {
 		register(CORSResponseFilter.class);
 		register(ObjectMapperProvider.class);
 		register(MultiPartFeature.class);
-		packages("com.ctrip.xpipe.redis.metaserver.rest.resource");
+		packages("com.ctrip.xpipe.redis.meta.server.rest.resource");
 	}
 }

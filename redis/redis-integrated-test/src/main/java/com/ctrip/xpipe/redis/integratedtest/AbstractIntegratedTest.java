@@ -38,7 +38,6 @@ import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaService;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaServiceManager;
 import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
-import com.ctrip.xpipe.redis.meta.server.StartMetaServer;
 /**
  * @author wenchao.meng
  *
@@ -49,7 +48,7 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 	private String integrated_test_config_file = "integrated-test.xml";
 
 	private String redis_template = "conf/redis_template.conf";
-	private StartMetaServer startMetaServer;
+	private MetaServerPrepareResourcesAndStart startMetaServer;
 	
 	private Map<String, DcInfo>  dcs = new ConcurrentHashMap<>();
 	
@@ -239,9 +238,7 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 		
 		startZk(dcInfo.getZkPort());
 		
-		startMetaServer = new StartMetaServer();
-		startMetaServer.setZkPort(dcInfo.getZkPort());
-		startMetaServer.setServerPort(dcInfo.getMetaServerPort());
+		startMetaServer = new MetaServerPrepareResourcesAndStart(dcInfo.getZkPort(), dcInfo.getMetaServerPort());
 		startMetaServer.start(dcMeta);
 	}
 

@@ -127,7 +127,8 @@ public abstract class AbstractRedisTest extends AbstractTest{
 			}
 		}
 		DefaultExecutor executor = new DefaultExecutor();
-		executor.execute(CommandLine.parse("sh -v " + url.getFile() + " " + StringUtil.join(" ", args)));
+		String command = "sh -v " + url.getFile() + " " + StringUtil.join(" ", args);
+		executor.execute(CommandLine.parse(command));
 	}
 
 }

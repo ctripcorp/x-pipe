@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest;
+package com.ctrip.xpipe.redis.integratedtest.singledc;
 
 
 import java.awt.IllegalComponentStateException;
@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 
 

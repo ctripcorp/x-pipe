@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest;
+package com.ctrip.xpipe.redis.integratedtest.singledc;
 
 import java.io.IOException;
 
@@ -17,8 +17,12 @@ public class DataSyncTest extends AbstractSingleDcTest{
 	
 	@Test
 	public void simpleTest() throws Exception{
-
-		sendMessageToMasterAndTestSlaveRedis();
+		
+		try{
+			sendMessageToMasterAndTestSlaveRedis();
+		}catch(Throwable e){
+			e.printStackTrace();
+		}
 	}
 	
 	

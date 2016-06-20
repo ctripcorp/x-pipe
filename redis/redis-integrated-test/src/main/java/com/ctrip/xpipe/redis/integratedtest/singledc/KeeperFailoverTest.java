@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest;
+package com.ctrip.xpipe.redis.integratedtest.singledc;
 
 import java.io.IOException;
 

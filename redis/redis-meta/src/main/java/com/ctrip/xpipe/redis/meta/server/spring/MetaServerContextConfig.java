@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
  *         May 26, 2016 6:23:55 PM
  */
 @Configuration
-@ComponentScan({ "com.ctrip.xpipe.redis.core", "com.ctrip.xpipe.redis.metaserver" })
+@ComponentScan({ "com.ctrip.xpipe.redis.core", "com.ctrip.xpipe.redis.meta.server" })
 public class MetaServerContextConfig {
 
 }
