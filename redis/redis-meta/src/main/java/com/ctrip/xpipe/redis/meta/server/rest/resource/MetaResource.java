@@ -24,6 +24,8 @@ import com.ctrip.xpipe.redis.meta.server.MetaServer;
 @Singleton
 @Produces(MediaType.APPLICATION_JSON)
 public class MetaResource extends BaseRecource {
+	
+	public static String FAKE_ADDRESS = "0.0.0.0:0";
 
 	@Path("/{clusterId}/{shardId}")
 	@GET
@@ -71,15 +73,14 @@ public class MetaResource extends BaseRecource {
 
 		RedisMeta master = doGetRedisMaster(clusterId, shardId);
 
-		if (master == null) {
-			return Response.status(Status.OK).entity("").build();
-		} else {
-			if ("plain".equals(format)) {
-				String plainRes = String.format("%s:%s", master.getIp(), master.getPort());
-				return Response.status(Status.OK).entity(plainRes).build();
-			} else {
-				return Response.status(Status.OK).entity(master).build();
+		if ("plain".equals(format)) {
+			if (master == null) {
+				return Response.status(Status.OK).entity(FAKE_ADDRESS).build();
 			}
+			String plainRes = String.format("%s:%s", master.getIp(), master.getPort());
+			return Response.status(Status.OK).entity(plainRes).build();
+		} else {
+			return Response.status(Status.OK).entity(master == null ? "": master).build();
 		}
 	}
 

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class DefaultCoreConfig implements CoreConfig {
+	
 	@Override
 	public int getZkConnectionTimeoutMillis() {
 		return 3000;

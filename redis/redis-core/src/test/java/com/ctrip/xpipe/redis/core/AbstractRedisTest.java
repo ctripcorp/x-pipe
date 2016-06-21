@@ -76,6 +76,8 @@ public abstract class AbstractRedisTest extends AbstractTest{
 
 		for(RedisMeta redisSlave : redisSlaves){
 			
+			logger.info(remarkableMessage("[assertRedisEquals]redisSlave:" + redisSlave));
+			
 			Jedis slave = createJedis(redisSlave);
 			Assert.assertEquals(values.size(), slave.keys("*").size());
 			

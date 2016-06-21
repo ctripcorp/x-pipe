@@ -5,6 +5,7 @@ import java.util.Set;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.keeper.protocal.protocal.BulkStringParser;
@@ -70,6 +71,12 @@ public class InfoHandler extends AbstractCommandHandler{
 			
 			sb.append("# Replication" + RedisProtocol.CRLF);
 			sb.append("role:" + redisKeeperServer.role() + RedisProtocol.CRLF);
+			
+			RedisMaster redisMaster =  redisKeeperServer.getRedisMaster();
+			String masterHost = redisMaster == null ? null: redisMaster.masterEndPoint().getHost();
+			Integer masterPort = redisMaster == null ? null: redisMaster.masterEndPoint().getPort();
+			sb.append("master_host:" + masterHost + RedisProtocol.CRLF );
+			sb.append("master_port:"  + masterPort +  RedisProtocol.CRLF );
 			Set<RedisSlave> slaves = redisKeeperServer.slaves();
 			sb.append("connected_slaves:" + slaves.size() + RedisProtocol.CRLF);
 			int slaveIndex = 0;

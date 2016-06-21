@@ -6,6 +6,9 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
 import org.apache.curator.retry.RetryNTimes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.unidal.test.jetty.JettyServer;
 
 import com.ctrip.xpipe.redis.core.CoreConfig;
@@ -15,6 +18,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.meta.server.MetaServerLifecycleManager;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.util.MetaUpdateUtil;
@@ -25,6 +29,8 @@ import com.ctrip.xpipe.redis.meta.server.util.MetaUpdateUtil;
  * Jun 20, 2016
  */
 public class MetaServerPrepareResourcesAndStart extends JettyServer{
+
+	private Logger logger = LoggerFactory.getLogger(MetaServerLifecycleManager.class);
 	
 	private int zkPort, serverPort;
 	
@@ -34,8 +40,10 @@ public class MetaServerPrepareResourcesAndStart extends JettyServer{
 	}
 	
 	
-	public void start(DcMeta meta) throws Exception {
-		start(connectToZk("127.0.0.1:" + zkPort), meta);
+	public ApplicationContext start(DcMeta meta) throws Exception {
+		
+		System.setProperty(MetaServerLifecycleManager.META_SERVER_START_KEY, "false");
+		return start(connectToZk("127.0.0.1:" + zkPort), meta);
 	}
 
 	private XpipeMeta extractDcMeta(DcMeta meta) throws Exception {
@@ -74,7 +82,7 @@ public class MetaServerPrepareResourcesAndStart extends JettyServer{
 		return xpipe;
 	}
 
-	public void start(CuratorFramework client, DcMeta dcMeta) throws Exception {
+	public ApplicationContext start(CuratorFramework client, DcMeta dcMeta) throws Exception {
 		
 		setupZkNodes(client, dcMeta);
 		
@@ -82,6 +90,24 @@ public class MetaServerPrepareResourcesAndStart extends JettyServer{
 		MetaUpdateUtil.updateMeta(client, xpipeMeta.toString());
 
 		startServer();
+		
+		return setupResouces(dcMeta);
+	}
+
+	private ApplicationContext setupResouces(DcMeta dcMeta) throws Exception {
+		
+		ApplicationContext applicationContext = MetaServerLifecycleManager.getApplicationContext();
+		
+		logger.info("[setupResouces][set zkConnectionString]");
+		DefaultCoreConfig coreConfig = applicationContext.getBean(DefaultCoreConfig.class);
+		coreConfig.setZkConnectionString(String.format("%s:%d", "127.0.0.1", zkPort));
+		
+		logger.info("[setupResouces][start MetaServerLifecycleManager]");
+		MetaServerLifecycleManager metaServerLifecycleManager = applicationContext.getBean(MetaServerLifecycleManager.class);
+		metaServerLifecycleManager.startAll();
+		
+		return applicationContext;
+		
 	}
 
 	private CuratorFramework connectToZk(String connectString) throws InterruptedException {

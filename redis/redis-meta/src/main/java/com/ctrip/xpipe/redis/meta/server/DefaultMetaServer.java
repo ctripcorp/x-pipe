@@ -113,6 +113,15 @@ public class DefaultMetaServer extends AbstractLifecycle implements MetaServer {
 		ShardStatus status = shardStatuses.get(new Pair<>(clusterId, shardId));
 		return status == null ? null : status.getRedisMaster();
 	}
+	
+	public void updateUpstreamKeeper(String clusterId, String shardId, KeeperMeta keeperMeta){
+		
+		ShardStatus status = shardStatuses.get(new Pair<>(clusterId, shardId));
+		
+		if(status != null){
+			status.setUpstreamKeeper(keeperMeta);
+		}
+	}
 
 	@Override
 	public KeeperMeta getUpstreamKeeper(String clusterId, String shardId) {

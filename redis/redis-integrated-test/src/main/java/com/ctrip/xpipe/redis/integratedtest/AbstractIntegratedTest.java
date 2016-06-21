@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,6 +16,7 @@ import org.apache.commons.io.IOUtils;
 import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.junit.After;
 import org.junit.Before;
+import org.springframework.context.ApplicationContext;
 import org.xml.sax.SAXException;
 
 import com.ctrip.xpipe.foundation.FakeFoundationService;
@@ -43,7 +46,7 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
  *
  *         Jun 13, 2016
  */
-public class AbstractIntegratedTest extends AbstractRedisTest {
+public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	private String integrated_test_config_file = "integrated-test.xml";
 
@@ -59,7 +62,7 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 	public void beforeAbstractIntegratedTest() throws Exception {
 		
 		dcs.put("jq", new DcInfo(9747, 2181));
-		dcs.put("fq", new DcInfo(9748, 2182));
+		dcs.put("fq", new DcInfo(9847, 2182));
 		loadXpipeMeta("integrated-test.xml");
 
 		initRegistry();
@@ -239,7 +242,8 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 		startZk(dcInfo.getZkPort());
 		
 		startMetaServer = new MetaServerPrepareResourcesAndStart(dcInfo.getZkPort(), dcInfo.getMetaServerPort());
-		startMetaServer.start(dcMeta);
+		ApplicationContext applicationContext = startMetaServer.start(dcMeta);
+		dcInfo.setApplicationContext(applicationContext);
 	}
 
 	protected void stopServerListeningPort(int listenPort) throws ExecuteException, IOException {
@@ -265,6 +269,7 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 
 		private int metaServerPort;
 		private int zkPort;
+		private ApplicationContext applicationContext;
 
 		public DcInfo(int metaServerPort, int zkPort) throws Exception {
 			this.metaServerPort = metaServerPort;
@@ -280,12 +285,140 @@ public class AbstractIntegratedTest extends AbstractRedisTest {
 			return zkPort;
 		}
 		
-
+		public void setApplicationContext(ApplicationContext applicationContext) {
+			this.applicationContext = applicationContext;
+		}
+		
+		public ApplicationContext getApplicationContext() {
+			return applicationContext;
+		}
+		
 		@Override
 		public String toString() {
 			return String.format("zkPort:%d, metaServerPort:%d", zkPort, metaServerPort);
 		}
 	}
+
+	protected List<RedisMeta> getRedises(String dc) {
+
+		List<RedisMeta> result = new LinkedList<>();
+		for(DcMeta dcMeta : getXpipeMeta().getDcs().values()){
+			if(!dcMeta.getId().equals(dc)){
+				continue;
+			}
+			for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
+				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+					result.addAll(shardMeta.getRedises());
+				}
+			}
+		}
+		return result;
+	}
+
+	protected List<RedisMeta> getRedisSlaves(String dc){
+
+		List<RedisMeta> result = new LinkedList<>();
+		
+		for(RedisMeta redisMeta : getRedises(dc)){
+			if(!redisMeta.isMaster()){
+				result.add(redisMeta);
+			}
+		}
+		return result;
+	}
+	
+	
+	protected Map<String, DcInfo> getDcInfos(){
+		return this.dcs;
+		
+	}
+	
+	protected List<DcMeta> getDcMetas(){
+		
+		List<DcMeta> result = new LinkedList<>();
+		
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			result.add(dcMeta);
+		}
+		return result;
+	}
+
+	protected RedisMeta getRedisMaster(){
+
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			List<RedisMeta> redises = getRedises(dcMeta.getId());
+			for(RedisMeta redisMeta : redises){
+				if(redisMeta.isMaster()){
+					return redisMeta;
+				}
+			}
+		}
+		return null;
+	}
+	
+	protected DcMeta activeDc(){
+		
+		DcMeta activeDcMeta = null;
+		
+		for(DcMeta dcMeta : getXpipeMeta().getDcs().values()){
+			if(activeDcMeta != null){
+				break;
+			}
+			for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
+				if(activeDcMeta != null){
+					break;
+				}
+				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+					if(activeDcMeta != null){
+						break;
+					}
+					for(RedisMeta redisMeta : shardMeta.getRedises()){
+						if(redisMeta.getMaster()){
+							activeDcMeta = dcMeta;
+							break;
+						}
+					}
+				}
+			}
+		}
+		return activeDcMeta; 
+	}
+	
+	protected List<DcMeta> backupDcs(){
+		
+		List<DcMeta> result = new LinkedList<>();
+		
+		DcMeta active = activeDc();
+		for(DcMeta dcMeta : getXpipeMeta().getDcs().values()){
+			if(!dcMeta.getId().equals(active.getId())){
+				result.add(dcMeta);
+			}
+		}
+		return result;
+	}
+	
+	
+	protected List<RedisKeeperServer> getRedisKeeperServers(String dc){
+		
+		List<RedisKeeperServer> result = new LinkedList<>();
+		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
+		for(RedisKeeperServer redisKeeperServer : redisKeeperServers.values()){
+			String currentDc = redisKeeperServer.getCurrentKeeperMeta().parent().parent().parent().getId();
+			if(dc.equals(currentDc)){
+				result.add(redisKeeperServer);
+			}
+			
+		}
+		return result;
+	}
+
+	protected void sendMessageToMasterAndTestSlaveRedis() {
+		sendRandomMessage(getRedisMaster(), getTestMessageCount());
+		sleep(6000);
+		assertRedisEquals(getRedisMaster(), getRedisSlaves());
+	}
+
+	protected abstract List<RedisMeta> getRedisSlaves();
 
 	@After
 	public void afterAbstractIntegratedTest(){
