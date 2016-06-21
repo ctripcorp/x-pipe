@@ -167,7 +167,6 @@
 				<groupId>org.unidal.framework</groupId>
 				<artifactId>test-framework</artifactId>
 				<version>${unidal.version}</version>
-				<scope>test</scope>
 				<exclusions>
 					<exclusion>
 						<groupId>org.mortbay.jetty</groupId>
