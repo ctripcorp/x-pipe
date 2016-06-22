@@ -5,8 +5,11 @@ import java.util.Set;
 
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.keeper.protocal.CommandRequester;
-import com.ctrip.xpipe.redis.keeper.protocal.PsyncObserver;
+import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
+import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
+import com.ctrip.xpipe.redis.core.store.RdbFileListener;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 
 import io.netty.channel.Channel;
 
@@ -57,12 +60,14 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Observer{
 	
 	RedisMaster getRedisMaster();
 	
+	void promoteSlave(String ip, int port) throws RedisSlavePromotionException;
+	
 	public static enum PROMOTION_STATE{
 		
 		NORMAL,
 		BEGIN_PROMOTE_SLAVE,//promote slave to master. 1.should not receive commands, 2. disconnect with master
 		SLAVE_PROMTED,
-		REPLICATION_META_EXCHAGED
+		REPLICATION_META_EXCHANGED
 		
 	}
 }

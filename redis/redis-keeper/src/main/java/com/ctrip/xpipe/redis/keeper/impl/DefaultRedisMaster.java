@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
+
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -19,21 +20,21 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.redis.core.protocal.CmdContext;
+import com.ctrip.xpipe.redis.core.protocal.Command;
+import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
+import com.ctrip.xpipe.redis.core.protocal.RequestResponseCommandListener;
+import com.ctrip.xpipe.redis.core.protocal.cmd.KinfoCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
+import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
-import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.keeper.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
-import com.ctrip.xpipe.redis.keeper.protocal.CmdContext;
-import com.ctrip.xpipe.redis.keeper.protocal.Command;
-import com.ctrip.xpipe.redis.keeper.protocal.CommandRequester;
-import com.ctrip.xpipe.redis.keeper.protocal.RequestResponseCommandListener;
-import com.ctrip.xpipe.redis.keeper.protocal.cmd.KinfoCommand;
-import com.ctrip.xpipe.redis.keeper.protocal.cmd.Psync;
-import com.ctrip.xpipe.redis.keeper.protocal.cmd.Replconf;
-import com.ctrip.xpipe.redis.keeper.protocal.cmd.Replconf.ReplConfType;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -261,7 +262,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	private Command psyncCommand(){
 		
-		Psync psync = new Psync(redisKeeperServer.getCurrentKeeperMeta(), replicationStoreManager);
+		Psync psync = new Psync(endpoint, redisKeeperServer.getCurrentKeeperMeta(), replicationStoreManager);
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
 		return psync;

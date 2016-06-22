@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.keeper.CommandsListener;
+import com.ctrip.xpipe.redis.core.store.CommandsListener;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

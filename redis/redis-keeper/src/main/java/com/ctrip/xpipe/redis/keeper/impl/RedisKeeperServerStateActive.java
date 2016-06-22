@@ -6,13 +6,13 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.ctrip.xpipe.redis.keeper.ReplicationStoreMeta;
+import com.ctrip.xpipe.redis.keeper.impl.RedisSlavePRomotor.SlavePromotionInfo;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 
-import com.ctrip.xpipe.redis.keeper.handler.SlaveOfCommandHandler.SlavePromotionInfo;
 
 
 /**
@@ -98,13 +98,13 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 				SlavePromotionInfo promotionInfo = (SlavePromotionInfo) info;
 				RedisMeta newMaster = masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
 							, promotionInfo.getNewMasterRunid(), promotionInfo.getNewMasterReplOffset());
-				this.promotionState = PROMOTION_STATE.REPLICATION_META_EXCHAGED;
+				this.promotionState = PROMOTION_STATE.REPLICATION_META_EXCHANGED;
 				
 				//TODO should be called!!
 				this.getShardStatus().setRedisMaster(newMaster);
 				reconnectMaster();
 				break;
-			case REPLICATION_META_EXCHAGED:
+			case REPLICATION_META_EXCHANGED:
 				throw new IllegalStateException("state should no be changed outside:" + promotionState);
 			default:
 				throw new IllegalStateException("unkonow state:" + promotionState);
@@ -134,7 +134,7 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 	@Override
 	protected void reconnectMaster() {
 		
-		if(promotionState == PROMOTION_STATE.NORMAL || promotionState == PROMOTION_STATE.REPLICATION_META_EXCHAGED){
+		if(promotionState == PROMOTION_STATE.NORMAL || promotionState == PROMOTION_STATE.REPLICATION_META_EXCHANGED){
 			super.reconnectMaster();
 		}else{
 			logger.warn("[reconnectMaster][can reconnect][promotioning...]{}, {}", promotionState, this.redisKeeperServer);

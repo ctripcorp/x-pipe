@@ -5,6 +5,7 @@ import java.awt.IllegalComponentStateException;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Assert;
 import org.junit.Before;
 
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -34,7 +35,7 @@ public class AbstractSingleDcTest extends AbstractIntegratedTest{
 		}
 		
 		startDc(dcMeta.getId());
-		sleep(1000);
+		sleep(7000);
 	}
 	
 	public DcMeta getDcMeta() {
@@ -47,7 +48,10 @@ public class AbstractSingleDcTest extends AbstractIntegratedTest{
 	}
 	
 	protected List<RedisMeta> getRedisSlaves(){
-		return getRedisSlaves(dcMeta.getId());
+		
+		List<RedisMeta> result = getRedisSlaves(dcMeta.getId());
+		Assert.assertTrue(result.size() >= 1);
+		return result;
 	}
 	
 	public RedisKeeperServer getRedisKeeperServerActive(){
@@ -60,6 +64,11 @@ public class AbstractSingleDcTest extends AbstractIntegratedTest{
 			}
 		}
 		return null;
+	}
+	
+	protected DcInfo getDcInfo(){
+		
+		return getDcInfos().get(dcMeta.getId());
 	}
 	
 

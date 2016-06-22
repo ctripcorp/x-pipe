@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.keeper.netty;
 
 
 import com.ctrip.xpipe.exception.XpipeException;
-import com.ctrip.xpipe.redis.keeper.protocal.Command;
-import com.ctrip.xpipe.redis.keeper.protocal.CommandRequester;
+import com.ctrip.xpipe.redis.core.protocal.Command;
+import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;

@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.integratedtest.multidc;
 
 
+
 import java.util.LinkedList;
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.springframework.context.ApplicationContext;
 
@@ -12,6 +14,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.meta.server.DefaultMetaServer;
+
 
 /**
  * @author wenchao.meng
@@ -36,8 +39,11 @@ public abstract class AbstractMultiDcTest extends AbstractIntegratedTest{
 		
 		List<RedisMeta> result = new LinkedList<>();
 		for(DcMeta dcMeta : getDcMetas()){
-			result.addAll(getRedisSlaves(dcMeta.getId()));
+			List<RedisMeta> slaves = getRedisSlaves(dcMeta.getId());
+			Assert.assertTrue(slaves.size() >= 1);
+			result.addAll(slaves);
 		}
+		Assert.assertTrue(result.size() >= 1);
 		return result;
 	}
 

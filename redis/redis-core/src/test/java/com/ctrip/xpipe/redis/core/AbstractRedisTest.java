@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.core;
 
-
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Socket;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -19,9 +18,13 @@ import org.apache.curator.test.TestingServer;
 import org.junit.Assert;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.Command;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.utils.StringUtil;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import redis.clients.jedis.Jedis;
 
@@ -132,5 +135,31 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		String command = "sh -v " + url.getFile() + " " + StringUtil.join(" ", args);
 		executor.execute(CommandLine.parse(command));
 	}
+
+	protected SERVER_ROLE getRedisServerRole(RedisMeta slave) {
+
+		try(Socket socket = new Socket(slave.getIp(), slave.getPort())) {
+			
+			Command command = new InfoCommand("replication");
+			ByteBuf byteBuf = command.request();
+			byte []data = new byte[byteBuf.readableBytes()];
+			byteBuf.readBytes(data);
+			socket.getOutputStream().write(data);
+			socket.getOutputStream().flush();
+
+			while(true){
+				String line = readLine(socket.getInputStream());
+				String []parts = line.split(":");
+				if(parts.length >= 2 && parts[0].equals("role")){
+					String role = parts[1].trim();
+					return SERVER_ROLE.of(role);
+				}
+			}
+		} catch (IOException e) {
+			logger.error("[getRedisServerRole]" + slave ,e);
+		}
+		return SERVER_ROLE.UNKNOWN;
+	}
+
 
 }

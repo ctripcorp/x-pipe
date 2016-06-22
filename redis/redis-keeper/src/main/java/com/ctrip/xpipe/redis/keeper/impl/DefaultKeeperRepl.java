@@ -5,9 +5,9 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.redis.keeper.CommandsListener;
+import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
-import com.ctrip.xpipe.redis.keeper.ReplicationStore;
 
 /**
  * @author wenchao.meng

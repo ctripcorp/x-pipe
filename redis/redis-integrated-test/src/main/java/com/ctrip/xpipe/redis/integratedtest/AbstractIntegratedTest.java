@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
 
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,10 +29,10 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.redis.core.zk.DefaultZkClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.cluster.DefaultLeaderElectorManager;
 import com.ctrip.xpipe.redis.keeper.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
@@ -248,7 +249,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	protected void stopServerListeningPort(int listenPort) throws ExecuteException, IOException {
 
-		logger.info("[stopMetaServer]");
+		logger.info("[stopServerListeningPort]{}", listenPort);
 		executeScript("kill_server.sh", String.valueOf(listenPort));
 	}
 
@@ -413,9 +414,30 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	}
 
 	protected void sendMessageToMasterAndTestSlaveRedis() {
+		
 		sendRandomMessage(getRedisMaster(), getTestMessageCount());
 		sleep(6000);
 		assertRedisEquals(getRedisMaster(), getRedisSlaves());
+	}
+
+	protected void changeRedisMaster(RedisMeta redisMaster, RedisMeta toPromote) {
+		
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			for(ClusterMeta clusterMeta: dcMeta.getClusters().values()){
+				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+					
+					if(shardMeta.getRedises().remove(redisMaster)){
+						for(RedisMeta redisMeta : shardMeta.getRedises()){
+							if(redisMeta.getIp().equals(toPromote.getIp()) && redisMeta.getPort().equals(toPromote.getPort())){
+								redisMeta.setMaster(true);
+								return;
+							}
+						}
+						throw new IllegalStateException("[can not find slave to promte]" + redisMaster + "," + toPromote); 
+					}
+				}
+			}
+		}
 	}
 
 	protected abstract List<RedisMeta> getRedisSlaves();

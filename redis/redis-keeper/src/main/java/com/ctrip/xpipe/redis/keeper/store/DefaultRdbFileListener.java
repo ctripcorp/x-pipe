@@ -8,10 +8,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import com.ctrip.xpipe.redis.keeper.RdbFileListener;
+import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
+import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.keeper.protocal.cmd.Psync;
-import com.ctrip.xpipe.redis.keeper.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.utils.StringUtil;
 
 /**
@@ -35,7 +35,7 @@ public class DefaultRdbFileListener implements RdbFileListener{
 
 	@Override
 	public void onFileData(FileChannel fileChannel, long pos, long len) {
-		
+		System.out.println("onFileData " + pos + "," + len);
 		if(len == -1){
 			
 			if(logger.isInfoEnabled()){

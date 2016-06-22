@@ -6,6 +6,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
+import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
+
 /**
  * @author wenchao.meng
  *
@@ -13,6 +16,10 @@ import org.junit.runners.Suite.SuiteClasses;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+	ArrayParserTest.class,
+	BulkStringParserTest.class,
+	ArrayParserTest.class
+	
 })
 public class AllTests {
 

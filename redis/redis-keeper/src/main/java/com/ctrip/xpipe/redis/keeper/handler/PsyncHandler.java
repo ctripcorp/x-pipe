@@ -4,13 +4,13 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 import java.io.IOException;
 
+import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
+import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.ctrip.xpipe.redis.keeper.protocal.cmd.Psync;
-import com.ctrip.xpipe.redis.keeper.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.store.DefaultRdbFileListener;
 
 /**

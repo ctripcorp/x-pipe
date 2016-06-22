@@ -13,12 +13,23 @@ public interface Server extends Lifecycle, Observable{
 	public static enum SERVER_ROLE{
 		MASTER,
 		SLAVE,
+		UNKNOWN,
 		KEEPER;
 		
 		public String toString() {
 			return super.toString().toLowerCase();
 			
 		};
+		
+		public static SERVER_ROLE of(String roleDesc){
+			
+			for(SERVER_ROLE role : SERVER_ROLE.values()){
+				if(role.toString().equalsIgnoreCase(roleDesc)){
+					return role;
+				}
+			}
+			return SERVER_ROLE.UNKNOWN;
+		} 
 	}
 
 	SERVER_ROLE role();

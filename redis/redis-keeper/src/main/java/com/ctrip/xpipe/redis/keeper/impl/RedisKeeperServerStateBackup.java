@@ -13,13 +13,12 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
-import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-
 import com.ctrip.xpipe.redis.keeper.handler.PsyncHandler;
-import com.ctrip.xpipe.redis.keeper.protocal.RedisProtocol;
 
 /**
  * @author wenchao.meng

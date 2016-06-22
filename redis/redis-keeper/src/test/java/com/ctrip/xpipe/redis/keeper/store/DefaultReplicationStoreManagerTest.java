@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.keeper.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

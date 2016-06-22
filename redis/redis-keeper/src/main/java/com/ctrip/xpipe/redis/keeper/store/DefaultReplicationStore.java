@@ -16,10 +16,10 @@ import org.unidal.helper.Files.IO;
 
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.keeper.CommandsListener;
-import com.ctrip.xpipe.redis.keeper.RdbFileListener;
-import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.ctrip.xpipe.redis.keeper.ReplicationStoreMeta;
+import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.core.store.RdbFileListener;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.store.RdbStore.Status;
 
 import io.netty.buffer.ByteBuf;

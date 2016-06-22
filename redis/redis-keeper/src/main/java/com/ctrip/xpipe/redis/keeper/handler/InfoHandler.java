@@ -2,13 +2,13 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 import java.util.Set;
 
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.keeper.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.keeper.protocal.protocal.BulkStringParser;
 
 /**
  * @author wenchao.meng

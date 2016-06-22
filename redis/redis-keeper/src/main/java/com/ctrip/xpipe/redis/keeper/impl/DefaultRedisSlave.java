@@ -7,12 +7,12 @@ import com.ctrip.xpipe.api.monitor.DelayMonitor;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
 import com.ctrip.xpipe.netty.NotClosableFileRegion;
-import com.ctrip.xpipe.redis.keeper.CommandsListener;
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
+import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.keeper.protocal.RedisClientProtocol;
-import com.ctrip.xpipe.redis.keeper.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.OsUtils;
 
@@ -104,6 +104,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	@Override
 	public void beginWriteCommands(long beginOffset) {
 		
+		logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
 		slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
 		redisKeeperServer.getKeeperRepl().addCommandsListener(beginOffset, this);
 	}
@@ -125,7 +126,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	public void onCommand(ByteBuf byteBuf) {
 		
 		ByteBuf b2 = byteBuf.duplicate();
-		
+		logger.info("[onCommand]{}", this);
 		if(debugDelay){
 			long createTime = getTime(b2);
 			delayMonitor.addData(createTime);

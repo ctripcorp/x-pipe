@@ -2,10 +2,10 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 
 
+import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.keeper.protocal.protocal.RedisErrorParser;
-import com.ctrip.xpipe.redis.keeper.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient.CAPA;
 import com.ctrip.xpipe.utils.StringUtil;
 

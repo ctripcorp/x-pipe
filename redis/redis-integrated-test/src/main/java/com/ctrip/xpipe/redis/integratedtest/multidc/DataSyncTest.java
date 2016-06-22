@@ -12,8 +12,8 @@ public class DataSyncTest extends AbstractMultiDcTest{
 	
 	@Test
 	public void testSync(){
-		sendMessageToMasterAndTestSlaveRedis();
 		
+		sendMessageToMasterAndTestSlaveRedis();
 	}
 
 }

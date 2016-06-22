@@ -123,7 +123,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	private void cmpActiveKeeper(KeeperMeta oldActiveKeeperMeta, KeeperMeta activeKeeper) {
 
 		if(ObjectUtils.equals(oldActiveKeeperMeta, activeKeeper)){
-			logger.info("[cmpActiveKeeper][equal]");
+			logger.debug("[cmpActiveKeeper][equal]");
 			return;
 		}
 		

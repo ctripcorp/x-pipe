@@ -20,25 +20,25 @@ import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.core.CoreConfig;
 import com.ctrip.xpipe.redis.core.DefaultCoreConfig;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultCommandRequester;
+import com.ctrip.xpipe.redis.core.store.RdbFileListener;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
-import com.ctrip.xpipe.redis.keeper.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.cluster.ElectContext;
 import com.ctrip.xpipe.redis.keeper.cluster.LeaderElector;
 import com.ctrip.xpipe.redis.keeper.cluster.LeaderElectorManager;
-
+import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
-import com.ctrip.xpipe.redis.keeper.protocal.CommandRequester;
-import com.ctrip.xpipe.redis.keeper.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.keeper.protocal.cmd.DefaultCommandRequester;
 import com.ctrip.xpipe.thread.NamedThreadFactory;
 import com.ctrip.xpipe.utils.OsUtils;
 
@@ -424,6 +424,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public RedisMaster getRedisMaster() {
 		return keeperRedisMaster;
+	}
+
+	@Override
+	public void promoteSlave(String ip, int port) throws RedisSlavePromotionException {
+		
+		logger.info("[promoteSlave]{}:{}", ip, port);
+		RedisSlavePRomotor promotor = new RedisSlavePRomotor(this, ip, port);
+		promotor.promote();
 	}
 
 }

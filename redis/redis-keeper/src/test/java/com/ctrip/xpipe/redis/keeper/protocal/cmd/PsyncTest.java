@@ -8,10 +8,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
-import com.ctrip.xpipe.redis.keeper.ReplicationStore;
-import com.ctrip.xpipe.redis.keeper.ReplicationStoreManager;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -43,7 +45,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		replicationStoreManager = createReplicationStoreManager();
 		replicationStore = replicationStoreManager.create();
 		
-		psync = new Psync(createKeeperMeta(), replicationStoreManager);
+		psync = new Psync(new DefaultEndPoint("127.0.0.1", 1234), createKeeperMeta(), replicationStoreManager);
 	}
 
 	@Test

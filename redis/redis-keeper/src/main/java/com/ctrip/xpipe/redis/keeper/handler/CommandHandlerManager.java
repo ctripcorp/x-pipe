@@ -4,9 +4,9 @@ package com.ctrip.xpipe.redis.keeper.handler;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.keeper.CommandHandler;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
-import com.ctrip.xpipe.redis.keeper.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.utils.StringUtil;
 
 
