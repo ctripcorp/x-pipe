@@ -27,14 +27,21 @@ public abstract class AbstractMultiDcTest extends AbstractIntegratedTestTemplate
 	@Before
 	public void beforeAbstractMultiDcTest() throws Exception{
 
-		for(DcMeta dcMeta : getDcMetas()){
+		if(startAllDc()){
 			
-			startDc(dcMeta.getId());
+			for(DcMeta dcMeta : getDcMetas()){
+				
+				startDc(dcMeta.getId());
+			}
+			updateUpstreamKeeper();
+			sleep(6000);
 		}
-		updateUpstreamKeeper();
-		sleep(6000);
 	}
 	
+	protected boolean startAllDc() {
+		return true;
+	}
+
 	@Override
 	protected List<RedisMeta> getRedisSlaves() {
 		

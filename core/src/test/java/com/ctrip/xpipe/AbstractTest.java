@@ -75,13 +75,17 @@ public class AbstractTest {
 		}
 		
 		File file = new File(getTestFileDir());
-		if(file.exists()){
+		if(file.exists() && deleteTestDir()){
 			FileUtils.forceDelete(file);
 		}
 		boolean testSucceed = file.mkdirs();
 		if(!testSucceed){
 			throw new IllegalStateException("test dir make failed!" + file);
 		}
+	}
+
+	protected boolean deleteTestDir() {
+		return true;
 	}
 
 	private ComponentRegistry getSpringRegistry() {

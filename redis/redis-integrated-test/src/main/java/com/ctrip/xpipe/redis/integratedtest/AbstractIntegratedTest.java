@@ -91,6 +91,12 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		}
 	}
 
+	
+	protected String getDc(int index) {
+		return getDcMetas().get(0).getId();
+	}
+
+
 	private void loadXpipeMeta(String string) throws SAXException, IOException {
 
 		InputStream ins = getClass().getClassLoader().getResourceAsStream(integrated_test_config_file);
@@ -131,7 +137,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		}
 	}
 
-	private LeaderElectorManager createLeaderElectorManager(DcInfo dcInfo) throws Exception {
+	protected LeaderElectorManager createLeaderElectorManager(DcInfo dcInfo) throws Exception {
 		
 		DefaultLeaderElectorManager leaderElectorManager = new DefaultLeaderElectorManager();
 		
@@ -148,7 +154,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return leaderElectorManager;
 	}
 
-	private MetaServiceManager createMetaServiceManager(DcInfo dcInfo) {
+	protected MetaServiceManager createMetaServiceManager(DcInfo dcInfo) {
 
 		DefaultMetaServerLocator metaServerLocator = new DefaultMetaServerLocator();
 		metaServerLocator.setAddress(String.format("%s:%d", "localhost", dcInfo.getMetaServerPort()));
@@ -162,7 +168,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return metaServiceManager;
 	}
 
-	private void startRedis(DcInfo dcInfo, RedisMeta redisMeta) throws ExecuteException, IOException {
+	protected void startRedis(DcInfo dcInfo, RedisMeta redisMeta) throws ExecuteException, IOException {
 		
 		logger.info(remarkableMessage("[startRedis]{}, {}"), dcInfo, redisMeta);
 		
@@ -221,7 +227,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return dstFile;
 	}
 
-	private void startKeeper(DcInfo dcInfo, KeeperMeta keeperMeta, MetaServiceManager metaServiceManager, LeaderElectorManager leaderElectorManager) throws Exception {
+	protected void startKeeper(DcInfo dcInfo, KeeperMeta keeperMeta, MetaServiceManager metaServiceManager, LeaderElectorManager leaderElectorManager) throws Exception {
 
 		logger.info(remarkableMessage("[startKeeper]{}, {}"), dcInfo, keeperMeta);
 		ReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
@@ -332,6 +338,15 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	
 	protected Map<String, DcInfo> getDcInfos(){
 		return this.dcs;
+		
+	}
+	
+	protected DcMeta getDcMeta(String dc){
+		return xpipeMeta.getDcs().get(dc);
+	}
+	
+	protected List<KeeperMeta> getDcKeepers(String dc, String clusterId, String shardId){
+		return xpipeMeta.getDcs().get(dc).getClusters().get(clusterId).getShards().get(shardId).getKeepers();
 		
 	}
 	
