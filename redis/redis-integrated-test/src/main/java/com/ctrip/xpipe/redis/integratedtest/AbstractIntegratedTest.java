@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.integratedtest;
 
 
 
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -62,8 +63,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	@Before
 	public void beforeAbstractIntegratedTest() throws Exception {
 		
-		dcs.put("jq", new DcInfo(9747, 2181));
-		dcs.put("fq", new DcInfo(9847, 2182));
+		dcs.put("jq", new DcInfo(randomPort(9747, 9846), randomPort(2181, 2280)));
+		dcs.put("fq", new DcInfo(randomPort(9847, 9946), randomPort(2281, 2380)));
 		loadXpipeMeta("integrated-test.xml");
 
 		initRegistry();
@@ -413,13 +414,6 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return result;
 	}
 
-	protected void sendMessageToMasterAndTestSlaveRedis() {
-		
-		sendRandomMessage(getRedisMaster(), getTestMessageCount());
-		sleep(6000);
-		assertRedisEquals(getRedisMaster(), getRedisSlaves());
-	}
-
 	protected void changeRedisMaster(RedisMeta redisMaster, RedisMeta toPromote) {
 		
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
@@ -440,8 +434,21 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		}
 	}
 
-	protected abstract List<RedisMeta> getRedisSlaves();
+	public RedisKeeperServer getRedisKeeperServerActive(String dc){
+		
+		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
+		
+		for(RedisKeeperServer server : redisKeeperServers.values()){
+			String currentDc =server.getCurrentKeeperMeta().parent().parent().parent().getId(); 
+			if(dc.equals(currentDc)  && server.getRedisKeeperServerState().isActive()){
+				return server;
+			}
+		}
+		return null;
+	}
 
+	protected abstract List<RedisMeta> getRedisSlaves();
+	
 	@After
 	public void afterAbstractIntegratedTest(){
 		

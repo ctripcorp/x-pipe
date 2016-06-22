@@ -9,6 +9,10 @@ import java.io.IOException;
  */
 public interface ReplicationStoreManager {
 	
+	ReplicationStore createIfDirtyOrNotExist() throws IOException;
+	
+	ReplicationStore createIfNotExist() throws IOException;
+
 	/**
 	 * create new replication store
 	 * @return

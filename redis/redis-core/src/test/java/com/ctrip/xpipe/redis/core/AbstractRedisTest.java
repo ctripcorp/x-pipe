@@ -160,6 +160,6 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		}
 		return SERVER_ROLE.UNKNOWN;
 	}
-
+	
 
 }

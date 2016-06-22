@@ -171,8 +171,6 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 				}
 			}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
 		}
-		
-		
 	}
 
 
@@ -180,10 +178,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	protected ReplicationStore getCurrentReplicationStore(){
 		
 		try {
-			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
-			if(replicationStore == null){
-				replicationStore = replicationStoreManager.create();
-			}
+			ReplicationStore replicationStore = replicationStoreManager.createIfNotExist();
 			return replicationStore;
 		} catch (IOException e) {
 			logger.error("[getCurrentReplicationStore]" + this, e);

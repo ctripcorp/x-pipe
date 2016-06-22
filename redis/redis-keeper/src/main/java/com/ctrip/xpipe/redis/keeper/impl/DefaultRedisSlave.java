@@ -66,7 +66,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	public void ack(Long ackOff) {
 		
 		if(logger.isDebugEnabled()){
-			logger.debug("[ack]" + this + "," + ackOff);
+			logger.debug("[ack]{}, {}", this , ackOff);
 		}
 		
 		this.replAckOff = ackOff;
@@ -126,7 +126,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	public void onCommand(ByteBuf byteBuf) {
 		
 		ByteBuf b2 = byteBuf.duplicate();
-		logger.info("[onCommand]{}", this);
+		logger.debug("[onCommand]{}", this);
 		if(debugDelay){
 			long createTime = getTime(b2);
 			delayMonitor.addData(createTime);

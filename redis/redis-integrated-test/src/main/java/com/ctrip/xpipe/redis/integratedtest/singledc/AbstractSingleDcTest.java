@@ -1,16 +1,14 @@
 package com.ctrip.xpipe.redis.integratedtest.singledc;
 
-
 import java.awt.IllegalComponentStateException;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
 
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
+import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTestTemplate;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 
 
@@ -20,7 +18,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
  *
  * Jun 15, 2016
  */
-public class AbstractSingleDcTest extends AbstractIntegratedTest{
+public class AbstractSingleDcTest extends AbstractIntegratedTestTemplate{
 	
 	private DcMeta dcMeta;
 	
@@ -54,16 +52,8 @@ public class AbstractSingleDcTest extends AbstractIntegratedTest{
 		return result;
 	}
 	
-	public RedisKeeperServer getRedisKeeperServerActive(){
-		
-		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
-		
-		for(RedisKeeperServer server : redisKeeperServers.values()){
-			if(server.getRedisKeeperServerState().isActive()){
-				return server;
-			}
-		}
-		return null;
+	public RedisKeeperServer getRedisKeeperServerActive() {
+		return super.getRedisKeeperServerActive(dcMeta.getId());
 	}
 	
 	protected DcInfo getDcInfo(){

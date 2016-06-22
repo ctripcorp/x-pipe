@@ -282,10 +282,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected ReplicationStore getCurrentReplicationStore(){
 		
 		try {
-			ReplicationStore replicationStore = replicationStoreManager.getCurrent(); 
-			if(replicationStore == null){
-				replicationStore = replicationStoreManager.create();
-			}
+			ReplicationStore replicationStore = replicationStoreManager.createIfNotExist(); 
 			return replicationStore;
 		} catch (IOException e) {
 			logger.error("[getCurrentReplicationStore]" + this, e);

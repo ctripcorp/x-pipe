@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -9,6 +10,9 @@ import java.io.Writer;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
@@ -25,6 +29,8 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	private final static String META_FILE = "store_manager_meta.properties";
 
 	private static final String LATEST_STORE_DIR = "latest.store.dir";
+	
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	private String clusterName;
 
@@ -47,12 +53,39 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 		this.baseDir = new File(baseDir, clusterName + "/" + shardName);
 		metaFile = new File(this.baseDir, META_FILE);
 	}
+	
+	@Override
+	public synchronized ReplicationStore createIfDirtyOrNotExist() throws IOException{
+		
+		logger.info("[createIfDirtyOrNotExist]{}", baseDir);
+		
+		ReplicationStore currentReplicationStore = getCurrent();
+		if(currentReplicationStore == null || !currentReplicationStore.isFresh()){
+			currentReplicationStore = create();
+		}
+		return currentReplicationStore;
+	}
+	
+	@Override
+	public ReplicationStore createIfNotExist() throws IOException {
+		logger.info("[createIfNotExist]{}", baseDir);
+		ReplicationStore currentReplicationStore = getCurrent();
+		if(currentReplicationStore == null){
+			currentReplicationStore = create();
+		}
+		return currentReplicationStore;
+	}
+
+
 
 	@Override
 	public synchronized ReplicationStore create() throws IOException {
 		// TODO dir naming
+		
 		File storeBaseDir = new File(baseDir, UUID.randomUUID().toString());
 		storeBaseDir.mkdirs();
+		
+		logger.info("[create]{}",  storeBaseDir);
 
 		recrodLatestStore(storeBaseDir.getName());
 
@@ -117,6 +150,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 			if (meta != null) {
 				if (meta.getProperty(LATEST_STORE_DIR) != null) {
 					File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
+					logger.info("[getCurrent][recover previous]{}", latestStoreDir);
 					if (latestStoreDir.isDirectory()) {
 						currentStore.set(new DefaultReplicationStore(latestStoreDir, config.getRedisCommandFileSize()));
 					}

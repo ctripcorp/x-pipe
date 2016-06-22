@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser.BulkStringP
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBuf;
@@ -238,7 +239,7 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 				logger.info("[handleResponse][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
 				
 				ReplicationStore oldStore = currentReplicationStore;
-				long newKeeperBeginOffset = 2;
+				long newKeeperBeginOffset = ReplicationStoreMeta.DEFAULT_KEEPER_BEGIN_OFFSET;
 				if(oldStore != null){
 					try {
 						oldStore.close();
@@ -248,7 +249,8 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 					newKeeperBeginOffset = oldStore.getKeeperBeginOffset() + (oldStore.endOffset() - oldStore.beginOffset()) + 1;
 					oldStore.delete();
 				}
-				currentReplicationStore = createNewReplicationStore();
+				currentReplicationStore = createIfDirtyOrNotExist();
+				logger.info("[handleRedisResponse][set keepermeta]{}, {}", keeperMeta.getId(), newKeeperBeginOffset);
 				currentReplicationStore.setKeeperMeta(keeperMeta.getId(), newKeeperBeginOffset);
 				notifyReFullSync();
 			}
@@ -277,10 +279,10 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	}
 
 
-	private ReplicationStore createNewReplicationStore() {
+	private ReplicationStore createIfDirtyOrNotExist() {
 		
 		try {
-			return replicationStoreManager.create();
+			return replicationStoreManager.createIfDirtyOrNotExist();
 		} catch (IOException e) {
 			throw new XpipeRuntimeException("[createNewReplicationStore]" + replicationStoreManager, e);
 		}

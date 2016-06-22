@@ -8,6 +8,8 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
  *         Jun 1, 2016
  */
 public class ReplicationStoreMeta {
+	
+	public static final int DEFAULT_KEEPER_BEGIN_OFFSET = 2;
 
 	private String masterRunid;
 	private DefaultEndPoint masterAddress;
@@ -17,7 +19,7 @@ public class ReplicationStoreMeta {
 	
 	private boolean active;
 
-	private long keeperBeginOffset;
+	private long keeperBeginOffset = DEFAULT_KEEPER_BEGIN_OFFSET;
 	private String keeperRunid;
 
 	

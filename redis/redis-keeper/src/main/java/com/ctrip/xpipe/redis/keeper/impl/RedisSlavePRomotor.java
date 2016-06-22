@@ -158,7 +158,7 @@ public class RedisSlavePRomotor {
 			
 			if(slaveCmdOffset == null || slaveCmdOffset < masterCmdOffset){
 				if (logger.isInfoEnabled()) {
-					logger.info("[waitUntilSlaveSync][wait for slave to sync with keeper before promote to master]{} < {}", slaveCmdOffset, masterCmdOffset);
+					logger.info("[waitUntilSlaveSync]{}, {} < {}", redisSlave, slaveCmdOffset, masterCmdOffset);
 				}
 				// TODO timeout
 				try {

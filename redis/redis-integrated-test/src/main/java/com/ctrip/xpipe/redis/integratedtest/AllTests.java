@@ -6,7 +6,8 @@ package com.ctrip.xpipe.redis.integratedtest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-import com.ctrip.xpipe.redis.integratedtest.multidc.MultiDcTests;
+import com.ctrip.xpipe.redis.integratedtest.multidc.AllMultiDcTests;
+import com.ctrip.xpipe.redis.integratedtest.singledc.AllSingleDcTests;
 
 /**
  * @author wenchao.meng
@@ -15,7 +16,8 @@ import com.ctrip.xpipe.redis.integratedtest.multidc.MultiDcTests;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
-	MultiDcTests.class
+	AllMultiDcTests.class,
+	AllSingleDcTests.class
 })
 public class AllTests {
 

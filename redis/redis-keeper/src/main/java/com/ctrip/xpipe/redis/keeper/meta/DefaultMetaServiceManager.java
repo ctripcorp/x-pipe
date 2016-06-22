@@ -162,7 +162,7 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 			}
 
 			if(metaInfo.updateIfNotEqual(shardStatus)){
-				logger.info("[doRun][shardStatusChanged]{}", shardStatus);
+				logger.debug("[doRun][shardStatusChanged]{}", shardStatus);
 				notifyObservers(new MetaUpdateInfo(clusterId, shardId, shardStatus));
 			}
 		}
