@@ -96,8 +96,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 				"$" + rdbContent.length() ,
 				"\r\n",
 				rdbContent.substring(0, rdbContent.length()/2),
-				rdbContent.substring(rdbContent.length()/2),
-				"\r\n",
+				rdbContent.substring(rdbContent.length()/2) + "\r\n",
 				commandContent.substring(0, rdbContent.length()/2),
 				commandContent.substring(rdbContent.length()/2)
 		};
