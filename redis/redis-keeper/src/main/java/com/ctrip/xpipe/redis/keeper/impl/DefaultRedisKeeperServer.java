@@ -11,15 +11,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.ctrip.xpipe.api.cluster.LeaderElector;
+import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.core.CoreConfig;
-import com.ctrip.xpipe.redis.core.DefaultCoreConfig;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultCommandRequester;
@@ -32,9 +35,6 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.keeper.cluster.ElectContext;
-import com.ctrip.xpipe.redis.keeper.cluster.LeaderElector;
-import com.ctrip.xpipe.redis.keeper.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
@@ -120,7 +120,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private LeaderElector createLeaderElector(){
 		
-		CoreConfig config = new DefaultCoreConfig();
+		CoreConfig config = new AbstractCoreConfig();
 		String leaderElectionZKPath = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), clusterId, shardId);
 		String leaderElectionID = String.format("%s:%s:%s", currentKeeperMeta.getIp(), currentKeeperMeta.getPort(), currentKeeperMeta.getId());
 		ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);

@@ -11,11 +11,21 @@
 
 	<dependencies>
 
+		<dependency>
+			<groupId>com.ctrip.xpipe.redis</groupId>
+			<artifactId>redis-core</artifactId>
+		</dependency>
+
 		<!-- test -->
 		<dependency>
 			<groupId>com.ctrip.xpipe.redis</groupId>
 			<artifactId>redis-core</artifactId>
 			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.unidal.framework</groupId>
+			<artifactId>test-framework</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

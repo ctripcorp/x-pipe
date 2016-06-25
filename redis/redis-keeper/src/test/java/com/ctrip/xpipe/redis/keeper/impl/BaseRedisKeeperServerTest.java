@@ -4,23 +4,17 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import java.io.File;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
-import org.apache.curator.retry.RetryNTimes;
 import org.junit.Before;
-
 import com.ctrip.xpipe.redis.core.CoreConfig;
-import com.ctrip.xpipe.redis.core.DefaultCoreConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
-
-
-
+import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 
 
 /**
@@ -45,7 +39,7 @@ public class BaseRedisKeeperServerTest extends AbstractRedisKeeperTest {
 			throw new RuntimeException("wrong keeper config");
 		}
 
-		DefaultCoreConfig config = new DefaultCoreConfig();
+		AbstractCoreConfig config = new AbstractCoreConfig();
 		setupZkNodes(cluster, config);
 		startKeepers(cluster);
 	}
@@ -67,27 +61,11 @@ public class BaseRedisKeeperServerTest extends AbstractRedisKeeperTest {
 	}
 
 	private void setupZkNodes(ClusterMeta cluster, CoreConfig config) throws Exception {
-		CuratorFramework client = initializeZK(config);
+		CuratorFramework client = new DefaultZkConfig().create(config.getZkConnectionString());
 		for (ShardMeta shard : cluster.getShards().values()) {
 			String path = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), cluster.getId(), shard.getId());
 			client.newNamespaceAwareEnsurePath(path).ensure(client.getZookeeperClient());
 		}
 	}
 
-	private CuratorFramework initializeZK(CoreConfig config) throws InterruptedException {
-		Builder builder = CuratorFrameworkFactory.builder();
-
-		builder.connectionTimeoutMs(config.getZkConnectionTimeoutMillis());
-		builder.connectString(config.getZkConnectionString());
-		builder.maxCloseWaitMs(config.getZkCloseWaitMillis());
-		builder.namespace(config.getZkNamespace());
-		builder.retryPolicy(new RetryNTimes(3, config.getSleepMsBetweenRetries()));
-		builder.sessionTimeoutMs(config.getZkSessionTimeoutMillis());
-
-		CuratorFramework client = builder.build();
-		client.start();
-		client.blockUntilConnected();
-
-		return client;
-	}
 }

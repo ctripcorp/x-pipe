@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
+import com.ctrip.xpipe.redis.core.CoreConfig;
+
 /**
  * @author marsqing
  *
  *         May 25, 2016 11:06:45 AM
  */
-public interface KeeperConfig {
+public interface KeeperConfig extends CoreConfig{
 
 	/**
 	 * @return

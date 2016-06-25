@@ -5,7 +5,17 @@
   </entity>
   <entity name="dc">
     <attribute name="id" value-type="String" />
+    <entity-ref name="metaServer" type="list" names="metaServers" />
+    <entity-ref name="zkServer" />
     <entity-ref name="cluster" type="list" names="clusters" />
+  </entity>
+  <entity name="metaServer">
+    <attribute name="ip" value-type="String" />
+    <attribute name="port" value-type="int" />
+    <attribute name="master" value-type="boolean" />
+  </entity>
+  <entity name="zkServer">
+    <attribute name="address" value-type="String" />
   </entity>
   <entity name="cluster">
     <attribute name="id" value-type="String" />

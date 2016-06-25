@@ -32,6 +32,7 @@ import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
+import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.utils.OsUtils;
 
@@ -61,6 +62,7 @@ public class AbstractTest {
 		
 		logger.info("[begin test]" + name.getMethodName());
 		
+		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
 		
 		
@@ -78,9 +80,12 @@ public class AbstractTest {
 		if(file.exists() && deleteTestDir()){
 			FileUtils.forceDelete(file);
 		}
-		boolean testSucceed = file.mkdirs();
-		if(!testSucceed){
-			throw new IllegalStateException("test dir make failed!" + file);
+		
+		if(!file.exists()){
+			boolean testSucceed = file.mkdirs();
+			if(!testSucceed){
+				throw new IllegalStateException("test dir make failed!" + file);
+			}
 		}
 	}
 

@@ -8,6 +8,7 @@ import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.util.Enumeration;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -78,5 +79,21 @@ public class IpUtils {
 		}
 		
 		throw new IllegalStateException("[can not find a qualified address]");
+	}
+	
+	public static List<InetSocketAddress> parse(String addressDesc){
+		
+		List<InetSocketAddress> result = new LinkedList<>();
+		String []addresses = addressDesc.split("\\s*,\\s*");
+		for(String address : addresses){
+			
+			String []parts = address.split("\\s*:\\s*");
+			if(parts.length != 2){
+				continue;
+			}
+			result.add(new InetSocketAddress(parts[0], Integer.parseInt(parts[1])));
+		}
+		
+		return result;
 	}
 }

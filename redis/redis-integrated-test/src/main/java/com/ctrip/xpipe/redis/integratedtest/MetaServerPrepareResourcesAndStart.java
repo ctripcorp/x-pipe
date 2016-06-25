@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
+
 import java.io.File;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -11,17 +12,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.unidal.test.jetty.JettyServer;
 
+import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.core.CoreConfig;
-import com.ctrip.xpipe.redis.core.DefaultCoreConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
-import com.ctrip.xpipe.redis.meta.server.MetaServerLifecycleManager;
-import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.util.MetaUpdateUtil;
+import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
+import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.core.meta.impl.DefaultMetaOperation;
 
 /**
  * @author wenchao.meng
@@ -30,20 +30,22 @@ import com.ctrip.xpipe.redis.meta.server.util.MetaUpdateUtil;
  */
 public class MetaServerPrepareResourcesAndStart extends JettyServer{
 
-	private Logger logger = LoggerFactory.getLogger(MetaServerLifecycleManager.class);
+	private Logger logger = LoggerFactory.getLogger(SpringComponentLifecycleManager.class);
 	
-	private int zkPort, serverPort;
+	private int serverPort;
+	private String zkAddress;
 	
-	public MetaServerPrepareResourcesAndStart(int zkPort, int serverPort){
-		this.zkPort = zkPort;
+	public MetaServerPrepareResourcesAndStart(String zkAddress, int serverPort){
+		
+		this.zkAddress = zkAddress;
 		this.serverPort = serverPort;
 	}
 	
 	
 	public ApplicationContext start(DcMeta meta) throws Exception {
 		
-		System.setProperty(MetaServerLifecycleManager.META_SERVER_START_KEY, "false");
-		return start(connectToZk("127.0.0.1:" + zkPort), meta);
+		System.setProperty(SpringComponentLifecycleManager.META_SERVER_START_KEY, "false");
+		return start(connectToZk(zkAddress), meta);
 	}
 
 	private XpipeMeta extractDcMeta(DcMeta meta) throws Exception {
@@ -87,7 +89,7 @@ public class MetaServerPrepareResourcesAndStart extends JettyServer{
 		setupZkNodes(client, dcMeta);
 		
 		XpipeMeta xpipeMeta = extractDcMeta(dcMeta);
-		MetaUpdateUtil.updateMeta(client, xpipeMeta.toString());
+		new DefaultMetaOperation(client).update(xpipeMeta.toString());
 
 		startServer();
 		
@@ -96,14 +98,14 @@ public class MetaServerPrepareResourcesAndStart extends JettyServer{
 
 	private ApplicationContext setupResouces(DcMeta dcMeta) throws Exception {
 		
-		ApplicationContext applicationContext = MetaServerLifecycleManager.getApplicationContext();
+		ApplicationContext applicationContext = SpringComponentLifecycleManager.getApplicationContext();
 		
 		logger.info("[setupResouces][set zkConnectionString]");
-		DefaultCoreConfig coreConfig = applicationContext.getBean(DefaultCoreConfig.class);
-		coreConfig.setZkConnectionString(String.format("%s:%d", "127.0.0.1", zkPort));
+		AbstractCoreConfig coreConfig = applicationContext.getBean(AbstractCoreConfig.class);
+		coreConfig.setZkConnectionString(zkAddress);
 		
 		logger.info("[setupResouces][start MetaServerLifecycleManager]");
-		MetaServerLifecycleManager metaServerLifecycleManager = applicationContext.getBean(MetaServerLifecycleManager.class);
+		SpringComponentLifecycleManager metaServerLifecycleManager = applicationContext.getBean(SpringComponentLifecycleManager.class);
 		metaServerLifecycleManager.startAll();
 		
 		return applicationContext;
@@ -128,8 +130,7 @@ public class MetaServerPrepareResourcesAndStart extends JettyServer{
 	}
 
 	private void setupZkNodes(CuratorFramework client, DcMeta dcMeta) throws Exception {
-		CoreConfig config = new DefaultCoreConfig();
-		MetaServerConfig metaServerConfig = new DefaultMetaServerConfig();
+		CoreConfig config = new AbstractCoreConfig();
 
 		for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
 			for(ShardMeta shardMeta : clusterMeta.getShards().values()){
@@ -137,7 +138,7 @@ public class MetaServerPrepareResourcesAndStart extends JettyServer{
 				client.newNamespaceAwareEnsurePath(path).ensure(client.getZookeeperClient());
 			}
 		}
-		String metaPath = metaServerConfig.getZkMetaStoragePath();
+		String metaPath = MetaZkConfig.getMetaRootPath();
 		client.newNamespaceAwareEnsurePath(metaPath).ensure(client.getZookeeperClient());
 	}
 	

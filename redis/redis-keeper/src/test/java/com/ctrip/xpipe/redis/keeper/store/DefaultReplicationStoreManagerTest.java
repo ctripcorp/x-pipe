@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
@@ -9,8 +10,8 @@ import java.io.File;
 import org.junit.Test;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -20,7 +21,7 @@ import io.netty.buffer.Unpooled;
  *
  *         Jun 1, 2016 9:47:12 AM
  */
-public class DefaultReplicationStoreManagerTest extends AbstractRedisTest {
+public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest{
 
 	@Test
 	public void test() throws Exception {

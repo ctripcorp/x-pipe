@@ -2,13 +2,15 @@ package com.ctrip.xpipe.redis.keeper.config;
 
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
+
 /**
  * @author marsqing
  *
  *         May 25, 2016 11:12:35 AM
  */
 @Component
-public class DefaultKeeperConfig implements KeeperConfig {
+public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperConfig {
 
 	@Override
 	public int getMetaServerConnectTimeout() {

@@ -9,6 +9,7 @@ import org.junit.Before;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTestTemplate;
+import com.ctrip.xpipe.redis.integratedtest.DcInfo;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 
 

@@ -13,8 +13,9 @@ import org.springframework.context.ApplicationContext;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTestTemplate;
+import com.ctrip.xpipe.redis.integratedtest.DcInfo;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.meta.server.DefaultMetaServer;
+import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServer;
 
 /**
  * @author wenchao.meng

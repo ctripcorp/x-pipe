@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.ctrip.xpipe.redis.core;
 
 /**
@@ -10,40 +7,8 @@ package com.ctrip.xpipe.redis.core;
  */
 public interface CoreConfig {
 
-	/**
-	 * @return
-	 */
-	int getZkConnectionTimeoutMillis();
-
-	/**
-	 * @return
-	 */
 	String getZkConnectionString();
 
-	/**
-	 * @return
-	 */
-	int getZkCloseWaitMillis();
-
-	/**
-	 * @return
-	 */
-	String getZkNamespace();
-
-	/**
-	 * @return
-	 */
-	int getZkRetries();
-
-	/**
-	 * @return
-	 */
-	int getSleepMsBetweenRetries();
-
-	/**
-	 * @return
-	 */
-	int getZkSessionTimeoutMillis();
 	
 	String getZkLeaderLatchRootPath();
 }

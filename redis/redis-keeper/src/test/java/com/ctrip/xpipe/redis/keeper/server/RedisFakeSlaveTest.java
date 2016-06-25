@@ -12,7 +12,7 @@ import org.junit.Test;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.server.io.IoAction;
 import com.ctrip.xpipe.redis.keeper.server.io.IoActionFactory;
 import com.ctrip.xpipe.redis.keeper.server.io.Server;
@@ -22,7 +22,7 @@ import com.ctrip.xpipe.redis.keeper.server.io.Server;
  *
  * 2016年4月15日 下午2:53:55
  */
-public class RedisFakeSlaveTest extends AbstractRedisTest{
+public class RedisFakeSlaveTest extends AbstractRedisKeeperTest{
 	
 	private String redisMasterUri = "redis://127.0.0.1:6379";
 	private int fakeSlavePort = 8888;

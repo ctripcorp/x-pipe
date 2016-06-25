@@ -10,7 +10,7 @@ import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
-import com.ctrip.xpipe.redis.meta.server.DefaultMetaServer;
+import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServer;
 
 /**
  * @author wenchao.meng
