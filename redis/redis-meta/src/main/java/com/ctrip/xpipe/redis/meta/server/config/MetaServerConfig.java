@@ -15,5 +15,7 @@ public interface MetaServerConfig extends CoreConfig{
 	
 	String getConsoleAddress();
 	
+	int getMetaRefreshMilli();
+	
 	
 }

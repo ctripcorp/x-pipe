@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
-import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
@@ -96,13 +95,15 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 	
 	private void loadFromXpipeMeta(XpipeMeta meta) {
 		
+		logger.debug("[loadFromXpipeMeta]{}", meta);
+		
 		Map<String, ClusterMeta> clusters = metaHolder.getMeta().findDc(currentDc).getClusters();
 
 		for (ClusterMeta cluster : clusters.values()) {
 			for (ShardMeta shard : cluster.getShards().values()) {
-				shardStatuses.put(new Pair<>(cluster.getId(), shard.getId()), new ShardStatus());
-				updateRedisMaster(cluster.getId(), shard);
-				updateUpstreamKeeper(cluster.getId(), shard.getId());
+				ShardStatus shardStatus = MapUtils.getOrCreate(shardStatuses, new Pair<>(cluster.getId(), shard.getId()),  ShardStatus.getFactory());
+				updateRedisMaster(cluster.getId(), shard, shardStatus);
+				updateUpstreamKeeper(cluster.getId(), shard.getId(), shardStatus);
 			}
 		}
 	}
@@ -160,8 +161,8 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		observeLeader(cluster);
 	}
 
-	private void updateRedisMaster(String clusterId, ShardMeta shard) {
-		ShardStatus shardStatus = shardStatuses.get(new Pair<>(clusterId, shard.getId()));
+	private void updateRedisMaster(String clusterId, ShardMeta shard, ShardStatus shardStatus) {
+		
 
 		if (shardStatus != null) {
 			for (RedisMeta redis : shard.getRedises()) {
@@ -172,41 +173,38 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		}
 	}
 
-	private void updateUpstreamKeeper(String clusterId, String shardId) {
-		ShardStatus shardStatus = shardStatuses.get(new Pair<>(clusterId, shardId));
+	private void updateUpstreamKeeper(String clusterId, String shardId, ShardStatus shardStatus) {
 
-		if (shardStatuses != null) {
-			XpipeMeta meta = metaHolder.getMeta();
+		XpipeMeta meta = metaHolder.getMeta();
 
-			ShardMeta activeShard = null;
-			for (DcMeta dc : meta.getDcs().values()) {
-				if (currentDc.equals(dc.getId())) {
-					// upstream keeper should locate in another dc
-					continue;
-				}
-
-				ClusterMeta cluster = dc.findCluster(clusterId);
-				if (cluster != null) {
-					ShardMeta shard = cluster.findShard(shardId);
-					if (shard != null && dc.getId().equals(shard.getActiveDc())) {
-						activeShard = shard;
-						break;
-					}
-				}
+		ShardMeta activeShard = null;
+		for (DcMeta dc : meta.getDcs().values()) {
+			if (currentDc.equals(dc.getId())) {
+				// upstream keeper should locate in another dc
+				continue;
 			}
 
-			KeeperMeta upstreamKeeper = null;
-			if (activeShard != null) {
-				for (KeeperMeta keeper : activeShard.getKeepers()) {
-					if (keeper.isActive()) {
-						upstreamKeeper = keeper;
-						break;
-					}
+			ClusterMeta cluster = dc.findCluster(clusterId);
+			if (cluster != null) {
+				ShardMeta shard = cluster.findShard(shardId);
+				if (shard != null && dc.getId().equals(shard.getActiveDc())) {
+					activeShard = shard;
+					break;
 				}
 			}
-
-			shardStatus.setUpstreamKeeper(upstreamKeeper);
 		}
+
+		KeeperMeta upstreamKeeper = null;
+		if (activeShard != null) {
+			for (KeeperMeta keeper : activeShard.getKeepers()) {
+				if (keeper.isActive()) {
+					upstreamKeeper = keeper;
+					break;
+				}
+			}
+		}
+
+		shardStatus.setUpstreamKeeper(upstreamKeeper);
 	}
 
 	private void observeLeader(final ClusterMeta cluster) throws Exception {
@@ -257,12 +255,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		}
 
 		Pair<String, String> key = new Pair<>(clusterId, shardId);
-		ShardStatus shardStatus = MapUtils.getOrCreate(shardStatuses, key, new ObjectFactory<ShardStatus>() {
-			@Override
-			public ShardStatus create() {
-				return new ShardStatus();
-			}
-		});
+		ShardStatus shardStatus = MapUtils.getOrCreate(shardStatuses, key, ShardStatus.getFactory());
 		
 		
 		KeeperMeta oldActiveKeeper = shardStatus.getActiveKeeper();
@@ -296,7 +289,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 	public void update(Object args, Observable observable) {
 		
 		if(args instanceof XpipeMeta){
-			logger.info("[update][load from xpipe meta]");
+			logger.debug("[update][load from xpipe meta]");
 			XpipeMeta xpipeMeta = (XpipeMeta) args;
 			loadFromXpipeMeta(xpipeMeta);
 		}

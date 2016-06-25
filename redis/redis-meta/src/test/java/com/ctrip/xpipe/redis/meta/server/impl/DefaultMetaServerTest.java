@@ -31,7 +31,7 @@ public class DefaultMetaServerTest extends AbstractMetaServerTest{
 		defaultMetaServer.setMetaHolder(fakeMetaHolder);
 		
 		DefaultZkClient zkClient = new DefaultZkClient();		
-		zkClient.setAddress("127.0.0.1:" + zkPort);
+		zkClient.setZkAddress("127.0.0.1:" + zkPort);
 		defaultMetaServer.setZkClient(zkClient);
 		
 		startZk(zkPort);

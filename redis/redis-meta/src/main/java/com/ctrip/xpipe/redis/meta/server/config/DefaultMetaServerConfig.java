@@ -26,4 +26,9 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public void setConsoleAddress(String consoleAddress) {
 		this.consoleAddress = consoleAddress;
 	}
+
+	@Override
+	public int getMetaRefreshMilli() {
+		return 5000;
+	}
 }

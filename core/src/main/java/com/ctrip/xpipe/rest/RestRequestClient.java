@@ -15,14 +15,20 @@ import org.glassfish.jersey.jackson.JacksonFeature;
  * Jun 24, 2016
  */
 public class RestRequestClient {
+	
+
+	public static <R> R get(String address, Class<R> clazz){
+
+		Client client = getClient();	
+		WebTarget target = client.target(address);
+        return target.request(MediaType.APPLICATION_JSON).get(clazz);
+		
+	}
 
 	
 	public static <R, T>  R request(String address, T request, Class<R> clazz){
 		
-		Client client = ClientBuilder.newBuilder()
-				.register(ObjectMapperProvider.class)
-				.register(JacksonFeature.class)
-				.build();	
+		Client client = getClient();	
 		WebTarget target = client.target(address);
 		Entity<T> entity = Entity.entity(request, MediaType.APPLICATION_JSON);
         return target.request(MediaType.APPLICATION_JSON).post(entity, clazz);

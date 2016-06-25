@@ -22,7 +22,7 @@ public class MetaServerContextConfig extends AbstractConfigContext{
 	public ZkClient getZkClient(MetaServerConfig metaServerConfig){
 		
 		DefaultZkClient zkClient = new DefaultZkClient();
-		zkClient.setAddress(metaServerConfig.getZkConnectionString());
+		zkClient.setZkAddress(metaServerConfig.getZkConnectionString());
 		return zkClient;
 	}
 

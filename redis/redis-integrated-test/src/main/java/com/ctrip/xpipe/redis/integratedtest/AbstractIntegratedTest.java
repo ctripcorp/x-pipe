@@ -200,7 +200,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	protected LeaderElectorManager createLeaderElectorManager(DcMeta dcMeta) throws Exception {
 		
 		DefaultZkClient zkClient = new DefaultZkClient();
-		zkClient.setAddress(dcMeta.getZkServer().getAddress());
+		zkClient.setZkAddress(dcMeta.getZkServer().getAddress());
 
 	
 		DefaultLeaderElectorManager leaderElectorManager = new DefaultLeaderElectorManager(zkClient);
@@ -304,7 +304,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	protected void startMetaServer(MetaServerMeta metaServerMeta, ZkServerMeta zkServerMeta, DcMeta dcMeta) throws Exception {
 		
-		logger.info(remarkableMessage("[startMetaServer]{}"), metaServerMeta);
+		logger.info(remarkableMessage("[startMetaServer]{}, {}"), metaServerMeta, zkServerMeta);
 				
 		MetaServerPrepareResourcesAndStart startMetaServer = new MetaServerPrepareResourcesAndStart(zkServerMeta.getAddress(), metaServerMeta.getPort(), dcMeta);
 		startMetaServer.initialize();

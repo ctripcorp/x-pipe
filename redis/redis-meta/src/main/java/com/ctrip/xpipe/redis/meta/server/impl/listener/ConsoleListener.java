@@ -31,7 +31,11 @@ public class ConsoleListener extends AbstractMetaChangeListener{
 
 	@Override
 	protected void redisMasterChanged(String clusterId, String shardId, RedisMeta oldRedisMaster, RedisMeta newRedisMaster) {
+
+		logger.info("[redisMasterChanged]{},{},{}->{}", clusterId, shardId, oldRedisMaster, newRedisMaster);
 		
+		throw new UnsupportedOperationException();
+
 	}
 
 	@Override
@@ -40,6 +44,7 @@ public class ConsoleListener extends AbstractMetaChangeListener{
 		if(newKeeperMeta == null){
 			newKeeperMeta = new KeeperMeta();
 		}
+		logger.info("[activeKeeperChanged]{},{},{}->{}", clusterId, shardId, oldKeeperMeta, newKeeperMeta);
 
 		String target = String.format("%s/api/v1/%s/%s/%s/keeper/active", metaServerConfig.getConsoleAddress(), dc, clusterId, shardId);
 		Response response =  RestRequestClient.request(target, newKeeperMeta);

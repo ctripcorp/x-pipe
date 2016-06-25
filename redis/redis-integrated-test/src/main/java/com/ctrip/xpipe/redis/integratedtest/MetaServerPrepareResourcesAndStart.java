@@ -20,9 +20,9 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
-import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultMetaOperation;
+import com.ctrip.xpipe.zk.ZkClient;
 
 /**
  * @author wenchao.meng
@@ -123,8 +123,8 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 		ApplicationContext applicationContext = SpringComponentLifecycleManager.getApplicationContext();
 		
 		logger.info("[setupResouces][set zkConnectionString]");
-		AbstractCoreConfig coreConfig = applicationContext.getBean(AbstractCoreConfig.class);
-		coreConfig.setZkConnectionString(zkAddress);
+		ZkClient zkClient = applicationContext.getBean(ZkClient.class);
+		zkClient.setZkAddress(zkAddress);
 		
 		logger.info("[setupResouces][start MetaServerLifecycleManager]");
 		SpringComponentLifecycleManager metaServerLifecycleManager = applicationContext.getBean(SpringComponentLifecycleManager.class);

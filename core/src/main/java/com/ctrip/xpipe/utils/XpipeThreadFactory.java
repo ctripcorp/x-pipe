@@ -29,6 +29,10 @@ public class XpipeThreadFactory implements ThreadFactory {
 		return m_threadGroup;
 	}
 
+	public static ThreadFactory create(String namePrefix) {
+		return new XpipeThreadFactory(namePrefix, false);
+	}
+
 	public static ThreadFactory create(String namePrefix, boolean daemon) {
 		return new XpipeThreadFactory(namePrefix, daemon);
 	}

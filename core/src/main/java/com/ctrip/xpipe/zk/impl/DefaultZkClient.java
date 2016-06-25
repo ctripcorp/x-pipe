@@ -24,6 +24,7 @@ public class DefaultZkClient extends AbstractLifecycle implements ZkClient {
 	@Override
 	protected void doStart() throws Exception {
 		
+		logger.info("[doStart]{}", address);
 		client= zkConfig.create(address);
 	}
 
@@ -32,7 +33,8 @@ public class DefaultZkClient extends AbstractLifecycle implements ZkClient {
 		return client;
 	}
 	
-	public void setAddress(String address) {
+	@Override
+	public void setZkAddress(String address) {
 		this.address = address;
 	}
 	

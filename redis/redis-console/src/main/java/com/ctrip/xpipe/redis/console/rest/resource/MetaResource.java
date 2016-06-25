@@ -13,6 +13,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 
 
 @Path("/api/v1")
@@ -36,10 +37,12 @@ public class MetaResource extends BaseRecource {
 		return Response.status(Status.OK).build();
 	}
 	
-	@Path("/{dc}/{clusterId}/{shardId}/keeper/active")
+	@Path("/xpipe")
 	@GET
 	public Response updateActiveKeeper(@PathParam("dc") String dc, @PathParam("clusterId") String clusterId, @PathParam("shardId") String shardId) {
-		return Response.status(Status.OK).build();
+		
+		XpipeMeta xpipeMeta = getMetaDao().getXpipeMeta();
+		return Response.status(Status.OK).entity(xpipeMeta).build();
 	}
 	
 }

@@ -31,39 +31,49 @@ public class ManualStarter extends AbstractMultiDcTest{
 		//clean environment
 		FileUtils.forceDelete(new File(getTestFileDir()));
 		startZks();
-//		startConsoleServer();
+		startConsoleServer();
+	}
+	
+
+	@Test
+	public void startMetaServer0() throws Exception{
+		startMetaServers(getDcMeta(getAndSetDc(0)));		
 	}
 	
 
 	@Test
 	public void startMetaServer1() throws Exception{
-		startMetaServers(getDcMeta(getDc(0)));		
+		startMetaServers(getDcMeta(getAndSetDc(1)));
 	}
 	
+	@Test
+	public void startKeepers0() throws Exception{
+		startKeepers(getAndSetDc(0), clusterId, shardId, null);
+	}
 
 	@Test
-	public void startMetaServer2() throws Exception{
-		startMetaServers(getDcMeta(getDc(1)));
+	public void startKeepers00() throws Exception{
+		startKeepers(getAndSetDc(0), clusterId, shardId, 0);
 	}
 	
+	@Test
+	public void startKeepers01() throws Exception{
+		startKeepers(getAndSetDc(0), clusterId, shardId, 1);
+	}
+
 	@Test
 	public void startKeepers1() throws Exception{
-		startKeepers(getDc(0), clusterId, shardId);
-	}
-
-	@Test
-	public void startKeepers2() throws Exception{
-		startKeepers(getDc(1), clusterId, shardId);
+		startKeepers(getAndSetDc(1), clusterId, shardId, null);
 	}
 	
 	@Test
-	public void startRedises1() throws ExecuteException, IOException{
-		startRedises(getDc(0), clusterId, shardId);
+	public void startRedises0() throws ExecuteException, IOException{
+		startRedises(getAndSetDc(0), clusterId, shardId);
 	}
 
 	@Test
-	public void startRedises2() throws ExecuteException, IOException{
-		startRedises(getDc(1), clusterId, shardId);
+	public void startRedises1() throws ExecuteException, IOException{
+		startRedises(getAndSetDc(1), clusterId, shardId);
 		
 	}
 
@@ -75,15 +85,20 @@ public class ManualStarter extends AbstractMultiDcTest{
 		}
 	}
 
-	private void startKeepers(String dc, String clusterId, String shardId) throws Exception {
+	private void startKeepers(String dc, String clusterId, String shardId, Integer index) throws Exception {
 
 		DcMeta dcMeta = getDcMeta(dc);
 		
 		MetaServiceManager metaServiceManager = createMetaServiceManager(dcMeta.getMetaServers());
 		LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcMeta);
 		
+		int count = 0;
 		for(KeeperMeta keeperMeta : getDcKeepers(dc, clusterId, shardId)){
-			startKeeper(keeperMeta, metaServiceManager, leaderElectorManager);
+			
+			if(index == null || index == count){
+				startKeeper(keeperMeta, metaServiceManager, leaderElectorManager);
+			}
+			count++;
 		}
 	}
 	

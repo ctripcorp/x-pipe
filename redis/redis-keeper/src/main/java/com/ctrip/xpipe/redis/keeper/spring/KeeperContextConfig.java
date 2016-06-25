@@ -31,7 +31,7 @@ public class KeeperContextConfig extends AbstractConfigContext{
 	private ZkClient getZkClient(KeeperConfig keeperConfig) {
 		
 		DefaultZkClient zkClient = new DefaultZkClient();
-		zkClient.setAddress(keeperConfig.getZkConnectionString());
+		zkClient.setZkAddress(keeperConfig.getZkConnectionString());
 		return zkClient;
 	}
 	

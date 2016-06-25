@@ -21,6 +21,7 @@ import org.xml.sax.SAXException;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
+import com.ctrip.xpipe.foundation.FakeFoundationService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -286,7 +287,10 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	}
 	
 	
-	protected String getDc(int index) {
-		return getDcMetas().get(index).getId();
+	protected String getAndSetDc(int index) {
+		
+		String dc = getDcMetas().get(index).getId(); 
+		FakeFoundationService.setDataCenter(dc);
+		return dc;
 	}
 }

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.meta;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
@@ -50,6 +51,17 @@ public class ShardStatus {
 
 	public void setRedisMaster(RedisMeta redisMaster) {
 		this.redisMaster.set(redisMaster);
+	}
+	
+	public static ObjectFactory<ShardStatus> getFactory(){
+		
+		return new ObjectFactory<ShardStatus>() {
+
+			@Override
+			public ShardStatus create() {
+				return new ShardStatus();
+			}
+		};
 	}
 
 }

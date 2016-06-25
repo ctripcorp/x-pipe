@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.ctrip.xpipe.zk;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -16,4 +13,6 @@ public interface ZkClient extends Lifecycle {
 
 	CuratorFramework get();
 
+	void setZkAddress(String zkAddress);
+	
 }
