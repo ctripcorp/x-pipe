@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
 
+
 import java.io.File;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -12,8 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.unidal.test.jetty.JettyServer;
 
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
-import com.ctrip.xpipe.redis.core.CoreConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -28,24 +29,45 @@ import com.ctrip.xpipe.redis.core.meta.impl.DefaultMetaOperation;
  *
  * Jun 20, 2016
  */
-public class MetaServerPrepareResourcesAndStart extends JettyServer{
+public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 
 	private Logger logger = LoggerFactory.getLogger(SpringComponentLifecycleManager.class);
 	
+	private MetaConsole metaConsole;
 	private int serverPort;
 	private String zkAddress;
+	private DcMeta dcMeta;
 	
-	public MetaServerPrepareResourcesAndStart(String zkAddress, int serverPort){
+	private ApplicationContext applicationContext;
+	
+	public MetaServerPrepareResourcesAndStart(String zkAddress, int serverPort, DcMeta dcMeta){
 		
 		this.zkAddress = zkAddress;
 		this.serverPort = serverPort;
+		this.dcMeta = dcMeta;
 	}
 	
+	@Override
+	public void doInitialize() throws Exception {
+		metaConsole = new MetaConsole();
+	}
 	
-	public ApplicationContext start(DcMeta meta) throws Exception {
+	@Override
+	public void  doStart() throws Exception {
 		
-		System.setProperty(SpringComponentLifecycleManager.META_SERVER_START_KEY, "false");
-		return start(connectToZk(zkAddress), meta);
+		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
+		applicationContext = start(connectToZk(zkAddress), dcMeta);
+	}
+	
+
+	@Override
+	public void doStop() throws Exception {
+		metaConsole.stopServer();
+	}
+	
+	@Override
+	protected void doDispose() throws Exception {
+		metaConsole = null;
 	}
 
 	private XpipeMeta extractDcMeta(DcMeta meta) throws Exception {
@@ -91,7 +113,7 @@ public class MetaServerPrepareResourcesAndStart extends JettyServer{
 		XpipeMeta xpipeMeta = extractDcMeta(dcMeta);
 		new DefaultMetaOperation(client).update(xpipeMeta.toString());
 
-		startServer();
+		metaConsole.startServer();
 		
 		return setupResouces(dcMeta);
 	}
@@ -130,11 +152,10 @@ public class MetaServerPrepareResourcesAndStart extends JettyServer{
 	}
 
 	private void setupZkNodes(CuratorFramework client, DcMeta dcMeta) throws Exception {
-		CoreConfig config = new AbstractCoreConfig();
 
 		for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
 			for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-				String path = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), clusterMeta.getId(), shardMeta.getId());
+				String path = MetaZkConfig.getKeeperLeaderLatchPath(clusterMeta.getId(), shardMeta.getId());
 				client.newNamespaceAwareEnsurePath(path).ensure(client.getZookeeperClient());
 			}
 		}
@@ -142,20 +163,40 @@ public class MetaServerPrepareResourcesAndStart extends JettyServer{
 		client.newNamespaceAwareEnsurePath(metaPath).ensure(client.getZookeeperClient());
 	}
 	
-	@Override
-	protected int getServerPort() {
-		return serverPort;
-	}
-
-
-	@Override
-	protected String getContextPath() {
-		return "/";
+	
+	public ApplicationContext getApplicationContext() {
+		return applicationContext;
 	}
 	
-	@Override
-	protected File getWarRoot() {
-		return new File("../redis-meta/src/main/webapp");
+
+	public class MetaConsole extends JettyServer{
+
+		@Override
+		protected int getServerPort() {
+			return serverPort;
+		}
+
+
+		@Override
+		protected String getContextPath() {
+			return "/";
+		}
+		
+		@Override
+		protected File getWarRoot() {
+			return new File("../redis-meta/src/main/webapp");
+		}
+		
+		@Override
+		public void startServer() throws Exception {
+			super.startServer();
+		}
+		
+		@Override
+		protected void stopServer() throws Exception {
+			super.stopServer();
+		}
+
 	}
 }
 

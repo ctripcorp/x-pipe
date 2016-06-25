@@ -50,10 +50,6 @@
 			<version>2.8.0</version>
 			<type>jar</type>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.curator</groupId>
-			<artifactId>curator-test</artifactId>
-		</dependency>
 	</dependencies>
 
 	<build>

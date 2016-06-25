@@ -27,6 +27,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaHolder;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
@@ -51,6 +52,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 	@Autowired
 	private MetaHolder metaHolder;
 
+	@SuppressWarnings("unused")
 	@Autowired
 	private MetaServerConfig config;
 
@@ -210,7 +212,8 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 	private void observeLeader(final ClusterMeta cluster) throws Exception {
 
 		for (final ShardMeta shard : cluster.getShards().values()) {
-			final String leaderLatchPath = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), cluster.getId(), shard.getId());
+			
+			final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(cluster.getId(), shard.getId());
 
 			List<String> children = zkClient.get().getChildren().usingWatcher(new CuratorWatcher() {
 

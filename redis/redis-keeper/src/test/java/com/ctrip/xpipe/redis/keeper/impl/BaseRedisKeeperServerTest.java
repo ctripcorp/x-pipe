@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
+import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -63,7 +64,7 @@ public class BaseRedisKeeperServerTest extends AbstractRedisKeeperTest {
 	private void setupZkNodes(ClusterMeta cluster, CoreConfig config) throws Exception {
 		CuratorFramework client = new DefaultZkConfig().create(config.getZkConnectionString());
 		for (ShardMeta shard : cluster.getShards().values()) {
-			String path = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), cluster.getId(), shard.getId());
+			String path = MetaZkConfig.getKeeperLeaderLatchPath(cluster.getId(), shard.getId());
 			client.newNamespaceAwareEnsurePath(path).ensure(client.getZookeeperClient());
 		}
 	}

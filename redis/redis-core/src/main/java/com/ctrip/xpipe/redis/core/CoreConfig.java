@@ -9,6 +9,4 @@ public interface CoreConfig {
 
 	String getZkConnectionString();
 
-	
-	String getZkLeaderLatchRootPath();
 }

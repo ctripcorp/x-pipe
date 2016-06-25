@@ -35,6 +35,7 @@ import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.zk.ZkTestServer;
 
 /**
  * @author wenchao.meng
@@ -249,14 +250,25 @@ public class AbstractTest {
 		System.in.read();
 	}
 	
+	protected void startZk(int zkPort) {
+		try {
+			logger.info(remarkableMessage("[startZK]{}"), zkPort);
+			ZkTestServer zkTestServer = new ZkTestServer(zkPort);
+			zkTestServer.initialize();
+			zkTestServer.start();
+			add(zkTestServer);
+		} catch (Exception e) {
+		}
+	}
+
 	@After
 	public void afterAbstractTest() throws IOException{
 		
 		try {
-			if(componentRegistry.getLifecycleState().canStop()){
+			if(componentRegistry.getLifecycleState() != null && componentRegistry.getLifecycleState().canStop()){
 				componentRegistry.stop();
 			}
-			if(componentRegistry.getLifecycleState().canDispose()){
+			if(componentRegistry.getLifecycleState() != null && componentRegistry.getLifecycleState().canDispose()){
 				componentRegistry.dispose();
 			}
 		} catch (Exception e) {

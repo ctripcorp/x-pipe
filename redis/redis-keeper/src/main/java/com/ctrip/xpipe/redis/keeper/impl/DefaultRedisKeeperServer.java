@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 
+
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
@@ -20,9 +21,8 @@ import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
-import com.ctrip.xpipe.redis.core.CoreConfig;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
+import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultCommandRequester;
@@ -120,9 +120,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private LeaderElector createLeaderElector(){
 		
-		CoreConfig config = new AbstractCoreConfig();
-		String leaderElectionZKPath = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), clusterId, shardId);
-		String leaderElectionID = String.format("%s:%s:%s", currentKeeperMeta.getIp(), currentKeeperMeta.getPort(), currentKeeperMeta.getId());
+		String leaderElectionZKPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterId, shardId);
+		String leaderElectionID = MetaZkConfig.getKeeperLeaderElectionId(currentKeeperMeta);
 		ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);
 		return leaderElectorManager.createLeaderElector(ctx);
 	}

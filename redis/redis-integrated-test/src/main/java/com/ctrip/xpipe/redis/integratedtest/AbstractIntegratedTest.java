@@ -13,11 +13,9 @@ import java.util.Set;
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.curator.framework.CuratorFramework;
 import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.junit.After;
 import org.junit.Before;
-import org.springframework.context.ApplicationContext;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
@@ -30,7 +28,6 @@ import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
-import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
@@ -41,9 +38,7 @@ import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaServiceManager;
 import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.utils.IpUtils;
-import com.ctrip.xpipe.zk.ZkConfig;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
-import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 
 /**
  * @author wenchao.meng
@@ -55,7 +50,6 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	private String integrated_test_config_file = "integrated-test.xml";
 
 	private String redis_template = "conf/redis_template.conf";
-	private MetaServerPrepareResourcesAndStart startMetaServer;
 	
 	private Map<String, DcInfo>  dcs = new ConcurrentHashMap<>();
 	
@@ -205,31 +199,17 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	protected LeaderElectorManager createLeaderElectorManager(DcMeta dcMeta) throws Exception {
 		
-		createLeaderElectManager(dcMeta.getZkServer().getAddress());
+		DefaultZkClient zkClient = new DefaultZkClient();
+		zkClient.setAddress(dcMeta.getZkServer().getAddress());
+
+	
+		DefaultLeaderElectorManager leaderElectorManager = new DefaultLeaderElectorManager(zkClient);
+		leaderElectorManager.initialize();
+		leaderElectorManager.start();
+		
+		return leaderElectorManager;
 	}
 
-	/**
-	 * @param address
-	 */
-	private void createLeaderElectManager(String address) {
-		
-		ZkConfig config = new DefaultZkConfig();
-		CuratorFramework client = config.create(address);
-		
-		DefaultLeaderElectorManager leaderElectorManager = new DefaultLeaderElectorManager(client);
-		
-		DefaultZkClient zkClient = new DefaultZkClient();
-		AbstractCoreConfig coreConfig = new AbstractCoreConfig();
-		coreConfig.setZkConnectionString(dcMeta.getZkServer().getAddress());
-		zkClient.setConfig(coreConfig);
-		zkClient.initialize();
-		zkClient.start();
-		
-		
-		leaderElectorManager.setZkClient(zkClient);
-		return leaderElectorManager;
-		
-	}
 
 	protected MetaServiceManager createMetaServiceManager(List<MetaServerMeta> metaServerMetas) {
 
@@ -325,12 +305,14 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	protected void startMetaServer(MetaServerMeta metaServerMeta, ZkServerMeta zkServerMeta, DcMeta dcMeta) throws Exception {
 		
 		logger.info(remarkableMessage("[startMetaServer]{}"), metaServerMeta);
+				
+		MetaServerPrepareResourcesAndStart startMetaServer = new MetaServerPrepareResourcesAndStart(zkServerMeta.getAddress(), metaServerMeta.getPort(), dcMeta);
+		startMetaServer.initialize();
+		startMetaServer.start();
 		
-//		startZk(dcInfo.getZkPort());
+		add(startMetaServer);
 		
-		startMetaServer = new MetaServerPrepareResourcesAndStart(zkServerMeta.getAddress(), metaServerMeta.getPort());
-		ApplicationContext applicationContext = startMetaServer.start(dcMeta);
-		dcs.get(dcMeta.getId()).setApplicationContext(applicationContext);
+		dcs.get(dcMeta.getId()).setApplicationContext(startMetaServer.getApplicationContext());
 	}
 
 	protected void stopServerListeningPort(int listenPort) throws ExecuteException, IOException {

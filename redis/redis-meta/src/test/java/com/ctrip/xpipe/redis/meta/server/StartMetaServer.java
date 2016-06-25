@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server;
 
+
 import java.io.IOException;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -12,14 +13,13 @@ import org.junit.Test;
 import org.unidal.helper.Files.IO;
 import org.unidal.test.jetty.JettyServer;
 
-import com.ctrip.xpipe.redis.core.CoreConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
-import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
+import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultMetaOperation;
 
 
@@ -111,9 +111,8 @@ public class StartMetaServer extends JettyServer {
 	}
 
 	private void setupZkNodes(CuratorFramework client) throws Exception {
-		CoreConfig config = new AbstractCoreConfig();
-
-		String path = String.format("%s/%s/%s", config.getZkLeaderLatchRootPath(), "cluster1", "shard1");
+		
+		String path = MetaZkConfig.getKeeperLeaderLatchPath("cluster1", "shard1");
 		client.newNamespaceAwareEnsurePath(path).ensure(client.getZookeeperClient());
 		client.newNamespaceAwareEnsurePath("/meta").ensure(client.getZookeeperClient());
 	}

@@ -15,7 +15,6 @@ import java.util.Map.Entry;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
-import org.apache.curator.test.TestingServer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.xml.sax.SAXException;
@@ -127,15 +126,6 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		logger.info("[sendRandomMessage][end  ]{}", jedis);
 	}
 
-
-	@SuppressWarnings("resource")
-	protected void startZk(int zkPort) {
-		try {
-			logger.info(remarkableMessage("[startZK]{}"), zkPort);
-			new TestingServer(zkPort).start();
-		} catch (Exception e) {
-		}
-	}
 
 	protected void executeCommands(String... args) throws ExecuteException, IOException {
 

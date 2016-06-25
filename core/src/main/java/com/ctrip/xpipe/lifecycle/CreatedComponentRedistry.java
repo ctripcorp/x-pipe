@@ -59,12 +59,15 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 		
 		if(component instanceof Lifecycle){
 			Lifecycle lifecycle = (Lifecycle) component;
-			if(lifecycle.getLifecycleState().canStop()){
-				lifecycle.stop();
-			}
 			
-			if(lifecycle.getLifecycleState().canDispose()){
-				lifecycle.dispose();
+			if(lifecycle.getLifecycleState() != null){
+				if(lifecycle.getLifecycleState().canStop()){
+					lifecycle.stop();
+				}
+				
+				if(lifecycle.getLifecycleState().canDispose()){
+					lifecycle.dispose();
+				}
 			}
 		}
 		return true;
@@ -95,15 +98,17 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 		if(component instanceof Lifecycle){
 			
 			Lifecycle lifecycle = (Lifecycle) component;
-			if(getLifecycleState().isInitializing() || getLifecycleState().isInitialized()){
-				if(lifecycle.getLifecycleState().canInitialize()){
-					lifecycle.initialize();
+			if(lifecycle.getLifecycleState() != null){
+				if(getLifecycleState().isInitializing() || getLifecycleState().isInitialized()){
+					if(lifecycle.getLifecycleState().canInitialize()){
+						lifecycle.initialize();
+					}
 				}
-			}
-			
-			if(getLifecycleState().isStarting() || getLifecycleState().isStarted()){
-				if(lifecycle.getLifecycleState().canStart()){
-					lifecycle.start();
+				
+				if(getLifecycleState().isStarting() || getLifecycleState().isStarted()){
+					if(lifecycle.getLifecycleState().canStart()){
+						lifecycle.start();
+					}
 				}
 			}
 		}

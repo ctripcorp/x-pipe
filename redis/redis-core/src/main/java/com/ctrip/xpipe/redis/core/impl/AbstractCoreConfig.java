@@ -24,9 +24,4 @@ public class AbstractCoreConfig implements CoreConfig {
 		this.zkConnectionString.set(zkConnectionString);
 	}
 
-	@Override
-	public String getZkLeaderLatchRootPath() {
-		return "/keepers";
-	}
-
 }
