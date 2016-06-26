@@ -48,6 +48,7 @@ public class DefaultFileDao extends AbstractMetaDao{
 		try {
 			URL url = getClass().getClassLoader().getResource(".");
 			File file = new File(new File(url.getPath()), fileName);
+			logger.info("[load]{}", file);
 			xpipeMeta = DefaultSaxParser.parse(new FileInputStream(file));
 		} catch (SAXException | IOException e) {
 			logger.error("[load]" + fileName, e);

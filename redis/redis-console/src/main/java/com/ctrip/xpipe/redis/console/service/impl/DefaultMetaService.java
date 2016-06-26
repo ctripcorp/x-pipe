@@ -67,6 +67,7 @@ public class DefaultMetaService implements MetaService{
 		try {
 			logger.info("[notifyDc]{}, {}, {}, {}", dc, clusterId, shardId, activeKeeper);
 			String zkAddress = metaDao.getZkServerMeta(dc).getAddress();
+			logger.info("[notifyDc]{}", zkAddress);
 			CuratorFramework curatorFramework = zkPool.borrowObject(zkAddress);
 			//TODO split into small pieces
 			new DefaultMetaOperation(curatorFramework).update(metaDao.getXpipeMeta());

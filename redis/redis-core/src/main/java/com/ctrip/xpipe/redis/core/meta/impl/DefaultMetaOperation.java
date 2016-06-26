@@ -28,7 +28,9 @@ public class DefaultMetaOperation implements MetaOperation{
 	@Override
 	public void update(XpipeMeta xpipeMeta) throws Exception {
 		
-		curatorFramework.setData().forPath(MetaZkConfig.getMetaRootPath(), xpipeMeta.toString().getBytes());
+		String path = MetaZkConfig.getMetaRootPath();
+		curatorFramework.newNamespaceAwareEnsurePath(path).ensure(curatorFramework.getZookeeperClient());
+		curatorFramework.setData().forPath(path, xpipeMeta.toString().getBytes());
 	}
 
 }

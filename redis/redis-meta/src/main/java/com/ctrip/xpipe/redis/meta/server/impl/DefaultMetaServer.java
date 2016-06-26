@@ -102,6 +102,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		for (ClusterMeta cluster : clusters.values()) {
 			for (ShardMeta shard : cluster.getShards().values()) {
 				ShardStatus shardStatus = MapUtils.getOrCreate(shardStatuses, new Pair<>(cluster.getId(), shard.getId()),  ShardStatus.getFactory());
+				
 				updateRedisMaster(cluster.getId(), shard, shardStatus);
 				updateUpstreamKeeper(cluster.getId(), shard.getId(), shardStatus);
 			}
@@ -163,13 +164,18 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 
 	private void updateRedisMaster(String clusterId, ShardMeta shard, ShardStatus shardStatus) {
 		
-
-		if (shardStatus != null) {
+		String activeDc = shard.getActiveDc();
+		if(activeDc.equals(currentDc)){
 			for (RedisMeta redis : shard.getRedises()) {
 				if (redis.isMaster()) {
 					shardStatus.setRedisMaster(redis);
 				}
 			}
+		}else{
+			if(shardStatus.getRedisMaster() != null){
+				logger.info("[updateRedisMaster][change redis master null][not active dc]{}", shardStatus.getRedisMaster());
+			}
+			shardStatus.setRedisMaster(null);
 		}
 	}
 

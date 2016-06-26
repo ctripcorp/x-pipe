@@ -57,10 +57,9 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	@Override
 	public synchronized ReplicationStore createIfDirtyOrNotExist() throws IOException{
 		
-		logger.info("[createIfDirtyOrNotExist]{}", baseDir);
-		
 		ReplicationStore currentReplicationStore = getCurrent();
 		if(currentReplicationStore == null || !currentReplicationStore.isFresh()){
+			logger.info("[createIfDirtyOrNotExist]{}", baseDir);
 			currentReplicationStore = create();
 		}
 		return currentReplicationStore;
@@ -68,9 +67,10 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	
 	@Override
 	public ReplicationStore createIfNotExist() throws IOException {
-		logger.info("[createIfNotExist]{}", baseDir);
+		
 		ReplicationStore currentReplicationStore = getCurrent();
 		if(currentReplicationStore == null){
+			logger.info("[createIfNotExist]{}", baseDir);
 			currentReplicationStore = create();
 		}
 		return currentReplicationStore;
