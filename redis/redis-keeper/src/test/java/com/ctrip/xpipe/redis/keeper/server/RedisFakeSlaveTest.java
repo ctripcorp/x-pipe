@@ -13,9 +13,9 @@ import org.junit.Test;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
-import com.ctrip.xpipe.redis.keeper.server.io.IoAction;
-import com.ctrip.xpipe.redis.keeper.server.io.IoActionFactory;
-import com.ctrip.xpipe.redis.keeper.server.io.Server;
+import com.ctrip.xpipe.simpleserver.IoAction;
+import com.ctrip.xpipe.simpleserver.IoActionFactory;
+import com.ctrip.xpipe.simpleserver.Server;
 
 /**
  * @author wenchao.meng
@@ -37,13 +37,13 @@ public class RedisFakeSlaveTest extends AbstractRedisKeeperTest{
 	
 	
 	@Test
-	public void testKeeperCreateReplicationLog() throws UnknownHostException, IOException{
+	public void testKeeperCreateReplicationLog() throws Exception{
 		
 		startFakeSlaveServer();
 		startKeeperCreateReplicationLogClient();
 	}
 
-	private void startFakeSlaveServer() {
+	private void startFakeSlaveServer() throws Exception {
 		
 		new Server(fakeSlavePort, new IoActionFactory() {
 			

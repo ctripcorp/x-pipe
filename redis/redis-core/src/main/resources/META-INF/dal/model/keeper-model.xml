@@ -19,7 +19,6 @@
   </entity>
   <entity name="redis">
     <attribute name="master" primitive="true" />
-    <attribute name="shard-active" value-type="boolean" primitive="true" />
   </entity>
 </model>
 

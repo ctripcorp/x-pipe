@@ -24,6 +24,8 @@ public interface MetaDao extends MetaUpdateOperation{
 	
 	Set<String> getDcs();
 	
+	String getActiveDc(String clusterId) throws DaoException;
+	
 	XpipeMeta getXpipeMeta();
 	
 	DcMeta getDcMeta(String dc);

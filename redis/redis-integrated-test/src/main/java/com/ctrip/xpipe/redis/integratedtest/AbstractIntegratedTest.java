@@ -227,6 +227,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	protected void startRedis(DcMeta dcMeta, RedisMeta redisMeta) throws ExecuteException, IOException {
 		
+		stopServerListeningPort(redisMeta.getPort());
+		
 		logger.info(remarkableMessage("[startRedis]{}, {}"), dcMeta, redisMeta);
 		
 		File testDir = new File(getTestFileDir());

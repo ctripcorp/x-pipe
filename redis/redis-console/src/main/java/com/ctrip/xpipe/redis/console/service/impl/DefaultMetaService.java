@@ -12,9 +12,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.redis.console.dao.DaoException;
 import com.ctrip.xpipe.redis.console.dao.MetaDao;
 import com.ctrip.xpipe.redis.console.service.MetaService;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultMetaOperation;
 
 /**
@@ -39,7 +41,7 @@ public class DefaultMetaService implements MetaService{
 	}
 	
 	@Override
-	public boolean updateKeeperActive(String dc, final String clusterId, final String shardId, final KeeperMeta activeKeeper) {
+	public boolean updateKeeperActive(String dc, final String clusterId, final String shardId, final KeeperMeta activeKeeper) throws DaoException {
 		
 		boolean activeChanged = metaDao.updateKeeperActive(dc, clusterId, shardId, activeKeeper);
 		
@@ -48,24 +50,45 @@ public class DefaultMetaService implements MetaService{
 			return false;
 		}
 		
+		notifyDcs(clusterId, shardId);
+		
+		return activeChanged;
+	}
+
+
+	@Override
+	public boolean updateRedisMaster(String dc, String clusterId, String shardId, RedisMeta redisMaster)
+			throws DaoException {
+		
+		boolean activeChanged = metaDao.updateRedisMaster(dc, clusterId, shardId, redisMaster);
+		
+		if(!activeChanged){
+			logger.info("[updateRedisMaster][not changed]{},{},{},{}", dc, clusterId, shardId, redisMaster);
+			return false;
+		}
+		
+		notifyDcs(clusterId, shardId);
+		return activeChanged;
+	}
+
+	private void notifyDcs(final String clusterId, final String shardId) {
+		
 		for(final String newDc : metaDao.getDcs()){
 			
 			executors.execute(new Runnable() {
 				
 				@Override
 				public void run() {
-					notifyDc(newDc, clusterId, shardId, activeKeeper);
+					notifyDc(newDc, clusterId, shardId);
 				}
 			});
 		}
-		
-		return activeChanged;
 	}
 
-	private void notifyDc(String dc, String clusterId, String shardId, KeeperMeta activeKeeper){
+	private void notifyDc(String dc, String clusterId, String shardId){
 		
 		try {
-			logger.info("[notifyDc]{}, {}, {}, {}", dc, clusterId, shardId, activeKeeper);
+			logger.info("[notifyDc]{}, {}, {}, {}", dc, clusterId, shardId);
 			String zkAddress = metaDao.getZkServerMeta(dc).getAddress();
 			logger.info("[notifyDc]{}", zkAddress);
 			CuratorFramework curatorFramework = zkPool.borrowObject(zkAddress);

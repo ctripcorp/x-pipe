@@ -33,9 +33,13 @@ public class ConsoleListener extends AbstractMetaChangeListener{
 	protected void redisMasterChanged(String clusterId, String shardId, RedisMeta oldRedisMaster, RedisMeta newRedisMaster) {
 
 		logger.info("[redisMasterChanged]{},{},{}->{}", clusterId, shardId, oldRedisMaster, newRedisMaster);
-		
-		throw new UnsupportedOperationException();
 
+		String target = String.format("%s/api/v1/%s/%s/%s/redis/master", metaServerConfig.getConsoleAddress(), dc, clusterId, shardId);
+		Response response =  RestRequestClient.request(target, newRedisMaster);
+		if(response.getStatus() != HttpConstants.HTTP_STATUS_200){
+			logger.error("[activeKeeperChanged][call console failed!]" + response);
+		}
+		
 	}
 
 	@Override
@@ -49,7 +53,7 @@ public class ConsoleListener extends AbstractMetaChangeListener{
 		String target = String.format("%s/api/v1/%s/%s/%s/keeper/active", metaServerConfig.getConsoleAddress(), dc, clusterId, shardId);
 		Response response =  RestRequestClient.request(target, newKeeperMeta);
 		if(response.getStatus() != HttpConstants.HTTP_STATUS_200){
-			logger.error("[activeKeeperChanged][call console]" + response);
+			logger.error("[activeKeeperChanged][call console failed]" + response);
 		}
 	}
 

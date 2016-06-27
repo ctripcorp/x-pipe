@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.server.io;
+package com.ctrip.xpipe.simpleserver;
 
 /**
  * @author wenchao.meng

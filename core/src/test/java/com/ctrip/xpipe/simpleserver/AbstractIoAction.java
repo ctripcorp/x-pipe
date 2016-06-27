@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.server.io;
+package com.ctrip.xpipe.simpleserver;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,5 +31,27 @@ public abstract class AbstractIoAction implements IoAction{
 	}
 
 	protected abstract void doWrite(OutputStream ous) throws IOException;
+	
+	
+	protected String readLine(InputStream ins) throws IOException {
+		
+		StringBuilder sb = new StringBuilder();
+		int last = 0;
+		while(true){
+			
+			int data = ins.read();
+			if(data == -1){
+				return null;
+			}
+			sb.append((char)data);
+			if(data == '\n' && last == '\r'){
+				break;
+			}
+			last = data;
+		}
+		
+		return sb.toString();
+	}
+
 
 }

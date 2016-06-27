@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
@@ -37,13 +38,12 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 				
 				try {
 					redisClient.getRedisKeeperServer().promoteSlave(ip, port);
-					String msg = String.format("promote %s:%s to master", ip, port);
-					redisClient.sendMessage(new BulkStringParser(msg).format());
+					redisClient.sendMessage(new BulkStringParser(RedisProtocol.OK).format());
+					return;
 				} catch (RedisSlavePromotionException e) {
 					logger.error("[doHandle]{},{},{}", redisClient, ip, port);
 					errorMessage = e.getMessage();
 				}
-				return;
 			}else{
 				errorMessage = "slave connected to keeper, discard command!";
 			}

@@ -66,7 +66,6 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	private RedisKeeperServer redisKeeperServer;
 	
 	private int masterConnectRetryDelaySeconds = 5;
-	private int retry = 3;
 
 	private ReplicationStoreManager replicationStoreManager;
 
@@ -77,7 +76,8 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	private EventLoopGroup slaveEventLoopGroup = new NioEventLoopGroup();
 
 	private Channel masterChannel;
-	private ScheduledFuture<?> replConfFuture; 
+	private ScheduledFuture<?> replConfFuture;
+	private long connectedTime;
 	
 	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, CommandRequester commandRequester){
 		
@@ -148,29 +148,23 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
              }
          });
 
-        int i = 0;
-		for(; i < retry ; i++){
-			try{
-				ChannelFuture f = b.connect(endpoint.getHost(), endpoint.getPort());
-		        f.sync();
-		        break;
-			}catch(Throwable th){
-				logger.error("[connectMaster][fail]" + endpoint, th);
-			}
+		try{
+			ChannelFuture f = b.connect(endpoint.getHost(), endpoint.getPort());
+	        f.sync();
+	        return;
+		}catch(Throwable th){
+			logger.error("[connectMaster][fail]" + endpoint, th);
 		}
 		
-		if(i == retry){
-			
-			if(logger.isInfoEnabled()){
-				logger.info("[connectMaster][fail, retry after "  + masterConnectRetryDelaySeconds + " seconds]" + endpoint);
-			}
-			scheduled.schedule(new Runnable() {
-				@Override
-				public void run() {
-					connectWithMaster();
-				}
-			}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
+		if(logger.isInfoEnabled()){
+			logger.info("[connectMaster][fail, retry after "  + masterConnectRetryDelaySeconds + " seconds]" + endpoint);
 		}
+		scheduled.schedule(new Runnable() {
+			@Override
+			public void run() {
+				connectWithMaster();
+			}
+		}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
 	}
 
 
@@ -196,12 +190,25 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	public void masterDisconntected(Channel channel) {
 		
 		commandRequester.connectionClosed(channel);
-		connectWithMaster();
+		
+		long interval = System.currentTimeMillis() - connectedTime;
+		long scheduleTime = masterConnectRetryDelaySeconds*1000 - interval;
+		if(scheduleTime < 0){
+			scheduleTime = 0;
+		}
+		scheduled.schedule(new Runnable() {
+			
+			@Override
+			public void run() {
+				connectWithMaster();
+			}
+		}, scheduleTime, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public void masterConnected(Channel channel) {
 		
+		connectedTime = System.currentTimeMillis();
 		this.masterChannel = channel;
 		commandRequester.request(channel, listeningPortCommand());
 		if(redisKeeperServer.getRedisKeeperServerState().sendKinfo()){

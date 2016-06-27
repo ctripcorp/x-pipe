@@ -13,11 +13,18 @@ import io.netty.buffer.ByteBuf;
  *         May 9, 2016 3:19:37 PM
  */
 public class SlaveOfCommand extends AbstractRedisCommand {
+	
+	private String ip;
+	private int port;
+	private String param = "";
 
-	/**
-	 * @param channel
-	 */
 	public SlaveOfCommand() {
+	}
+
+	public SlaveOfCommand(String ip, int port, String param) {
+		this.ip = ip;
+		this.port = port;
+		this.param = param;
 	}
 
 	@Override
@@ -27,8 +34,18 @@ public class SlaveOfCommand extends AbstractRedisCommand {
 
 	@Override
 	protected ByteBuf doRequest() {
-		RequestStringParser requestString = new RequestStringParser(getName(), "no", "one");
+		
+		RequestStringParser requestString = null;
+		if(ip == null){
+			requestString = new RequestStringParser(getName(), "no", "one", param);
+		}else{
+			requestString = new RequestStringParser(getName(), ip, String.valueOf(port), param);
+		}
 		return requestString.format();
 	}
 
+	@Override
+	public String toString() {
+		return String.format("%s %d %s", ip, port, param);
+	}
 }

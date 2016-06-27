@@ -215,6 +215,11 @@ public class AbstractTest {
 	} 
 
 	
+	protected int randomPort(){
+		return randomPort(10000, 20000);
+	}
+	
+	
 	/**
 	 * find an available port from min to max
 	 * @param min

@@ -1,4 +1,5 @@
-package com.ctrip.xpipe.redis.keeper.netty;
+package com.ctrip.xpipe.redis.core.netty;
+
 
 
 import com.ctrip.xpipe.exception.XpipeException;
@@ -24,11 +25,18 @@ public class NettyBaseClientHandler extends AbstractNettyHandler {
 		this.commandRequester = commandRequester;
 		this.initCmd = initCmd;
 	}
+	
+	public NettyBaseClientHandler(CommandRequester commandRequester) {
+		this.commandRequester = commandRequester;
+	}
+
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 
-		commandRequester.request(ctx.channel(), initCmd);
+		if(this.initCmd != null){
+			commandRequester.request(ctx.channel(), initCmd);
+		}
 		super.channelActive(ctx);
 	}
 

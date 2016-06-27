@@ -1,0 +1,74 @@
+package com.ctrip.xpipe.job;
+
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.job.JobFuture;
+
+
+/**
+ * @author wenchao.meng
+ *
+ * Jun 26, 2016
+ */
+public class DefaultJobFutureTest extends AbstractTest{
+	
+	JobFuture<Object> jobFuture = new DefaultJobFuture<>();
+	
+	@Test
+	public void testSuccess() throws InterruptedException, ExecutionException{
+		
+		final Object success = new Object();
+		jobFuture.await(1000, TimeUnit.MILLISECONDS);
+		
+		new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				jobFuture.setSuccess(success);
+			}
+		}).start();
+		Assert.assertEquals(success, jobFuture.get());
+		
+	}
+
+	@Test(expected = ExecutionException.class)
+	public void testFailure() throws InterruptedException, ExecutionException{
+		
+		jobFuture.await(1000, TimeUnit.MILLISECONDS);
+		
+		new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				jobFuture.setFailure(new Exception());
+			}
+		}).start();
+		jobFuture.get();
+		
+	}
+
+	@Test(expected = CancellationException.class)
+	public void testCancel() throws InterruptedException, ExecutionException{
+		
+		jobFuture.await(1000, TimeUnit.MILLISECONDS);
+		
+		new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				jobFuture.cancel(true);
+			}
+		}).start();
+		
+		sleep(10);
+		Assert.assertTrue(jobFuture.isCancelled());
+		jobFuture.get();
+	}
+
+}

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.server.io;
+package com.ctrip.xpipe.simpleserver;
 
 import java.io.IOException;
 import java.io.InputStream;

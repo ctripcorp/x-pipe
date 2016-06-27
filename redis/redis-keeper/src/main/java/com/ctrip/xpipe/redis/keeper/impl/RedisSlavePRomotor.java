@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.redis.core.netty.NettyBaseClientHandler;
 import com.ctrip.xpipe.redis.core.protocal.CmdContext;
 import com.ctrip.xpipe.redis.core.protocal.Command;
 import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
@@ -26,7 +27,6 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
-import com.ctrip.xpipe.redis.keeper.netty.NettyBaseClientHandler;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -42,15 +42,15 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  *
  * Jun 22, 2016
  */
-public class RedisSlavePRomotor {
+public class RedisSlavePromotor {
 	
-	protected Logger logger = LoggerFactory.getLogger(RedisSlavePRomotor.class);
+	protected Logger logger = LoggerFactory.getLogger(RedisSlavePromotor.class);
 	
 	private final RedisKeeperServer redisKeeperServer;
 	private final String promoteServerIp;
 	private final int promoteServerPort;
 	
-	public RedisSlavePRomotor(RedisKeeperServer redisKeeperServer, String promoteServerIp, int promoteServerPort){
+	public RedisSlavePromotor(RedisKeeperServer redisKeeperServer, String promoteServerIp, int promoteServerPort){
 		
 		this.redisKeeperServer = redisKeeperServer;
 		this.promoteServerIp = promoteServerIp;

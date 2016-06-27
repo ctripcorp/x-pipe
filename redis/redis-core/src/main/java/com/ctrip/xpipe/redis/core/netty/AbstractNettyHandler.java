@@ -1,7 +1,8 @@
-package com.ctrip.xpipe.redis.keeper.netty;
+package com.ctrip.xpipe.redis.core.netty;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -13,7 +14,7 @@ import io.netty.channel.ChannelHandlerContext;
  */
 public class AbstractNettyHandler extends ChannelDuplexHandler{
 	
-	protected Logger logger = LoggerFactory.getLogger(NettySlaveHandler.class);
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	protected ByteBufReadPolicy byteBufReadPolicy = new RetryByteBufReadPolicy();
 

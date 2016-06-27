@@ -8,8 +8,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ctrip.xpipe.redis.keeper.server.io.AbstractIoAction;
-import com.ctrip.xpipe.redis.keeper.server.io.SocketAware;
+import com.ctrip.xpipe.simpleserver.AbstractIoAction;
+import com.ctrip.xpipe.simpleserver.SocketAware;
 
 
 /**

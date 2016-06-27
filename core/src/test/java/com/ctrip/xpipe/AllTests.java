@@ -12,6 +12,7 @@ import com.ctrip.xpipe.Lifecycle.DefaultLifecycleStateTest;
 import com.ctrip.xpipe.Lifecycle.SpringComponentRegistryTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
+import com.ctrip.xpipe.job.DefaultJobFutureTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
 import com.ctrip.xpipe.utils.OffsetNotifierTest;
@@ -23,6 +24,7 @@ import com.ctrip.xpipe.utils.OffsetNotifierTest;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+	DefaultJobFutureTest.class,
 	DefaultEndPointTest.class,
 	ByteArrayOutputStreamPayloadTest.class,
 	ByteArrayWritableByteChannelTest.class,

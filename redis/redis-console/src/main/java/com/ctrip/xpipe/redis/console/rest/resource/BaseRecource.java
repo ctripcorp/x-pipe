@@ -11,6 +11,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import com.ctrip.xpipe.redis.console.dao.MetaDao;
 import com.ctrip.xpipe.redis.console.service.MetaService;
+import com.ctrip.xpipe.rest.DefaultRestProcessTemplate;
+import com.ctrip.xpipe.rest.ProcessTemplate;
 
 /**
  * @author marsqing
@@ -18,6 +20,8 @@ import com.ctrip.xpipe.redis.console.service.MetaService;
  *         May 26, 2016 6:34:49 PM
  */
 public class BaseRecource {
+	
+	protected ProcessTemplate template =  new DefaultRestProcessTemplate();
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	

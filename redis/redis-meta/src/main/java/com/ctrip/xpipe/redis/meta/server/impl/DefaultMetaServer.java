@@ -1,18 +1,18 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
 
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.recipes.locks.LockInternals;
 import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.apache.zookeeper.WatchedEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
@@ -31,7 +31,10 @@ import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaHolder;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.exception.RedisMetaServerException;
 import com.ctrip.xpipe.redis.meta.server.impl.event.ActiveKeeperChanged;
+import com.ctrip.xpipe.redis.meta.server.impl.event.RedisMasterChanged;
+import com.ctrip.xpipe.redis.meta.server.job.SlavePromotionJob;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.ObjectUtils.EqualFunction;
@@ -45,8 +48,6 @@ import com.ctrip.xpipe.utils.ServicesUtil;
  */
 @Component
 public class DefaultMetaServer extends AbstractLifecycleObservable implements MetaServer, Observer {
-
-	private static Logger log = LoggerFactory.getLogger(DefaultMetaServer.class);
 
 	@Autowired
 	private MetaHolder metaHolder;
@@ -103,7 +104,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 			for (ShardMeta shard : cluster.getShards().values()) {
 				ShardStatus shardStatus = MapUtils.getOrCreate(shardStatuses, new Pair<>(cluster.getId(), shard.getId()),  ShardStatus.getFactory());
 				
-				updateRedisMaster(cluster.getId(), shard, shardStatus);
+				updateRedisMaster(cluster.getId(), shard, cluster, shardStatus);
 				updateUpstreamKeeper(cluster.getId(), shard.getId(), shardStatus);
 			}
 		}
@@ -162,9 +163,9 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		observeLeader(cluster);
 	}
 
-	private void updateRedisMaster(String clusterId, ShardMeta shard, ShardStatus shardStatus) {
+	private void updateRedisMaster(String clusterId, ShardMeta shard, ClusterMeta cluster, ShardStatus shardStatus) {
 		
-		String activeDc = shard.getActiveDc();
+		String activeDc = cluster.getActiveDc();
 		if(activeDc.equals(currentDc)){
 			for (RedisMeta redis : shard.getRedises()) {
 				if (redis.isMaster()) {
@@ -191,9 +192,9 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 			}
 
 			ClusterMeta cluster = dc.findCluster(clusterId);
-			if (cluster != null) {
+			if (cluster != null && dc.getId().equals(cluster.getActiveDc())) {
 				ShardMeta shard = cluster.findShard(shardId);
-				if (shard != null && dc.getId().equals(shard.getActiveDc())) {
+				if (shard != null) {
 					activeShard = shard;
 					break;
 				}
@@ -269,10 +270,10 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		if(keeperChanged(oldActiveKeeper, keeper)){
 			notifyObservers(new ActiveKeeperChanged(clusterId, shardId, oldActiveKeeper, keeper));
 			if (keeper != null) {
-				log.info("{} become active keeper of cluster:{} shard:{}", keeper, clusterId, shardId);
+				logger.info("{} become active keeper of cluster:{} shard:{}", keeper, clusterId, shardId);
 				shardStatus.setActiveKeeper(keeper);
 			} else {
-				log.info("all keeper of cluster:{} shard:{} is down", clusterId, shardId);
+				logger.info("all keeper of cluster:{} shard:{} is down", clusterId, shardId);
 				shardStatus.setActiveKeeper(null);
 			}
 		}
@@ -316,5 +317,45 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 	
 	public void setMetaChangeListeners(List<MetaChangeListener> metaChangeListeners) {
 		this.metaChangeListeners = metaChangeListeners;
+	}
+
+	@Override
+	public void promoteRedisMaster(String clusterId, String shardId, String promoteIp, int promotePort) throws InterruptedException, RedisMetaServerException, ExecutionException {
+		
+		if(!currentDc.equals(getActiveDc(clusterId))){
+			throw new IllegalStateException("currrent dc not active, can not promote master");
+		}
+
+		logger.info("[promteRedisMaster]{}-{},{}:{}", clusterId, shardId, promoteIp, promotePort);
+		KeeperMeta activeKeeper = getActiveKeeper(clusterId, shardId); 
+		if(activeKeeper == null){
+			throw new RedisMetaServerException("[promoteRedisMaster][active keeper not found!]" + clusterId + "," + shardId + "," + promoteIp + ":" + promotePort);
+		}
+		
+		RedisMeta oldRedisMaster = getRedisMaster(clusterId, shardId);
+		
+		new SlavePromotionJob(activeKeeper, promoteIp, promotePort).execute().sync();
+		
+		RedisMeta redisMeta = new RedisMeta();
+		redisMeta.setIp(promoteIp);
+		redisMeta.setPort(promotePort);
+		redisMeta.setMaster(true);
+		updateRedisMaster(clusterId, shardId, redisMeta);
+		
+		notifyObservers(new RedisMasterChanged(clusterId, shardId, oldRedisMaster, redisMeta));
+		
+	}
+
+	private String getActiveDc(String clusterId) {
+		
+		XpipeMeta xpipeMeta = metaHolder.getMeta();
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+			if(clusterMeta == null){
+				continue;
+			}
+			return clusterMeta.getActiveDc();
+		}
+		throw new IllegalStateException("unfound cluster:" + clusterId);
 	}
 }

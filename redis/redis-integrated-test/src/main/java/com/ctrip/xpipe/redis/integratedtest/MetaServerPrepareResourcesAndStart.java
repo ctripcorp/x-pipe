@@ -82,13 +82,13 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 			dc.addCluster(clusterClone);
 
 			clusterClone.setId(cluster.getId());
+			clusterClone.setActiveDc(cluster.getActiveDc());
 
 			for (ShardMeta shard : cluster.getShards().values()) {
 				ShardMeta shardClone = new ShardMeta();
 				clusterClone.addShard(shardClone);
 
 				shardClone.setId(shard.getId());
-				shardClone.setActiveDc(shard.getActiveDc());
 
 				for (RedisMeta redis : shard.getRedises()) {
 					RedisMeta redisClone = new RedisMeta();
@@ -97,7 +97,6 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 					redisClone.setIp(redis.getIp());
 					redisClone.setMaster(redis.getMaster());
 					redisClone.setPort(redis.getPort());
-					redisClone.setShardActive(redis.getShardActive());
 
 				}
 			}

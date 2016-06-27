@@ -10,6 +10,8 @@ public interface RedisProtocol {
 	public static final int REDIS_PORT_DEFAULT = 6379;
 	
 	public static String CRLF = "\r\n";
+	
+	public static String OK = "OK";
 
 
 

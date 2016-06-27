@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.netty;
+package com.ctrip.xpipe.redis.core.netty;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

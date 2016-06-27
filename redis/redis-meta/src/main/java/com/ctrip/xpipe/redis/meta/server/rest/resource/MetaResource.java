@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server.rest.resource;
 
 
+import java.util.concurrent.Callable;
+
 import javax.inject.Singleton;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -83,6 +86,22 @@ public class MetaResource extends BaseRecource {
 			return Response.status(Status.OK).entity(master == null ? "": master).build();
 		}
 	}
+
+	@Path("/promote/{clusterId}/{shardId}/{ip}/{port}")
+	@POST
+	public Response promoteRedisMaster(@PathParam("clusterId") final String clusterId, @PathParam("shardId") final String shardId, @PathParam("ip") final String promoteIp, @PathParam("port") final int promotePort) {
+
+		logger.info("[promoteRedisMaster]{},{},{}:{}", clusterId , shardId , promoteIp , promotePort);
+
+		return processTemplate.process(new Callable<Response>() {
+			@Override
+			public Response call() throws Exception {
+				getMetaServer().promoteRedisMaster(clusterId, shardId, promoteIp, promotePort);
+				return Response.status(Status.OK).build();
+			}
+		});
+	}
+
 
 	private KeeperMeta doGetActiveKeeper(String clusterId, String shardId) {
 		KeeperMeta keeper = getMetaServer().getActiveKeeper(clusterId, shardId);

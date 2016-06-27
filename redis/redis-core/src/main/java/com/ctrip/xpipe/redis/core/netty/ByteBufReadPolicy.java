@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.netty;
+package com.ctrip.xpipe.redis.core.netty;
 
 import com.ctrip.xpipe.exception.XpipeException;
 
