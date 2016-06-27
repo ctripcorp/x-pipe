@@ -40,7 +40,12 @@ public class ClientTest extends AbstractRedisTest{
 		int port = randomPort();
 		Client client = new Client(new InetSocketAddress("localhost", port));
 		client.initialize();
-		client.start();
+		try{
+			client.start();
+			Assert.fail();
+		}catch(Exception e){
+			
+		}
 		
 		Assert.assertEquals(false, client.isAlive());		
 	}
