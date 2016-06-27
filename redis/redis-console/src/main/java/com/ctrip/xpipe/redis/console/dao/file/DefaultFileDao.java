@@ -291,4 +291,33 @@ public class DefaultFileDao extends AbstractMetaDao{
 		throw new DaoException("clusterId " + clusterId + " not found!");
 	}
 
+	@Override
+	public boolean updateActiveDc(String clusterId, String activeDc) throws DaoException {
+		
+		logger.info("[updateActiveDc]{}, {}", clusterId, activeDc);
+		String currentActive = getActiveDc(clusterId);
+		if(currentActive.equals(activeDc)){
+			logger.info("[updateActiveDc][not changed]{}, {}", clusterId, activeDc);
+			return false;
+		}
+		
+		for(ClusterMeta clusterMeta : getClusterMetaInAllDc(clusterId)){
+			clusterMeta.setActiveDc(activeDc);
+		}
+		return true;
+	}
+
+	private List<ClusterMeta> getClusterMetaInAllDc(String clusterId) {
+		
+		List<ClusterMeta> result = new LinkedList<>();
+		for(DcMeta dcMeta : getXpipeMeta().getDcs().values()){
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+			if(clusterMeta == null){
+				continue;
+			}
+			result.add(clusterMeta);
+		}
+		return result;
+	}
+
 }

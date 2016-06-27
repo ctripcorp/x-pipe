@@ -46,6 +46,7 @@ public class SlavePromotionJob extends AbstractJob<Void>{
 	public class SlavePromotionTask implements Runnable, RequestResponseCommandListener{
 		
 		private JobFuture<Void> future; 
+		private Client client;
 		public SlavePromotionTask(JobFuture<Void> future ) {
 			this.future = future;
 		}
@@ -57,7 +58,7 @@ public class SlavePromotionJob extends AbstractJob<Void>{
 			ClientPool clientPool = ClientPool.getInstance();
 			
 			try{
-				Client client = clientPool.getClient(new InetSocketAddress(keeperMeta.getIp(), keeperMeta.getPort()));
+				client = clientPool.borrowClient(new InetSocketAddress(keeperMeta.getIp(), keeperMeta.getPort()));
 				SlaveOfCommand slaveOfCommand = new SlaveOfCommand(null, 0, String.format("%s %d", promoteIp, promotePort));
 				slaveOfCommand.setCommandListener(this);
 				logger.info("[run][write cmd]{}", slaveOfCommand);
@@ -70,6 +71,8 @@ public class SlavePromotionJob extends AbstractJob<Void>{
 		
 		@Override
 		public void onComplete(CmdContext cmdContext, Object data, Exception e) {
+			
+			ClientPool.getInstance().returnClient(client);
 			
 			logger.info("[onComplete]{},{}", data, e);
 			if(e != null){

@@ -50,6 +50,7 @@ public class DefaultMetaService implements MetaService{
 			return false;
 		}
 		
+		logger.info("[updateKeeperActive][changed]{},{},{},{}", dc, clusterId, shardId, activeKeeper);
 		notifyDcs(clusterId, shardId);
 		
 		return activeChanged;
@@ -67,10 +68,27 @@ public class DefaultMetaService implements MetaService{
 			return false;
 		}
 		
+		logger.info("[updateRedisMaster][changed]{},{},{},{}", dc, clusterId, shardId, redisMaster);
 		notifyDcs(clusterId, shardId);
 		return activeChanged;
 	}
 
+	@Override
+	public boolean updateActiveDc(String clusterId, String activeDc) throws DaoException {
+		
+		boolean activeDcChanged = metaDao.updateActiveDc(clusterId, activeDc);
+		
+		if(!activeDcChanged){
+			logger.info("[updateActiveDc][not changed]{},{}", clusterId, activeDc);
+			return false;
+		}
+		
+		logger.info("[updateActiveDc][changed notify dcs]{},{}", clusterId, activeDc);
+		notifyDcs(clusterId, null);
+		return activeDcChanged;
+	}
+
+	
 	private void notifyDcs(final String clusterId, final String shardId) {
 		
 		for(final String newDc : metaDao.getDcs()){
@@ -79,23 +97,33 @@ public class DefaultMetaService implements MetaService{
 				
 				@Override
 				public void run() {
-					notifyDc(newDc, clusterId, shardId);
+					notifyDc(newDc);
 				}
 			});
 		}
 	}
 
-	private void notifyDc(String dc, String clusterId, String shardId){
-		
+	private void notifyDc(String dc){
+
+		String zkAddress = null;
+		CuratorFramework curatorFramework = null;
 		try {
-			logger.info("[notifyDc]{}, {}, {}, {}", dc, clusterId, shardId);
-			String zkAddress = metaDao.getZkServerMeta(dc).getAddress();
-			logger.info("[notifyDc]{}", zkAddress);
-			CuratorFramework curatorFramework = zkPool.borrowObject(zkAddress);
+			zkAddress = metaDao.getZkServerMeta(dc).getAddress();
+			curatorFramework = zkPool.borrowObject(zkAddress);
+			logger.info("[notifyDc]{}, {}", dc, zkAddress);
 			//TODO split into small pieces
 			new DefaultMetaOperation(curatorFramework).update(metaDao.getXpipeMeta());
 		} catch (Exception e) {
 			logger.error("[notifyDc]" + dc, e);
+		}finally{
+			if(curatorFramework != null){
+				try {
+					zkPool.returnObject(zkAddress, curatorFramework);
+				} catch (Exception e) {
+					logger.error("[return object exception]" + zkAddress + ","+ curatorFramework, e);
+				}
+			}
 		}
 	}
+
 }

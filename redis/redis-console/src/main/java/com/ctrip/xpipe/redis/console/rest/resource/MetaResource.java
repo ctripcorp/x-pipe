@@ -58,6 +58,22 @@ public class MetaResource extends BaseRecource {
 			}
 		});
 	}
+	
+
+	@Path("/{clusterId}/activedc/{activeDc}")
+	@POST
+	public Response updateActiveDc(@PathParam("clusterId") final String clusterId, @PathParam("activeDc") final String activeDc) {
+		
+		logger.info("[updateActiveDc]{},{},{},{}", clusterId, activeDc);
+		
+		return template.process(new Callable<Response>() {
+			@Override
+			public Response call() throws Exception {
+				getMetaService().updateActiveDc(clusterId, activeDc);
+				return Response.status(Status.OK).build();
+			}
+		});
+	}
 
 	@Path("/xpipe")
 	@GET

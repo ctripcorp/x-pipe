@@ -10,16 +10,10 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
  */
 public interface MetaUpdateOperation {
 	
-	/**
-	 * @param dc
-	 * @param clusterId
-	 * @param shardId
-	 * @param activeKeeper
-	 * @return true if active changed
-	 * @throws DaoException 
-	 */
 	boolean updateKeeperActive(String dc, String clusterId, String shardId, KeeperMeta activeKeeper) throws DaoException;
 	
 	boolean updateRedisMaster(String dc, String clusterId, String shardId, RedisMeta redisMaster) throws DaoException;
+	
+	boolean updateActiveDc(String clusterId, String activeDc) throws DaoException;
 }	
 
