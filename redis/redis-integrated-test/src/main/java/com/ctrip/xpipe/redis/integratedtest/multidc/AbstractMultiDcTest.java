@@ -27,7 +27,6 @@ public abstract class AbstractMultiDcTest extends AbstractIntegratedTestTemplate
 
 		if(startAllDc()){
 			startXpipe();
-//			updateUpstreamKeeper();
 			sleep(6000);
 		}
 	}

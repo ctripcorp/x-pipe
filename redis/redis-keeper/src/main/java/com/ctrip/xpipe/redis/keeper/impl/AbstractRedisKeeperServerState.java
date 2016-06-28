@@ -55,7 +55,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		
 		if(args instanceof MetaUpdateInfo){
 			
-			logger.info("{}, {}", args);
+			logger.debug("{}, {}", args);
 
 			MetaUpdateInfo metaUpdateInfo = (MetaUpdateInfo) args;
 			if(!redisKeeperServer.getClusterId().equals(metaUpdateInfo.getClusterId()) || !redisKeeperServer.getShardId().equals(metaUpdateInfo.getShardId())){

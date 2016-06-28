@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
+import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import javax.ws.rs.ProcessingException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -53,8 +56,15 @@ public class DefaultMetaRefresher extends AbstractLifecycle implements MetaRefre
 	public void run() {
 		try{
 			update();
-		}catch(Throwable th){
-			logger.error("[run]", th);
+		}catch(ProcessingException e){
+			
+			if(e.getCause() instanceof IOException){
+				logger.error("[run]" + e.getMessage());
+			}else{
+				logger.error("[run]", e);
+			}
+		} catch (Exception e) {
+			logger.error("[run]", e);
 		}
 	}
 

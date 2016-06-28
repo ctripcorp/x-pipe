@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.impl.listener;
 
 
+import java.io.IOException;
+
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.Response;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,11 +38,26 @@ public class ConsoleListener extends AbstractMetaChangeListener{
 		logger.info("[redisMasterChanged]{},{},{}->{}", clusterId, shardId, oldRedisMaster, newRedisMaster);
 
 		String target = String.format("%s/api/v1/%s/%s/%s/redis/master", metaServerConfig.getConsoleAddress(), dc, clusterId, shardId);
-		Response response =  RestRequestClient.request(target, newRedisMaster);
-		if(response.getStatus() != HttpConstants.HTTP_STATUS_200){
-			logger.error("[activeKeeperChanged][call console failed!]" + response);
-		}
+		request(target, newRedisMaster);
 		
+	}
+
+	private void request(String target, Object param) {
+		
+		try{
+			Response response =  RestRequestClient.request(target, param);
+			if(response.getStatus() != HttpConstants.HTTP_STATUS_200){
+				logger.error("[request][call console failed!]" + response);
+			}
+		}catch(ProcessingException e){
+			if(e.getCause() instanceof IOException){
+				logger.error("[request]" + e.getMessage());
+			}else{
+				logger.error("[request]", e);
+			}
+		} catch (Exception e) {
+			logger.error("[request]", e);
+		}
 	}
 
 	@Override
@@ -51,10 +69,7 @@ public class ConsoleListener extends AbstractMetaChangeListener{
 		logger.info("[activeKeeperChanged]{},{},{}->{}", clusterId, shardId, oldKeeperMeta, newKeeperMeta);
 
 		String target = String.format("%s/api/v1/%s/%s/%s/keeper/active", metaServerConfig.getConsoleAddress(), dc, clusterId, shardId);
-		Response response =  RestRequestClient.request(target, newKeeperMeta);
-		if(response.getStatus() != HttpConstants.HTTP_STATUS_200){
-			logger.error("[activeKeeperChanged][call console failed]" + response);
-		}
+		request(target, newKeeperMeta);
 	}
 
 }

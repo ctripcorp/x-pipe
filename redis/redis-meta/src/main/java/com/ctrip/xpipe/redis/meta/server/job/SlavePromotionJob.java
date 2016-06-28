@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
@@ -8,8 +9,8 @@ import com.ctrip.xpipe.api.job.JobFuture;
 import com.ctrip.xpipe.job.AbstractJob;
 import com.ctrip.xpipe.job.DefaultJobFuture;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.client.Client;
-import com.ctrip.xpipe.redis.core.client.ClientPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.CmdContext;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
@@ -27,11 +28,13 @@ public class SlavePromotionJob extends AbstractJob<Void>{
 	private KeeperMeta keeperMeta;
 	private String promoteIp;
 	private int promotePort;
+	private XpipeKeyedObjectPool<InetSocketAddress, Client> clientPool;
 	
-	public SlavePromotionJob(KeeperMeta keeperMeta, String promoteIp, int promotePort) {
+	public SlavePromotionJob(KeeperMeta keeperMeta, String promoteIp, int promotePort, XpipeKeyedObjectPool<InetSocketAddress, Client> clientPool) {
 		this.keeperMeta = keeperMeta;
 		this.promoteIp = promoteIp;
 		this.promotePort = promotePort;
+		this.clientPool = clientPool;
 	}
 
 	@Override
@@ -55,10 +58,8 @@ public class SlavePromotionJob extends AbstractJob<Void>{
 			
 			logger.info("[run]{},{},{}", keeperMeta, promoteIp, promotePort);
 			
-			ClientPool clientPool = ClientPool.getInstance();
-			
 			try{
-				client = clientPool.borrowClient(new InetSocketAddress(keeperMeta.getIp(), keeperMeta.getPort()));
+				client = clientPool.borrowObject(new InetSocketAddress(keeperMeta.getIp(), keeperMeta.getPort()));
 				SlaveOfCommand slaveOfCommand = new SlaveOfCommand(null, 0, String.format("%s %d", promoteIp, promotePort));
 				slaveOfCommand.setCommandListener(this);
 				logger.info("[run][write cmd]{}", slaveOfCommand);
@@ -72,7 +73,11 @@ public class SlavePromotionJob extends AbstractJob<Void>{
 		@Override
 		public void onComplete(CmdContext cmdContext, Object data, Exception e) {
 			
-			ClientPool.getInstance().returnClient(client);
+			try {
+				clientPool.returnObject(client.getAddress(), client);
+			} catch (Exception e1) {
+				logger.error("[onComplete][return object error]{}", client);
+			}
 			
 			logger.info("[onComplete]{},{}", data, e);
 			if(e != null){

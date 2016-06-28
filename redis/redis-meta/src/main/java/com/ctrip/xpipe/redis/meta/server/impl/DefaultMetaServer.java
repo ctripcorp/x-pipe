@@ -2,11 +2,14 @@ package com.ctrip.xpipe.redis.meta.server.impl;
 
 
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+
+import javax.annotation.Resource;
 
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.recipes.locks.LockInternals;
@@ -20,6 +23,8 @@ import org.unidal.tuple.Pair;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
+import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
+import com.ctrip.xpipe.redis.core.client.Client;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -51,6 +56,9 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 
 	@Autowired
 	private MetaHolder metaHolder;
+	
+	@Resource( name = "clientPool" )
+	XpipeKeyedObjectPool<InetSocketAddress, Client> clientPool;
 
 	@SuppressWarnings("unused")
 	@Autowired
@@ -334,7 +342,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		
 		RedisMeta oldRedisMaster = getRedisMaster(clusterId, shardId);
 		
-		new SlavePromotionJob(activeKeeper, promoteIp, promotePort).execute().sync();
+		new SlavePromotionJob(activeKeeper, promoteIp, promotePort, clientPool).execute().sync();
 		
 		RedisMeta redisMeta = new RedisMeta();
 		redisMeta.setIp(promoteIp);

@@ -26,24 +26,21 @@ public class ManualStarter extends AbstractMultiDcTest{
 	
 
 	@Test
-	public void startConsoleAndZk() throws Exception{
+	public void startConsole() throws Exception{
 	
 		//clean environment
 		FileUtils.forceDelete(new File(getTestFileDir()));
-		startZks();
+		stopServerListeningPort(getConsolePort());
 		startConsoleServer();
 	}
 	
 
 	@Test
 	public void startMetaServer0() throws Exception{
-		startMetaServers(getDcMeta(getAndSetDc(0)));		
-	}
-	
-
-	@Test
-	public void startMetaServer1() throws Exception{
-		startMetaServers(getDcMeta(getAndSetDc(1)));
+		
+		DcMeta dcMeta = getDcMeta(getAndSetDc(0));
+		startZkServer(dcMeta.getZkServer());
+		startMetaServers(dcMeta);		
 	}
 	
 	@Test
@@ -61,16 +58,33 @@ public class ManualStarter extends AbstractMultiDcTest{
 		startKeepers(getAndSetDc(0), clusterId, shardId, 1);
 	}
 
-	@Test
-	public void startKeepers1() throws Exception{
-		startKeepers(getAndSetDc(1), clusterId, shardId, null);
-	}
-	
+
 	@Test
 	public void startRedises0() throws ExecuteException, IOException{
 		startRedises(getAndSetDc(0), clusterId, shardId);
 	}
 
+	@Test
+	public void stopDc0() throws ExecuteException, IOException{
+		
+		DcMeta dcMeta = getDcMeta(getAndSetDc(0));
+		stopDc(dcMeta);
+	}
+
+	/////////////////////////////////////////DC1/////////////////////////////////////////
+	@Test
+	public void startMetaServer1() throws Exception{
+		DcMeta dcMeta = getDcMeta(getAndSetDc(1));
+		startZkServer(dcMeta.getZkServer());
+		startMetaServers(dcMeta);		
+	}
+	
+
+	@Test
+	public void startKeepers1() throws Exception{
+		startKeepers(getAndSetDc(1), clusterId, shardId, null);
+	}
+	
 	@Test
 	public void startRedises1() throws ExecuteException, IOException{
 		startRedises(getAndSetDc(1), clusterId, shardId);
@@ -123,13 +137,6 @@ public class ManualStarter extends AbstractMultiDcTest{
 	protected boolean staticPort() {
 		return true;
 	}
-
-	protected void startZks() {
-		for(DcMeta dcMeta : getXpipeMeta().getDcs().values()){
-			startZkServer(dcMeta.getZkServer());
-		}
-	}
-
 
 
 	@After

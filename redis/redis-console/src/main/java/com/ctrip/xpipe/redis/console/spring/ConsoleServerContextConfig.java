@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.console.spring;
 
-import org.apache.commons.pool.KeyedObjectPool;
-import org.apache.commons.pool.impl.GenericKeyedObjectPool;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
+import com.ctrip.xpipe.spring.AbstractConfigContext;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import com.ctrip.xpipe.zk.pool.ZkFactory;
 
@@ -17,14 +18,12 @@ import com.ctrip.xpipe.zk.pool.ZkFactory;
  */
 @Configuration
 @ComponentScan({"com.ctrip.xpipe.redis.console"})
-public class ConsoleServerContextConfig {
+public class ConsoleServerContextConfig extends AbstractConfigContext{
 
 	@Bean(name= "zkPool")
-	public KeyedObjectPool<String, CuratorFramework>  getZkPool(){
+	public XpipeKeyedObjectPool<String, CuratorFramework>  getZkPool(){
 		
-		KeyedObjectPool<String, CuratorFramework>  pool = new GenericKeyedObjectPool<String, CuratorFramework>(
-				new ZkFactory(new DefaultZkConfig()));
-		
+		XpipeKeyedObjectPool<String, CuratorFramework> pool = new XpipeKeyedObjectPool<>(new ZkFactory(new DefaultZkConfig()));
 		return pool;
 	}
 }

@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.zk.pool;
 
 
-import org.apache.commons.pool.KeyedPoolableObjectFactory;
+import org.apache.commons.pool2.KeyedPooledObjectFactory;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.curator.framework.CuratorFramework;
 import com.ctrip.xpipe.zk.ZkConfig;
 
@@ -10,7 +12,7 @@ import com.ctrip.xpipe.zk.ZkConfig;
  *
  * Jun 23, 2016
  */
-public class ZkFactory implements KeyedPoolableObjectFactory<String, CuratorFramework>{
+public class ZkFactory implements KeyedPooledObjectFactory<String, CuratorFramework>{
 	
 	private ZkConfig zkConfig;
 	
@@ -19,30 +21,33 @@ public class ZkFactory implements KeyedPoolableObjectFactory<String, CuratorFram
 	}
 	
 	@Override
-	public CuratorFramework makeObject(String key) throws Exception {
-
-		return zkConfig.create(key);
-	}
-
-	@Override
-	public void destroyObject(String key, CuratorFramework obj) throws Exception {
-		obj.close();
+	public PooledObject<CuratorFramework> makeObject(String key) throws Exception {
 		
+		CuratorFramework curatorFramework = zkConfig.create(key);
+		return new DefaultPooledObject<>(curatorFramework);
 	}
 
 	@Override
-	public boolean validateObject(String key, CuratorFramework obj) {
+	public void destroyObject(String key, PooledObject<CuratorFramework> p) throws Exception {
+		
+		CuratorFramework curatorFramework = p.getObject();
+		if(curatorFramework != null){
+			curatorFramework.close();
+		}
+	}
+
+	@Override
+	public boolean validateObject(String key, PooledObject<CuratorFramework> p) {
 		return true;
 	}
 
 	@Override
-	public void activateObject(String key, CuratorFramework obj) throws Exception {
+	public void activateObject(String key, PooledObject<CuratorFramework> p) throws Exception {
 		
 	}
 
 	@Override
-	public void passivateObject(String key, CuratorFramework obj) throws Exception {
+	public void passivateObject(String key, PooledObject<CuratorFramework> p) throws Exception {
 		
 	}
-
 }

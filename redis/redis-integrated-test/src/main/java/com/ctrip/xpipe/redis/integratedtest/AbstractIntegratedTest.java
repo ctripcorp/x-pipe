@@ -78,26 +78,35 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		// stop keeper
 		for (DcMeta dcMeta : getXpipeMeta().getDcs().values()) {
 
-			for(InetSocketAddress address : IpUtils.parse(dcMeta.getZkServer().getAddress())){
-				logger.info(remarkableMessage("[stopZkServer]{}"), address);
-				stopServerListeningPort(address.getPort());
-			}
-			
-			for(MetaServerMeta metaServerMeta : dcMeta.getMetaServers()){
-				logger.info("[stopMetaServer]{}", metaServerMeta);
-				stopServerListeningPort(metaServerMeta.getPort());
-			}
-			
-			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
-					for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-						logger.info("[stopKeeperServer]{}", keeperMeta.getPort());
-						stopServerListeningPort(keeperMeta.getPort());
-					}
+			stopDc(dcMeta);
+		}
+
+	}
+
+	protected void stopDc(DcMeta dcMeta) throws ExecuteException, IOException {
+		
+		for(InetSocketAddress address : IpUtils.parse(dcMeta.getZkServer().getAddress())){
+			logger.info(remarkableMessage("[stopZkServer]{}"), address);
+			stopServerListeningPort(address.getPort());
+		}
+		
+		for(MetaServerMeta metaServerMeta : dcMeta.getMetaServers()){
+			logger.info("[stopMetaServer]{}", metaServerMeta);
+			stopServerListeningPort(metaServerMeta.getPort());
+		}
+		
+		for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+			for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+				for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
+					logger.info("[stopKeeperServer]{}", keeperMeta.getPort());
+					stopServerListeningPort(keeperMeta.getPort());
+				}
+				for(RedisMeta redisMeta : shardMeta.getRedises()){
+					logger.info("[stopRedisServer]{}", redisMeta.getPort());
+					stopServerListeningPort(redisMeta.getPort());
 				}
 			}
 		}
-
 	}
 
 	private void createDcs(){
@@ -108,7 +117,12 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	}
 
 	protected void startConsoleServer() throws Exception {
-		new ConsoleStart(consolePort).start();
+		
+		logger.info(remarkableMessage("[startConsoleServer]{}"), consolePort);
+		ConsoleStart consoleStart = new ConsoleStart(consolePort);
+		consoleStart.initialize();
+		consoleStart.start();
+		add(consoleStart);
 	}
 
 
@@ -128,7 +142,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 
 	protected void startXpipe() throws Exception{
-
+		
+		logger.info(remarkableMessage("startXpipe"));
 		
 		startConsoleServer();
 		
@@ -229,7 +244,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		
 		stopServerListeningPort(redisMeta.getPort());
 		
-		logger.info(remarkableMessage("[startRedis]{}, {}"), dcMeta, redisMeta);
+		logger.info(remarkableMessage("[startRedis]{}"), redisMeta);
 		
 		File testDir = new File(getTestFileDir());
 		File redisDir = new File(testDir, "redisconfig");

@@ -5,13 +5,13 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.pool.KeyedObjectPool;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.dao.DaoException;
 import com.ctrip.xpipe.redis.console.dao.MetaDao;
 import com.ctrip.xpipe.redis.console.service.MetaService;
@@ -35,7 +35,7 @@ public class DefaultMetaService implements MetaService{
 	private ExecutorService executors  = Executors.newCachedThreadPool(); 
 	
 	@Resource(name="zkPool")
-	private KeyedObjectPool<String, CuratorFramework> zkPool;
+	private XpipeKeyedObjectPool<String, CuratorFramework> zkPool;
 	
 	public DefaultMetaService() {
 	}

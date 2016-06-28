@@ -4,41 +4,69 @@ import java.io.File;
 
 import org.unidal.test.jetty.JettyServer;
 
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
+
 /**
  * @author wenchao.meng
  *
  * Jun 24, 2016
  */
-public class ConsoleStart extends JettyServer{
+public class ConsoleStart extends AbstractLifecycle{
 	
 	private int consolePort = 8080;
+	private ConsoleJettyServer consoleJettyServer;
 	
 	public ConsoleStart(int consolePort) {
 		this.consolePort = consolePort;
+		consoleJettyServer = new ConsoleJettyServer();
+	}
+	@Override
+	protected void doStart() throws Exception {
+		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "true");
+		consoleJettyServer.startServer();
 		
 	}
+
+	@Override
+	protected void doStop() throws Exception {
+		consoleJettyServer.stopServer();
+	}
+
 	
-	public void start() throws Exception{
+	private class ConsoleJettyServer extends JettyServer{
 		
-		startServer();
+		@Override
+		protected String getContextPath() {
+			return "/";
+		}
+
+		@Override
+		protected int getServerPort() {
+			return consolePort;
+		}
+
+		@Override
+		protected void startServer() throws Exception {
+			super.startServer();
+		}
+
+		@Override
+		protected void stopServer() throws Exception {
+			super.stopServer();
+		}
+		
+		@Override
+		protected File getWarRoot() {
+			return new File("../redis-console/src/main/webapp");
+		}
 	}
 
-	@Override
-	protected String getContextPath() {
-		return "/";
-	}
-
-	@Override
-	protected int getServerPort() {
-		return consolePort;
-	}
-
-	@Override
-	protected File getWarRoot() {
-		return new File("../redis-console/src/main/webapp");
-	}
 
 	public static void main(String []argc) throws Exception{
-		new ConsoleStart(8080).start();
+		
+		ConsoleStart consoleStart = new ConsoleStart(8080);
+		consoleStart.initialize();
+		consoleStart.start();
 	}
 }

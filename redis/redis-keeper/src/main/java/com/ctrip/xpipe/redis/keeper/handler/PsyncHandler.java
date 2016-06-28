@@ -88,6 +88,14 @@ public class PsyncHandler extends AbstractCommandHandler{
 						return;
 					}
 				} catch (InterruptedException e) {
+				}catch(Exception e){
+					logger.error("[waitForoffset][failed]", e);
+					try {
+						redisSlave.close();
+					} catch (IOException e1) {
+						logger.error("[waitForoffset][close slave]" + redisSlave, e);
+					}
+					return;
 				}
 				logger.info("[run][offset wait failed]{}", redisSlave);
 				doFullSync(redisSlave);
