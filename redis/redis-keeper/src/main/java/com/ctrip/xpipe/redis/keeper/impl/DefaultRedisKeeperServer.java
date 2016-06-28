@@ -426,7 +426,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public void promoteSlave(String ip, int port) throws RedisSlavePromotionException {
 		
 		logger.info("[promoteSlave]{}:{}", ip, port);
-		RedisSlavePromotor promotor = new RedisSlavePromotor(this, ip, port);
+		RedisPromotor promotor = new RedisPromotor(this, ip, port);
 		promotor.promote();
 	}
 

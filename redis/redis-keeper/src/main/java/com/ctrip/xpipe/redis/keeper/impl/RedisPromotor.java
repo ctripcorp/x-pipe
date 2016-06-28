@@ -42,15 +42,15 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  *
  * Jun 22, 2016
  */
-public class RedisSlavePromotor {
+public class RedisPromotor {
 	
-	protected Logger logger = LoggerFactory.getLogger(RedisSlavePromotor.class);
+	protected Logger logger = LoggerFactory.getLogger(RedisPromotor.class);
 	
 	private final RedisKeeperServer redisKeeperServer;
 	private final String promoteServerIp;
 	private final int promoteServerPort;
 	
-	public RedisSlavePromotor(RedisKeeperServer redisKeeperServer, String promoteServerIp, int promoteServerPort){
+	public RedisPromotor(RedisKeeperServer redisKeeperServer, String promoteServerIp, int promoteServerPort){
 		
 		this.redisKeeperServer = redisKeeperServer;
 		this.promoteServerIp = promoteServerIp;
