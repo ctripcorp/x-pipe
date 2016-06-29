@@ -117,8 +117,7 @@ public class MetaResource extends BaseRecource {
 	}
 
 	private MetaServer getMetaServer() {
-		// TODO call getBean only once
-		return getSpringContext().getBean(MetaServer.class);
+		return getBeansOfType(MetaServer.class);
 	}
 
 }

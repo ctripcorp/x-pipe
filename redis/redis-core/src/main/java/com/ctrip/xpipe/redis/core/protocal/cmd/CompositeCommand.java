@@ -91,8 +91,12 @@ public class CompositeCommand extends AbstractCommand{
 
 	@Override
 	protected ByteBuf doRequest() {
-		
-		return nextCommand().request();
+		Command command = nextCommand();
+		if(command == null){
+			logger.info("[doRequest][next command null]");
+			return null;
+		}
+		return command.request();
 	}
 
 	@Override

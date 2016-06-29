@@ -66,7 +66,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	}
 	
 	@Override
-	public ReplicationStore createIfNotExist() throws IOException {
+	public synchronized ReplicationStore createIfNotExist() throws IOException {
 		
 		ReplicationStore currentReplicationStore = getCurrent();
 		if(currentReplicationStore == null){

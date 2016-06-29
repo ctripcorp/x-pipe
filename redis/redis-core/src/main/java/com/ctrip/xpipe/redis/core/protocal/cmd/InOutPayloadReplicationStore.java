@@ -64,11 +64,9 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	@Override
 	public void onFileData(FileChannel fileChannel, long pos, long len) throws IOException {
 		
-		if(writableByteChannel != null && len > 0){
+		if(len >= 0){
 			fileChannel.transferTo(pos, len, writableByteChannel);
-		}
-		
-		if( len == -1 ){
+		}else{
 			writableByteChannel.close();
 		}
 	}

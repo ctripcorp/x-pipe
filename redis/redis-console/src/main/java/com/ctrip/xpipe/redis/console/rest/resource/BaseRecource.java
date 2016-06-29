@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.rest.resource;
 
 
+
 import javax.servlet.ServletContext;
 import javax.ws.rs.core.Context;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -34,13 +36,23 @@ public class BaseRecource {
 	
 	protected MetaDao getMetaDao(){
 		
-		return getSpringContext().getBean(MetaDao.class);
+		
+		return getBean(MetaDao.class);
 	}
 	
 	
-	protected MetaService getMetaService(){
+	private <T> T getBean(Class<T> clazz) {
 		
-		return getSpringContext().getBean(MetaService.class);
+		ApplicationContext applicationContext = getSpringContext();
+		if(applicationContext == null){
+			return null;
+		}
+		return applicationContext.getBean(clazz);
 	}
 
+	protected MetaService getMetaService(){
+		
+		return getBean(MetaService.class);
+	}
+	
 }

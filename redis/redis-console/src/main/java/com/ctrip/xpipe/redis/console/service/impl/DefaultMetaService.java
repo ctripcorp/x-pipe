@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.console.dao.MetaDao;
 import com.ctrip.xpipe.redis.console.service.MetaService;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultMetaOperation;
 
 /**
@@ -108,7 +109,12 @@ public class DefaultMetaService implements MetaService{
 		String zkAddress = null;
 		CuratorFramework curatorFramework = null;
 		try {
-			zkAddress = metaDao.getZkServerMeta(dc).getAddress();
+			ZkServerMeta zkServerMeta = metaDao.getZkServerMeta(dc);
+			if(zkServerMeta == null){
+				logger.warn("[notifyDc][no zkServer config]{}", dc);
+				return;
+			}
+			zkAddress = zkServerMeta.getAddress();
 			curatorFramework = zkPool.borrowObject(zkAddress);
 			logger.info("[notifyDc]{}, {}", dc, zkAddress);
 			//TODO split into small pieces

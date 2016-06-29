@@ -21,15 +21,18 @@ public abstract class AbstractObservable implements Observable{
 	private List<Observer> observers = new LinkedList<>();
 	
 	@Override
-	public synchronized void addObserver(Observer observer) {
+	public void addObserver(Observer observer) {
 		
-		observers.add(observer);
-		
+		synchronized (observers) {
+			observers.add(observer);
+		}
 	}
 
-	public synchronized void removeObserver(Observer observer) {
+	public void removeObserver(Observer observer) {
 		
-		observers.remove(observer);
+		synchronized (observers) {
+			observers.remove(observer);
+		}
 	}
 	
 	

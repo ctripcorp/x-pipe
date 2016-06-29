@@ -59,10 +59,12 @@ public class DefaultCommandStore implements CommandStore {
 	private long findMaxStartOffset() {
 		long maxStartOffset = 0;
 		File[] files = baseDir.listFiles((FilenameFilter) fileFilter);
-		for (File file : files) {
-			long startOffset = extractStartOffset(file);
-			if (startOffset > maxStartOffset) {
-				maxStartOffset = startOffset;
+		if(files != null){
+			for (File file : files) {
+				long startOffset = extractStartOffset(file);
+				if (startOffset > maxStartOffset) {
+					maxStartOffset = startOffset;
+				}
 			}
 		}
 		return maxStartOffset;
@@ -131,14 +133,15 @@ public class DefaultCommandStore implements CommandStore {
 		rotateFileIfNenessary();
 		
 		File[] files = baseDir.listFiles((FilenameFilter) fileFilter);
-		for (File file : files) {
-			long startOffset = extractStartOffset(file);
-			if (targetStartOffset >= startOffset
-			      && (targetStartOffset < startOffset + file.length() || targetStartOffset < startOffset + maxFileSize)) {
-				return file;
+		if(files != null){
+			for (File file : files) {
+				long startOffset = extractStartOffset(file);
+				if (targetStartOffset >= startOffset
+				      && (targetStartOffset < startOffset + file.length() || targetStartOffset < startOffset + maxFileSize)) {
+					return file;
+				}
 			}
 		}
-
 		return null;
 	}
 

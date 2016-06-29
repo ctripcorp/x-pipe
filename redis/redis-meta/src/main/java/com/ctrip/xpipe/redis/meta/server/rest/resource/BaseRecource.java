@@ -5,6 +5,7 @@ import javax.ws.rs.core.Context;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -27,6 +28,15 @@ public class BaseRecource {
 
 	protected WebApplicationContext getSpringContext() {
 		return WebApplicationContextUtils.getWebApplicationContext(servletContext);
+	}
+
+	protected <T> T getBeansOfType(Class<T> clazz) {
+		
+		ApplicationContext applicationContext = getSpringContext();
+		if(applicationContext == null){
+			return null;
+		}
+		return applicationContext.getBean(clazz);
 	}
 
 }

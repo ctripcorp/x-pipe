@@ -263,47 +263,51 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	private File createRedisConfigFile(DcMeta dcMeta, RedisMeta redisMeta, File destDir, File dataDir) throws IOException {
 
-		InputStream ins_template = getClass().getClassLoader().getResourceAsStream(redis_template);
-		
-		int metaServerPort = dcMeta.getMetaServers().get(0).getPort();
-
-		StringBuilder sb = new StringBuilder();
-		for (String line : IOUtils.readLines(ins_template)) {
-
-			if (line.startsWith("#")) {
+		try(InputStream ins_template = getClass().getClassLoader().getResourceAsStream(redis_template)){
+			int metaServerPort = dcMeta.getMetaServers().get(0).getPort();
+	
+			StringBuilder sb = new StringBuilder();
+			for (String line : IOUtils.readLines(ins_template)) {
+	
+				if (line.startsWith("#")) {
+					sb.append(line);
+					continue;
+				}
+	
+				String[] confs = line.split("\\s+");
+				if (confs.length < 2) {
+					sb.append(line);
+					continue;
+				}
+	
+				String confKey = confs[0];
+				if (confKey.equalsIgnoreCase("port")) {
+					line = String.format("port %d", redisMeta.getPort());
+				}
+				if (confKey.equalsIgnoreCase("dir")) {
+					line = String.format("dir %s", dataDir.getAbsolutePath());
+				}
+				if (confKey.equalsIgnoreCase("meta-server-url")) {
+					line = String.format("meta-server-url http://localhost:%d/", metaServerPort);
+				}
+				if (confKey.equalsIgnoreCase("cluster-name")) {
+					line = String.format("cluster-name %s", redisMeta.parent().parent().getId());
+				}
+				if (confKey.equalsIgnoreCase("shard-name")) {
+					line = String.format("shard-name %s", redisMeta.parent().getId());
+				}
 				sb.append(line);
-				continue;
+				sb.append("\r\n");
 			}
-
-			String[] confs = line.split("\\s+");
-			if (confs.length < 2) {
-				sb.append(line);
-				continue;
+	
+			
+			
+			File dstFile = new File(destDir, redisMeta.getPort() + ".conf");
+			try(FileOutputStream fous = new FileOutputStream(dstFile)){
+				IOUtils.write(sb, fous);
 			}
-
-			String confKey = confs[0];
-			if (confKey.equalsIgnoreCase("port")) {
-				line = String.format("port %d", redisMeta.getPort());
-			}
-			if (confKey.equalsIgnoreCase("dir")) {
-				line = String.format("dir %s", dataDir.getAbsolutePath());
-			}
-			if (confKey.equalsIgnoreCase("meta-server-url")) {
-				line = String.format("meta-server-url http://localhost:%d/", metaServerPort);
-			}
-			if (confKey.equalsIgnoreCase("cluster-name")) {
-				line = String.format("cluster-name %s", redisMeta.parent().parent().getId());
-			}
-			if (confKey.equalsIgnoreCase("shard-name")) {
-				line = String.format("shard-name %s", redisMeta.parent().getId());
-			}
-			sb.append(line);
-			sb.append("\r\n");
+			return dstFile;
 		}
-
-		File dstFile = new File(destDir, redisMeta.getPort() + ".conf");
-		IOUtils.write(sb, new FileOutputStream(dstFile));
-		return dstFile;
 	}
 
 	protected void startKeeper(KeeperMeta keeperMeta, MetaServiceManager metaServiceManager, LeaderElectorManager leaderElectorManager) throws Exception {
