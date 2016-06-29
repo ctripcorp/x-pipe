@@ -45,7 +45,7 @@ public class ConsoleListener extends AbstractMetaChangeListener{
 	private void request(String target, Object param) {
 		
 		try{
-			Response response =  RestRequestClient.request(target, param);
+			Response response =  RestRequestClient.post(target, param);
 			if(response.getStatus() != HttpConstants.HTTP_STATUS_200){
 				logger.error("[request][call console failed!]" + response);
 			}

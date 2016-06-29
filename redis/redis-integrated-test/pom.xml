@@ -12,35 +12,43 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.ctrip.xpipe.redis</groupId>
 			<artifactId>redis-core</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.ctrip.xpipe.redis</groupId>
 			<artifactId>redis-keeper</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.ctrip.xpipe.redis</groupId>
 			<artifactId>redis-meta</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.ctrip.xpipe.redis</groupId>
 			<artifactId>redis-console</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.ctrip.xpipe.redis</groupId>
 			<artifactId>redis-core</artifactId>
 			<type>test-jar</type>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-exec</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.unidal.framework</groupId>
 			<artifactId>test-framework</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

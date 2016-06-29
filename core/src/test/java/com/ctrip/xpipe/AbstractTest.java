@@ -1,16 +1,17 @@
 package com.ctrip.xpipe;
 
-
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.Charset;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,6 +35,10 @@ import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.simpleserver.AbstractIoAction;
+import com.ctrip.xpipe.simpleserver.IoAction;
+import com.ctrip.xpipe.simpleserver.IoActionFactory;
+import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.zk.ZkTestServer;
 
@@ -121,12 +126,12 @@ public class AbstractTest {
 		componentRegistry.start();
 	}
 
-	protected String randomString(){
+	public static String randomString(){
 		
 		return randomString(1 << 10);
 	}
 	
-	protected String randomString(int length){
+	public static String randomString(int length){
 		
 		StringBuilder sb = new StringBuilder();
 		for(int i=0; i < length ; i++){
@@ -215,7 +220,7 @@ public class AbstractTest {
 	} 
 
 	
-	protected int randomPort(){
+	public static int randomPort(){
 		return randomPort(10000, 20000);
 	}
 	
@@ -226,7 +231,7 @@ public class AbstractTest {
 	 * @param max
 	 * @return
 	 */
-	protected int randomPort(int min, int max) {
+	public static int randomPort(int min, int max) {
 
 		int i = min;
 		for(;i<=max;i++){
@@ -265,6 +270,41 @@ public class AbstractTest {
 		} catch (Exception e) {
 		}
 	}
+
+	protected Server startEchoServer() throws Exception {
+		
+		int serverPort = randomPort();
+		Server server = new Server(serverPort, new IoActionFactory() {
+			
+			@Override
+			public IoAction createIoAction() {
+				return new AbstractIoAction(){
+					
+					private List<Integer> data = new LinkedList<>();
+
+					@Override
+					protected Object doRead(InputStream ins) throws IOException {
+						int data = ins.read();
+						if(data == -1){
+							return null;
+						}
+						return data;
+					}
+
+					@Override
+					protected void doWrite(OutputStream ous) throws IOException {
+						for(Integer dig : data)
+						ous.write(dig);
+					}
+				};
+			}
+		});
+		server.initialize();
+		server.start();
+		add(server);
+		return server;
+	}
+
 
 	@After
 	public void afterAbstractTest() throws IOException{

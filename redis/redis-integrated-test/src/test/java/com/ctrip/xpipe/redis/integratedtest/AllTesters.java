@@ -19,6 +19,6 @@ import com.ctrip.xpipe.redis.integratedtest.singledc.AllSingleDcTests;
 	AllMultiDcTests.class,
 	AllSingleDcTests.class
 })
-public class AllTests {
+public class AllTesters {
 
 }

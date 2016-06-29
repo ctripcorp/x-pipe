@@ -6,13 +6,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
-import com.ctrip.xpipe.Lifecycle.CreatedComponentRedistryTest;
-import com.ctrip.xpipe.Lifecycle.DefaultLifecycleControllerTest;
-import com.ctrip.xpipe.Lifecycle.DefaultLifecycleStateTest;
-import com.ctrip.xpipe.Lifecycle.SpringComponentRegistryTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
 import com.ctrip.xpipe.job.DefaultJobFutureTest;
+import com.ctrip.xpipe.lifecycle.CreatedComponentRedistryTest;
+import com.ctrip.xpipe.lifecycle.DefaultLifecycleControllerTest;
+import com.ctrip.xpipe.lifecycle.DefaultLifecycleStateTest;
+import com.ctrip.xpipe.lifecycle.SpringComponentRegistryTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
 import com.ctrip.xpipe.utils.OffsetNotifierTest;
@@ -33,8 +33,9 @@ import com.ctrip.xpipe.utils.OffsetNotifierTest;
 	DefaultLifecycleStateTest.class,
 	CreatedComponentRedistryTest.class,
 	SpringComponentRegistryTest.class,
-	OffsetNotifierTest.class
-})
+	OffsetNotifierTest.class,
+	com.ctrip.xpipe.rest.RestRequestClientTest.class
+	})
 public class AllTests {
 
 }

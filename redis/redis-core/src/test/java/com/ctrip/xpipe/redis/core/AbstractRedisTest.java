@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.core;
 
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
 import java.util.HashMap;
@@ -32,10 +32,6 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.protocal.Command;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
-import com.ctrip.xpipe.simpleserver.AbstractIoAction;
-import com.ctrip.xpipe.simpleserver.IoAction;
-import com.ctrip.xpipe.simpleserver.IoActionFactory;
-import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBuf;
@@ -289,40 +285,6 @@ public abstract class AbstractRedisTest extends AbstractTest{
 
 	public XpipeMeta getXpipeMeta() {
 		return xpipeMeta;
-	}
-
-	protected Server startEchoServer() throws Exception {
-		
-		int serverPort = randomPort();
-		Server server = new Server(serverPort, new IoActionFactory() {
-			
-			@Override
-			public IoAction createIoAction() {
-				return new AbstractIoAction(){
-					
-					private List<Integer> data = new LinkedList<>();
-
-					@Override
-					protected Object doRead(InputStream ins) throws IOException {
-						int data = ins.read();
-						if(data == -1){
-							return null;
-						}
-						return data;
-					}
-
-					@Override
-					protected void doWrite(OutputStream ous) throws IOException {
-						for(Integer dig : data)
-						ous.write(dig);
-					}
-				};
-			}
-		});
-		server.initialize();
-		server.start();
-		add(server);
-		return server;
 	}
 
 	
