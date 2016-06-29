@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.multidc.manul;
+package com.ctrip.xpipe.redis.integratedtest.manul;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,8 +29,10 @@ public class ManualStarter extends AbstractMultiDcTest{
 	public void startConsole() throws Exception{
 	
 		//clean environment
-		FileUtils.forceDelete(new File(getTestFileDir()));
-		stopServerListeningPort(getConsolePort());
+		stopXippe();
+		FileUtils.forceDelete(new File(new File(getTestFileDir()).getParent()));
+		FileUtils.forceMkdir(new File(getTestFileDir()));
+		
 		startConsoleServer();
 	}
 	
@@ -42,7 +44,13 @@ public class ManualStarter extends AbstractMultiDcTest{
 		startZkServer(dcMeta.getZkServer());
 		startMetaServers(dcMeta);		
 	}
-	
+
+	@Test
+	public void startRedises0() throws ExecuteException, IOException{
+		startRedises(getAndSetDc(0), clusterId, shardId);
+	}
+
+
 	@Test
 	public void startKeepers0() throws Exception{
 		startKeepers(getAndSetDc(0), clusterId, shardId, null);
@@ -56,12 +64,6 @@ public class ManualStarter extends AbstractMultiDcTest{
 	@Test
 	public void startKeepers01() throws Exception{
 		startKeepers(getAndSetDc(0), clusterId, shardId, 1);
-	}
-
-
-	@Test
-	public void startRedises0() throws ExecuteException, IOException{
-		startRedises(getAndSetDc(0), clusterId, shardId);
 	}
 
 	@Test
@@ -80,15 +82,16 @@ public class ManualStarter extends AbstractMultiDcTest{
 	}
 	
 
-	@Test
-	public void startKeepers1() throws Exception{
-		startKeepers(getAndSetDc(1), clusterId, shardId, null);
-	}
 	
 	@Test
 	public void startRedises1() throws ExecuteException, IOException{
 		startRedises(getAndSetDc(1), clusterId, shardId);
 		
+	}
+
+	@Test
+	public void startKeepers1() throws Exception{
+		startKeepers(getAndSetDc(1), clusterId, shardId, null);
 	}
 
 	private void startRedises(String dc, String clusterId, String shardId) throws ExecuteException, IOException {

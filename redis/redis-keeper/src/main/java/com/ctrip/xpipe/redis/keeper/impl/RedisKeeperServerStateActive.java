@@ -146,4 +146,9 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		return true;
 	}
 
+	@Override
+	public void initPromotionState() {
+		this.promotionState = PROMOTION_STATE.NORMAL;
+	}
+
 }

@@ -171,6 +171,11 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		
 		return String.format("redisKeeperServer:%s, shardInfo:%s", redisKeeperServer, shardStatus);
 	}
+
+	@Override
+	public void initPromotionState() {
+		logger.info("[initPromotionState][nothing to do]");
+	}
 	
 	@Override
 	public boolean sendKinfo() {

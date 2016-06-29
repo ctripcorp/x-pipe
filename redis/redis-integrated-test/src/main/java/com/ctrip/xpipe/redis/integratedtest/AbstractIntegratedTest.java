@@ -70,17 +70,20 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 			return;
 		}
 
-		stopConsole();
+		stopXippe();
+
+	}
+
+	protected void stopXippe() throws ExecuteException, IOException {
 		
+		stopConsole();
 		//stop all servers
 		stopAllRedisServer();
 				
 		// stop keeper
 		for (DcMeta dcMeta : getXpipeMeta().getDcs().values()) {
-
 			stopDc(dcMeta);
 		}
-
 	}
 
 	protected void stopDc(DcMeta dcMeta) throws ExecuteException, IOException {

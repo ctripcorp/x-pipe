@@ -246,7 +246,7 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 					} catch (IOException e) {
 						logger.error("[handleRedisReponse]" + oldStore, e);
 					}
-					newKeeperBeginOffset = oldStore.getKeeperBeginOffset() + (oldStore.endOffset() - oldStore.beginOffset()) + 1;
+					newKeeperBeginOffset = oldStore.getKeeperBeginOffset() + (oldStore.endOffset() - oldStore.beginOffset()) + 2;
 					oldStore.delete();
 				}
 				currentReplicationStore = createIfDirtyOrNotExist();

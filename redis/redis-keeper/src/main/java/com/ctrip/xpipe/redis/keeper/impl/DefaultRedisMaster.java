@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 
+
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -33,7 +34,6 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 
 import io.netty.bootstrap.Bootstrap;
@@ -304,7 +304,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	@Override
 	public void reFullSync() {
-		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.NORMAL);
+		redisKeeperServer.getRedisKeeperServerState().initPromotionState();
 	}
 
 	@Override
@@ -322,7 +322,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public void onContinue() {
 		partialState = PARTIAL_STATE.PARTIAL;
-		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.NORMAL);
+		redisKeeperServer.getRedisKeeperServerState().initPromotionState();
 		scheduleReplconf();
 	}
 
