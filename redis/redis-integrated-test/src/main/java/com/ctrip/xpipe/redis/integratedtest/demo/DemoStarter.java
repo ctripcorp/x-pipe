@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.manul;
+package com.ctrip.xpipe.redis.integratedtest.demo;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +20,7 @@ import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
  *
  * Jun 21, 2016
  */
-public class ManualStarter extends AbstractMultiDcTest{
+public class DemoStarter extends AbstractMultiDcTest{
 	
 	private String clusterId = "cluster1", shardId = "shard1";
 	
