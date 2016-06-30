@@ -6,9 +6,8 @@ import org.springframework.context.annotation.Configuration;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
-import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
+import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.spring.AbstractConfigContext;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
@@ -20,7 +19,7 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
  */
 @Configuration
 @ComponentScan({"com.ctrip.xpipe.redis.keeper" })
-public class KeeperContextConfig extends AbstractConfigContext{
+public class KeeperContextConfig extends AbstractRedisConfigContext{
 		
 	@Bean
 	public LeaderElectorManager geElectorManager(KeeperConfig  keeperConfig){
@@ -33,12 +32,6 @@ public class KeeperContextConfig extends AbstractConfigContext{
 		DefaultZkClient zkClient = new DefaultZkClient();
 		zkClient.setZkAddress(keeperConfig.getZkConnectionString());
 		return zkClient;
-	}
-	
-	
-	@Bean
-	public SpringComponentLifecycleManager getSpringComponentLifecycleManager(){
-		return new SpringComponentLifecycleManager();
 	}
 	
 }

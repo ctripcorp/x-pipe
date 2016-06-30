@@ -1,16 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
-import java.net.InetSocketAddress;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
-import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
-import com.ctrip.xpipe.redis.core.client.Client;
-import com.ctrip.xpipe.redis.core.client.ClientFactory;
+import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.spring.AbstractConfigContext;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
@@ -21,7 +17,7 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
  */
 @Configuration
 @ComponentScan({ "com.ctrip.xpipe.redis.meta.server" })
-public class MetaServerContextConfig extends AbstractConfigContext{
+public class MetaServerContextConfig extends AbstractRedisConfigContext{
 
 	@Bean
 	public ZkClient getZkClient(MetaServerConfig metaServerConfig){
@@ -31,10 +27,4 @@ public class MetaServerContextConfig extends AbstractConfigContext{
 		return zkClient;
 	}
 	
-	@Bean( name = "clientPool")
-	public XpipeKeyedObjectPool<InetSocketAddress, Client> getClientPool(){
-		
-		return new XpipeKeyedObjectPool<>(new ClientFactory());
-	}
-
 }
