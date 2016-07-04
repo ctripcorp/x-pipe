@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server;
 import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -26,5 +27,5 @@ public interface MetaServer extends TopElement {
 
 	void watchCluster(ClusterMeta cluster) throws Exception;
 	
-	void promoteRedisMaster(String clusterId, String shardId, String promoteIp, int promotePort) throws InterruptedException, RedisMetaServerException, ExecutionException;
+	void promoteRedisMaster(String clusterId, String shardId, String promoteIp, int promotePort) throws InterruptedException, RedisMetaServerException, ExecutionException, CommandExecutionException;
 }

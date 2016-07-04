@@ -23,9 +23,7 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultCommandRequester;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
@@ -60,8 +58,6 @@ import io.netty.handler.logging.LoggingHandler;
  */
 public class DefaultRedisKeeperServer extends AbstractRedisServer implements RedisKeeperServer{
 	
-	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER"; 
-		
 	/**
 	 * when keeper is active, it's redis master, else it's another keeper
 	 */
@@ -78,8 +74,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private ScheduledExecutorService scheduled;
 	
-	private CommandRequester commandRequester;
-	
 	private final String clusterId, shardId;
 	
 	private MetaServiceManager metaServiceManager;
@@ -93,13 +87,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, ReplicationStoreManager replicationStoreManager, 
 			MetaServiceManager metaServiceManager, LeaderElectorManager leaderElectorManager){
-		this(currentKeeperMeta, replicationStoreManager, metaServiceManager, null, null, leaderElectorManager);
+		this(currentKeeperMeta, replicationStoreManager, metaServiceManager, null, leaderElectorManager);
 	}
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, ReplicationStoreManager replicationStoreManager, 
 			MetaServiceManager metaServiceManager, 
 			ScheduledExecutorService scheduled, 
-			CommandRequester commandRequester,
 			LeaderElectorManager leaderElectorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
 		this.shardId = currentKeeperMeta.parent().getId();
@@ -111,10 +104,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(clusterId + "-" + shardId));
 		}
 		this.scheduled = scheduled;
-		if(commandRequester == null){
-			commandRequester = new DefaultCommandRequester(this.scheduled);
-		}
-		this.commandRequester = commandRequester;
 		
 	}
 	
@@ -198,7 +187,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private void initAndStartMaster(Endpoint target) {
 		try {
-			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, replicationStoreManager, scheduled, commandRequester);
+			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, replicationStoreManager, scheduled);
 			this.keeperRedisMaster.initialize();
 			this.keeperRedisMaster.start();
 		} catch (Exception e) {
@@ -328,11 +317,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return slaves;
 	}
 
-	@Override
-	public CommandRequester getCommandRequester() {
-		return commandRequester;
-	}
-	
    public ReplicationStore getReplicationStore() {
 	   return getCurrentReplicationStore();
    }

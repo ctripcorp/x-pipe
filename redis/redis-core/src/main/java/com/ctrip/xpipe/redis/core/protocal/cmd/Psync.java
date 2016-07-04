@@ -7,11 +7,11 @@ import java.util.List;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.payload.InOutPayload;
-import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.core.protocal.CmdContext;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
@@ -30,7 +30,7 @@ import io.netty.buffer.ByteBuf;
  *
  * 2016年3月24日 下午2:24:38
  */
-public class Psync extends AbstractRedisCommand implements BulkStringParserListener{
+public class Psync extends AbstractRedisCommand<Object> implements BulkStringParserListener{
 	
 	
 	public static final String FULL_SYNC = "FULLRESYNC";
@@ -59,8 +59,9 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	}
 	
 	
-	public Psync(Endpoint masterEndPoint, KeeperMeta keeperMeta, ReplicationStoreManager replicationStoreManager) {
-		
+	public Psync(SimpleObjectPool<NettyClient> clientPool, 
+			Endpoint masterEndPoint, KeeperMeta keeperMeta, ReplicationStoreManager replicationStoreManager) {
+		super(clientPool);
 		this.masterEndPoint = masterEndPoint;
 		this.keeperMeta = keeperMeta;
 		this.replicationStoreManager = replicationStoreManager;
@@ -78,9 +79,8 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 		this.observers.add(observer);
 	}
 
-
 	@Override
-	protected ByteBuf doRequest() {
+	protected ByteBuf getRequest() {
 		
 		String masterRunidRequest = null;
 		
@@ -117,29 +117,29 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	}
 	
 	@Override
-	protected void doConnectionClosed() {
-		super.doConnectionClosed();
+	public void clientClosed(NettyClient nettyClient) {
 		
+		super.clientClosed(nettyClient);
 		switch(psyncState){
-			case PSYNC_COMMAND_WAITING_REPONSE:
-				break;
-			case READING_RDB:
-				endReadRdb();
-				break;
-			case READING_COMMANDS:
-				break;
-			default:
-				throw new IllegalStateException("unknown state:" + psyncState);
+		case PSYNC_COMMAND_WAITING_REPONSE:
+			break;
+		case READING_RDB:
+			endReadRdb();
+			break;
+		case READING_COMMANDS:
+			break;
+		default:
+			throw new IllegalStateException("unknown state:" + psyncState);
 		}
 	}
-	
-	@Override
-	protected RESPONSE_STATE doHandleResponse(CmdContext cmdContext, ByteBuf byteBuf) throws XpipeException {
 		
+	@Override
+	protected Object doReceiveResponse(ByteBuf byteBuf) throws Exception {
+
 		switch(psyncState){
 		
 			case PSYNC_COMMAND_WAITING_REPONSE:
-				Object response = super.readResponse(byteBuf);
+				Object response = super.doReceiveResponse(byteBuf);
 				if(response == null){
 					return null;
 				}
@@ -169,7 +169,7 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 				throw new IllegalStateException("unknown state:" + psyncState);
 		}
 		
-		return RESPONSE_STATE.GO_ON_READING_BUF;
+		return null;
 	}
 
 
@@ -292,9 +292,10 @@ public class Psync extends AbstractRedisCommand implements BulkStringParserListe
 	public void onGotLengthFiled(long length) {
 		beginReadRdb(length);
 	}
-	
+
+
 	@Override
-	protected void doReset() {
-		psyncState = PSYNC_STATE.PSYNC_COMMAND_WAITING_REPONSE;
+	protected Object format(Object payload) {
+		return payload;
 	}
 }

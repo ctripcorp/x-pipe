@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 
-
-
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 
 import io.netty.buffer.ByteBuf;
@@ -12,12 +12,13 @@ import io.netty.buffer.ByteBuf;
  *
  * 2016年3月29日 下午2:51:47
  */
-public class Replconf extends AbstractRedisCommand{
+public class Replconf extends AbstractRedisCommand<Object>{
 	
 	private ReplConfType replConfType;
 	private String argu;
 	
-	public Replconf(ReplConfType replConfType, String argu) {
+	public Replconf(SimpleObjectPool<NettyClient> clientPool, ReplConfType replConfType, String argu) {
+		super(clientPool);
 		this.replConfType = replConfType;
 		this.argu = argu;
 	}
@@ -36,20 +37,6 @@ public class Replconf extends AbstractRedisCommand{
 		return true;
 	}
 
-	@Override
-	protected ByteBuf doRequest(){
-		
-		
-		boolean logRead = true, logWrite = true;
-		
-		if(replConfType == ReplConfType.ACK){
-			logWrite = false;
-		}
-		
-		RequestStringParser request = new RequestStringParser(logRead, logWrite, getName(), replConfType.toString(), argu);
-		return request.format();
-	}
-
 	public enum ReplConfType{
 		
 		LISTENING_PORT("listening-port"),
@@ -66,5 +53,23 @@ public class Replconf extends AbstractRedisCommand{
 		public String toString() {
 			return command;
 		}
+	}
+
+	@Override
+	protected ByteBuf getRequest() {
+		
+		boolean logRead = true, logWrite = true;
+		
+		if(replConfType == ReplConfType.ACK){
+			logWrite = false;
+		}
+		
+		RequestStringParser request = new RequestStringParser(logRead, logWrite, getName(), replConfType.toString(), argu);
+		return request.format();
+	}
+
+	@Override
+	protected Object format(Object payload) {
+		return payload;
 	}
 }

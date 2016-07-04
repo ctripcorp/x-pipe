@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.pool;
 
 
-import java.util.NoSuchElementException;
-
 import org.apache.commons.pool2.KeyedObjectPool;
 import org.apache.commons.pool2.KeyedPooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 
 /**
@@ -17,7 +16,7 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
  *
  * Jun 28, 2016
  */
-public class XpipeKeyedObjectPool<K, V> extends AbstractLifecycle implements TopElement{
+public class XpipeKeyedObjectPool<K, V> extends AbstractLifecycle implements TopElement, SimpleKeyedObjectPool<K, V>{
 	
 	private KeyedObjectPool<K, V>  objectPool;
 	private KeyedPooledObjectFactory<K, V> pooledObjectFactory;
@@ -45,17 +44,29 @@ public class XpipeKeyedObjectPool<K, V> extends AbstractLifecycle implements Top
 		this.objectPool = new GenericKeyedObjectPool<>(pooledObjectFactory, config);
 	}
 	
-	public V borrowObject(K key) throws NoSuchElementException, IllegalStateException, Exception{
+	@Override
+	public V borrowObject(K key) throws BorrowObjectException{
 		
-		V value = this.objectPool.borrowObject(key);
-		logger.info("[borrowObject]{}, {}", key, value);
-		return value;
+		try {
+			V value = this.objectPool.borrowObject(key);
+			logger.info("[borrowObject]{}, {}", key, value);
+			return value;
+		} catch (Exception e) {
+			logger.error("[borrowObject]" + key,  e);
+			throw new BorrowObjectException("borrow " + key, e);
+		}
 	}
 	
-	public void returnObject(K key, V value) throws Exception{
+	@Override
+	public void returnObject(K key, V value) throws ReturnObjectException{
 		
-		logger.info("[returnObject]{}, {}", key, value);
-		this.objectPool.returnObject(key, value);
+		try {
+			logger.info("[returnObject]{}, {}", key, value);
+			this.objectPool.returnObject(key, value);
+		} catch (Exception e) {
+			logger.error("[returnObject]", e);
+			throw new ReturnObjectException("return " + key + " " + value , e);
+		}
 	}
 	
 

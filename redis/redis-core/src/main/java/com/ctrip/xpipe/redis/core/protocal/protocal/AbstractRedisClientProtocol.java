@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;

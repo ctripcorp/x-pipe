@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 
-
-
-
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 
 import io.netty.buffer.ByteBuf;
@@ -13,18 +12,12 @@ import io.netty.buffer.ByteBuf;
  *
  *         May 9, 2016 5:42:01 PM
  */
-public class InfoCommand extends AbstractRedisCommand {
+public class InfoCommand extends AbstractRedisCommand<String> {
 
 	private String args;
 
-	/**
-	 * @param channel
-	 */
-	public InfoCommand() {
-		this("");
-	}
-
-	public InfoCommand(String args) {
+	public InfoCommand(SimpleObjectPool<NettyClient> clientPool, String args) {
+		super(clientPool);
 		this.args = args;
 	}
 
@@ -34,9 +27,16 @@ public class InfoCommand extends AbstractRedisCommand {
 	}
 
 	@Override
-	protected ByteBuf doRequest(){
+	protected ByteBuf getRequest() {
+		
 		RequestStringParser requestString = new RequestStringParser(getName(), args);
 		return requestString.format();
+	}
+
+	@Override
+	protected String format(Object payload) {
+
+		return payloadToString(payload);
 	}
 
 }

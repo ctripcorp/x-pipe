@@ -5,7 +5,6 @@ import java.util.Set;
 
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -39,9 +38,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Observer{
 	Set<RedisClient> allClients();
 	
 	Set<RedisSlave> slaves();
-	
-	CommandRequester getCommandRequester();
-	
+		
 	ReplicationStore getReplicationStore();
 		
 	String getClusterId();

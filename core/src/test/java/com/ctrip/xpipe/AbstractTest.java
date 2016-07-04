@@ -1,5 +1,6 @@
 package com.ctrip.xpipe;
 
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,8 +11,6 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.Charset;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -155,6 +154,24 @@ public class AbstractTest {
 		sleep(seconds * 1000);
 	}
 
+	protected void sleepIgnoreInterrupt(int time) {
+		long future = System.currentTimeMillis() + time;
+
+		while(true){
+			long left = future - System.currentTimeMillis();
+			if(left <= 0){
+				break;
+			}
+			if(left > 0){
+				try {
+					TimeUnit.MILLISECONDS.sleep(left);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+		
+	}
+
 	protected void sleep(int miliSeconds){
 		
 		try {
@@ -280,21 +297,29 @@ public class AbstractTest {
 			public IoAction createIoAction() {
 				return new AbstractIoAction(){
 					
-					private List<Integer> data = new LinkedList<>();
+					private String line;
 
 					@Override
 					protected Object doRead(InputStream ins) throws IOException {
-						int data = ins.read();
-						if(data == -1){
-							return null;
-						}
-						return data;
+						line = readLine(ins);
+						logger.info("[doRead]{}", line);
+						return line;
 					}
 
 					@Override
 					protected void doWrite(OutputStream ous) throws IOException {
-						for(Integer dig : data)
-						ous.write(dig);
+						
+						String []sp = line.split("\\s+");
+						if(sp.length >= 1){
+							if(sp[0].equalsIgnoreCase("sleep")){
+								int sleep = Integer.parseInt(sp[1]);
+								logger.info("[sleep]{}", sleep);
+								sleepIgnoreInterrupt(sleep);
+							}
+						}
+						logger.info("[doWrite]{}", line);
+						ous.write(line.getBytes());
+						ous.flush();
 					}
 				};
 			}

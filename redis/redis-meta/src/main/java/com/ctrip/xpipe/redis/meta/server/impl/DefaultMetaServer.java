@@ -22,9 +22,10 @@ import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
+import com.ctrip.xpipe.command.CommandExecutionException;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
-import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
-import com.ctrip.xpipe.redis.core.client.Client;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -58,7 +59,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 	private MetaHolder metaHolder;
 	
 	@Resource( name = "clientPool" )
-	XpipeKeyedObjectPool<InetSocketAddress, Client> clientPool;
+	SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 
 	@SuppressWarnings("unused")
 	@Autowired
@@ -328,7 +329,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 	}
 
 	@Override
-	public void promoteRedisMaster(String clusterId, String shardId, String promoteIp, int promotePort) throws InterruptedException, RedisMetaServerException, ExecutionException {
+	public void promoteRedisMaster(String clusterId, String shardId, String promoteIp, int promotePort) throws InterruptedException, RedisMetaServerException, ExecutionException, CommandExecutionException {
 		
 		if(!currentDc.equals(getActiveDc(clusterId))){
 			throw new IllegalStateException("currrent dc not active, can not promote master");

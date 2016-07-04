@@ -3,13 +3,17 @@ package com.ctrip.xpipe.redis.keeper.protocal.cmd;
 
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.netty.NettyPoolUtil;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
@@ -40,12 +44,13 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 	private boolean isPartial = false;
 
 	@Before
-	public void beforePsyncTest() throws IOException{
+	public void beforePsyncTest() throws Exception{
 		
 		replicationStoreManager = createReplicationStoreManager();
 		replicationStore = replicationStoreManager.create();
 		
-		psync = new Psync(new DefaultEndPoint("127.0.0.1", 1234), createKeeperMeta(), replicationStoreManager);
+		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress("127.0.0.1", 1234));
+		psync = new Psync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), createKeeperMeta(), replicationStoreManager);
 	}
 
 	@Test
@@ -116,7 +121,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		}
 		
 		for(ByteBuf byteBuf : byteBufs){
-			psync.handleResponse(null, byteBuf);
+			psync.receive(byteBuf);
 		}
 
 		assertResult();

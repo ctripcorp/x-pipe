@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
-
-
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -11,20 +9,20 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSON;
-import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
+import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
-import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
-import com.ctrip.xpipe.redis.core.protocal.CmdContext;
-import com.ctrip.xpipe.redis.core.protocal.Command;
-import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
-import com.ctrip.xpipe.redis.core.protocal.RequestResponseCommandListener;
+import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.cmd.KinfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
@@ -72,20 +70,19 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	private DefaultEndPoint endpoint;
 	
 	private ScheduledExecutorService scheduled;
-	private CommandRequester commandRequester;
 	private EventLoopGroup slaveEventLoopGroup = new NioEventLoopGroup();
 
 	private Channel masterChannel;
 	private ScheduledFuture<?> replConfFuture;
 	private long connectedTime;
+	private FixedObjectPool<NettyClient>  clientPool;
 	
-	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, CommandRequester commandRequester){
+	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled){
 		
 		this.redisKeeperServer = redisKeeperServer;
 		this.replicationStoreManager = replicationStoreManager;
 		this.endpoint = endpoint;
 		this.scheduled = scheduled;
-		this.commandRequester = commandRequester;
 	}
 
 	@Override
@@ -183,14 +180,12 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	@Override
 	public void handleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException {
-		commandRequester.handleResponse(channel, byteBuf);
+		clientPool.getObject().handleResponse(byteBuf);
 	}
 
 	@Override
 	public void masterDisconntected(Channel channel) {
-		
-		commandRequester.connectionClosed(channel);
-		
+				
 		long interval = System.currentTimeMillis() - connectedTime;
 		long scheduleTime = masterConnectRetryDelaySeconds*1000 - interval;
 		if(scheduleTime < 0){
@@ -210,69 +205,66 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		
 		connectedTime = System.currentTimeMillis();
 		this.masterChannel = channel;
-		commandRequester.request(channel, listeningPortCommand());
-		if(redisKeeperServer.getRedisKeeperServerState().sendKinfo()){
-			commandRequester.request(channel, kinfoCommand());
-		}else{
-			commandRequester.request(channel, psyncCommand());
+		clientPool = new FixedObjectPool<NettyClient>(new DefaultNettyClient(channel));
+		
+		try {
+			listeningPortCommand();
+			if(redisKeeperServer.getRedisKeeperServerState().sendKinfo()){
+				kinfoCommand();
+			}else{
+				psyncCommand();
+			}
+		} catch (CommandExecutionException e) {
+			logger.error("[masterConnected]" + channel, e);
 		}
 	}
 
-	private Command kinfoCommand() {
+	private void kinfoCommand() throws CommandExecutionException {
 		
-		KinfoCommand kinfoCommand = new KinfoCommand();
-		kinfoCommand.setCommandListener(new RequestResponseCommandListener() {
+		KinfoCommand kinfoCommand = new KinfoCommand(clientPool);
+		
+		kinfoCommand.execute().addListener(new CommandFutureListener<ReplicationStoreMeta>() {
 			
 			@Override
-			public void onComplete(CmdContext cmdContext, Object data, Exception e) {
-				
-				if(e != null){
-					logger.error("[onComplete]" + data, e);
-					cmdContext.schedule(TimeUnit.SECONDS, 1, kinfoCommand());
-					return;
-				}
-				
-				ByteArrayOutputStreamPayload payload = (ByteArrayOutputStreamPayload) data;
-				String buff = new String(payload.getBytes(), Codec.defaultCharset);
-				
-				logger.info("[onComplete]{}", buff);
-				
-				ReplicationStoreMeta meta = null;
+			public void operationComplete(CommandFuture<ReplicationStoreMeta> commandFuture) throws Exception {
+
 				try{
-					meta = JSON.parseObject(buff, ReplicationStoreMeta.class);
-				}catch(Exception e1){
-					logger.error("[onComplete]" + cmdContext + "," + buff, e1);
-				}
-				
-				if(meta != null && meta.getMasterRunid() != null){
-					try {
-						getCurrentReplicationStore().saveMeta(DefaultRedisKeeperServer.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME, meta);
-						cmdContext.sendCommand(psyncCommand());
+					ReplicationStoreMeta meta = commandFuture.get();
+					try{
+						replicationStoreManager.getCurrent().saveMeta(ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME, meta);
+						psyncCommand();
 					} catch (IOException e1) {
-						logger.error("[onComplete]" + cmdContext + "," + buff, e1);
-						throw new XpipeRuntimeException("[kinfo][cmd error]" + buff, e1);
+							logger.error("[onComplete]"+ commandFuture, e1);
 					}
-					
-				}else{
-					cmdContext.schedule(TimeUnit.SECONDS, 1, kinfoCommand());
+				}catch(Exception e){
+					scheduled.schedule(new Runnable() {
+						
+						@Override
+						public void run() {
+							try {
+								kinfoCommand();
+							} catch (CommandExecutionException e) {
+								logger.error("[run]" + clientPool.getObject(), e);
+							}
+						}
+					}, 1, TimeUnit.SECONDS);
 				}
 			}
 		});
-		
-		return kinfoCommand;
 	}
 
-	private Command psyncCommand(){
+	private void psyncCommand() throws CommandExecutionException{
 		
-		Psync psync = new Psync(endpoint, redisKeeperServer.getCurrentKeeperMeta(), replicationStoreManager);
+		Psync psync = new Psync(clientPool, endpoint, redisKeeperServer.getCurrentKeeperMeta(), replicationStoreManager);
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
-		return psync;
+		psync.execute();
 	}
 
-	private Command listeningPortCommand(){
+	private void listeningPortCommand() throws CommandExecutionException{
 		
-		return new Replconf(ReplConfType.LISTENING_PORT, String.valueOf(redisKeeperServer.getListeningPort()));
+		Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT, String.valueOf(redisKeeperServer.getListeningPort())); 
+		replconf.execute();
 	}
 	
 	private void scheduleReplconf() {
@@ -286,9 +278,10 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 			@Override
 			public void run() {
 				try{
+					
 					logger.debug("[run][send ack]{}", masterChannel);
-					Command command = new Replconf(ReplConfType.ACK, String.valueOf(getCurrentReplicationStore().endOffset()));
-					masterChannel.writeAndFlush(command.request());
+					Command<Object> command = new Replconf(clientPool, ReplConfType.ACK, String.valueOf(getCurrentReplicationStore().endOffset()));
+					command.execute();
 				}catch(Throwable th){
 					logger.error("[run][send replack error]" + DefaultRedisMaster.this, th);
 				}

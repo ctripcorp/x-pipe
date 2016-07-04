@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.core.spring;
 
+
 import java.net.InetSocketAddress;
 
 import org.springframework.context.annotation.Bean;
 
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
-import com.ctrip.xpipe.redis.core.client.Client;
-import com.ctrip.xpipe.redis.core.client.ClientFactory;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 
 /**
@@ -17,9 +18,9 @@ import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 public class AbstractRedisConfigContext extends AbstractSpringConfigContext{
 	
 	@Bean( name = "clientPool")
-	public XpipeKeyedObjectPool<InetSocketAddress, Client> getClientPool(){
+	public XpipeKeyedObjectPool<InetSocketAddress, NettyClient> getClientPool(){
 		
-		return new XpipeKeyedObjectPool<>(new ClientFactory());
+		return new XpipeKeyedObjectPool<>(new NettyKeyedPoolClientFactory());
 	}
 
 	

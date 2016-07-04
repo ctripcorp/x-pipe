@@ -5,21 +5,15 @@ import java.io.StringReader;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
-import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
-import com.ctrip.xpipe.redis.core.netty.NettyBaseClientHandler;
-import com.ctrip.xpipe.redis.core.protocal.CmdContext;
-import com.ctrip.xpipe.redis.core.protocal.Command;
-import com.ctrip.xpipe.redis.core.protocal.CommandRequester;
-import com.ctrip.xpipe.redis.core.protocal.RequestResponseCommandListener;
+import com.ctrip.xpipe.netty.NettyPoolUtil;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Fsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
@@ -27,15 +21,6 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
-
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 
 /**
  * @author marsqing
@@ -70,83 +55,59 @@ public class RedisPromotor {
 		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.BEGIN_PROMOTE_SLAVE);
 		new Thread() {
 			public void run() {
-				promoteSlaveToMaster(redisSlave);
+				try {
+					promoteSlaveToMaster(redisSlave);
+				} catch (Exception e) {
+					logger.error("[run][promote slave]" + redisSlave, e);
+				}
 			}
 		}.start();
 	}
 
-	private void promoteSlaveToMaster(RedisSlave redisSlave) {
+	private void promoteSlaveToMaster(RedisSlave redisSlave) throws Exception {
 		
 		waitUntilSlaveSync(redisSlave, this.promoteServerIp, this.promoteServerPort);
 		logger.info("[promoteSlaveToMaster][fsync start]{},{}", this.promoteServerIp, this.promoteServerPort);
 		
-		Fsync fsyncCmd = new Fsync();
-		fsyncCmd.setCommandListener(new RequestResponseCommandListener() {
+		SimpleObjectPool<NettyClient> fsyncPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(promoteServerIp, promoteServerPort));
+		
+		Fsync fsyncCmd = new Fsync(fsyncPool);
+		fsyncCmd.execute().sync();
+		logger.info("[promoteSlaveToMaster][fsync done]{},{}", promoteServerIp, promoteServerPort);
+		
 
-			@Override
-			public void onComplete(CmdContext cmdContext, Object data, Exception e) {
-				
-				logger.info("[promoteSlaveToMaster][fsync done]{},{}", promoteServerIp, promoteServerPort);
-				SlaveOfCommand slaveOfCmd = new SlaveOfCommand();
-				slaveOfCmd.setCommandListener(new RequestResponseCommandListener() {
+		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(promoteServerIp, promoteServerPort));
+		SlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
+		slaveOfCmd.execute().sync();
 
-					@Override
-					public void onComplete(CmdContext cmdContext, Object data, Exception e) {
-						if (e == null) {
-							InfoCommand infoServerCmd = new InfoCommand("server");
-							infoServerCmd.setCommandListener(new RequestResponseCommandListener() {
+		InfoCommand infoServerCmd = new InfoCommand(clientPool, "server");
+		String info = infoServerCmd.execute().get();
+		String masterId = null;
 
-								@Override
-								public void onComplete(CmdContext cmdContext, Object data, Exception e) {
-									String res = new String(((ByteArrayOutputStreamPayload) data).getBytes());
-									List<String> lines = null;
-									try {
-										lines = IOUtils.readLines(new StringReader(res));
-									} catch (IOException e1) {
-										// TODO
-									}
-
-									final AtomicReference<String> masterId = new AtomicReference<String>();
-									for (String line : lines) {
-										if (line.startsWith("run_id:")) {
-											masterId.set(line.substring("run_id:".length()));
-										}
-									}
-
-									InfoCommand infoLastMasterCmd = new InfoCommand("lastmaster");
-									infoLastMasterCmd.setCommandListener(new RequestResponseCommandListener() {
-
-										@Override
-										public void onComplete(CmdContext cmdContext, Object data, Exception e) {
-											String res = new String(((ByteArrayOutputStreamPayload) data).getBytes());
-											long keeperOffset = 0, newMasterOffset = 0;
-											try {
-												String[] parts = res.split("\\s");
-												keeperOffset = Long.parseLong(parts[1]);
-												newMasterOffset = Long.parseLong(parts[2]);
-												
-												redisKeeperServer.getRedisKeeperServerState().setPromotionState(
-														PROMOTION_STATE.SLAVE_PROMTED, new SlavePromotionInfo(keeperOffset, new DefaultEndPoint(promoteServerIp, promoteServerPort), 
-																masterId.get(), newMasterOffset));
-											} catch (Exception ee) {
-												logger.error("[onComplete]" + promoteServerIp + ":" + promoteServerPort, e);
-											}
-										}
-									});
-									cmdContext.schedule(TimeUnit.SECONDS, 3, infoLastMasterCmd);
-								}
-							});
-							cmdContext.sendCommand(infoServerCmd);
-						} else {
-							logger.error("slaveof command error." + promoteServerIp + ":" + promoteServerPort, e);
-						}
-					}
-				});
-
-				sendCommandToRedis(promoteServerIp, promoteServerPort, redisKeeperServer.getCommandRequester(), slaveOfCmd);
+		try{
+			List<String> lines = IOUtils.readLines(new StringReader(info));
+			for (String line : lines) {
+				if (line.startsWith("run_id:")) {
+					masterId = line.substring("run_id:".length());
+				}
 			}
-		});
-		sendCommandToRedis(promoteServerIp, promoteServerPort, redisKeeperServer.getCommandRequester(), fsyncCmd);
+			InfoCommand infoLastMasterCmd = new InfoCommand(clientPool,"lastmaster");
+			String infoLastMaster = infoLastMasterCmd.execute().get();
+			long keeperOffset = 0, newMasterOffset = 0;
+			try {
+				String[] parts = infoLastMaster.split("\\s");
+				keeperOffset = Long.parseLong(parts[1]);
+				newMasterOffset = Long.parseLong(parts[2]);
+				
+				redisKeeperServer.getRedisKeeperServerState().setPromotionState(
+						PROMOTION_STATE.SLAVE_PROMTED, new SlavePromotionInfo(keeperOffset, new DefaultEndPoint(promoteServerIp, promoteServerPort), 
+								masterId, newMasterOffset));
+			} catch (Exception e) {
+				logger.error("[onComplete]" + promoteServerIp + ":" + promoteServerPort, e);
+			}
+		} catch (IOException e1) {
+			logger.error("promoteSlaveToMaster", e1);
+		}
 	}
 
 	private void waitUntilSlaveSync(RedisSlave redisSlave, String ip, int port) {
@@ -169,36 +130,6 @@ public class RedisPromotor {
 			}else{
 				break;
 			}
-		}
-	}
-
-	/**
-	 * @param keeper
-	 * @param ip
-	 * @param port
-	 * @param commandRequester
-	 */
-	private void sendCommandToRedis(String ip, int port, final CommandRequester cmdRequester, final Command cmd) {
-		// TODO reuse event loop group
-		// TODO close channel, use channel manager?
-		NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup();
-		Bootstrap b = new Bootstrap();
-		b.group(eventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
-		      .handler(new ChannelInitializer<SocketChannel>() {
-			      @Override
-			      public void initChannel(SocketChannel ch) throws Exception {
-				      ChannelPipeline p = ch.pipeline();
-				      p.addLast(new NettySimpleMessageHandler());
-				      p.addLast(new NettyBaseClientHandler(cmdRequester, cmd));
-			      }
-		      });
-
-		try {
-			// TODO connect in separate thread, connect timeout, re-connect
-			ChannelFuture f = b.connect(ip, port);
-			f.sync();
-		} catch (Throwable th) {
-			logger.error("[connectRedis][fail]" + port, th);
 		}
 	}
 

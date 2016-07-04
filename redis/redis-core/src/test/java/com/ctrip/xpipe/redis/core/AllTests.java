@@ -2,11 +2,11 @@ package com.ctrip.xpipe.redis.core;
 
 
 
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
-import com.ctrip.xpipe.redis.core.client.ClientTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
 
@@ -20,7 +20,6 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
 	ArrayParserTest.class,
 	BulkStringParserTest.class,
 	ArrayParserTest.class,
-	ClientTest.class
 })
 public class AllTests {
 

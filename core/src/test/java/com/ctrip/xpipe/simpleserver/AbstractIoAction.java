@@ -43,6 +43,7 @@ public abstract class AbstractIoAction implements IoAction{
 			if(data == -1){
 				return null;
 			}
+			
 			sb.append((char)data);
 			if(data == '\n' && last == '\r'){
 				break;

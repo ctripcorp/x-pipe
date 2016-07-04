@@ -1,17 +1,12 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
-import org.apache.commons.exec.ExecuteException;
 import org.junit.Assert;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
-import com.ctrip.xpipe.redis.meta.server.exception.RedisMetaServerException;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServer;
 
 /**
@@ -31,7 +26,7 @@ public abstract class AbstractIntegratedTestTemplate extends AbstractIntegratedT
 
 
 	
-	protected void failOverTestTemplate() throws ExecuteException, IOException, RedisSlavePromotionException, RedisMetaServerException, InterruptedException, ExecutionException {
+	protected void failOverTestTemplate() throws Exception {
 		
 		RedisMeta redisMaster = getRedisMaster();
 		stopServerListeningPort(redisMaster.getPort());
