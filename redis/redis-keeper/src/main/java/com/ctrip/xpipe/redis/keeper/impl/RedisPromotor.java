@@ -75,8 +75,8 @@ public class RedisPromotor {
 			waitUntilSlaveSync(redisSlave, this.promoteServerIp, this.promoteServerPort);
 			
 			Fsync fsyncCmd = new Fsync(fsyncPool);
-			fsyncCmd.execute();
-			logger.info("[promoteSlaveToMaster][fsync done]{},{}", promoteServerIp, promoteServerPort);
+			String fsyncResult = fsyncCmd.execute().get();
+			logger.info("[promoteSlaveToMaster][fsync done]{}, {},{}", fsyncResult, promoteServerIp, promoteServerPort);
 			
 	
 			SlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);

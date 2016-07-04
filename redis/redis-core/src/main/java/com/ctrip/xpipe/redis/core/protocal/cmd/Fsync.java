@@ -12,8 +12,10 @@ import io.netty.buffer.ByteBuf;
  *
  *         May 16, 2016 6:46:15 PM
  */
-public class Fsync extends AbstractRedisCommand<Object> {
-
+public class Fsync extends AbstractRedisCommand<String> {
+	
+	public static String SUCCESS_STRING = "CONTINUE";
+	
 	public Fsync(SimpleObjectPool<NettyClient> clientPool) {
 		super(clientPool);
 	}
@@ -30,7 +32,8 @@ public class Fsync extends AbstractRedisCommand<Object> {
 	}
 
 	@Override
-	protected Object format(Object payload) {
-		return null;
+	protected String format(Object payload) {
+		
+		return payloadToString(payload);
 	}
 }
