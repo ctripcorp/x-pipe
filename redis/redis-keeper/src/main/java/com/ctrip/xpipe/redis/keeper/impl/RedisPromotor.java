@@ -65,48 +65,59 @@ public class RedisPromotor {
 	}
 
 	private void promoteSlaveToMaster(RedisSlave redisSlave) throws Exception {
-		
-		waitUntilSlaveSync(redisSlave, this.promoteServerIp, this.promoteServerPort);
-		logger.info("[promoteSlaveToMaster][fsync start]{},{}", this.promoteServerIp, this.promoteServerPort);
-		
-		SimpleObjectPool<NettyClient> fsyncPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(promoteServerIp, promoteServerPort));
-		
-		Fsync fsyncCmd = new Fsync(fsyncPool);
-		fsyncCmd.execute().sync();
-		logger.info("[promoteSlaveToMaster][fsync done]{},{}", promoteServerIp, promoteServerPort);
-		
 
-		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(promoteServerIp, promoteServerPort));
-		SlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
-		slaveOfCmd.execute().sync();
-
-		InfoCommand infoServerCmd = new InfoCommand(clientPool, "server");
-		String info = infoServerCmd.execute().get();
-		String masterId = null;
-
+		SimpleObjectPool<NettyClient> fsyncPool = null;
+		SimpleObjectPool<NettyClient> clientPool = null;
 		try{
-			List<String> lines = IOUtils.readLines(new StringReader(info));
-			for (String line : lines) {
-				if (line.startsWith("run_id:")) {
-					masterId = line.substring("run_id:".length());
+			fsyncPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(promoteServerIp, promoteServerPort));
+			clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(promoteServerIp, promoteServerPort));
+	
+			waitUntilSlaveSync(redisSlave, this.promoteServerIp, this.promoteServerPort);
+			
+			Fsync fsyncCmd = new Fsync(fsyncPool);
+			fsyncCmd.execute();
+			logger.info("[promoteSlaveToMaster][fsync done]{},{}", promoteServerIp, promoteServerPort);
+			
+	
+			SlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
+			slaveOfCmd.execute().sync();
+	
+			InfoCommand infoServerCmd = new InfoCommand(clientPool, "server");
+			String info = infoServerCmd.execute().get();
+			String masterId = null;
+	
+			try{
+				List<String> lines = IOUtils.readLines(new StringReader(info));
+				for (String line : lines) {
+					if (line.startsWith("run_id:")) {
+						masterId = line.substring("run_id:".length());
+					}
 				}
+				InfoCommand infoLastMasterCmd = new InfoCommand(clientPool,"lastmaster");
+				String infoLastMaster = infoLastMasterCmd.execute().get();
+				long keeperOffset = 0, newMasterOffset = 0;
+				try {
+					String[] parts = infoLastMaster.split("\\s");
+					keeperOffset = Long.parseLong(parts[1]);
+					newMasterOffset = Long.parseLong(parts[2]);
+					
+					redisKeeperServer.getRedisKeeperServerState().setPromotionState(
+							PROMOTION_STATE.SLAVE_PROMTED, new SlavePromotionInfo(keeperOffset, new DefaultEndPoint(promoteServerIp, promoteServerPort), 
+									masterId, newMasterOffset));
+				} catch (Exception e) {
+					logger.error("[onComplete]" + promoteServerIp + ":" + promoteServerPort, e);
+				}
+			} catch (IOException e1) {
+				logger.error("promoteSlaveToMaster", e1);
 			}
-			InfoCommand infoLastMasterCmd = new InfoCommand(clientPool,"lastmaster");
-			String infoLastMaster = infoLastMasterCmd.execute().get();
-			long keeperOffset = 0, newMasterOffset = 0;
-			try {
-				String[] parts = infoLastMaster.split("\\s");
-				keeperOffset = Long.parseLong(parts[1]);
-				newMasterOffset = Long.parseLong(parts[2]);
-				
-				redisKeeperServer.getRedisKeeperServerState().setPromotionState(
-						PROMOTION_STATE.SLAVE_PROMTED, new SlavePromotionInfo(keeperOffset, new DefaultEndPoint(promoteServerIp, promoteServerPort), 
-								masterId, newMasterOffset));
-			} catch (Exception e) {
-				logger.error("[onComplete]" + promoteServerIp + ":" + promoteServerPort, e);
+		}finally{
+			if(fsyncPool != null){
+				fsyncPool.clear();
 			}
-		} catch (IOException e1) {
-			logger.error("promoteSlaveToMaster", e1);
+			if(clientPool != null){
+				clientPool.clear();
+			}
+			
 		}
 	}
 

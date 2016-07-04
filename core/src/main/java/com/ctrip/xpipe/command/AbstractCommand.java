@@ -28,7 +28,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	
 	protected ScheduledExecutorService scheduled;
 	
-	protected CommandFuture<V> future = new DefaultCommandFuture<>();
+	protected CommandFuture<V> future = new DefaultCommandFuture<>(this);
 
 	
 	public AbstractCommand(ScheduledExecutorService scheduled) {

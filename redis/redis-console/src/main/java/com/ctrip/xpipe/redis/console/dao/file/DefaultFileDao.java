@@ -37,7 +37,7 @@ public class DefaultFileDao extends AbstractMetaDao{
 	private XpipeMeta xpipeMeta;
 	
 	public DefaultFileDao(){
-		this("../../../redis-integrated-test/src/main/resources/integrated-test.xml");
+		this("../../../redis-integrated-test/src/test/resources/integrated-test.xml");
 	}
 	
 	public DefaultFileDao(String fileName) {

@@ -8,7 +8,6 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeObjectPoolFromKeyed;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -39,7 +38,6 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 	@Override
 	protected CommandFuture<Void> doExecute() {
 	
-		CommandFuture<Void> future = new DefaultCommandFuture<>();
 		XpipeThreadFactory.create("SLAVE_PROMOTION_JOB").newThread(new SlavePromotionTask(future)).start();
 		return future;
 	}

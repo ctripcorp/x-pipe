@@ -11,6 +11,7 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 
@@ -32,6 +33,12 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
     private short waiters = 0;
     
     private final List<CommandFutureListener<V>> listeners = new LinkedList<>();
+    
+    private Command<V> command; 
+    
+	public DefaultCommandFuture(Command<V> command) {
+		this.command = command;
+	}
 
 	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {
@@ -139,12 +146,12 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
 	public void setSuccess(V result) {
 		
 		if(isDone()){
-			throw new IllegalStateException("already completed!" + result);
+			throw new IllegalStateException(alreadyComplete(result));
 		}
 		
 		synchronized (this) {
 			if(isDone()){
-				throw new IllegalStateException("already completed!" + result);
+				throw new IllegalStateException(alreadyComplete(result));
 			}
 			
 			if(result != null){
@@ -159,15 +166,21 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
 		}
 	}
 
+	private String alreadyComplete(Object given) {
+		
+		return "already completed!" + this.result + "->" + given + "," + command;
+	}
+
 	@Override
 	public void setFailure(Throwable cause) {
+		
 		if(isDone()){
-			throw new IllegalStateException("already completed!" + result);
+			throw new IllegalStateException(alreadyComplete(cause));
 		}
 		
 		synchronized (this) {
 			if(isDone()){
-				throw new IllegalStateException("already completed!" + result);
+				throw new IllegalStateException(alreadyComplete(cause));
 			}
 			this.result = new CauseHolder(cause);
             if (hasWaiters()) {

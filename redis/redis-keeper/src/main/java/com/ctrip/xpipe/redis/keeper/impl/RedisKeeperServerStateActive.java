@@ -137,7 +137,7 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		if(promotionState == PROMOTION_STATE.NORMAL || promotionState == PROMOTION_STATE.REPLICATION_META_EXCHANGED){
 			super.reconnectMaster();
 		}else{
-			logger.warn("[reconnectMaster][can reconnect][promotioning...]{}, {}", promotionState, this.redisKeeperServer);
+			logger.warn("[reconnectMaster][can  not reconnect][promotioning...]{}, {}", promotionState, this.redisKeeperServer);
 		}
 	}
 

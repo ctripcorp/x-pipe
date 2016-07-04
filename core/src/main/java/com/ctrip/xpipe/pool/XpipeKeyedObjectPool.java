@@ -75,4 +75,15 @@ public class XpipeKeyedObjectPool<K, V> extends AbstractLifecycle implements Top
 		this.objectPool.clear();
 	}
 
+
+	@Override
+	public void clear() throws Exception {
+		this.objectPool.clear();
+	}
+
+	@Override
+	public void clear(K key) throws Exception {
+		this.objectPool.clear(key);
+	}
+
 }

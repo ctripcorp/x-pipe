@@ -231,12 +231,14 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 				try{
 					ReplicationStoreMeta meta = commandFuture.get();
 					try{
-						replicationStoreManager.getCurrent().saveMeta(ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME, meta);
+						logger.info("[operationComplete][meta got, save]{}", meta);
+						getCurrentReplicationStore().saveMeta(ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME, meta);
 						psyncCommand();
 					} catch (IOException e1) {
 							logger.error("[onComplete]"+ commandFuture, e1);
 					}
 				}catch(Exception e){
+					logger.error("[operationComplete][retry kinfo]" + DefaultRedisMaster.this, e);
 					scheduled.schedule(new Runnable() {
 						
 						@Override

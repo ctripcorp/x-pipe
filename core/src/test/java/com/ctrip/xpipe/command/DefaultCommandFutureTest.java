@@ -19,7 +19,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
  */
 public class DefaultCommandFutureTest extends AbstractTest{
 	
-	CommandFuture<Object> jobFuture = new DefaultCommandFuture<>();
+	CommandFuture<Object> jobFuture = new DefaultCommandFuture<>(null);
 	
 	@Test
 	public void testSuccess() throws InterruptedException, ExecutionException{

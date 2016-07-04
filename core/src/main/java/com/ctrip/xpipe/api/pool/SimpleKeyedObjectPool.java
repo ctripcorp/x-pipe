@@ -14,6 +14,8 @@ public interface SimpleKeyedObjectPool<K, V> {
 	
 	void returnObject(K key, V value) throws ReturnObjectException;
 	
+	void clear() throws Exception;
 	
+	void clear(K key) throws Exception;
 
 }

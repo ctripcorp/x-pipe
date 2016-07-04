@@ -60,4 +60,9 @@ public class XpipeObjectPool<T> extends AbstractLifecycle implements SimpleObjec
 	protected void doDispose() throws Exception {
 		objectPool.clear();
 	}
+
+	@Override
+	public void clear() throws Exception {
+		this.objectPool.clear();
+	}
 }

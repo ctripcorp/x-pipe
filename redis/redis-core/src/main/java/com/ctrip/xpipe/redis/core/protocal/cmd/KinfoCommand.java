@@ -50,20 +50,14 @@ public class KinfoCommand extends AbstractRedisCommand<ReplicationStoreMeta> {
 		ByteArrayOutputStreamPayload data = (ByteArrayOutputStreamPayload) payload;
 		String buff = new String(data.getBytes(), Codec.defaultCharset);
 		
-		logger.info("[onComplete]{}", buff);
+		logger.info("[format]{}", buff);
 		
 		ReplicationStoreMeta meta = null;
-		try{
-			meta = JSON.parseObject(buff, ReplicationStoreMeta.class);
-			if(meta != null && meta.getMasterRunid() != null && meta.getMasterRunid().length() == RedisProtocol.RUN_ID_LENGTH){
-				return meta;
-			}else{
-				throw new XpipeRuntimeException("[format][wrong meta]" + meta);
-			}
-		}catch(Exception e1){
-			logger.error("[onComplete]" + getName() + "," + buff, e1);
+		meta = JSON.parseObject(buff, ReplicationStoreMeta.class);
+		if(meta != null && meta.getMasterRunid() != null && meta.getMasterRunid().length() == RedisProtocol.RUN_ID_LENGTH){
+			return meta;
+		}else{
+			throw new XpipeRuntimeException("[format][wrong meta]" + meta);
 		}
-		
-		return meta;
 	};
 }
