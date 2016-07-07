@@ -2,6 +2,7 @@
 <!-- MarkdownTOC -->
 
 1. [总体设计](#总体设计)
+    1. [设计原则](#设计原则)
     1. [总体设计图](#总体设计图)
     1. [机房之间交互](#机房之间交互)
     1. [机房内交互](#机房内交互)
@@ -24,6 +25,10 @@
 
 <a name="总体设计"></a>
 # 总体设计
+<a name="设计原则"></a>
+## 设计原则
+1. 机房通信异常，单机房内可以正常工作
+1. 
 <a name="总体设计图"></a>
 ## 总体设计图
 <a name="机房之间交互"></a>
@@ -93,18 +98,23 @@ event:
     dc2
 
 meta
-    dc1
+    dc1(只存储此dc内的信息)
         metaserver1
         metaserver2
         cluster : {config} {version}
             shard  {upstreamKeeper: ""} 
+                keeper 
+                keeper 
+                redis 
+                redis
 
-elector
+elector  
     dc1 
-        metaserver
-        cluster
-            shard
-                keeper
+        metaserver  
+        cluster  
+            shard  
+                keeper  
+
 <a name="meta-server"></a>
 # meta server
 
