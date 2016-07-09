@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.api.endpoint;
 
+import java.net.InetSocketAddress;
+
 public interface Endpoint {
 	
 	String getScheme();
@@ -12,5 +14,5 @@ public interface Endpoint {
 	
 	String getPassword();
 	
-
+	InetSocketAddress getSocketAddress();
 }

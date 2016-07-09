@@ -24,6 +24,8 @@ public class KeeperFailoverTest extends AbstractSingleDcTest{
 		RedisKeeperServer activeRedisKeeperServer = getRedisKeeperServerActive();
 		logger.info("[testKeeperFailOver][active]{}", activeRedisKeeperServer);
 		sleep(6000);
+		
+		logger.info(remarkableMessage("[testKeeperFailOver][stop activeKeeper]"), activeRedisKeeperServer);
 		remove(activeRedisKeeperServer);
 		sleep(6000);
 		

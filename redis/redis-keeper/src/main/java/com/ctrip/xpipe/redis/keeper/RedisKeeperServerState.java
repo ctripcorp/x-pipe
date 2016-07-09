@@ -1,7 +1,11 @@
 package com.ctrip.xpipe.redis.keeper;
 
+
+import java.net.InetSocketAddress;
+
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 
 /**
@@ -9,7 +13,13 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
  *
  * Jun 8, 2016
  */
-public interface RedisKeeperServerState extends Observer{
+public interface RedisKeeperServerState{
+	
+	void becomeActive(InetSocketAddress masterAddress);
+	
+	void becomeBackup(InetSocketAddress masterAddress);
+	
+	void setShardStatus(ShardStatus shardStatus);
 	
 	Endpoint getMaster();
 	
@@ -26,4 +36,7 @@ public interface RedisKeeperServerState extends Observer{
 	boolean psync(RedisClient redisClient, String []args);
 	
 	boolean isActive();
+	
+	KeeperState keeperState();
+	
 }

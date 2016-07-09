@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 
+import java.net.InetSocketAddress;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -30,22 +32,21 @@ public class RedisKeeperServerStateBackupTest extends AbstractRedisKeeperServerS
 		activeKeeperMeta.setPort(redisKeeperServer.getCurrentKeeperMeta().getPort() + 1);
 		
 		ShardStatus shardStatus = createShardStatus(activeKeeperMeta, null, redisMasterMeta);
-		backup = new RedisKeeperServerStateBackup(redisKeeperServer, shardStatus);
+		backup = new RedisKeeperServerStateBackup(redisKeeperServer);
+		backup.setShardStatus(shardStatus);
 	}
 
 	@Test
 	public void getMaster(){
 		
-		Assert.assertEquals(activeKeeperMeta.getIp(), backup.getMaster().getHost());
-		Assert.assertEquals(activeKeeperMeta.getPort(), (Integer)backup.getMaster().getPort());
+		Assert.assertEquals(new InetSocketAddress(activeKeeperMeta.getIp(), activeKeeperMeta.getPort()), backup.getMaster().getSocketAddress());
 	}
 	
 	@Test
 	public void testBackupActive(){
 
-		ShardStatus shardStatus = createShardStatus(redisKeeperServer.getCurrentKeeperMeta(), null, backup.getShardStatus().getRedisMaster());
 		try{
-			update(shardStatus, backup);
+			backup.becomeActive(new InetSocketAddress("localhost", randomPort()));
 			Assert.fail();
 		}catch(Exception e){
 			e.printStackTrace();
@@ -56,11 +57,7 @@ public class RedisKeeperServerStateBackupTest extends AbstractRedisKeeperServerS
 	@Test
 	public void testBackupBackup(){
 		
-		KeeperMeta newKeeperMeta = createKeeperMeta();
-		newKeeperMeta.setPort(activeKeeperMeta.getPort() + 1);
-		
-		ShardStatus shardStatus = createShardStatus(newKeeperMeta, null, backup.getShardStatus().getRedisMaster());
-		update(shardStatus, backup);
+		backup.becomeBackup(new InetSocketAddress("localhost", randomPort()));
 	}
 
 	@After

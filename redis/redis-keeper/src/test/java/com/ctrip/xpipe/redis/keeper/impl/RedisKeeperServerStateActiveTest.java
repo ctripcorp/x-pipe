@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 
+import java.net.InetSocketAddress;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -24,45 +26,38 @@ public class RedisKeeperServerStateActiveTest extends AbstractRedisKeeperServerS
 	public void beforeRedisKeeperServerStateTest() throws Exception{
 		
 		ShardStatus shardStatus = createShardStatus(redisKeeperServer.getCurrentKeeperMeta(), null, redisMasterMeta);
-		active = new RedisKeeperServerStateActive(redisKeeperServer,  shardStatus);
+		active = new RedisKeeperServerStateActive(redisKeeperServer);
+		active.setShardStatus(shardStatus);
 	}
 
 
 	@Test
 	public void getMaster(){
 		
-		Assert.assertEquals(redisMasterMeta.getIp(), active.getMaster().getHost());
-		Assert.assertEquals(redisMasterMeta.getPort(), (Integer)active.getMaster().getPort());
+		Assert.assertEquals(new InetSocketAddress(redisMasterMeta.getIp(), redisMasterMeta.getPort()), active.getMaster().getSocketAddress());
 		
 		KeeperMeta upstreamKeeper = createKeeperMeta();
 		upstreamKeeper.setPort(redisMasterMeta.getPort() + 1);
 		ShardStatus newStatus = createShardStatus(redisKeeperServer.getCurrentKeeperMeta(), upstreamKeeper, null);
-		
-		update(newStatus, active);
 
-		Assert.assertEquals(upstreamKeeper.getIp(), active.getMaster().getHost());
-		Assert.assertEquals(upstreamKeeper.getPort(), (Integer)active.getMaster().getPort());
+		active.setShardStatus(newStatus);
+
+		Assert.assertEquals(new InetSocketAddress(upstreamKeeper.getIp(), upstreamKeeper.getPort()), active.getMaster().getSocketAddress());
 }
 	
 	@Test
 	public void testActiveActive(){
 		
-		update(active.getShardStatus(), active);
+		active.becomeActive(new InetSocketAddress("localhost", randomPort()));
 		
 	}
 
 	@Test
 	public void testActiveBackup(){
-		
-		
-		KeeperMeta keeperMeta = createKeeperMeta();
-		keeperMeta.setPort(redisKeeperServer.getCurrentKeeperMeta().getPort() + 1);
-		
-		ShardStatus newStatus = createShardStatus(keeperMeta, active.getShardStatus().getUpstreamKeeper(), active.getShardStatus().getRedisMaster());
-		
-		update(newStatus, active);
-		
+
+		active.becomeBackup(new InetSocketAddress("localhost", randomPort()));
 		Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
+		
 	}
 
 	

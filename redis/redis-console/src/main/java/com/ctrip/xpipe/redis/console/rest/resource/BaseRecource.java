@@ -12,7 +12,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import com.ctrip.xpipe.redis.console.dao.ConsoleDao;
-import com.ctrip.xpipe.redis.console.service.MetaService;
+import com.ctrip.xpipe.redis.console.service.ConsoleService;
 import com.ctrip.xpipe.rest.DefaultRestProcessTemplate;
 import com.ctrip.xpipe.rest.ProcessTemplate;
 
@@ -50,9 +50,9 @@ public class BaseRecource {
 		return applicationContext.getBean(clazz);
 	}
 
-	protected MetaService getMetaService(){
+	protected ConsoleService getMetaService(){
 		
-		return getBean(MetaService.class);
+		return getBean(ConsoleService.class);
 	}
 	
 }

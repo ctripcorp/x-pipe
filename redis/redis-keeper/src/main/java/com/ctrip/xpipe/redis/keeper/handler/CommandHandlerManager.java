@@ -32,6 +32,7 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 		putHandler(new InfoHandler());
 		putHandler(new SlaveOfCommandHandler());
 		putHandler(new KinfoCommandHandler());
+		putHandler(new KeeperCommandHandler());
 	}
 
 	private void putHandler(CommandHandler handler) {

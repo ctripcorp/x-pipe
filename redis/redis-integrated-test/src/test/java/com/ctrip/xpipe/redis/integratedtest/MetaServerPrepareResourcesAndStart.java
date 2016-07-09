@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultMetaOperation;
+import com.ctrip.xpipe.redis.meta.server.dao.memory.MemoryMetaServerDao;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -33,6 +34,7 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 
 	private Logger logger = LoggerFactory.getLogger(SpringComponentLifecycleManager.class);
 	
+	private String integratedTestFile;
 	private MetaConsole metaConsole;
 	private int serverPort;
 	private String zkAddress;
@@ -40,8 +42,9 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 	
 	private ApplicationContext applicationContext;
 	
-	public MetaServerPrepareResourcesAndStart(String zkAddress, int serverPort, DcMeta dcMeta){
+	public MetaServerPrepareResourcesAndStart(String integratedTestFile, String zkAddress, int serverPort, DcMeta dcMeta){
 		
+		this.integratedTestFile = integratedTestFile;
 		this.zkAddress = zkAddress;
 		this.serverPort = serverPort;
 		this.dcMeta = dcMeta;
@@ -56,6 +59,7 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 	public void  doStart() throws Exception {
 		
 		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
+		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, integratedTestFile);
 		applicationContext = start(connectToZk(zkAddress), dcMeta);
 	}
 	

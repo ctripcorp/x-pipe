@@ -9,6 +9,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActiveTest;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackupTest;
+import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateUnknownTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
 
 /**
@@ -20,7 +21,8 @@ import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
 @SuiteClasses({
 	PsyncTest.class,
 	RedisKeeperServerStateBackupTest.class,
-	RedisKeeperServerStateActiveTest.class
+	RedisKeeperServerStateActiveTest.class,
+	RedisKeeperServerStateUnknownTest.class
 })
 public class AllTests {
 

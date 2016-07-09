@@ -1,6 +1,7 @@
 package com.ctrip.xpipe;
 
 
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,7 +28,6 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
@@ -238,7 +238,7 @@ public class AbstractTest {
 
 	
 	public static int randomPort(){
-		return randomPort(10000, 20000);
+		return randomPort(10000, 20000); 
 	}
 	
 	
@@ -254,13 +254,18 @@ public class AbstractTest {
 		for(;i<=max;i++){
 			
 			try(ServerSocket s = new ServerSocket()){
-				s.bind(new InetSocketAddress(i));
-				break;
+				int port = randomInt(min, max);
+				s.bind(new InetSocketAddress(port));
+				return port;
 			} catch (IOException e) {
 			}
 		}
 		
-		return i;
+		throw new IllegalStateException(String.format("random port not found:(%d, %d)", min , max));
+	}
+	
+	protected static int randomInt(int begin, int end){
+		return (int) (begin + Math.random() * (end - begin));
 	}
 
 	protected Integer randomInt() {

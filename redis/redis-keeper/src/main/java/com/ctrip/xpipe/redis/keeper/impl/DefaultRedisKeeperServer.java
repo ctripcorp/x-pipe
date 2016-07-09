@@ -23,6 +23,7 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -35,7 +36,7 @@ import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
-import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
+import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.thread.NamedThreadFactory;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -76,29 +77,29 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private final String clusterId, shardId;
 	
-	private MetaServiceManager metaServiceManager;
-	
 	private volatile RedisKeeperServerState redisKeeperServerState;
 	
 	private KeeperMeta currentKeeperMeta;
 	private LeaderElector leaderElector;
 
 	private LeaderElectorManager leaderElectorManager;
+	
+	private MetaService metaService;
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, ReplicationStoreManager replicationStoreManager, 
-			MetaServiceManager metaServiceManager, LeaderElectorManager leaderElectorManager){
-		this(currentKeeperMeta, replicationStoreManager, metaServiceManager, null, leaderElectorManager);
+			MetaService metaService, LeaderElectorManager leaderElectorManager){
+		this(currentKeeperMeta, replicationStoreManager, metaService, null, leaderElectorManager);
 	}
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, ReplicationStoreManager replicationStoreManager, 
-			MetaServiceManager metaServiceManager, 
+			MetaService metaService, 
 			ScheduledExecutorService scheduled, 
 			LeaderElectorManager leaderElectorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
 		this.shardId = currentKeeperMeta.parent().getId();
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.replicationStoreManager = replicationStoreManager;
-		this.metaServiceManager = metaServiceManager;
+		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
 		if(scheduled == null){
 			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(clusterId + "-" + shardId));
@@ -122,7 +123,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = new RedisKeeperServerStateUnknown(this); 
-		metaServiceManager.add(this);
 
 	}
 	
@@ -133,7 +133,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			this.keeperRedisMaster.dispose();
 		}
 		
-		metaServiceManager.remove(this);
 		this.leaderElector.dispose();
 		super.doDispose();
 	}
@@ -143,11 +142,23 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doStart() throws Exception {
 		super.doStart();
 		
+		
+		getCurrentShardStatus();
+		
 		keeperStartTime = System.currentTimeMillis();
-		this.leaderElector.start();
 		startServer();
+		this.leaderElector.start();
 	}
 	
+	private void getCurrentShardStatus() {
+		try{
+			ShardStatus shardStatus = metaService.getShardStatus(clusterId, shardId);
+			this.redisKeeperServerState.setShardStatus(shardStatus);
+		}catch(Exception e){
+			logger.error("[getCurrentShardStatus]" + this, e);
+		}
+	}
+
 	@Override
 	protected void doStop() throws Exception {
 		
@@ -394,11 +405,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public RedisKeeperServerState getRedisKeeperServerState() {
 		return this.redisKeeperServerState;
-	}
-
-	@Override
-	public void update(Object args, Observable observable) {
-		redisKeeperServerState.update(args, observable);
 	}
 
 	@Override

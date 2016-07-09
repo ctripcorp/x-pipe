@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.endpoint;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -13,7 +14,11 @@ public class DefaultEndPoint implements Endpoint{
 	
 	public DefaultEndPoint() {
 	}
-	
+
+	public DefaultEndPoint(InetSocketAddress address) {
+		this(address.getHostName(), address.getPort());
+	}
+
 	public DefaultEndPoint(String ip, int port){
 		this("redis://" + ip + ":" + port);
 	}
@@ -119,6 +124,11 @@ public class DefaultEndPoint implements Endpoint{
 		} else if (!uri.equals(other.uri))
 			return false;
 		return true;
+	}
+
+	@Override
+	public InetSocketAddress getSocketAddress() {
+		return new InetSocketAddress(getHost(), getPort());
 	}
 
 }

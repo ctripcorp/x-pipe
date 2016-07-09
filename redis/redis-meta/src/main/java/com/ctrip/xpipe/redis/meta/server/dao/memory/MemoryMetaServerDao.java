@@ -15,7 +15,9 @@ import com.ctrip.xpipe.redis.meta.server.dao.MetaServerDao;
 @Component
 public class MemoryMetaServerDao extends AbstractMetaServerDao implements MetaServerDao{
 
-	private String fileName = System.getProperty("memory_meta_server_dao_file", "memory_meta_server_dao_file.xml");
+	public static String MEMORY_META_SERVER_DAO_KEY = "memory_meta_server_dao_file";
+	
+	private String fileName = System.getProperty(MEMORY_META_SERVER_DAO_KEY, "memory_meta_server_dao_file.xml");
 
 	public MemoryMetaServerDao(){
 	}

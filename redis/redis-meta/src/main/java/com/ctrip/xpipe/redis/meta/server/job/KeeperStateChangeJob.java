@@ -3,11 +3,14 @@ package com.ctrip.xpipe.redis.meta.server.job;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Callable;
+
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.api.retry.RetryTemplate;
+import com.ctrip.xpipe.api.retry.RetryType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -15,6 +18,7 @@ import com.ctrip.xpipe.pool.XpipeObjectPoolFromKeyed;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
+import com.ctrip.xpipe.retry.RetryNTimes;
 
 /**
  * @author wenchao.meng
@@ -26,6 +30,8 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	private List<KeeperMeta> keepers;
 	private InetSocketAddress activeKeeperMaster;
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
+	private int delayBaseMilli = 1000;
+	private int retryTimes = 5;
 	
 	public KeeperStateChangeJob(List<KeeperMeta> keepers, InetSocketAddress activeKeeperMaster, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool){
 		
@@ -54,31 +60,13 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 			throw new IllegalStateException("no activekeeper " + keepers);
 		}
 		
-		//change acitve keeper
-		try {
-			logger.info("[doExecute][change keeper to active]", activeKeeper);
-			SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(clientPool, new InetSocketAddress(activeKeeper.getIp(), activeKeeper.getPort()));
-			Boolean result = new KeeperSetStateCommand(pool, KeeperState.ACTIVE, activeKeeperMaster).execute().sync().get();
-			if(!result){
-				future.setFailure(new Exception("set keeperstate command result failure"));
-				return future;
-			}
-		} catch (InterruptedException | ExecutionException e) {
-			logger.error("[doExecute][change keeper to active fail]" + activeKeeper, e);
-			future.setFailure(new Exception("change keeper to active fail", e));
-			return future;
+		if(!executeKeeperState(activeKeeper, activeKeeperMaster)){
+			future.setFailure(new Exception("set keeper to active fail:" + activeKeeper));
 		}
 		
-		//change backup keeper
 		for(KeeperMeta keeperMeta : keepers){
 			if(!keeperMeta.isActive()){
-				try {
-					logger.info("[doExecute][change keeper to backup]", keeperMeta);
-					SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(clientPool, new InetSocketAddress(keeperMeta.getIp(), keeperMeta.getPort()));
-					new KeeperSetStateCommand(pool, KeeperState.BACKUP, new InetSocketAddress(activeKeeper.getIp(), activeKeeper.getPort())).execute().get();
-				} catch (InterruptedException | ExecutionException e) {
-					logger.error("[doExecute][change keeper to back fail]", e);
-				}
+				executeKeeperState(keeperMeta, new InetSocketAddress(activeKeeper.getIp(), activeKeeper.getPort())); //backup fail ignore
 			}
 		}
 		
@@ -86,4 +74,22 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 		return future;
 	}
 
+	private boolean executeKeeperState(final KeeperMeta keeper, final InetSocketAddress masterAddress) {
+
+		RetryTemplate retryTemplate = new RetryNTimes(retryTimes, delayBaseMilli);
+		
+		return retryTemplate.execute(new Callable<RetryType>() {
+			@Override
+			public RetryType call() throws Exception {
+
+				logger.info("[doExecute][change keeper to {} %s]", keeper, keeper.isActive() ? "active" : "backup");
+				SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(clientPool, new InetSocketAddress(keeper.getIp(), keeper.getPort()));
+				Boolean result = new KeeperSetStateCommand(pool, keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP, masterAddress).execute().sync().get();
+				if(!result){
+					return RetryType.FAIL_RETRY;
+				}
+				return RetryType.SUCCESS;
+			}
+		});
+	}
 }

@@ -17,6 +17,11 @@ import io.netty.buffer.ByteBuf;
  *         May 16, 2016 6:46:15 PM
  */
 public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
+	
+	public static String GET_STATE = "getstate";
+	
+	public static String SET_STATE = "setstate";
+	
 		
 	public AbstractKeeperCommand(SimpleObjectPool<NettyClient> clientPool) {
 		super(clientPool);
@@ -40,7 +45,7 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 
 		@Override
 		protected ByteBuf getRequest() {
-			return new RequestStringParser(getName(), "getstate").format();
+			return new RequestStringParser(getName(), GET_STATE).format();
 		}
 	}
 	
@@ -67,13 +72,13 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 
 		@Override
 		protected ByteBuf getRequest() {
-			return new RequestStringParser(getName(), state.toString(), masterAddress.getHostName(), String.valueOf(masterAddress.getPort())).format();
+			return new RequestStringParser(getName(), SET_STATE, state.toString(), masterAddress.getHostName(), String.valueOf(masterAddress.getPort())).format();
 		}
 		
 		
 		@Override
 		public String toString() {
-			return String.format("%s %s %s", getName(), state.toString(), masterAddress.toString());
+			return String.format("%s %s %s", getName(), SET_STATE, state.toString(), masterAddress.toString());
 		}
 	}
 }

@@ -1,19 +1,18 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.impl.RedisPromotor.SlavePromotionInfo;
+
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
-
-
 
 /**
  * @author wenchao.meng
@@ -28,33 +27,17 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		super(redisKeeperServer);
 	}
 	
-	public RedisKeeperServerStateActive(RedisKeeperServer redisKeeperServer, ShardStatus shardStatus) {
-		super(redisKeeperServer, shardStatus);
+	public RedisKeeperServerStateActive(RedisKeeperServer redisKeeperServer, InetSocketAddress masterAddress) {
+		super(redisKeeperServer, masterAddress);
 	}
 
-	
 	@Override
-	protected Endpoint doGetMaster(ShardStatus shardStatus) {
-		
-		if(shardStatus.getRedisMaster() != null){
-			return new DefaultEndPoint(shardStatus.getRedisMaster().getIp(), shardStatus.getRedisMaster().getPort());
-		}
-		
-		if(shardStatus.getUpstreamKeeper() != null){
-			return new DefaultEndPoint(shardStatus.getUpstreamKeeper().getIp(), shardStatus.getUpstreamKeeper().getPort());
-		}
-		
-		return null;
-	}
-	
-	
-	@Override
-	protected void becomeBackup() {
+	public void becomeBackup(InetSocketAddress masterAddress) {
 		//active changed!
 		try {
 			logger.info("[becomeBackup][active->backup] {}", this);
-			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, getShardStatus()));
 			redisKeeperServer.getReplicationStore().changeMetaToKeeper();
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, masterAddress));
 			reconnectMaster();
 		} catch (IOException e) {
 			logger.error("[becomeBackup]" + this, e);
@@ -63,21 +46,16 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 	}
 
 	@Override
-	protected void becomeActive() {
-		//nothing to do
-		logger.info("[becomeActive][nothing to do]");
+	public void becomeActive(InetSocketAddress masterAddress) {
+		
+		setMasterAddress(masterAddress);
 	}
 
-	
 	@Override
 	protected void keeperMasterChanged() {
 
 		reconnectMaster();
 	}
-
-
-
-	
 	
 	@Override
 	public void setPromotionState(PROMOTION_STATE promotionState, Object info) {
@@ -100,9 +78,7 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 							, promotionInfo.getNewMasterRunid(), promotionInfo.getNewMasterReplOffset());
 				this.promotionState = PROMOTION_STATE.REPLICATION_META_EXCHANGED;
 				
-				//TODO should be called!!
-				this.getShardStatus().setRedisMaster(newMaster);
-				reconnectMaster();
+				setMasterAddress(new InetSocketAddress(newMaster.getIp(), newMaster.getPort()));
 				break;
 			case REPLICATION_META_EXCHANGED:
 				throw new IllegalStateException("state should no be changed outside:" + promotionState);
@@ -149,6 +125,11 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 	@Override
 	public void initPromotionState() {
 		this.promotionState = PROMOTION_STATE.NORMAL;
+	}
+
+	@Override
+	public KeeperState keeperState() {
+		return KeeperState.ACTIVE;
 	}
 
 }

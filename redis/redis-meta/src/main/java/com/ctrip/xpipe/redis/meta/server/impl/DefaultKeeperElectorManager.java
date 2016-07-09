@@ -80,7 +80,8 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 	};
 
 	private void updateShardLeader(List<String> children, String leaderLatchPath, String clusterId, String shardId) throws Exception {
-		
+
+		logger.info("[updateShardLeader]{}, {}, {}, {}", children, leaderLatchPath, clusterId, shardId);
 		KeeperMeta keeper = null;
 
 		if (children != null && !children.isEmpty()) {
@@ -97,8 +98,7 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 			keeper.setIp(parts[0]);
 			keeper.setPort(Integer.parseInt(parts[1]));
 			keeper.setId(parts[2]);
+			metaServer.updateActiveKeeper(clusterId, shardId, keeper);
 		}
-
-		metaServer.updateActiveKeeper(clusterId, shardId, keeper);
 	}
 }

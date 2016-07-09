@@ -67,6 +67,22 @@ public class Replconf extends AbstractRedisCommand<Object>{
 		RequestStringParser request = new RequestStringParser(logRead, logWrite, getName(), replConfType.toString(), argu);
 		return request.format();
 	}
+	
+	@Override
+	protected boolean logRequest() {
+		if(replConfType == ReplConfType.ACK){
+			return false;
+		}
+		return true;
+
+	}
+	
+	@Override
+	protected boolean logResponse() {
+		return logRequest();
+	}
+	
+	
 
 	@Override
 	protected Object format(Object payload) {

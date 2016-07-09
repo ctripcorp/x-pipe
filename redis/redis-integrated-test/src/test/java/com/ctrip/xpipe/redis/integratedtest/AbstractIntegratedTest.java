@@ -34,8 +34,7 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaServerLocator;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaService;
-import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaServiceManager;
-import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
+import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
@@ -173,7 +172,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		
 		startMetaServers(dcMeta);
 
-		MetaServiceManager metaServiceManager = createMetaServiceManager(dcMeta.getMetaServers());
+		MetaService metaService = createMetaService(dcMeta.getMetaServers());
 		
 		LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcMeta);
 
@@ -184,7 +183,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 			for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 				logger.info(remarkableMessage("[startShard]{}"), shardMeta.getId());
 				for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-					startKeeper(keeperMeta, metaServiceManager, leaderElectorManager);
+					startKeeper(keeperMeta, metaService, leaderElectorManager);
 				}
 				for (RedisMeta redisMeta : shardMeta.getRedises()) {
 					startRedis(dcMeta, redisMeta);
@@ -229,7 +228,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	}
 
 
-	protected MetaServiceManager createMetaServiceManager(List<MetaServerMeta> metaServerMetas) {
+	protected MetaService createMetaService(List<MetaServerMeta> metaServerMetas) {
 
 		DefaultMetaServerLocator metaServerLocator = new DefaultMetaServerLocator();
 		metaServerLocator.setAddress(String.format("%s:%d", "localhost", metaServerMetas.get(0).getPort()));
@@ -238,9 +237,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		metaService.setConfig(new DefaultKeeperConfig());
 		metaService.setMetaServerLocator(metaServerLocator);
 
-		DefaultMetaServiceManager metaServiceManager = new DefaultMetaServiceManager();
-		metaServiceManager.setMetaService(metaService);
-		return metaServiceManager;
+		return metaService;
 	}
 
 	protected void startRedis(DcMeta dcMeta, RedisMeta redisMeta) throws ExecuteException, IOException {
@@ -310,14 +307,14 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		}
 	}
 
-	protected void startKeeper(KeeperMeta keeperMeta, MetaServiceManager metaServiceManager, LeaderElectorManager leaderElectorManager) throws Exception {
+	protected void startKeeper(KeeperMeta keeperMeta, MetaService metaService, LeaderElectorManager leaderElectorManager) throws Exception {
 
 		logger.info(remarkableMessage("[startKeeper]{}, {}"), keeperMeta);
 		ReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
 				keeperMeta.parent().parent().getId(), keeperMeta.parent().getId(), 
 				new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort()));
 
-		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperMeta, replicationStoreManager, metaServiceManager, leaderElectorManager);
+		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperMeta, replicationStoreManager, metaService, leaderElectorManager);
 		add(redisKeeperServer);
 	}
 
@@ -330,7 +327,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		
 		logger.info(remarkableMessage("[startMetaServer]{}, {}"), metaServerMeta, zkServerMeta);
 				
-		MetaServerPrepareResourcesAndStart startMetaServer = new MetaServerPrepareResourcesAndStart(zkServerMeta.getAddress(), metaServerMeta.getPort(), dcMeta);
+		MetaServerPrepareResourcesAndStart startMetaServer = new MetaServerPrepareResourcesAndStart(integrated_test_config_file, zkServerMeta.getAddress(), metaServerMeta.getPort(), dcMeta);
 		startMetaServer.initialize();
 		startMetaServer.start();
 		

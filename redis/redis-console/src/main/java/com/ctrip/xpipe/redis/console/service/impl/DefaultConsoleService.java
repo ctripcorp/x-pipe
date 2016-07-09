@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.dao.ConsoleDao;
-import com.ctrip.xpipe.redis.console.service.MetaService;
+import com.ctrip.xpipe.redis.console.service.ConsoleService;
 import com.ctrip.xpipe.redis.core.dao.DaoException;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -26,7 +26,7 @@ import com.ctrip.xpipe.redis.core.meta.impl.DefaultMetaOperation;
  * Jun 23, 2016
  */
 @Component
-public class DefaultMetaService implements MetaService{
+public class DefaultConsoleService implements ConsoleService{
 	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -38,7 +38,7 @@ public class DefaultMetaService implements MetaService{
 	@Resource(name="zkPool")
 	private XpipeKeyedObjectPool<String, CuratorFramework> zkPool;
 	
-	public DefaultMetaService() {
+	public DefaultConsoleService() {
 	}
 	
 	@Override
@@ -69,8 +69,6 @@ public class DefaultMetaService implements MetaService{
 			return false;
 		}
 		
-		logger.info("[updateRedisMaster][changed]{},{},{},{}", dc, clusterId, shardId, redisMaster);
-		notifyDcs(clusterId, shardId);
 		return activeChanged;
 	}
 
@@ -85,13 +83,17 @@ public class DefaultMetaService implements MetaService{
 		}
 		
 		logger.info("[updateActiveDc][changed notify dcs]{},{}", clusterId, activeDc);
-		notifyDcs(clusterId, null);
+		notifyDcs(clusterId);
 		return activeDcChanged;
 	}
 
 	
+	private void notifyDcs(String clusterId) {
+		//TODO
+	}
+
 	private void notifyDcs(final String clusterId, final String shardId) {
-		
+		//TODO
 		for(final String newDc : metaDao.getDcs()){
 			
 			executors.execute(new Runnable() {

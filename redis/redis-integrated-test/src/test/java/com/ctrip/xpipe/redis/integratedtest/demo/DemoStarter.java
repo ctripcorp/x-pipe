@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.integratedtest.multidc.AbstractMultiDcTest;
-import com.ctrip.xpipe.redis.keeper.meta.MetaServiceManager;
+import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 
 /**
  * @author wenchao.meng
@@ -106,14 +106,14 @@ public class DemoStarter extends AbstractMultiDcTest{
 
 		DcMeta dcMeta = getDcMeta(dc);
 		
-		MetaServiceManager metaServiceManager = createMetaServiceManager(dcMeta.getMetaServers());
+		MetaService metaService = createMetaService(dcMeta.getMetaServers());
 		LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcMeta);
 		
 		int count = 0;
 		for(KeeperMeta keeperMeta : getDcKeepers(dc, clusterId, shardId)){
 			
 			if(index == null || index == count){
-				startKeeper(keeperMeta, metaServiceManager, leaderElectorManager);
+				startKeeper(keeperMeta, metaService, leaderElectorManager);
 			}
 			count++;
 		}

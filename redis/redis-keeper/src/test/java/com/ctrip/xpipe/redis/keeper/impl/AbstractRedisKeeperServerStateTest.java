@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaServiceManager.MetaUpdateInfo;
 
 
 
@@ -31,12 +30,6 @@ public class AbstractRedisKeeperServerStateTest extends AbstractRedisKeeperTest{
 	}
 	
 
-	protected void update(ShardStatus shardStatus, AbstractRedisKeeperServerState state) {
-
-		MetaUpdateInfo updateInfo = new MetaUpdateInfo(redisKeeperServer.getClusterId(), redisKeeperServer.getShardId(), shardStatus);
-		
-		state.update(updateInfo, null);
-	}
 	
 	protected ShardStatus createShardStatus(KeeperMeta activeKeeper, KeeperMeta upstreamKeeper, RedisMeta redisMaster) {
 		return new ShardStatus(activeKeeper, upstreamKeeper, redisMaster);

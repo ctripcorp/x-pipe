@@ -14,7 +14,7 @@
   <entity name="shard">
     <attribute name="id" key="true" />
   </entity>
-  <entity name="keeper">
+  <entity name="keeper" implements="java.io.Serializable">
     <attribute name="active" primitive="true" />
   </entity>
   <entity name="redis">

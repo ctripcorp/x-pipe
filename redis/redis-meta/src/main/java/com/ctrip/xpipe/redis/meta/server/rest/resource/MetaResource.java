@@ -110,6 +110,22 @@ public class MetaResource extends BaseRecource {
 			}
 		});
 	}
+	
+	@Path("/setupstream/{clusterId}/{shardId}/{ip}/{port}")
+	@POST
+	public Response setUpstream(@PathParam("clusterId") final String clusterId, @PathParam("shardId") final String shardId, @PathParam("ip") final String upstreamIp, @PathParam("port") final int upstreamPort) {
+
+		logger.info("[setUpstream]{},{},{}:{}", clusterId , shardId , upstreamIp, upstreamPort);
+
+		return processTemplate.process(new Callable<Response>() {
+			@Override
+			public Response call() throws Exception {
+				getMetaServer().updateUpstream(clusterId, shardId, String.format("%s:%p", upstreamIp, upstreamPort));
+				return Response.status(Status.OK).build();
+			}
+		});
+	}
+
 
 
 	private KeeperMeta doGetActiveKeeper(String clusterId, String shardId) {

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -40,7 +41,7 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 		String clusterId = redisKeeperServer.getClusterId();
 		String shardId = redisKeeperServer.getShardId();
 		
-		addObserver(redisKeeperServer);
+		addObserver((Observer)redisKeeperServer);
 		
 		synchronized (metaInfos) {
 			MetaInfo metaInfo = getOrAddShard(clusterId, shardId);
@@ -55,7 +56,7 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 		
 		String clusterId = redisKeeperServer.getClusterId();
 		String shardId = redisKeeperServer.getShardId();
-		removeObserver(redisKeeperServer);
+		removeObserver((Observer)redisKeeperServer);
 
 		synchronized (metaInfos) {
 			MetaInfo metaInfo = metaInfos.get(getKey(clusterId, shardId));

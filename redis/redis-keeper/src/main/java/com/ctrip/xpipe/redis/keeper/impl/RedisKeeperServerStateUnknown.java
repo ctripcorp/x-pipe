@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
@@ -19,29 +19,24 @@ public class RedisKeeperServerStateUnknown extends AbstractRedisKeeperServerStat
 		super(redisKeeperServer);
 	}
 
-	@Override
-	protected Endpoint doGetMaster(ShardStatus shardStatus) {
-		return null;
-	}
 
 
 	@Override
-	protected void becomeBackup() {
+	public void becomeBackup(InetSocketAddress masterAddress) {
 		
-		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, getShardStatus()));
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, masterAddress));
 		reconnectMaster();
 	}
 
 	@Override
-	protected void becomeActive() {
+	public void becomeActive(InetSocketAddress masterAddress) {
 		
-		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, getShardStatus()));
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, masterAddress));
 		reconnectMaster();
 	}
 
 	@Override
 	protected void keeperMasterChanged() {
-		
 		//nothing to do
 		logger.info("[keeperMasterChanged][nothing to do]");
 	}
@@ -68,4 +63,10 @@ public class RedisKeeperServerStateUnknown extends AbstractRedisKeeperServerStat
 	public boolean isActive() {
 		return false;
 	}
+
+	@Override
+	public KeeperState keeperState() {
+		return KeeperState.UNKNOWN;
+	}
+
 }

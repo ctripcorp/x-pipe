@@ -25,7 +25,7 @@ public abstract class AbstractLifecycleObservable extends AbstractLifecycle impl
 	
 	private List<Observer> observers = new LinkedList<>();
 	
-	private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(this + "-observable" ));
+	private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(this.getClass() + "-observable" ));
 	
 	@Override
 	public synchronized void addObserver(Observer observer) {

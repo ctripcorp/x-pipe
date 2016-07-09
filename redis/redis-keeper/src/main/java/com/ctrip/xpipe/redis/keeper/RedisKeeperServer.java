@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.keeper;
 
+
 import java.io.IOException;
 import java.util.Set;
 
-import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
@@ -17,7 +17,7 @@ import io.netty.channel.Channel;
  *
  * 2016年3月29日 下午3:09:23
  */
-public interface RedisKeeperServer extends RedisServer, PsyncObserver, Observer{
+public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	
 	int getListeningPort();
 	
