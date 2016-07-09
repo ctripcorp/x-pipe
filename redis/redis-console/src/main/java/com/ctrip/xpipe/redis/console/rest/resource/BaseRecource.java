@@ -11,7 +11,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
-import com.ctrip.xpipe.redis.console.dao.MetaDao;
+import com.ctrip.xpipe.redis.console.dao.ConsoleDao;
 import com.ctrip.xpipe.redis.console.service.MetaService;
 import com.ctrip.xpipe.rest.DefaultRestProcessTemplate;
 import com.ctrip.xpipe.rest.ProcessTemplate;
@@ -34,10 +34,10 @@ public class BaseRecource {
 		return WebApplicationContextUtils.getWebApplicationContext(servletContext);
 	}
 	
-	protected MetaDao getMetaDao(){
+	protected ConsoleDao getMetaDao(){
 		
 		
-		return getBean(MetaDao.class);
+		return getBean(ConsoleDao.class);
 	}
 	
 	

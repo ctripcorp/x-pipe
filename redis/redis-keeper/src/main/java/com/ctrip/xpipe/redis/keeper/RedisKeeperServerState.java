@@ -21,7 +21,6 @@ public interface RedisKeeperServerState extends Observer{
 	
 	void initPromotionState();
 	
-	
 	boolean sendKinfo();
 	
 	boolean psync(RedisClient redisClient, String []args);

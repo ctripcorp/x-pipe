@@ -1,7 +1,9 @@
-package com.ctrip.xpipe.redis.console.dao;
+package com.ctrip.xpipe.redis.core.dao;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * @author wenchao.meng

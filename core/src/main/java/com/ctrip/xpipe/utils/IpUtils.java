@@ -12,6 +12,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author wenchao.meng
  *
@@ -20,6 +23,7 @@ import java.util.regex.Pattern;
 public class IpUtils {
 	
 	private static Pattern IP_PATTERN = Pattern.compile("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
+	private static Logger logger = LoggerFactory.getLogger(IpUtils.class);
 	
 	public static String getIp(SocketAddress socketAddress){
 		
@@ -59,8 +63,6 @@ public class IpUtils {
 			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
 			while(interfaces.hasMoreElements()){
 				 NetworkInterface current = interfaces.nextElement();
-//				 System.out.println(current);
-//				 System.out.println(current.getInterfaceAddresses());
 				 if(current.isLoopback()){
 					 continue;
 				 }
@@ -86,14 +88,23 @@ public class IpUtils {
 		List<InetSocketAddress> result = new LinkedList<>();
 		String []addresses = addressDesc.split("\\s*,\\s*");
 		for(String address : addresses){
-			
-			String []parts = address.split("\\s*:\\s*");
-			if(parts.length != 2){
-				continue;
+
+			try {
+				InetSocketAddress inetAddress = parseSingle(address);
+				result.add(inetAddress);
+			} catch (Exception e) {
+				logger.warn("[parse][wrong address]" + address);
 			}
-			result.add(new InetSocketAddress(parts[0], Integer.parseInt(parts[1])));
 		}
-		
 		return result;
 	}
+	
+	public static InetSocketAddress parseSingle(String singleAddress) throws Exception{
+
+		String []parts = singleAddress.split("\\s*:\\s*");
+		if(parts.length != 2){
+			throw new Exception("invalid socket address:" + singleAddress);
+		}
+		return new InetSocketAddress(parts[0], Integer.parseInt(parts[1]));
+	} 
 }

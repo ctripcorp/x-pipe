@@ -7,6 +7,7 @@
     <attribute name="id" value-type="String" />
     <entity-ref name="metaServer" type="list" names="metaServers" />
     <entity-ref name="zkServer" />
+    <entity-ref name="keeperContainer" type="list" names="keeperContainers" xml-indent="true" />
     <entity-ref name="cluster" type="list" names="clusters" />
   </entity>
   <entity name="metaServer">
@@ -17,6 +18,11 @@
   <entity name="zkServer">
     <attribute name="address" value-type="String" />
   </entity>
+  <entity name="keeperContainer">
+    <attribute name="id" value-type="int" />
+    <attribute name="ip" value-type="String" />
+    <attribute name="port" value-type="int" />
+  </entity>
   <entity name="cluster">
     <attribute name="id" value-type="String" />
     <attribute name="active-dc" value-type="String" />
@@ -24,6 +30,7 @@
   </entity>
   <entity name="shard">
     <attribute name="id" value-type="String" />
+    <attribute name="upstream" value-type="String" />
     <entity-ref name="keeper" type="list" names="keepers" />
     <entity-ref name="redis" type="list" names="redises" />
   </entity>
@@ -32,6 +39,7 @@
     <attribute name="ip" value-type="String" />
     <attribute name="port" value-type="int" />
     <attribute name="active" value-type="boolean" />
+    <attribute name="keeperContainer" value-type="int" />
   </entity>
   <entity name="redis">
     <attribute name="ip" value-type="String" />

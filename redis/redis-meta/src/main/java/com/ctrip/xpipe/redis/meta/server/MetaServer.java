@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server;
 
-import java.util.concurrent.ExecutionException;
+
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
-import com.ctrip.xpipe.command.CommandExecutionException;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.meta.server.exception.RedisMetaServerException;
+import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 
 
 
@@ -23,9 +21,14 @@ public interface MetaServer extends TopElement {
 
 	RedisMeta getRedisMaster(String clusterId, String shardId);
 
-	KeeperMeta getUpstreamKeeper(String clusterId, String shardId);
+	KeeperMeta getUpstreamKeeper(String clusterId, String shardId) throws Exception;
 
-	void watchCluster(ClusterMeta cluster) throws Exception;
+	ShardStatus getShardStatus(String clusterId, String shardId) throws Exception;
+
+	void updateActiveKeeper(String clusterId, String shardId, KeeperMeta keeper) throws Exception;
 	
-	void promoteRedisMaster(String clusterId, String shardId, String promoteIp, int promotePort) throws InterruptedException, RedisMetaServerException, ExecutionException, CommandExecutionException;
+	void updateUpstream(String clusterId, String shardId, String upstream) throws Exception;
+	
+	void promoteRedisMaster(String clusterId, String shardId, String promoteIp, int promotePort) throws Exception;
+
 }

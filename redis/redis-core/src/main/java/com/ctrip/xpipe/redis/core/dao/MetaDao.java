@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.dao;
+package com.ctrip.xpipe.redis.core.dao;
 
 
 import java.util.List;
@@ -7,28 +7,24 @@ import java.util.Set;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 
 /**
  * @author wenchao.meng
  *
- * Jun 23, 2016
+ * Jul 7, 2016
  */
 public interface MetaDao extends MetaUpdateOperation{
 	
+	boolean dcExists(String dc);
+	
 	Set<String> getDcs();
 	
-	String getActiveDc(String clusterId) throws DaoException;
-	
-	XpipeMeta getXpipeMeta();
-	
-	DcMeta getDcMeta(String dc);
+	Set<String> getDcClusters(String dc);
 	
 	ClusterMeta getClusterMeta(String dc, String clusterId);
 	
@@ -52,5 +48,12 @@ public interface MetaDao extends MetaUpdateOperation{
 	List<MetaServerMeta> getMetaServers(String dc);
 	
 	ZkServerMeta  getZkServerMeta(String dc);
-	
+
+	String getActiveDc(String clusterId) throws DaoException;
+
+	List<String> getBackupDc(String clusterId) throws DaoException;
+
+	boolean updateUpstreamKeeper(String dc, String clusterId, String shardId, String address) throws DaoException;
+
+	String getUpstream(String dc, String clusterId, String shardId) throws DaoException;
 }

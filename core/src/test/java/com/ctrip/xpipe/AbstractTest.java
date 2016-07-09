@@ -219,11 +219,11 @@ public class AbstractTest {
 		return null;
 	}
 	
-	protected void add(Lifecycle lifecycle) throws Exception{
+	protected void add(Object lifecycle) throws Exception{
 		this.componentRegistry.add(lifecycle);
 	}
 
-	protected void remove(Lifecycle lifecycle) throws Exception{
+	protected void remove(Object lifecycle) throws Exception{
 		this.componentRegistry.remove(lifecycle);
 	}
 	

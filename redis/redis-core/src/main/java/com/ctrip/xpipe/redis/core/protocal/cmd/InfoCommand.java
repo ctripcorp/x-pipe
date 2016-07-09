@@ -38,5 +38,10 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 
 		return payloadToString(payload);
 	}
+	
+	@Override
+	public String toString() {
+		return getName() + " " + (args == null? "":args);
+	}
 
 }

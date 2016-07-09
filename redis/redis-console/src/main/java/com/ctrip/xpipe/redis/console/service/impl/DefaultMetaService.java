@@ -12,9 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
-import com.ctrip.xpipe.redis.console.dao.DaoException;
-import com.ctrip.xpipe.redis.console.dao.MetaDao;
+import com.ctrip.xpipe.redis.console.dao.ConsoleDao;
 import com.ctrip.xpipe.redis.console.service.MetaService;
+import com.ctrip.xpipe.redis.core.dao.DaoException;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
@@ -31,7 +31,7 @@ public class DefaultMetaService implements MetaService{
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	
 	@Autowired
-	private MetaDao metaDao;
+	private ConsoleDao metaDao;
 	
 	private ExecutorService executors  = Executors.newCachedThreadPool(); 
 	

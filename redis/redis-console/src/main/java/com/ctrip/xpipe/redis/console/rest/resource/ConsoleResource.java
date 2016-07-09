@@ -23,9 +23,9 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 @Singleton
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class MetaResource extends BaseRecource {
+public class ConsoleResource extends BaseRecource {
 	
-	public MetaResource() {
+	public ConsoleResource() {
 	}
 	
 	@Path("/{dc}/{clusterId}/{shardId}/keeper/active")

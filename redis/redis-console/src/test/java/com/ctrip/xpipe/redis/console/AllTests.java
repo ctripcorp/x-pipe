@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
-import com.ctrip.xpipe.redis.console.dao.file.DefaultFileDaoTest;
+import com.ctrip.xpipe.redis.core.dao.memory.DefaultMemoryMetaDaoTest;
 
 import org.junit.runner.RunWith;
 
@@ -14,7 +14,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
-	DefaultFileDaoTest.class
+	DefaultMemoryMetaDaoTest.class
 })
 public class AllTests {
 

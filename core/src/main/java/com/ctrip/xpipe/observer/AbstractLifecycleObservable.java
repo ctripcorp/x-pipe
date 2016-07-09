@@ -2,6 +2,8 @@ package com.ctrip.xpipe.observer;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
  * @author wenchao.meng
@@ -21,6 +24,8 @@ public abstract class AbstractLifecycleObservable extends AbstractLifecycle impl
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private List<Observer> observers = new LinkedList<>();
+	
+	private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(this + "-observable" ));
 	
 	@Override
 	public synchronized void addObserver(Observer observer) {
@@ -35,7 +40,7 @@ public abstract class AbstractLifecycleObservable extends AbstractLifecycle impl
 	}
 	
 	
-	protected void notifyObservers(Object arg){
+	protected void notifyObservers(final Object arg){
 		
 		Object []tmpObservers;
 		
@@ -43,13 +48,18 @@ public abstract class AbstractLifecycleObservable extends AbstractLifecycle impl
 			tmpObservers = observers.toArray();
 		}
 		
-		for(Object observer : tmpObservers){
+		for(final Object observer : tmpObservers){
 			
-			try{
-				((Observer)observer).update(arg, this);
-			}catch(Exception e){
-				logger.error("[notifyObservers]" + observer, e);
-			}
+				executors.execute(new Runnable() {
+					@Override
+					public void run() {
+						try{
+							((Observer)observer).update(arg, AbstractLifecycleObservable.this);
+						}catch(Exception e){
+							logger.error("[notifyObservers]" + observer, e);
+						}
+					}
+				});
 		}
 	}
 }

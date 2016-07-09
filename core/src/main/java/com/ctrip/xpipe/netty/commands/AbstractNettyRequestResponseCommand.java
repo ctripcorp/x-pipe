@@ -35,6 +35,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	@Override
 	protected void doSendRequest(final NettyClient nettyClient, ByteBuf byteBuf) {
 		
+		logger.info("[doSendRequest]{}", this);
 		if(hasResponse()){
 			nettyClient.sendRequest(byteBuf, this);
 		}else{
@@ -94,6 +95,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 		try{
 			 V result = doReceiveResponse(byteBuf);
 			 if(result != null){
+				 logger.info("[receive]{}", result);
 				 future().setSuccess(result);
 			 }
 			 return result != null;

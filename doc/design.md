@@ -20,6 +20,8 @@
     1. [API](#api)
     1. [状态查询](#状态查询)
 1. [keeper](#keeper)
+    1. [keeper状态变化](#keeper状态变化)
+    1. [命令](#命令)
 
 <!-- /MarkdownTOC -->
 
@@ -166,7 +168,26 @@ resharding
 ## 状态查询
 <a name="keeper"></a>
 # keeper
+<a name="keeper状态变化"></a>
+## keeper状态变化
+1. keeper启动
+    * 如果为active，则连接对应的redismaster或者upstream
+    * 如果为backup，则连接对应的active
+    * 如果为null，状态置为unknown
+1. meta server发现注册的keeper变化
+    * 选举keeper active
+        - 获取所有keeper状态，如果有active，则active设置为active的keeper
+            + 通知所有keeper状态变化
+        - 如果没有，选举出active
+            + 通知所有keeper状态变化
 
+
+
+
+<a name="命令"></a>
+## 命令
+1. keeper getstate
+1. keeper setstate  
 
 
 

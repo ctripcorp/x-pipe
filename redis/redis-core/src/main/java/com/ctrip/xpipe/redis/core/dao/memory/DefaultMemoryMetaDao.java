@@ -1,20 +1,21 @@
-package com.ctrip.xpipe.redis.console.dao.file;
+package com.ctrip.xpipe.redis.core.dao.memory;
 
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 import org.xml.sax.SAXException;
 
-import com.ctrip.xpipe.redis.console.dao.AbstractMetaDao;
-import com.ctrip.xpipe.redis.console.dao.DaoException;
+import com.ctrip.xpipe.redis.core.dao.AbstractMetaDao;
+import com.ctrip.xpipe.redis.core.dao.DaoException;
+import com.ctrip.xpipe.redis.core.dao.MetaDao;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -24,23 +25,23 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
+import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**
  * @author wenchao.meng
  *
- * Jun 23, 2016
+ * Jul 7, 2016
  */
-@Component
-public class DefaultFileDao extends AbstractMetaDao{
+public class DefaultMemoryMetaDao extends AbstractMetaDao implements MetaDao{
 	
 	private String fileName = null;
-	private XpipeMeta xpipeMeta;
+	protected XpipeMeta xpipeMeta;
 	
-	public DefaultFileDao(){
+	public DefaultMemoryMetaDao(){
 		this("../../../redis-integrated-test/src/test/resources/integrated-test.xml");
 	}
 	
-	public DefaultFileDao(String fileName) {
+	public DefaultMemoryMetaDao(String fileName) {
 		this.fileName = fileName;
 		load(fileName);
 	}
@@ -56,24 +57,57 @@ public class DefaultFileDao extends AbstractMetaDao{
 			throw new IllegalStateException("load " + fileName + " failed!", e);
 		}
 	}
-
+	
 	@Override
-	public XpipeMeta getXpipeMeta() {
-		return this.xpipeMeta;
+	public String getActiveDc(String clusterId) throws DaoException {
+		
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+			if(clusterMeta == null){
+				continue;
+			}
+			return clusterMeta.getActiveDc();
+		}
+		throw new DaoException("clusterId " + clusterId + " not found!");
+	}
+	
+	@Override
+	public List<String> getBackupDc(String clusterId) throws DaoException {
+
+		String activeDc = getActiveDc(clusterId);
+		List<String> result = new LinkedList<>();
+		
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+			if(clusterMeta == null){
+				continue;
+			}
+			if(!dcMeta.getId().equals(activeDc)){
+				result.add(dcMeta.getId());
+			}
+		}
+		
+		return result;
 	}
 
+
 	@Override
-	public DcMeta getDcMeta(String dc) {
-		return this.xpipeMeta.getDcs().get(dc);
+	public Set<String> getDcClusters(String dc) {
+		return new HashSet<>(xpipeMeta.getDcs().get(dc).getClusters().keySet());
 	}
 
 	@Override
 	public ClusterMeta getClusterMeta(String dc, String clusterId) {
+		
 		DcMeta dcMeta = getDcMeta(dc);
 		if(dcMeta == null){
 			return null;
 		}
 		return dcMeta.getClusters().get(clusterId);
+	}
+
+	protected DcMeta getDcMeta(String dc) {
+		return xpipeMeta.getDcs().get(dc);
 	}
 
 	@Override
@@ -92,7 +126,7 @@ public class DefaultFileDao extends AbstractMetaDao{
 		if(shardMeta == null){
 			return null;
 		}
-		return shardMeta.getKeepers();
+		return new LinkedList<>(shardMeta.getKeepers());
 	}
 
 	@Override
@@ -102,7 +136,7 @@ public class DefaultFileDao extends AbstractMetaDao{
 		if(shardMeta == null){
 			return null;
 		}
-		return shardMeta.getRedises();
+		return new LinkedList<>(shardMeta.getRedises());
 	}
 
 	@Override
@@ -218,7 +252,7 @@ public class DefaultFileDao extends AbstractMetaDao{
 		if( dcMeta == null ){
 			return null;
 		}
-		return dcMeta.getMetaServers();
+		return new LinkedList<>(dcMeta.getMetaServers());
 	}
 
 	@Override
@@ -279,45 +313,36 @@ public class DefaultFileDao extends AbstractMetaDao{
 	}
 
 	@Override
-	public String getActiveDc(String clusterId) throws DaoException {
-		
-		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
-			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
-			if(clusterMeta == null){
-				continue;
-			}
-			return clusterMeta.getActiveDc();
-		}
-		throw new DaoException("clusterId " + clusterId + " not found!");
+	public boolean dcExists(String dc) {
+		return xpipeMeta.getDcs().get(dc) != null;
 	}
 
 	@Override
-	public boolean updateActiveDc(String clusterId, String activeDc) throws DaoException {
+	public boolean updateUpstreamKeeper(String dc, String clusterId, String shardId, String address) throws DaoException {
 		
-		logger.info("[updateActiveDc]{}, {}", clusterId, activeDc);
-		String currentActive = getActiveDc(clusterId);
-		if(currentActive.equals(activeDc)){
-			logger.info("[updateActiveDc][not changed]{}, {}", clusterId, activeDc);
+		String activeDc = getActiveDc(clusterId);
+		if(dc.equalsIgnoreCase(activeDc)){
+			throw new DaoException("[updateUpstreamKeeper][dc active, can not update upstream]"+ dc + "," + clusterId);
+		}
+		logger.info("[updateUpstreamKeeper]{},{},{},{}", dc, clusterId, shardId, address);
+		ShardMeta shardMeta = getShardMeta(activeDc, clusterId, shardId);
+		
+		String oldUpstream = shardMeta.getUpstream();
+		if(ObjectUtils.equals(oldUpstream, address)){
 			return false;
 		}
-		
-		for(ClusterMeta clusterMeta : getClusterMetaInAllDc(clusterId)){
-			clusterMeta.setActiveDc(activeDc);
-		}
+		shardMeta.setUpstream(address);
 		return true;
 	}
 
-	private List<ClusterMeta> getClusterMetaInAllDc(String clusterId) {
+	@Override
+	public String getUpstream(String dc, String clusterId, String shardId) throws DaoException {
 		
-		List<ClusterMeta> result = new LinkedList<>();
-		for(DcMeta dcMeta : getXpipeMeta().getDcs().values()){
-			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
-			if(clusterMeta == null){
-				continue;
-			}
-			result.add(clusterMeta);
+		ShardMeta shardMeta = getShardMeta(dc, clusterId, shardId);
+		if(shardMeta == null){
+			throw new DaoException("can not find shard:" + dc + "," + clusterId + "," + shardId);
 		}
-		return result;
+		return shardMeta.getUpstream();
 	}
 
 }

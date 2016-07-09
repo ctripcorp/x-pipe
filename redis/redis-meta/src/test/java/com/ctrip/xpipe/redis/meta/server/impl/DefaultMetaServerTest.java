@@ -26,18 +26,6 @@ public class DefaultMetaServerTest extends AbstractMetaServerTest{
 	@Before
 	public void beforeDefaultMetaServerTest() throws Exception{
 		
-		defaultMetaServer.setConfig(new DefaultMetaServerConfig());
-		defaultMetaServer.setMetaChangeListeners(new LinkedList<MetaChangeListener>());
-		defaultMetaServer.setMetaHolder(fakeMetaHolder);
-		
-		DefaultZkClient zkClient = new DefaultZkClient();		
-		zkClient.setZkAddress("127.0.0.1:" + zkPort);
-		defaultMetaServer.setZkClient(zkClient);
-		
-		startZk(zkPort);
-		
-		defaultMetaServer.initialize();
-		defaultMetaServer.start();
 	}
 	
 	@Test

@@ -32,15 +32,18 @@ public class MetaResource extends BaseRecource {
 
 	@Path("/{clusterId}/{shardId}")
 	@GET
-	public Response getClusterStatus(@PathParam("clusterId") String clusterId, @PathParam("shardId") String shardId,
+	public Response getClusterStatus(@PathParam("clusterId") final String clusterId, @PathParam("shardId") final String shardId,
 			@QueryParam("version") @DefaultValue("0") long version) {
-		// TODO merge and update cluster status on demand
+		return processTemplate.process(new Callable<Response>() {
 
-		KeeperMeta activeKeeper = doGetActiveKeeper(clusterId, shardId);
-		RedisMeta redisMaster = doGetRedisMaster(clusterId, shardId);
-		KeeperMeta upstreamKeeper = doGetUpstreamKeeper(clusterId, shardId);
-
-		return Response.status(Status.OK).entity(new ShardStatus(activeKeeper, upstreamKeeper, redisMaster)).build();
+			@Override
+			public Response call() throws Exception {
+				
+				ShardStatus shardStatus = getMetaServer().getShardStatus(clusterId, shardId);
+				
+				return Response.status(Status.OK).entity(shardStatus).build();
+			}
+		});
 	}
 
 	@Path("/{clusterId}/{shardId}/keeper/master")
@@ -63,10 +66,16 @@ public class MetaResource extends BaseRecource {
 
 	@Path("/{clusterId}/{shardId}/keeper/upstream")
 	@GET
-	public Response getUpstreamKeeper(@PathParam("clusterId") String clusterId, @PathParam("shardId") String shardId) {
-		KeeperMeta upstreamKeeper = doGetUpstreamKeeper(clusterId, shardId);
+	public Response getUpstreamKeeper(@PathParam("clusterId") final String clusterId, @PathParam("shardId") final String shardId) {
+		
+		return processTemplate.process(new Callable<Response>() {
 
-		return Response.status(Status.OK).entity(upstreamKeeper).build();
+			@Override
+			public Response call() throws Exception {
+				KeeperMeta upstreamKeeper = doGetUpstreamKeeper(clusterId, shardId);
+				return Response.status(Status.OK).entity(upstreamKeeper).build();
+			}
+		});
 	}
 
 	@Path("/{clusterId}/{shardId}/redis/master")
@@ -108,7 +117,7 @@ public class MetaResource extends BaseRecource {
 		return keeper;
 	}
 
-	private KeeperMeta doGetUpstreamKeeper(String clusterId, String shardId) {
+	private KeeperMeta doGetUpstreamKeeper(String clusterId, String shardId) throws Exception {
 		return getMetaServer().getUpstreamKeeper(clusterId, shardId);
 	}
 

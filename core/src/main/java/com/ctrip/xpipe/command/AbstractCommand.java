@@ -74,4 +74,10 @@ public abstract class AbstractCommand<V> implements Command<V>{
 		return future;
 	}
 	
+	
+	@Override
+	public String toString() {
+		return "Command:" + getName();
+	}
+	
 }
