@@ -4,9 +4,8 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
-
-import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.retry.RetryTemplate;
@@ -46,7 +45,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	}
 
 	@Override
-	protected CommandFuture<Void> doExecute() throws CommandExecutionException {
+	protected void doExecute() throws CommandExecutionException {
 
 		KeeperMeta activeKeeper = null;
 		for(KeeperMeta keeperMeta : keepers){
@@ -71,7 +70,6 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 		}
 		
 		future.setSuccess(null);
-		return future;
 	}
 
 	private boolean executeKeeperState(final KeeperMeta keeper, final InetSocketAddress masterAddress) {
@@ -91,5 +89,11 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 				return RetryType.SUCCESS;
 			}
 		});
+	}
+
+	@Override
+	protected void doReset() throws InterruptedException, ExecutionException {
+		throw new UnsupportedOperationException();
+		
 	}
 }

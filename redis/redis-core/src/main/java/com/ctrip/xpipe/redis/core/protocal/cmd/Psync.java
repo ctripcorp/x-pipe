@@ -298,4 +298,9 @@ public class Psync extends AbstractRedisCommand<Object> implements BulkStringPar
 	protected Object format(Object payload) {
 		return payload;
 	}
+	
+	@Override
+	protected void doReset() {
+		throw new UnsupportedOperationException("not supported");
+	}
 }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.command;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ctrip.xpipe.api.command.Command;
@@ -27,10 +28,9 @@ public class SequenceCommandChain extends AbstractCommandChain{
 	}
 
 	@Override
-	protected CommandFuture<Object> doExecute() throws CommandExecutionException {
+	protected void doExecute() throws CommandExecutionException {
 		
 		executeNext();
-		return future;
 	}
 
 
@@ -43,26 +43,21 @@ public class SequenceCommandChain extends AbstractCommandChain{
 			return null;
 		}
 		
-		try {
-			command.execute().addListener(new CommandFutureListener() {
+		command.execute().addListener(new CommandFutureListener() {
 
-				@Override
-				public void operationComplete(CommandFuture commandFuture) throws Exception {
-					
-					if(commandFuture.isSuccess()){
-						Command next = executeNext();
-						if(next == null){
-							future.setSuccess(commandFuture.get());
-						}
-					}else{
-						failExecuteNext(commandFuture.cause());
+			@Override
+			public void operationComplete(CommandFuture commandFuture) throws Exception {
+				
+				if(commandFuture.isSuccess()){
+					Command next = executeNext();
+					if(next == null){
+						future.setSuccess(commandFuture.get());
 					}
+				}else{
+					failExecuteNext(commandFuture.cause());
 				}
-			});
-		} catch (CommandExecutionException e) {
-			logger.error("[executeNext]" + command, e);
-			failExecuteNext(e);
-		}
+			}
+		});
 		return command;
 	}
 
@@ -77,5 +72,12 @@ public class SequenceCommandChain extends AbstractCommandChain{
 		}
 		
 		future.setFailure(throwable);
+	}
+
+	@Override
+	protected void doReset() throws InterruptedException, ExecutionException {
+		
+		super.doReset();
+		current.set(-1);
 	}
 }

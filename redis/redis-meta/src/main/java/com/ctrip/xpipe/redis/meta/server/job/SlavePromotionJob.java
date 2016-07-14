@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.job;
 
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
@@ -36,10 +37,9 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 	}
 
 	@Override
-	protected CommandFuture<Void> doExecute() {
+	protected void doExecute() {
 	
 		XpipeThreadFactory.create("SLAVE_PROMOTION_JOB").newThread(new SlavePromotionTask(future)).start();
-		return future;
 	}
 	
 	
@@ -89,5 +89,10 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 	@Override
 	public String getName() {
 		return String.format("slave promotion %s:%d", promoteIp, promotePort);
+	}
+
+	@Override
+	protected void doReset() throws InterruptedException, ExecutionException {
+		throw new UnsupportedOperationException();
 	}
 }

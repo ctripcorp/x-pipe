@@ -35,10 +35,14 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
     private final List<CommandFutureListener<V>> listeners = new LinkedList<>();
     
     private Command<V> command; 
-    
+
+	public DefaultCommandFuture() {
+	}
+
 	public DefaultCommandFuture(Command<V> command) {
 		this.command = command;
 	}
+	
 
 	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {

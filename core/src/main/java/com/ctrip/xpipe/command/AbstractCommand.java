@@ -3,6 +3,7 @@ package com.ctrip.xpipe.command;
 
 
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -40,11 +41,35 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	}
 
 	@Override
-	public CommandFuture<V> execute() throws CommandExecutionException{
-		return doExecute();
+	public CommandFuture<V> execute(){
+		
+		future.addListener(new CommandFutureListener<V>() {
+
+			@Override
+			public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
+				if(commandFuture.isCancelled()){
+					doCancel();
+				}
+			}
+		});
+		
+		try{
+			doExecute();
+			return future;
+		}catch(Exception e){
+			logger.error("[execute]{}", e);
+			if(!future.isDone()){
+				future.setFailure(e);
+			}
+		}
+		return future;
 	}
 
-	protected abstract CommandFuture<V> doExecute() throws CommandExecutionException;
+	protected void doCancel() {
+		
+	}
+
+	protected abstract void doExecute() throws Exception;
 
 	@Override
 	public CommandFuture<V> execute(final int time, TimeUnit timeUnit) {
@@ -53,11 +78,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 			
 			@Override
 			public void run() {
-				try {
-					execute();
-				} catch (CommandExecutionException e) {
-					logger.error("[run]" + AbstractCommand.this, e);
-				}
+				execute();
 			}
 		}, time, timeUnit);
 
@@ -74,7 +95,21 @@ public abstract class AbstractCommand<V> implements Command<V>{
 		return future;
 	}
 	
+	@Override
+	public void reset() throws InterruptedException, ExecutionException {
+		
+		if(!future.isDone()){
+			logger.info("[reset][not done]{}", this);
+			future.cancel(true);
+		}
+
+		future = new DefaultCommandFuture<>(this);
+		logger.info("[reset]{}", this);
+		doReset();
+	}
 	
+	protected abstract void doReset() throws InterruptedException, ExecutionException;
+
 	@Override
 	public String toString() {
 		return "Command:" + getName();

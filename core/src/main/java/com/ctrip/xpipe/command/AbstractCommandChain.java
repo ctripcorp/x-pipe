@@ -2,6 +2,7 @@ package com.ctrip.xpipe.command;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.api.command.Command;
 
@@ -45,6 +46,13 @@ public abstract class AbstractCommandChain extends AbstractCommand<Object>{
 			return null;
 		}
 		return commands.get(index);
+	}
+	
+	@Override
+	protected void doReset() throws InterruptedException, ExecutionException {
+		for(Command<?> command : commands){
+			command.reset();
+		}
 	}
 
 }

@@ -31,7 +31,7 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 	
 
 	@Override
-	protected CommandFuture<V> doExecute() throws CommandExecutionException {
+	protected void doExecute() throws CommandExecutionException {
 		
 		NettyClient nettyClient = null;
 		try {
@@ -49,7 +49,6 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 				}
 			}
 		}
-		return future;
 	}
 
 	protected abstract void doSendRequest(NettyClient nettyClient, ByteBuf byteBuf);
@@ -57,6 +56,11 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 	protected abstract ByteBuf getRequest();
 	
 
+	@Override
+	protected void doReset() {
+		
+	}
+	
 	public CommandFuture<V> future() {
 		return future;
 	}

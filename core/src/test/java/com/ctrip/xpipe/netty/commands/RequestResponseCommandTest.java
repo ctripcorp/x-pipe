@@ -47,6 +47,21 @@ public class RequestResponseCommandTest extends AbstractTest{
 	}
 	
 	@Test
+	public void testReset() throws CommandExecutionException, InterruptedException, ExecutionException{
+
+		String request = randomString(10) + "\r\n";
+		TestCommand command = new TestCommand(request, clientPool, scheduler);
+		CommandFuture<String> future = command.execute(); 
+		String result = future.get();
+		Assert.assertEquals(request, result);
+		
+		command.reset();
+		future = command.execute();
+		result = future.get();
+		Assert.assertEquals(request, result);
+	}
+
+	@Test
 	public void testSuccess() throws Exception{
 		
 		String request = randomString() + "\r\n";
@@ -244,6 +259,10 @@ public class RequestResponseCommandTest extends AbstractTest{
 			return Unpooled.wrappedBuffer(request.getBytes());
 		}
 
+		@Override
+		protected void doReset() {
+			result.reset();
+		}
 		@Override
 		public String getName() {
 			return "unittest comamnd";

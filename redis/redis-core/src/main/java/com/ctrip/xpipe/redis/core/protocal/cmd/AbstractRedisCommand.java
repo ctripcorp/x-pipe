@@ -40,6 +40,12 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 	private RedisClientProtocol<?> redisClientProtocol;
 
 	
+	@Override
+	protected void doReset() {
+		commandResponseState = COMMAND_RESPONSE_STATE.READING_SIGN;
+	}
+	
+	
 	protected String[] splitSpace(String buff) {
 		
 		return buff.split("\\s+");
