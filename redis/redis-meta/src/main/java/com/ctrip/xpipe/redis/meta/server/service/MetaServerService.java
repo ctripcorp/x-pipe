@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.meta.server.service;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Component;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.pool.XpipeObjectPoolFromKeyed;
@@ -132,7 +130,7 @@ public class MetaServerService extends AbstractLifecycleObservable implements Me
 				try {
 					command.execute().sync();
 					notifyObservers(event);
-				} catch (InterruptedException | ExecutionException | CommandExecutionException e) {
+				} catch (Exception e) {
 					logger.error("[run]" + command + "," + event, e);
 				}
 			}
