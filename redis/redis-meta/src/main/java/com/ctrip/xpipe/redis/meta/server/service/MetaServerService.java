@@ -25,7 +25,6 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
 import com.ctrip.xpipe.redis.meta.server.dao.MetaServerDao;
 import com.ctrip.xpipe.redis.meta.server.dao.MetaServerUpdateOperation;
-import com.ctrip.xpipe.redis.meta.server.exception.RedisMetaServerException;
 import com.ctrip.xpipe.redis.meta.server.impl.MetaChangeListener;
 import com.ctrip.xpipe.redis.meta.server.impl.event.ActiveKeeperChanged;
 import com.ctrip.xpipe.redis.meta.server.impl.event.RedisMasterChanged;
@@ -154,9 +153,7 @@ public class MetaServerService extends AbstractLifecycleObservable implements Me
 		SimpleObjectPool<NettyClient> pool =  new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(clientPool, new InetSocketAddress(activeKeeper.getIp(), activeKeeper.getPort()));
 		
 		KeeperSetStateCommand command = new KeeperSetStateCommand(pool, KeeperState.ACTIVE, IpUtils.parseSingle(address));
-		if(!command.execute().sync().get()){
-			throw new RedisMetaServerException("updateUpstreamKeeper " + clusterId + " " + shardId + " "+ address + " fail, result not ok!");
-		}
+		command.execute().sync();
 		return true;
 	}
 

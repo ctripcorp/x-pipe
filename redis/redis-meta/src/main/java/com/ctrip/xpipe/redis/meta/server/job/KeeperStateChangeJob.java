@@ -3,21 +3,24 @@ package com.ctrip.xpipe.redis.meta.server.job;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.api.retry.RetryTemplate;
-import com.ctrip.xpipe.api.retry.RetryType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.CommandExecutionException;
+import com.ctrip.xpipe.command.CommandRetryWrapper;
+import com.ctrip.xpipe.command.ParallelCommandChain;
+import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeObjectPoolFromKeyed;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
-import com.ctrip.xpipe.retry.RetryNTimes;
+import com.ctrip.xpipe.retry.RetryDelay;
 
 /**
  * @author wenchao.meng
@@ -58,37 +61,43 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 		if(activeKeeper == null){
 			throw new IllegalStateException("no activekeeper " + keepers);
 		}
+
+		SequenceCommandChain chain = new SequenceCommandChain(false);
 		
-		if(!executeKeeperState(activeKeeper, activeKeeperMaster)){
-			future.setFailure(new Exception("set keeper to active fail:" + activeKeeper));
-		}
+		Command<?> setActiveCommand = createKeeperSetStateCommand(activeKeeper, activeKeeperMaster);
+		chain.add(setActiveCommand);
+		
+		
+		ParallelCommandChain backupChain = new ParallelCommandChain();
 		
 		for(KeeperMeta keeperMeta : keepers){
 			if(!keeperMeta.isActive()){
-				executeKeeperState(keeperMeta, new InetSocketAddress(activeKeeper.getIp(), activeKeeper.getPort())); //backup fail ignore
+				Command<?> backupCommand = createKeeperSetStateCommand(keeperMeta, new InetSocketAddress(activeKeeper.getIp(), activeKeeper.getPort()));
+				backupChain.add(backupCommand);
 			}
 		}
+
+		chain.add(backupChain);
 		
-		future.setSuccess(null);
+		chain.execute().addListener(new CommandFutureListener<List<CommandFuture<?>>>() {
+			
+			@Override
+			public void operationComplete(CommandFuture<List<CommandFuture<?>>> commandFuture) throws Exception {
+				
+				if(commandFuture.isSuccess()){
+					future.setSuccess(null);
+				}else{
+					future.setFailure(commandFuture.cause());
+				}
+			}
+		});;
 	}
 
-	private boolean executeKeeperState(final KeeperMeta keeper, final InetSocketAddress masterAddress) {
-
-		RetryTemplate retryTemplate = new RetryNTimes(retryTimes, delayBaseMilli);
+	private Command<?> createKeeperSetStateCommand(KeeperMeta keeper, InetSocketAddress masterAddress) {
 		
-		return retryTemplate.execute(new Callable<RetryType>() {
-			@Override
-			public RetryType call() throws Exception {
-
-				logger.info("[doExecute][change keeper to {} %s]", keeper, keeper.isActive() ? "active" : "backup");
-				SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(clientPool, new InetSocketAddress(keeper.getIp(), keeper.getPort()));
-				Boolean result = new KeeperSetStateCommand(pool, keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP, masterAddress).execute().sync().get();
-				if(!result){
-					return RetryType.FAIL_RETRY;
-				}
-				return RetryType.SUCCESS;
-			}
-		});
+		SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(clientPool, new InetSocketAddress(keeper.getIp(), keeper.getPort()));
+		KeeperSetStateCommand command =  new KeeperSetStateCommand(pool, keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP, masterAddress);
+		return new CommandRetryWrapper<String>(retryTimes, new RetryDelay(delayBaseMilli), command);
 	}
 
 	@Override
@@ -96,4 +105,5 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 		throw new UnsupportedOperationException();
 		
 	}
+	
 }

@@ -54,7 +54,7 @@ public class SequenceCommandChainTest extends AbstractCommandChainTest{
 		}catch(Exception e){
 			e.printStackTrace();
 		}
-		Assert.assertEquals(1, chain.getExecuteCount());
+		Assert.assertEquals(1, chain.executeCount());
 		
 	}
 

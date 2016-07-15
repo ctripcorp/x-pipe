@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandChain;
 import com.ctrip.xpipe.api.command.CommandFuture;
 
 /**
@@ -13,7 +14,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
  *
  * Jul 1, 2016
  */
-public abstract class AbstractCommandChain extends AbstractCommand<List<CommandFuture<?>>>{
+public abstract class AbstractCommandChain extends AbstractCommand<List<CommandFuture<?>>> implements CommandChain<List<CommandFuture<?>>>{
 	
 	protected final List<Command<?>>  commands = new LinkedList<>();
 	
@@ -21,7 +22,10 @@ public abstract class AbstractCommandChain extends AbstractCommand<List<CommandF
 	
 	private AtomicInteger current = new AtomicInteger(-1);
 
-	
+	public AbstractCommandChain() {
+		
+	}
+
 	public AbstractCommandChain(Command<?> ... commands) {
 		
 		for(Command<?> command : commands){
@@ -39,11 +43,13 @@ public abstract class AbstractCommandChain extends AbstractCommand<List<CommandF
 		return sb.toString();
 	}
 
-	protected synchronized void add(Command<?> command){
+	@Override
+	public synchronized void add(Command<?> command){
 		this.commands.add(command);
 	}
 
-	protected synchronized void remove(Command<?> command){
+	@Override
+	public synchronized void remove(Command<?> command){
 		this.commands.remove(command);
 	}
 	
@@ -89,7 +95,8 @@ public abstract class AbstractCommandChain extends AbstractCommand<List<CommandF
 		return executeCommand(command);
 	}
 	
-	public int getExecuteCount() {
+	@Override
+	public int executeCount() {
 		return current.get() + 1;
 	}
 

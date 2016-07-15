@@ -20,12 +20,19 @@ public class ParallelCommandChain extends AbstractCommandChain{
 	private ExecutorService executors;
 	private List<CommandFuture<?>> completed = new LinkedList<>();
 
+	public ParallelCommandChain(){
+		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("ParallelCommandChain"));
+	}
+	
 	public ParallelCommandChain(Command<?> ...commands) {
-		this(Executors.newCachedThreadPool(XpipeThreadFactory.create("ParallelCommandChain")), commands);
+		this(null, commands);
 	}
 
 	public ParallelCommandChain(ExecutorService executors, Command<?> ...commands) {
 		super(commands);
+		if(executors == null){
+			executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("ParallelCommandChain"));
+		}
 		this.executors = executors;
 		
 	}

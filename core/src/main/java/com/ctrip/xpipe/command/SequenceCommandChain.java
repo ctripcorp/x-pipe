@@ -12,6 +12,10 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 public class SequenceCommandChain extends AbstractCommandChain{
 	
 	private boolean failContinue = false;
+
+	public SequenceCommandChain(boolean failContinue){
+		this.failContinue = failContinue;
+	}
 	
 	public SequenceCommandChain(Command<?> ... commands) {
 		this(false, commands);
@@ -62,7 +66,7 @@ public class SequenceCommandChain extends AbstractCommandChain{
 			return;
 		}
 		
-		future.setFailure(new CommandChainException("execute count:" + (getExecuteCount()), getResult()));
+		future.setFailure(new CommandChainException("execute count:" + (executeCount()), getResult()));
 	}
 
 }
