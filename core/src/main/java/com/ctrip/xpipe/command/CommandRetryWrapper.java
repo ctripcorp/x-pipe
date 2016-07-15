@@ -71,6 +71,8 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 						return;
 					}
 					
+					logger.error("[operationComplete]" + command, commandFuture.cause());
+					
 					int waitMilli = retryWait.retryWaitMilli();
 					logger.info("[retry]{}, {},{}", executeCount.get(), waitMilli, command);
 					command.reset();
