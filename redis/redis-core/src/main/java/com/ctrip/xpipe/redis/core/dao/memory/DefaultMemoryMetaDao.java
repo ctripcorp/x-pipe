@@ -283,13 +283,13 @@ public class DefaultMemoryMetaDao extends AbstractMetaDao implements MetaDao{
 		}
 		
 		boolean found = false, changed = false;
-		
+		String oldRedisMaster = null;
 		for(RedisMeta redisMeta : shardMeta.getRedises()){
 			if(redisMeta.getIp().equals(redisMaster.getIp()) && redisMeta.getPort().equals(redisMaster.getPort())){
 				found = true;
 				if(!redisMeta.isMaster()){
 					logger.info("[updateRedisMaster][change redis to master]{}", redisMeta);
-					redisMeta.setMaster(true);
+					redisMeta.setMaster(null);
 					changed = true;
 				}else{
 					logger.info("[updateRedisMaster][redis already master]{}", redisMeta);
@@ -297,14 +297,32 @@ public class DefaultMemoryMetaDao extends AbstractMetaDao implements MetaDao{
 			}else{
 				if(redisMeta.isMaster()){
 					logger.info("[updateRedisMaster][change redis to slave]{}", redisMeta);
-					redisMeta.setMaster(false);
+					//unknown
+					oldRedisMaster = String.format("%s:%d", redisMeta.getIp(), redisMeta.getPort());
+					redisMeta.setMaster("0.0.0.0:0");
 					changed = true;
 				}
 			}
 		}
-
+		
+		
+		if(oldRedisMaster != null){
+			String newMaster = String.format("%s:%d", redisMaster.getIp(), redisMaster.getPort());
+			for(RedisMeta redisMeta : shardMeta.getRedises()){
+				if(oldRedisMaster.equalsIgnoreCase(redisMeta.getMaster())){
+					redisMeta.setMaster(newMaster);
+					changed = true;
+				}
+			}
+			for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
+				if(oldRedisMaster.equalsIgnoreCase(keeperMeta.getMaster())){
+					keeperMeta.setMaster(newMaster);
+					changed = true;
+				}
+			}
+		}
+		
 		if(!found){
-			redisMaster.setMaster(true);
 			redisMaster.setParent(shardMeta);
 			shardMeta.getRedises().add(redisMaster);
 			changed = true;

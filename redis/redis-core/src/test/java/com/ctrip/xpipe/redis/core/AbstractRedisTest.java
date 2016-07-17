@@ -251,7 +251,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 						break;
 					}
 					for(RedisMeta redisMeta : shardMeta.getRedises()){
-						if(redisMeta.getMaster()){
+						if(redisMeta.isMaster()){
 							activeDcMeta = dcMeta;
 							break;
 						}

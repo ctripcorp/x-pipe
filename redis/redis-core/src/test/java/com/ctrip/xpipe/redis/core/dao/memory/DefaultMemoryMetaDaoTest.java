@@ -62,11 +62,23 @@ public class DefaultMemoryMetaDaoTest extends AbstractRedisTest{
 		Assert.assertEquals(redisMaster.getKey(), "jq");
 		boolean result = fileDao.updateRedisMaster(redisMaster.getKey(), clusterId, shardId, redisMaster.getValue());
 		Assert.assertTrue(!result);
-		
+
+		KeeperMeta activeKeeper = null;
+		for(KeeperMeta keeperMeta : fileDao.getKeepers(dc, clusterId, shardId)){
+			if(keeperMeta.getMaster().equals(String.format("%s:%d", redisMaster.getValue().getIp(), redisMaster.getValue().getPort()))){
+				activeKeeper = keeperMeta;
+			}
+		}
+		Assert.assertNotNull(activeKeeper);
+
 		for(RedisMeta redis : fileDao.getRedises(dc, clusterId, shardId)){
+			
 			if(!redis.equals(redisMaster.getValue())){
+				String master = String.format("%s:%d", redis.getIp(), redis.getPort());
+				Assert.assertNotEquals(activeKeeper.getMaster(), master);
 				result = fileDao.updateRedisMaster(redisMaster.getKey(), clusterId, shardId, redis);
 				Assert.assertTrue(result);
+				Assert.assertEquals(activeKeeper.getMaster(), master);
 			}
 		}
 	}

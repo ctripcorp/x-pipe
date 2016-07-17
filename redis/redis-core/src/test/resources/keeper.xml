@@ -4,6 +4,8 @@
 		<metaServer ip="1.1.1.1" port="9747" master="true"/>
 		<metaServer ip="1.1.1.1" port="9748" master="false"/>
 		<zkServer address="127.0.0.1:2181"/>
+		
+		
 		<keeperContainers>
 			<keeperContainer id="1" ip="1.1.1.1" port="8080"/>
 			<keeperContainer id="2" ip="1.1.1.1" port="8081"/>
@@ -13,10 +15,10 @@
 		
 		<cluster id="cluster1" active-dc="jq">
 			<shard id="shard1" upstream="127.0.0.1:1111" setinelId="1">
-				<keeper id="40a" ip="1.1.1.1" port="8888" active="true" keeperContainerId="1" offset="111111"/>
-				<keeper id="40a" ip="1.1.1.2" port="9999" active="false" keeperContainerId="1" offset="11111"/>
-				<redis ip="1.1.1.3" port="1234" master="true" offset="111111"/>
-				<redis ip="1.1.1.4" port="1234" master="false" offset="111111"/>
+				<keeper id="40a" ip="1.1.1.1" port="8888" master="1.1.1.1:1234" active="true" keeperContainerId="1" offset="111111"/>
+				<keeper id="40a" ip="1.1.1.2" port="9999" master="1.1.1.1:8888" active="false" keeperContainerId="1" offset="11111"/>
+				<redis id="40b" ip="1.1.1.3" port="1234" master="" offset="111111"/>
+				<redis id="40c" ip="1.1.1.4" port="1234" master="1.1.1.1:8888" offset="111111"/>
 			</shard>
 			<shard id="shard02" />
 		</cluster>

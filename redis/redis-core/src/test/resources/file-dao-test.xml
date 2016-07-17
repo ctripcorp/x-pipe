@@ -6,10 +6,10 @@
 		<cluster id="cluster1" active-dc="jq">
 			<shard id="shard1" >
 				<redis ip="127.0.0.1" port="6379" master="true" />
-				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6000" active="false" />
-				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6001" active="false" />
-				<redis ip="127.0.0.1" port="8000" master="false" />
-				<redis ip="127.0.0.1" port="8001" master="false" />
+				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000" ip="127.0.0.1" port="6000" active="false" />
+				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.1" port="6001" active="false" />
+				<redis ip="127.0.0.1" port="8000" master=""/>
+				<redis ip="127.0.0.1" port="8001" master="127.0.0.1:6000"  />
 			</shard>
 		</cluster>
 	</dc>
@@ -18,10 +18,10 @@
 		<metaServer ip="127.0.0.1" port="9847" master="true"/>
 		<cluster id="cluster1" active-dc="jq">
 			<shard id="shard1">
-				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6100" active="false" />
-				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6101" active="false" />
-				<redis ip="127.0.0.1" port="8100" master="false" />
-				<redis ip="127.0.0.1" port="8101" master="false" />
+				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.1" port="6100" active="false" />
+				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6100" ip="127.0.0.1" port="6101" active="false" />
+				<redis ip="127.0.0.1" port="8100" master="127.0.0.1:6100" />
+				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
 			</shard>
 		</cluster>
 	</dc>

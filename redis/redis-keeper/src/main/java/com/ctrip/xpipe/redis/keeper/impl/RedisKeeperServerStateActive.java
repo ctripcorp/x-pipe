@@ -105,7 +105,6 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		RedisMeta redisMeta = new RedisMeta();
 		redisMeta.setIp(newMasterEndpoint.getHost());
 		redisMeta.setPort(newMasterEndpoint.getPort());
-		redisMeta.setMaster(true);
 		
 		return redisMeta;
 	}
