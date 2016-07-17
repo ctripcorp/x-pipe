@@ -71,12 +71,14 @@ public class InfoHandler extends AbstractCommandHandler{
 			
 			sb.append("# Replication" + RedisProtocol.CRLF);
 			sb.append("role:" + redisKeeperServer.role() + RedisProtocol.CRLF);
-			
+			sb.append("state:" + redisKeeperServer.getRedisKeeperServerState().keeperState() + RedisProtocol.CRLF);
 			RedisMaster redisMaster =  redisKeeperServer.getRedisMaster();
 			String masterHost = redisMaster == null ? null: redisMaster.masterEndPoint().getHost();
 			Integer masterPort = redisMaster == null ? null: redisMaster.masterEndPoint().getPort();
-			sb.append("master_host:" + masterHost + RedisProtocol.CRLF );
-			sb.append("master_port:"  + masterPort +  RedisProtocol.CRLF );
+			if(masterHost != null){
+				sb.append("master_host:" + masterHost + RedisProtocol.CRLF );
+				sb.append("master_port:"  + masterPort +  RedisProtocol.CRLF );
+			}
 			Set<RedisSlave> slaves = redisKeeperServer.slaves();
 			sb.append("connected_slaves:" + slaves.size() + RedisProtocol.CRLF);
 			int slaveIndex = 0;

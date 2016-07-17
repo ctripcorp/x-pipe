@@ -87,7 +87,8 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		}
 	}
 
-	protected void setMasterAddress(InetSocketAddress masterAddress) {
+	@Override
+	public void setMasterAddress(InetSocketAddress masterAddress) {
 		
 		if(ObjectUtils.equals(this.masterAddress, masterAddress)){
 			logger.info("[setMasterAddress][master address unchanged]{},{}", this.masterAddress, masterAddress);

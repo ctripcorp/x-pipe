@@ -27,7 +27,6 @@ public class BaseRedisKeeperServerTest extends AbstractRedisKeeperTest {
 
 	@Before
 	public void beforeDefaultRedisKeeperServerTest() throws Exception {
-		initRegistry();
 		startRegistry();
 	}
 
