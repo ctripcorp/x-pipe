@@ -5,6 +5,7 @@ import java.io.StringReader;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Fsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
+import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
@@ -30,6 +32,8 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 public class RedisPromotor {
 	
 	protected Logger logger = LoggerFactory.getLogger(RedisPromotor.class);
+	
+	private int waitTimeoutMilli = 60 * 1000;
 	
 	private final RedisKeeperServer redisKeeperServer;
 	private final String promoteServerIp;
@@ -52,7 +56,6 @@ public class RedisPromotor {
 		}
 		
 		logger.info("[promote]{},{} ,{}:{}", redisKeeperServer, redisSlave, promoteServerIp, promoteServerPort);
-		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.BEGIN_PROMOTE_SLAVE);
 		new Thread() {
 			public void run() {
 				try {
@@ -71,14 +74,36 @@ public class RedisPromotor {
 		try{
 			fsyncPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(promoteServerIp, promoteServerPort));
 			clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(promoteServerIp, promoteServerPort));
-	
-			waitUntilSlaveSync(redisSlave, this.promoteServerIp, this.promoteServerPort);
+			waitUntilSlaveSync(redisSlave, this.promoteServerIp, this.promoteServerPort, waitTimeoutMilli);
 			
-			Fsync fsyncCmd = new Fsync(fsyncPool);
-			String fsyncResult = fsyncCmd.execute().get();
-			logger.info("[promoteSlaveToMaster][fsync done]{}, {},{}", fsyncResult, promoteServerIp, promoteServerPort);
-			
-	
+			try{
+				redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.BEGIN_PROMOTE_SLAVE);
+				Fsync fsyncCmd = new Fsync(fsyncPool);
+				String fsyncResult = fsyncCmd.execute().get();
+				logger.info("[promoteSlaveToMaster][fsync done]{}, {},{}", fsyncResult, promoteServerIp, promoteServerPort);
+				redisModified(redisSlave, clientPool);
+			}catch(ExecutionException e){
+				logger.error("[promoteSlaveToMaster]" + redisSlave, e.getCause());
+				if(e.getCause() instanceof RedisError){
+					logger.info("[promoteSlaveToMaster][fsync not supported, raw redis]{}", redisSlave);
+					redisNotModified(redisSlave, clientPool);
+				}else{
+					logger.error("[promoteSlaveToMaster][fail]" + redisSlave);
+				}
+			}
+		}finally{
+			if(fsyncPool != null){
+				fsyncPool.clear();
+			}
+			if(clientPool != null){
+				clientPool.clear();
+			}
+		}
+	}
+
+	private void redisModified(RedisSlave redisSlave, SimpleObjectPool<NettyClient> clientPool) throws Exception {
+		
+		try{
 			SlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
 			slaveOfCmd.execute().sync();
 	
@@ -111,21 +136,27 @@ public class RedisPromotor {
 				logger.error("promoteSlaveToMaster", e1);
 			}
 		}finally{
-			if(fsyncPool != null){
-				fsyncPool.clear();
-			}
-			if(clientPool != null){
-				clientPool.clear();
-			}
-			
 		}
 	}
 
-	private void waitUntilSlaveSync(RedisSlave redisSlave, String ip, int port) {
+	private void redisNotModified(RedisSlave redisSlave, SimpleObjectPool<NettyClient> clientPool) throws InterruptedException, ExecutionException {
 		
+		SlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
+		slaveOfCmd.execute().sync();
+		
+		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.SLAVE_PROMTED, new InetSocketAddress(promoteServerIp, promoteServerPort));
+	}
 
+	private void waitUntilSlaveSync(RedisSlave redisSlave, String ip, int port, int timeoutMilli) {
+		
+		long til = System.currentTimeMillis() + timeoutMilli;
 		while (true) {
-
+			long current = System.currentTimeMillis();
+			if(current > til){
+				logger.info("[waitUntilSlaveSync][timeout]{}", redisSlave);
+				break;
+			}
+			
 			Long slaveCmdOffset = redisSlave.getAck();
 			long masterCmdOffset = redisSlave.getRedisKeeperServer().getKeeperRepl().getEndOffset();
 			
@@ -133,7 +164,6 @@ public class RedisPromotor {
 				if (logger.isInfoEnabled()) {
 					logger.info("[waitUntilSlaveSync]{}, {} < {}", redisSlave, slaveCmdOffset, masterCmdOffset);
 				}
-				// TODO timeout
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
