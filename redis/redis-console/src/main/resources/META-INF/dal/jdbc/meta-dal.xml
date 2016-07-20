@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entities do-package="com.ctrip.xpipe.redis.console.web.model" gen="true">
+	<entity name="cluster-tbl" table="CLUSTER_TBL" alias="ct">
+		
+	</entity>
+</entities>
