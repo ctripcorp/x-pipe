@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
+import com.ctrip.xpipe.redis.meta.server.cluster.MetaserverLeaderElector;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dao.MetaServerDao;
 import com.ctrip.xpipe.redis.meta.server.service.MetaServerService;
@@ -50,6 +51,9 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 	private ZkClient zkClient;
 	
 	@Autowired
+	private MetaserverLeaderElector metaserverLeaderElector;
+	
+	@Autowired
 	private KeeperElectorManager keeperElectorManager;
 	
 	@Autowired
@@ -60,6 +64,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		
 		zkClient.initialize();
 		
+		metaserverLeaderElector.initialize();
 		LifecycleHelper.initializeIfPossible(metaServerDao);
 		LifecycleHelper.initializeIfPossible(keeperElectorManager);
 	}
@@ -68,6 +73,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 	protected void doStart() throws Exception {
 		
 		zkClient.start();
+		metaserverLeaderElector.start();;
 		LifecycleHelper.startIfPossible(metaServerDao);
 		LifecycleHelper.startIfPossible(keeperElectorManager);
 		
@@ -93,6 +99,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		
 		LifecycleHelper.stopIfPossible(keeperElectorManager);
 		LifecycleHelper.stopIfPossible(metaServerDao);
+		metaserverLeaderElector.stop();
 		zkClient.stop();
 	}
 	
@@ -101,6 +108,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		
 		LifecycleHelper.disposeIfPossible(keeperElectorManager);
 		LifecycleHelper.disposeIfPossible(metaServerDao);
+		metaserverLeaderElector.dispose();
 		zkClient.dispose();;
 	}
 

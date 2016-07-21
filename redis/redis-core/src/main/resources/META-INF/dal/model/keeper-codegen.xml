@@ -48,6 +48,7 @@
     <attribute name="active" value-type="boolean" />
     <attribute name="keeperContainerId" value-type="int" />
     <attribute name="offset" value-type="int" />
+    <attribute name="alive" value-type="boolean" />
     <attribute name="keeperContainer" value-type="int" />
   </entity>
   <entity name="redis">
@@ -56,6 +57,7 @@
     <attribute name="port" value-type="int" />
     <attribute name="master" value-type="String" />
     <attribute name="offset" value-type="int" />
+    <attribute name="alive" value-type="boolean" />
   </entity>
 </model>
 

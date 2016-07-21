@@ -26,4 +26,8 @@ public interface Redis {
 	   Redis setOffset(Long offset);
 
 	   Redis setPort(Integer port);
+	   
+	   Redis setAlive(Boolean alive);
+	   
+	   boolean isAlive();
 }
