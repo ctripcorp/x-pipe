@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.ctrip.xpipe.redis.meta.server.config;
 
 
@@ -16,11 +13,13 @@ import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
 @Component
 public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaServerConfig {
 	
-	private String consoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
+	public static String KEY_CONSOLE_ADDRESS = "console.adress";
+	
+	private String consoleAddress = System.getProperty("consoleAddress");
 
 	@Override
 	public String getConsoleAddress() {
-		return consoleAddress;
+		return getProperty(consoleAddress, consoleAddress);
 	}
 
 	public void setConsoleAddress(String consoleAddress) {

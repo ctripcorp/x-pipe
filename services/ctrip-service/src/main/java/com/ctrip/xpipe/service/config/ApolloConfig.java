@@ -36,4 +36,9 @@ public class ApolloConfig extends AbstractConfig implements ConfigChangeListener
 		
 	}
 
+	@Override
+	public String get(String key, String defaultValue) {
+		return config.getProperty(key, defaultValue);
+	}
+
 }

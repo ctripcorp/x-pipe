@@ -13,6 +13,8 @@ public interface Config {
 
 	String get(String key);
 
+	String get(String key, String defaultValue);
+
 	void addConfigChangeListener(ConfigChangeListener configChangeListener);
 
 	void removeConfigChangeListener(ConfigChangeListener configChangeListener);

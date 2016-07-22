@@ -53,4 +53,11 @@ public class DefaultFileConfig extends AbstractConfig{
 		return properties.getProperty(key);
 	}
 
+	@Override
+	public String get(String key, String defaultValue) {
+		
+		String value = get(key);
+		return value == null ? defaultValue : value;
+	}
+
 }
