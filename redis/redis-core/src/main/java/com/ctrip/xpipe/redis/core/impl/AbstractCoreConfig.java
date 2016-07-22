@@ -19,7 +19,7 @@ public class AbstractCoreConfig extends AbstractConfigBean implements CoreConfig
 	@Override
 	public String getZkConnectionString() {
 		
-		return getProperty(KEY_ZK_ADDRESS, zkConnectionString.get());
+		return getProperty(KEY_ZK_ADDRESS, zkConnectionString.get() == null ? "127.0.0.1:2181" : zkConnectionString.get());
 	}
 
 	public void setZkConnectionString(String zkConnectionString) {
