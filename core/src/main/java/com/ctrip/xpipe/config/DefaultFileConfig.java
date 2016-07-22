@@ -15,6 +15,10 @@ public class DefaultFileConfig extends AbstractConfig{
 	
 	private Properties properties = new Properties();
 	
+	public DefaultFileConfig(){
+		
+	}
+	
 	public DefaultFileConfig(String file) {
 		
 		properties.putAll(load(file));
