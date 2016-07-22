@@ -9,13 +9,13 @@ import javax.ws.rs.core.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.http.HttpConstants;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.impl.AbstractMetaChangeListener;
 import com.ctrip.xpipe.rest.RestRequestClient;
-import com.ctrip.xpipe.utils.ServicesUtil;
 
 /**
  * @author wenchao.meng
@@ -28,7 +28,7 @@ public class ConsoleListener extends AbstractMetaChangeListener{
 	@Autowired
 	private MetaServerConfig metaServerConfig;
 	
-	private String dc = ServicesUtil.getFoundationService().getDataCenter();
+	private String dc = FoundationService.DEFAULT.getDataCenter();
 	
 	
 
