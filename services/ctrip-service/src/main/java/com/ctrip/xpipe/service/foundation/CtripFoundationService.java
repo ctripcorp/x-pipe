@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.foundation;
+package com.ctrip.xpipe.service.foundation;
 
 import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.api.foundation.FoundationService;
