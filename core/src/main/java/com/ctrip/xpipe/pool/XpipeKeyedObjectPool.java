@@ -5,6 +5,7 @@ import org.apache.commons.pool2.KeyedObjectPool;
 import org.apache.commons.pool2.KeyedPooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
+import org.springframework.core.Ordered;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
@@ -84,6 +85,11 @@ public class XpipeKeyedObjectPool<K, V> extends AbstractLifecycle implements Top
 	@Override
 	public void clear(K key) throws Exception {
 		this.objectPool.clear(key);
+	}
+
+	@Override
+	public int getOrder() {
+		return Ordered.HIGHEST_PRECEDENCE;
 	}
 
 }

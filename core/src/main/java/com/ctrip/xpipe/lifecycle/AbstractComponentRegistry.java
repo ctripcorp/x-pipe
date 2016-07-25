@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.lifecycle;
 
 
+
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
@@ -57,7 +60,7 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		
-		for(Lifecycle lifecycle : lifecycleCallable().values()){
+		for(Lifecycle lifecycle : lifecycleCallable()){
 			if(lifecycle.getLifecycleState().canInitialize()){
 				lifecycle.initialize();
 			}
@@ -68,7 +71,7 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	protected void doStart() throws Exception {
 		super.doStart();
 		
-		for(Lifecycle lifecycle : lifecycleCallable().values()){
+		for(Lifecycle lifecycle : lifecycleCallable()){
 			if(lifecycle.getLifecycleState().canStart()){
 				lifecycle.start();
 			}
@@ -78,8 +81,11 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	
 	@Override
 	protected void doStop() throws Exception {
+
+		List<Lifecycle> components = lifecycleCallable();
+		Collections.reverse(components);
 		
-		for(Lifecycle lifecycle : lifecycleCallable().values()){
+		for(Lifecycle lifecycle : components){
 				if(lifecycle.getLifecycleState().canStop()){
 					lifecycle.stop();
 				}
@@ -91,7 +97,10 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	@Override
 	protected void doDispose() throws Exception {
 
-		for(Lifecycle lifecycle : lifecycleCallable().values()){
+		List<Lifecycle> components = lifecycleCallable();
+		Collections.reverse(components);
+		
+		for(Lifecycle lifecycle : components){
 			if(lifecycle.getLifecycleState().canDispose()){
 				lifecycle.dispose();
 			}

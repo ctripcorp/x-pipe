@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.lifecycle;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.context.ApplicationContext;
@@ -65,9 +69,9 @@ public class SpringComponentRegistry extends AbstractComponentRegistry{
 	}
 
 	@Override
-	public Map<String, Lifecycle> lifecycleCallable() {
+	public List<Lifecycle> lifecycleCallable() {
 		
-		Map<String, Lifecycle> result = new HashMap<>();
+		List<Lifecycle> result = new LinkedList<>();
 		
 		String []names = applicationContext.getBeanDefinitionNames();
 		for(String name : names){
@@ -75,9 +79,20 @@ public class SpringComponentRegistry extends AbstractComponentRegistry{
 			Object bean = applicationContext.getBean(name);
 			//only call topelement in spring
 			if(bean instanceof Lifecycle && bean instanceof TopElement){
-				result.put(name, (Lifecycle)bean);
+				result.add((Lifecycle)bean);
 			}
 		}
+		
+		Collections.sort(result, new Comparator<Lifecycle>() {
+
+			@Override
+			public int compare(Lifecycle o1, Lifecycle o2) {
+				
+				TopElement te1 = (TopElement) o1, te2 = (TopElement) o2;
+				return (te1.getOrder() < te2.getOrder()) ? -1: (te1.getOrder() == te2.getOrder() ? 0: 1);
+			}
+
+		});
 		return result;
 	}
 
