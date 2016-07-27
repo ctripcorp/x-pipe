@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.unidal.dal.jdbc.configuration.AbstractJdbcResourceConfigurator;
-import org.unidal.dal.jdbc.datasource.JdbcDataSourceDescriptorManager;
-import org.unidal.lookup.configuration.AbstractResourceConfigurator;
 import org.unidal.lookup.configuration.Component;
 
 public class ComponentsConfigurator extends AbstractJdbcResourceConfigurator {
