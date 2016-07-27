@@ -6,7 +6,6 @@ import java.net.InetSocketAddress;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
-import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 
 import io.netty.buffer.ByteBuf;
@@ -49,7 +48,7 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 		}
 	}
 	
-	public static class KeeperSetStateCommand extends AbstractKeeperCommand<Boolean>{
+	public static class KeeperSetStateCommand extends AbstractKeeperCommand<String>{
 
 		private KeeperState state;
 		private InetSocketAddress masterAddress;
@@ -61,13 +60,9 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 		}
 
 		@Override
-		protected Boolean format(Object payload) {
+		protected String format(Object payload) {
 			
-			String ret = payloadToString(payload);
-			if(ret.equalsIgnoreCase(RedisProtocol.OK) || ret.startsWith(RedisProtocol.OK)){
-				return true;
-			}
-			return false;
+			return payloadToString(payload);
 		}
 
 		@Override

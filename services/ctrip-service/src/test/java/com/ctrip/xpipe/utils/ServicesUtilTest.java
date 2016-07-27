@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.foundation.CtripFoundationService;
+import com.ctrip.xpipe.service.foundation.CtripFoundationService;
 
 /**
  * @author wenchao.meng

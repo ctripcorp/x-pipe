@@ -6,6 +6,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.dao.DaoException;
 import com.ctrip.xpipe.redis.core.dao.MetaDao;
@@ -15,7 +16,6 @@ import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
-import com.ctrip.xpipe.utils.ServicesUtil;
 
 /**
  * @author wenchao.meng
@@ -28,7 +28,7 @@ public abstract class AbstractMetaServerDao extends AbstractLifecycle implements
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
-	protected String currentDc = ServicesUtil.getFoundationService().getDataCenter();
+	protected String currentDc = FoundationService.DEFAULT.getDataCenter();
 
 	
 	

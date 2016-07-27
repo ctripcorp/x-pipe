@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.api.command;
 
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import com.ctrip.xpipe.command.CommandExecutionException;
 
 /**
  * @author wenchao.meng

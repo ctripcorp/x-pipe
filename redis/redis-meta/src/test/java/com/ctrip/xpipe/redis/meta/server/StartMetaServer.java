@@ -10,17 +10,11 @@ import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
 import org.junit.After;
 import org.junit.Test;
-import org.unidal.helper.Files.IO;
 import org.unidal.test.jetty.JettyServer;
 
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.core.meta.impl.DefaultMetaOperation;
+import com.ctrip.xpipe.redis.meta.server.dao.memory.MemoryMetaServerDao;
 
 
 
@@ -36,65 +30,29 @@ public class StartMetaServer extends JettyServer {
 
 	@Test
 	public void start9747() throws Exception {
+		
 		startZk();
-		String meta = IO.INSTANCE.readFrom(getClass().getResourceAsStream("/metaserver--jq.xml"), "utf-8");
-		start(connectToZk("127.0.0.1:" + zkPort), meta);
+		
+		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
+		start(connectToZk("127.0.0.1:" + zkPort));
 	}
 
 	@Test
 	public void start9748() throws Exception {
+		
 		this.zkPort = IdcUtil.OY_ZK_PORT;
 		this.serverPort = IdcUtil.OY_METASERVER_PORT;
-		
+
+		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, "metaserver--oy.xml");
+
 		IdcUtil.setToOY();
-		
 		startZk();
-
-		String meta = IO.INSTANCE.readFrom(getClass().getResourceAsStream("/metaserver--oy.xml"), "utf-8");
-		start(connectToZk("127.0.0.1:" + zkPort), meta);
+		start(connectToZk("127.0.0.1:" + zkPort));
 	}
 
-	public void start(DcMeta meta) throws Exception {
-		start(connectToZk("127.0.0.1:" + zkPort), extractDcMeta(meta));
-	}
 
-	private String extractDcMeta(DcMeta meta) throws Exception {
-		XpipeMeta xpipe = new XpipeMeta();
-		DcMeta dc = new DcMeta();
-		xpipe.addDc(dc);
-
-		dc.setId(meta.getId());
-
-		for (ClusterMeta cluster : meta.getClusters().values()) {
-			ClusterMeta clusterClone = new ClusterMeta();
-			dc.addCluster(clusterClone);
-
-			clusterClone.setId(cluster.getId());
-			clusterClone.setActiveDc(cluster.getActiveDc());
-
-			for (ShardMeta shard : cluster.getShards().values()) {
-				ShardMeta shardClone = new ShardMeta();
-				clusterClone.addShard(shardClone);
-
-				shardClone.setId(shard.getId());
-
-				for (RedisMeta redis : shard.getRedises()) {
-					RedisMeta redisClone = new RedisMeta();
-					shardClone.addRedis(redisClone);
-
-					redisClone.setIp(redis.getIp());
-					redisClone.setMaster(redis.getMaster());
-					redisClone.setPort(redis.getPort());
-				}
-			}
-		}
-
-		return xpipe.toString();
-	}
-
-	public void start(CuratorFramework client, String meta) throws Exception {
+	public void start(CuratorFramework client) throws Exception {
 		setupZkNodes(client);
-		new DefaultMetaOperation(client).update(meta);
 
 		startServer();
 

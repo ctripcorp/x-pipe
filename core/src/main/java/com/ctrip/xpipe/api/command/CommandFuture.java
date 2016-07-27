@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit;
  */
 public interface CommandFuture<V> extends Future<V>{
 	
+	Command<V> command();
+	
 	boolean isSuccess();
 	
 	Throwable cause();

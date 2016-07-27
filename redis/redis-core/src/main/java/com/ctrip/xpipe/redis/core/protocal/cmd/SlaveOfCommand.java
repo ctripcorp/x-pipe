@@ -48,7 +48,7 @@ public class SlaveOfCommand extends AbstractRedisCommand<String> {
 
 	@Override
 	public String toString() {
-		return String.format("%s %d %s", ip, port, param);
+		return String.format("%s %s %d %s", getName(), ip, port, param);
 	}
 
 	@Override

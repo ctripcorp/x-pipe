@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 
 /**
@@ -19,6 +20,11 @@ public class ServicesUtil {
 	private static Logger logger = LoggerFactory.getLogger(ServicesUtil.class);
 	
 	private static Map<Class<?>, Object> allServices = new ConcurrentHashMap<>();
+	
+	public static Config getConfigService(){
+		return load(Config.class);
+	}
+	
 	
 	public static FoundationService getFoundationService(){
 		

@@ -38,5 +38,7 @@ public interface RedisKeeperServerState{
 	boolean isActive();
 	
 	KeeperState keeperState();
+
+	void setMasterAddress(InetSocketAddress masterAddress);
 	
 }

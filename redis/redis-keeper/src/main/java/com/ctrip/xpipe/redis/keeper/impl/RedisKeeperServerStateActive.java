@@ -73,12 +73,20 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 				redisKeeperServer.stopAndDisposeMaster();
 				break;
 			case SLAVE_PROMTED:
-				SlavePromotionInfo promotionInfo = (SlavePromotionInfo) info;
-				RedisMeta newMaster = masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
-							, promotionInfo.getNewMasterRunid(), promotionInfo.getNewMasterReplOffset());
-				this.promotionState = PROMOTION_STATE.REPLICATION_META_EXCHANGED;
 				
-				setMasterAddress(new InetSocketAddress(newMaster.getIp(), newMaster.getPort()));
+				InetSocketAddress newMasterAddress = null;
+				if(info instanceof SlavePromotionInfo){
+					SlavePromotionInfo promotionInfo = (SlavePromotionInfo) info;
+					RedisMeta newMaster = masterChanged(promotionInfo.getKeeperOffset(), promotionInfo.getNewMasterEndpoint()
+								, promotionInfo.getNewMasterRunid(), promotionInfo.getNewMasterReplOffset());
+					newMasterAddress = new InetSocketAddress(newMaster.getIp(), newMaster.getPort());
+				}else if (info instanceof InetSocketAddress){
+					newMasterAddress = (InetSocketAddress) info;
+				}else{
+					throw new IllegalStateException("unknown info:" + info);
+				}
+				this.promotionState = PROMOTION_STATE.REPLICATION_META_EXCHANGED;
+				setMasterAddress(newMasterAddress);
 				break;
 			case REPLICATION_META_EXCHANGED:
 				throw new IllegalStateException("state should no be changed outside:" + promotionState);
@@ -97,7 +105,6 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		RedisMeta redisMeta = new RedisMeta();
 		redisMeta.setIp(newMasterEndpoint.getHost());
 		redisMeta.setPort(newMasterEndpoint.getPort());
-		redisMeta.setMaster(true);
 		
 		return redisMeta;
 	}

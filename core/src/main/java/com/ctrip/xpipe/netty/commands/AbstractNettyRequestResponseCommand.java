@@ -107,7 +107,6 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 			 return result != null;
 		}catch(Exception e){
 			future().setFailure(e);
-			logger.error("[execute comamnd exception]" + this, e);
 		}
 		return true;
 	}

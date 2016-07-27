@@ -380,7 +380,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 					if(shardMeta.getRedises().remove(redisMaster)){
 						for(RedisMeta redisMeta : shardMeta.getRedises()){
 							if(redisMeta.getIp().equals(toPromote.getIp()) && redisMeta.getPort().equals(toPromote.getPort())){
-								redisMeta.setMaster(true);
+								redisMeta.setMaster(null);
 								return;
 							}
 						}

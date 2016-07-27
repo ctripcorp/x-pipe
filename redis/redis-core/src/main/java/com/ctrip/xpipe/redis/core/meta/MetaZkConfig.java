@@ -15,6 +15,14 @@ public class MetaZkConfig {
 		return System.getProperty("zkMetaStoragePath", "/meta");
 	}
 	
+	public static String getMetaServerLeaderElectPath(){
+		return System.getProperty("zkMetaStoragePath", "/metaserver/leader");
+	}
+
+	public static String getMetaServerRegisterPath(){
+		return System.getProperty("zkMetaStoragePath", "/metaserver/servers");
+	}
+
 	public static String getZkLeaderLatchRootPath() {
 		return System.getProperty("zkLeaderLatchRootPath", "/keepers");
 	}

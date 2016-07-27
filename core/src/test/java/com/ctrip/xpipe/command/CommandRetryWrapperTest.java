@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.command;
 
+
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -24,7 +24,7 @@ public class CommandRetryWrapperTest extends AbstractTest{
 	@Test
 	public void testSucccess() throws InterruptedException, ExecutionException{
 
-		CommandRetryWrapperTestCommand command = new CommandRetryWrapperTestCommand(message);
+		TestCommand command = new TestCommand(message);
 		CommandRetryWrapper<String> wrapper = new CommandRetryWrapper<>(retryCount, new RetryDelay(sleepBase), command);
 		
 		Assert.assertEquals(message, wrapper.execute().get());;
@@ -33,7 +33,7 @@ public class CommandRetryWrapperTest extends AbstractTest{
 	@Test
 	public void testRetry() throws CommandExecutionException{
 		
-		CommandRetryWrapperTestCommand command = new CommandRetryWrapperTestCommand(new Exception("just throw"));
+		TestCommand command = new TestCommand(new Exception("just throw"));
 		CommandRetryWrapper<String> wrapper = new CommandRetryWrapper<>(retryCount, new RetryDelay(sleepBase), command);
 		try {
 			wrapper.execute().get();
@@ -48,7 +48,7 @@ public class CommandRetryWrapperTest extends AbstractTest{
 	@Test
 	public void testRetryCancel(){
 
-		CommandRetryWrapperTestCommand command = new CommandRetryWrapperTestCommand(new Exception("just throw"));
+		TestCommand command = new TestCommand(new Exception("just throw"));
 		CommandRetryWrapper<String> wrapper = new CommandRetryWrapper<>(retryCount, new RetryDelay(sleepBase), command);
 		
 		final CommandFuture<String> future = wrapper.execute();
@@ -71,49 +71,4 @@ public class CommandRetryWrapperTest extends AbstractTest{
 		Assert.assertTrue(wrapper.getExecuteCount() < (retryCount + 1));
 		
 	}
-	
-	
-	public class CommandRetryWrapperTestCommand extends AbstractCommand<String>{
-		
-		private Exception e;
-		private String successMessage;
-
-		public CommandRetryWrapperTestCommand(String successMessage) {
-			this(null, successMessage);
-		}
-
-		public CommandRetryWrapperTestCommand(Exception e) {
-			this(e, "OK");
-		}
-
-		public CommandRetryWrapperTestCommand(Exception e, String successMessage) {
-			this.e = e;
-			this.successMessage = successMessage;
-		}
-
-		@Override
-		public String getName() {
-			return "CommandRetryWrapperTest";
-		}
-
-		@Override
-		protected void doExecute() throws Exception {
-			
-			try {
-				TimeUnit.MILLISECONDS.sleep(100);
-				if(e != null){
-					throw new CommandExecutionException("error", e);
-				}
-				future.setSuccess(successMessage);
-			} catch (InterruptedException e) {
-			}
-		}
-
-		@Override
-		protected void doReset() throws InterruptedException, ExecutionException {
-			
-		}
-		
-	}
-
 }

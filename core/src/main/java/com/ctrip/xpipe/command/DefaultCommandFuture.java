@@ -330,4 +330,9 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
 			notifyListener(listener);
 		}
 	}
+
+	@Override
+	public Command<V> command() {
+		return this.command;
+	}
 }

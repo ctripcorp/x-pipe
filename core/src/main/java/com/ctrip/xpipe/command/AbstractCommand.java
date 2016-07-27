@@ -37,7 +37,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	}
 
 	public AbstractCommand() {
-		this.scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create("command-" + getName()));
+		this.scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(getClass().getName()));
 	}
 
 	@Override
@@ -57,7 +57,6 @@ public abstract class AbstractCommand<V> implements Command<V>{
 			doExecute();
 			return future;
 		}catch(Exception e){
-			logger.error("[execute]{}", e);
 			if(!future.isDone()){
 				future.setFailure(e);
 			}

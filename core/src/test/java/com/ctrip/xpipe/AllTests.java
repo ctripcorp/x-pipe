@@ -8,7 +8,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import com.ctrip.xpipe.command.CommandRetryWrapperTest;
 import com.ctrip.xpipe.command.DefaultCommandFutureTest;
+import com.ctrip.xpipe.command.ParallelCommandChainTest;
+import com.ctrip.xpipe.command.SequenceCommandChainTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistryTest;
@@ -38,7 +41,10 @@ import com.ctrip.xpipe.utils.OffsetNotifierTest;
 	SpringComponentRegistryTest.class,
 	OffsetNotifierTest.class,
 	com.ctrip.xpipe.rest.RestRequestClientTest.class,
-	RequestResponseCommandTest.class
+	RequestResponseCommandTest.class,
+	CommandRetryWrapperTest.class,
+	SequenceCommandChainTest.class,
+	ParallelCommandChainTest.class
 	})
 public class AllTests {
 
