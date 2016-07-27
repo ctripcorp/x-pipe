@@ -23,6 +23,12 @@ public class ServerBalanceResharding extends AbstractResharding{
 	protected void doExecute() throws Exception {
 		
 		Set<ClusterServer> aliveServers = servers.allClusterServers();
+		if(aliveServers.size() == 0){
+			logger.info("[doExecute][no aliveServers]{}", aliveServers);
+			future.setSuccess(null);
+			return;
+		}
+		
 		int totalSlots = getAliveTotal(aliveServers);
 		int average = totalSlots/aliveServers.size();
 		

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +60,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 				throw new IllegalStateException("serverId:" + currentServerId + " already exists!");
 			}
 			deleteServerPath();
+			TimeUnit.MILLISECONDS.sleep(50);//make sure server get notification
 		}
 		
 		logger.info("[doStart][createServerPathCreated]{}", serverPath);

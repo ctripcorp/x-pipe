@@ -32,7 +32,20 @@ public class DefaultClusterServersTest extends AbstractMetaServerTest{
 		servers.setMetaServerConfig(currentConfig);
 		servers.setRemoteClusterServerFactory(new DefaultRemoteClusterSeverFactory());
 		servers.setZkClient(getZkClient());
+	}
+	
+	@Test
+	public void testServerRestart() throws Exception{
+
+
+		DefaultMetaServerConfig config2 = new DefaultMetaServerConfig();
+		config2.setDefaultMetaServerId(2);
+		CurrentClusterServer server2 = createAndStart(config2);
+
+		CurrentClusterServer newServer2 = createAndStart(config2);
+
 		
+		waitForAnyKeyToExit();
 	}
 	
 	@Test

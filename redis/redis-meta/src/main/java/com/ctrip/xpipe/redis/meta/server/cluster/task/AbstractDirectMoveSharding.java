@@ -33,7 +33,12 @@ public abstract class AbstractDirectMoveSharding extends AbstractResharding{
 		List<Integer> slots = getSlotsToArrange();
 		
 		List<ClusterServer> aliveServers = allAliveServers();
-		logger.info("[doRun][aliveServers]{}", aliveServers);
+		logger.info("[doExecute][aliveServers]{}", aliveServers);
+		if(aliveServers.size() == 0){
+			logger.info("[doExecute][no aliveServers]{}");
+			future.setSuccess(null);
+			return;
+		}
 
 		int aliveTotal = getAliveTotal(aliveServers);
 		

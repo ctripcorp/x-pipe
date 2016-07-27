@@ -41,8 +41,6 @@ import com.ctrip.xpipe.zk.ZkClient;
 @Component
 public class DefaultClusterArranger extends AbstractLifecycle implements ClusterArranger, TopElement, LeaderAware, Observer{
 	
-	private int waitDeadRestart = 5000;
-	
 	@Autowired
 	private ClusterServers clusterServers;
 	
@@ -50,13 +48,12 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 	private ZkClient zkClient;
 	
 	@Autowired
-	private ArrangeTaskExecutor arrangeTaskExecutor;
-	
+	private ArrangeTaskTrigger arrangeTaskTrigger;
 	
 	@Autowired
 	private RemoteClusterServerFactory remoteClusterServerFactory;
 	
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("Slot_Arranger"));
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create("Slot_Arranger"));
 
 	@Autowired
 	private SlotManager slotManager;
@@ -105,7 +102,7 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		
 		if(notExist.size() > 0){
 			logger.info("[checkAllSlots][not exist]{}", notExist);
-			arrangeTaskExecutor.offer(new InitResharding(slotManager, notExist, clusterServers, zkClient));
+			arrangeTaskTrigger.initSharding(new InitResharding(slotManager, notExist, clusterServers, zkClient));
 		}
 		
 		Set<Integer> allSlotServers = slotManager.allServers();
@@ -145,7 +142,8 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		if(!leader.get()){
 			return;
 		}
-		arrangeTaskExecutor.offer(new ServerBalanceResharding(slotManager, clusterServers, zkClient));
+		logger.info("[onServerAdded]{}", clusterServer);
+		arrangeTaskTrigger.serverAdded(clusterServer);
 		
 	}
 
@@ -154,7 +152,8 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		if(!leader.get()){
 			return;
 		}
-		arrangeTaskExecutor.offer(new ServerDeadResharding(slotManager, clusterServer, clusterServers, zkClient));
+		logger.info("[onServerRemoved]{}", clusterServer);
+		arrangeTaskTrigger.serverDead(clusterServer);
 	}
 
 	@Override

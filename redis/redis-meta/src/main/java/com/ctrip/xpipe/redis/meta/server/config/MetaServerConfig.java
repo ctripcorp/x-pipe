@@ -23,7 +23,9 @@ public interface MetaServerConfig extends CoreConfig{
 	
 	int getMetaServerPort();
 	
-	
+
+	int getClusterServersRefreshMilli();
+
 	int getSlotRefreshMilli();
 	
 	int getLeaderCheckMilli();

@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -50,6 +54,9 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 	@Autowired
 	private RemoteClusterServerFactory remoteClusterServerFactory;
 	
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+	private ScheduledFuture<?> future;
+		
 	@Override
 	protected void doInitialize() throws Exception {
 	
@@ -66,8 +73,20 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 		EnsurePath ensure = client.newNamespaceAwareEnsurePath(MetaZkConfig.getMetaServerRegisterPath());
 		ensure.ensure(client.getZookeeperClient());
 		
-		childrenChanged();
 		watchServers();
+		
+		future = scheduled.scheduleWithFixedDelay(new Runnable() {
+			
+			@Override
+			public void run() {
+				try{
+					childrenChanged();
+				}catch(Throwable th){
+					logger.error("[doStart]", th);
+				}
+				
+			}
+		}, 0,  metaServerConfig.getClusterServersRefreshMilli(), TimeUnit.MILLISECONDS);
 		
 	}
 
@@ -180,6 +199,16 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 		return new HashSet<>(servers.values());
 	}
 
+	
+	@Override
+	protected void doStop() throws Exception {
+		
+		if(future != null){
+			future.cancel(true);
+			future = null;
+		}
+	}
+	
 	@Override
 	public void refresh() throws Exception {
 		childrenChanged();

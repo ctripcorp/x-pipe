@@ -20,6 +20,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static String KEY_META_REFRESH_MILLI = "meta.refresh.milli";
 	public static String KEY_SLOT_REFRESH_MILLI = "slot.refresh.milli";
 	public static String KEY_LEADER_CHACK_MILLI = "leader.check.milli";
+	public static String KEY_CLUSTER_SERVERS_CHACK_MILLI = "cluster.servers.check.milli";
 	
 	
 	public static String META_SRRVER_PROPERTIES_FILE = "meta_server.properties";
@@ -60,6 +61,12 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public int getLeaderCheckMilli() {
 		return getIntProperty(KEY_LEADER_CHACK_MILLI, 60000);
 	}
+
+	@Override
+	public int getClusterServersRefreshMilli() {
+		return getIntProperty(KEY_CLUSTER_SERVERS_CHACK_MILLI, 60000);
+	}
+
 
 
 	//from local config file
