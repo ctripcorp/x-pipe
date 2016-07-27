@@ -26,8 +26,6 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.InitResharding;
-import com.ctrip.xpipe.redis.meta.server.cluster.task.ServerBalanceResharding;
-import com.ctrip.xpipe.redis.meta.server.cluster.task.ServerDeadResharding;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
