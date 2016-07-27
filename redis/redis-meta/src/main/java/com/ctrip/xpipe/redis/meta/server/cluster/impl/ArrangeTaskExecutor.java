@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,7 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 	private BlockingQueue<ReshardingTask> tasks = new LinkedBlockingQueue<>();
 	private int waitTaskTimeoutMilli =  60000; 
 	private CommandFuture<Void> currentTask = null;
+	private AtomicLong totalTasks = new AtomicLong(0);
 	
 	@Override
 	protected void doStart() throws Exception {
@@ -35,7 +37,12 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 	}
 	
 	public void offer(ReshardingTask task){
-		tasks.offer(task);
+		logger.info("[offer]{}", task);
+		if(tasks.offer(task)){
+			totalTasks.incrementAndGet();
+		}else{
+			logger.error("[offset][fail]{}", task);
+		}
 	}
 	
 	public void clearTasks(){
@@ -56,7 +63,7 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 	@Override
 	public void run() {
 		
-		while(!getLifecycleState().isStarted()){
+		while(getLifecycleState().isStarted() || getLifecycleState().isStarting()){
 			try{
 				executeTask();
 			}catch(Throwable th){
@@ -66,6 +73,10 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 		logger.info("[run][break]");
 	}
 
+	
+	public long getTotalTasks() {
+		return totalTasks.get();
+	}
 
 	private void executeTask() throws InterruptedException {
 		try{

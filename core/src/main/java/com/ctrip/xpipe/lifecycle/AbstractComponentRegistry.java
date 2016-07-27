@@ -3,6 +3,7 @@ package com.ctrip.xpipe.lifecycle;
 
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -137,6 +138,19 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 			throw new IllegalStateException("component of type more than one:" + clazz + "," + all.size());
 		}
 		return (T) all.values().toArray()[0];
+	}
+
+	
+	protected List<Lifecycle> sort(List<Lifecycle> result) {
+		Collections.sort(result, new Comparator<Lifecycle>() {
+
+			@Override
+			public int compare(Lifecycle o1, Lifecycle o2) {
+				
+				return (o1.getOrder() < o2.getOrder()) ? -1: (o1.getOrder() == o2.getOrder() ? 0: 1);
+			}
+		});
+		return result;
 	}
 
 }

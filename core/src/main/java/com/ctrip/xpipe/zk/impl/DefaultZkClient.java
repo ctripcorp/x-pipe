@@ -30,6 +30,11 @@ public class DefaultZkClient extends AbstractLifecycle implements ZkClient, TopE
 		client= zkConfig.create(address);
 	}
 
+	
+	@Override
+	protected void doStop() throws Exception {
+		client.close();
+	}
 	@Override
 	public CuratorFramework get() {
 		return client;

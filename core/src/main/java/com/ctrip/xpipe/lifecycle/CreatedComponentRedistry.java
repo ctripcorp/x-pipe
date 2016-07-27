@@ -133,6 +133,6 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 				result.add((Lifecycle)entry.getValue());
 			}
 		}
-		return result;
+		return sort(result);
 	}
 }

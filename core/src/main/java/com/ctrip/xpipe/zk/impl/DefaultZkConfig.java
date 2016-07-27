@@ -34,7 +34,7 @@ public class DefaultZkConfig implements ZkConfig{
 
 	@Override
 	public int getZkRetries() {
-		return Integer.MAX_VALUE;
+		return 10;
 	}
 
 	@Override

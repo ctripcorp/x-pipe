@@ -53,6 +53,12 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 		leaderLatch.start();
 		
 	}
+	
+	
+	@Override
+	protected void doStop() throws Exception {
+		leaderLatch.close();
+	}
 
 	@Override
 	public void isLeader() {

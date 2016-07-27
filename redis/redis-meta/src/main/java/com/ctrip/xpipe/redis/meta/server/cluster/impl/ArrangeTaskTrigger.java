@@ -52,6 +52,7 @@ public class ArrangeTaskTrigger {
 	private Map<ClusterServer, DeadServer> serverActions = new ConcurrentHashMap<>();  
 	
 	public void initSharding(ReshardingTask task){
+		
 		arrangeTaskExecutor.offer(task);
 	}
 	
@@ -70,7 +71,7 @@ public class ArrangeTaskTrigger {
 		serverActions.remove(clusterServer);
 	}
 
-	public void serverAdded(ClusterServer clusterServer){
+	public void serverAlive(ClusterServer clusterServer){
 		
 		DeadServer deadServer = serverActions.get(clusterServer);
 		if(deadServer == null){
@@ -104,5 +105,8 @@ public class ArrangeTaskTrigger {
 		}
 	} 
 
+	public void setWaitForRestartTimeMills(int waitForRestartTimeMills) {
+		this.waitForRestartTimeMills = waitForRestartTimeMills;
+	}
 
 }

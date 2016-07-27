@@ -141,7 +141,7 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 			return;
 		}
 		logger.info("[onServerAdded]{}", clusterServer);
-		arrangeTaskTrigger.serverAdded(clusterServer);
+		arrangeTaskTrigger.serverAlive(clusterServer);
 		
 	}
 

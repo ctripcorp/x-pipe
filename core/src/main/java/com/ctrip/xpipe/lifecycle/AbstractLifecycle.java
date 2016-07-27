@@ -132,4 +132,9 @@ public abstract class AbstractLifecycle implements Lifecycle, LifecycleStateAwar
 		
 		return getClass().getSimpleName() + ", phase:" + lifecycleState.getPhaseName();
 	}
+	
+	@Override
+	public int getOrder() {
+		return 0;
+	}
 }

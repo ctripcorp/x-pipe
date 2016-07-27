@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.lifecycle;
 
-import java.util.Collections;
-import java.util.Comparator;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -83,17 +82,9 @@ public class SpringComponentRegistry extends AbstractComponentRegistry{
 			}
 		}
 		
-		Collections.sort(result, new Comparator<Lifecycle>() {
-
-			@Override
-			public int compare(Lifecycle o1, Lifecycle o2) {
-				
-				TopElement te1 = (TopElement) o1, te2 = (TopElement) o2;
-				return (te1.getOrder() < te2.getOrder()) ? -1: (te1.getOrder() == te2.getOrder() ? 0: 1);
-			}
-
-		});
-		return result;
+		return sort(result);
 	}
+
+
 
 }
