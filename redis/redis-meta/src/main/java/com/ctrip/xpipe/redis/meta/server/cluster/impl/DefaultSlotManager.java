@@ -4,9 +4,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.EnsurePath;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +21,7 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.zk.ZkClient;
 
@@ -32,15 +37,36 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 	@Autowired
 	private ZkClient zkClient;
 	
+	@Autowired
+	private MetaServerConfig config;
+	
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	
 	private Map<Integer, SlotInfo>  slotsMap = new ConcurrentHashMap<Integer,SlotInfo>();
 	
 	private Map<Integer, Set<Integer>> serverMap = new ConcurrentHashMap<>();
+	
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 		
 	@Override
 	protected void doStart() throws Exception {
+
+		CuratorFramework client = zkClient.get();
+		EnsurePath ensure = client.newNamespaceAwareEnsurePath(MetaZkConfig.getMetaServerSlotsPath());
+		ensure.ensure(client.getZookeeperClient());
+
 		refresh();
+		
+		scheduled.scheduleWithFixedDelay(new Runnable() {
+			@Override
+			public void run() {
+				try{
+					refresh();
+				}catch(Throwable th){
+					logger.error("[run]", th);
+				}
+			}
+		}, config.getSlotRefreshMilli(), config.getSlotRefreshMilli(), TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -60,7 +86,7 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 	}
 
 	@Override
-	public Set<Integer> getByServerId(int serverId) {
+	public Set<Integer> getSlotsByServerId(int serverId) {
 		try{
 			lock.readLock().lock();
 			return serverMap.get(serverId);
@@ -153,6 +179,21 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 		try{
 			lock.readLock().lock();
 			return new HashSet<>(serverMap.keySet());
+		}finally{
+			lock.readLock().unlock();
+		}
+	}
+
+	@Override
+	public int getSlotsSizeByServerId(int serverId) {
+		
+		try{
+			lock.readLock().lock();
+			Set<Integer> slots = getSlotsByServerId(serverId);
+			if(slots == null){
+				return 0;
+			}
+			return slots.size();
 		}finally{
 			lock.readLock().unlock();
 		}

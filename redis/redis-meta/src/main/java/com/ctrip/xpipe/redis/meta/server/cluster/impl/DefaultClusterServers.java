@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.WatchedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -59,13 +60,19 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 		
 		int currentServerId = currentServer.getServerId();
 		servers.put(currentServerId, currentServer);
+		
+		CuratorFramework client = zkClient.get();
 
+		EnsurePath ensure = client.newNamespaceAwareEnsurePath(MetaZkConfig.getMetaServerRegisterPath());
+		ensure.ensure(client.getZookeeperClient());
+		
 		childrenChanged();
 		watchServers();
 		
 	}
 
 	private void watchServers() throws Exception {
+		
 		zkClient.get().getChildren().usingWatcher(this).forPath(MetaZkConfig.getMetaServerRegisterPath());		
 	}
 
@@ -182,5 +189,6 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 	public boolean exist(int serverId) {
 		return servers.get(serverId) != null;
 	}
+	
 	
 }

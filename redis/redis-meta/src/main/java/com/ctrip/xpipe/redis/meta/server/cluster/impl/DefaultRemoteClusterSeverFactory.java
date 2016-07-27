@@ -18,27 +18,4 @@ public class DefaultRemoteClusterSeverFactory implements RemoteClusterServerFact
 	public ClusterServer createClusterServer(int serverId, ClusterServerInfo clusterServerInfo) {
 		return new RemoteClusterServer(serverId, clusterServerInfo);
 	}
-	
-	class RemoteClusterServer implements ClusterServer{
-		
-		private int serverId;
-		private ClusterServerInfo clusterServerInfo;
-		
-		public RemoteClusterServer(int serverId, ClusterServerInfo clusterServerInfo) {
-			
-			this.serverId = serverId;
-			this.clusterServerInfo = clusterServerInfo;
-		}
-
-		@Override
-		public int getServerId() {
-			return this.serverId;
-		}
-
-		@Override
-		public ClusterServerInfo getClusterInfo() {
-			return this.clusterServerInfo;
-		}
-		
-	}
 }

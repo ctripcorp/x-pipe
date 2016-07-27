@@ -62,7 +62,11 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 		
 		for(Lifecycle lifecycle : lifecycleCallable()){
 			if(lifecycle.getLifecycleState().canInitialize()){
-				lifecycle.initialize();
+				try{
+					lifecycle.initialize();
+				}catch(Throwable th){
+					logger.error("[doInitialize]" + lifecycle, th);
+				}
 			}
 		}
 	}
@@ -73,7 +77,11 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 		
 		for(Lifecycle lifecycle : lifecycleCallable()){
 			if(lifecycle.getLifecycleState().canStart()){
-				lifecycle.start();
+				try{
+					lifecycle.start();
+				}catch(Throwable th){
+					logger.error("[doStart]" + lifecycle, th);
+				}
 			}
 		}
 	}
@@ -87,7 +95,11 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 		
 		for(Lifecycle lifecycle : components){
 				if(lifecycle.getLifecycleState().canStop()){
-					lifecycle.stop();
+					try{
+						lifecycle.stop();
+					}catch(Throwable th){
+						logger.error("[doStop]" + lifecycle, th);
+					}
 				}
 		}
 		super.doStop();
@@ -102,7 +114,11 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 		
 		for(Lifecycle lifecycle : components){
 			if(lifecycle.getLifecycleState().canDispose()){
-				lifecycle.dispose();
+				try{
+					lifecycle.dispose();
+				}catch(Throwable th){
+					logger.error("[doDispose]" + lifecycle, th);
+				}
 			}
 		}
 		super.doDispose();

@@ -7,12 +7,10 @@ package com.ctrip.xpipe.redis.meta.server.cluster;
  */
 public interface ClusterArranger {
 	
-	void onServerAdded(int clusterServer);
+	void onServerAdded(ClusterServer clusterServer);
 	
-	void onServerRemoved(int clusterServer);
+	void onServerRemoved(ClusterServer clusterServer);
 	
 	void onServerChanged(ClusterServer oldClusterServer, ClusterServer newClusterServer);
 
-	void moveSlot(int slotId, int fromServer, int toServer);
-	
 }

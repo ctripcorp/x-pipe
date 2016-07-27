@@ -114,6 +114,11 @@ public class AbstractTest {
 	protected  ApplicationContext createSpringContext() {
 		return null;
 	}
+	
+	protected<T> T getBean(Class<T> clazz){
+		
+		return getRegistry().getComponent(clazz);
+	}
 
 	protected void initRegistry() throws Exception{
 		

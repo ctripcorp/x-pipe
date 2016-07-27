@@ -18,6 +18,7 @@ import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
 
@@ -33,6 +34,10 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 	@Autowired
 	private ZkClient zkClient;
 	
+	@Autowired
+	private MetaServerConfig config;
+	
+	
 	private ApplicationContext applicationContext;
 	
 	private LeaderLatch leaderLatch;
@@ -43,7 +48,7 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 	@Override
 	protected void doStart() throws Exception {
 		
-		leaderLatch = new LeaderLatch(zkClient.get(), MetaZkConfig.getMetaServerLeaderElectPath());
+		leaderLatch = new LeaderLatch(zkClient.get(), MetaZkConfig.getMetaServerLeaderElectPath(), String.valueOf(config.getMetaServerId()));
 		leaderLatch.addListener(this, executors);
 		leaderLatch.start();
 		

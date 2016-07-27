@@ -17,7 +17,7 @@ public class MemoryMetaServerDao extends AbstractMetaServerDao implements MetaSe
 
 	public static String MEMORY_META_SERVER_DAO_KEY = "memory_meta_server_dao_file";
 	
-	private String fileName = System.getProperty(MEMORY_META_SERVER_DAO_KEY, "memory_meta_server_dao_file.xml");
+	private String fileName;
 
 	public MemoryMetaServerDao(){
 	}
@@ -28,6 +28,10 @@ public class MemoryMetaServerDao extends AbstractMetaServerDao implements MetaSe
 
 	@Override
 	protected MetaDao loadMetaDao() {
+
+		if(fileName == null){
+			fileName = System.getProperty(MEMORY_META_SERVER_DAO_KEY, "memory_meta_server_dao_file.xml");
+		}
 		
 		if(fileName != null){
 			return new DefaultMemoryMetaDao(fileName);

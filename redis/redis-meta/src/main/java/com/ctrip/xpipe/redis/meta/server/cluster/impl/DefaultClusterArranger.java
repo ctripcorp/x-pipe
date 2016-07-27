@@ -1,9 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,12 +20,18 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.observer.NodeModified;
-import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterArranger;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
+import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
+import com.ctrip.xpipe.redis.meta.server.cluster.task.InitResharding;
+import com.ctrip.xpipe.redis.meta.server.cluster.task.ServerBalanceResharding;
+import com.ctrip.xpipe.redis.meta.server.cluster.task.ServerDeadResharding;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
+
 
 /**
  * @author wenchao.meng
@@ -30,31 +41,49 @@ import com.ctrip.xpipe.zk.ZkClient;
 @Component
 public class DefaultClusterArranger extends AbstractLifecycle implements ClusterArranger, TopElement, LeaderAware, Observer{
 	
-	@Autowired
-	private ZkClient zkClient;
-	
-	private int waitDeadRestart = 30000;
+	private int waitDeadRestart = 5000;
 	
 	@Autowired
 	private ClusterServers clusterServers;
 	
 	@Autowired
+	private ZkClient zkClient;
+	
+	@Autowired
+	private ArrangeTaskExecutor arrangeTaskExecutor;
+	
+	
+	@Autowired
+	private RemoteClusterServerFactory remoteClusterServerFactory;
+	
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("Slot_Arranger"));
+
+	@Autowired
 	private SlotManager slotManager;
 	
-	private volatile boolean leader = false;
+	@Autowired
+	private MetaServerConfig config;
+	
+	private AtomicBoolean leader = new AtomicBoolean(false);
+	private ScheduledFuture<?> future;
 
 	
 	@Override
 	public void isleader() {
 		
 		logger.info("[isLeader]");
-		leader = true;
-		
-		try {
-			checkAllSlots();
-		} catch (Exception e) {
-			logger.error("[isLeader]", e);
-		}
+		leader.set(true);
+		future = scheduled.scheduleWithFixedDelay(new Runnable() {
+			
+			@Override
+			public void run() {
+				try {
+					checkAllSlots();
+				} catch (Throwable th) {
+					logger.error("[run]", th);
+				}
+			}
+		}, 0, config.getLeaderCheckMilli(), TimeUnit.MILLISECONDS);
 		
 		clusterServers.addObserver(this);
 	}
@@ -76,6 +105,7 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		
 		if(notExist.size() > 0){
 			logger.info("[checkAllSlots][not exist]{}", notExist);
+			arrangeTaskExecutor.offer(new InitResharding(slotManager, notExist, clusterServers, zkClient));
 		}
 		
 		Set<Integer> allSlotServers = slotManager.allServers();
@@ -87,18 +117,22 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 
 		if(deadServer.size() > 0){
 			logger.info("[checkAllSlots][dead servers]{}", deadServer);
+			for(Integer deadServerId : deadServer){
+				onServerRemoved(remoteClusterServerFactory.createClusterServer(deadServerId, null));
+			}
 		}
-		
-		
-		
 		
 	}
 
 	@Override
 	public void notLeader() {
 		logger.info("[notLeader]");
-		leader = false;
-		clusterServers.removeObserver(this);
+		if(leader.compareAndSet(true, false)){
+			clusterServers.removeObserver(this);
+			if(future != null){
+				future.cancel(true);
+			}
+		}
 	}
 
 	@Override
@@ -107,36 +141,30 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 	}
 
 	@Override
-	public void onServerAdded(int clusterServer) {
-		if(!leader){
+	public void onServerAdded(ClusterServer clusterServer) {
+		if(!leader.get()){
 			return;
 		}
+		arrangeTaskExecutor.offer(new ServerBalanceResharding(slotManager, clusterServers, zkClient));
 		
 	}
 
 	@Override
-	public void onServerRemoved(int clusterServer) {
-		if(!leader){
+	public void onServerRemoved(ClusterServer clusterServer) {
+		if(!leader.get()){
 			return;
 		}
-		
-		
-		
+		arrangeTaskExecutor.offer(new ServerDeadResharding(slotManager, clusterServer, clusterServers, zkClient));
 	}
 
 	@Override
 	public void onServerChanged(ClusterServer oldClusterServer, ClusterServer newClusterServer) {
-		if(!leader){
+		if(!leader.get()){
 			return;
 		}
-		
 		logger.info("[onNodeChanged][nothing to do]{}->{}", oldClusterServer, newClusterServer);
 	}
 
-	@Override
-	public void moveSlot(int slotId, int fromServer, int toServer) {
-		
-	}
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -144,13 +172,13 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		
 		if(args instanceof NodeAdded<?>){
 			NodeAdded<ClusterServer> added = (NodeAdded<ClusterServer>) args;
-			onServerAdded(added.getNode().getServerId());
+			onServerAdded(added.getNode());
 			return;
 		}
 
 		if(args instanceof NodeDeleted<?>){
 			NodeDeleted<ClusterServer> deleted = (NodeDeleted<ClusterServer>) args;
-			onServerRemoved(deleted.getNode().getServerId());
+			onServerRemoved(deleted.getNode());
 			return;
 		}
 

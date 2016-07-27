@@ -23,8 +23,10 @@ public class DefaultClusterServersTest extends AbstractMetaServerTest{
 	@Before
 	public void beforeDefaultClusterServersTest() throws Exception{
 		
-		currentConfig = new DefaultMetaServerConfig();
+		initRegistry();
+		startRegistry();
 		
+		currentConfig = new DefaultMetaServerConfig();
 		servers = new DefaultClusterServers();
 		servers.setCurrentServer(createAndStart(currentConfig));
 		servers.setMetaServerConfig(currentConfig);
@@ -34,7 +36,7 @@ public class DefaultClusterServersTest extends AbstractMetaServerTest{
 	}
 	
 	@Test
-	public void test() throws Exception{
+	public void testServers() throws Exception{
 		
 		servers.initialize();
 		servers.start();
@@ -47,7 +49,9 @@ public class DefaultClusterServersTest extends AbstractMetaServerTest{
 		
 		sleep(100);
 		Assert.assertEquals(2, servers.allClusterServers().size());
+		current2 = createAndStart(config2);
 		
+		Assert.assertEquals(2, servers.allClusterServers().size());
 		current2.stop();
 		sleep(100);
 		Assert.assertEquals(1, servers.allClusterServers().size());

@@ -4,6 +4,7 @@ package com.ctrip.xpipe.command;
 
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -17,6 +18,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.util.concurrent.MoreExecutors;
 
 /**
  * @author wenchao.meng
@@ -42,6 +44,11 @@ public abstract class AbstractCommand<V> implements Command<V>{
 
 	@Override
 	public CommandFuture<V> execute(){
+		return execute(MoreExecutors.sameThreadExecutor());
+	}
+
+	@Override
+	public CommandFuture<V> execute(ExecutorService executors) {
 		
 		future.addListener(new CommandFutureListener<V>() {
 
@@ -53,17 +60,23 @@ public abstract class AbstractCommand<V> implements Command<V>{
 			}
 		});
 		
-		try{
-			doExecute();
-			return future;
-		}catch(Exception e){
-			if(!future.isDone()){
-				future.setFailure(e);
+		executors.execute(new Runnable() {
+			
+			@Override
+			public void run() {
+				try{
+					doExecute();
+				}catch(Exception e){
+					if(!future.isDone()){
+						future.setFailure(e);
+					}
+				}
 			}
-		}
+		});
 		return future;
 	}
-
+	
+	
 	protected void doCancel() {
 		
 	}
