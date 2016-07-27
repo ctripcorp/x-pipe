@@ -21,7 +21,6 @@ private DcTblDao dcTblDao;
 	@PostConstruct
 	private void postConstruct() {
 		try {
-			ContainerLoader.getDefaultContainer().lookup(ClusterTblDao.class);
 			dcTblDao = ContainerLoader.getDefaultContainer().lookup(DcTblDao.class);
 		} catch (Exception e) {
 			e.printStackTrace();
