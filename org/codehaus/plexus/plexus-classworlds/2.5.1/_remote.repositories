@@ -1,0 +1,6 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Jul 19 13:38:47 CST 2016
+plexus-classworlds-2.5.1.pom>public=
+plexus-classworlds-2.5.1.jar>=
+plexus-classworlds-2.5.1.jar>localpublic=
+plexus-classworlds-2.5.1.jar>public=

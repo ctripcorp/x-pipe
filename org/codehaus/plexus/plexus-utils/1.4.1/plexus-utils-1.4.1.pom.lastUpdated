@@ -1,0 +1,5 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Wed Jul 06 16:22:33 CST 2016
+http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/public/.lastUpdated=1467793353141
+@default-central-https\://repo.maven.apache.org/maven2/.lastUpdated=1467792829849
+https\://repo.maven.apache.org/maven2/.error=Could not transfer artifact org.codehaus.plexus\:plexus-utils\:pom\:1.4.1 from/to central (https\://repo.maven.apache.org/maven2)\: The operation was cancelled.

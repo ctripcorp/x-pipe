@@ -1,0 +1,5 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Jul 19 13:38:47 CST 2016
+groovy-2.4.7.jar>=
+groovy-2.4.7.pom>localpublic=
+groovy-2.4.7.jar>localpublic=

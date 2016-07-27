@@ -1,0 +1,8 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Wed Jul 20 14:16:30 CST 2016
+plexus-container-default-1.6-sources.jar>localpublic=
+plexus-container-default-1.6.pom>localpublic=
+plexus-container-default-1.6.jar>=
+plexus-container-default-1.6.pom>public=
+plexus-container-default-1.6.jar>localpublic=
+plexus-container-default-1.6.jar>public=
