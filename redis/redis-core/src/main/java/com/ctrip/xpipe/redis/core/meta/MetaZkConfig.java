@@ -23,6 +23,10 @@ public class MetaZkConfig {
 		return System.getProperty("zkMetaStoragePath", "/metaserver/servers");
 	}
 
+	public static String getMetaServerSlotsPath(){
+		return System.getProperty("zkMetaStoragePath", "/metaserver/slots");
+	}
+
 	public static String getZkLeaderLatchRootPath() {
 		return System.getProperty("zkLeaderLatchRootPath", "/keepers");
 	}

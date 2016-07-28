@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.lifecycle;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -122,14 +124,15 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 	}
 
 	@Override
-	public Map<String, Lifecycle> lifecycleCallable() {
-		Map<String, Lifecycle> result = new HashMap<>();
+	public List<Lifecycle> lifecycleCallable() {
+		
+		List<Lifecycle> result = new LinkedList<>();
 		
 		for(Entry<String, Object> entry : components.entrySet()){
 			if(entry.getValue() instanceof Lifecycle){
-				result.put(entry.getKey(), (Lifecycle)entry.getValue());
+				result.add((Lifecycle)entry.getValue());
 			}
 		}
-		return result;
+		return sort(result);
 	}
 }

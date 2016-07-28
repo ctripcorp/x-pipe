@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.lifecycle;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
@@ -79,49 +81,13 @@ public class DefaultRegistry extends AbstractComponentRegistry{
 	}
 
 	@Override
-	public Map<String, Lifecycle> lifecycleCallable() {
+	public List<Lifecycle> lifecycleCallable() {
 		
-		Map<String, Lifecycle>  result = new HashMap<>();
-		result.putAll(createdRegistry.lifecycleCallable());
+		List<Lifecycle> result = new LinkedList<>();
+		result.addAll(createdRegistry.lifecycleCallable());
 		if(springRegistry != null){
-			result.putAll(springRegistry.lifecycleCallable());
+			result.addAll(springRegistry.lifecycleCallable());
 		}
-		return result;
-	}
-	
-	@Override
-	protected void doInitialize() throws Exception {
-		
-		createdRegistry.initialize();
-		if(springRegistry != null){
-			springRegistry.initialize();
-		}
-	}
-	
-	@Override
-	protected void doStart() throws Exception {
-		
-		createdRegistry.start();
-		if(springRegistry != null){
-			springRegistry.start();
-		}
-	}
-	
-	@Override
-	protected void doStop() throws Exception {
-		
-		createdRegistry.stop();
-		if(springRegistry != null){
-			springRegistry.stop();
-		}
-	}
-	
-	@Override
-	protected void doDispose() throws Exception {
-
-		createdRegistry.dispose();
-		if(springRegistry != null){
-			springRegistry.dispose();
-		}
+		return sort(result);
 	}
 }

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.zk;
 
 import org.apache.curator.test.TestingServer;
 
+import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 
 /**
@@ -40,6 +41,11 @@ public class ZkTestServer extends AbstractLifecycle{
 
 	public int getZkPort() {
 		return zkPort;
+	}
+	
+	@Override
+	public int getOrder() {
+		return Ordered.HIGHEST_PRECEDENCE;
 	}
 
 }

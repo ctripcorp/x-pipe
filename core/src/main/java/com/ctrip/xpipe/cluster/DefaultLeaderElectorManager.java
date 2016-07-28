@@ -2,6 +2,7 @@ package com.ctrip.xpipe.cluster;
 
 import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -45,6 +46,11 @@ public class DefaultLeaderElectorManager extends AbstractLifecycle implements Le
 	@Override
 	public LeaderElector createLeaderElector(ElectContext ctx) {
 		return new DefaultLeaderElector(ctx, zkClient.get());
+	}
+
+	@Override
+	public int getOrder() {
+		return Ordered.HIGHEST_PRECEDENCE;
 	}
 	
 }

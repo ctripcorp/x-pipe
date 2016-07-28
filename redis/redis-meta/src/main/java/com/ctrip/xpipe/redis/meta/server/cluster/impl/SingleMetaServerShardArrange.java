@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.cluster;
+package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
 import org.springframework.stereotype.Component;
 

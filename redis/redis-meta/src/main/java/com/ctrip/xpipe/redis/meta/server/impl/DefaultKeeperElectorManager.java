@@ -2,10 +2,12 @@ package com.ctrip.xpipe.redis.meta.server.impl;
 
 import java.util.List;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.recipes.locks.LockInternals;
 import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
+import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.WatchedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -53,17 +55,22 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 
 		logger.info("[observeLeader]{}", cluster.getId());
 		
+		final CuratorFramework client = zkClient.get();
+		
 		for (final ShardMeta shard : cluster.getShards().values()) {
 			
 			final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(cluster.getId(), shard.getId());
+			
+			EnsurePath ensure = client.newNamespaceAwareEnsurePath(leaderLatchPath);
+			ensure.ensure(client.getZookeeperClient());
 
-			List<String> children = zkClient.get().getChildren().usingWatcher(new CuratorWatcher() {
+			List<String> children = client.getChildren().usingWatcher(new CuratorWatcher() {
 
 				@Override
 				public void process(WatchedEvent event) throws Exception {
 					
 					logger.info("[process]" + event);
-					updateShardLeader(zkClient.get().getChildren().usingWatcher(this).forPath(leaderLatchPath), leaderLatchPath, cluster.getId(),
+					updateShardLeader(client.getChildren().usingWatcher(this).forPath(leaderLatchPath), leaderLatchPath, cluster.getId(),
 							shard.getId());
 				}
 			}).forPath(leaderLatchPath);
