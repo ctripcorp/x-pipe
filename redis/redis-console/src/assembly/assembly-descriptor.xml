@@ -18,6 +18,22 @@
 			<fileMode>0755</fileMode>
 			<lineEnding>unix</lineEnding>
 		</fileSet>
+		<fileSet>
+			<directory>src/main/config</directory>
+			<outputDirectory>config</outputDirectory>
+			<excludes>
+				<exclude>xpipe-console.conf</exclude>
+			</excludes>
+			<lineEnding>unix</lineEnding>
+		</fileSet>
+		<fileSet>
+			<directory>src/main/config</directory>
+			<outputDirectory>/</outputDirectory>
+			<includes>
+				<include>xpipe-console.conf</include>
+			</includes>
+			<lineEnding>unix</lineEnding>
+		</fileSet>
 		<!--artifact -->
 		<fileSet>
 			<directory>target</directory>
