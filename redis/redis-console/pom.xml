@@ -54,6 +54,20 @@
          <plugin>
             <groupId>org.unidal.maven.plugins</groupId>
             <artifactId>codegen-maven-plugin</artifactId>
+            <executions>
+               			<execution>
+            			      <id>generate dal jdbc model</id>
+   			               	  <phase>generate-sources</phase>
+                  			  <goals>
+                     			<goal>dal-jdbc</goal>
+                    		  </goals>
+                  			  <configuration>
+                     			<manifest><![CDATA[,
+                        			${basedir}/src/main/resources/META-INF/dal/jdbc/meta-manifest.xml,
+                     			,]]></manifest>
+                  			  </configuration>
+               			</execution>
+            		</executions>
          </plugin>
          <plugin>
             <groupId>org.unidal.maven.plugins</groupId>
@@ -74,10 +88,54 @@
       </plugins>
       <pluginManagement>
          <plugins>
-            <plugin>
-               <groupId>org.eclipse.m2e</groupId>
-               <artifactId>lifecycle-mapping</artifactId>
-            </plugin>
+            <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+      			<plugin>
+      				<groupId>org.eclipse.m2e</groupId>
+      				<artifactId>lifecycle-mapping</artifactId>
+      				<version>1.0.0</version>
+      				<configuration>
+      					<lifecycleMappingMetadata>
+      						<pluginExecutions>
+      							<pluginExecution>
+      								<pluginExecutionFilter>
+      									<groupId>
+      										org.unidal.maven.plugins
+      									</groupId>
+      									<artifactId>
+	      									codegen-maven-plugin
+    	  								</artifactId>
+      									<versionRange>
+      										[2.4.2,)
+      									</versionRange>
+      									<goals>
+      										<goal>dal-jdbc</goal>
+      									</goals>
+      								</pluginExecutionFilter>
+      								<action>
+      									<ignore></ignore>
+      								</action>
+      							</pluginExecution>
+      							<pluginExecution>
+      								<pluginExecutionFilter>
+      									<groupId>
+      										org.unidal.maven.plugins
+      									</groupId>
+      									<artifactId>
+      										plexus-maven-plugin
+      									</artifactId>
+      									<versionRange>[2.4.2,)</versionRange>
+      									<goals>
+      										<goal>plexus</goal>
+      									</goals>
+      								</pluginExecutionFilter>
+      								<action>
+      									<ignore></ignore>
+      								</action>
+      								</pluginExecution>
+      						</pluginExecutions>
+      					</lifecycleMappingMetadata>
+      				</configuration>
+      			</plugin>
          </plugins>
       </pluginManagement>
    </build>

@@ -16,10 +16,10 @@ import com.ctrip.xpipe.redis.console.web.service.DcService;
 public class IndexController {
 	
 	@Autowired
-	private DcService dcClusterShardService;
+	private DcService dcService;
 	
 	@RequestMapping("/api/alldcs")
-	public String getAllDc() throws DalException {
-		return dcClusterShardService.getAllDcs().toString();
+	public String allDcs() throws DalException {
+		return dcService.getAllDcs().toString();
 	}
 }

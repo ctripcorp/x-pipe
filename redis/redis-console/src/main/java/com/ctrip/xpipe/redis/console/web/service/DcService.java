@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.console.web.model.DcTblEntity;
  *
  * Jul 28, 2016
  */
-@Service("dcClusterShardService")
+@Service("dcService")
 public class DcService {
 
 private DcTblDao dcTblDao;
