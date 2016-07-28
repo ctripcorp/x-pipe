@@ -4,16 +4,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.unidal.dal.jdbc.DalException;
-import com.ctrip.xpipe.redis.console.web.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.console.web.service.DcService;
 
+
+/**
+ * @author shyin
+ *
+ * Jul 28, 2016
+ */
 @RestController("indexController")
 public class IndexController {
 	
 	@Autowired
-	private DcClusterShardService dcClusterShardService;
+	private DcService dcService;
 	
-	@RequestMapping("/getcluster")
-	public String xpipeConsoleIndex() throws DalException {
-		return dcClusterShardService.getByPK("pk").toString();
+	@RequestMapping("/api/alldcs")
+	public String allDcs() throws DalException {
+		return dcService.getAllDcs().toString();
 	}
 }
