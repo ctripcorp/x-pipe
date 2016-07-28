@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -19,6 +21,7 @@ import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.meta.server.cluster.SLOT_STATE;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
@@ -97,6 +100,13 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 
 	@Override
 	public void refresh() throws Exception {
+		
+		doRefresh();
+	}
+
+	private void doRefresh() throws NumberFormatException, Exception {
+		
+		logger.info("[doRefresh]");
 		
 		Map<Integer, SlotInfo> result = new ConcurrentHashMap<>();
 		Map<Integer, Set<Integer>> server = new ConcurrentHashMap<>();
@@ -199,4 +209,28 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 		}
 	}
 
+	@Override
+	public Map<Integer, SlotInfo> allMoveingSlots() {
+		
+		try{
+			lock.readLock().lock();
+			
+			Map<Integer, SlotInfo> result = new HashMap<>();
+			
+			for(Entry<Integer, SlotInfo> entry : slotsMap.entrySet()){
+				
+				Integer slot = entry.getKey();
+				SlotInfo slotInfo = entry.getValue();
+				
+				if(slotInfo.getSlotState() == SLOT_STATE.MOVING){
+					result.put(slot, slotInfo.clone());
+				}
+			}
+			return result;
+		} catch (CloneNotSupportedException e) {
+			throw new IllegalStateException(e);
+		}finally{
+			lock.readLock().unlock();
+		}
+	}
 }

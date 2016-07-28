@@ -56,6 +56,10 @@ public class ArrangeTaskTrigger {
 		arrangeTaskExecutor.offer(task);
 	}
 	
+	public void rebalance(){
+		arrangeTaskExecutor.offer(new ServerBalanceResharding(slotManager, clusterServers, zkClient));
+	}
+	
 	public void serverDead(final ClusterServer clusterServer){
 		
 		MapUtils.getOrCreate(serverActions, clusterServer, new ObjectFactory<DeadServer>() {

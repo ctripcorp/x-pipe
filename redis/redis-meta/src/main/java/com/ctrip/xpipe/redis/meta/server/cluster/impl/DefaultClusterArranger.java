@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,7 +25,9 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterArranger;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
+import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
+import com.ctrip.xpipe.redis.meta.server.cluster.task.ContinueResharding;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.InitResharding;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -68,12 +71,19 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		
 		logger.info("[isLeader]");
 		leader.set(true);
+		
+		try {
+			initCheck();
+		} catch (Exception e) {
+			logger.error("[isLeader]", e);
+		}
+		
 		future = scheduled.scheduleWithFixedDelay(new Runnable() {
 			
 			@Override
 			public void run() {
 				try {
-					checkAllSlots();
+					periodCheck();
 				} catch (Throwable th) {
 					logger.error("[run]", th);
 				}
@@ -83,25 +93,29 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		clusterServers.addObserver(this);
 	}
 
-	private void checkAllSlots() throws Exception {
-		
+	private void refresh() throws Exception {
 		slotManager.refresh();
 		clusterServers.refresh();
 		
-		Set<Integer> notExist =  new HashSet<>();
-		Set<Integer> deadServer =  new HashSet<>();
-				
-		Set<Integer> allSlots =  slotManager.allSlots();
-		for(int i=0;i<SlotManager.TOTAL_SLOTS;i++){
-			if(!allSlots.contains(i)){
-				notExist.add(i);
-			}
-		}
+	}
+
+	protected void periodCheck() throws Exception {
 		
-		if(notExist.size() > 0){
-			logger.info("[checkAllSlots][not exist]{}", notExist);
-			arrangeTaskTrigger.initSharding(new InitResharding(slotManager, notExist, clusterServers, zkClient));
-		}
+		checkDeadServer();
+		arrangeTaskTrigger.rebalance();
+	}
+
+	private void initCheck() throws Exception {
+		refresh();
+		
+		checkNotExist();
+		checkMovingTasks();
+		checkDeadServer();
+	}
+
+	private void checkDeadServer() {
+		Set<Integer> deadServer = new HashSet<>();
+		
 		
 		Set<Integer> allSlotServers = slotManager.allServers();
 		for(int slotServer : allSlotServers){
@@ -115,6 +129,30 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 			for(Integer deadServerId : deadServer){
 				onServerRemoved(remoteClusterServerFactory.createClusterServer(deadServerId, null));
 			}
+		}
+	}
+
+	private void checkMovingTasks() {
+		//moving slots
+		Map<Integer, SlotInfo> movingSlots = slotManager.allMoveingSlots();
+		if(movingSlots.size() > 0){
+			arrangeTaskTrigger.initSharding(new ContinueResharding(slotManager, movingSlots, clusterServers, zkClient));
+		}
+	}
+
+	private void checkNotExist() {
+		
+		Set<Integer> notExist =  new HashSet<>();
+		Set<Integer> allSlots =  slotManager.allSlots();
+		for(int i=0;i<SlotManager.TOTAL_SLOTS;i++){
+			if(!allSlots.contains(i)){
+				notExist.add(i);
+			}
+		}
+		
+		if(notExist.size() > 0){
+			logger.info("[checkAllSlots][not exist]{}", notExist);
+			arrangeTaskTrigger.initSharding(new InitResharding(slotManager, notExist, clusterServers, zkClient));
 		}
 		
 	}

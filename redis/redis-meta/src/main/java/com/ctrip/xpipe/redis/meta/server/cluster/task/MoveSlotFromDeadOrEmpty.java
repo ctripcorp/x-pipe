@@ -29,7 +29,7 @@ public class MoveSlotFromDeadOrEmpty extends AbstractSlotMoveTask{
 
 	@Override
 	protected void doExecute() throws Exception {
-		
+		logger.info("[doExecute]{},{}->{}", slot, from, to);
 		setSlotInfo(new SlotInfo(getTo().getServerId()));
 		future.setSuccess(null);
 	}

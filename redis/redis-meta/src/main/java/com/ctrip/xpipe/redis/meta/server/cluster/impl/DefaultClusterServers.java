@@ -65,9 +65,6 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 	@Override
 	protected void doStart() throws Exception {
 		
-		int currentServerId = currentServer.getServerId();
-		servers.put(currentServerId, currentServer);
-		
 		CuratorFramework client = zkClient.get();
 
 		EnsurePath ensure = client.newNamespaceAwareEnsurePath(MetaZkConfig.getMetaServerRegisterPath());
@@ -113,13 +110,15 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 
 	@Override
 	public void process(WatchedEvent event) throws Exception {
-		
+		logger.info("[process]{}", event);
 		watchServers();
 		childrenChanged();
 	}
 
 	private void childrenChanged() throws Exception {
 
+		logger.info("[childrenChanged]{}", servers);
+		
 		CuratorFramework client = zkClient.get();
 		List<String> children = client.getChildren().forPath(MetaZkConfig.getMetaServerRegisterPath());
 		
@@ -130,11 +129,9 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 			byte []data = client.getData().forPath(MetaZkConfig.getMetaServerRegisterPath() + "/" + child);
 			ClusterServerInfo  info = Codec.DEFAULT.decode(data, ClusterServerInfo.class);
 			
+			logger.info("[childrenChanged]{},{}", serverId, info);
 			currentServers.add(serverId);
-			if(serverId == metaServerConfig.getMetaServerId()){
-				continue;
-			}
-			
+
 			ClusterServer server = servers.get(serverId);
 			if(server == null){
 				logger.info("[childrenChanged][createNew]{}{}", child, info);
@@ -158,7 +155,7 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 			if(!currentServers.contains(old)){
 				
 				ClusterServer serverInfo = servers.remove(old);
-				logger.info("[childrenChanged][remote not exist]{}, {}", old, serverInfo);
+				logger.info("[childrenChanged][remote not exist]{}, {}, current:{}", old, serverInfo, currentServers);
 				remoteDelted(serverInfo);
 				
 			}

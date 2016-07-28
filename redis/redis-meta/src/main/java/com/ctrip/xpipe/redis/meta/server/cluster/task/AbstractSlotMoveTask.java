@@ -45,7 +45,7 @@ public abstract class AbstractSlotMoveTask extends AbstractCommand<Void> impleme
 		CuratorFramework client = zkClient.get();
 
 		String path = getSlotZkPath();
-		EnsurePath ensurePath = new EnsurePath(path);
+		EnsurePath ensurePath = client.newNamespaceAwareEnsurePath(path);
 		ensurePath.ensure(client.getZookeeperClient());
 		client.setData().forPath(path, slotInfo.encode());
 	}

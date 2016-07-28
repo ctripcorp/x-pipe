@@ -37,7 +37,15 @@ public abstract class AbstractClusterServer extends AbstractLifecycle implements
 	public int hashCode() {
 		return serverId;
 	}
+	
+	public void setServerId(int serverId) {
+		this.serverId = serverId;
+	}
 
+	public void setClusterServerInfo(ClusterServerInfo clusterServerInfo) {
+		this.clusterServerInfo = clusterServerInfo;
+	}
+	
 	@Override
 	public boolean equals(Object obj) {
 		

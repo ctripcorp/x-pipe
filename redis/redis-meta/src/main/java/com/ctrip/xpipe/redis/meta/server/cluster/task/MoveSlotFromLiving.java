@@ -33,8 +33,8 @@ public class MoveSlotFromLiving extends AbstractSlotMoveTask{
 		try{
 			logger.info("[doExecute]{},{}->{}", slot, from, to);
 			//change slot info to moving
-			SlotInfo slotInfo = new SlotInfo(getFrom().getServerId());
-			slotInfo.moveingSlot(getTo().getServerId());
+			SlotInfo slotInfo = new SlotInfo(from.getServerId());
+			slotInfo.moveingSlot(to.getServerId());
 			setSlotInfo(slotInfo);
 			
 			CommandFuture<Void> importFuture = to.importSlot(slot);

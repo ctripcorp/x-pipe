@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -9,11 +12,15 @@ import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
+import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -31,9 +38,16 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	@Autowired
 	private MetaServerConfig config;
 	
+	@Autowired
+	private SlotManager slotManager;
+	
 	private int currentServerId;
 	
 	private String serverPath;
+	
+	private volatile CommandFuture<Void> slotRefreshFuture;
+	
+	private ExecutorService executors;
 
 	
 	public DefaultCurrentClusterServer() {
@@ -41,11 +55,16 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 
 	@Override
 	protected void doInitialize() throws Exception {
+
+		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("DEFAULT_CURRENT_CLUSTER_SERVER"));
 		
 		this.currentServerId = config.getMetaServerId();
 		serverPath = MetaZkConfig.getMetaServerRegisterPath() + "/" + currentServerId;
 		
+		setServerId(currentServerId);
+		setClusterServerInfo(new ClusterServerInfo(config.getMetaServerIp(), config.getMetaServerPort()));
 	}
+	
 
 
 	@Override
@@ -95,31 +114,51 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		this.config = config;
 	}
 
-	@Override
-	public int getServerId() {
-		return config.getMetaServerId();
-	}
 
 	@Override
-	public ClusterServerInfo getClusterInfo() {
-		return new ClusterServerInfo(config.getMetaServerIp(), config.getMetaServerPort());
-	}
+	public synchronized void notifySlotChange() {
+		
+		if(slotRefreshFuture == null || slotRefreshFuture.isDone()){
+			
+			SlotRefreshCommand cmd = new SlotRefreshCommand();
+			slotRefreshFuture = cmd.execute(executors);
+			slotRefreshFuture.addListener(new CommandFutureListener<Void>() {
 
-	@Override
-	public void notifySlotChange() {
-		//TODO
+				@Override
+				public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
+					if(!commandFuture.isSuccess()){
+						logger.error("[notifySlotChange]", commandFuture.cause());
+					}
+				}
+			});
+		}
 	}
 
 	@Override
 	public CommandFuture<Void> exportSlot(int slotId) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public CommandFuture<Void> importSlot(int slotId) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
+	
+	class SlotRefreshCommand extends AbstractCommand<Void>{
+
+		@Override
+		public String getName() {
+			return "SlotRefreshCommand";
+		}
+
+		@Override
+		protected void doExecute() throws Exception {
+			slotManager.refresh();
+		}
+
+		@Override
+		protected void doReset() throws InterruptedException, ExecutionException {
+		}
+	} 
 }

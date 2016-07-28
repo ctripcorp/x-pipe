@@ -60,9 +60,6 @@ public class ArrangeTaskTriggerTest extends AbstractMetaServerTest{
 		long taskCount3 = arrangeTaskExecutor.getTotalTasks();
 		
 		Assert.assertEquals(1, taskCount3 - taskCount2);
-		
-		
-		
 	}
 	
 	

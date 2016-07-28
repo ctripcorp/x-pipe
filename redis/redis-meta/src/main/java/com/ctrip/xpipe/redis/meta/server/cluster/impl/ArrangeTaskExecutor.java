@@ -26,9 +26,14 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 	private CommandFuture<Void> currentTask = null;
 	private AtomicLong totalTasks = new AtomicLong(0);
 	
+	public static final String ARRANGE_TASK_EXECUTOR_START = "ArrangeTaskExecutorStart";
+	
 	@Override
 	protected void doStart() throws Exception {
-		XpipeThreadFactory.create("ArrangeTaskExecutor").newThread(this).start();;
+		
+		if(Boolean.parseBoolean(System.getProperty(ARRANGE_TASK_EXECUTOR_START, "true"))){
+			XpipeThreadFactory.create("ArrangeTaskExecutor").newThread(this).start();
+		}
 	}
 	
 	

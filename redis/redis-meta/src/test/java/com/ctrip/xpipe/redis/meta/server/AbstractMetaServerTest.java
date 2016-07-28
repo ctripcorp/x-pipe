@@ -6,10 +6,12 @@ import org.junit.Before;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
@@ -33,29 +35,39 @@ public class AbstractMetaServerTest extends AbstractRedisTest{
 
 	@Before
 	public void beforeAbstractMetaServerTest() throws Exception{
-		
+		arrangeTaskStart(false);
 		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
 		
 		int zkPort = randomPort();
 		startZk(zkPort);
 		
 		zkAddress = String.format("localhost:%d", zkPort);
-		((DefaultZkClient)getZkClient()).setZkAddress(zkAddress);
 		
+		getZkClient();//set zk address and start
 	}
 	
 	
+	protected void arrangeTaskStart(boolean isStart) {
+		System.setProperty(ArrangeTaskExecutor.ARRANGE_TASK_EXECUTOR_START, String.valueOf(isStart));
+	}
+
+
 	@Override
 	protected ApplicationContext createSpringContext() {
 		return new AnnotationConfigApplicationContext(MetaServerContextConfig.class);
 	}
 	
 	
-	public ZkClient getZkClient() {
-		return getBean(ZkClient.class);
+	public ZkClient getZkClient() throws Exception {
+		
+		ZkClient zkClient = getBean(ZkClient.class);
+		((DefaultZkClient)zkClient).setZkAddress(zkAddress);
+		LifecycleHelper.initializeIfPossible(zkClient);
+		LifecycleHelper.startIfPossible(zkClient);
+		return zkClient;
 	}
 
-	public CuratorFramework getCurator() {
+	public CuratorFramework getCurator() throws Exception {
 		return getZkClient().get();
 	}
 

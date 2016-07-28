@@ -7,12 +7,16 @@ import com.ctrip.xpipe.codec.JsonCodable;
  *
  * Jul 25, 2016
  */
-public class SlotInfo extends JsonCodable{
+public class SlotInfo extends JsonCodable implements Cloneable{
 	
 	private int serverId;
 	private SLOT_STATE slotState = SLOT_STATE.NORMAL;
 	
 	private int toServerId;
+	
+	public SlotInfo(){
+		
+	}
 	
 	public SlotInfo(int serverId){
 		this.serverId = serverId;
@@ -44,5 +48,20 @@ public class SlotInfo extends JsonCodable{
 		return JsonCodable.decode(bytes, SlotInfo.class);
 	} 
 
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("serverId:" + serverId);
+		if(slotState == SLOT_STATE.MOVING){
+			sb.append("->toServerId:" + toServerId);
+		}
+		return sb.toString();
+	}
 	
+	@Override
+	public SlotInfo clone() throws CloneNotSupportedException {
+		
+		SlotInfo clone = (SlotInfo) super.clone();
+		return clone;
+	}
 }
