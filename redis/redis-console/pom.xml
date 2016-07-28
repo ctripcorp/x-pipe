@@ -7,9 +7,8 @@
       <version>0.0.1-SNAPSHOT</version>
    </parent>
    <artifactId>redis-console</artifactId>
-   
    <dependencies>
-	  <dependency>
+      <dependency>
          <groupId>org.springframework.boot</groupId>
          <artifactId>spring-boot-starter-web</artifactId>
       </dependency>
@@ -18,9 +17,9 @@
          <artifactId>spring-boot-devtools</artifactId>
       </dependency>
       <dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-actuator</artifactId>
+      </dependency>
       <dependency>
          <groupId>com.ctrip.xpipe.redis</groupId>
          <artifactId>redis-core</artifactId>
@@ -33,26 +32,24 @@
          <scope>test</scope>
       </dependency>
       <dependency>
-		 <groupId>org.unidal.framework</groupId>
-		 <artifactId>test-framework</artifactId>
-	  </dependency>
-      
+         <groupId>org.unidal.framework</groupId>
+         <artifactId>test-framework</artifactId>
+      </dependency>
       <!-- Unidal -->
       <dependency>
          <groupId>org.unidal.framework</groupId>
          <artifactId>dal-jdbc</artifactId>
       </dependency>
       <dependency>
-    	 <groupId>mysql</groupId>
-   		 <artifactId>mysql-connector-java</artifactId>
-	  </dependency>
+         <groupId>mysql</groupId>
+         <artifactId>mysql-connector-java</artifactId>
+      </dependency>
    </dependencies>
-   
    <build>
       <plugins>
-      	 <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
+         <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
          </plugin>
          <plugin>
             <groupId>org.unidal.maven.plugins</groupId>
@@ -76,12 +73,12 @@
          </plugin>
       </plugins>
       <pluginManagement>
-      	<plugins>
-      		<plugin>
-      			<groupId>org.eclipse.m2e</groupId>
-      			<artifactId>lifecycle-mapping</artifactId>
-      		</plugin>
-      	</plugins>
+         <plugins>
+            <plugin>
+               <groupId>org.eclipse.m2e</groupId>
+               <artifactId>lifecycle-mapping</artifactId>
+            </plugin>
+         </plugins>
       </pluginManagement>
    </build>
    <properties>

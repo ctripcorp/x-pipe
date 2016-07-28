@@ -8,13 +8,17 @@ import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
-import com.ctrip.xpipe.redis.console.web.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.web.model.DcTbl;
 import com.ctrip.xpipe.redis.console.web.model.DcTblDao;
 import com.ctrip.xpipe.redis.console.web.model.DcTblEntity;
 
+/**
+ * @author shyin
+ *
+ * Jul 28, 2016
+ */
 @Service("dcClusterShardService")
-public class DcClusterShardService {
+public class DcService {
 
 private DcTblDao dcTblDao;
 	
@@ -27,8 +31,7 @@ private DcTblDao dcTblDao;
 		}
 	}
 
-	public List<DcTbl> getByPK(String pk) throws DalException {
-//		return clusterTblDao.findAllClusters(ClusterTblEntity.READSET_FULL);
+	public List<DcTbl> getAllDcs() throws DalException {
 		return dcTblDao.findAllDcs(DcTblEntity.READSET_FULL);
 	}
 

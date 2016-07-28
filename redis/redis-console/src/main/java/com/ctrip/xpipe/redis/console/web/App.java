@@ -5,9 +5,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * @author shyin
- * Console Page Entry
+ *
+ * Jul 28, 2016
  */
-
 @SpringBootApplication
 public class App {
 	public static void main(String[] args) {
