@@ -1,5 +1,5 @@
 #!/bin/bash
-SERVICE_NAME=xpipe-console
+SERVICE_NAME=redis-console
 LOG_DIR=/opt/logs/100004374
 SERVER_PORT=8080
 
