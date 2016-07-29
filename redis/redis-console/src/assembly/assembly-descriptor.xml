@@ -22,7 +22,7 @@
 			<directory>src/main/config</directory>
 			<outputDirectory>config</outputDirectory>
 			<excludes>
-				<exclude>xpipe-console.conf</exclude>
+				<exclude>redis-console.conf</exclude>
 			</excludes>
 			<lineEnding>unix</lineEnding>
 		</fileSet>
@@ -30,7 +30,7 @@
 			<directory>src/main/config</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
-				<include>xpipe-console.conf</include>
+				<include>redis-console.conf</include>
 			</includes>
 			<lineEnding>unix</lineEnding>
 		</fileSet>
