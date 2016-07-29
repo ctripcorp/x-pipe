@@ -63,7 +63,7 @@
 							<goal>single</goal>
 						</goals>
 						<configuration>
-							<finalName>${project.artifactId}</finalName>
+							<finalName>${project.artifactId}-${project.version}</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
 							<descriptors>
 								<descriptor>src/assembly/assembly-descriptor.xml</descriptor>
