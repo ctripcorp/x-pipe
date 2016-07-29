@@ -40,11 +40,11 @@ public class DefaultClusterArrangerTest extends AbstractMetaServerTest{
 		arrangeTaskStart(true);
 		startRegistry();
 		
-		sleep(2000);
+		sleep(3000);
 		
 		logger.info("[testInitArrange][getSlots]");
 		children = client.getChildren().forPath(MetaZkConfig.getMetaServerSlotsPath());
-		logger.info("[testInitArrange][getSlots]{}", children);
+		logger.info("[testInitArrange][getSlots]{}, {}", children.size(), children);
 		Assert.assertEquals(SlotManager.TOTAL_SLOTS, children.size());
 	}
 	
