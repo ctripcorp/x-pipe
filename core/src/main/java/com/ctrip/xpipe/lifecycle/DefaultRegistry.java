@@ -79,7 +79,47 @@ public class DefaultRegistry extends AbstractComponentRegistry{
 		}
 		return result;
 	}
+	
+	
+	@Override
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+		
+		createdRegistry.initialize();
+		if(springRegistry != null){
+			springRegistry.initialize();
+		}
+	}
+	
+	@Override
+	protected void doStart() throws Exception {
+		super.doStart();
+		
+		createdRegistry.start();
+		if(springRegistry != null){
+			springRegistry.start();
+		}
+	}
+	
+	@Override
+	protected void doStop() throws Exception {
+		super.doStop();
+		
+		createdRegistry.stop();
+		if(springRegistry != null){
+			springRegistry.stop();
+		}
+	}
 
+	@Override
+	protected void doDispose() throws Exception {
+		super.doDispose();
+		
+		createdRegistry.dispose();
+		if(springRegistry != null){
+			springRegistry.dispose();
+		}
+	}
 	@Override
 	public List<Lifecycle> lifecycleCallable() {
 		

@@ -40,7 +40,6 @@ import com.ctrip.xpipe.utils.OffsetNotifierTest;
 	CreatedComponentRedistryTest.class,
 	SpringComponentRegistryTest.class,
 	OffsetNotifierTest.class,
-	com.ctrip.xpipe.rest.RestRequestClientTest.class,
 	RequestResponseCommandTest.class,
 	CommandRetryWrapperTest.class,
 	SequenceCommandChainTest.class,
