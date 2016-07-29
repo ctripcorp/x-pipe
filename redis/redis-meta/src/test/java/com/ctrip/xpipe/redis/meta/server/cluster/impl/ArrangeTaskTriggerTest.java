@@ -40,7 +40,7 @@ public class ArrangeTaskTriggerTest extends AbstractMetaServerTest{
 		
 		ClusterServer clusterServer = factory.createClusterServer(100, new ClusterServerInfo("localhost", randomPort()));
 
-		sleep(100);//wait for init task
+		sleep(500);//wait for init task
 		long taskCount1 = arrangeTaskExecutor.getTotalTasks();
 		
 		arrangeTaskTrigger.serverDead(clusterServer);
