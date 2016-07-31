@@ -14,6 +14,8 @@ public interface SlotManager extends Lifecycle{
 	
 	public static final int TOTAL_SLOTS = 1 << 10;
 	
+	SlotInfo getSlotInfo(int slotId);
+	
 	Integer getSlotServerId(int slotId);
 	
 	Set<Integer> getSlotsByServerId(int serverId);
@@ -21,6 +23,8 @@ public interface SlotManager extends Lifecycle{
 	int getSlotsSizeByServerId(int serverId);
 
 	void refresh() throws Exception;
+	
+	void refresh(int ...slotIds) throws Exception;
 	
 	void move(int slotId, int fromServer, int toServer);
 	

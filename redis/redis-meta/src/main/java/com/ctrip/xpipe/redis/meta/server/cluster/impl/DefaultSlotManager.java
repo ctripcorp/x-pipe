@@ -103,13 +103,50 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 		
 		doRefresh();
 	}
+	
+	@Override
+	public void refresh(int... slotIds) throws Exception {
+		
+		String slotsPath = MetaZkConfig.getMetaServerSlotsPath();
+		CuratorFramework client = zkClient.get();
+
+		Map<Integer, SlotInfo> slotsInfo = new HashMap<>();
+		for(int slotId : slotIds){
+
+			byte[] slotContent = client.getData().forPath(slotsPath + "/" + String.valueOf(slotId));
+			SlotInfo slotInfo = Codec.DEFAULT.decode(slotContent, SlotInfo.class);
+			slotsInfo.put(slotId, slotInfo);
+		}
+		
+		try{
+			lock.writeLock().lock();
+			for(Entry<Integer, SlotInfo> entry : slotsInfo.entrySet()){
+				Integer slotId = entry.getKey();
+				SlotInfo slotInfo = entry.getValue();
+				SlotInfo oldSlotInfo = slotsMap.get(slotId);
+
+				slotsMap.put(slotId, slotInfo);
+				
+				if(oldSlotInfo != null){
+					Set<Integer> oldServerSlot = serverMap.get(oldSlotInfo.getServerId());
+					if(oldServerSlot != null){
+						oldServerSlot.remove(slotId);
+					}
+				}
+				getOrCreateServerMap(serverMap, slotInfo.getServerId()).add(slotId);
+			}
+		}finally{
+			lock.writeLock().unlock();
+		}
+		
+	}
 
 	private void doRefresh() throws NumberFormatException, Exception {
 		
 		logger.info("[doRefresh]");
 		
-		Map<Integer, SlotInfo> result = new ConcurrentHashMap<>();
-		Map<Integer, Set<Integer>> server = new ConcurrentHashMap<>();
+		Map<Integer, SlotInfo> slotsMap = new ConcurrentHashMap<>();
+		Map<Integer, Set<Integer>> serverMap = new ConcurrentHashMap<>();
 		
 		CuratorFramework client = zkClient.get();
 		String slotsPath = MetaZkConfig.getMetaServerSlotsPath();
@@ -119,25 +156,29 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 			SlotInfo slotInfo = Codec.DEFAULT.decode(slotContent, SlotInfo.class);
 
 			
-			Set<Integer> serverMap = MapUtils.getOrCreate(server, slotInfo.getServerId(), new ObjectFactory<Set<Integer>>() {
-
-				@Override
-				public Set<Integer> create() {
-					return new HashSet<>();
-				}
-			});
-			
-			serverMap.add(slot);
-			result.put(slot, slotInfo);
+			Set<Integer> serverSlots = getOrCreateServerMap(serverMap, slotInfo.getServerId());			
+			serverSlots.add(slot);
+			slotsMap.put(slot, slotInfo);
 		}
 		
 		try{
 			lock.writeLock().lock();
-			slotsMap = result;
-			serverMap = server;
+			this.slotsMap = slotsMap;
+			this.serverMap = serverMap;
 		}finally{
 			lock.writeLock().unlock();
 		}
+	}
+
+	private Set<Integer> getOrCreateServerMap(Map<Integer, Set<Integer>> serverMap, int serverId) {
+
+		return MapUtils.getOrCreate(serverMap, serverId, new ObjectFactory<Set<Integer>>() {
+
+			@Override
+			public Set<Integer> create() {
+				return new HashSet<>();
+			}
+		});
 	}
 
 	@Override
@@ -233,4 +274,15 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 			lock.readLock().unlock();
 		}
 	}
+
+	@Override
+	public SlotInfo getSlotInfo(int slotId) {
+		try{
+			lock.readLock().lock();
+			return slotsMap.get(slotId);
+		}finally{
+			lock.readLock().unlock();
+		}
+	}
+
 }

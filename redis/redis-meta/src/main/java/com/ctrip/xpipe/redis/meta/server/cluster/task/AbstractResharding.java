@@ -49,10 +49,10 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 	}
 
 
-	protected void notifyAliveServers() {
+	protected void notifyAliveServers(int slotId) {
 		
 		for(ClusterServer clusterServer: servers.allClusterServers()){
-			clusterServer.notifySlotChange();
+			clusterServer.notifySlotChange(slotId);
 		}
 	}
 
@@ -85,7 +85,9 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 			checkTaskFinish();
 			
 			if(commandFuture.isSuccess()){
-				notifyAliveServers();
+				
+				SlotMoveTask task = (SlotMoveTask) commandFuture.command();
+				notifyAliveServers(task.getSlot());
 			}else{
 				logger.error("[error]" + commandFuture.command(), commandFuture.cause());
 			}

@@ -16,7 +16,7 @@ public interface ClusterServer{
 	/**
 	 * reresh slotmanager
 	 */
-	void notifySlotChange();
+	void notifySlotChange(int slot);
 	
 	/**
 	 * notify server to export slot

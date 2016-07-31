@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
  * Jul 29, 2016
  */
 @RestController
-@RequestMapping("/api/metacluster/")
+@RequestMapping(ClusterApi.PATH_FOR_CLUSTER)
 public class DefaultClusterApi implements ClusterApi{
 	
 	@Autowired
@@ -34,14 +34,14 @@ public class DefaultClusterApi implements ClusterApi{
 	public ClusterServerInfo getClusterInfo() {
 		return currentClusterServer.getClusterInfo();
 	}
-
-	@RequestMapping(path = "/notifyslotchange", method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	
+	@RequestMapping(path = PATH_NOTIFY_SLOT_CHANGE, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
-	public void notifySlotChange() {
-		currentClusterServer.notifySlotChange();
+	public void notifySlotChange(int slotId) {
+		currentClusterServer.notifySlotChange(slotId);
 	}
 
-	@RequestMapping(path = "/exportslot/{slotId}", method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@RequestMapping(path = PATH_EXPORT_SLOT, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
 	public void exportSlot(@PathVariable int slotId) throws Exception{
 		currentClusterServer.exportSlot(slotId).sync();
