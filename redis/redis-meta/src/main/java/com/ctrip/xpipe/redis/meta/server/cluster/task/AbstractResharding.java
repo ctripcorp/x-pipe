@@ -91,7 +91,7 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 			}else{
 				logger.error("[error]" + commandFuture.command(), commandFuture.cause());
 			}
-			//if fail leave it to leader reaction
+			//if fail leave it to leader redo
 		}
 	}
 	

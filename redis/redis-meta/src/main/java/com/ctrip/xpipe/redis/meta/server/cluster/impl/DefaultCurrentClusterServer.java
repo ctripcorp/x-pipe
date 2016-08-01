@@ -138,7 +138,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 
 	@Override
 	public CommandFuture<Void> exportSlot(int slotId) {
-		return null;
+		return new SlotExportCommand(slotId).execute();
 	}
 
 	@Override
