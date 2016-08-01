@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.lifecycle;
 
 
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
@@ -57,9 +61,13 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		
-		for(Lifecycle lifecycle : lifecycleCallable().values()){
+		for(Lifecycle lifecycle : lifecycleCallable()){
 			if(lifecycle.getLifecycleState().canInitialize()){
-				lifecycle.initialize();
+				try{
+					lifecycle.initialize();
+				}catch(Throwable th){
+					logger.error("[doInitialize]" + lifecycle, th);
+				}
 			}
 		}
 	}
@@ -68,9 +76,13 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	protected void doStart() throws Exception {
 		super.doStart();
 		
-		for(Lifecycle lifecycle : lifecycleCallable().values()){
+		for(Lifecycle lifecycle : lifecycleCallable()){
 			if(lifecycle.getLifecycleState().canStart()){
-				lifecycle.start();
+				try{
+					lifecycle.start();
+				}catch(Throwable th){
+					logger.error("[doStart]" + lifecycle, th);
+				}
 			}
 		}
 	}
@@ -78,10 +90,17 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	
 	@Override
 	protected void doStop() throws Exception {
+
+		List<Lifecycle> components = lifecycleCallable();
+		Collections.reverse(components);
 		
-		for(Lifecycle lifecycle : lifecycleCallable().values()){
+		for(Lifecycle lifecycle : components){
 				if(lifecycle.getLifecycleState().canStop()){
-					lifecycle.stop();
+					try{
+						lifecycle.stop();
+					}catch(Throwable th){
+						logger.error("[doStop]" + lifecycle, th);
+					}
 				}
 		}
 		super.doStop();
@@ -91,9 +110,16 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 	@Override
 	protected void doDispose() throws Exception {
 
-		for(Lifecycle lifecycle : lifecycleCallable().values()){
+		List<Lifecycle> components = lifecycleCallable();
+		Collections.reverse(components);
+		
+		for(Lifecycle lifecycle : components){
 			if(lifecycle.getLifecycleState().canDispose()){
-				lifecycle.dispose();
+				try{
+					lifecycle.dispose();
+				}catch(Throwable th){
+					logger.error("[doDispose]" + lifecycle, th);
+				}
 			}
 		}
 		super.doDispose();
@@ -112,6 +138,19 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 			throw new IllegalStateException("component of type more than one:" + clazz + "," + all.size());
 		}
 		return (T) all.values().toArray()[0];
+	}
+
+	
+	protected List<Lifecycle> sort(List<Lifecycle> result) {
+		Collections.sort(result, new Comparator<Lifecycle>() {
+
+			@Override
+			public int compare(Lifecycle o1, Lifecycle o2) {
+				
+				return (o1.getOrder() < o2.getOrder()) ? -1: (o1.getOrder() == o2.getOrder() ? 0: 1);
+			}
+		});
+		return result;
 	}
 
 }

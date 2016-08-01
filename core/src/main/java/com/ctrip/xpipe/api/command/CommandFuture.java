@@ -20,6 +20,11 @@ public interface CommandFuture<V> extends Future<V>{
 		
 	void setSuccess(V result);
 	
+	/**
+	 * result null
+	 */
+	void setSuccess();
+	
 	void setFailure(Throwable cause);
 	
 	CommandFuture<V> sync() throws InterruptedException, ExecutionException;

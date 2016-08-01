@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
+
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.ProcessingException;
@@ -20,6 +22,7 @@ import com.ctrip.xpipe.rest.RestRequestClient;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
 
+
 /**
  * @author wenchao.meng
  *
@@ -36,10 +39,11 @@ public class DefaultMetaRefresher extends AbstractLifecycle implements MetaRefre
 	private ZkClient zkClient;
 	
 	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("Meta-Refresher"));
+	private ScheduledFuture<?> future;
 	
 	protected void doStart() throws Exception {
 		
-		scheduled.scheduleAtFixedRate(this, 0, metaServerConfig.getMetaRefreshMilli(), TimeUnit.MILLISECONDS);
+		future = scheduled.scheduleAtFixedRate(this, 0, metaServerConfig.getMetaRefreshMilli(), TimeUnit.MILLISECONDS);
 		
 	};
 	
@@ -66,6 +70,16 @@ public class DefaultMetaRefresher extends AbstractLifecycle implements MetaRefre
 		} catch (Exception e) {
 			logger.error("[run]", e);
 		}
+	}
+	
+	@Override
+	protected void doStop() throws Exception {
+		future.cancel(true);
+	}
+
+	@Override
+	public int getOrder() {
+		return 0;
 	}
 
 }

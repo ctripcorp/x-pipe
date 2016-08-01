@@ -147,6 +147,11 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
 	}
 
 	@Override
+	public void setSuccess() {
+		setSuccess(null);
+	}
+
+	@Override
 	public void setSuccess(V result) {
 		
 		if(isDone()){
@@ -335,4 +340,5 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
 	public Command<V> command() {
 		return this.command;
 	}
+
 }

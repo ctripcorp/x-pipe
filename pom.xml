@@ -134,12 +134,18 @@
 				<groupId>org.unidal.framework</groupId>
 				<artifactId>foundation-service</artifactId>
 				<version>${unidal.version}</version>
+				<exclusions>
+					<exclusion>
+						<artifactId>log4j</artifactId>
+						<groupId>log4j</groupId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 			<dependency>
-         		<groupId>org.unidal.framework</groupId>
-         		<artifactId>dal-jdbc</artifactId>
-         		<version>${unidal.jdbc.version}</version>
-      		</dependency>
+				<groupId>org.unidal.framework</groupId>
+				<artifactId>dal-jdbc</artifactId>
+				<version>${unidal.jdbc.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>org.glassfish.jersey.media</groupId>
 				<artifactId>jersey-media-multipart</artifactId>
@@ -164,7 +170,7 @@
 				<groupId>javax.servlet</groupId>
 				<artifactId>javax.servlet-api</artifactId>
 				<version>${servlet-api.version}</version>
-			</dependency>			
+			</dependency>
 			<dependency>
 				<groupId>com.alibaba</groupId>
 				<artifactId>fastjson</artifactId>
@@ -210,6 +216,12 @@
 				<artifactId>curator-test</artifactId>
 				<version>${curator.version}</version>
 				<scope>test</scope>
+				<exclusions>
+					<exclusion>
+						<artifactId>log4j</artifactId>
+						<groupId>log4j</groupId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 			<dependency>
 				<groupId>junit</groupId>
@@ -269,10 +281,10 @@
 					<version>${unidal.codegen.version}</version>
 				</plugin>
 				<plugin>
-            		<groupId>org.unidal.maven.plugins</groupId>
-            		<artifactId>plexus-maven-plugin</artifactId>
-            		<version>${unidal.plexus.version}</version>
-         		</plugin>
+					<groupId>org.unidal.maven.plugins</groupId>
+					<artifactId>plexus-maven-plugin</artifactId>
+					<version>${unidal.plexus.version}</version>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 	</build>
@@ -294,6 +306,11 @@
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>jcl-over-slf4j</artifactId>
+		</dependency>
+
 		<!-- test -->
 		<dependency>
 			<groupId>junit</groupId>

@@ -17,5 +17,17 @@ public interface MetaServerConfig extends CoreConfig{
 	
 	int getMetaRefreshMilli();
 	
+	int getMetaServerId();
+	
+	String getMetaServerIp();
+	
+	int getMetaServerPort();
+	
+
+	int getClusterServersRefreshMilli();
+
+	int getSlotRefreshMilli();
+	
+	int getLeaderCheckMilli();
 	
 }

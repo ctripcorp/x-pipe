@@ -1,7 +1,9 @@
-package com.ctrip.xpipe.redis.meta.server.cluster;
+package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
@@ -12,8 +14,12 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.cluster.LeaderAware;
+import com.ctrip.xpipe.api.lifecycle.Ordered;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -22,23 +28,36 @@ import com.ctrip.xpipe.zk.ZkClient;
  * Jul 21, 2016
  */
 @Component
-public class MetaserverLeaderElector extends AbstractLifecycleObservable implements LeaderLatchListener, ApplicationContextAware{
+public class MetaserverLeaderElector extends AbstractLifecycleObservable implements LeaderLatchListener, ApplicationContextAware, TopElement{
 
 
 	@Autowired
 	private ZkClient zkClient;
 	
+	@Autowired
+	private MetaServerConfig config;
+	
+	
 	private ApplicationContext applicationContext;
 	
 	private LeaderLatch leaderLatch;
 	
+	private ExecutorService executors  = Executors.newCachedThreadPool(XpipeThreadFactory.create("META-SREVER-LEADER-ELECTOR"));
+	
+	
 	@Override
 	protected void doStart() throws Exception {
 		
-		leaderLatch = new LeaderLatch(zkClient.get(), MetaZkConfig.getMetaServerLeaderElectPath());
-		leaderLatch.addListener(this);
+		leaderLatch = new LeaderLatch(zkClient.get(), MetaZkConfig.getMetaServerLeaderElectPath(), String.valueOf(config.getMetaServerId()));
+		leaderLatch.addListener(this, executors);
 		leaderLatch.start();
 		
+	}
+	
+	
+	@Override
+	protected void doStop() throws Exception {
+		leaderLatch.close();
 	}
 
 	@Override
@@ -64,5 +83,10 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		this.applicationContext = applicationContext;
+	}
+
+	@Override
+	public int getOrder() {
+		return Ordered.LOWEST_PRECEDENCE;
 	}
 }

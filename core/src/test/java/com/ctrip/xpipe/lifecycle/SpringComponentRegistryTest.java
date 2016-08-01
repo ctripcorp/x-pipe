@@ -67,6 +67,12 @@ public class SpringComponentRegistryTest extends AbstractTest{
 	
 	
 	public static class TopNoOpLifecycleObject extends NoOpLifecycleObject implements TopElement{
+
+		@Override
+		public int getOrder() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
 		
 	}
 }

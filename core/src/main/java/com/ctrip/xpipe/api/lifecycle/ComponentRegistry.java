@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.api.lifecycle;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,6 +27,6 @@ public interface ComponentRegistry extends Lifecycle{
 	
 	Map<String, Object> allComponents();
 	
-	Map<String, Lifecycle> lifecycleCallable();
+	List<Lifecycle> lifecycleCallable();
 	
 }
