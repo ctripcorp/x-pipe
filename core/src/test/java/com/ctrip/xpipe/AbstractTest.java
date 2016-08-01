@@ -68,6 +68,7 @@ public class AbstractTest {
 		logger.info("[begin test]" + name.getMethodName());
 		
 		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
+		setProperties();
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
 		
 		
@@ -92,6 +93,10 @@ public class AbstractTest {
 				throw new IllegalStateException("test dir make failed!" + file);
 			}
 		}
+	}
+
+	protected void setProperties() {
+		
 	}
 
 	protected boolean deleteTestDir() {
