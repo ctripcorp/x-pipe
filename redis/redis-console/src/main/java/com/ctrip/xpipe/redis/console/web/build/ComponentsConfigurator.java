@@ -16,9 +16,4 @@ public class ComponentsConfigurator extends AbstractJdbcResourceConfigurator {
       all.add(defineJdbcDataSourceConfigurationManagerComponent("/opt/ctrip/data/xpipe/datasources.xml"));
       return all;
    }
-
-// tmp for package
-//   public static void main(String[] args) {
-//      generatePlexusComponentsXmlFile(new ComponentsConfigurator());
-//   }
 }
