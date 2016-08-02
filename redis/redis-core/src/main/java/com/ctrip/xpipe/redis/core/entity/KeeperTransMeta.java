@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.entity;
 
+
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**
