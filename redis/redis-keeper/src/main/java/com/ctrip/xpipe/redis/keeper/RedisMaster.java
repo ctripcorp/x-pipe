@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import java.io.IOException;
+
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.LifecycleStateAware;
@@ -35,5 +37,7 @@ public interface RedisMaster extends RedisRole, PsyncObserver, Lifecycle, Lifecy
 	void masterConnected(Channel channel);
 
 	Endpoint masterEndPoint();
+	
+	void fullSyncToSlave(RedisSlave redisSlave) throws IOException;
 		
 }

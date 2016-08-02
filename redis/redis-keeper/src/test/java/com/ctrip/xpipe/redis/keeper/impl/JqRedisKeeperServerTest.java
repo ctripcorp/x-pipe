@@ -14,6 +14,11 @@ import org.junit.Test;
  *         Jun 16, 2016 5:27:17 PM
  */
 public class JqRedisKeeperServerTest extends BaseRedisKeeperServerTest {
+	
+	@Override
+	protected boolean deleteTestDir() {
+		return false;
+	}
 
 	@Test
 	public void startKeeper6666() throws Exception {

@@ -31,5 +31,7 @@ public interface RedisSlave extends RedisClient, PartialAware{
 	void rdbWriteComplete();
 
 	void partialSync();
+	
+	void processPsyncSequentially(Runnable runnable);
 
 }

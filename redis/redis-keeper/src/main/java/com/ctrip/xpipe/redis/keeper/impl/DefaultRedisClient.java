@@ -4,9 +4,11 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
@@ -19,6 +21,8 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.netty.ChannelUtil;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -45,15 +49,17 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	
 	private CLIENT_ROLE clientRole = CLIENT_ROLE.NORMAL;
 	
-	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
-
+	private ExecutorService nonPsyncExecutor;
+	
+	private DefaultRedisClient(Channel channel) {
 		this.channel = channel;
-		this.redisKeeperServer = redisKeeperServer;
+		String remoteIpLocalPort = ChannelUtil.getRemoteIpLocalPort(channel);
+		nonPsyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create("RedisClientNonPsync-" + remoteIpLocalPort));
 	}
-
-	public DefaultRedisClient(DefaultRedisClient redisClient) {
-		this.channel = redisClient.channel;
-		this.redisKeeperServer = redisClient.redisKeeperServer;
+	
+	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
+		this(channel);
+		this.redisKeeperServer = redisKeeperServer;
 	}
 
 	@Override
@@ -184,6 +190,7 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	@Override
 	public void close() {
 		channel.close();
+		nonPsyncExecutor.shutdownNow();
 	}
 	
 	@Override
@@ -233,5 +240,10 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 				releasable.release();
 			}
 		});
+	}
+
+	@Override
+	public void processCommandSequentially(Runnable runnable) {
+		nonPsyncExecutor.execute(runnable);
 	}
 }

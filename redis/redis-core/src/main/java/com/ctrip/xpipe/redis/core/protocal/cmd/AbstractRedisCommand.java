@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -52,7 +53,7 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 	}
 	
 	@Override
-	protected T doReceiveResponse(ByteBuf byteBuf) throws Exception {
+	protected T doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
 		
 		switch(commandResponseState){
 		

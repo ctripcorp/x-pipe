@@ -27,23 +27,21 @@ public class DefaultKeeperRepl implements KeeperRepl {
 
 	@Override
 	public long getBeginOffset() {
-
-		return replicationStore.getKeeperBeginOffset();
+		return replicationStore.getMetaStore().getKeeperBeginOffset();
 	}
 
 	@Override
 	public long getEndOffset() {
-
-		long delta = replicationStore.endOffset() - replicationStore.beginOffset();
-		return replicationStore.getKeeperBeginOffset() + delta;
+		long delta = replicationStore.endOffset() - replicationStore.getMetaStore().beginOffset();
+		return replicationStore.getMetaStore().getKeeperBeginOffset() + delta;
 	}
 
 	@Override
 	public void addCommandsListener(long offset, CommandsListener commandsListener) {
 
 		try {
-			long replicationStoreOffset = offset - replicationStore.getKeeperBeginOffset();
-			replicationStore.addCommandsListener(replicationStoreOffset, commandsListener);
+			long replicationStoreOffset = offset - replicationStore.getMetaStore().getKeeperBeginOffset();
+			replicationStore.getCommandStore().addCommandsListener(replicationStoreOffset, commandsListener);
 		} catch (IOException e) {
 			logger.error("[addCommandsListener]" + offset, e);
 		}

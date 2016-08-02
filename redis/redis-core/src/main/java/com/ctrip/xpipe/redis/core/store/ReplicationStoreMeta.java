@@ -8,7 +8,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
  *         Jun 1, 2016
  */
 public class ReplicationStoreMeta {
-	
+
 	public static final int DEFAULT_KEEPER_BEGIN_OFFSET = 2;
 
 	private String masterRunid;
@@ -16,24 +16,17 @@ public class ReplicationStoreMeta {
 	private long beginOffset;
 	private String rdbFile;
 	private long rdbFileSize;
-	
+	// last offset of rdb in keeper coordinate
+	private long rdbLastKeeperOffset;
+	private String cmdFilePrefix;
+
 	private boolean active;
 
 	private long keeperBeginOffset = DEFAULT_KEEPER_BEGIN_OFFSET;
 	private String keeperRunid;
 
-	
 	public ReplicationStoreMeta() {
 
-	}
-
-	public ReplicationStoreMeta(String masterRunid, DefaultEndPoint masterAddress, long beginOffset, long keeperBeginOffset, boolean active) {
-
-		this.masterRunid = masterRunid;
-		this.masterAddress = masterAddress;
-		this.beginOffset = beginOffset;
-		this.keeperBeginOffset = keeperBeginOffset;
-		this.active = active;
 	}
 
 	public ReplicationStoreMeta(ReplicationStoreMeta proto) {
@@ -43,7 +36,9 @@ public class ReplicationStoreMeta {
 		this.active = proto.active;
 		this.rdbFile = proto.rdbFile;
 		this.rdbFileSize = proto.rdbFileSize;
-		
+		this.rdbLastKeeperOffset = proto.rdbLastKeeperOffset;
+		this.cmdFilePrefix = proto.cmdFilePrefix;
+
 		this.keeperBeginOffset = proto.keeperBeginOffset;
 		this.keeperRunid = proto.keeperRunid;
 	}
@@ -113,8 +108,9 @@ public class ReplicationStoreMeta {
 
 	@Override
 	public String toString() {
-		return "ReplicationStoreMeta [masterRunid=" + masterRunid + ", masterAddress=" + masterAddress + ", beginOffset=" + beginOffset + ", keeperRunid:" + keeperRunid + ", keeperBeginOffset="
-				+ keeperBeginOffset + ", active=" + active + ", rdbFile=" + rdbFile + ", rdbFileSize=" + rdbFileSize + "]";
+		return "ReplicationStoreMeta [masterRunid=" + masterRunid + ", masterAddress=" + masterAddress + ", beginOffset=" + beginOffset + ", rdbFile=" + rdbFile
+				+ ", rdbFileSize=" + rdbFileSize + ", rdbLastKeeperOffset=" + rdbLastKeeperOffset + ", cmdFilePrefix=" + cmdFilePrefix + ", active=" + active
+				+ ", keeperBeginOffset=" + keeperBeginOffset + ", keeperRunid=" + keeperRunid + "]";
 	}
 
 	public String getKeeperRunid() {
@@ -125,4 +121,20 @@ public class ReplicationStoreMeta {
 		this.keeperRunid = keeperRunid;
 	}
 
+	public String getCmdFilePrefix() {
+		return cmdFilePrefix;
+	}
+
+	public void setCmdFilePrefix(String cmdFilePrefix) {
+		this.cmdFilePrefix = cmdFilePrefix;
+	}
+
+	public long getRdbLastKeeperOffset() {
+		return rdbLastKeeperOffset;
+	}
+
+	public void setRdbLastKeeperOffset(long rdbLastKeeperOffset) {
+		this.rdbLastKeeperOffset = rdbLastKeeperOffset;
+	}
+	
 }
