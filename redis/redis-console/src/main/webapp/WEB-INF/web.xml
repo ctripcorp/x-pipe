@@ -6,13 +6,13 @@
 
 	<!-- spring -->
 	<context-param>
-		<param-name>contextClass</param-name>
-		<param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext
-      	</param-value>
-	</context-param>
+	<param-name>contextClass</param-name>
+	<param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext
+	</param-value>
+</context-param>
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
-		<param-value>com.ctrip.xpipe.redis.console.spring.ConsoleServerContextConfig</param-value>
+		<param-value>com.ctrip.xpipe.redis.console.configuration.ConsoleServerContextConfig</param-value>
 	</context-param>
 	<listener>
 		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
