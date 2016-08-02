@@ -37,4 +37,9 @@ public interface RdbFileListener {
 	 */
    void exception(Exception e);
    
+   /**
+    * called before any other methods to provide a hook to do some initialization
+    */
+   void beforeFileData();
+   
 }

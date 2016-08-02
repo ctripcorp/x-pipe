@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal;
 
+import java.io.IOException;
 
 /**
  * @author wenchao.meng
@@ -10,7 +11,7 @@ public interface PsyncObserver {
 	
 	void reFullSync();
 	
-	void beginWriteRdb();
+	void beginWriteRdb() throws IOException;
 	
 	void endWriteRdb();
 	

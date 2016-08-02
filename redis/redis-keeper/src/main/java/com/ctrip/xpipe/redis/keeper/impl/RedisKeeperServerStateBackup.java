@@ -45,7 +45,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		
 		try {
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-			replicationStore.changeMetaTo(ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME);
+			replicationStore.getMetaStore().becomeActive();
 			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, masterAddress));
 			reconnectMaster();
 		} catch (IOException e) {

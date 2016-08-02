@@ -26,6 +26,7 @@ import com.ctrip.xpipe.simpleserver.Server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -234,7 +235,7 @@ public class RequestResponseCommandTest extends AbstractTest{
 		}
 
 		@Override
-		protected String doReceiveResponse(ByteBuf byteBuf) throws Exception {
+		protected String doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
 			
 			if(e != null){
 				throw e;

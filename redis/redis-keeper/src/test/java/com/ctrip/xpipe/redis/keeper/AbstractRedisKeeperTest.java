@@ -175,7 +175,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		final ByteArrayWritableByteChannel bachannel = new ByteArrayWritableByteChannel();
 		final CountDownLatch latch = new CountDownLatch(1);
 
-		replicationStore.readRdbFile(new RdbFileListener() {
+		replicationStore.getRdbStore().readRdbFile(new RdbFileListener() {
 
 			@Override
 			public void setRdbFileInfo(long rdbFileSize, long rdbFileOffset) {
@@ -200,26 +200,48 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			public void exception(Exception e) {
 				latch.countDown();
 			}
+
+			@Override
+			public void beforeFileData() {
+			}
 		});
 
 		latch.await();
 		return new String(bachannel.getResult());
 	}
 
-	public String readCommandFileTilEnd(ReplicationStore replicationStore) throws IOException {
+	public String readCommandFileTilEnd(final ReplicationStore replicationStore) throws IOException {
 
 		final List<ByteBuf> buffs = new LinkedList<>();
 		final AtomicInteger size = new AtomicInteger();
 
-		replicationStore.addCommandsListener(0, new CommandsListener() {
-
-			@Override
-			public void onCommand(ByteBuf byteBuf) {
-
-				buffs.add(byteBuf);
-				size.addAndGet(byteBuf.readableBytes());
+		new Thread() {
+			
+			public void run() {
+				try {
+					doRun();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
-		});
+			
+			private void doRun() throws IOException {
+				replicationStore.getCommandStore().addCommandsListener(0, new CommandsListener() {
+					
+					@Override
+					public void onCommand(ByteBuf byteBuf) {
+						
+						buffs.add(byteBuf);
+						size.addAndGet(byteBuf.readableBytes());
+					}
+					
+					@Override
+					public boolean isOpen() {
+						return true;
+					}
+				});
+			}
+		}.start();
 
 		int lastSize = buffs.size();
 		long equalCount = 0;

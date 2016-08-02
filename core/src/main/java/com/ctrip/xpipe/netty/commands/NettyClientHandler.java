@@ -49,7 +49,7 @@ public class NettyClientHandler extends AbstractNettyHandler{
 			
 			@Override
 			public void read(Channel channel, ByteBuf byteBuf) throws XpipeException {
-				nettyClient.handleResponse(byteBuf);
+				nettyClient.handleResponse(channel, byteBuf);
 			}
 		});
 		

@@ -1,9 +1,18 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.monitor.DelayMonitor;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
 import com.ctrip.xpipe.netty.NotClosableFileRegion;
@@ -13,8 +22,10 @@ import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.netty.ChannelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -24,7 +35,9 @@ import io.netty.channel.Channel;
  *
  * May 20, 2016 4:34:09 PM
  */
-public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave, CommandsListener{
+public class DefaultRedisSlave implements RedisSlave, CommandsListener{
+	
+	private final static Logger logger = LoggerFactory.getLogger(DefaultRedisSlave.class);
 	
 	private Long replAckOff;
 	
@@ -39,17 +52,22 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_NETTY", 5000);
 	private boolean debugDelay = Boolean.parseBoolean(System.getProperty("DEBUG_DELAY"));
 
+	private ExecutorService psyncExecutor;
+
+	private RedisClient redisClient;
+	
+	private AtomicBoolean closed = new AtomicBoolean(false);
 	
 	public DefaultRedisSlave(RedisClient redisClient){
-		super((DefaultRedisClient)redisClient);
+		this.redisClient = redisClient;
 		this.setSlaveListeningPort(redisClient.getSlaveListeningPort());
 		delayMonitor.setDelayInfo(redisClient.channel().remoteAddress().toString());
-		
+		initPsyncExecutor(((DefaultRedisClient)redisClient).channel);
 	}
 
-	public DefaultRedisSlave(Channel channel, RedisKeeperServer redisKeeperServer) {
-		super(channel, redisKeeperServer);
-		delayMonitor.setDelayInfo(channel.remoteAddress().toString());
+	private void initPsyncExecutor(Channel channel) {
+		String getRemoteIpLocalPort = ChannelUtil.getRemoteIpLocalPort(channel);
+		psyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create("RedisClientPsync-" + getRemoteIpLocalPort));
 	}
 
 	@Override
@@ -76,7 +94,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	@Override
 	public void writeFile(FileChannel fileChannel, long pos, long len) {
 		
-		channel.writeAndFlush(new NotClosableFileRegion(fileChannel, pos, len));
+		channel().writeAndFlush(new NotClosableFileRegion(fileChannel, pos, len));
 	}
 
 	@Override
@@ -98,7 +116,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 		
     	RequestStringParser parser = new RequestStringParser(String.valueOf((char)RedisClientProtocol.DOLLAR_BYTE)
     			+String.valueOf(rdbFileSize)); 
-    	channel.writeAndFlush(parser.format());
+    	channel().writeAndFlush(parser.format());
 	}
 
 	@Override
@@ -106,7 +124,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 		
 		logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
 		slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
-		redisKeeperServer.getKeeperRepl().addCommandsListener(beginOffset, this);
+		redisClient.getRedisKeeperServer().getKeeperRepl().addCommandsListener(beginOffset, this);
 	}
 
 	@Override
@@ -131,7 +149,7 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 			long createTime = getTime(b2);
 			delayMonitor.addData(createTime);
 		}
-		channel.writeAndFlush(byteBuf);
+		channel().writeAndFlush(byteBuf);
 	}
 
 	/**
@@ -161,9 +179,9 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 		long lag = System.currentTimeMillis() - replAckTime;
 		info = String.format(
 				"ip=%s,port=%d,state=%s,offset=%d,lag=%d,remotePort=%d" ,
-				IpUtils.getIp(channel.remoteAddress()), getSlaveListeningPort(), 
+				IpUtils.getIp(channel().remoteAddress()), getSlaveListeningPort(), 
 				slaveState != null ? slaveState.getDesc() : "null",
-				replAckOff, lag/1000, ((InetSocketAddress)channel.remoteAddress()).getPort());
+				replAckOff, lag/1000, ((InetSocketAddress)channel().remoteAddress()).getPort());
 		return info;
 	}
 
@@ -176,5 +194,76 @@ public class DefaultRedisSlave extends DefaultRedisClient implements RedisSlave,
 	public void partialSync() {
 		partialState = PARTIAL_STATE.PARTIAL;
 	}
+
+	@Override
+	public void processPsyncSequentially(Runnable runnable) {
+		psyncExecutor.execute(runnable);
+	}
+
+	@Override
+	public boolean isOpen() {
+		return !closed.get();
+	}
+	
+	public void close() throws IOException {
+		closed.set(true);
+		redisClient.close();
+		psyncExecutor.shutdownNow();
+	}
+	
+	
+	// delegate methods start
+	public void addObserver(Observer observer) {
+		redisClient.addObserver(observer);
+	}
+
+	public void removeObserver(Observer observer) {
+		redisClient.removeObserver(observer);
+	}
+
+	public RedisSlave becomeSlave() {
+		return redisClient.becomeSlave();
+	}
+
+	public RedisKeeperServer getRedisKeeperServer() {
+		return redisClient.getRedisKeeperServer();
+	}
+
+	public void setSlaveListeningPort(int port) {
+		redisClient.setSlaveListeningPort(port);
+	}
+
+	public int getSlaveListeningPort() {
+		return redisClient.getSlaveListeningPort();
+	}
+
+	public void capa(CAPA capa) {
+		redisClient.capa(capa);
+	}
+
+	public String[] readCommands(ByteBuf byteBuf) {
+		return redisClient.readCommands(byteBuf);
+	}
+
+	public Channel channel() {
+		return redisClient.channel();
+	}
+
+	public void sendMessage(ByteBuf byteBuf) {
+		redisClient.sendMessage(byteBuf);
+	}
+
+	public void sendMessage(byte[] bytes) {
+		redisClient.sendMessage(bytes);
+	}
+
+	public void addChannelCloseReleaseResources(Releasable releasable) {
+		redisClient.addChannelCloseReleaseResources(releasable);
+	}
+
+	public void processCommandSequentially(Runnable runnable) {
+		redisClient.processCommandSequentially(runnable);
+	}
+	// delegate methods end
 	
 }

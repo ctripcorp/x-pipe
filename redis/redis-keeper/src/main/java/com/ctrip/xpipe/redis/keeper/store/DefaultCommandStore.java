@@ -6,54 +6,57 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.core.store.CommandReader;
+import com.ctrip.xpipe.redis.core.store.CommandStore;
+import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public class DefaultCommandStore implements CommandStore {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 
-	private File baseDir;
+	private final File baseDir;
 
-	private String fileNamePrefix;
+	private final String fileNamePrefix;
 
-	private long currentStartOffset;
+	private final int maxFileSize;
+	
+	private final FilenameFilter fileFilter;
 
-	private int maxFileSize;
-
-	private RandomAccessFile writeFile;
-
-	private FileChannel channel;
-
-	private FilenameFilter fileFilter;
-
-	private OffsetNotifier offsetNotifier;
+	private final ConcurrentMap<DefaultCommandReader, Boolean> readers = new ConcurrentHashMap<>(); 
+	
+	private final OffsetNotifier offsetNotifier;
+	
+	private AtomicReference<CommandFileContext> cmdFileCtxRef = new AtomicReference<>();
 	
 	public DefaultCommandStore(File file, int maxFileSize) throws IOException {
 		this.baseDir = file.getParentFile();
 		this.fileNamePrefix = file.getName();
 		this.maxFileSize = maxFileSize;
 		fileFilter = new PrefixFileFilter(fileNamePrefix);
-
-		currentStartOffset = findMaxStartOffset();
+		
+		long currentStartOffset = findMaxStartOffset();
 		File currentFile = fileForStartOffset(currentStartOffset);
 		logger.info("Write to " + currentFile.getName());
-		writeFile = new RandomAccessFile(currentFile, "rw");
-		channel = writeFile.getChannel();
-		// append to file
-		channel.position(channel.size());
-		offsetNotifier = new OffsetNotifier(currentStartOffset + channel.size() - 1);
+		CommandFileContext cmdFileCtx = new CommandFileContext(currentStartOffset, currentFile);
+		cmdFileCtxRef.set(cmdFileCtx);
+		offsetNotifier = new OffsetNotifier(currentStartOffset + cmdFileCtx.channel.size() - 1);
 	}
 
 	private File fileForStartOffset(long startOffset) {
-		return new File(baseDir, fileNamePrefix + "_" + startOffset);
+		return new File(baseDir, fileNamePrefix + startOffset);
 	}
 
 	private long findMaxStartOffset() {
@@ -70,49 +73,46 @@ public class DefaultCommandStore implements CommandStore {
 		return maxStartOffset;
 	}
 
-	private long extractStartOffset(File file) {
-		return Long.parseLong(file.getName().substring(fileNamePrefix.length() + 1));
+	public long extractStartOffset(File file) {
+		return Long.parseLong(file.getName().substring(fileNamePrefix.length()));
 	}
 
 	@Override
 	public int appendCommands(ByteBuf byteBuf) throws IOException {
 		rotateFileIfNenessary();
 
+		CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
 		int wrote = 0;
 		ByteBuffer[] buffers = byteBuf.nioBuffers();
 		// TODO ensure all read
 		if (buffers != null) {
 			for (ByteBuffer buf : buffers) {
-				wrote += channel.write(buf);
+				wrote += cmdFileCtx.channel.write(buf);
 			}
 		}
 		
 		byteBuf.readerIndex(byteBuf.writerIndex());
 
-		offsetNotifier.offsetIncreased(currentStartOffset + channel.size());
+		offsetNotifier.offsetIncreased(cmdFileCtx.currentStartOffset + cmdFileCtx.channel.size());
 
 		return wrote;
 	}
 
 	@Override
 	public long totalLength() {
-		
-		try {
-			return currentStartOffset + channel.size();
-		} catch (IOException e) {
-			throw new XpipeRuntimeException("[totalLength]getFileLength error" + channel, e);
-		}
+		return cmdFileCtxRef.get().totalLength();
 	}
 
 	
 	private void rotateFileIfNenessary() throws IOException {
-		if (writeFile.length() >= maxFileSize) {
-			currentStartOffset += writeFile.length();
-			writeFile.close();
-			File newFile = new File(baseDir, fileNamePrefix + "_" + currentStartOffset);
+		CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
+		if (curCmdFileCtx.writeFile.length() >= maxFileSize) {
+			long newStartOffset = curCmdFileCtx.currentStartOffset + curCmdFileCtx.writeFile.length();
+			File newFile = new File(baseDir, fileNamePrefix + newStartOffset);
+			cmdFileCtxRef.set(new CommandFileContext(newStartOffset, newFile));
 			logger.info("Rotate to " + newFile.getName());
-			writeFile = new RandomAccessFile(newFile, "rw");
-			channel = writeFile.getChannel();
+			
+			curCmdFileCtx.close();
 		}
 	}
 
@@ -125,7 +125,9 @@ public class DefaultCommandStore implements CommandStore {
 		}
 		long fileStartOffset = extractStartOffset(targetFile);
 		long channelPosition = startOffset - fileStartOffset;
-		return new DefaultCommandReader(targetFile, channelPosition, offsetNotifier);
+		DefaultCommandReader reader = new DefaultCommandReader(targetFile, channelPosition, offsetNotifier);
+		readers.put(reader, Boolean.TRUE);
+		return reader;
 	}
 
 	private File findFileForOffset(long targetStartOffset) throws IOException {
@@ -160,6 +162,35 @@ public class DefaultCommandStore implements CommandStore {
 		// TODO Auto-generated method stub
 
 	}
+	
+	private class CommandFileContext {
+		public final long currentStartOffset;
+
+		public final RandomAccessFile writeFile;
+
+		public final FileChannel channel;
+		
+		public CommandFileContext(long currentStartOffset, File currentFile) throws IOException {
+			this.currentStartOffset = currentStartOffset;
+			writeFile = new RandomAccessFile(currentFile, "rw");
+			channel = writeFile.getChannel();
+			// append to file
+			channel.position(channel.size());
+		}
+
+		public void close() throws IOException {
+			channel.close();
+			writeFile.close();
+		}
+
+		public long totalLength() {
+			try {
+				return currentStartOffset + channel.size();
+			} catch (IOException e) {
+				throw new XpipeRuntimeException("[totalLength]getFileLength error" + channel, e);
+			}
+		}
+	}
 
 	private class DefaultCommandReader implements CommandReader {
 
@@ -181,6 +212,7 @@ public class DefaultCommandStore implements CommandStore {
 
 		@Override
 		public void close() throws IOException {
+			readers.remove(this);
 			readFile.close();
 		}
 
@@ -212,16 +244,65 @@ public class DefaultCommandStore implements CommandStore {
 				}
 			}
 		}
-	}
 
+		public File getCurFile() {
+			return curFile;
+		}
+		
+	}
+	
 	@Override
-	public boolean await(long offset, int timeMilli) throws InterruptedException {
+	public boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException {
 		return offsetNotifier.await(offset, timeMilli);
 	}
 
 	@Override
-	public void await(long offset) throws InterruptedException {
+	public void awaitCommandsOffset(long offset) throws InterruptedException {
 		offsetNotifier.await(offset);
 	}
 
+	@Override
+	public long lowestReadingOffset() {
+		long lowestReadingOffset = Long.MAX_VALUE;
+
+		for (DefaultCommandReader reader : readers.keySet()) {
+			File readingFile = reader.getCurFile();
+			if (readingFile != null) {
+				lowestReadingOffset = Math.min(lowestReadingOffset, extractStartOffset(readingFile));
+			}
+		}
+
+		return lowestReadingOffset;
+	}
+	
+	@Override
+	public void addCommandsListener(long offset, CommandsListener listener) throws IOException {
+		logger.info("[addCommandsListener] from offset {}", offset);
+		
+		CommandReader cmdReader = beginRead(offset);
+		try{
+			// TODO stop notifier
+			while (listener.isOpen()) {
+				int read = 0;
+				ByteBuffer dst = ByteBuffer.allocate(4096);
+				read = cmdReader.read(dst);
+				if (read > 0) {
+					dst.flip();
+					listener.onCommand(Unpooled.wrappedBuffer(dst));
+				} else {
+					try {
+						// TODO
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
+				}
+			}
+		}catch(Throwable th){
+			logger.error("[readCommands][exit]" + listener, th);
+		} finally {
+			cmdReader.close();
+		}
+	}
+	
 }

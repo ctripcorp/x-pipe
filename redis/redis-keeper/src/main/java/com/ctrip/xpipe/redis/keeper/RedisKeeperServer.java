@@ -67,4 +67,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 		REPLICATION_META_EXCHANGED
 		
 	}
+
+	void fullSyncToSlave(RedisSlave redisSlave) throws IOException;
 }

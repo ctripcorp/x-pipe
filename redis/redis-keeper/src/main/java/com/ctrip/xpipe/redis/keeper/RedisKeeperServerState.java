@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
@@ -25,9 +26,9 @@ public interface RedisKeeperServerState{
 	
 	RedisKeeperServer getRedisKeeperServer();
 	
-	void setPromotionState(PROMOTION_STATE promotionState, Object promitionInfo);
+	void setPromotionState(PROMOTION_STATE promotionState, Object promitionInfo) throws IOException;
 
-	void setPromotionState(PROMOTION_STATE promotionState);
+	void setPromotionState(PROMOTION_STATE promotionState) throws IOException;
 	
 	void initPromotionState();
 	

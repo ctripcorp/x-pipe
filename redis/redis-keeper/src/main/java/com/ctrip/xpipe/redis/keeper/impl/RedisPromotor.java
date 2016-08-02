@@ -139,7 +139,7 @@ public class RedisPromotor {
 		}
 	}
 
-	private void redisNotModified(RedisSlave redisSlave, SimpleObjectPool<NettyClient> clientPool) throws InterruptedException, ExecutionException {
+	private void redisNotModified(RedisSlave redisSlave, SimpleObjectPool<NettyClient> clientPool) throws InterruptedException, ExecutionException, IOException {
 		
 		SlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
 		slaveOfCmd.execute().sync();
