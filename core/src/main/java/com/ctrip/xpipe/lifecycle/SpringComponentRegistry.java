@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.springframework.context.ApplicationContext;
 
@@ -72,12 +73,13 @@ public class SpringComponentRegistry extends AbstractComponentRegistry{
 		
 		List<Lifecycle> result = new LinkedList<>();
 		
-		String []names = applicationContext.getBeanDefinitionNames();
-		for(String name : names){
+		Map<String, Lifecycle> beans = applicationContext.getBeansOfType(Lifecycle.class);
+		for(Entry<String, Lifecycle> entry : beans.entrySet()){
 			
-			Object bean = applicationContext.getBean(name);
-			//only call topelement in spring
-			if(bean instanceof Lifecycle && bean instanceof TopElement){
+			String name = entry.getKey();
+			Lifecycle bean = entry.getValue();
+			logger.info("[lifecycleCallable]{}", name);
+			if(bean instanceof TopElement){
 				result.add((Lifecycle)bean);
 			}
 		}

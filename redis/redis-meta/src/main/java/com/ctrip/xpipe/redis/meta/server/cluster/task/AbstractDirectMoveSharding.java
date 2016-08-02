@@ -28,7 +28,7 @@ public abstract class AbstractDirectMoveSharding extends AbstractResharding{
 
 	
 	@Override
-	protected void doExecute() throws Exception {
+	protected void doShardingTask() throws Exception {
 		
 		List<Integer> slots = getSlotsToArrange();
 		
@@ -64,7 +64,6 @@ public abstract class AbstractDirectMoveSharding extends AbstractResharding{
 							zkClient)
 				);
 		}
-		allTaskSubmited();
 	}
 
 	protected abstract ClusterServer getDeadServer();

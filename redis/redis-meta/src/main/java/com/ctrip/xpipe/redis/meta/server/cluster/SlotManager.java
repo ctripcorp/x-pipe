@@ -12,7 +12,7 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
  */
 public interface SlotManager extends Lifecycle{
 	
-	public static final int TOTAL_SLOTS = 1 << 10;
+	public static final int TOTAL_SLOTS = Integer.parseInt(System.getProperty("TOTAL_SLOTS", "1024"));//change only for unit test
 	
 	SlotInfo getSlotInfo(int slotId);
 	

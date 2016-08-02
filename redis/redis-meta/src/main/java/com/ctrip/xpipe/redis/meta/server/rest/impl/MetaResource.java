@@ -28,7 +28,6 @@ public class MetaResource extends AbstractRecource implements MetaApi{
 	public static String FAKE_ADDRESS = "0.0.0.0:0";
 	
 	public MetaResource() {
-		System.out.println("MetaResource");
 	}
 
 	

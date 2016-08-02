@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.spring;
 
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 
@@ -24,6 +25,11 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 	@Bean
 	public SpringComponentLifecycleManager getSpringComponentLifecycleManager(){
 		return new SpringComponentLifecycleManager();
+	}
+	
+	@Bean
+	public HandlerExceptionResolver getHandlerExceptionResolver(){
+		return new ExceptionLoggerResolver();
 	}
 	
 	

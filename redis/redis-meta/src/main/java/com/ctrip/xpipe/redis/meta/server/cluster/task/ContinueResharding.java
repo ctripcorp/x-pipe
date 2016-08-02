@@ -30,9 +30,9 @@ public class ContinueResharding extends AbstractResharding{
 	}
 
 	@Override
-	protected void doExecute() throws Exception {
+	protected void doShardingTask() throws Exception {
 		
-		logger.info("[doExecute]{}", slotInfos);
+		logger.info("[doShardingTask]{}", slotInfos);
 		
 		for(Entry<Integer, SlotInfo> entry : slotInfos.entrySet()){
 			
@@ -56,11 +56,11 @@ public class ContinueResharding extends AbstractResharding{
 		}
 	}
 
-
 	@Override
 	protected void doReset() throws InterruptedException, ExecutionException {
 		
 	}
+
 
 
 }

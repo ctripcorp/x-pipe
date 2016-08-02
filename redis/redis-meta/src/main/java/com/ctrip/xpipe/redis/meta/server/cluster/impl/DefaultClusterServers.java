@@ -117,7 +117,7 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 
 	private void childrenChanged() throws Exception {
 
-		logger.info("[childrenChanged]{}", servers);
+		logger.info("[childrenChanged][{}]{}", currentServer, servers);
 		
 		CuratorFramework client = zkClient.get();
 		List<String> children = client.getChildren().forPath(MetaZkConfig.getMetaServerRegisterPath());
@@ -134,14 +134,14 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 
 			ClusterServer server = servers.get(serverId);
 			if(server == null){
-				logger.info("[childrenChanged][createNew]{}{}", child, info);
+				logger.info("[childrenChanged][{}][createNew]{}{}", currentServer, child, info);
 				ClusterServer remoteServer = remoteClusterServerFactory.createClusterServer(serverId, info);
 				servers.put(serverId, remoteServer);
 				serverAdded(remoteServer);
 			}else{
 				if(!info.equals(server.getClusterInfo())){
 					
-					logger.info("[childrenChanged][clusterInfoChanged]{}{}", child, info, server.getClusterInfo());
+					logger.info("[childrenChanged][{}][clusterInfoChanged]{}{}", currentServer, child, info, server.getClusterInfo());
 					ClusterServer newServer = remoteClusterServerFactory.createClusterServer(serverId, info);
 					servers.put(serverId, newServer);
 					serverChanged(server, newServer);
