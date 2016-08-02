@@ -5,6 +5,7 @@ import java.util.List;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 
 /**
+ * used for console
  * @author wenchao.meng
  *
  * Aug 2, 2016
