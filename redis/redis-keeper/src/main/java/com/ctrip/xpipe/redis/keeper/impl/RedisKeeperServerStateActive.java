@@ -7,12 +7,10 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.impl.RedisPromotor.SlavePromotionInfo;
-
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
+import com.ctrip.xpipe.redis.keeper.impl.RedisPromotor.SlavePromotionInfo;
 
 /**
  * @author wenchao.meng
@@ -36,7 +34,7 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		//active changed!
 		try {
 			logger.info("[becomeBackup][active->backup] {}", this);
-			redisKeeperServer.getReplicationStore().changeMetaToKeeper();
+			redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
 			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, masterAddress));
 			reconnectMaster();
 		} catch (IOException e) {
@@ -58,7 +56,7 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 	}
 	
 	@Override
-	public void setPromotionState(PROMOTION_STATE promotionState, Object info) {
+	public void setPromotionState(PROMOTION_STATE promotionState, Object info) throws IOException {
 		
 		@SuppressWarnings("unused")
 		PROMOTION_STATE oldState = this.promotionState;
@@ -95,12 +93,10 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		}
 	}
 	
-	public RedisMeta masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) {
+	public RedisMeta masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) throws IOException {
 		
 		ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-		ReplicationStoreMeta meta = replicationStore.getReplicationStoreMeta();
-		long delta = (meta.getKeeperBeginOffset() - meta.getBeginOffset()) + newMasterReplOffset - keeperOffset;
-		replicationStore.masterChanged(newMasterEndpoint, newMasterRunid, delta);
+		replicationStore.getMetaStore().masterChanged(keeperOffset, newMasterEndpoint, newMasterRunid, newMasterReplOffset);
 		
 		RedisMeta redisMeta = new RedisMeta();
 		redisMeta.setIp(newMasterEndpoint.getHost());

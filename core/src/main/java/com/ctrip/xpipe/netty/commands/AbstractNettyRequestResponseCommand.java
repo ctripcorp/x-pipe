@@ -16,6 +16,7 @@ import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.pool.XpipeObjectPool;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
@@ -90,14 +91,14 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	}
 
 	@Override
-	public boolean receive(ByteBuf byteBuf) {
+	public boolean receive(Channel channel, ByteBuf byteBuf) {
 		
 		if(future().isDone()){
 			return true;
 		}
 		
 		try{
-			 V result = doReceiveResponse(byteBuf);
+			 V result = doReceiveResponse(channel, byteBuf);
 			 if(result != null){
 				 if(logResponse()){
 					 logger.info("[receive]{}", result);
@@ -126,7 +127,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 		future().setFailure(new IOException("remote closed:" + nettyClient));
 	}
 
-	protected abstract V doReceiveResponse(ByteBuf byteBuf) throws Exception;
+	protected abstract V doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception;
 
 	@Override
 	public int getCommandTimeoutMilli() {

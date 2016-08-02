@@ -10,6 +10,7 @@ import java.io.File;
 import org.junit.Test;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 
@@ -43,18 +44,19 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest{
 		assertEquals(newCurrentStore, mgr.getCurrent());
 		assertNotEquals(currentStore, mgr.getCurrent());
 
-		newCurrentStore.setMasterAddress(new DefaultEndPoint("redis://127.0.0.1:6379"));
+		MetaStore metaStore = newCurrentStore.getMetaStore();
+		metaStore.setMasterAddress(new DefaultEndPoint("redis://127.0.0.1:6379"));
 		newCurrentStore.beginRdb("masterRunid", 0, 100);
 
 		ByteBuf cmdBuf = Unpooled.buffer();
 		cmdBuf.writeByte(9);
-		newCurrentStore.appendCommands(cmdBuf);
+		newCurrentStore.getCommandStore().appendCommands(cmdBuf);
 
 		DefaultReplicationStoreManager mgr2 = new DefaultReplicationStoreManager(clusterId, shardId, baseDir);
-		assertEquals(newCurrentStore.getMasterRunid(), mgr2.getCurrent().getMasterRunid());
-		assertEquals(newCurrentStore.getKeeperBeginOffset(), mgr2.getCurrent().getKeeperBeginOffset());
-		assertEquals(newCurrentStore.getMasterAddress(), mgr2.getCurrent().getMasterAddress());
-		assertEquals(newCurrentStore.beginOffset(), mgr2.getCurrent().beginOffset());
+		assertEquals(metaStore.getMasterRunid(), mgr2.getCurrent().getMetaStore().getMasterRunid());
+		assertEquals(metaStore.getKeeperBeginOffset(), mgr2.getCurrent().getMetaStore().getKeeperBeginOffset());
+		assertEquals(metaStore.getMasterAddress(), mgr2.getCurrent().getMetaStore().getMasterAddress());
+		assertEquals(metaStore.beginOffset(), mgr2.getCurrent().getMetaStore().beginOffset());
 	}
 
 }

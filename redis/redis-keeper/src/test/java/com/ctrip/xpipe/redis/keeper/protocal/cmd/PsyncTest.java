@@ -50,7 +50,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		replicationStore = replicationStoreManager.create();
 		
 		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress("127.0.0.1", 1234));
-		psync = new Psync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), createKeeperMeta(), replicationStoreManager);
+		psync = new Psync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager);
 	}
 
 	@Test
@@ -63,7 +63,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		};
 		//create store
 		replicationStore.beginRdb(masterId, masterOffset, 12345);
-		replicationStore.endRdb();
+		replicationStore.getRdbStore().endRdb();
 		runData(data);
 	}
 
@@ -121,7 +121,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		}
 		
 		for(ByteBuf byteBuf : byteBufs){
-			psync.receive(byteBuf);
+			psync.receive(null, byteBuf);
 		}
 
 		assertResult();
@@ -129,6 +129,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 	}
 
 	private void assertResult() throws IOException, InterruptedException {
+		replicationStore = replicationStoreManager.getCurrent();
 		
 		String rdbResult = readRdbFileTilEnd(replicationStore);
 		String commandResult = readCommandFileTilEnd(replicationStore);

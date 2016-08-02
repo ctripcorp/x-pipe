@@ -16,7 +16,7 @@ public interface NettyClient {
 	 * @param byteBuf
 	 * @return if true, means finish reading
 	 */
-	void handleResponse(ByteBuf byteBuf);
+	void handleResponse(Channel channel, ByteBuf byteBuf);
 	
 	Channel channel();
 

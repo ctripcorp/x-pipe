@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -12,57 +12,65 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.unidal.helper.Files.IO;
 
-import com.alibaba.fastjson.JSON;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.core.store.CommandStore;
+import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
-import com.ctrip.xpipe.redis.keeper.store.RdbStore.Status;
 
-import io.netty.buffer.ByteBuf;
-
+// TODO make methods correctly sequenced
 public class DefaultReplicationStore implements ReplicationStore {
 
 	private final static Logger log = LoggerFactory.getLogger(DefaultReplicationStore.class);
 
-	private static final String META_FILE = "meta.json";
+	private final static FileFilter RDB_FILE_FILTER = new FileFilter() {
 
-	private static final String ROOT_FILE_PATTERN = "root-%s.json";
+		@Override
+		public boolean accept(File path) {
+			return path.isFile() && path.getName().startsWith("rdb_");
+		}
+	};
+
+	private final static FileFilter CMD_FILE_FILTER = new FileFilter() {
+
+		@Override
+		public boolean accept(File path) {
+			return path.isFile() && path.getName().startsWith("cmd_");
+		}
+	};
 
 	private File baseDir;
 
-	private RdbStore rdbStore;
+	private AtomicReference<DefaultRdbStore> rdbStore = new AtomicReference<>();
 
-	private RandomAccessFile rdbReadFile;
+	private ConcurrentMap<DefaultRdbStore, Boolean> previousRdbStores = new ConcurrentHashMap<>();
 
-	private CommandStore cmdStore;
+	private DefaultCommandStore cmdStore;
 
-	private ConcurrentMap<CommandsListener, CommandNotifier> cmdListeners = new ConcurrentHashMap<>();
+	private MetaStore metaStore;
 
 	private int cmdFileSize;
-
-	private AtomicReference<ReplicationStoreMeta> metaRef = new AtomicReference<>();
 
 	public DefaultReplicationStore(File baseDir, int cmdFileSize) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = cmdFileSize;
-		loadMeta();
 
-		ReplicationStoreMeta meta = metaRef.get();
+		metaStore = new DefaultMetaStore(baseDir);
+		metaStore.loadMeta();
+
+		ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
 
 		if (meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
-				rdbStore = new DefaultRdbStore(rdbFileOf(meta.getRdbFile()), meta.getRdbFileSize());
-				rdbReadFile = rdbStore.getRdbFile();
-				cmdStore = new DefaultCommandStore(cmdFileOf(meta.getRdbFile()), cmdFileSize);
+				rdbStore.set(new DefaultRdbStore(rdb, meta.getKeeperBeginOffset() - 1, meta.getRdbFileSize()));
+				cmdStore = new DefaultCommandStore(new File(baseDir, meta.getCmdFilePrefix()), cmdFileSize);
 			}
 		}
 	}
-
+	
 	@Override
 	public void close() throws IOException {
 		// TODO
@@ -71,103 +79,16 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public void beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException {
 		log.info("Begin RDB masterRunid:{}, masterOffset:{}, rdbFileSize:{}", masterRunid, masterOffset, rdbFileSize);
-		ReplicationStoreMeta meta = metaRef.get();
-
-		meta.setMasterRunid(masterRunid);
-		meta.setBeginOffset(masterOffset + 1);
-		meta.setRdbFile(UUID.randomUUID().toString());
-		meta.setRdbFileSize(rdbFileSize);
-
 		baseDir.mkdirs();
-		saveMeta();
+
+		String rdbFile = newRdbFileName();
+		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
+		ReplicationStoreMeta newMeta = metaStore.rdbBegun(masterRunid, masterOffset + 1, rdbFile, rdbFileSize, cmdFilePrefix);
 
 		// TODO file naming
-		rdbStore = new DefaultRdbStore(rdbFileOf(meta.getRdbFile()), rdbFileSize);
-		rdbReadFile = rdbStore.getRdbFile();
-		cmdStore = new DefaultCommandStore(cmdFileOf(meta.getRdbFile()), cmdFileSize);
-	}
-
-	private File cmdFileOf(String masterRunid) {
-		return new File(baseDir, masterRunid + "_cmd");
-	}
-
-	private File rdbFileOf(String masterRunid) {
-		return new File(baseDir, masterRunid);
-	}
-
-	private void saveMeta() throws IOException {
-		// TODO file naming
-		IO.INSTANCE.writeTo(new File(baseDir, META_FILE), JSON.toJSONString(metaRef.get()));
-	}
-
-	private void loadMeta() throws IOException {
-		File metaFile = new File(baseDir, META_FILE);
-		if (metaFile.isFile()) {
-			metaRef.set(JSON.parseObject(IO.INSTANCE.readFrom(metaFile, "utf-8"), ReplicationStoreMeta.class));
-			ReplicationStoreMeta meta = metaRef.get();
-
-			log.info("Meta loaded: {}", meta);
-		} else {
-			metaRef.set(new ReplicationStoreMeta());
-		}
-	}
-
-	@Override
-	public int writeRdb(ByteBuf byteBuffer) throws IOException {
-		// TODO ByteBuf to ByteBuffer correct?
-		int wrote = 0;
-		ByteBuffer[] bufs = byteBuffer.nioBuffers();
-		if (bufs != null) {
-			for (ByteBuffer buf : bufs) {
-				wrote += rdbStore.write(buf);
-			}
-		}
-
-		return wrote;
-	}
-
-	@Override
-	public void endRdb() throws IOException {
-		rdbStore.endWrite();
-	}
-
-	@Override
-	public String getMasterRunid() {
-		return metaRef.get().getMasterRunid();
-	}
-
-	@Override
-	public int appendCommands(ByteBuf byteBuf) throws IOException {
-		int wrote = cmdStore.appendCommands(byteBuf);
-
-		return wrote;
-	}
-
-	@Override
-	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
-		CommandNotifier notifier = new DefaultCommandNotifier();
-		notifier.start(cmdStore, offset, commandsListener);
-		cmdListeners.put(commandsListener, notifier);
-	}
-
-	@Override
-	public void removeCommandsListener(CommandsListener commandsListener) {
-		cmdListeners.remove(commandsListener);
-	}
-
-	@Override
-	public long beginOffset() {
-		return metaRef.get().getBeginOffset();
-	}
-
-	@Override
-	public long endOffset() {
-		if (cmdStore == null) {
-			// TODO
-			return -2L;
-		} else {
-			return beginOffset() + cmdStore.totalLength() - 1;
-		}
+		// beginOffset - 1 == masteroffset
+		rdbStore.set(new DefaultRdbStore(new File(baseDir, newMeta.getRdbFile()), newMeta.getKeeperBeginOffset() - 1, rdbFileSize));
+		cmdStore = new DefaultCommandStore(new File(baseDir, newMeta.getCmdFilePrefix()), cmdFileSize);
 	}
 
 	@Override
@@ -177,196 +98,159 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void readRdbFile(final RdbFileListener rdbFileListener) throws IOException {
-		// TODO use "selector" to reduce thread
-		new Thread() {
-			public void run() {
-				while (rdbReadFile == null) {
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-					}
-				}
+	public synchronized void rdbUpdated(String rdbRelativePath, long masterOffset) throws IOException {
+		File rdbFile = new File(baseDir, rdbRelativePath);
+		long rdbFileSize = rdbFile.length();
 
-				try {
-					doReadRdbFile(rdbFileListener);
-				} catch (Exception e) {
-					log.error("Error read rdb file", e);
-				}
-			}
-		}.start();
+		ReplicationStoreMeta metaDup = metaStore.rdbUpdated(rdbRelativePath, rdbFileSize, masterOffset);
+
+		log.info("[rdbUpdated] new file {}, rdbFileSize {}", rdbFile, rdbFileSize);
+		previousRdbStores.put(rdbStore.get(), Boolean.TRUE);
+		rdbStore.set(new DefaultRdbStore(rdbFile, metaDup.getRdbLastKeeperOffset(), rdbFileSize, true));
 	}
 
-	private void doReadRdbFile(RdbFileListener rdbFileListener) throws IOException {
-		// beginOffset - 1 == masteroffset
-		rdbFileListener.setRdbFileInfo(metaRef.get().getRdbFileSize(), metaRef.get().getKeeperBeginOffset() - 1);
-		FileChannel channel = rdbReadFile.getChannel();
-		long start = 0;
+	@Override
+	public CommandStore getCommandStore() {
+		return cmdStore;
+	}
 
-		while (!rdbFileListener.isStop() && (isRdbWriting(rdbStore.getStatus()) || start < channel.size())) {
-			if (channel.size() > start) {
-				long end = channel.size();
-				rdbFileListener.onFileData(channel, start, end - start);
-				start = end;
-			} else {
-				// TODO
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-				}
+	@Override
+	public RdbStore getRdbStore() {
+		// TODO
+		while (rdbStore.get() == null) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
 			}
 		}
+		return rdbStore.get();
+	}
 
-		switch (rdbStore.getStatus()) {
-		case Success:
-			rdbFileListener.onFileData(channel, start, -1L);
-			break;
-
-		case Fail:
+	@Override
+	public long endOffset() {
+		if (cmdStore == null) {
 			// TODO
-			rdbFileListener.exception(new Exception(""));
-			break;
-
-		default:
-			break;
-		}
-	}
-
-	/**
-	 * @param status
-	 * @return
-	 */
-	private boolean isRdbWriting(Status status) {
-		return status != Status.Fail && status != Status.Success;
-	}
-
-	@Override
-	public void masterChanged(DefaultEndPoint newMasterEndpoint, String newMasterRunid, long offsetDelta) {
-		ReplicationStoreMeta newMeta = new ReplicationStoreMeta(metaRef.get());
-
-		newMeta.setMasterAddress(newMasterEndpoint);
-		newMeta.setMasterRunid(newMasterRunid);
-		newMeta.setBeginOffset(metaRef.get().getBeginOffset() + offsetDelta);
-
-		metaRef.set(newMeta);
-
-		log.info("[masterChanged]offsetDelta:{}, masterEndpoint:{}, masterRunid:{}, beginOffset:{}, endOffset:{}", offsetDelta, newMeta.getMasterAddress(),
-				newMeta.getMasterRunid(), newMeta.getBeginOffset(), endOffset());
-		try {
-			saveMeta();
-		} catch (IOException e) {
-			log.error("[masterChanged][save meta failed]{}{}{}", newMasterEndpoint, newMasterRunid, offsetDelta);
+			return -2L;
+		} else {
+			return metaStore.beginOffset() + cmdStore.totalLength() - 1;
 		}
 	}
 
 	@Override
-	public void setMasterAddress(DefaultEndPoint endpoint) {
-		metaRef.get().setMasterAddress(endpoint);
+	public MetaStore getMetaStore() {
+		return metaStore;
 	}
 
 	@Override
-	public DefaultEndPoint getMasterAddress() {
-		return metaRef.get().getMasterAddress();
-	}
+	public boolean gc() {
+		// delete old rdb files
+		if (rdbStore.get() != null) {
+			Set<File> rdbFilesCurrentlyUsing = new HashSet<>();
 
-	@Override
-	public void setKeeperMeta(String keeperRunid, long keeperBeginOffset) {
+			File currentRdbFile = rdbStore.get().getFile();
+			rdbFilesCurrentlyUsing.add(currentRdbFile);
 
-		metaRef.get().setKeeperRunid(keeperRunid);
-		metaRef.get().setKeeperBeginOffset(keeperBeginOffset);
-	}
+			for (DefaultRdbStore rdbStore : previousRdbStores.keySet()) {
+				if (rdbStore.refCount() > 0) {
+					rdbFilesCurrentlyUsing.add(rdbStore.getFile());
+				}
+			}
 
-	@Override
-	public long getKeeperBeginOffset() {
-
-		return metaRef.get().getKeeperBeginOffset();
-	}
-
-	@Override
-	public void setActive(boolean active) {
-		metaRef.get().setActive(active);
-	}
-
-	@Override
-	public boolean isActive() {
-		return metaRef.get().isActive();
-	}
-
-	@Override
-	public ReplicationStoreMeta getReplicationStoreMeta() {
-		return metaRef.get();
-	}
-
-	@Override
-	public ReplicationStoreMeta getReplicationStoreMeta(String name) throws IOException {
-		File file = new File(baseDir, String.format(ROOT_FILE_PATTERN, name));
-
-		ReplicationStoreMeta meta = null;
-		if (file.isFile()) {
-			meta = JSON.parseObject(IO.INSTANCE.readFrom(file, "utf-8"), ReplicationStoreMeta.class);
+			for (File rdbFile : rdbFilesOnFS()) {
+				if (!rdbFilesCurrentlyUsing.contains(rdbFile)) {
+					log.info("[GC] delete rdb file {}", rdbFile);
+					rdbFile.delete();
+				}
+			}
 		}
 
-		return meta;
-	}
-
-	@Override
-	public void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException {
-		File file = new File(baseDir, String.format(ROOT_FILE_PATTERN, name));
-
-		IO.INSTANCE.writeTo(file, JSON.toJSONString(replicationStoreMeta));
-	}
-
-	@Override
-	public void changeMetaToKeeper() throws IOException {
-
-		log.info("[changeMetaToKeeper]");
-
-		ReplicationStoreMeta meta = new ReplicationStoreMeta(metaRef.get());
-		meta.setBeginOffset(meta.getKeeperBeginOffset());
-		meta.setMasterRunid(meta.getKeeperRunid());
-
-		changeMetaTo(meta);
-	}
-
-	private void changeMetaTo(ReplicationStoreMeta meta) throws IOException {
-
-		ReplicationStoreMeta old = getReplicationStoreMeta();
-		long length = endOffset() - beginOffset();
-		long newEndOffset = meta.getBeginOffset() + length;
-
-		metaRef.set(meta);
-		log.info("[changeMetaTo][cmdFile length, new endoffset]{},{}", length, newEndOffset);
-		log.info("[changeMetaTo][old]{}", old);
-		log.info("[changeMetaTo][new]{}", meta);
-
-		saveMeta();
-
-	}
-
-	@Override
-	public void changeMetaTo(String name) throws IOException {
-
-		ReplicationStoreMeta meta = getReplicationStoreMeta(name);
-		if (meta == null) {
-			throw new IllegalStateException("can not find meta:" + name);
+		// delete old command file
+		if (cmdStore != null) {
+			for (File cmdFile : cmdFilesOnFS()) {
+				long fileStartOffset = cmdStore.extractStartOffset(cmdFile);
+				if (canDeleteCmdFile(cmdStore.lowestReadingOffset(), fileStartOffset, cmdFile.length())) {
+					// TODO
+					log.info("[GC] delete command file {}", cmdFile);
+					cmdFile.delete();
+				}
+			}
 		}
-		changeMetaTo(meta);
+
+		return true;
 	}
 
-	@Override
-	public boolean isFresh() {
-		return metaRef.get().getMasterRunid() == null;
+	private boolean canDeleteCmdFile(long lowestReadingOffset, long fileStartOffset, long fileSize) {
+		// TODO
+		return fileStartOffset < lowestReadingOffset && cmdStore.totalLength() - (fileStartOffset + fileSize) > cmdFileSize * 2;
 	}
 
-	@Override
-	public boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException {
+	private File[] rdbFilesOnFS() {
+		File[] rdbFiles = baseDir.listFiles(RDB_FILE_FILTER);
+		return rdbFiles != null ? rdbFiles : new File[0];
+	}
+
+	private File[] cmdFilesOnFS() {
+		File[] cmdFiles = baseDir.listFiles(CMD_FILE_FILTER);
+		return cmdFiles != null ? cmdFiles : new File[0];
+	}
+
+	private long minCmdKeeperOffset() {
+		long minCmdOffset = Long.MAX_VALUE; // start from zero
+
+		for (File cmdFile : cmdFilesOnFS()) {
+			minCmdOffset = Math.min(cmdStore.extractStartOffset(cmdFile), minCmdOffset);
+		}
+
+		long minCmdKeeperOffset = minCmdOffset + metaStore.getKeeperBeginOffset();
+
+		return minCmdKeeperOffset;
+	}
+
+	private long maxCmdKeeperOffset() {
+		return metaStore.getKeeperBeginOffset() + cmdStore.totalLength();
+	}
+
+	private boolean isFullSyncPossible() {
+		if(rdbStore.get() == null) {
+			return false;
+		}
 		
-		return cmdStore.await(offset, timeMilli);
+		// TODO temporary stop remove command file
+		long rdbLastKeeperOffset = rdbStore.get().lastKeeperOffset();
+		long minCmdKeeperOffset = minCmdKeeperOffset();
+		long maxCmdKeeperOffset = maxCmdKeeperOffset();
+
+		/**
+		 * rdb and cmd is continuous AND not so much cmd after rdb
+		 */
+		// TODO
+		long cmdAfterRdbThreshold = 100;
+		boolean fullSyncPossible = minCmdKeeperOffset <= rdbLastKeeperOffset + 1 && maxCmdKeeperOffset - rdbLastKeeperOffset < cmdAfterRdbThreshold;
+		
+		log.info("[isFullSyncPossible] {}, {} <= {} + 1 && {} - {} < {}", //
+				fullSyncPossible, minCmdKeeperOffset, rdbLastKeeperOffset, maxCmdKeeperOffset, rdbLastKeeperOffset, cmdAfterRdbThreshold);
+
+		return fullSyncPossible;
+	}
+
+	private String newRdbFileName() {
+		return "rdb_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString();
 	}
 
 	@Override
-	public void awaitCommandsOffset(long offset) throws InterruptedException {
-		cmdStore.await(offset);
+	public File newRdbFile() {
+		return new File(baseDir, newRdbFileName());
+	}
+
+	@Override
+	public boolean fullSyncIfPossible(RdbFileListener rdbFileListener) throws IOException {
+		if (isFullSyncPossible()) {
+			log.info("[fullSyncToSlave]reuse current rdb to full sync");
+			rdbStore.get().readRdbFile(rdbFileListener);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 }
