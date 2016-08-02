@@ -6,15 +6,15 @@ import java.util.List;
 import org.unidal.dal.jdbc.configuration.AbstractJdbcResourceConfigurator;
 import org.unidal.lookup.configuration.Component;
 
-import com.ctrip.framework.apollo.ds.ApolloDataSourceProvider;
-
-public class ComponentsConfigurator extends AbstractJdbcResourceConfigurator {
+final class FxxpipedbDatabaseConfigurator extends AbstractJdbcResourceConfigurator {
    @Override
    public List<Component> defineComponents() {
       List<Component> all = new ArrayList<Component>();
-      
-      all.addAll(new XpipedemodbDatabaseConfigurator().defineComponents());
-      all.add(A(ApolloDataSourceProvider.class));
+
+
+      defineSimpleTableProviderComponents(all, "fxxpipedb", com.ctrip.xpipe.redis.console.web.model._INDEX.getEntityClasses());
+      defineDaoComponents(all, com.ctrip.xpipe.redis.console.web.model._INDEX.getDaoClasses());
+
       return all;
    }
 }
