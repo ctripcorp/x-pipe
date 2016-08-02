@@ -40,7 +40,7 @@ public class MoveSlotFromLiving extends AbstractSlotMoveTask{
 			CommandFuture<Void> importFuture = to.importSlot(slot);
 			
 			if(importFuture.await(taskMaxWaitMilli, TimeUnit.MILLISECONDS)){
-				if(!future.isSuccess()){
+				if(!importFuture.isSuccess()){
 					logger.info("[doExecute][import fail]", importFuture.cause());
 					setFailAndlRollback(new Exception("import fail", importFuture.cause()));
 					return;
@@ -51,8 +51,8 @@ public class MoveSlotFromLiving extends AbstractSlotMoveTask{
 			}
 			
 			CommandFuture<Void> exportFuture = from.exportSlot(slot);
-			if(importFuture.await(taskMaxWaitMilli, TimeUnit.MILLISECONDS)){
-				if(!future.isSuccess()){
+			if(exportFuture.await(taskMaxWaitMilli, TimeUnit.MILLISECONDS)){
+				if(!exportFuture.isSuccess()){
 					logger.info("[doExecute][export fail]", exportFuture.cause());
 					setFailAndlRollback(new Exception("export fail", exportFuture.cause()));
 					return;

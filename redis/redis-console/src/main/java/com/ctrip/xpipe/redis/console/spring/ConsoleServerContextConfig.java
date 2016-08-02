@@ -7,7 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
-import com.ctrip.xpipe.spring.AbstractConfigContext;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import com.ctrip.xpipe.zk.pool.ZkFactory;
 
@@ -18,7 +18,7 @@ import com.ctrip.xpipe.zk.pool.ZkFactory;
  */
 @Configuration
 @ComponentScan({"com.ctrip.xpipe.redis.console"})
-public class ConsoleServerContextConfig extends AbstractConfigContext{
+public class ConsoleServerContextConfig extends AbstractSpringConfigContext{
 
 	@Bean(name= "zkPool")
 	public XpipeKeyedObjectPool<String, CuratorFramework>  getZkPool(){

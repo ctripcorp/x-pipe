@@ -65,7 +65,7 @@ public class AbstractTest {
 	@Before
 	public void beforeAbstractTest() throws IOException{
 		
-		logger.info("[begin test]" + name.getMethodName());
+		logger.info(remarkableMessage("[begin test]" + name.getMethodName()));
 		
 		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
 		setProperties();
@@ -361,6 +361,6 @@ public class AbstractTest {
 		}
 		File file = new File(getTestFileDir());
 		FileUtils.forceDelete(file);
-		logger.info("[end   test]" + name.getMethodName());
+		logger.info(remarkableMessage("[end   test]" + name.getMethodName()));
 	}
 }

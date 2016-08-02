@@ -28,27 +28,32 @@ public class RemoteClusterServer extends AbstractClusterServer{
 
 	private RestTemplate restTemplate;
 	
-	private final String notifySlotChangePath;
+	private String notifySlotChangePath;
 
-	private final String exportSlotChangePath;
+	private String exportSlotChangePath;
 
-	private final String importSlotChangePath;
+	private String importSlotChangePath;
+
+	public RemoteClusterServer(int serverId) {
+		this(serverId, null);
+	}
 
 	public RemoteClusterServer(int serverId, ClusterServerInfo clusterServerInfo) {
 		super(serverId, clusterServerInfo);
-		
-		HttpClient httpClient = HttpClientBuilder.create()
-				.setMaxConnPerRoute(maxConnPerRoute)
-				.setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(soTimeout).build())
-				.setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectTimeout).build())
-				.build();
-		ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient); 
-		restTemplate = new RestTemplate(factory);
-		
-		String httpHost = String.format("http://%s:%d", clusterServerInfo.getIp(), clusterServerInfo.getPort());
-		notifySlotChangePath = String.format("http://%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_NOTIFY_SLOT_CHANGE);
-		exportSlotChangePath = String.format("http://%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_EXPORT_SLOT);
-		importSlotChangePath = String.format("http://%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_IMPORT_SLOT);
+		if(clusterServerInfo != null){
+			HttpClient httpClient = HttpClientBuilder.create()
+					.setMaxConnPerRoute(maxConnPerRoute)
+					.setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(soTimeout).build())
+					.setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectTimeout).build())
+					.build();
+			ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient); 
+			restTemplate = new RestTemplate(factory);
+			
+			String httpHost = String.format("http://%s:%d", clusterServerInfo.getIp(), clusterServerInfo.getPort());
+			notifySlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_NOTIFY_SLOT_CHANGE);
+			exportSlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_EXPORT_SLOT);
+			importSlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_IMPORT_SLOT);
+		}
 	}
 
 	@Override
@@ -83,6 +88,7 @@ public class RemoteClusterServer extends AbstractClusterServer{
 
 		@Override
 		protected void doExecute() throws Exception {
+		
 			restTemplate.postForObject(path, null, String.class, slotId);
 			future.setSuccess();
 		}

@@ -81,6 +81,7 @@ public class ArrangeTaskTrigger {
 		if(deadServer == null){
 			arrangeTaskExecutor.offer(new ServerBalanceResharding(slotManager, clusterServers, zkClient));
 		}else{
+			logger.info("[serverAlive][dead server alive]{}", clusterServer);
 			deadServer.serverAlive();
 		}
 	}

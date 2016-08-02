@@ -44,6 +44,8 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 	
 	private ExecutorService executors  = Executors.newCachedThreadPool(XpipeThreadFactory.create("META-SREVER-LEADER-ELECTOR"));
 	
+	private volatile boolean isLeader = false; 
+	
 	
 	@Override
 	protected void doStart() throws Exception {
@@ -63,6 +65,7 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 	@Override
 	public void isLeader() {
 		logger.info("[isLeader]");
+		isLeader = true;
 		Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
 		for(Entry<String, LeaderAware> entry : leaderawares.entrySet()){
 			logger.info("[isLeader][notify]{}", entry.getKey());
@@ -73,6 +76,7 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 	@Override
 	public void notLeader() {
 		logger.info("[notLeader]");
+		isLeader = false;
 		Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
 		for(Entry<String, LeaderAware> entry : leaderawares.entrySet()){
 			logger.info("[notLeader][notify]{}", entry.getKey());
@@ -83,6 +87,10 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		this.applicationContext = applicationContext;
+	}
+	
+	public boolean amILeader(){
+		return isLeader;
 	}
 
 	@Override

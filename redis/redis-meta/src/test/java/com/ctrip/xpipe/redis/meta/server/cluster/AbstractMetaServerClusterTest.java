@@ -1,17 +1,15 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
 
+
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-
-import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
+import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
 /**
@@ -21,12 +19,23 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
  */
 public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 	
-	private List<ApplicationContext>  servers = new LinkedList<>(); 
+	private List<TestAppServer>  servers = new LinkedList<>();
+	private int zkPort = randomPort();
 	
 	@Before
 	public void beforeAbstractMetaServerClusterTest(){
+		
+		startZk(zkPort);
 	}
 	
+	protected CuratorFramework getCuratorFramework() throws Exception{
+		
+		ZkClient client = new DefaultZkClient();
+		client.setZkAddress(String.format("localhost:%d", zkPort));
+		client.initialize();
+		client.start();
+		return client.get();
+	}
 	
 	@Override
 	protected ApplicationContext createSpringContext() {
@@ -35,29 +44,38 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 	
 	protected void createMetaServers(int serverCount) throws Exception{
 		
-		for(int i=0;i<serverCount;i++){
+		
+		for(int i=0 ; i<serverCount ; i++){
 			
 			int port = randomPort();
-			ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MetaServerContextConfig.class);
-			
-			
-			DefaultZkClient client = applicationContext.getBean(DefaultZkClient.class);
-			client.setZkAddress(getZkAddress());
-
-			DefaultMetaServerConfig config = applicationContext.getBean(DefaultMetaServerConfig.class);
-			config.setZkConnectionString(getZkAddress());
-			config.setDefaultMetaServerId(i + 1);
-			config.setDefaultServerPort(port);
-			
-			
-			SpringComponentLifecycleManager lifeCycleManager = applicationContext.getBean(SpringComponentLifecycleManager.class);
-			lifeCycleManager.startAll();
-			
-			servers.add(applicationContext);
+			TestAppServer testAppServer = new TestAppServer(i + 1, port, zkPort);
+			testAppServer.start();
+			servers.add(testAppServer);
 		}
 	}
 	
+	public List<TestAppServer> getServers() {
+		return servers;
+	}
 	
-	
-	
+	public TestAppServer getLeader(){
+		
+		for(TestAppServer server : servers){
+			if(server.isLeader()){
+				return server;
+			}
+		}
+		return null;
+	}
+
+	public TestAppServer getRandomNotLeader(){
+		
+		for(TestAppServer server : servers){
+			if(!server.isLeader()){
+				return server;
+			}
+		}
+		return null;
+	}
+
 }

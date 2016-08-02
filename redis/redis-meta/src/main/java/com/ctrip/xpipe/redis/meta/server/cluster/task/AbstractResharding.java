@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,6 +49,16 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 		this(Executors.newCachedThreadPool(XpipeThreadFactory.create("Sharding")), slotManager, servers, zkClient);
 	}
 
+	@Override
+	protected void doExecute() throws Exception {
+		
+		doShardingTask();
+		
+		allTaskSubmited();
+	}
+	
+
+	protected abstract void doShardingTask() throws Exception;
 
 	protected void notifyAliveServers(int slotId) {
 		
@@ -107,5 +118,10 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 			logger.info("[checkTaskFinish][finish]");
 			future.setSuccess(null);
 		}
+	}
+	
+	@Override
+	protected void doReset() throws InterruptedException, ExecutionException {
+		throw new UnsupportedOperationException();
 	}
 }
