@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-sources>
-   <data-source id="xpipedemodb">
+   <data-source id="fxxpipedb">
       <maximum-pool-size>3</maximum-pool-size>
       <connection-timeout>1s</connection-timeout>
       <idle-timeout>1m</idle-timeout>
       <statement-cache-size>1000</statement-cache-size>
       <properties>
          <driver>com.mysql.jdbc.Driver</driver>
-         <url><![CDATA[jdbc:mysql://localhost:3306/xpipedemodb]]></url>
-         <user>root</user>
-         <password>root</password>
+         <url><![CDATA[jdbc:mysql://pub.mysql.db.dev.sh.ctripcorp.com:28747/fxxpipedb]]></url>
+         <user>us_dev_shyin</user>
+         <password>~{f4feb3d4a2c5c3764ed29583cce7b7fcd0b2b620e0e0e0f0f2e4bcccd71c6}</password>
          <connectionProperties><![CDATA[useUnicode=true&amp;characterEncoding=UTF-8&amp;autoReconnect=true]]></connectionProperties>
       </properties>
    </data-source>

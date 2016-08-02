@@ -11,7 +11,6 @@ final class XpipedemodbDatabaseConfigurator extends AbstractJdbcResourceConfigur
    public List<Component> defineComponents() {
       List<Component> all = new ArrayList<Component>();
 
-
       defineSimpleTableProviderComponents(all, "xpipedemodb", com.ctrip.xpipe.redis.console.web.model._INDEX.getEntityClasses());
       defineDaoComponents(all, com.ctrip.xpipe.redis.console.web.model._INDEX.getDaoClasses());
 

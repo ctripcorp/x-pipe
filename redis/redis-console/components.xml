@@ -164,8 +164,10 @@
 		</component>
 		<component>
 			<role>org.unidal.dal.jdbc.datasource.DataSourceProvider</role>
-			<role-hint>apollo</role-hint>
-			<implementation>com.ctrip.framework.apollo.ds.ApolloDataSourceProvider</implementation>
+			<implementation>org.unidal.dal.jdbc.datasource.DefaultDataSourceProvider</implementation>
+			<configuration>
+				<datasourceFile>/opt/ctrip/data/xpipe/datasources.xml</datasourceFile>
+			</configuration>
 		</component>
 	</components>
 </plexus>

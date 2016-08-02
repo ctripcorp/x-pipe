@@ -4,6 +4,7 @@
     <member name="cluster-id" field="cluster_id" value-type="String" length="30" nullable="false" key="true" />
     <member name="activedc-id" field="activedc_id" value-type="String" length="30" />
     <member name="cluster-description" field="cluster_description" value-type="String" length="180" />
+    <member name="cluster-last-modified-time" field="cluster_last_modified_time" value-type="String" length="20" />
     <var name="key-cluster-id" value-type="String" key-member="cluster-id" />
     <primary-key name="PRIMARY" members="cluster_id" />
     <readsets>
@@ -40,6 +41,9 @@
     <member name="dc-cluster-shard-id" field="dc_cluster_shard_id" value-type="int" length="10" nullable="false" key="true" auto-increment="true" />
     <member name="dc-cluster-id" field="dc_cluster_id" value-type="int" length="10" />
     <member name="shard-id" field="shard_id" value-type="int" length="10" />
+    <member name="setinel-id" field="setinel_id" value-type="String" length="30" />
+    <member name="setinel-monitor-name" field="setinel_monitor_name" value-type="String" length="30" />
+    <member name="dc-cluster-shard-phase" field="dc_cluster_shard_phase" value-type="int" length="10" />
     <var name="key-dc-cluster-shard-id" value-type="int" key-member="dc-cluster-shard-id" />
     <primary-key name="PRIMARY" members="dc_cluster_shard_id" />
     <readsets>
@@ -77,6 +81,7 @@
     <member name="dc-id" field="dc_id" value-type="String" length="30" />
     <member name="cluster-id" field="cluster_id" value-type="String" length="30" />
     <member name="metaserver-id" field="metaserver_id" value-type="String" length="30" />
+    <member name="dc-cluster-phase" field="dc_cluster_phase" value-type="int" length="10" />
     <var name="key-dc-cluster-id" value-type="int" key-member="dc-cluster-id" />
     <primary-key name="PRIMARY" members="dc_cluster_id" />
     <readsets>
@@ -113,6 +118,7 @@
     <member name="dc-id" field="dc_id" value-type="String" length="30" nullable="false" key="true" />
     <member name="dc-active" field="dc_active" value-type="boolean" />
     <member name="dc-description" field="dc_description" value-type="String" length="180" />
+    <member name="dc-last-modified-time" field="dc_last_modified_time" value-type="String" length="20" />
     <var name="key-dc-id" value-type="String" key-member="dc-id" />
     <primary-key name="PRIMARY" members="dc_id" />
     <index name="dc_id" unique="true" members="dc_id ASC" />
@@ -148,6 +154,7 @@
   </entity>
   <entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
     <member name="keepercontainer-id" field="keepercontainer_id" value-type="int" length="10" nullable="false" key="true" auto-increment="true" />
+    <member name="keepercontainer-dc" field="keepercontainer_dc" value-type="String" length="30" />
     <member name="keepercontainer-ip" field="keepercontainer_ip" value-type="String" length="40" />
     <member name="keepercontainer-port" field="keepercontainer_port" value-type="int" length="10" />
     <member name="keepercontainer-active" field="keepercontainer_active" value-type="boolean" />
@@ -263,7 +270,44 @@
       </query>
     </query-defs>
   </entity>
-  <entity name="shard-tbl" table="SHARD_TBL" alias="st">
+  <entity name="setinel-tbl" table="SETINEL_TBL" alias="st">
+    <member name="setinel-id" field="setinel_id" value-type="String" length="30" nullable="false" key="true" />
+    <member name="dc-id" field="dc_id" value-type="String" length="30" />
+    <member name="setinel-address" field="setinel_address" value-type="String" length="80" />
+    <member name="setinel-description" field="setinel_description" value-type="String" length="120" />
+    <var name="key-setinel-id" value-type="String" key-member="setinel-id" />
+    <primary-key name="PRIMARY" members="setinel_id" />
+    <readsets>
+      <readset name="FULL" all="true" />
+    </readsets>
+    <updatesets>
+      <updateset name="FULL" all="true" />
+    </updatesets>
+    <query-defs>
+      <query name="find-by-PK" type="SELECT">
+        <param name="key-setinel-id" />
+        <statement><![CDATA[SELECT <FIELDS/>
+        FROM <TABLE/>
+        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}]]></statement>
+      </query>
+      <query name="insert" type="INSERT">
+        <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
+        VALUES(<VALUES/>)]]></statement>
+      </query>
+      <query name="update-by-PK" type="UPDATE">
+        <param name="key-setinel-id" />
+        <statement><![CDATA[UPDATE <TABLE/>
+        SET <FIELDS/>
+        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}]]></statement>
+      </query>
+      <query name="delete-by-PK" type="DELETE">
+        <param name="key-setinel-id" />
+        <statement><![CDATA[DELETE FROM <TABLE/>
+        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}]]></statement>
+      </query>
+    </query-defs>
+  </entity>
+  <entity name="shard-tbl" table="SHARD_TBL" alias="st2">
     <member name="shard-id" field="shard_id" value-type="String" length="30" nullable="false" key="true" />
     <member name="cluster-id" field="cluster_id" value-type="String" length="30" />
     <var name="key-shard-id" value-type="String" key-member="shard-id" />
