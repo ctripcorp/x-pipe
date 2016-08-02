@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.cluster;
 
 
 
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -11,8 +12,7 @@ import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 import org.springframework.web.context.support.StandardServletEnvironment;
 
-import com.ctrip.xpipe.api.lifecycle.Startable;
-import com.ctrip.xpipe.api.lifecycle.Stoppable;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTrigger;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.MetaserverLeaderElector;
@@ -28,7 +28,7 @@ import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
  */
 @EnableAutoConfiguration
 @Import(com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.class)
-public class TestAppServer implements Startable, Stoppable{
+public class TestAppServer extends AbstractLifecycle{
 	
 	private static final int waitForRestartTimeMills = 1000;
 	private static final int zkSessionTimeoutMillis = 5000;
@@ -57,7 +57,7 @@ public class TestAppServer implements Startable, Stoppable{
 	
 	
 	@Override
-	public void start() throws Exception{
+	public void doStart() throws Exception{
 		
 		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, configFile);
 		System.setProperty("TOTAL_SLOTS", String.valueOf(total_slots));
@@ -86,7 +86,7 @@ public class TestAppServer implements Startable, Stoppable{
 	}
 	
 	@Override
-	public void stop() throws Exception {
+	public void doStop() throws Exception {
 		context.close();
 	}
 	
@@ -127,9 +127,16 @@ public class TestAppServer implements Startable, Stoppable{
 	}
 	
 	public boolean isLeader(){
-		
-		MetaserverLeaderElector metaserverLeaderElector = context.getBean(MetaserverLeaderElector.class);
-		return metaserverLeaderElector.amILeader();
+
+		if(getLifecycleState().isStarted()){
+			try{
+				MetaserverLeaderElector metaserverLeaderElector = context.getBean(MetaserverLeaderElector.class);
+				return metaserverLeaderElector.amILeader();
+			}catch(Exception e){
+				return false;
+			}
+		}
+		return false;
 	}
 	
 	public int getServerId() {

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.ReshardingTask;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -24,8 +25,14 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement, Runnable{
 	
 	private BlockingQueue<ReshardingTask> tasks = new LinkedBlockingQueue<>();
-	private int waitTaskTimeoutMilli =  60000; 
+	
+	private int waitTaskTimeoutMilli =  60000;
+	
 	private CommandFuture<Void> currentTask = null;
+	
+	@Autowired
+	private CurrentClusterServer currentClusterServer;
+	
 	private AtomicLong totalTasks = new AtomicLong(0);
 	
 	@Autowired
@@ -95,7 +102,7 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 		try{
 			
 			task = tasks.take();
-			logger.info("[executeTask][begin]{}", task);
+			logger.info("[executeTask][begin]{}, {}", task, currentClusterServer.getServerId());
 			
 			try {
 				slotManager.refresh();//get most refresh info
@@ -113,7 +120,7 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 				logger.error("[executTask][fail]" + task, currentTask.cause());
 			}
 		}finally{
-			logger.info("[executeTask][end]{}", task);
+			logger.info("[executeTask][ end ]{}, {}", task, currentClusterServer.getServerId());
 			currentTask = null;
 		}
 	}

@@ -49,6 +49,7 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 			
 			int port = randomPort();
 			TestAppServer testAppServer = new TestAppServer(i + 1, port, zkPort);
+			testAppServer.initialize();
 			testAppServer.start();
 			servers.add(testAppServer);
 		}
