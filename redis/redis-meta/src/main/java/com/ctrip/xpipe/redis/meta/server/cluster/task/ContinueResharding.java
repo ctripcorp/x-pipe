@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.SLOT_STATE;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
-import com.ctrip.xpipe.redis.meta.server.cluster.impl.RemoteClusterServer;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractRemoteClusterServer;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -23,7 +23,7 @@ public class ContinueResharding extends AbstractResharding{
 	
 	private Map<Integer, SlotInfo> slotInfos;
 	
-	public ContinueResharding(SlotManager slotManager, Map<Integer, SlotInfo> slotInfos, ClusterServers servers, ZkClient zkClient) {
+	public ContinueResharding(SlotManager slotManager, Map<Integer, SlotInfo> slotInfos, ClusterServers<?> servers, ZkClient zkClient) {
 		super(slotManager, servers, zkClient);
 		this.slotInfos = slotInfos;
 
@@ -46,11 +46,11 @@ public class ContinueResharding extends AbstractResharding{
 			
 			ClusterServer from = servers.getClusterServer(slotInfo.getServerId());
 			if(from == null){
-				from = new RemoteClusterServer(slotInfo.getServerId(), null);
+				from = new AbstractRemoteClusterServer(slotInfo.getServerId(), null);
 			}
 			ClusterServer to = servers.getClusterServer(slotInfo.getToServerId());
 			if(to == null){
-				to = new RemoteClusterServer(slotInfo.getToServerId(), null);
+				to = new AbstractRemoteClusterServer(slotInfo.getToServerId(), null);
 			}
 			executeTask(new MoveSlotFromLiving(slot, from, to, zkClient));
 		}

@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.meta.server.impl;
 
 
 
+
 import java.net.InetSocketAddress;
+import java.util.List;
 
 import javax.annotation.Resource;
 
@@ -13,12 +15,17 @@ import com.ctrip.xpipe.api.cluster.ShardArrange;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dao.MetaServerDao;
 import com.ctrip.xpipe.redis.meta.server.service.MetaServerService;
@@ -30,7 +37,7 @@ import com.ctrip.xpipe.utils.IpUtils;
  *         May 25, 2016 5:24:27 PM
  */
 @Component
-public class DefaultMetaServer extends AbstractLifecycleObservable implements MetaServer {
+public class DefaultMetaServer extends AbstractCurrentClusterServer implements MetaServer {
 	
 	@Autowired
 	private ShardArrange<String>  shardarrange;
@@ -53,6 +60,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 	
 	@Override
 	protected void doInitialize() throws Exception {
+		super.doInitialize();
 		
 		LifecycleHelper.initializeIfPossible(metaServerDao);
 		LifecycleHelper.initializeIfPossible(keeperElectorManager);
@@ -60,6 +68,7 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 
 	@Override
 	protected void doStart() throws Exception {
+		super.doStart();
 		
 		LifecycleHelper.startIfPossible(metaServerDao);
 		LifecycleHelper.startIfPossible(keeperElectorManager);
@@ -86,7 +95,8 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		
 		LifecycleHelper.stopIfPossible(keeperElectorManager);
 		LifecycleHelper.stopIfPossible(metaServerDao);
-
+		
+		super.doStop();
 	}
 	
 	@Override
@@ -94,6 +104,8 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		
 		LifecycleHelper.disposeIfPossible(keeperElectorManager);
 		LifecycleHelper.disposeIfPossible(metaServerDao);
+		
+		super.doDispose();
 	}
 
 	@Override
@@ -157,5 +169,57 @@ public class DefaultMetaServer extends AbstractLifecycleObservable implements Me
 		return 0;
 	}
 
+	@Override
+	public List<KeeperTransMeta> getKeepersByKeeperContainer(KeeperContainerMeta keeperContainerMeta) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
+	@Override
+	public void addKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void removeKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setKeepers(String clusterId, String shardId, KeeperMeta keeperMeta, List<KeeperMeta> keeperMetas) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void clusterChanged(String clusterId) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public DcMeta getDynamicInfo() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<MetaServerMeta> getAllMetaServers() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public List<KeeperTransMeta> getAllKeepersByKeeperContainer(KeeperContainerMeta keeperContainerMeta) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

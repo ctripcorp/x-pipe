@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
@@ -30,8 +29,7 @@ import com.ctrip.xpipe.zk.ZkClient;
  *
  * Jul 25, 2016
  */
-@Component
-public class DefaultCurrentClusterServer extends AbstractClusterServer implements CurrentClusterServer, TopElement{
+public class AbstractCurrentClusterServer extends AbstractClusterServer implements CurrentClusterServer, TopElement{
 	
 
 	@Autowired
@@ -52,7 +50,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	private ExecutorService executors;
 
 	
-	public DefaultCurrentClusterServer() {
+	public AbstractCurrentClusterServer() {
 	}
 
 	@Override

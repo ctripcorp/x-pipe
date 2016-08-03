@@ -15,7 +15,7 @@ public interface MetaServerKeeperService extends MetaServerService{
 
 	/***********************for keeper*******************/
 	
-	void ping(KeeperInstanceMeta keeperInstanceMeta);
+	void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta);
 
 	
 	/***********************for container*******************/

@@ -20,7 +20,7 @@ import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
  *
  * Jul 26, 2016
  */
-public class RemoteClusterServer extends AbstractClusterServer{
+public class AbstractRemoteClusterServer extends AbstractClusterServer{
 	
 	private int maxConnPerRoute = Integer.parseInt(System.getProperty("remoteMaxConnPerRoute", "5"));
 	private int connectTimeout = Integer.parseInt(System.getProperty("remoteConnectTimeout", "5000"));
@@ -34,11 +34,11 @@ public class RemoteClusterServer extends AbstractClusterServer{
 
 	private String importSlotChangePath;
 
-	public RemoteClusterServer(int serverId) {
+	public AbstractRemoteClusterServer(int serverId) {
 		this(serverId, null);
 	}
 
-	public RemoteClusterServer(int serverId, ClusterServerInfo clusterServerInfo) {
+	public AbstractRemoteClusterServer(int serverId, ClusterServerInfo clusterServerInfo) {
 		super(serverId, clusterServerInfo);
 		if(clusterServerInfo != null){
 			HttpClient httpClient = HttpClientBuilder.create()

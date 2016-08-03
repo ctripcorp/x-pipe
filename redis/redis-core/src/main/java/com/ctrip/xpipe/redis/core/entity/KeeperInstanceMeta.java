@@ -5,6 +5,10 @@ package com.ctrip.xpipe.redis.core.entity;
  *
  * Aug 2, 2016
  */
-public class KeeperInstanceMeta {
+public class KeeperInstanceMeta extends KeeperTransMeta{
+
+	public KeeperInstanceMeta(String clusterId, String shardId, KeeperMeta keeperMeta) {
+		super(clusterId, shardId, keeperMeta);
+	}
 
 }

@@ -6,13 +6,15 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
+import com.ctrip.xpipe.redis.meta.server.rest.AllMetaServerService;
 
 /**
  * @author marsqing
  *
  *         May 25, 2016 2:37:05 PM
  */
-public interface MetaServer extends TopElement{
+public interface MetaServer extends ClusterServer, AllMetaServerService, TopElement{
 
 	KeeperMeta getActiveKeeper(String clusterId, String shardId);
 

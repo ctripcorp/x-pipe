@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
  */
 public class DefaultClusterServersTest extends AbstractMetaServerTest{
 	
-	private DefaultClusterServers servers;
+	private AbstractClusterServers servers;
 	
 	@Before
 	public void beforeDefaultClusterServersTest() throws Exception{
@@ -25,7 +25,7 @@ public class DefaultClusterServersTest extends AbstractMetaServerTest{
 		initRegistry();
 		startRegistry();
 		
-		servers = (DefaultClusterServers) getBean(ClusterServers.class);
+		servers = (AbstractClusterServers) getBean(ClusterServers.class);
 	}
 	
 	@Test
