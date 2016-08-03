@@ -47,7 +47,7 @@ public class ClusterController {
 		dcTbl1.setDcId("DC-JQ");
 		ClusterVO.DC dc1 = new ClusterVO.DC();
 		dc1.setBaseInfo(dcTbl1);
-		dc1.setShards(Arrays.asList(shard));
+		dc1.setShards(Arrays.asList(shard, shard));
 
 		DcTbl dcTbl2 = new DcTbl();
 		dcTbl2.setDcId("DC-FQ");
