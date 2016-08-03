@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActiveTest;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackupTest;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateUnknownTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
+import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 
 /**
  * @author wenchao.meng
@@ -22,7 +23,8 @@ import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
 	PsyncTest.class,
 	RedisKeeperServerStateBackupTest.class,
 	RedisKeeperServerStateActiveTest.class,
-	RedisKeeperServerStateUnknownTest.class
+	RedisKeeperServerStateUnknownTest.class,
+	KeeperContainerServiceTest.class
 })
 public class AllTests {
 
