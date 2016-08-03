@@ -44,6 +44,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 	public void becomeActive(InetSocketAddress masterAddress) {
 		
 		try {
+			logger.info("[becomeActive][backup->active] {}", this);
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 			replicationStore.getMetaStore().becomeActive();
 			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, masterAddress));

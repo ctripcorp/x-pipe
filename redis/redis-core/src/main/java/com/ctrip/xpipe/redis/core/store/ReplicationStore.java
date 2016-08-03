@@ -38,4 +38,6 @@ public interface ReplicationStore extends Closeable {
 	File newRdbFile();
 
 	boolean fullSyncIfPossible(RdbFileListener defaultRdbFileListener) throws IOException;
+
+	boolean isFresh();
 }

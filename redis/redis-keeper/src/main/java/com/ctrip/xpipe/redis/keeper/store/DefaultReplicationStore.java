@@ -254,4 +254,9 @@ public class DefaultReplicationStore implements ReplicationStore {
 		}
 	}
 
+	@Override
+	public boolean isFresh() {
+		return metaStore == null || metaStore.getMasterRunid() == null;
+	}
+
 }

@@ -224,7 +224,9 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			}
 			psyncState = PSYNC_STATE.READING_RDB;
 			
-			doWhenFullSync(masterRunid);
+			if(currentReplicationStore == null || !currentReplicationStore.isFresh()){
+				doWhenFullSyncToNonFreshReplicationStore(masterRunid);
+			}
 		}else if(split[0].equalsIgnoreCase(PARTIAL_SYNC)){
 			
 			psyncState = PSYNC_STATE.READING_COMMANDS;
@@ -234,7 +236,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		}
 	}
 
-	protected abstract void doWhenFullSync(String masterRunid) throws IOException;
+	protected abstract void doWhenFullSyncToNonFreshReplicationStore(String masterRunid) throws IOException;
 
 	private void notifyContinue() {
 		

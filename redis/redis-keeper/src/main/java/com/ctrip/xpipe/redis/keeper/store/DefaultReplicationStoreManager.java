@@ -57,6 +57,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 		this.baseDir = new File(baseDir, clusterName + "/" + shardName);
 		metaFile = new File(this.baseDir, META_FILE);
 
+		// TODO move to manager of manager and add "close" logic
 		Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("gc", true)).scheduleWithFixedDelay(new Runnable() {
 
 			@Override
@@ -67,7 +68,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 					e.printStackTrace();
 				}
 			}
-		}, 10, 10, TimeUnit.SECONDS);
+		}, config.getReplicationStoreGcIntervalSeconds(), config.getReplicationStoreGcIntervalSeconds(), TimeUnit.SECONDS);
 	}
 
 	@Override

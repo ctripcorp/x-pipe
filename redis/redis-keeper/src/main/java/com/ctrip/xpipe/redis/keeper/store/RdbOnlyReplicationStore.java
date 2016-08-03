@@ -191,4 +191,10 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 		return false;
 	}
 
+	@Override
+	public boolean isFresh() {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
 }
