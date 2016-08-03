@@ -38,7 +38,7 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 			logger.debug("[doIn]" + byteBuf.readableBytes());
 		}
 		
-		return replicationStore.writeRdb(byteBuf);
+		return replicationStore.getRdbStore().writeRdb(byteBuf);
 	}
 
 	@Override
@@ -50,7 +50,7 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	public long doOut(WritableByteChannel writableByteChannel) throws IOException {
 		
 		this.writableByteChannel = writableByteChannel;
-		replicationStore.readRdbFile(this);
+		replicationStore.getRdbStore().readRdbFile(this);
 		return 0;
 	}
 
@@ -100,6 +100,11 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
    public boolean isStop() {
 	   return stop.get();
    }
+
+
+	@Override
+	public void beforeFileData() {
+	}
 
 
 }

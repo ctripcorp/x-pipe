@@ -2,9 +2,11 @@ package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
@@ -37,7 +39,7 @@ public class DefaultClusterApi implements ClusterApi{
 	
 	@RequestMapping(path = PATH_NOTIFY_SLOT_CHANGE, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
-	public void notifySlotChange(int slotId) {
+	public void notifySlotChange(@PathVariable int slotId) {
 		currentClusterServer.notifySlotChange(slotId);
 	}
 
@@ -52,4 +54,13 @@ public class DefaultClusterApi implements ClusterApi{
 	public void importSlot(@PathVariable int slotId) throws Exception{
 		currentClusterServer.importSlot(slotId).sync();
 	}
+	
+	@ExceptionHandler
+	@ResponseBody
+	public String handleException(Exception e){
+		e.printStackTrace();
+		return e.getMessage();
+	}
+
+	
 }

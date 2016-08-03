@@ -36,14 +36,25 @@ public class AbstractMetaServerTest extends AbstractRedisTest{
 	@Before
 	public void beforeAbstractMetaServerTest() throws Exception{
 		arrangeTaskStart(false);
-		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
 		
 		int zkPort = randomPort();
-		startZk(zkPort);
+		if(isStartZk()){
+			startZk(zkPort);
+		}
 		
 		zkAddress = String.format("localhost:%d", zkPort);
-		
 		getZkClient();//set zk address and start
+	}
+	
+	protected boolean isStartZk() {
+		return true;
+	}
+
+	@Override
+	protected void setProperties() {
+		super.setProperties();
+		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
+		System.setProperty("TOTAL_SLOTS", "16");
 	}
 	
 	
@@ -60,11 +71,16 @@ public class AbstractMetaServerTest extends AbstractRedisTest{
 	
 	public ZkClient getZkClient() throws Exception {
 		
-		ZkClient zkClient = getBean(ZkClient.class);
-		((DefaultZkClient)zkClient).setZkAddress(zkAddress);
-		LifecycleHelper.initializeIfPossible(zkClient);
-		LifecycleHelper.startIfPossible(zkClient);
-		return zkClient;
+		try{
+			ZkClient zkClient = getBean(ZkClient.class);
+			((DefaultZkClient)zkClient).setZkAddress(zkAddress);
+			LifecycleHelper.initializeIfPossible(zkClient);
+			LifecycleHelper.startIfPossible(zkClient);
+			return zkClient;
+		}catch(Exception e){
+			logger.info(e.getMessage());
+			return null;
+		}
 	}
 
 	public CuratorFramework getCurator() throws Exception {

@@ -291,7 +291,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void readRdbFile(RdbFileListener rdbFileListener) throws IOException {
-		getCurrentReplicationStore().readRdbFile(rdbFileListener);
+		getCurrentReplicationStore().getRdbStore().readRdbFile(rdbFileListener);
 	}
 	
 	@Override
@@ -418,6 +418,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		logger.info("[promoteSlave]{}:{}", ip, port);
 		RedisPromotor promotor = new RedisPromotor(this, ip, port);
 		promotor.promote();
+	}
+	
+	@Override
+	public void fullSyncToSlave(final RedisSlave redisSlave) throws IOException {
+		keeperRedisMaster.fullSyncToSlave(redisSlave);
 	}
 
 }

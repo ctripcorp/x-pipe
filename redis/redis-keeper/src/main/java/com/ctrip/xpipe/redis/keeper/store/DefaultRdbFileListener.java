@@ -84,4 +84,8 @@ public class DefaultRdbFileListener implements RdbFileListener{
 			logger.error("[exception]" + redisSlave, e1);
 		}
 	}
+
+	@Override
+	public void beforeFileData() {
+	}
 }

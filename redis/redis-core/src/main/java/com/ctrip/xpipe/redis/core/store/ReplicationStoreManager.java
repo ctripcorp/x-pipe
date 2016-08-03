@@ -9,8 +9,6 @@ import java.io.IOException;
  */
 public interface ReplicationStoreManager {
 	
-	ReplicationStore createIfDirtyOrNotExist() throws IOException;
-	
 	ReplicationStore createIfNotExist() throws IOException;
 
 	/**
@@ -34,4 +32,6 @@ public interface ReplicationStoreManager {
 	String getClusterName();
 	
 	String getShardName();
+
+	ReplicationStore create(String masterRunid, long keeperBeginOffset) throws IOException;
 }

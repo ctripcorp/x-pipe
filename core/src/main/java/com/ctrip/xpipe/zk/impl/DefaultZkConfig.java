@@ -16,6 +16,9 @@ import com.ctrip.xpipe.zk.ZkConfig;
  * Jun 23, 2016
  */
 public class DefaultZkConfig implements ZkConfig{
+	
+	private int zkSessionTimeoutMillis = 5000;
+	
 
 	@Override
 	public int getZkConnectionTimeoutMillis() {
@@ -44,7 +47,11 @@ public class DefaultZkConfig implements ZkConfig{
 
 	@Override
 	public int getZkSessionTimeoutMillis() {
-		return 5000;
+		return zkSessionTimeoutMillis;
+	}
+	
+	public void setZkSessionTimeoutMillis(int zkSessionTimeoutMillis) {
+		this.zkSessionTimeoutMillis = zkSessionTimeoutMillis;
 	}
 
 	@Override

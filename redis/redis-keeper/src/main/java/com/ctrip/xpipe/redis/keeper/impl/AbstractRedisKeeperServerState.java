@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.slf4j.Logger;
@@ -103,7 +104,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	protected abstract  void keeperMasterChanged();
 
 	@Override
-	public void setPromotionState(PROMOTION_STATE promotionState) {
+	public void setPromotionState(PROMOTION_STATE promotionState) throws IOException {
 		this.setPromotionState(promotionState, null);
 	}
 

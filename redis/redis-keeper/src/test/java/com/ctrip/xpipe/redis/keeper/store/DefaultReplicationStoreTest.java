@@ -31,15 +31,22 @@ public class DefaultReplicationStoreTest {
 
 		final CountDownLatch latch = new CountDownLatch(cmdCount * cmdLen);
 		final StringBuffer got = new StringBuffer();
-		store.addCommandsListener(0, new CommandsListener() {
+		store.getCommandStore().addCommandsListener(0, new CommandsListener() {
 
 			@Override
 			public void onCommand(ByteBuf byteBuf) {
 				int len = byteBuf.readableBytes();
-				got.append(new String(byteBuf.array(), byteBuf.arrayOffset(), len));
+				byte[] dst = new byte[len];
+				byteBuf.readBytes(dst);
+				got.append(new String(dst, 0, len));
 				for (int i = 0; i < len; i++) {
 					latch.countDown();
 				}
+			}
+
+			@Override
+			public boolean isOpen() {
+				return true;
 			}
 		});
 
@@ -49,7 +56,7 @@ public class DefaultReplicationStoreTest {
 			String cmd = UUID.randomUUID().toString().substring(0, cmdLen);
 			exp.append(cmd);
 			buf.writeBytes(cmd.getBytes());
-			store.appendCommands(buf);
+			store.getCommandStore().appendCommands(buf);
 		}
 
 		assertTrue(latch.await(1, TimeUnit.SECONDS));

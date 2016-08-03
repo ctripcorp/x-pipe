@@ -222,7 +222,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 			for(int slotId : slotIds){
 				SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
 				if(slotInfo.getSlotState() == SLOT_STATE.MOVING && slotInfo.getServerId() == getServerId()){
-					logger.info("[doExecute][export]{}, {}", slotId, slotInfo);
+					logger.info("[doExecute][export]{}, {}({})", slotId, slotInfo, getServerId());
 				}else{
 					throw new IllegalStateException("error export " + slotId + "," + slotInfo);
 				}

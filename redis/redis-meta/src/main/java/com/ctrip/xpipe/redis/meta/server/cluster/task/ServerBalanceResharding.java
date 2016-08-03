@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
@@ -20,7 +19,7 @@ public class ServerBalanceResharding extends AbstractResharding{
 	}
 
 	@Override
-	protected void doExecute() throws Exception {
+	protected void doShardingTask() throws Exception {
 		
 		Set<ClusterServer> aliveServers = servers.allClusterServers();
 		if(aliveServers.size() == 0){
@@ -36,6 +35,7 @@ public class ServerBalanceResharding extends AbstractResharding{
 		for(ClusterServer clusterServer : aliveServers){
 			
 			int currentSlots = slotManager.getSlotsSizeByServerId(clusterServer.getServerId());
+			logger.info("[doExecute]{}, {}", clusterServer, currentSlots);
 			if(currentSlots < average/2){
 				easyServer = clusterServer;
 				break;
@@ -43,7 +43,7 @@ public class ServerBalanceResharding extends AbstractResharding{
 		}
 		
 		if(easyServer == null){
-			logger.info("[doExecute][no easy server][exit]");
+			logger.info("[doExecute][no easy server][exit]{}", servers.allClusterServers());
 			future.setSuccess(null);
 			return;
 		}
@@ -80,14 +80,10 @@ public class ServerBalanceResharding extends AbstractResharding{
 			if(currentMove >= moveSize){
 				break;
 			}
-			
 			executeTask(new MoveSlotFromLiving(slot, fromServer, toServer, zkClient));
+			currentMove++;
 		}
 	}
 
 
-	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
-		throw new UnsupportedOperationException();
-	}
 }

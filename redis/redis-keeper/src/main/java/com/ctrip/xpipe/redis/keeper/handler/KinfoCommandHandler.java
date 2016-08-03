@@ -25,7 +25,7 @@ public class KinfoCommandHandler extends AbstractCommandHandler {
 	protected void doHandle(String[] args, RedisClient redisClient) {
 		RedisKeeperServer keeper = redisClient.getRedisKeeperServer();
 
-		String result = JSON.toJSONString(keeper.getReplicationStore().getReplicationStoreMeta());
+		String result = JSON.toJSONString(keeper.getReplicationStore().getMetaStore().dupReplicationStoreMeta());
 
 		redisClient.sendMessage(new BulkStringParser(result).format());
 	}

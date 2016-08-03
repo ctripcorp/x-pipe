@@ -56,11 +56,11 @@ public class DefaultNettyClient implements NettyClient{
 	}
 
 	@Override
-	public void handleResponse(ByteBuf byteBuf) {
+	public void handleResponse(Channel channel, ByteBuf byteBuf) {
 		
 		ByteBufReceiver byteBufReceiver = receivers.peek();
 		if(byteBufReceiver != null){
-			boolean result = byteBufReceiver.receive(byteBuf);
+			boolean result = byteBufReceiver.receive(channel, byteBuf);
 			if(result){
 				receivers.poll();
 			}

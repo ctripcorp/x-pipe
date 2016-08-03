@@ -24,7 +24,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public int getRedisCommandFileSize() {
-		return 1024 * 1024 * 1024;
+		return 20;
 	}
 
 	@Override

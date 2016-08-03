@@ -65,9 +65,10 @@ public class AbstractTest {
 	@Before
 	public void beforeAbstractTest() throws IOException{
 		
-		logger.info("[begin test]" + name.getMethodName());
+		logger.info(remarkableMessage("[begin test]" + name.getMethodName()));
 		
 		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
+		setProperties();
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
 		
 		
@@ -92,6 +93,10 @@ public class AbstractTest {
 				throw new IllegalStateException("test dir make failed!" + file);
 			}
 		}
+	}
+
+	protected void setProperties() {
+		
 	}
 
 	protected boolean deleteTestDir() {
@@ -356,6 +361,6 @@ public class AbstractTest {
 		}
 		File file = new File(getTestFileDir());
 		FileUtils.forceDelete(file);
-		logger.info("[end   test]" + name.getMethodName());
+		logger.info(remarkableMessage("[end   test]" + name.getMethodName()));
 	}
 }

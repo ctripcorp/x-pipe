@@ -5,11 +5,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
+import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.ReshardingTask;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
@@ -22,9 +25,18 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement, Runnable{
 	
 	private BlockingQueue<ReshardingTask> tasks = new LinkedBlockingQueue<>();
-	private int waitTaskTimeoutMilli =  60000; 
+	
+	private int waitTaskTimeoutMilli =  60000;
+	
 	private CommandFuture<Void> currentTask = null;
+	
+	@Autowired
+	private CurrentClusterServer currentClusterServer;
+	
 	private AtomicLong totalTasks = new AtomicLong(0);
+	
+	@Autowired
+	private SlotManager slotManager;
 	
 	public static final String ARRANGE_TASK_EXECUTOR_START = "ArrangeTaskExecutorStart";
 	
@@ -42,6 +54,7 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 	}
 	
 	public void offer(ReshardingTask task){
+		
 		logger.info("[offer]{}", task);
 		if(tasks.offer(task)){
 			totalTasks.incrementAndGet();
@@ -72,7 +85,7 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 			try{
 				executeTask();
 			}catch(Throwable th){
-				logger.error("");
+				logger.error("[run]", th);
 			}
 		}
 		logger.info("[run][break]");
@@ -84,9 +97,19 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 	}
 
 	private void executeTask() throws InterruptedException {
+		
+		ReshardingTask task = null;
 		try{
-			ReshardingTask task = tasks.take();
-			logger.info("[executeTask][begin]{}", task);
+			
+			task = tasks.take();
+			logger.info("[executeTask][begin]{}, {}", task, currentClusterServer.getServerId());
+			
+			try {
+				slotManager.refresh();//get most refresh info
+			} catch (Exception e) {
+				logger.error("[executeTask]", e);
+			}
+
 			currentTask = task.execute();
 			if(!currentTask.await(waitTaskTimeoutMilli, TimeUnit.MILLISECONDS)){
 				logger.info("[executeTask][task timeout]{}", waitTaskTimeoutMilli);
@@ -97,6 +120,7 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 				logger.error("[executTask][fail]" + task, currentTask.cause());
 			}
 		}finally{
+			logger.info("[executeTask][ end ]{}, {}", task, currentClusterServer.getServerId());
 			currentTask = null;
 		}
 	}

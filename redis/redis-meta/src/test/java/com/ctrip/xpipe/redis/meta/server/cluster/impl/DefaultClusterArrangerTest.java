@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+
 import java.util.List;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -10,8 +11,6 @@ import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
-import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 
 
 /**
@@ -44,24 +43,4 @@ public class DefaultClusterArrangerTest extends AbstractMetaServerTest{
 		children = client.getChildren().forPath(MetaZkConfig.getMetaServerSlotsPath());
 		logger.info("[testInitArrange][getSlots]{}, {}", children.size(), children);
 	}
-	
-	@Test
-	public void testAddServerArrange() throws Exception{
-		
-		int newServerID = 100;
-		
-		startRegistry();
-		SlotManager slotManager = getBean(SlotManager.class);
-		sleep(5000);
-		slotManager.refresh();
-		
-		DefaultMetaServerConfig metaServerConfig = new DefaultMetaServerConfig();
-		metaServerConfig.setDefaultMetaServerId(newServerID);
-		createAndStart(metaServerConfig);
-		
-		sleep(2000);
-		
-	}
-
-
 }
