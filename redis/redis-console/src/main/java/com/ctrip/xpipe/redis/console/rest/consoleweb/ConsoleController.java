@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.web.controller;
+package com.ctrip.xpipe.redis.console.rest.consoleweb;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

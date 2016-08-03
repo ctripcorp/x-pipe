@@ -1,10 +1,10 @@
-package com.ctrip.xpipe.redis.console.web.controller;
+package com.ctrip.xpipe.redis.console.rest.consoleweb;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.unidal.dal.jdbc.DalException;
-import com.ctrip.xpipe.redis.console.web.service.DcService;
+import com.ctrip.xpipe.redis.console.service.DcService;
 
 
 /**

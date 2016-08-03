@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.web;
+package com.ctrip.xpipe.redis.console;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

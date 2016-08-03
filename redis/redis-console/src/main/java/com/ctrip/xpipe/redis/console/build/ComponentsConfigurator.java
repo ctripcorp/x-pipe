@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.web.build;
+package com.ctrip.xpipe.redis.console.build;
 
 import java.util.ArrayList;
 import java.util.List;
