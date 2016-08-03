@@ -139,14 +139,10 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException {
+	public RdbStore beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException {
 		this.masterRunid = masterRunid;
 		this.masterOffset = masterOffset;
 		rdbStore = new DefaultRdbStore(rdbFile, masterOffset, rdbFileSize);
-	}
-
-	@Override
-	public RdbStore getRdbStore() {
 		return rdbStore;
 	}
 
@@ -193,6 +189,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	public boolean fullSyncIfPossible(RdbFileListener defaultRdbFileListener) throws IOException {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public boolean isFresh() {
+		// TODO Auto-generated method stub
+		return true;
 	}
 
 }

@@ -234,7 +234,6 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	@Override
 	public void masterConnected(Channel channel) {
-
 		connectedTime = System.currentTimeMillis();
 		this.masterChannel = channel;
 		clientPool = new FixedObjectPool<NettyClient>(new DefaultNettyClient(channel));
@@ -255,6 +254,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 		KinfoCommand kinfoCommand = new KinfoCommand(clientPool);
 
+		// TODO execute in this thread?
 		kinfoCommand.execute().addListener(new CommandFutureListener<ReplicationStoreMeta>() {
 
 			@Override
@@ -293,6 +293,8 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
 		psync.execute();
+		
+		//TODO check and retry psync command
 	}
 
 	private void listeningPortCommand() throws CommandExecutionException {
