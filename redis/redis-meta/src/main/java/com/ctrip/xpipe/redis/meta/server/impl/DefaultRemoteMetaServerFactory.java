@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
+
 import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
@@ -13,10 +14,12 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractRemoteClusterSever
  */
 @Component
 public class DefaultRemoteMetaServerFactory extends AbstractRemoteClusterSeverFactory<MetaServer>{
+	
 
-	@Override
+ 	@Override
 	protected MetaServer doCreateRemoteServer(int serverId, ClusterServerInfo clusterServerInfo) {
-		return new RemoteMetaServer(serverId, clusterServerInfo);
+ 		
+		return new RemoteMetaServer(currentClusterServer.getServerId(), serverId, clusterServerInfo);
 	}
 
 }

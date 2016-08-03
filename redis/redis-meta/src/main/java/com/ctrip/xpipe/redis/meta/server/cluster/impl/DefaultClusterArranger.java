@@ -136,7 +136,7 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		//moving slots
 		Map<Integer, SlotInfo> movingSlots = slotManager.allMoveingSlots();
 		if(movingSlots.size() > 0){
-			arrangeTaskTrigger.initSharding(new ContinueResharding(slotManager, movingSlots, clusterServers, zkClient));
+			arrangeTaskTrigger.initSharding(new ContinueResharding(slotManager, movingSlots, clusterServers, remoteClusterServerFactory, zkClient));
 		}
 	}
 

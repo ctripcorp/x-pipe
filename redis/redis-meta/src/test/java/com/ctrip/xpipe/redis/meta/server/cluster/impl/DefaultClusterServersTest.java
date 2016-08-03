@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
@@ -15,9 +15,9 @@ import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
  *
  * Jul 25, 2016
  */
-public class DefaultClusterServersTest extends AbstractMetaServerTest{
+public class DefaultClusterServersTest extends AbstractMetaServerContextTest{
 	
-	private AbstractClusterServers servers;
+	private AbstractClusterServers<?> servers;
 	
 	@Before
 	public void beforeDefaultClusterServersTest() throws Exception{
@@ -25,7 +25,7 @@ public class DefaultClusterServersTest extends AbstractMetaServerTest{
 		initRegistry();
 		startRegistry();
 		
-		servers = (AbstractClusterServers) getBean(ClusterServers.class);
+		servers = (AbstractClusterServers<?>) getBean(ClusterServers.class);
 	}
 	
 	@Test

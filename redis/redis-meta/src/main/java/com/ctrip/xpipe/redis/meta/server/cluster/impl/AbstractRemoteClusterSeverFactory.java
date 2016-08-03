@@ -19,7 +19,7 @@ public abstract class AbstractRemoteClusterSeverFactory<T extends ClusterServer>
 	private MetaServerConfig config;
 	
 	@Autowired
-	private T currentClusterServer;
+	protected T currentClusterServer;
 
 	@Override
 	public T createClusterServer(int serverId, ClusterServerInfo clusterServerInfo) {

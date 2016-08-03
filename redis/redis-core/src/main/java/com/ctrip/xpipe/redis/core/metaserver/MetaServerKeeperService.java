@@ -12,6 +12,12 @@ import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
  * Aug 2, 2016
  */
 public interface MetaServerKeeperService extends MetaServerService{
+	
+	
+
+	public static String PATH_PING = PATH_PREFIX + "/cluster/{clusterId}/shard/{shardId}/ping";
+	
+	public static String PATH_GET_ALL_KEEPERS = PATH_PREFIX + "/getallkeepers";
 
 	/***********************for keeper*******************/
 	

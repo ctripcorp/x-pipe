@@ -307,4 +307,9 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 		}
 	}
 
+	@Override
+	public Map<Integer, SlotInfo> allSlotsInfo() {
+		return new HashMap<>(slotsMap);
+	}
+
 }

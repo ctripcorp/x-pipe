@@ -1,10 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
-
-
-
 import java.net.InetSocketAddress;
-import java.util.List;
 
 import javax.annotation.Resource;
 
@@ -16,18 +12,15 @@ import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dao.MetaServerDao;
+import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.redis.meta.server.service.MetaServerService;
 import com.ctrip.xpipe.utils.IpUtils;
 
@@ -170,56 +163,7 @@ public class DefaultMetaServer extends AbstractCurrentClusterServer implements M
 	}
 
 	@Override
-	public List<KeeperTransMeta> getKeepersByKeeperContainer(KeeperContainerMeta keeperContainerMeta) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void addKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void removeKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setKeepers(String clusterId, String shardId, KeeperMeta keeperMeta, List<KeeperMeta> keeperMetas) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void clusterChanged(String clusterId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public DcMeta getDynamicInfo() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<MetaServerMeta> getAllMetaServers() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public List<KeeperTransMeta> getAllKeepersByKeeperContainer(KeeperContainerMeta keeperContainerMeta) {
-		// TODO Auto-generated method stub
-		return null;
+	public void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo) {
+		logger.info("[ping]{},{},{},{}", clusterId, shardId, keeperInstanceMeta, forwardInfo);
 	}
 }

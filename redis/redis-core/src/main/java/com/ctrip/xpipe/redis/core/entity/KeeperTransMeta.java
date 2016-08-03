@@ -17,6 +17,9 @@ public class KeeperTransMeta implements ClusterAware{
 	
 	private KeeperMeta keeperMeta;
 	
+	public KeeperTransMeta() {
+	}
+	
 	public KeeperTransMeta(String clusterId, String shardId, KeeperMeta keeperMeta){
 		this.clusterId = clusterId;
 		this.shardId = shardId;

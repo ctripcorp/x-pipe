@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
  *
  * Jul 25, 2016
  */
-public interface CurrentClusterServer extends ClusterServer, Lifecycle{
+public interface RemoteClusterServer extends ClusterServer, Lifecycle{
 	
+	int getCurrentServerId();
 }

@@ -20,7 +20,7 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 	
 	private List<TestAppServer>  servers = new LinkedList<>();
-	private int zkPort = randomPort();
+	private int zkPort = portUsable(defaultZkPort());
 	
 	@Before
 	public void beforeAbstractMetaServerClusterTest(){
@@ -47,7 +47,7 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 		
 		for(int i=0 ; i<serverCount ; i++){
 			
-			int port = randomPort();
+			int port = portUsable(defaultMetaServerPort());
 			TestAppServer testAppServer = new TestAppServer(i + 1, port, zkPort);
 			testAppServer.initialize();
 			testAppServer.start();

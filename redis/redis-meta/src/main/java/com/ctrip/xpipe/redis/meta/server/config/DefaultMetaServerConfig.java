@@ -49,7 +49,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	
 	@Override
 	public int getMetaRefreshMilli() {
-		return getIntProperty(KEY_META_REFRESH_MILLI, 5000);
+		return getIntProperty(KEY_META_REFRESH_MILLI, 60000);
 	}
 
 	@Override

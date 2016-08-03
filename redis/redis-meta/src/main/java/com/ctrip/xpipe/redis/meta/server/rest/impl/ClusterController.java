@@ -5,6 +5,6 @@ package com.ctrip.xpipe.redis.meta.server.rest.impl;
  *
  * Jul 29, 2016
  */
-public class ClusterResource {
+public class ClusterController {
 
 }
