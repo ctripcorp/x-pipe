@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
 /**
  * all api for console
@@ -26,7 +27,7 @@ public interface ConsoleService {
 
 	ClusterMeta getClusterMeta(String dcId, String clusterId);
 
-	ClusterMeta getShardMeta(String dcId, String clusterId, String shardId);
+	ShardMeta getShardMeta(String dcId, String clusterId, String shardId);
 
 	/***********************POST***********************/
 	void keeperActiveChanged(String dc, String clusterId, String shardId, KeeperMeta newActiveKeeper) throws Exception;

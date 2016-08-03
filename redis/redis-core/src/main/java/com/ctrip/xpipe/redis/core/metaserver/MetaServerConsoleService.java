@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.metaserver;
 
 import java.util.List;
 
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 
 /**
@@ -24,4 +25,9 @@ public interface MetaServerConsoleService extends MetaServerService{
 	 * @param clusterId
 	 */
 	void clusterChanged(String clusterId);
+	
+	/**
+	 * @return
+	 */
+	DcMeta getDynamicInfo();
 }
