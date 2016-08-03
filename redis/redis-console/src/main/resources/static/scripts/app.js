@@ -1,3 +1,4 @@
-/**
- * Created by lepdou on 16/8/3.
- */
+var services = angular.module('services', ['ngResource']);
+
+var index_module = angular.module('index', ['services', 'ui.router']);
+
