@@ -1,7 +1,7 @@
 index_module.controller('ClusterCtl', ['$scope', '$window', 'ClusterService',
          function ($scope, $window, ClusterService) {
 
-             $scope.clusterName = "cluster01";
+             $scope.clusterName = "cluster1";
 
              $scope.switchDc = switchDc;
 

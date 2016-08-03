@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.entity.vo;
 
-import com.ctrip.xpipe.redis.console.web.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.web.model.DcTbl;
-import com.ctrip.xpipe.redis.console.web.model.ShardTbl;
-
 import java.util.List;
+
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.ShardTbl;
 
 public class ClusterVO {
 
@@ -122,7 +122,7 @@ public class ClusterVO {
 	}
 
 	public enum RedisRole {
-		MASTER, SLAVE, KEPPER
+		MASTER, SLAVE, KEEPER
 	}
 
 }
