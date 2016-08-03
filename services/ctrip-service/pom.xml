@@ -12,7 +12,7 @@
 
 	<properties>
 		<cat.version>1.5.1</cat.version>
-		<apollo.version>0.0.5</apollo.version>
+		<apollo.version>0.0.8</apollo.version>
 	</properties>
 
 	<dependencies>
