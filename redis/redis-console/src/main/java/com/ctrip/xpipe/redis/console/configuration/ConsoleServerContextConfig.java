@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.spring;
+package com.ctrip.xpipe.redis.console.configuration;
 
 
 import org.apache.curator.framework.CuratorFramework;

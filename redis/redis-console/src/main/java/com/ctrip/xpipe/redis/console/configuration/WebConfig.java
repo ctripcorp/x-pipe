@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.web.config;
+package com.ctrip.xpipe.redis.console.configuration;
 
 import org.springframework.context.annotation.Configuration;
 

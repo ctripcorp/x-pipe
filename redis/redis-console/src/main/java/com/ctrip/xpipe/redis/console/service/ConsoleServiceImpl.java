@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.web.service;
+package com.ctrip.xpipe.redis.console.service;
 
 import java.util.Set;
 

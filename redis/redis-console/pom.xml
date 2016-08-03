@@ -102,7 +102,7 @@
                      <goal>plexus</goal>
                   </goals>
                   <configuration>
-                     <className>com.ctrip.xpipe.redis.console.web.build.ComponentsConfigurator</className>
+                     <className>com.ctrip.xpipe.redis.console.build.ComponentsConfigurator</className>
                   </configuration>
                </execution>
             </executions>
