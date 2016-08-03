@@ -16,6 +16,9 @@ public class KeeperTransMeta {
 	private String shardId;
 	
 	private KeeperMeta keeperMeta;
+
+	//for json conversion
+	public KeeperTransMeta() {}
 	
 	public KeeperTransMeta(String clusterId, String shardId, KeeperMeta keeperMeta){
 		this.clusterId = clusterId;

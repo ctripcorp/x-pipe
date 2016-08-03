@@ -32,4 +32,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 		return 3000;
 	}
 
+	@Override
+	public long getReplicationStoreGcIntervalSeconds() {
+		return 10;
+	}
+
 }

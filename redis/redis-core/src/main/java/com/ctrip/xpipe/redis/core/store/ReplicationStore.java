@@ -13,10 +13,8 @@ public interface ReplicationStore extends Closeable {
 	
 	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER"; 
 
-	void beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException;
+	RdbStore beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException;
 
-	RdbStore getRdbStore();
-	
 	CommandStore getCommandStore();
 	
 	MetaStore getMetaStore();
@@ -40,4 +38,6 @@ public interface ReplicationStore extends Closeable {
 	File newRdbFile();
 
 	boolean fullSyncIfPossible(RdbFileListener defaultRdbFileListener) throws IOException;
+
+	boolean isFresh();
 }
