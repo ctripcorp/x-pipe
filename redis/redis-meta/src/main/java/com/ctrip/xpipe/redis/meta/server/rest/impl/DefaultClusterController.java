@@ -20,7 +20,7 @@ import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
  */
 @RestController
 @RequestMapping(ClusterApi.PATH_FOR_CLUSTER)
-public class DefaultClusterApi implements ClusterApi{
+public class DefaultClusterController implements ClusterApi{
 	
 	@Autowired
 	private CurrentClusterServer currentClusterServer;

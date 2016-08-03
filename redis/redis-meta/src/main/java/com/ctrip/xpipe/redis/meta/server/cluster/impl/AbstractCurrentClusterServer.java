@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
@@ -30,8 +29,7 @@ import com.ctrip.xpipe.zk.ZkClient;
  *
  * Jul 25, 2016
  */
-@Component
-public class DefaultCurrentClusterServer extends AbstractClusterServer implements CurrentClusterServer, TopElement{
+public class AbstractCurrentClusterServer extends AbstractClusterServer implements CurrentClusterServer, TopElement{
 	
 
 	@Autowired
@@ -46,13 +44,11 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	private int currentServerId;
 	
 	private String serverPath;
-	
-	private volatile CommandFuture<Void> slotRefreshFuture;
-	
+		
 	private ExecutorService executors;
 
 	
-	public DefaultCurrentClusterServer() {
+	public AbstractCurrentClusterServer() {
 	}
 
 	@Override
@@ -116,24 +112,19 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		this.config = config;
 	}
 
-
 	@Override
 	public synchronized void notifySlotChange(int slot) {
 		
-		if(slotRefreshFuture == null || slotRefreshFuture.isDone()){
-			
-			SlotRefreshCommand cmd = new SlotRefreshCommand(slot);
-			slotRefreshFuture = cmd.execute(executors);
-			slotRefreshFuture.addListener(new CommandFutureListener<Void>() {
+		SlotRefreshCommand cmd = new SlotRefreshCommand(slot);
+		cmd.execute(executors).addListener(new CommandFutureListener<Void>() {
 
-				@Override
-				public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
-					if(!commandFuture.isSuccess()){
-						logger.error("[notifySlotChange]", commandFuture.cause());
-					}
+			@Override
+			public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
+				if(!commandFuture.isSuccess()){
+					logger.error("[notifySlotChange]", commandFuture.cause());
 				}
-			});
-		}
+			}
+		});
 	}
 
 	@Override
@@ -190,7 +181,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 			for(int slotId : slotIds){
 				SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
 				if(slotInfo.getSlotState() == SLOT_STATE.MOVING && slotInfo.getToServerId() == getServerId()){
-					logger.info("[doExecute][import]{}, {}", slotId, slotInfo);
+					logger.info("[doExecute][import({})]{}, {}", currentServerId, slotId, slotInfo);
 				}else{
 					throw new IllegalStateException("error import " + slotId + "," + slotInfo);
 				}
@@ -222,7 +213,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 			for(int slotId : slotIds){
 				SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
 				if(slotInfo.getSlotState() == SLOT_STATE.MOVING && slotInfo.getServerId() == getServerId()){
-					logger.info("[doExecute][export]{}, {}({})", slotId, slotInfo, getServerId());
+					logger.info("[doExecute][export({}){}, {}", currentServerId, slotId, slotInfo, getServerId());
 				}else{
 					throw new IllegalStateException("error export " + slotId + "," + slotInfo);
 				}

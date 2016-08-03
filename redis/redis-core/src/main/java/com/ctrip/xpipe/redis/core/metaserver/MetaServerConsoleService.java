@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
+
 import java.util.List;
 
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 
 /**
  * used for console
@@ -13,11 +14,11 @@ import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
  */
 public interface MetaServerConsoleService extends MetaServerService{
 
-	void addKeeper(KeeperTransMeta keeperTransMeta);
+	void addKeeper(String clusterId, String shardId,  KeeperMeta keeperMeta);
 
-	void removeKeeper(KeeperTransMeta keeperTransMeta);
+	void removeKeeper(String clusterId, String shardId,  KeeperMeta keeperMeta);
 
-	void setKeepers(List<KeeperTransMeta> keeperTransMeta);
+	void setKeepers(String clusterId, String shardId,  KeeperMeta keeperMeta, List<KeeperMeta> keeperMetas);
 
 	/**
 	 * add/delete/modify

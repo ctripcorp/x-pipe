@@ -31,6 +31,12 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>redis.clients</groupId>
+			<artifactId>jedis</artifactId>
+			<scope>test</scope>
+			<type>jar</type>
+		</dependency>
+		<dependency>
 			<groupId>com.ctrip.xpipe.redis</groupId>
 			<artifactId>redis-core</artifactId>
 			<type>test-jar</type>

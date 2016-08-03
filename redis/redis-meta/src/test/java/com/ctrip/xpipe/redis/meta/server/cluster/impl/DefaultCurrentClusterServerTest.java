@@ -6,7 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 
 
 /**
@@ -14,15 +14,15 @@ import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
  *
  * Jul 25, 2016
  */
-public class DefaultCurrentClusterServerTest extends AbstractMetaServerTest{
+public class DefaultCurrentClusterServerTest extends AbstractMetaServerContextTest{
 	
-	DefaultCurrentClusterServer currentServer;
+	AbstractCurrentClusterServer currentServer;
 	
 	@Before
 	public void beforeDefaultCurrentClusterServerTest() throws Exception{
 		
 		
-		currentServer = new DefaultCurrentClusterServer();
+		currentServer = new AbstractCurrentClusterServer();
 		currentServer.setConfig(config);
 		
 		currentServer.setZkClient(getZkClient());
@@ -54,7 +54,7 @@ public class DefaultCurrentClusterServerTest extends AbstractMetaServerTest{
 		Stat stat1 = getCurator().checkExists().forPath(MetaZkConfig.getMetaServerRegisterPath() + "/" + config.getMetaServerId());
 		Assert.assertNotNull(stat1);
 
-		DefaultCurrentClusterServer newServer = new DefaultCurrentClusterServer();
+		AbstractCurrentClusterServer newServer = new AbstractCurrentClusterServer();
 		newServer.setConfig(config);
 		newServer.setZkClient(getZkClient());
 		newServer.initialize();

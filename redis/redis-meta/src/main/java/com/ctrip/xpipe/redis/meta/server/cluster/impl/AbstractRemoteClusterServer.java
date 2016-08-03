@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
+import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServer;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
 
 /**
@@ -20,13 +21,17 @@ import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
  *
  * Jul 26, 2016
  */
-public class RemoteClusterServer extends AbstractClusterServer{
+public class AbstractRemoteClusterServer extends AbstractClusterServer implements RemoteClusterServer{
 	
 	private int maxConnPerRoute = Integer.parseInt(System.getProperty("remoteMaxConnPerRoute", "5"));
 	private int connectTimeout = Integer.parseInt(System.getProperty("remoteConnectTimeout", "5000"));
 	private int soTimeout = Integer.parseInt(System.getProperty("remoteSoTimeout", "5000"));
 
-	private RestTemplate restTemplate;
+	protected RestTemplate restTemplate;
+	
+	private int currentServerId;
+	
+	private String httpHost;
 	
 	private String notifySlotChangePath;
 
@@ -34,12 +39,16 @@ public class RemoteClusterServer extends AbstractClusterServer{
 
 	private String importSlotChangePath;
 
-	public RemoteClusterServer(int serverId) {
-		this(serverId, null);
+	public AbstractRemoteClusterServer(int currentServerId, int serverId) {
+		this(currentServerId, serverId, null);
+		
 	}
 
-	public RemoteClusterServer(int serverId, ClusterServerInfo clusterServerInfo) {
+	public AbstractRemoteClusterServer(int currentServerId, int serverId, ClusterServerInfo clusterServerInfo) {
 		super(serverId, clusterServerInfo);
+		
+		this.currentServerId = currentServerId;
+		
 		if(clusterServerInfo != null){
 			HttpClient httpClient = HttpClientBuilder.create()
 					.setMaxConnPerRoute(maxConnPerRoute)
@@ -49,7 +58,7 @@ public class RemoteClusterServer extends AbstractClusterServer{
 			ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient); 
 			restTemplate = new RestTemplate(factory);
 			
-			String httpHost = String.format("http://%s:%d", clusterServerInfo.getIp(), clusterServerInfo.getPort());
+			httpHost = String.format("http://%s:%d", clusterServerInfo.getIp(), clusterServerInfo.getPort());
 			notifySlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_NOTIFY_SLOT_CHANGE);
 			exportSlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_EXPORT_SLOT);
 			importSlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_IMPORT_SLOT);
@@ -62,6 +71,12 @@ public class RemoteClusterServer extends AbstractClusterServer{
 	}
 
 	@Override
+	public int getCurrentServerId() {
+		return currentServerId;
+	}
+
+	
+	@Override
 	public CommandFuture<Void> exportSlot(int slotId) {
 		
 		return new RemoteSlotCommand(exportSlotChangePath, slotId).execute();
@@ -72,6 +87,10 @@ public class RemoteClusterServer extends AbstractClusterServer{
 		return new RemoteSlotCommand(importSlotChangePath, slotId).execute();
 	}
 
+	public String getHttpHost() {
+		return httpHost;
+	}
+	
 	class RemoteSlotCommand extends AbstractCommand<Void>{
 		
 		private String path;

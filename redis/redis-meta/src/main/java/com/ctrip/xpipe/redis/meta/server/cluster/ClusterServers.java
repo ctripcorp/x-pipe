@@ -10,13 +10,13 @@ import com.ctrip.xpipe.api.observer.Observable;
  *
  * Jul 22, 2016
  */
-public interface ClusterServers extends Observable, Lifecycle{
+public interface ClusterServers<T extends ClusterServer> extends Observable, Lifecycle{
 	
-	ClusterServer currentClusterServer();
+	T currentClusterServer();
 	
-	ClusterServer  getClusterServer(int serverId);
+	T  getClusterServer(int serverId);
 	
-	Set<ClusterServer> allClusterServers();
+	Set<T> allClusterServers();
 	
 	void refresh() throws Exception;
 	

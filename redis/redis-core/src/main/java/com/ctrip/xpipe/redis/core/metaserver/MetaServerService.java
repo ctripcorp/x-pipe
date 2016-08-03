@@ -11,6 +11,11 @@ import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
  */
 public interface MetaServerService {
 	
+	public static final String HTTP_HEADER_FOWRARD = "forward";
+	public static final String PATH_PREFIX = "/api/meta";
+	
+	public static final String PATH_GET_ALL_META_SERVERS = PATH_PREFIX + "/getallmetaservers";
+	
 	
 	List<MetaServerMeta> getAllMetaServers();
 

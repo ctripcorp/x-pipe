@@ -147,6 +147,10 @@ public class TestAppServer extends AbstractLifecycle{
 		return zkPort;
 	}
 	
+	public int getServerPort() {
+		return serverPort;
+	}
+	
 	public static int getWaitforrestarttimemills() {
 		return waitForRestartTimeMills;
 	}

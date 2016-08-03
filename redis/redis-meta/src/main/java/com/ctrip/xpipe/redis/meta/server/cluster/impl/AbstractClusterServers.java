@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,6 @@ import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.WatchedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
@@ -27,7 +27,6 @@ import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
-import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -37,10 +36,9 @@ import com.ctrip.xpipe.zk.ZkClient;
  *
  * Jul 22, 2016
  */
-@Component
-public class DefaultClusterServers extends AbstractLifecycleObservable implements ClusterServers, TopElement, CuratorWatcher{
+public class AbstractClusterServers<T extends ClusterServer> extends AbstractLifecycleObservable implements ClusterServers<T>, TopElement, CuratorWatcher{
 	
-	private Map<Integer, ClusterServer> servers = new ConcurrentHashMap<>();
+	private Map<Integer, T> servers = new ConcurrentHashMap<>();
 	
 	@Autowired
 	private MetaServerConfig  metaServerConfig;
@@ -49,10 +47,10 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 	private ZkClient zkClient;
 		
 	@Autowired
-	private CurrentClusterServer currentServer;
+	private T currentServer;
 	
 	@Autowired
-	private RemoteClusterServerFactory remoteClusterServerFactory;
+	private RemoteClusterServerFactory<T> remoteClusterServerFactory;
 	
 	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 	private ScheduledFuture<?> future;
@@ -93,13 +91,13 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 	}
 
 	@Override
-	public ClusterServer currentClusterServer() {
+	public T currentClusterServer() {
 		
 		return currentServer;
 	}
 
 	@Override
-	public ClusterServer getClusterServer(int serverId) {
+	public T getClusterServer(int serverId) {
 		return servers.get(serverId);
 	}
 
@@ -135,14 +133,14 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 			ClusterServer server = servers.get(serverId);
 			if(server == null){
 				logger.info("[childrenChanged][{}][createNew]{}{}", currentServer, child, info);
-				ClusterServer remoteServer = remoteClusterServerFactory.createClusterServer(serverId, info);
+				T remoteServer = remoteClusterServerFactory.createClusterServer(serverId, info);
 				servers.put(serverId, remoteServer);
 				serverAdded(remoteServer);
 			}else{
 				if(!info.equals(server.getClusterInfo())){
 					
 					logger.info("[childrenChanged][{}][clusterInfoChanged]{}{}", currentServer, child, info, server.getClusterInfo());
-					ClusterServer newServer = remoteClusterServerFactory.createClusterServer(serverId, info);
+					T newServer = remoteClusterServerFactory.createClusterServer(serverId, info);
 					servers.put(serverId, newServer);
 					serverChanged(server, newServer);
 					
@@ -183,16 +181,16 @@ public class DefaultClusterServers extends AbstractLifecycleObservable implement
 		this.zkClient = zkClient;
 	}
 	
-	public void setCurrentServer(CurrentClusterServer currentServer) {
+	public void setCurrentServer(T currentServer) {
 		this.currentServer = currentServer;
 	}
 	
-	public void setRemoteClusterServerFactory(RemoteClusterServerFactory remoteClusterServerFactory) {
+	public void setRemoteClusterServerFactory(RemoteClusterServerFactory<T> remoteClusterServerFactory) {
 		this.remoteClusterServerFactory = remoteClusterServerFactory;
 	}
 
 	@Override
-	public Set<ClusterServer> allClusterServers() {
+	public Set<T> allClusterServers() {
 		return new HashSet<>(servers.values());
 	}
 

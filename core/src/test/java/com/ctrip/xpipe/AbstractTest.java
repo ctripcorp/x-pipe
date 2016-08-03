@@ -245,6 +245,17 @@ public class AbstractTest {
 	protected String currentTestName(){
 		return name.getMethodName();
 	} 
+	
+	public static int portUsable(int fromPort){
+		
+		for(int i=fromPort;i<fromPort + 100;i++){
+			if(isUsable(i)){
+				return i;
+			}
+		}
+		
+		throw new IllegalStateException("unfonud usable port from %d" + fromPort);
+	}
 
 	
 	public static int randomPort(){
@@ -262,18 +273,26 @@ public class AbstractTest {
 
 		int i = min;
 		for(;i<=max;i++){
-			
-			try(ServerSocket s = new ServerSocket()){
-				int port = randomInt(min, max);
-				s.bind(new InetSocketAddress(port));
+
+			int port = randomInt(min, max);
+			if(isUsable(port)){
 				return port;
-			} catch (IOException e) {
 			}
 		}
 		
 		throw new IllegalStateException(String.format("random port not found:(%d, %d)", min , max));
 	}
 	
+	private static boolean isUsable(int port) {
+		
+		try(ServerSocket s = new ServerSocket()){
+			s.bind(new InetSocketAddress(port));
+			return true;
+		} catch (IOException e) {
+		}
+		return false;
+	}
+
 	protected static int randomInt(int begin, int end){
 		return (int) (begin + Math.random() * (end - begin));
 	}
@@ -301,6 +320,15 @@ public class AbstractTest {
 			add(zkTestServer);
 		} catch (Exception e) {
 		}
+	}
+	
+	
+	public static int defaultZkPort(){
+		return 2181;
+	}
+
+	public static int defaultMetaServerPort(){
+		return 9747;
 	}
 
 	protected Server startEchoServer() throws Exception {
