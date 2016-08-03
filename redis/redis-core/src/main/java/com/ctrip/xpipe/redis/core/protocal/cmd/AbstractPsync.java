@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser.BulkStringParserListener;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.utils.StringUtil;
 
@@ -44,6 +45,10 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	private PSYNC_STATE psyncState = PSYNC_STATE.PSYNC_COMMAND_WAITING_REPONSE;
 	
 	private boolean saveCommands;
+	
+	private volatile RdbStore rdbStore;
+	
+	private volatile InOutPayloadReplicationStore inOutPayloadReplicationStore;
 	
 	public static enum PSYNC_STATE{
 		PSYNC_COMMAND_WAITING_REPONSE,
@@ -123,7 +128,8 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 				
 			case READING_RDB:
 				if(rdbReader == null){
-					rdbReader = new BulkStringParser(new InOutPayloadReplicationStore(currentReplicationStore), this);
+					inOutPayloadReplicationStore = new InOutPayloadReplicationStore();
+					rdbReader = new BulkStringParser(inOutPayloadReplicationStore, this);
 				}
 				RedisClientProtocol<InOutPayload> payload =  rdbReader.read(byteBuf);
 				if( payload != null){
@@ -172,7 +178,8 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		}
 
 		try {
-			currentReplicationStore.beginRdb(masterRunid, offset, fileSize);
+			rdbStore = currentReplicationStore.beginRdb(masterRunid, offset, fileSize);
+			inOutPayloadReplicationStore.setRdbStore(rdbStore);
 		} catch (IOException e) {
 			logger.error("[beginReadRdb]" + masterRunid + "," + offset, e);
 		}
@@ -182,7 +189,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		
 		logger.info("[endReadRdb]{}", this);
 		try {
-			currentReplicationStore.getRdbStore().endRdb();
+			rdbStore.endRdb();
 		} catch (IOException e) {
 			logger.error("[endReadRdb]", e);
 		}

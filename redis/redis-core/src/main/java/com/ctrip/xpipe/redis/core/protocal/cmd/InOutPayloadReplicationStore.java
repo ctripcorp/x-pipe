@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.payload.AbstractInOutPayload;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 
 import io.netty.buffer.ByteBuf;
 
@@ -20,25 +20,26 @@ import io.netty.buffer.ByteBuf;
  */
 public class InOutPayloadReplicationStore extends AbstractInOutPayload implements InOutPayload, RdbFileListener{
 
-	public  ReplicationStore replicationStore;
+	public  RdbStore rdbStore;
 	
 	private WritableByteChannel writableByteChannel;
 	
 	private AtomicBoolean stop = new AtomicBoolean(false);
 	
-	public InOutPayloadReplicationStore(ReplicationStore replicationStore) {
-		this.replicationStore = replicationStore;
+	public InOutPayloadReplicationStore() {
+	}
+	
+	public void setRdbStore(RdbStore rdbStore) {
+		this.rdbStore = rdbStore;
 	}
 
-	
 	@Override
 	public int doIn(ByteBuf byteBuf) throws IOException {
 		
 		if(logger.isDebugEnabled()){
 			logger.debug("[doIn]" + byteBuf.readableBytes());
 		}
-		
-		return replicationStore.getRdbStore().writeRdb(byteBuf);
+		return rdbStore.writeRdb(byteBuf);
 	}
 
 	@Override
@@ -48,10 +49,7 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 
 	@Override
 	public long doOut(WritableByteChannel writableByteChannel) throws IOException {
-		
-		this.writableByteChannel = writableByteChannel;
-		replicationStore.getRdbStore().readRdbFile(this);
-		return 0;
+		throw new UnsupportedOperationException("Should not call doOut");
 	}
 
 
