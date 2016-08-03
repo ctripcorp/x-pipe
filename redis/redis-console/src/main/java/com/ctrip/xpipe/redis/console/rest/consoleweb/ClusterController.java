@@ -1,24 +1,31 @@
 package com.ctrip.xpipe.redis.console.rest.consoleweb;
 
 import com.ctrip.xpipe.redis.console.entity.vo.ClusterVO;
+import com.ctrip.xpipe.redis.console.service.MetaInfoService;
 import com.ctrip.xpipe.redis.console.web.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.web.model.DcTbl;
 import com.ctrip.xpipe.redis.console.web.model.ShardTbl;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.unidal.dal.jdbc.DalException;
 
 import java.util.Arrays;
 
 @RestController
 public class ClusterController {
+	
+	@Autowired
+	private MetaInfoService metaInfoService;
 
 	@RequestMapping("/clusters/{clusterName}")
-	public ClusterVO loadCluster(@PathVariable String clusterName){
-		return mockData();
-
+	public ClusterVO loadCluster(@PathVariable String clusterName) throws DalException{
+		
+		return metaInfoService.getClusterVO(clusterName);
+		//return mockData();
 	}
 
 	private ClusterVO mockData(){
@@ -32,7 +39,7 @@ public class ClusterController {
 		redis2.setId("redis-1");
 		redis2.setIp("127.1.1.2");
 		redis2.setPort(8180);
-		redis2.setRole(ClusterVO.RedisRole.KEPPER);
+		redis2.setRole(ClusterVO.RedisRole.KEEPER);
 
 
 		ShardTbl shardTbl = new ShardTbl();

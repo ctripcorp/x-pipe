@@ -93,7 +93,7 @@ create table REDIS_TBL
 	redis_active tinyint(1) not null default 1 comment 'redis active status',
 	redis_master varchar(80) not null default '' comment 'redis master',
 	keepercontainer_id bigint comment 'keepercontainer id',
-   	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+    DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
 );
 
 
@@ -105,5 +105,5 @@ create table KEEPERCONTAINER_TBL
 	keepercontainer_ip varchar(40) not null comment 'keepercontainer ip',
 	keepercontainer_port int not null comment 'keepercontainer port',
 	keepercontainer_active tinyint(1) not null default 1 comment 'keepercontainer active status',
-    DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+    DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'cluster_tblcluster_tbl
 );

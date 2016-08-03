@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
 
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
+import org.unidal.dal.jdbc.Readset;
 import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.redis.console.web.model.DcTbl;
@@ -31,8 +33,14 @@ private DcTblDao dcTblDao;
 		}
 	}
 
-	public List<DcTbl> getAllDcs() throws DalException {
-		return dcTblDao.findAllDcs(DcTblEntity.READSET_FULL);
+	public List<String> getAllDcs() throws DalException {
+		List<String> dcIds = new ArrayList<String>(10);
+		
+		for(DcTbl dc : dcTblDao.findAllDcs(new Readset<DcTbl>(DcTblEntity.DC_ID)) ) {
+			dcIds.add(dc.getDcId());
+		}
+			
+		return dcIds;
 	}
 
 }
