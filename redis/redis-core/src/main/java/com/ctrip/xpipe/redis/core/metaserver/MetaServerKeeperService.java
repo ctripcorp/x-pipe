@@ -15,10 +15,16 @@ public interface MetaServerKeeperService extends MetaServerService{
 
 	/***********************for keeper*******************/
 	
-	void ping(KeeperInstanceMeta keeperPingMeta);
+	void ping(KeeperInstanceMeta keeperInstanceMeta);
 
 	
 	/***********************for container*******************/
+	
+	/**
+	 * meta server merge all meta server's results
+	 * @param keeperContainerMeta
+	 * @return
+	 */
 	List<KeeperTransMeta> getAllKeepersByKeeperContainer(KeeperContainerMeta keeperContainerMeta);
 	
 

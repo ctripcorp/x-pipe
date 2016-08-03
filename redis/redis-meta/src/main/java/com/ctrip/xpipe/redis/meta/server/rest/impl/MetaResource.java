@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
 
-
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,12 +13,11 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
-import com.ctrip.xpipe.redis.meta.server.rest.MetaApi;
 
 
 @RestController
 @RequestMapping("/api/v1")
-public class MetaResource extends AbstractRecource implements MetaApi{
+public class MetaResource extends AbstractRecource{
 	
 	@Autowired
 	private MetaServer metaServer;
