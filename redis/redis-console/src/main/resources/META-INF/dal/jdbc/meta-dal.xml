@@ -113,6 +113,17 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-all-by-dc-id" type="SELECT" multiple="true">
+
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-id' /> = ${dc-id} 
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -216,6 +227,16 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='keepercontainer-id' /> = ${keepercontainer-id}
+					]]>
+				</statement>
+			</query>
+			<query name='find-all-by-dc-id' type='SELECT' multiple='true'>
+				<param name='keepercontainer-dc'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='keepercontainer-dc' /> = ${keepercontainer-dc}
 					]]>
 				</statement>
 			</query>
