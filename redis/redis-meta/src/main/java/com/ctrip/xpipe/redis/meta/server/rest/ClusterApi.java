@@ -26,5 +26,6 @@ public interface ClusterApi{
 	
 	void importSlot(int slotId) throws Exception;
 	
+	String debug();
 
 }

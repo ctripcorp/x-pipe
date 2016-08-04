@@ -1,17 +1,18 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
+import com.ctrip.xpipe.redis.meta.server.rest.ClusterDebugInfo;
 
 /**
  * @author wenchao.meng
@@ -49,18 +50,20 @@ public class DefaultClusterController implements ClusterApi{
 		currentClusterServer.exportSlot(slotId).sync();
 	}
 
-	@RequestMapping(path = "/importslot/{slotId}", method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@RequestMapping(path = PATH_IMPORT_SLOT, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
 	public void importSlot(@PathVariable int slotId) throws Exception{
 		currentClusterServer.importSlot(slotId).sync();
 	}
-	
-	@ExceptionHandler
-	@ResponseBody
-	public String handleException(Exception e){
-		e.printStackTrace();
-		return e.getMessage();
+	@RequestMapping(path = "/debug", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@Override
+	public String debug() {
+		JsonCodec pretty = new JsonCodec(true);
+		return pretty.encode(
+				new ClusterDebugInfo(currentClusterServer.getServerId(), 
+						currentClusterServer.isLeader(), 
+						currentClusterServer.getClusterInfo(), 
+						currentClusterServer.slots()));
 	}
-
 	
 }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,6 +41,9 @@ public class AbstractCurrentClusterServer extends AbstractClusterServer implemen
 	
 	@Autowired
 	private SlotManager slotManager;
+	
+	@Autowired
+	private MetaserverLeaderElector metaserverLeaderElector;
 	
 	private int currentServerId;
 	
@@ -137,6 +141,15 @@ public class AbstractCurrentClusterServer extends AbstractClusterServer implemen
 		return new SlotImportCommand(slotId).execute(executors);
 	}
 
+	@Override
+	public Set<Integer> slots() {
+		return slotManager.getSlotsByServerId(currentServerId);
+	}
+	
+	@Override
+	public boolean isLeader() {
+		return metaserverLeaderElector.amILeader();
+	}
 	
 	class SlotRefreshCommand extends AbstractCommand<Void>{
 		
