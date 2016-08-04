@@ -8,7 +8,4 @@ import com.ctrip.xpipe.redis.console.dao.ConsoleUpdateOperation;
  * Jun 23, 2016
  */
 public interface ConsoleService extends ConsoleUpdateOperation{
-	
-	
-	
 }

@@ -25,7 +25,7 @@ public class RdbOnlyPsync extends AbstractPsync {
 	}
 
 	@Override
-	protected void doWhenFullSync(String masterRunid) {
+	protected void doWhenFullSyncToNonFreshReplicationStore(String masterRunid) {
 		// always a fresh ReplicationStore, so do nothing
 	}
 

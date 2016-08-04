@@ -10,6 +10,16 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-dc-by-dcid" type="SELECT" multiple="false">
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-id'/> = ${dc-id}
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -50,6 +60,16 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-cluster-by-clusterid" type="SELECT" multiple="false">
+			<param name='cluster-id'/>
+			<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='cluster-id'/> = ${cluster-id}
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -77,18 +97,38 @@
 					]]>
 				</statement>
 			</query>
-		</query-defs>
-	</entity>
-
-	<entity name="shard-tbl" table="SHARD_TBL" alias="st">
-		<query-defs>
-			<query name="find-shard" type="SELECT" multiple="false">
+			<query name="find-all-dc-cluster-by-cluster" type="SELECT" multiple="true">
 				<param name='cluster-id'/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='cluster-id' /> = ${cluster-id} 
+					]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+
+	<entity name="shard-tbl" table="SHARD_TBL" alias="st">
+		<query-defs>
+			<query name="find-all-shards-by-clusterid" type="SELECT" multiple="true">
+				<param name='cluster-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='cluster-id' /> = ${cluster-id} 
+					]]>
+				</statement>
+			</query>
+			<query name="find-shard-by-shardid" type="SELECT" multiple="false">
+				<param name='shard-id' />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='shard-id' /> = ${shard-id} 
 					]]>
 				</statement>
 			</query>
@@ -106,6 +146,16 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='shard-id' /> = ${shard-id} 
 					AND <FIELD name='dc-cluster-id' /> = ${dc-cluster-id}
+					]]>
+				</statement>
+			</query>
+			<query name='find-all-dc-cluster-shard-by-dcclusterid' type='SELECT' multiple='true'>
+				<param name='dc-cluster-id' />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-cluster-id' /> = ${dc-cluster-id}
 					]]>
 				</statement>
 			</query>

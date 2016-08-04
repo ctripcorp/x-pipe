@@ -122,7 +122,7 @@ public class ClusterVO {
 	}
 
 	public enum RedisRole {
-		MASTER, SLAVE, KEPPER
+		MASTER, SLAVE, KEEPER
 	}
 
 }

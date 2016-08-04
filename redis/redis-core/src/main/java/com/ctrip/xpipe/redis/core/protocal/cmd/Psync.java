@@ -50,7 +50,7 @@ public class Psync extends AbstractPsync {
 	}
 	
 	@Override
-	protected void doWhenFullSync(String masterRunid) throws IOException {
+	protected void doWhenFullSyncToNonFreshReplicationStore(String masterRunid) throws IOException {
 		logger.info("[handleResponse][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
 		
 		ReplicationStore oldStore = currentReplicationStore;

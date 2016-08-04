@@ -77,7 +77,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException {
+	public RdbStore beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException {
 		log.info("Begin RDB masterRunid:{}, masterOffset:{}, rdbFileSize:{}", masterRunid, masterOffset, rdbFileSize);
 		baseDir.mkdirs();
 
@@ -89,6 +89,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 		// beginOffset - 1 == masteroffset
 		rdbStore.set(new DefaultRdbStore(new File(baseDir, newMeta.getRdbFile()), newMeta.getKeeperBeginOffset() - 1, rdbFileSize));
 		cmdStore = new DefaultCommandStore(new File(baseDir, newMeta.getCmdFilePrefix()), cmdFileSize);
+		
+		return rdbStore.get();
 	}
 
 	@Override
@@ -114,7 +116,6 @@ public class DefaultReplicationStore implements ReplicationStore {
 		return cmdStore;
 	}
 
-	@Override
 	public RdbStore getRdbStore() {
 		// TODO
 		while (rdbStore.get() == null) {
@@ -251,6 +252,11 @@ public class DefaultReplicationStore implements ReplicationStore {
 		} else {
 			return false;
 		}
+	}
+
+	@Override
+	public boolean isFresh() {
+		return metaStore == null || metaStore.getMasterRunid() == null;
 	}
 
 }
