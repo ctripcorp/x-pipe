@@ -93,16 +93,22 @@
 				<artifactId>core</artifactId>
 				<type>test-jar</type>
 				<version>${project.version}</version>
+                <scope>test</scope>
 			</dependency>
 			<dependency>
 				<groupId>com.ctrip.xpipe.redis</groupId>
 				<artifactId>redis-core</artifactId>
 				<type>test-jar</type>
 				<version>${project.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.ctrip.xpipe</groupId>
+				<artifactId>ctrip-service</artifactId>
+				<version>${project.version}</version>
 			</dependency>
 
 			<!-- xpipe related -->
-
 			<dependency>
 				<groupId>commons-io</groupId>
 				<artifactId>commons-io</artifactId>
@@ -344,8 +350,8 @@
 
 		<!-- test -->
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

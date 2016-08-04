@@ -115,7 +115,7 @@ public class DefaultMetaStore implements MetaStore {
 
 		IO.INSTANCE.writeTo(file, JSON.toJSONString(replicationStoreMeta));
 	}
-	
+
 	@Override
 	public void psyncBegun(String keeperRunid, long keeperBeginOffset) throws IOException {
 		synchronized (metaRef) {
@@ -164,6 +164,15 @@ public class DefaultMetaStore implements MetaStore {
 
 	}
 
+	/**
+	 * RedisMaster, ActiveKeeper and BackupKeeper each has its own offset
+	 * coordinate(determined by beginOffset and keeperBeginOffset).
+	 * 
+	 * When Keeper send Psync to RedisMaster or Keeper, it will use begingOffet
+	 * + cmdFileSize
+	 * 
+	 */
+
 	@Override
 	public void becomeBackup() throws IOException {
 		synchronized (metaRef) {
@@ -171,7 +180,11 @@ public class DefaultMetaStore implements MetaStore {
 
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 
-			// TODO logic is not correct?
+			/**
+			 * Make the new BackupKeeper can continue cmd from the new
+			 * ActiveKeeper which will inherit coordinate from the old
+			 * ActiveKeeper(the new BackupKeeper)
+			 */
 			metaDup.setBeginOffset(metaDup.getKeeperBeginOffset());
 			metaDup.setMasterRunid(metaDup.getKeeperRunid());
 
@@ -183,12 +196,24 @@ public class DefaultMetaStore implements MetaStore {
 	public void becomeActive() throws IOException {
 		synchronized (metaRef) {
 			log.info("[becomeActive]");
-			
+
 			String name = ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME;
-			ReplicationStoreMeta newMeta = getReplicationStoreMeta(name);
-			if (newMeta == null) {
+			ReplicationStoreMeta metaOfLastActiveKeeper = getReplicationStoreMeta(name);
+			if (metaOfLastActiveKeeper == null) {
 				throw new IllegalStateException("can not find meta:" + name);
 			} else {
+				ReplicationStoreMeta newMeta = dupReplicationStoreMeta();
+
+				/**
+				 * Inherit coordinate from last active keeper, so redis slave
+				 * and BackupKeeper can continue cmd from this new ActiveKeeper.
+				 */
+				newMeta.setBeginOffset(metaOfLastActiveKeeper.getBeginOffset());
+				newMeta.setKeeperBeginOffset(metaOfLastActiveKeeper.getKeeperBeginOffset());
+				newMeta.setKeeperRunid(metaOfLastActiveKeeper.getKeeperRunid());
+				newMeta.setMasterAddress(metaOfLastActiveKeeper.getMasterAddress());
+				newMeta.setMasterRunid(metaOfLastActiveKeeper.getMasterRunid());
+
 				saveMeta(newMeta);
 			}
 		}

@@ -10,12 +10,15 @@
 					]]>
 				</statement>
 			</query>
+
 			<query name="find-dc-by-dc-name" type="SELECT" multiple="false">
 				<param name='dc-name'/>
+
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
+
 					WHERE <FIELD name='dc-name'/> = ${dc-name}
 					]]>
 				</statement>
@@ -67,6 +70,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='cluster-name'/> = ${cluster-name}
+
 					]]>
 				</statement>
 			</query>
@@ -97,7 +101,9 @@
 					]]>
 				</statement>
 			</query>
+
 			<query name="find-all-by-cluster-id" type="SELECT" multiple="true">
+
 				<param name='cluster-id'/>
 				<statement>
 					<![CDATA[
@@ -112,7 +118,9 @@
 
 	<entity name="shard-tbl" table="SHARD_TBL" alias="st">
 		<query-defs>
+
 			<query name="find-all-by-cluster-id" type="SELECT" multiple="true">
+
 				<param name='cluster-id'/>
 				<statement>
 					<![CDATA[
@@ -122,12 +130,14 @@
 					]]>
 				</statement>
 			</query>
+
 			<query name="find-shard-by-shard-name" type="SELECT" multiple="false">
 				<param name='shard-name' />
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
+
 					WHERE <FIELD name='shard-name' /> = ${shard-name} 
 					]]>
 				</statement>

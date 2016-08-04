@@ -43,6 +43,7 @@
 			<groupId>com.ctrip.xpipe</groupId>
 			<artifactId>core</artifactId>
 			<type>test-jar</type>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>redis.clients</groupId>

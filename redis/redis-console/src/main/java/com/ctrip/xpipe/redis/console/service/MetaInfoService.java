@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.entity.vo.ClusterVO.DC;
 import com.ctrip.xpipe.redis.console.entity.vo.ClusterVO.Redis;
 import com.ctrip.xpipe.redis.console.entity.vo.ClusterVO.RedisRole;
 import com.ctrip.xpipe.redis.console.entity.vo.ClusterVO.Shard;
+
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
@@ -42,6 +43,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
 /**
@@ -51,7 +53,9 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
  */
 @Service
 public class MetaInfoService {
+
 	public static long REDIS_MASTER_NULL = 0L;
+
 	
 	private DcTblDao dcTblDao;
 	private ClusterTblDao clusterTblDao;
@@ -88,9 +92,10 @@ public class MetaInfoService {
 	 */
 	public List<String> getAllDcIds() throws DalException {
 		List<String> dcIds = new ArrayList<String>(5);
-		
+
 		for(DcTbl dc : dcTblDao.findAllDcs(new Readset<DcTbl>(DcTblEntity.DC_NAME)) ) {
 			dcIds.add(dc.getDcName());
+
 		}
 			
 		return dcIds;
@@ -189,6 +194,7 @@ public class MetaInfoService {
 		}
 		
 		return shardMeta;
+
 	}
 	
 	/**
@@ -239,6 +245,7 @@ public class MetaInfoService {
 		dcMeta.setId(dcId);
 		
 		/** Metaserver Info **/
+
 		List<MetaserverTbl> metaservers = metaserverTblDao.findAllByDcId(dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId()
 				, MetaserverTblEntity.READSET_FULL);
 		for(MetaserverTbl metaserver : metaservers) {
@@ -247,6 +254,7 @@ public class MetaInfoService {
 			metaserverInfo.setIp(metaserver.getMetaserverIp());
 			metaserverInfo.setPort(metaserver.getMetaserverPort());
 			metaserverInfo.setParent(dcMeta);
+
 			// metaserver info
 			
 			dcMeta.getMetaServers().add(metaserverInfo);
@@ -273,6 +281,7 @@ public class MetaInfoService {
 		List<DC> dcs = new ArrayList<DC>(5);
 		
 		/** Cluster base info **/
+
 		clusterVO.setBaseInfo(clusterTblDao.findClusterByClusterName(clusterId, ClusterTblEntity.READSET_FULL));
 		
 		/** DCS info **/
@@ -286,10 +295,12 @@ public class MetaInfoService {
 			/** Get Shards info **/
 			List<Shard> shards = new ArrayList<Shard>(10);
 			List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardTblDao.findAllByDcClusterId(dcCluster.getDcClusterId(), 
+
 					DcClusterShardTblEntity.READSET_FULL);
 			for(DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
 				Shard shard = new Shard();
 				/** Shard base info **/
+
 				shard.setBaseInfo(shardTblDao.findByPK(dcClusterShardTbl.getShardId(), ShardTblEntity.READSET_FULL));
 				
 				/** Get Redis info **/
