@@ -56,8 +56,8 @@ public class DefaultMetaService implements MetaService {
 		return pollMetaServer(new Function<String, Pair<Integer, String>>() {
 
 			@Override
-			public Pair<Integer, String> apply(String ip) {
-				String url = String.format("http://%s%s", ip, path);
+			public Pair<Integer, String> apply(String baseUrl) {
+				String url = String.format("%s%s", baseUrl, path);
 				InputStream is = null;
 				try {
 					if (requestParams != null) {
@@ -110,9 +110,9 @@ public class DefaultMetaService implements MetaService {
 		Pair<Integer, String> codeAndRes = pollMetaServer(new Function<String, Pair<Integer, String>>() {
 
 			@Override
-			public Pair<Integer, String> apply(String ip) {
+			public Pair<Integer, String> apply(String baseUrl) {
 
-				String url = String.format("http://%s%s", ip, path);
+				String url = String.format("%s%s", baseUrl, path);
 				InputStream is = null;
 				OutputStream os = null;
 
@@ -183,10 +183,10 @@ public class DefaultMetaService implements MetaService {
 	}
 
 	private Pair<Integer, String> pollMetaServer(Function<String, Pair<Integer, String>> fun) {
-		List<String> metaServerIpPorts = metaServerLocator.getMetaServerList();
+		List<String> metaServerList = metaServerLocator.getMetaServerList();
 
-		for (String ipPort : metaServerIpPorts) {
-			Pair<Integer, String> result = fun.apply(ipPort);
+		for (String url : metaServerList) {
+			Pair<Integer, String> result = fun.apply(url);
 			if (result != null) {
 				return result;
 			} else {
