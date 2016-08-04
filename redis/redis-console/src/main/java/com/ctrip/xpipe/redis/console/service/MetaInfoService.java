@@ -211,6 +211,18 @@ public class MetaInfoService {
 		clusterMeta.setId(clusterTbl.getClusterName());
 		clusterMeta.setActiveDc(dcTblDao.findByPK(clusterTbl.getActivedcId(), DcTblEntity.READSET_FULL).getDcName());
 		
+		/** Shards **/
+		List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardTblDao.findAllByDcClusterId(
+				dcClusterTbl.getDcClusterId(), 
+				DcClusterShardTblEntity.READSET_FULL);
+		for(DcClusterShardTbl dcClusterShard : dcClusterShardTbls) {
+			ShardMeta shardMeta = getDcClusterShardMeta(dcId,clusterId,
+					shardTblDao.findByPK(dcClusterShard.getShardId(), ShardTblEntity.READSET_FULL).getShardName()
+					);
+			
+			clusterMeta.addShard(shardMeta);
+		}
+		
 		
 		return clusterMeta;
 	}
