@@ -27,23 +27,28 @@ import com.ctrip.xpipe.redis.console.model.DcClusterTblEntity;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.DcTblDao;
 import com.ctrip.xpipe.redis.console.model.DcTblEntity;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTblDao;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTblEntity;
 import com.ctrip.xpipe.redis.console.model.MetaserverTbl;
 import com.ctrip.xpipe.redis.console.model.MetaserverTblDao;
 import com.ctrip.xpipe.redis.console.model.MetaserverTblEntity;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
 import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
+import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.SetinelTblDao;
+import com.ctrip.xpipe.redis.console.model.SetinelTblEntity;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-
+import com.ctrip.xpipe.redis.core.entity.SetinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
 /**
@@ -245,7 +250,6 @@ public class MetaInfoService {
 		dcMeta.setId(dcId);
 		
 		/** Metaserver Info **/
-
 		List<MetaserverTbl> metaservers = metaserverTblDao.findAllByDcId(dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId()
 				, MetaserverTblEntity.READSET_FULL);
 		for(MetaserverTbl metaserver : metaservers) {
@@ -253,18 +257,58 @@ public class MetaInfoService {
 			MetaServerMeta metaserverInfo = new MetaServerMeta();
 			metaserverInfo.setIp(metaserver.getMetaserverIp());
 			metaserverInfo.setPort(metaserver.getMetaserverPort());
+			if(metaserver.getMetaserverRole().equals("master")) {
+				metaserverInfo.setMaster(true);
+			} else {
+				metaserverInfo.setMaster(false);
+			}
 			metaserverInfo.setParent(dcMeta);
 
-			// metaserver info
-			
 			dcMeta.getMetaServers().add(metaserverInfo);
 		}
 		
 		/** KeeperContainer Info **/
+		List<KeepercontainerTbl> keepercontainerTbls = keepercontainerTblDao.findAllKeeperByDcId(
+				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), 
+				KeepercontainerTblEntity.READSET_FULL);
+		for(KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
+			
+			KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
+			keeperContainerMeta.setId((int)keepercontainerTbl.getKeepercontainerId());
+			keeperContainerMeta.setIp(keepercontainerTbl.getKeepercontainerIp());
+			keeperContainerMeta.setPort(keepercontainerTbl.getKeepercontainerPort());
+			keeperContainerMeta.setParent(dcMeta);
+			
+			dcMeta.addKeeperContainer(keeperContainerMeta);
+		}
 		
 		/** Setinel Info **/
+		List<SetinelTbl> setinelTbls = setinelTblDao.findAllByDcId(
+				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), 
+				SetinelTblEntity.READSET_FULL);
+		for(SetinelTbl setinelTbl : setinelTbls) {
+			
+			SetinelMeta setinelMeta = new SetinelMeta();
+			setinelMeta.setId((int)setinelTbl.getSetinelId());
+			setinelMeta.setAddress(setinelMeta.getAddress());
+			setinelMeta.setParent(dcMeta);
+			
+			dcMeta.addSetinel(setinelMeta);
+		}
 		
 		/** Cluster Info **/
+		List<DcClusterTbl> dcClusterTbls = dcClusterTblDao.findAllByDcId(
+				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), 
+				DcClusterTblEntity.READSET_FULL);
+		for(DcClusterTbl dcClusterTbl : dcClusterTbls) {
+			
+			ClusterMeta clusterMeta = getDcClusterMeta(
+					dcId,
+					clusterTblDao.findByPK(dcClusterTbl.getClusterId(), ClusterTblEntity.READSET_FULL).getClusterName()
+					);
+			
+			dcMeta.addCluster(clusterMeta);
+		}
 		
 		return dcMeta;
 	}
