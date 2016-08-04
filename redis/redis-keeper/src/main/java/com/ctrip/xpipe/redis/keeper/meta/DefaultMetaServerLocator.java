@@ -3,6 +3,9 @@ package com.ctrip.xpipe.redis.keeper.meta;
 import java.util.Arrays;
 import java.util.List;
 
+import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
+import com.google.common.base.Strings;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,21 +15,25 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class DefaultMetaServerLocator implements MetaServerLocator {
-	
-	private String address = System.getProperty("metaServerIp", "127.0.0.1") + ":"  + System.getProperty("metaServerPort", "9747");  
-		
+	@Autowired
+	private KeeperContainerConfig keeperContainerConfig;
+    private String addressOverride;
+
 	public DefaultMetaServerLocator() {
 		
 	}
 
 	@Override
 	public List<String> getMetaServerList() {
-		
-		return Arrays.asList(address);
+		return Arrays.asList(getAddress());
 	}
 	
 	public void setAddress(String address) {
-		this.address = address;
+		this.addressOverride = address;
+	}
+
+	private String getAddress() {
+		return Strings.isNullOrEmpty(addressOverride) ? keeperContainerConfig.getMetaServerUrl() : addressOverride;
 	}
 
 }
