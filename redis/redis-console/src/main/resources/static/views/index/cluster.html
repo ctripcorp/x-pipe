@@ -2,36 +2,36 @@
     <ul class="breadcrumb">
         <li>
             <i class="ace-icon fa fa-home home-icon"></i>
-            <a href="#" ng-bind="cluster.baseInfo.clusterId"></a>
+            <a href="#" ng-bind="cluster.baseInfo.clusterName"></a>
         </li>
     </ul>
 
-    <div class="nav-search" id="nav-search">
-        <form class="form-search">
+    <div class="nav-search" id="nav-search2">
+        <form class="form-search" ng-submit="loadCluster()">
 							<span class="input-icon">
-								<input type="text" placeholder="Search ." class="nav-search-input" id="nav-search-input"
-                                       autocomplete="off"/>
+								<input type="text" placeholder="cluster name" class="nav-search-input" ng-model="clusterName">
 								<i class="ace-icon fa fa-search nav-search-icon"></i>
 							</span>
         </form>
     </div>
+
 </div>
 
 <div class="page-content">
     <div class="tabbable">
         <ul class="nav nav-tabs padding-18 tab-size-bigger" id="myTab">
-            <li ng-repeat="dc in cluster.dcs" ng-class="{'active': dcActiveTab == dc.baseInfo.dcId}"
+            <li ng-repeat="dc in cluster.dcs" ng-class="{'active': dcActiveTab == dc.baseInfo.dcId || $index == 0}"
                 ng-click="switchDc(dc)">
                 <a data-toggle="tab">
                     <i class="blue ace-icon fa fa-question-circle bigger-120"></i>
-                    {{dc.baseInfo.dcId}}
+                    {{dc.baseInfo.dcName}}
                 </a>
             </li>
 
         </ul>
 
         <div class="tab-content no-border padding-24">
-            <div ng-repeat="dc in cluster.dcs" ng-show="dcActiveTab == dc.baseInfo.dcId"
+            <div ng-repeat="dc in cluster.dcs" ng-show="dcActiveTab == dc.baseInfo.dcName"
                  class="tab-pane fade in active">
                 <div class="col-xs-12">
                     <div class="widget-box transparent" ng-repeat="shard in dc.shards">
