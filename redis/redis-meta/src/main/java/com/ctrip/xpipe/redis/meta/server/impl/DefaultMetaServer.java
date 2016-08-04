@@ -11,13 +11,14 @@ import com.ctrip.xpipe.api.cluster.ShardArrange;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.core.cluster.ClusterMovingMethod;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractCurrentClusterServer;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dao.MetaServerDao;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
@@ -30,7 +31,7 @@ import com.ctrip.xpipe.utils.IpUtils;
  *         May 25, 2016 5:24:27 PM
  */
 @Component
-public class DefaultMetaServer extends AbstractCurrentClusterServer implements MetaServer {
+public class DefaultMetaServer extends DefaultCurrentClusterServer implements MetaServer {
 	
 	@Autowired
 	private ShardArrange<String>  shardarrange;
@@ -162,8 +163,10 @@ public class DefaultMetaServer extends AbstractCurrentClusterServer implements M
 		return 0;
 	}
 
+	@ClusterMovingMethod
 	@Override
 	public void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo) {
 		logger.info("[ping]{},{},{},{}", clusterId, shardId, keeperInstanceMeta, forwardInfo);
+		
 	}
 }

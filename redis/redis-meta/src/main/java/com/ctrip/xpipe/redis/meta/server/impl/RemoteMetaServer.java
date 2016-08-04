@@ -34,7 +34,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	public RemoteMetaServer(int currentServerId, int serverId, ClusterServerInfo clusterServerInfo) {
 		super(currentServerId, serverId, clusterServerInfo);
 		
-		pingPath = String.format("%s/%s", getHttpHost(), MetaServerKeeperService.PATH_PING);
+		pingPath = String.format("%s/%s/%s", getHttpHost(), MetaServerKeeperService.PATH_PREFIX, MetaServerKeeperService.PATH_PING);
 	}
 
 	@Override

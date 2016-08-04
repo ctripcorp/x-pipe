@@ -32,7 +32,7 @@ public class TestAppServer extends AbstractLifecycle{
 	
 	private static final int waitForRestartTimeMills = 1000;
 	private static final int zkSessionTimeoutMillis = 5000;
-	private static final int total_slots = 16;
+	public static final int total_slots = 16;
 	private int serverPort;
 	private int zkPort;
 	private int serverId; 

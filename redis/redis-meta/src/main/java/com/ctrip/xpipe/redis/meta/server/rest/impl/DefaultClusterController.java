@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
+import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
+import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterDebugInfo;
 
@@ -20,11 +22,17 @@ import com.ctrip.xpipe.redis.meta.server.rest.ClusterDebugInfo;
  * Jul 29, 2016
  */
 @RestController
-@RequestMapping(ClusterApi.PATH_FOR_CLUSTER)
+@RequestMapping(ClusterApi.PATH_PREFIX)
 public class DefaultClusterController implements ClusterApi{
 	
 	@Autowired
 	private CurrentClusterServer currentClusterServer;
+	
+	@Autowired
+	private SlotManager slotManager;
+
+	@Autowired
+	private ClusterServers<?> clusterServers;
 
 	@RequestMapping(path = "/serverid", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
@@ -63,7 +71,17 @@ public class DefaultClusterController implements ClusterApi{
 				new ClusterDebugInfo(currentClusterServer.getServerId(), 
 						currentClusterServer.isLeader(), 
 						currentClusterServer.getClusterInfo(), 
-						currentClusterServer.slots()));
+						currentClusterServer.slots(),
+						clusterServers.allClusterServerInfos(),
+						slotManager.allSlotsInfo()
+						));
+	}
+
+	@RequestMapping(path = "/refresh", method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@Override
+	public void refresh() throws Exception {
+		slotManager.refresh();
+		clusterServers.refresh();
 	}
 	
 }

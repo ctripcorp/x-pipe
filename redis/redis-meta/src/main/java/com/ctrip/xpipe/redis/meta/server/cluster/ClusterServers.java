@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
+import java.util.Map;
 import java.util.Set;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
@@ -22,4 +23,5 @@ public interface ClusterServers<T extends ClusterServer> extends Observable, Lif
 	
 	boolean exist(int serverId);
 
+	Map<Integer, ClusterServerInfo> allClusterServerInfos();
 }

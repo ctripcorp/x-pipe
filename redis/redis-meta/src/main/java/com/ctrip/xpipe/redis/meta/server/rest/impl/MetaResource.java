@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.meta.server.MetaServer;
 
 @RestController
 @RequestMapping("/api/v1")
-public class MetaResource extends AbstractRecource{
+public class MetaResource extends AbstractController{
 	
 	@Autowired
 	private MetaServer metaServer;

@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -212,6 +214,16 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 	@Override
 	public boolean exist(int serverId) {
 		return servers.get(serverId) != null;
+	}
+
+	@Override
+	public Map<Integer, ClusterServerInfo> allClusterServerInfos() {
+		
+		Map<Integer, ClusterServerInfo> result = new HashMap<>();
+		for(Entry<Integer, T> entry : servers.entrySet()){
+			result.put(entry.getKey(), entry.getValue().getClusterInfo());
+		}
+		return result;
 	}
 	
 	

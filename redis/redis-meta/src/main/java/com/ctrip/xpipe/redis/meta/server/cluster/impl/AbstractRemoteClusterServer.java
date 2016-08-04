@@ -59,9 +59,9 @@ public class AbstractRemoteClusterServer extends AbstractClusterServer implement
 			restTemplate = new RestTemplate(factory);
 			
 			httpHost = String.format("http://%s:%d", clusterServerInfo.getIp(), clusterServerInfo.getPort());
-			notifySlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_NOTIFY_SLOT_CHANGE);
-			exportSlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_EXPORT_SLOT);
-			importSlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_FOR_CLUSTER, ClusterApi.PATH_IMPORT_SLOT);
+			notifySlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_PREFIX, ClusterApi.PATH_NOTIFY_SLOT_CHANGE);
+			exportSlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_PREFIX, ClusterApi.PATH_EXPORT_SLOT);
+			importSlotChangePath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_PREFIX, ClusterApi.PATH_IMPORT_SLOT);
 		}
 	}
 

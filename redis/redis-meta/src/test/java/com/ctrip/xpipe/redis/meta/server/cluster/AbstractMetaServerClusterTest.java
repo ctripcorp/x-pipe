@@ -29,6 +29,10 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 	}
 	
 	protected CuratorFramework getCuratorFramework() throws Exception{
+		return getCuratorFramework(zkPort);
+	}
+
+	protected CuratorFramework getCuratorFramework(int zkPort) throws Exception{
 		
 		ZkClient client = new DefaultZkClient();
 		client.setZkAddress(String.format("localhost:%d", zkPort));
@@ -36,7 +40,7 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 		client.start();
 		return client.get();
 	}
-	
+
 	@Override
 	protected ApplicationContext createSpringContext() {
 		return null;

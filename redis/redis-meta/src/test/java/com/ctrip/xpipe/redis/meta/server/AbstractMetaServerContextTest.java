@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
-import com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractCurrentClusterServer;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dao.memory.MemoryMetaServerDao;
@@ -90,7 +90,7 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	
 	public CurrentClusterServer createAndStart(MetaServerConfig metaServerConfig) throws Exception{
 		
-		AbstractCurrentClusterServer current = new AbstractCurrentClusterServer();
+		DefaultCurrentClusterServer current = new DefaultCurrentClusterServer();
 		current.setZkClient(getZkClient());
 		current.setConfig(metaServerConfig);
 		current.initialize();

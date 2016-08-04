@@ -34,7 +34,9 @@ public interface SlotManager extends Lifecycle{
 	
 	Map<Integer, SlotInfo> allMoveingSlots();
 	
-	int getSlotByKey(Object key);
+	int getSlotIdByKey(Object key);
+
+	SlotInfo getSlotInfoByKey(Object key);
 
 	Integer getServerIdByKey(Object key);
 	

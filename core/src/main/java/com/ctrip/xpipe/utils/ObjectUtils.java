@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.utils;
 
+import java.lang.reflect.Method;
 
 /**
  * @author wenchao.meng
@@ -39,5 +40,16 @@ public class ObjectUtils {
 		boolean equals(T obj1, T obj2);
 		
 	}
+	
+	public static Method getMethod(String methodName, Class<?> clazz) {
+		
+		for(Method method : clazz.getMethods()){
+			if(method.getName().equals(methodName)){
+				return method;
+			}
+		}
+		return null;
+	}
+
 
 }

@@ -22,9 +22,12 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
+import com.ctrip.xpipe.redis.meta.server.cluster.SLOT_STATE;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
+import com.ctrip.xpipe.redis.meta.server.rest.ForwardType;
+import com.ctrip.xpipe.redis.meta.server.rest.exception.MovingTargetException;
 import com.ctrip.xpipe.redis.meta.server.rest.exception.UnfoundAliveSererException;
 
 /**
@@ -34,13 +37,15 @@ import com.ctrip.xpipe.redis.meta.server.rest.exception.UnfoundAliveSererExcepti
  * Aug 3, 2016
  */
 @RestController
-public class DispatcherMetaServerController{
+@RequestMapping(MetaServerService.PATH_PREFIX)
+public class DispatcherMetaServerController extends AbstractController{
 	
 	@Autowired
 	public MetaServer currentMetaServer;
 	
 	@Autowired
 	private SlotManager slotManager;
+	
 
 	@Autowired
 	public ClusterServers<MetaServer> servers;
@@ -48,7 +53,9 @@ public class DispatcherMetaServerController{
 	@RequestMapping(path = MetaServerKeeperService.PATH_PING, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public void ping(@PathVariable String clusterId, @PathVariable String shardId, KeeperInstanceMeta keeperInstanceMeta, 
 			@RequestHeader(name = MetaServerService.HTTP_HEADER_FOWRARD, required = false) ForwardInfo forwardInfo) {
-		
+		if(forwardInfo != null){
+			logger.info("[ping]{},{}", clusterId, forwardInfo);
+		}
 		MetaServer metaServer = getMetaServer(clusterId, forwardInfo);
 		if(metaServer == null){
 			throw new UnfoundAliveSererException(clusterId, slotManager.getServerIdByKey(clusterId), currentMetaServer.getServerId());
@@ -57,7 +64,19 @@ public class DispatcherMetaServerController{
 	}
 
 	private MetaServer getMetaServer(String clusterId, ForwardInfo forwardInfo) {
+		
+		int slotId = slotManager.getSlotIdByKey(clusterId);
+		SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
+		
+		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MOVING){
 
+			if(!(slotInfo.getSlotState() == SLOT_STATE.MOVING  && slotInfo.getToServerId() == currentMetaServer.getServerId())){
+				throw new MovingTargetException(forwardInfo, currentMetaServer.getServerId(), slotInfo, clusterId, slotId);
+			}
+			logger.info("[getMetaServer][use current server]");
+			return currentMetaServer;
+		}
+		
 		Integer serverId = slotManager.getServerIdByKey(clusterId);
 		if(serverId == null){
 			throw new IllegalStateException("clusterId:" + clusterId + ", unfound server");

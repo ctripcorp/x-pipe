@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+
 import java.util.Set;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,8 +32,7 @@ import com.ctrip.xpipe.zk.ZkClient;
  *
  * Jul 25, 2016
  */
-public class AbstractCurrentClusterServer extends AbstractClusterServer implements CurrentClusterServer, TopElement{
-	
+public class DefaultCurrentClusterServer extends AbstractClusterServer implements CurrentClusterServer, TopElement{
 
 	@Autowired
 	private ZkClient zkClient;
@@ -52,7 +53,7 @@ public class AbstractCurrentClusterServer extends AbstractClusterServer implemen
 	private ExecutorService executors;
 
 	
-	public AbstractCurrentClusterServer() {
+	public DefaultCurrentClusterServer() {
 	}
 
 	@Override
@@ -150,6 +151,17 @@ public class AbstractCurrentClusterServer extends AbstractClusterServer implemen
 	public boolean isLeader() {
 		return metaserverLeaderElector.amILeader();
 	}
+	
+	
+	protected boolean isExporting(Object key){
+		
+		SlotInfo slotInfo = slotManager.getSlotInfoByKey(key);
+		if(slotInfo.getSlotState() == SLOT_STATE.MOVING){
+			return true;
+		}
+		return false;
+	}
+	
 	
 	class SlotRefreshCommand extends AbstractCommand<Void>{
 		
