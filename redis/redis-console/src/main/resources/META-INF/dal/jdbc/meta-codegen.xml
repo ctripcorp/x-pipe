@@ -2,18 +2,14 @@
 <entities>
   <entity name="cluster-tbl" table="CLUSTER_TBL" alias="ct">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
-
     <member name="cluster-name" field="cluster_name" value-type="String" length="30" nullable="false" />
     <member name="activedc-id" field="activedc_id" value-type="long" length="20" nullable="false" />
-
     <member name="cluster-description" field="cluster_description" value-type="String" length="180" nullable="false" />
     <member name="cluster-last-modified-time" field="cluster_last_modified_time" value-type="String" length="20" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
-
     <index name="cluster_name" unique="true" members="cluster_name ASC" />
-
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -47,10 +43,8 @@
   <entity name="dc-cluster-shard-tbl" table="DC_CLUSTER_SHARD_TBL" alias="dcst">
     <member name="dc-cluster-shard-id" field="dc_cluster_shard_id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="dc-cluster-id" field="dc_cluster_id" value-type="long" length="19" nullable="false" />
-
     <member name="shard-id" field="shard_id" value-type="long" length="20" nullable="false" />
     <member name="setinel-id" field="setinel_id" value-type="long" length="20" nullable="false" />
-
     <member name="setinel-monitor-name" field="setinel_monitor_name" value-type="String" length="30" nullable="false" />
     <member name="dc-cluster-shard-phase" field="dc_cluster_shard_phase" value-type="int" length="10" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
@@ -88,11 +82,9 @@
   </entity>
   <entity name="dc-cluster-tbl" table="DC_CLUSTER_TBL" alias="dct">
     <member name="dc-cluster-id" field="dc_cluster_id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
-
     <member name="dc-id" field="dc_id" value-type="long" length="20" nullable="false" />
     <member name="cluster-id" field="cluster_id" value-type="long" length="20" nullable="false" />
     <member name="metaserver-id" field="metaserver_id" value-type="long" length="20" nullable="false" />
-
     <member name="dc-cluster-phase" field="dc_cluster_phase" value-type="int" length="10" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <var name="key-dc-cluster-id" value-type="long" key-member="dc-cluster-id" />
@@ -129,18 +121,14 @@
   </entity>
   <entity name="dc-tbl" table="DC_TBL" alias="dt">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
-
     <member name="dc-name" field="dc_name" value-type="String" length="30" nullable="false" />
-
     <member name="dc-active" field="dc_active" value-type="boolean" nullable="false" />
     <member name="dc-description" field="dc_description" value-type="String" length="180" nullable="false" />
     <member name="dc-last-modified-time" field="dc_last_modified_time" value-type="String" length="20" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
-
     <index name="dc_name" unique="true" members="dc_name ASC" />
-
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -173,9 +161,7 @@
   </entity>
   <entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
     <member name="keepercontainer-id" field="keepercontainer_id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
-
     <member name="keepercontainer-dc" field="keepercontainer_dc" value-type="long" length="20" nullable="false" />
-
     <member name="keepercontainer-ip" field="keepercontainer_ip" value-type="String" length="40" nullable="false" />
     <member name="keepercontainer-port" field="keepercontainer_port" value-type="int" length="10" nullable="false" />
     <member name="keepercontainer-active" field="keepercontainer_active" value-type="boolean" nullable="false" />
@@ -214,10 +200,8 @@
   </entity>
   <entity name="metaserver-tbl" table="METASERVER_TBL" alias="mt">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
-
     <member name="metaserver-name" field="metaserver_name" value-type="String" length="30" nullable="false" />
     <member name="dc-id" field="dc_id" value-type="long" length="20" nullable="false" />
-
     <member name="metaserver-ip" field="metaserver_ip" value-type="String" length="40" nullable="false" />
     <member name="metaserver-port" field="metaserver_port" value-type="int" length="10" nullable="false" />
     <member name="metaserver-active" field="metaserver_active" value-type="boolean" nullable="false" />
@@ -225,9 +209,7 @@
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
-
     <index name="metaserver_name" unique="true" members="metaserver_name ASC" />
-
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -260,18 +242,14 @@
   </entity>
   <entity name="redis-tbl" table="REDIS_TBL" alias="rt">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
-
     <member name="redis-name" field="redis_name" value-type="String" length="80" nullable="false" />
-
     <member name="dc-cluster-shard-id" field="dc_cluster_shard_id" value-type="long" length="19" nullable="false" />
     <member name="redis-ip" field="redis_ip" value-type="String" length="40" nullable="false" />
     <member name="redis-port" field="redis_port" value-type="int" length="10" nullable="false" />
     <member name="redis-role" field="redis_role" value-type="String" length="12" nullable="false" />
-
     <member name="keeper-active" field="keeper_active" value-type="boolean" nullable="false" />
     <member name="redis-master" field="redis_master" value-type="long" length="20" />
     <member name="keepercontainer-id" field="keepercontainer_id" value-type="long" length="20" />
-
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
@@ -307,9 +285,7 @@
   </entity>
   <entity name="setinel-tbl" table="SETINEL_TBL" alias="st">
     <member name="setinel-id" field="setinel_id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
-
     <member name="dc-id" field="dc_id" value-type="long" length="20" nullable="false" />
-
     <member name="setinel-address" field="setinel_address" value-type="String" length="80" nullable="false" />
     <member name="setinel-description" field="setinel_description" value-type="String" length="120" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
@@ -347,10 +323,8 @@
   </entity>
   <entity name="shard-tbl" table="SHARD_TBL" alias="st2">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
-
     <member name="shard-name" field="shard_name" value-type="String" length="30" nullable="false" />
     <member name="cluster-id" field="cluster_id" value-type="long" length="20" nullable="false" />
-
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />

@@ -268,7 +268,7 @@ public class MetaInfoService {
 		}
 		
 		/** KeeperContainer Info **/
-		List<KeepercontainerTbl> keepercontainerTbls = keepercontainerTblDao.findAllKeeperByDcId(
+		List<KeepercontainerTbl> keepercontainerTbls = keepercontainerTblDao.findAllByDcId(
 				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), 
 				KeepercontainerTblEntity.READSET_FULL);
 		for(KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
