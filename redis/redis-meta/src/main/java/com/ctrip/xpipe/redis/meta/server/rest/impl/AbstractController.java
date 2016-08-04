@@ -13,7 +13,7 @@ import com.ctrip.xpipe.rest.ProcessTemplate;
  *
  *         May 26, 2016 6:34:49 PM
  */
-public class AbstractRecource {
+public class AbstractController {
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	

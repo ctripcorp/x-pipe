@@ -14,6 +14,12 @@
 	</entity>
 	<entity name="shard">
 		<attribute name="id" key="true" />
+	</entity>	
+	<entity name="setinel">
+		<attribute name="id" value-type="Long" />
+	</entity>
+	<entity name="keeperContainer">
+		<attribute name="id" value-type="Long" />
 	</entity>
 	<entity name="keeper" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Keeper">
 		<attribute name="active" primitive="true" />

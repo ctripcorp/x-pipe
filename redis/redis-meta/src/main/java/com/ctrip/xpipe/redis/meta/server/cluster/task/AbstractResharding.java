@@ -30,14 +30,14 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 	protected ExecutorService executors;
 	
 	protected SlotManager slotManager;
-	protected ClusterServers servers;
+	protected ClusterServers<? extends ClusterServer> servers;
 	protected ZkClient zkClient;
 	
 	private volatile boolean allTaskSubmited = false;
 	private AtomicInteger totalTasks = new AtomicInteger();
 	private AtomicInteger completedTasks = new AtomicInteger();
 
-	public AbstractResharding(ExecutorService executors, SlotManager slotManager, ClusterServers servers, ZkClient zkClient) {
+	public AbstractResharding(ExecutorService executors, SlotManager slotManager, ClusterServers<?> servers, ZkClient zkClient) {
 		this.executors = executors;
 		this.slotManager = slotManager;
 		this.servers = servers;
@@ -45,7 +45,7 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 
 	}
 
-	public AbstractResharding(SlotManager slotManager, ClusterServers servers, ZkClient zkClient) {
+	public AbstractResharding(SlotManager slotManager, ClusterServers<?> servers, ZkClient zkClient) {
 		this(Executors.newCachedThreadPool(XpipeThreadFactory.create("Sharding")), slotManager, servers, zkClient);
 	}
 
@@ -72,7 +72,7 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 		return getClass().getSimpleName();
 	}
 
-	protected int getAliveTotal(Collection<ClusterServer> aliveServers) {
+	protected int getAliveTotal(Collection<? extends ClusterServer> aliveServers) {
 		
 		int result = 0;
 		for(ClusterServer server : aliveServers){

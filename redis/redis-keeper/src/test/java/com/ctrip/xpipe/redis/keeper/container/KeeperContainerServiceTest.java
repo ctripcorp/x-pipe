@@ -1,26 +1,22 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
-import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperBadRequestException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -33,14 +29,13 @@ public class KeeperContainerServiceTest {
     @Mock
     private MetaService metaService;
     @Mock
-    private Config config;
+    private KeeperContainerConfig keeperContainerConfig;
     @Mock
     private ComponentRegistry componentRegistry;
     private KeeperContainerService keeperContainerService;
     private String someCluster;
     private String someShard;
     private int somePort;
-    private String someRdsDir;
     private KeeperTransMeta someKeeperTransMeta;
     private KeeperMeta someKeeperMeta;
 
@@ -50,7 +45,7 @@ public class KeeperContainerServiceTest {
 
         ReflectionTestUtils.setField(keeperContainerService, "leaderElectorManager", leaderElectorManager);
         ReflectionTestUtils.setField(keeperContainerService, "metaService", metaService);
-        ReflectionTestUtils.setField(keeperContainerService, "config", config);
+        ReflectionTestUtils.setField(keeperContainerService, "keeperContainerConfig", keeperContainerConfig);
 
         someCluster = "someCluster";
         someShard = "someShard";
@@ -63,13 +58,7 @@ public class KeeperContainerServiceTest {
         someKeeperTransMeta.setShardId(someShard);
         someKeeperTransMeta.setKeeperMeta(someKeeperMeta);
 
-        //config always return default value
-        doAnswer(new Answer<String>() {
-            @Override
-            public String answer(InvocationOnMock invocation) throws Throwable {
-                return invocation.getArgumentAt(1, String.class);
-            }
-        }).when(config).get(anyString(), anyString());
+        when(keeperContainerConfig.getReplicationStoreDir()).thenReturn(System.getProperty("user.dir"));
 
         ReflectionTestUtils.setField(ComponentRegistryHolder.class, "componentRegistry", componentRegistry);
     }

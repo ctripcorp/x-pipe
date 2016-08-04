@@ -285,4 +285,36 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 		}
 	}
 
+	@Override
+	public int getSlotIdByKey(Object key) {
+		
+		return key.hashCode()%TOTAL_SLOTS;
+	}
+
+	@Override
+	public SlotInfo getSlotInfoByKey(Object key) {
+		return slotsMap.get(getSlotIdByKey(key));
+	}
+
+	@Override
+	public Integer getServerIdByKey(Object key) {
+		
+		int slotId = getSlotIdByKey(key);
+		try{
+			lock.readLock().lock();
+			SlotInfo slotInfo = slotsMap.get(slotId);
+			if(slotInfo == null){
+				return null;
+			}
+			return slotInfo.getServerId();
+		}finally{
+			lock.readLock().unlock();
+		}
+	}
+
+	@Override
+	public Map<Integer, SlotInfo> allSlotsInfo() {
+		return new HashMap<>(slotsMap);
+	}
+
 }
