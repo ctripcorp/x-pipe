@@ -6,7 +6,7 @@ index_module.controller('ClusterCtl', ['$scope', '$window', 'ClusterService',
              $scope.switchDc = switchDc;
 
              function switchDc(dc) {
-                 $scope.dcActiveTab = dc.baseInfo.dcId;
+                 $scope.dcActiveTab = dc.baseInfo.dcName;
              }
 
              ClusterService.load_cluster($scope.clusterName)
