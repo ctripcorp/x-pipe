@@ -2,11 +2,9 @@ package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
-import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 
@@ -15,21 +13,22 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
  *
  * Jul 23, 2016
  */
-@Component
-public class DefaultRemoteClusterSeverFactory implements RemoteClusterServerFactory{
+public abstract class AbstractRemoteClusterSeverFactory<T extends ClusterServer> implements RemoteClusterServerFactory<T>{
 
 	@Autowired
 	private MetaServerConfig config;
 	
 	@Autowired
-	private CurrentClusterServer currentClusterServer;
+	protected T currentClusterServer;
 
 	@Override
-	public ClusterServer createClusterServer(int serverId, ClusterServerInfo clusterServerInfo) {
+	public T createClusterServer(int serverId, ClusterServerInfo clusterServerInfo) {
 		
 		if(serverId == config.getMetaServerId()){
 			return currentClusterServer;
 		}
-		return new RemoteClusterServer(serverId, clusterServerInfo);
+		return doCreateRemoteServer(serverId, clusterServerInfo);
 	}
+
+	protected abstract T doCreateRemoteServer(int serverId, ClusterServerInfo clusterServerInfo);
 }

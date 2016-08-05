@@ -6,7 +6,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
  *
  * Jul 27, 2016
  */
-public class ArrangeTaskTriggerTest extends AbstractMetaServerTest{
+public class ArrangeTaskTriggerTest extends AbstractMetaServerContextTest{
 	
 	@Before
 	public void beforeArrangeTaskTriggerTest() throws Exception{
@@ -36,7 +36,7 @@ public class ArrangeTaskTriggerTest extends AbstractMetaServerTest{
 		ArrangeTaskTrigger arrangeTaskTrigger = getBean(ArrangeTaskTrigger.class);
 		arrangeTaskTrigger.setWaitForRestartTimeMills(1000);
 		
-		RemoteClusterServerFactory factory = getBean(RemoteClusterServerFactory.class);
+		RemoteClusterServerFactory<?> factory = getBean(RemoteClusterServerFactory.class);
 		
 		ClusterServer clusterServer = factory.createClusterServer(100, new ClusterServerInfo("localhost", randomPort()));
 

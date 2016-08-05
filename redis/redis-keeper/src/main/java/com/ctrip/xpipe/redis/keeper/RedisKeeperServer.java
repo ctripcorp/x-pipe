@@ -6,7 +6,6 @@ import java.util.Set;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
-import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 
@@ -28,8 +27,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	void clientDisConnected(Channel channel);
 	
 	String getKeeperRunid();
-	
-	void readRdbFile(RdbFileListener rdbFileListener) throws IOException;
 	
 	/**
 	 * include all client roles

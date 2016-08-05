@@ -9,13 +9,16 @@ import com.ctrip.xpipe.utils.ObjectUtils;
  *
  * Aug 2, 2016
  */
-public class KeeperTransMeta {
+public class KeeperTransMeta implements ClusterAware{
 	
 	private String clusterId;
 
 	private String shardId;
 	
 	private KeeperMeta keeperMeta;
+
+	//for json conversion
+	public KeeperTransMeta() {}
 	
 	public KeeperTransMeta(String clusterId, String shardId, KeeperMeta keeperMeta){
 		this.clusterId = clusterId;
@@ -24,6 +27,7 @@ public class KeeperTransMeta {
 	}
 	
 
+	@Override
 	public String getClusterId() {
 		return clusterId;
 	}

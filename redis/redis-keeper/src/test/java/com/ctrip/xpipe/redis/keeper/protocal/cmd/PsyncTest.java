@@ -15,9 +15,9 @@ import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -34,7 +34,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 	private Psync psync;
 	
 	private ReplicationStoreManager replicationStoreManager;
-	private ReplicationStore replicationStore;
+	private DefaultReplicationStore replicationStore;
 
 	private String masterId = randomString(40);
 	private Long masterOffset = 1024L;
@@ -47,7 +47,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 	public void beforePsyncTest() throws Exception{
 		
 		replicationStoreManager = createReplicationStoreManager();
-		replicationStore = replicationStoreManager.create();
+		replicationStore = (DefaultReplicationStore) replicationStoreManager.create();
 		
 		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress("127.0.0.1", 1234));
 		psync = new Psync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager);
@@ -129,7 +129,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 	}
 
 	private void assertResult() throws IOException, InterruptedException {
-		replicationStore = replicationStoreManager.getCurrent();
+		replicationStore = (DefaultReplicationStore) replicationStoreManager.getCurrent();
 		
 		String rdbResult = readRdbFileTilEnd(replicationStore);
 		String commandResult = readCommandFileTilEnd(replicationStore);

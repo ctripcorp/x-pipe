@@ -43,7 +43,7 @@ import com.ctrip.xpipe.zk.ZkClient;
 public class DefaultClusterArranger extends AbstractLifecycle implements ClusterArranger, TopElement, LeaderAware, Observer{
 	
 	@Autowired
-	private ClusterServers clusterServers;
+	private ClusterServers<?> clusterServers;
 	
 	@Autowired
 	private ZkClient zkClient;
@@ -52,7 +52,7 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 	private ArrangeTaskTrigger arrangeTaskTrigger;
 	
 	@Autowired
-	private RemoteClusterServerFactory remoteClusterServerFactory;
+	private RemoteClusterServerFactory<?> remoteClusterServerFactory;
 	
 	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create("Slot_Arranger"));
 
@@ -136,7 +136,7 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		//moving slots
 		Map<Integer, SlotInfo> movingSlots = slotManager.allMoveingSlots();
 		if(movingSlots.size() > 0){
-			arrangeTaskTrigger.initSharding(new ContinueResharding(slotManager, movingSlots, clusterServers, zkClient));
+			arrangeTaskTrigger.initSharding(new ContinueResharding(slotManager, movingSlots, clusterServers, remoteClusterServerFactory, zkClient));
 		}
 	}
 

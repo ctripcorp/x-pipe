@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
  */
 public interface ClusterApi{
 
-	public static final String PATH_FOR_CLUSTER = "/api/metacluster";
+	public static final String PATH_PREFIX = "/api/metacluster";
 
 	public static final String PATH_NOTIFY_SLOT_CHANGE = "/notifyslotchange/{slotId}";
 	public static final String PATH_EXPORT_SLOT = "/exportslot/{slotId}";
@@ -26,5 +26,8 @@ public interface ClusterApi{
 	
 	void importSlot(int slotId) throws Exception;
 	
+	String debug();
+	
+	void refresh() throws Exception;
 
 }

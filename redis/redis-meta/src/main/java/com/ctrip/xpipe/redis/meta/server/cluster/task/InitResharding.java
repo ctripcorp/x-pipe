@@ -19,7 +19,7 @@ public class InitResharding extends AbstractDirectMoveSharding{
 	
 	private Set<Integer> emptySlots;
 	
-	public InitResharding(SlotManager slotManager, Set<Integer> emptySlots, ClusterServers servers, ZkClient zkClient) {
+	public InitResharding(SlotManager slotManager, Set<Integer> emptySlots, ClusterServers<?> servers, ZkClient zkClient) {
 		super(slotManager, servers, zkClient);
 		this.emptySlots = emptySlots;
 	}

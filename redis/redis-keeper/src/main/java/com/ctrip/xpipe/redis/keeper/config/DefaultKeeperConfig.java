@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.keeper.config;
 
 import org.springframework.stereotype.Component;
 
-import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
+import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 
 /**
  * @author marsqing
@@ -30,6 +30,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getMetaRefreshIntervalMillis() {
 		return 3000;
+	}
+
+	@Override
+	public long getReplicationStoreGcIntervalSeconds() {
+		return 10;
 	}
 
 }

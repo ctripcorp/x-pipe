@@ -32,6 +32,7 @@ import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 import com.ctrip.xpipe.redis.keeper.spring.KeeperContextConfig;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 
 import io.netty.buffer.ByteBuf;
@@ -170,7 +171,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return currentTestName() + "-shardId";
 	}
 
-	protected String readRdbFileTilEnd(ReplicationStore replicationStore) throws IOException, InterruptedException {
+	protected String readRdbFileTilEnd(DefaultReplicationStore replicationStore) throws IOException, InterruptedException {
 
 		final ByteArrayWritableByteChannel bachannel = new ByteArrayWritableByteChannel();
 		final CountDownLatch latch = new CountDownLatch(1);

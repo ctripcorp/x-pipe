@@ -25,7 +25,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
@@ -289,11 +288,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 	}
 
-	@Override
-	public void readRdbFile(RdbFileListener rdbFileListener) throws IOException {
-		getCurrentReplicationStore().getRdbStore().readRdbFile(rdbFileListener);
-	}
-	
 	@Override
 	public Set<RedisClient> allClients() {
 		return new HashSet<>(redisClients.values());

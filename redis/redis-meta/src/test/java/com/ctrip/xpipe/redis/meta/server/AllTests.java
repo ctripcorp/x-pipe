@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.meta.server;
 
 
 
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -11,7 +12,9 @@ import org.junit.runners.Suite.SuiteClasses;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTriggerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterArrangerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServerTest;
+import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
+import com.ctrip.xpipe.redis.meta.server.keepercontainer.DefaultKeeperContainerServiceFactoryTest;
 
 
 /**
@@ -24,7 +27,9 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 	ArrangeTaskTriggerTest.class,
 	DefaultClusterArrangerTest.class,
 	DefaultClusterServersTest.class,
-	DefaultCurrentClusterServerTest.class
+	DefaultCurrentClusterServerTest.class,
+	DefaultKeeperContainerServiceFactoryTest.class,
+	ForwardInfoEditorTest.class
 })
 public class AllTests {
 
