@@ -28,7 +28,6 @@
 		<coveralls-maven-plugin.version>4.1.0</coveralls-maven-plugin.version>
 		<cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
 		<fastjson.version>1.2.12</fastjson.version>
-		<servlet-api.version>3.0.1</servlet-api.version>
 		<jersey.version>2.19</jersey.version>
 		<commons-exec.version>1.3</commons-exec.version>
 		<unidal.version>2.4.0</unidal.version>
@@ -184,11 +183,6 @@
 				<groupId>org.glassfish.jersey.containers</groupId>
 				<artifactId>jersey-container-servlet-core</artifactId>
 				<version>${jersey.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>javax.servlet</groupId>
-				<artifactId>javax.servlet-api</artifactId>
-				<version>${servlet-api.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.alibaba</groupId>

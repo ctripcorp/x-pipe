@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.core;
+package com.ctrip.xpipe.redis.core.config;
 
 /**
  * @author marsqing

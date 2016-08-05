@@ -17,12 +17,12 @@ import com.ctrip.xpipe.zk.ZkClient;
  */
 public abstract class AbstractDirectMoveSharding extends AbstractResharding{
 
-	public AbstractDirectMoveSharding(ExecutorService executors, SlotManager slotManager, ClusterServers servers,
+	public AbstractDirectMoveSharding(ExecutorService executors, SlotManager slotManager, ClusterServers<?> servers,
 			ZkClient zkClient) {
 		super(executors, slotManager, servers, zkClient);
 	}
 
-	public AbstractDirectMoveSharding(SlotManager slotManager, ClusterServers servers, ZkClient zkClient) {
+	public AbstractDirectMoveSharding(SlotManager slotManager, ClusterServers<?> servers, ZkClient zkClient) {
 		super(slotManager, servers, zkClient);
 	}
 

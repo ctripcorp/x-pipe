@@ -157,7 +157,7 @@ public class MetaInfoService {
 		
 		/** dc-cluster-shard base info **/
 		shardMeta.setId(shardId);
-		shardMeta.setSetinelId((int) dcClusterShardTbl.getSetinelId());
+		shardMeta.setSetinelId(dcClusterShardTbl.getSetinelId());
 		
 		/** redis info **/
 		List<RedisTbl> redisTbls = redisTblDao.findAllByDcClusterShardId(dcClusterShardTbl.getDcClusterShardId()
@@ -178,6 +178,7 @@ public class MetaInfoService {
 							RedisTblEntity.READSET_FULL).getRedisName());
 				}
 				keeperMeta.setActive(redisTbl.isKeeperActive());
+				keeperMeta.setKeeperContainerId(redisTbl.getKeepercontainerId());
 				
 				shardMeta.addKeeper(keeperMeta);
 			} else {
@@ -274,7 +275,7 @@ public class MetaInfoService {
 		for(KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
 			
 			KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
-			keeperContainerMeta.setId((int)keepercontainerTbl.getKeepercontainerId());
+			keeperContainerMeta.setId(keepercontainerTbl.getKeepercontainerId());
 			keeperContainerMeta.setIp(keepercontainerTbl.getKeepercontainerIp());
 			keeperContainerMeta.setPort(keepercontainerTbl.getKeepercontainerPort());
 			keeperContainerMeta.setParent(dcMeta);
@@ -289,7 +290,7 @@ public class MetaInfoService {
 		for(SetinelTbl setinelTbl : setinelTbls) {
 			
 			SetinelMeta setinelMeta = new SetinelMeta();
-			setinelMeta.setId((int)setinelTbl.getSetinelId());
+			setinelMeta.setId(setinelTbl.getSetinelId());
 			setinelMeta.setAddress(setinelMeta.getAddress());
 			setinelMeta.setParent(dcMeta);
 			

@@ -231,7 +231,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	protected MetaService createMetaService(List<MetaServerMeta> metaServerMetas) {
 
 		DefaultMetaServerLocator metaServerLocator = new DefaultMetaServerLocator();
-		metaServerLocator.setAddress(String.format("%s:%d", "localhost", metaServerMetas.get(0).getPort()));
+		metaServerLocator.setAddress(String.format("http://%s:%d", "localhost", metaServerMetas.get(0).getPort()));
 
 		DefaultMetaService metaService = new DefaultMetaService();
 		metaService.setConfig(new DefaultKeeperConfig());

@@ -7,9 +7,7 @@ package com.ctrip.xpipe.redis.core.entity;
  */
 public interface Keeper extends Redis {
 
-	Integer getKeeperContainer();
-
-	Integer getKeeperContainerId();
+	Long getKeeperContainerId();
 
 	Keeper setId(String id);
 

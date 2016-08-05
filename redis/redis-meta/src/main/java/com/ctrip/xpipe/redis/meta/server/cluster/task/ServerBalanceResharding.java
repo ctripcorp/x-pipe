@@ -14,14 +14,14 @@ import com.ctrip.xpipe.zk.ZkClient;
  */
 public class ServerBalanceResharding extends AbstractResharding{
 
-	public ServerBalanceResharding(SlotManager slotManager, ClusterServers servers, ZkClient zkClient) {
+	public ServerBalanceResharding(SlotManager slotManager, ClusterServers<? extends ClusterServer> servers, ZkClient zkClient) {
 		super(slotManager, servers, zkClient);
 	}
 
 	@Override
 	protected void doShardingTask() throws Exception {
 		
-		Set<ClusterServer> aliveServers = servers.allClusterServers();
+		Set<? extends ClusterServer> aliveServers = servers.allClusterServers();
 		if(aliveServers.size() == 0){
 			logger.info("[doExecute][no aliveServers]{}", aliveServers);
 			future.setSuccess(null);
