@@ -6,7 +6,7 @@
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
 				<physical-table-name>CLUSTER_TBL</physical-table-name>
-				<data-source-name>xpipedemodb</data-source-name>
+				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
 		<component>
@@ -15,7 +15,7 @@
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
 				<physical-table-name>DC_CLUSTER_SHARD_TBL</physical-table-name>
-				<data-source-name>xpipedemodb</data-source-name>
+				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
 		<component>
@@ -24,7 +24,7 @@
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
 				<physical-table-name>DC_CLUSTER_TBL</physical-table-name>
-				<data-source-name>xpipedemodb</data-source-name>
+				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
 		<component>
@@ -33,7 +33,7 @@
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
 				<physical-table-name>DC_TBL</physical-table-name>
-				<data-source-name>xpipedemodb</data-source-name>
+				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
 		<component>
@@ -42,7 +42,7 @@
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
 				<physical-table-name>KEEPERCONTAINER_TBL</physical-table-name>
-				<data-source-name>xpipedemodb</data-source-name>
+				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
 		<component>
@@ -51,7 +51,7 @@
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
 				<physical-table-name>METASERVER_TBL</physical-table-name>
-				<data-source-name>xpipedemodb</data-source-name>
+				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
 		<component>
@@ -60,7 +60,16 @@
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
 				<physical-table-name>REDIS_TBL</physical-table-name>
-				<data-source-name>xpipedemodb</data-source-name>
+				<data-source-name>fxxpipe</data-source-name>
+			</configuration>
+		</component>
+		<component>
+			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
+			<role-hint>setinel-tbl</role-hint>
+			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
+			<configuration>
+				<physical-table-name>SETINEL_TBL</physical-table-name>
+				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
 		<component>
@@ -69,12 +78,12 @@
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
 				<physical-table-name>SHARD_TBL</physical-table-name>
-				<data-source-name>xpipedemodb</data-source-name>
+				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
 		<component>
-			<role>com.ctrip.xpipe.redis.console.web.model.ClusterTblDao</role>
-			<implementation>com.ctrip.xpipe.redis.console.web.model.ClusterTblDao</implementation>
+			<role>com.ctrip.xpipe.redis.console.model.ClusterTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.ClusterTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>
@@ -82,8 +91,8 @@
 			</requirements>
 		</component>
 		<component>
-			<role>com.ctrip.xpipe.redis.console.web.model.DcClusterShardTblDao</role>
-			<implementation>com.ctrip.xpipe.redis.console.web.model.DcClusterShardTblDao</implementation>
+			<role>com.ctrip.xpipe.redis.console.model.DcClusterShardTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.DcClusterShardTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>
@@ -91,8 +100,8 @@
 			</requirements>
 		</component>
 		<component>
-			<role>com.ctrip.xpipe.redis.console.web.model.DcClusterTblDao</role>
-			<implementation>com.ctrip.xpipe.redis.console.web.model.DcClusterTblDao</implementation>
+			<role>com.ctrip.xpipe.redis.console.model.DcClusterTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.DcClusterTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>
@@ -100,8 +109,8 @@
 			</requirements>
 		</component>
 		<component>
-			<role>com.ctrip.xpipe.redis.console.web.model.DcTblDao</role>
-			<implementation>com.ctrip.xpipe.redis.console.web.model.DcTblDao</implementation>
+			<role>com.ctrip.xpipe.redis.console.model.DcTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.DcTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>
@@ -109,8 +118,8 @@
 			</requirements>
 		</component>
 		<component>
-			<role>com.ctrip.xpipe.redis.console.web.model.KeepercontainerTblDao</role>
-			<implementation>com.ctrip.xpipe.redis.console.web.model.KeepercontainerTblDao</implementation>
+			<role>com.ctrip.xpipe.redis.console.model.KeepercontainerTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.KeepercontainerTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>
@@ -118,8 +127,8 @@
 			</requirements>
 		</component>
 		<component>
-			<role>com.ctrip.xpipe.redis.console.web.model.MetaserverTblDao</role>
-			<implementation>com.ctrip.xpipe.redis.console.web.model.MetaserverTblDao</implementation>
+			<role>com.ctrip.xpipe.redis.console.model.MetaserverTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.MetaserverTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>
@@ -127,8 +136,8 @@
 			</requirements>
 		</component>
 		<component>
-			<role>com.ctrip.xpipe.redis.console.web.model.RedisTblDao</role>
-			<implementation>com.ctrip.xpipe.redis.console.web.model.RedisTblDao</implementation>
+			<role>com.ctrip.xpipe.redis.console.model.RedisTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.RedisTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>
@@ -136,8 +145,17 @@
 			</requirements>
 		</component>
 		<component>
-			<role>com.ctrip.xpipe.redis.console.web.model.ShardTblDao</role>
-			<implementation>com.ctrip.xpipe.redis.console.web.model.ShardTblDao</implementation>
+			<role>com.ctrip.xpipe.redis.console.model.SetinelTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.SetinelTblDao</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.QueryEngine</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
+			<role>com.ctrip.xpipe.redis.console.model.ShardTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.ShardTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>
@@ -146,9 +164,10 @@
 		</component>
 		<component>
 			<role>org.unidal.dal.jdbc.datasource.DataSourceProvider</role>
-			<implementation>org.unidal.dal.jdbc.datasource.DefaultDataSourceProvider</implementation>
+			<implementation>com.ctrip.xpipe.redis.console.ds.XpipeDataSourceProvider</implementation>
 			<configuration>
-				<datasourceFile>/opt/ctrip/data/xpipe/datasources.xml</datasourceFile>
+				<datasourceFile>datasources.xml</datasourceFile>
+				<baseDirRef>FXXPIPE_HOME</baseDirRef>
 			</configuration>
 		</component>
 	</components>
