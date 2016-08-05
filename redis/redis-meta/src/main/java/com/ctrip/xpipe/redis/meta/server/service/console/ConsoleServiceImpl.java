@@ -1,5 +1,6 @@
-package com.ctrip.xpipe.redis.core.console;
+package com.ctrip.xpipe.redis.meta.server.service.console;
 
+import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -16,15 +17,15 @@ import java.util.Collections;
 import java.util.Set;
 
 @Service
-public class ConsoleServiceImpl implements ConsoleService{
+public class ConsoleServiceImpl implements ConsoleService {
 
 	@Autowired
-	private RetryableRestTemplate retryableRestTemplate;
+	private RetryableRestTemplate restTemplate;
 
 	@Override
 	public Set<String> getAllDcIds() {
-		DCDTO[] dcs = retryableRestTemplate.get("/api/dcs", DCDTO[].class);
-		if (dcs == null || dcs.length == 0){
+		DCDTO[] dcs = restTemplate.get("/api/dcs", DCDTO[].class);
+		if (dcs == null || dcs.length == 0) {
 			return Collections.emptySet();
 		}
 		return BeanUtils.toPropertySet("dcName", Arrays.asList(dcs));
@@ -47,7 +48,7 @@ public class ConsoleServiceImpl implements ConsoleService{
 
 	@Override
 	public ClusterMeta getClusterMeta(String dcId, String clusterId) {
-		return null;
+		return restTemplate.get("/api/dc/{dcId}/cluster/{clusterId}", ClusterMeta.class, dcId, clusterId);
 	}
 
 	@Override

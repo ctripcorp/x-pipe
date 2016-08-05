@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.core.console;
+package com.ctrip.xpipe.redis.meta.server.service.console;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;

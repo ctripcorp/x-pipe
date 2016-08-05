@@ -1,7 +1,8 @@
-package com.ctrip.xpipe.redis.core.console;
+package com.ctrip.xpipe.redis.meta.server.service.console;
 
 
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
@@ -24,7 +25,8 @@ public class RetryableRestTemplate {
 
 	@Autowired
 	private RestTemplateFactory restTemplateFactory;
-
+	@Autowired
+	private MetaServerConfig config;
 
 	@PostConstruct
 	private void postConstruct() {
@@ -100,7 +102,7 @@ public class RetryableRestTemplate {
 	}
 
 	private String host() {
-		return "localhost:8080";
+		return config.getConsoleAddress();
 	}
 
 	//post,delete,put处理超时情况下不重试
