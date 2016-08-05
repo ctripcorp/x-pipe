@@ -9,12 +9,12 @@
    <artifactId>redis-console</artifactId>
    <dependencies>
       <dependency>
-         <groupId>org.springframework.boot</groupId>
-         <artifactId>spring-boot-starter-web</artifactId>
+         <groupId>javax.servlet</groupId>
+         <artifactId>javax.servlet-api</artifactId>
       </dependency>
       <dependency>
          <groupId>org.springframework.boot</groupId>
-         <artifactId>spring-boot-devtools</artifactId>
+         <artifactId>spring-boot-starter-web</artifactId>
       </dependency>
       <dependency>
          <groupId>org.springframework.boot</groupId>
@@ -37,10 +37,11 @@
          <type>test-jar</type>
          <scope>test</scope>
       </dependency>
-      <dependency>
+	  <dependency>
          <groupId>org.unidal.framework</groupId>
          <artifactId>test-framework</artifactId>
       </dependency>
+      
       <!-- Unidal -->
       <dependency>
          <groupId>org.unidal.framework</groupId>
@@ -49,6 +50,11 @@
       <dependency>
          <groupId>mysql</groupId>
          <artifactId>mysql-connector-java</artifactId>
+      </dependency>
+      	
+      <dependency>
+     	 <groupId>com.ctrip.framework.apollo</groupId>
+    	 <artifactId>apollo-client</artifactId>
       </dependency>
    </dependencies>
    <build>
@@ -107,7 +113,7 @@
                      <goal>plexus</goal>
                   </goals>
                   <configuration>
-                     <className>com.ctrip.xpipe.redis.console.web.build.ComponentsConfigurator</className>
+                     <className>com.ctrip.xpipe.redis.console.build.ComponentsConfigurator</className>
                   </configuration>
                </execution>
             </executions>

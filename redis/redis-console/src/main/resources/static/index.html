@@ -1,750 +1,190 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-	<head>
-		<meta charset="utf-8" />
-		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-		<title>XpipeConsole Demo</title>
-		<meta name="description" content="Xpipe Console Page Demo" />
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+    <title>XpipeConsole</title>
 
-		<link rel="stylesheet" href="./css/bootstrap.min.css" />
-		<link rel="stylesheet" href="./css/font-awesome.min.css" />
-		<link rel="stylesheet" href="./css/ace-fonts.css" />
-		<link rel="stylesheet" href="./css/ace.min.css" id="main-ace-style" />
-		<!--[if lte IE 9]>
-			<link rel="stylesheet" href="./css/ace-part2.min.css" />
-		<![endif]-->
-		<link rel="stylesheet" href="./css/ace-skins.min.css" />
-		<link rel="stylesheet" href="./css/ace-rtl.min.css" />
-		<!--[if lte IE 9]>
-		  <link rel="stylesheet" href="./css/ace-ie.min.css" />
-		<![endif]-->
-		<!-- inline styles related to this page -->
+    <link rel="stylesheet" href="./vendor/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="./vendor/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="./vendor/css/ace-fonts.css"/>
+    <link rel="stylesheet" href="./vendor/css/ace.min.css" id="main-ace-style"/>
+    <link rel="stylesheet" href="./vendor/css/ace-part2.min.css"/>
+    <link rel="stylesheet" href="./vendor/css/ace-skins.min.css"/>
+    <link rel="stylesheet" href="./vendor/css/ace-rtl.min.css"/>
+    <link rel="stylesheet" href="./vendor/css/ace-ie.min.css"/>
+</head>
 
-		<!-- ace settings handler -->
-		<script src="./js/ace-extra.min.js"></script>
-		<!-- HTML5shiv and Respond.js for IE8 to support HTML5 elements and media queries -->
+<body class="no-skin" ng-app="index">
 
-		<!--[if lte IE 8]>
-		<script src="./js/html5shiv.min.js"></script>
-		<script src="./js/respond.min.js"></script>
-		<![endif]-->
-	</head>
-
-	<body class="no-skin">
-<!-- Nav Bar -->
-		<div id="navbar" class="navbar navbar-default navbar-fixed-top">
-			<div class="navbar-container" id="navbar-container">
-	<!-- NavBar header -->
-				<div class="navbar-header pull-left">
+<div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="navbar-container" id="navbar-container">
+        <!-- NavBar header -->
+        <div class="navbar-header pull-left">
 					<span class="navbar-brand">
 						<small>
 							<!-- NavBar Icon : Set to be toggle button for sidebar-->
-							<i class="ace-icon fa fa-cogs sidebar-collapse"  id="sidebar-collapse" style="margin-left:-10px"></i>
+							<i class="ace-icon fa fa-cogs sidebar-collapse" id="sidebar-collapse"
+                               style="margin-left:-10px"></i>
 							Xpipe Console
 						</small>
 					</span>
-				</div>
+        </div>
 
-	<!-- NavBar User Infos & Dropdowns -->
-				<div class="navbar-buttons navbar-header pull-right" role="navigation">
-					<ul class="nav ace-nav">
-	<!-- Contact us For technical help -->
-						<li class="green">
-				<!-- Tab Description -->
-							<a data-toggle="dropdown" class="dropdown-toggle" href="#" title="发送邮件">
-								<i class="ace-icon fa fa-envelope"></i>
-								<span>技术支持</span>
-							</a>
-				<!-- End Tab Description -->
-						</li>
-	<!-- End Contact us For technical help -->
 
-	<!-- Profile Settings & Logout -->
-						<li class="dark-blue">
-							<a data-toggle="dropdown" href="#" class="dropdown-toggle">
-							<!-- User Photo -->
-								<i class="ace-icon fa fa-coffee"></i>
+        <!-- NavBar User Infos & Dropdowns -->
+        <div class="navbar-buttons navbar-header pull-right" role="navigation">
+            <ul class="nav ace-nav">
+                <!-- Contact us For technical help -->
+                <li class="green">
+                    <!-- Tab Description -->
+                    <a data-toggle="dropdown" class="dropdown-toggle" href="#" title="发送邮件">
+                        <i class="ace-icon fa fa-envelope"></i>
+                        <span>技术支持</span>
+                    </a>
+                    <!-- End Tab Description -->
+                </li>
+                <!-- End Contact us For technical help -->
+
+                <!-- Profile Settings & Logout -->
+                <li class="dark-blue">
+                    <a data-toggle="dropdown" href="#" class="dropdown-toggle">
+                        <!-- User Photo -->
+                        <i class="ace-icon fa fa-coffee"></i>
 								<span class="user-info">
 									<small>Welcome,</small>
-									<!-- Profile name -->
+                                    <!-- Profile name -->
 									Admin
 								</span>
-								<i class="ace-icon fa fa-caret-down"></i>
-							</a>
-		<!-- Dropdown menu For user profile-->
-							<ul class="user-menu dropdown-menu-right dropdown-menu dropdown-yellow dropdown-caret dropdown-close">
-								<li>
-									<a href="#">
-										<i class="ace-icon fa fa-cog"></i>
-										Settings
-									</a>
-								</li>
-								<!-- Seperate Line -->
-								<li class="divider"></li>
-								<li>
-									<a href="#">
-									<!-- Icon -->
-										<i class="ace-icon fa fa-power-off"></i>
-									<!-- Info -->
-										Logout
-									</a>
-								</li>
-							</ul>
-						</li>
-	<!-- End Profile Settings & Logout -->
+                        <i class="ace-icon fa fa-caret-down"></i>
+                    </a>
+                    <!-- Dropdown menu For user profile-->
+                    <ul class="user-menu dropdown-menu-right dropdown-menu dropdown-yellow dropdown-caret dropdown-close">
+                        <li>
+                            <a href="#">
+                                <i class="ace-icon fa fa-cog"></i>
+                                Settings
+                            </a>
+                        </li>
+                        <!-- Seperate Line -->
+                        <li class="divider"></li>
+                        <li>
+                            <a href="#">
+                                <!-- Icon -->
+                                <i class="ace-icon fa fa-power-off"></i>
+                                <!-- Info -->
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <!-- End Profile Settings & Logout -->
 
-					</ul>
-				</div>
-			</div>
-		</div>
-<!-- End Nav Bar -->
+            </ul>
+        </div>
+    </div>
+</div>
 
-		<div class="main-container" id="main-container">
-<!-- SideBar -->
-			<div id="sidebar" class="sidebar responsive sidebar-fixed">
-				<ul class="nav nav-list">
-				<!-- Home Page Nav & Active by Default-->
-					<li class="active">
-						<a href="index.html">
-							<i class="menu-icon fa fa-tachometer"></i>
-							<span class="menu-text"> Dashboard </span>
-						</a>
-						<b class="arrow"></b>
-					</li>
-				<!-- End Home Page Nav -->
+<div class="main-container">
 
-	<!-- Config Tab -->
-					<li class="">
-						<a href="#" class="dropdown-toggle">
-							<i class="menu-icon fa fa-desktop"></i>
-							<span class="menu-text"> 配置 </span>
-							<b class="arrow fa fa-angle-down"></b>
-						</a>
-						<b class="arrow"></b>
-					<!-- Sub menu for config tab -->
-						<ul class="submenu">
-							<li class="">
-								<a href="#" class="dropdown-toggle">
-									<i class="menu-icon fa fa-caret-right"></i>
-									DC
-									<b class="arrow"></b>
-								</a>
-								<b class="arrow"></b>
-							</li>
-							<li class="">
-								<a href="#">
-									<i class="menu-icon fa fa-caret-right"></i>
-									Cluster
-								</a>
-								<b class="arrow"></b>
-							</li>
-							<li class="">
-								<a href="#">
-									<i class="menu-icon fa fa-caret-right"></i>
-									Shard
-								</a>
-								<b class="arrow"></b>
-							</li>
-							<li class="">
-								<a href="#">
-									<i class="menu-icon fa fa-caret-right"></i>
-									Redis
-								</a>
-								<b class="arrow"></b>
-							</li>
-							<li class="">
-								<a href="#">
-									<i class="menu-icon fa fa-caret-right"></i>
-									KeeperContainer
-								</a>
-								<b class="arrow"></b>
-							</li>
-						</ul>
-					<!-- End Sub menu for config tab -->
-					</li>
-	<!-- End Config Tab -->
-				</ul>
+    <!--nav-->
+    <div id="sidebar" class="sidebar responsive sidebar-fixed">
+        <ul class="nav nav-list">
+            <li class="active">
+                <a ui-sref="cluster">
+                    <i class="menu-icon fa fa-tachometer"></i>
+                    <span class="menu-text">Cluster</span>
+                </a>
+                <b class="arrow"></b>
+            </li>
+            <li>
+                <a ui-sref="page2">
+                    <i class="menu-icon fa fa-tachometer"></i>
+                    <span class="menu-text"> Page2 </span>
+                </a>
+                <b class="arrow"></b>
+            </li>
 
-				<!-- Toggle button -->
-				<div class="sidebar-toggle sidebar-collapse">
-					<i class="ace-icon fa fa-angle-double-left" data-icon1="ace-icon fa fa-angle-double-left" data-icon2="ace-icon fa fa-angle-double-right"></i>
-				</div>
-				<!-- End Toggle button -->
-			</div>
-<!-- End Side bar -->
+            <li class="">
+                <a href="#" class="dropdown-toggle">
+                    <i class="menu-icon fa fa-desktop"></i>
+                    <span class="menu-text"> 配置 </span>
+                    <b class="arrow fa fa-angle-down"></b>
+                </a>
+                <b class="arrow"></b>
+                <ul class="submenu">
+                    <li class="">
+                        <a href="#" class="dropdown-toggle">
+                            <i class="menu-icon fa fa-caret-right"></i>
+                            DC
+                            <b class="arrow"></b>
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                    <li class="">
+                        <a href="#">
+                            <i class="menu-icon fa fa-caret-right"></i>
+                            Cluster
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                    <li class="">
+                        <a href="#">
+                            <i class="menu-icon fa fa-caret-right"></i>
+                            Shard
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                    <li class="">
+                        <a href="#">
+                            <i class="menu-icon fa fa-caret-right"></i>
+                            Redis
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                    <li class="">
+                        <a href="#">
+                            <i class="menu-icon fa fa-caret-right"></i>
+                            KeeperContainer
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                </ul>
+            </li>
+        </ul>
 
-			<div class="main-content">
-<!-- Breadcrumb -->
-				<div class="breadcrumbs" id="breadcrumbs">
-					<ul class="breadcrumb">
-						<li>
-							<i class="ace-icon fa fa-home home-icon"></i>
-							<a href="#">Cluster-01 ></a>
-						</li>
-					</ul>
-<!-- End Breadcrumb -->
+        <div class="sidebar-toggle sidebar-collapse">
+            <i class="ace-icon fa fa-angle-double-left" data-icon1="ace-icon fa fa-angle-double-left"
+               data-icon2="ace-icon fa fa-angle-double-right"></i>
+        </div>
+    </div>
 
-<!-- SearchBox -->
-					<div class="nav-search" id="nav-search">
-						<form class="form-search">
-							<span class="input-icon">
-								<input type="text" placeholder="Search ." class="nav-search-input" id="nav-search-input" autocomplete="off" />
-								<i class="ace-icon fa fa-search nav-search-icon"></i>
-							</span>
-						</form>
-					</div>
-<!-- End SearchBox -->
-				</div>
 
-				<div class="page-content">
-					<div class="page-content-area">
-						<div class="row">
-							<div class="col-xs-12">
-								<!-- PAGE CONTENT BEGINS -->
-<!-- Tabable -->
-								<div class="tabbable">
-	<!-- Tab header -->
-									<ul class="nav nav-tabs padding-18 tab-size-bigger" id="myTab">
-										<li class="active">
-											<a data-toggle="tab" href="#faq-tab-1">
-												<i class="blue ace-icon fa fa-question-circle bigger-120"></i>
-												DC-JQ
-											</a>
-										</li>
+    <div class="main-content" ui-view></div>
 
-										<li>
-											<a data-toggle="tab" href="#faq-tab-2">
-												<i class="green ace-icon fa fa-user bigger-120"></i>
-												DC-OY
-											</a>
-										</li>
-									</ul>
-    <!-- End Tab header -->
-									<div class="tab-content no-border padding-24">
-	<!-- Tab 1 -->
-										<div id="faq-tab-1" class="tab-pane fade in active">
-								<!-- Slave Details -->
-											<div class="col-xs-12">
-												<div class="widget-box transparent">
-													<div class="widget-header widget-header-flat">
-														<h4 class="widget-title lighter">
-															<i class="ace-icon fa fa-star orange"></i>
-															Shard0
-														</h4>
 
-														<div class="widget-toolbar">
-															<a href="#" data-action="collapse">
-																<i class="ace-icon fa fa-chevron-up"></i>
-															</a>
-														</div>
-													</div>
+    <a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
+        <i class="ace-icon fa fa-angle-double-up icon-only bigger-110"></i>
+    </a>
+</div>
 
-													<div class="widget-body">
-												<div class="widget-main no-padding">
-													<table class="table table-bordered table-striped">
-														<thead class="thin-border-bottom">
-															<tr>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>REDIS_ID
-																</th>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>IP
-																</th>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>PORT
-																</th>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>ROLE
-																</th>
-																<th class="hidden-480">
-																	<i class="ace-icon fa fa-caret-right blue"></i>ACTIVE
-																</th>
-															</tr>
-														</thead>
-														<tbody>
-															<tr>
-																<td>redis-0</td>
-																<td>
-																	<small>
-																		<span>192.168.1.1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">8808</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		Master
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-															</tr>
-															<tr>
-																<td>redis-1</td>
-																<td>
-																	<small>
-																		<span>192.168.1.1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">8809</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		Keeper
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-															</tr>
-															<tr>
-																<td>redis-2</td>
-																<td>
-																	<small>
-																		<span>192.168.1.1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">8810</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		Keeper
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-															</tr>
-															<tr>
-																<td>redis-3</td>
-																<td>
-																	<small>
-																		<span>192.168.1.1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">8811</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		Slave
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-															</tr>
-															<tr>
-																<td>redis-4</td>
-																<td>
-																	<small>
-																		<span>192.168.1.1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">8811</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		Slave
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-warning label-sm">FAILED</span>
-																</td>
-															</tr>
-														</tbody>
-													</table>
-												</div>
-													</div>
-												</div>
-												<div class="widget-box transparent">
-													<div class="widget-header widget-header-flat">
-														<h4 class="widget-title lighter">
-															<i class="ace-icon fa fa-star orange"></i>
-															Shard1
-														</h4>
+<script src='./vendor/js/jquery.min.js'></script>
+<script src="./vendor/js/ace-extra.min.js"></script>
+<!--<script src="./vendor/js/respond.min.js"></script>-->
 
-														<div class="widget-toolbar">
-															<a href="#" data-action="collapse">
-																<i class="ace-icon fa fa-chevron-up"></i>
-															</a>
-														</div>
-													</div>
+<script src="./vendor/js/bootstrap.min.js"></script>
+<script src="./vendor/js/ace-elements.min.js"></script>
+<script src="./vendor/js/ace.min.js"></script>
 
-													<div class="widget-body">
-												<div class="widget-main no-padding">
-													<table class="table table-bordered table-striped">
-														<thead class="thin-border-bottom">
-															<tr>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>REDIS_ID
-																</th>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>IP
-																</th>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>PORT
-																</th>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>ROLE
-																</th>
-																<th class="hidden-480">
-																	<i class="ace-icon fa fa-caret-right blue"></i>ACTIVE
-																</th>
-															</tr>
-														</thead>
-														<tbody>
-															<tr>
-																<td>redis-0</td>
-																<td>
-																	<small>
-																		<span>192.168.1.1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">8808</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		Master
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-															</tr>
-															<tr>
-																<td>redis-1</td>
-																<td>
-																	<small>
-																		<span>192.168.1.1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">8809</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		Keeper
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-															</tr>
-															<tr>
-																<td>redis-2</td>
-																<td>
-																	<small>
-																		<span>192.168.1.1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">8810</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		Keeper
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-															</tr>
-															<tr>
-																<td>redis-3</td>
-																<td>
-																	<small>
-																		<span>192.168.1.1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">8811</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		Slave
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-															</tr>
-															<tr>
-																<td>redis-4</td>
-																<td>
-																	<small>
-																		<span>192.168.1.1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">8811</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		Slave
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-warning label-sm">FAILED</span>
-																</td>
-															</tr>
-														</tbody>
-													</table>
-												</div>
-													</div>
-												</div>
-											</div>
-										</div>
-	<!-- End Tab 1 -->
+<script src="./vendor/angular/angular.min.js"></script>
+<script src="./vendor/angular/angular-resource.min.js"></script>
+<script src="./vendor/angular/angular-ui-router.min.js"></script>
 
-	<!-- Tab 2 -->
-										<div id="faq-tab-2" class="tab-pane fade">
-											<!-- Slave Details -->
-											<div class="col-sx-12">
-												<div class="widget-box transparent">
-													<div class="widget-header widget-header-flat">
-														<h4 class="widget-title lighter">
-															<i class="ace-icon fa fa-star orange"></i>
-															Shard0
-														</h4>
+<script src="./scripts/app.js"></script>
 
-														<div class="widget-toolbar">
-															<a href="#" data-action="collapse">
-																<i class="ace-icon fa fa-chevron-up"></i>
-															</a>
-														</div>
-													</div>
+<script src="./scripts/services/ClusterService.js"></script>
 
-													<div class="widget-body">
-												<div class="widget-main no-padding">
-													<table class="table table-bordered table-striped">
-														<thead class="thin-border-bottom">
-															<tr>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>ID
-																</th>
-
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>ADDR
-																</th>
-
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>DC
-																</th>
-
-																<th class="hidden-480">
-																	<i class="ace-icon fa fa-caret-right blue"></i>STATUS
-																</th>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>Role
-																</th>
-															</tr>
-														</thead>
-
-														<tbody>
-															<tr>
-																<td>8508</td>
-
-																<td>
-																	<small>
-																		<span>test0</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">OY</span>
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">Master</span>
-																	</small>
-																</td>
-															</tr>
-
-															<tr>
-																<td>8509</td>
-
-																<td>
-																	<small>
-																		<span>test1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">OY</span>
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">Keeper</span>
-																	</small>
-																</td>
-															</tr>
-														</tbody>
-													</table>
-												</div>
-													</div>
-												</div>
-												<div class="widget-box transparent">
-													<div class="widget-header widget-header-flat">
-														<h4 class="widget-title lighter">
-															<i class="ace-icon fa fa-star orange"></i>
-															Shard1
-														</h4>
-
-														<div class="widget-toolbar">
-															<a href="#" data-action="collapse">
-																<i class="ace-icon fa fa-chevron-up"></i>
-															</a>
-														</div>
-													</div>
-
-													<div class="widget-body">
-												<div class="widget-main no-padding">
-													<table class="table table-bordered table-striped">
-														<thead class="thin-border-bottom">
-															<tr>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>ID
-																</th>
-
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>ADDR
-																</th>
-
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>DC
-																</th>
-
-																<th class="hidden-480">
-																	<i class="ace-icon fa fa-caret-right blue"></i>STATUS
-																</th>
-																<th>
-																	<i class="ace-icon fa fa-caret-right blue"></i>Role
-																</th>
-															</tr>
-														</thead>
-
-														<tbody>
-															<tr>
-																<td>8508</td>
-
-																<td>
-																	<small>
-																		<span>test0</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">OY</span>
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">Master</span>
-																	</small>
-																</td>
-															</tr>
-
-															<tr>
-																<td>8509</td>
-
-																<td>
-																	<small>
-																		<span>test1</span>
-																	</small>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">OY</span>
-																	</small>
-																</td>
-																<td class="hidden-480">
-																	<span class="label label-info arrowed-right arrowed-in">RUNNING</span>
-																</td>
-																<td>
-																	<small>
-																		<span class="blue">Keeper</span>
-																	</small>
-																</td>
-															</tr>
-														</tbody>
-													</table>
-												</div>
-													</div>
-												</div>
-											</div>
-										</div>
-	<!-- End Tab 2 -->
-									</div>
-								</div>
-<!-- End Tabable -->
-								<!-- PAGE CONTENT ENDS -->
-							</div><!-- /.col -->
-						</div><!-- /.row -->
-					</div><!-- /.page-content-area -->
-				</div><!-- /.page-content -->
-			</div><!-- /.main-content -->
-
-			<a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
-				<i class="ace-icon fa fa-angle-double-up icon-only bigger-110"></i>
-			</a>
-		</div><!-- /.main-container -->
-
-		<!-- basic scripts -->
-		<!--[if !IE]> -->
-		<script type="text/javascript">
-			window.jQuery || document.write("<script src='./js/jquery.min.js'>"+"<"+"/script>");
-		</script>
-		<!-- <![endif]-->
-		<!--[if IE]>
-		<script type="text/javascript">
- 		window.jQuery || document.write("<script src='./js/jquery1x.min.js'>"+"<"+"/script>");
-		</script>
-		<![endif]-->
-		<script type="text/javascript">
-			if('ontouchstart' in document.documentElement) document.write("<script src='./js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
-		</script>
-		<script src="./js/bootstrap.min.js"></script>
-		<!-- ace scripts -->
-		<script src="./js/ace-elements.min.js"></script>
-		<script src="./js/ace.min.js"></script>
-	</body>
+<script src="scripts/router.js"></script>
+<script src="scripts/controllers/ClusterCtl.js"></script>
+</body>
 </html>
