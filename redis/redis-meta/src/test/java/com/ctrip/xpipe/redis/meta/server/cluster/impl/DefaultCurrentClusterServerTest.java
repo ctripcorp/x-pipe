@@ -6,7 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 
 
 /**
@@ -14,7 +14,7 @@ import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
  *
  * Jul 25, 2016
  */
-public class DefaultCurrentClusterServerTest extends AbstractMetaServerTest{
+public class DefaultCurrentClusterServerTest extends AbstractMetaServerContextTest{
 	
 	DefaultCurrentClusterServer currentServer;
 	

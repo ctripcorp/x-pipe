@@ -19,11 +19,10 @@ public class ServerDeadResharding extends AbstractDirectMoveSharding{
 	
 	private ClusterServer deadServer;
 	
-	public ServerDeadResharding(SlotManager slotManager, ClusterServer deadServer, ClusterServers servers, ZkClient zkClient) {
+	public ServerDeadResharding(SlotManager slotManager, ClusterServer deadServer, ClusterServers<? extends ClusterServer> servers, ZkClient zkClient) {
 		super(slotManager, servers, zkClient);
 		this.deadServer = deadServer;
 	}
-	
 	
 
 

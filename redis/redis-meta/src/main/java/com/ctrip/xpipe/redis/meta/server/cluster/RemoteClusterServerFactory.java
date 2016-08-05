@@ -5,8 +5,8 @@ package com.ctrip.xpipe.redis.meta.server.cluster;
  *
  * Jul 23, 2016
  */
-public interface RemoteClusterServerFactory {
+public interface RemoteClusterServerFactory<T extends ClusterServer> {
 	
-	ClusterServer  createClusterServer(int serverId, ClusterServerInfo clusterServerInfo);
+	T  createClusterServer(int serverId, ClusterServerInfo clusterServerInfo);
 	
 }

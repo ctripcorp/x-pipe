@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
-import com.ctrip.xpipe.redis.core.CoreConfig;
+import com.ctrip.xpipe.redis.core.config.CoreConfig;
 
 /**
  * @author marsqing

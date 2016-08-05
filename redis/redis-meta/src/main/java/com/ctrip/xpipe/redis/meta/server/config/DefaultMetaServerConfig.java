@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.config.DefaultFileConfig;
-import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
+import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.utils.IpUtils;
 
 /**
@@ -49,7 +49,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	
 	@Override
 	public int getMetaRefreshMilli() {
-		return getIntProperty(KEY_META_REFRESH_MILLI, 5000);
+		return getIntProperty(KEY_META_REFRESH_MILLI, 60000);
 	}
 
 	@Override

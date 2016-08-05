@@ -1,0 +1,10 @@
+package com.ctrip.xpipe.redis.keeper.config;
+
+/**
+ * @author Jason Song(song_s@ctrip.com)
+ */
+public interface KeeperContainerConfig {
+    String getReplicationStoreDir();
+
+    String getMetaServerUrl();
+}

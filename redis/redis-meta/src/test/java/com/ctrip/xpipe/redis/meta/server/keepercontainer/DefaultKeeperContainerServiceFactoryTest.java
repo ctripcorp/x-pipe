@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.keepercontainer;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
-import com.ctrip.xpipe.redis.core.keepercontainer.KeeperContainerService;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
+import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactory;
+
 import org.junit.Before;
 import org.junit.Test;
 

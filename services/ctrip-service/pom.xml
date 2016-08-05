@@ -12,7 +12,6 @@
 
 	<properties>
 		<cat.version>1.5.1</cat.version>
-		<apollo.version>0.0.8</apollo.version>
 	</properties>
 
 	<dependencies>
@@ -23,7 +22,6 @@
 		<dependency>
 			<groupId>com.ctrip.framework.apollo</groupId>
 			<artifactId>apollo-client</artifactId>
-			<version>${apollo.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.dianping.cat</groupId>

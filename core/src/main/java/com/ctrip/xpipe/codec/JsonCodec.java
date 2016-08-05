@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
  * @author wenchao.meng
@@ -15,8 +16,15 @@ public class JsonCodec extends AbstractCodec{
 	private ObjectMapper objectMapper;
 	
 	public JsonCodec() {
-		objectMapper = new ObjectMapper();
+		this(false);
+	}
+	
+	public JsonCodec(boolean indent){
 		
+		objectMapper = new ObjectMapper();
+		if(indent){
+			objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+		}
 	}
 
 

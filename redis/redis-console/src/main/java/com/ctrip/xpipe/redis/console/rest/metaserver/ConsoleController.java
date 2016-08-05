@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.rest.metaserver;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +34,21 @@ public class ConsoleController {
 	public ShardMeta getDcClusterShardMeta(@PathVariable String dcId,@PathVariable String clusterId,
 			@PathVariable String shardId) throws DalException {
 		return metaInfoService.getDcClusterShardMeta(dcId, clusterId, shardId);
+	}
+	
+	@RequestMapping("/dcids")
+	public List<String> getDcIds() throws DalException {
+		return metaInfoService.getAllDcIds();
+	}
+	
+	@RequestMapping("/clusterids")
+	public List<String> getClusterIds() throws DalException {
+		return metaInfoService.getAllClusterIds();
+	}
+	
+	@RequestMapping("/cluster/{clusterId}/shardids")
+	public List<String> getShardIds(@PathVariable String clusterId) throws DalException {
+		return metaInfoService.getAllClusterShardIds(clusterId);
 	}
 
 }
