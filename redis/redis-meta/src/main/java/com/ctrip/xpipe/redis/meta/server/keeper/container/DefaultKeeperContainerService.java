@@ -1,9 +1,10 @@
-package com.ctrip.xpipe.redis.meta.server.keepercontainer;
+package com.ctrip.xpipe.redis.meta.server.keeper.container;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-import com.ctrip.xpipe.redis.core.keepercontainer.KeeperContainerService;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
+
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
