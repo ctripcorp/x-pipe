@@ -46,18 +46,25 @@
          <groupId>mysql</groupId>
          <artifactId>mysql-connector-java</artifactId>
       </dependency>
-      	
-      <dependency>
-     	 <groupId>com.ctrip.framework.apollo</groupId>
-    	 <artifactId>apollo-client</artifactId>
-      </dependency>
    </dependencies>
+	<profiles>
+		<profile>
+			<id>services</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.ctrip.xpipe</groupId>
+					<artifactId>ctrip-service</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
+	</profiles>
    <build>
       <plugins>
          	<plugin>
             	<groupId>org.springframework.boot</groupId>
             	<artifactId>spring-boot-maven-plugin</artifactId>
             	<configuration>
+					<mainClass>com.ctrip.xpipe.redis.console.App</mainClass>
 					<executable>true</executable>
 				</configuration>
        		</plugin>
