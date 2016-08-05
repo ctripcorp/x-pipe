@@ -243,7 +243,7 @@
 		</query-defs>
 	</entity>
 	
-	<entity name='setinel-tbl' table='SETINEL_TBL' alias='set'>
+	<entity name='setinel-tbl' table='SETINEL_TBL' alias='setinelt'>
 		<query-defs>
 			<query name='find-all-by-dc-id' type='SELECT' multiple='true'>
 				<param name='dc-id'/>

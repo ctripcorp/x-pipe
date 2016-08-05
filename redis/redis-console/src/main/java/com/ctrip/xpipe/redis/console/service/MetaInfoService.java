@@ -178,6 +178,7 @@ public class MetaInfoService {
 							RedisTblEntity.READSET_FULL).getRedisName());
 				}
 				keeperMeta.setActive(redisTbl.isKeeperActive());
+				keeperMeta.setKeeperContainerId(redisTbl.getKeepercontainerId());
 				
 				shardMeta.addKeeper(keeperMeta);
 			} else {
