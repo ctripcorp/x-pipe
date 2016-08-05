@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.keeper.config;
 
 import org.springframework.stereotype.Component;
 
-import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
+import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 
 /**
  * @author marsqing
