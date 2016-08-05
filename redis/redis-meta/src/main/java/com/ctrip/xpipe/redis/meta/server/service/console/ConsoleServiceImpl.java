@@ -6,14 +6,13 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.dto.DCDTO;
-import com.ctrip.xpipe.utils.BeanUtils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 @Service
@@ -24,26 +23,35 @@ public class ConsoleServiceImpl implements ConsoleService {
 
 	@Override
 	public Set<String> getAllDcIds() {
-		DCDTO[] dcs = restTemplate.get("/api/dcs", DCDTO[].class);
-		if (dcs == null || dcs.length == 0) {
-			return Collections.emptySet();
+		String[] dcIds = restTemplate.get("/api/dcids", String[].class);
+		if (dcIds == null || dcIds.length == 0){
+			return Collections.EMPTY_SET;
 		}
-		return BeanUtils.toPropertySet("dcName", Arrays.asList(dcs));
+		return new HashSet<>(Arrays.asList(dcIds));
+
 	}
 
 	@Override
 	public Set<String> getAllClusterIds() {
-		return null;
+		String[] clustersIds = restTemplate.get("/api/clusterids", String[].class);
+		if (clustersIds == null || clustersIds.length == 0){
+			return Collections.EMPTY_SET;
+		}
+		return new HashSet<>(Arrays.asList(clustersIds));
 	}
 
 	@Override
 	public Set<String> getClusterShardIds(String clusterId) {
-		return null;
+		String[] shardIds = restTemplate.get("/api/cluster/{clusterId}/shardids", String[].class, clusterId);
+		if (shardIds == null || shardIds.length == 0){
+			return Collections.EMPTY_SET;
+		}
+		return new HashSet<>(Arrays.asList(shardIds));
 	}
 
 	@Override
 	public DcMeta getDcMeta(String dcId) {
-		return null;
+		return restTemplate.get("/api/dc/{dcId}", DcMeta.class, dcId);
 	}
 
 	@Override
@@ -53,7 +61,8 @@ public class ConsoleServiceImpl implements ConsoleService {
 
 	@Override
 	public ShardMeta getShardMeta(String dcId, String clusterId, String shardId) {
-		return null;
+		return restTemplate
+			.get("/api/dc/{dcId}/cluster/{clusterId}/shard/{shardId}", ShardMeta.class, dcId, clusterId, shardId);
 	}
 
 	@Override
