@@ -1,10 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+
 import org.slf4j.LoggerFactory;
 
 import org.slf4j.Logger;
 
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -15,7 +16,7 @@ import com.ctrip.xpipe.utils.ObjectUtils.EqualFunction;
  *
  * Jul 26, 2016
  */
-public abstract class AbstractClusterServer extends AbstractLifecycle implements ClusterServer{
+public abstract class AbstractClusterServer extends AbstractLifecycleObservable implements ClusterServer{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 

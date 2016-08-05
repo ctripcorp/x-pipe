@@ -42,7 +42,7 @@ public class ArrangeTaskTrigger {
 	private ZkClient zkClient;
 
 	@Autowired
-	private ClusterServers clusterServers;
+	private ClusterServers<?> clusterServers;
 
 	@Autowired
 	private ArrangeTaskExecutor arrangeTaskExecutor;

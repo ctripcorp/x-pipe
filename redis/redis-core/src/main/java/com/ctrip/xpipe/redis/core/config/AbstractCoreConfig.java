@@ -1,9 +1,8 @@
-package com.ctrip.xpipe.redis.core.impl;
+package com.ctrip.xpipe.redis.core.config;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.ctrip.xpipe.config.AbstractConfigBean;
-import com.ctrip.xpipe.redis.core.CoreConfig;
 
 /**
  * @author marsqing

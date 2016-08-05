@@ -1,21 +1,18 @@
 package com.ctrip.xpipe.redis.meta.server.impl.listener;
 
 
-import java.io.IOException;
 
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.core.Response;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.http.HttpConstants;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.impl.AbstractMetaChangeListener;
-import com.ctrip.xpipe.rest.RestRequestClient;
 
 /**
  * @author wenchao.meng
@@ -29,6 +26,8 @@ public class ConsoleListener extends AbstractMetaChangeListener{
 	private MetaServerConfig metaServerConfig;
 	
 	private String dc = FoundationService.DEFAULT.getDataCenter();
+	
+	private RestTemplate restTemplate = new RestTemplate();
 	
 	
 
@@ -45,18 +44,13 @@ public class ConsoleListener extends AbstractMetaChangeListener{
 	private void request(String target, Object param) {
 		
 		try{
-			Response response =  RestRequestClient.post(target, param);
-			if(response.getStatus() != HttpConstants.HTTP_STATUS_200){
-				logger.error("[request][call console failed!]" + response);
-			}
-		}catch(ProcessingException e){
-			if(e.getCause() instanceof IOException){
+			restTemplate.postForObject(target, param, String.class);
+		}catch(Exception e){
+			if(e instanceof ResourceAccessException){
 				logger.error("[request]" + e.getMessage());
 			}else{
 				logger.error("[request]", e);
 			}
-		} catch (Exception e) {
-			logger.error("[request]", e);
 		}
 	}
 

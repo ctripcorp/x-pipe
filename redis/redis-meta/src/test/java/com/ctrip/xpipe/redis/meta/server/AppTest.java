@@ -22,7 +22,7 @@ import com.ctrip.xpipe.redis.meta.server.dao.memory.MemoryMetaServerDao;
 
 @EnableAutoConfiguration
 @Import(com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.class)
-public class AppTest extends AbstractMetaServerTest{
+public class AppTest extends AbstractMetaServerContextTest{
 	
 	private int zkPort = IdcUtil.JQ_ZK_PORT;
 	private int serverPort = IdcUtil.JQ_METASERVER_PORT;

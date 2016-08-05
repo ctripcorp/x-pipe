@@ -1,31 +1,24 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
-import com.ctrip.xpipe.api.config.Config;
-import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
-import com.ctrip.xpipe.redis.core.CoreConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.impl.AbstractCoreConfig;
-import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperBadRequestException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
-import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.curator.framework.CuratorFramework;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
@@ -39,15 +32,11 @@ public class KeeperContainerService {
     private LeaderElectorManager leaderElectorManager;
     @Autowired
     private MetaService metaService;
-    private Config config;
+    @Autowired
+    private KeeperContainerConfig keeperContainerConfig;
 
     private Set<Integer> runningPorts = Sets.newConcurrentHashSet();
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
-
-    @PostConstruct
-    private void init() {
-        config = Config.DEFAULT;
-    }
 
     public RedisKeeperServer add(KeeperTransMeta keeperTransMeta) {
         KeeperMeta keeperMeta = keeperTransMeta.getKeeperMeta();
@@ -116,13 +105,9 @@ public class KeeperContainerService {
     }
 
     private File getReplicationStoreDir(KeeperMeta keeperMeta) {
-        String baseDir = config.get("replication.store.dir", getDefaultRdsDir());
+        String baseDir = keeperContainerConfig.getReplicationStoreDir();
         baseDir = StringUtils.trimTrailingCharacter(baseDir, '/');
         return new File(String.format("%s/replication_store_%s", baseDir, keeperMeta.getPort()));
-    }
-
-    private String getDefaultRdsDir() {
-        return System.getProperty("user.dir");
     }
 
     private String assembleKeeperServerKey(KeeperTransMeta keeperTransMeta) {
