@@ -7,11 +7,11 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.redis.console.dao.ConsoleDao;
-import com.ctrip.xpipe.redis.core.dao.DaoException;
-import com.ctrip.xpipe.redis.core.dao.memory.DefaultMemoryMetaDao;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaException;
+import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 
 /**
  * @author wenchao.meng
@@ -19,8 +19,11 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
  * Jun 23, 2016
  */
 @Component
-public class DefaultMemoryDao extends DefaultMemoryMetaDao implements ConsoleDao{
-
+public class DefaultMemoryDao extends DefaultXpipeMetaManager implements ConsoleDao{
+	
+	public DefaultMemoryDao() {
+	}
+	
 	@Override
 	public XpipeMeta getXpipeMeta() {
 		return this.xpipeMeta;
@@ -28,7 +31,7 @@ public class DefaultMemoryDao extends DefaultMemoryMetaDao implements ConsoleDao
 
 
 	@Override
-	public boolean updateActiveDc(String clusterId, String activeDc) throws DaoException {
+	public boolean updateActiveDc(String clusterId, String activeDc) throws MetaException {
 		
 		logger.info("[updateActiveDc]{}, {}", clusterId, activeDc);
 		String currentActive = getActiveDc(clusterId);

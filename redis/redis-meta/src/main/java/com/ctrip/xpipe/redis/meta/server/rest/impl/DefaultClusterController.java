@@ -46,10 +46,17 @@ public class DefaultClusterController implements ClusterApi{
 		return currentClusterServer.getClusterInfo();
 	}
 	
-	@RequestMapping(path = PATH_NOTIFY_SLOT_CHANGE, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+
+	@RequestMapping(path = PATH_ADD_SLOT, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
-	public void notifySlotChange(@PathVariable int slotId) {
-		currentClusterServer.notifySlotChange(slotId);
+	public void addSlot(int slotId) throws Exception {
+		currentClusterServer.addSlot(slotId).sync();
+	}
+
+	@RequestMapping(path = PATH_DELETE_SLOT, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@Override
+	public void deleteSlot(int slotId) throws Exception {
+		currentClusterServer.deleteSlot(slotId).sync();
 	}
 
 	@RequestMapping(path = PATH_EXPORT_SLOT, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -63,6 +70,14 @@ public class DefaultClusterController implements ClusterApi{
 	public void importSlot(@PathVariable int slotId) throws Exception{
 		currentClusterServer.importSlot(slotId).sync();
 	}
+	
+	
+	@RequestMapping(path = PATH_NOTIFY_SLOT_CHANGE, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@Override
+	public void notifySlotChange(int slotId) throws Exception {
+		currentClusterServer.notifySlotChange(slotId);
+	}
+	
 	@RequestMapping(path = "/debug", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
 	public String debug() {
@@ -83,5 +98,7 @@ public class DefaultClusterController implements ClusterApi{
 		slotManager.refresh();
 		clusterServers.refresh();
 	}
+
+
 	
 }

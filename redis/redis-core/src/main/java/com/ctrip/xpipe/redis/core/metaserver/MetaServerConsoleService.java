@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
 
-import java.util.List;
 
+import java.net.InetSocketAddress;
+
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
 /**
  * used for console
@@ -14,19 +16,17 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
  */
 public interface MetaServerConsoleService extends MetaServerService{
 
-	void addKeeper(String clusterId, String shardId,  KeeperMeta keeperMeta);
+	void shardChanged(String clusterId, ShardMeta shardMeta);
 
-	void removeKeeper(String clusterId, String shardId,  KeeperMeta keeperMeta);
-
-	void setKeepers(String clusterId, String shardId,  KeeperMeta keeperMeta, List<KeeperMeta> keeperMetas);
+	void clusterChanged(ClusterMeta clusterMeta);
 
 	/**
-	 * add/delete/modify
-	 * meta server found the change, and change the meta
+	 * used by backup dc
 	 * @param clusterId
+	 * @param shardId
+	 * @param upstreamAddress
 	 */
-	void clusterChanged(String clusterId);
-	
+	void upstreamChange(String clusterId, String shardId, InetSocketAddress upstreamAddress);
 	/**
 	 * @return
 	 */

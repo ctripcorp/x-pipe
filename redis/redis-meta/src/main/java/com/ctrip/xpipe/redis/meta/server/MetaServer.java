@@ -26,11 +26,8 @@ public interface MetaServer extends ClusterServer, TopElement{
 
 	ShardStatus getShardStatus(String clusterId, String shardId) throws Exception;
 
-	void updateActiveKeeper(String clusterId, String shardId, KeeperMeta keeper) throws Exception;
 	
 	void updateUpstream(String clusterId, String shardId, String upstream) throws Exception;
-	
-	void promoteRedisMaster(String clusterId, String shardId, String promoteIp, int promotePort) throws Exception;
 	
 
 	void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo);

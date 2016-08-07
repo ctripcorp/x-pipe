@@ -15,7 +15,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.dao.memory.MemoryMetaServerDao;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
@@ -53,7 +53,7 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	@Override
 	protected void setProperties() {
 		super.setProperties();
-		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
+		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
 		System.setProperty("TOTAL_SLOTS", "16");
 	}
 	

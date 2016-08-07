@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.entity;
 
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**
@@ -79,5 +80,10 @@ public class KeeperTransMeta implements ClusterAware{
 		hash = hash * 31 + (shardId == null ? 0 : shardId.hashCode());
 		hash = hash * 31 + (keeperMeta == null ? 0 : keeperMeta.hashCode());
 		return hash;
+	}
+	
+	@Override
+	public String toString() {
+		return Codec.DEFAULT.encode(this);
 	}
 }

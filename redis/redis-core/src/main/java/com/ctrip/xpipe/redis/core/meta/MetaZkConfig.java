@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.meta;
 
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 
 /**
@@ -39,7 +40,7 @@ public class MetaZkConfig {
 	
 	public static String getKeeperLeaderElectionId(KeeperMeta currentKeeperMeta){
 		
-		String leaderElectionID = String.format("%s:%s:%s", currentKeeperMeta.getIp(), currentKeeperMeta.getPort(), currentKeeperMeta.getId());
+		String leaderElectionID = Codec.DEFAULT.encode(currentKeeperMeta);
 		return leaderElectionID;
 	}
 	

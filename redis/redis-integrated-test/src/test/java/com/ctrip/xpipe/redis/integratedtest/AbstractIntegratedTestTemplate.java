@@ -26,6 +26,7 @@ public abstract class AbstractIntegratedTestTemplate extends AbstractIntegratedT
 
 
 	
+	@SuppressWarnings("unused")
 	protected void failOverTestTemplate() throws Exception {
 		
 		RedisMeta redisMaster = getRedisMaster();
@@ -42,7 +43,7 @@ public abstract class AbstractIntegratedTestTemplate extends AbstractIntegratedT
 		String clusterId = redisMaster.parent().parent().getId();
 		String shardId = redisMaster.parent().getId();
 		DefaultMetaServer metaServer = getDcInfos().get(activeDc().getId()).getApplicationContext().getBean(DefaultMetaServer.class);
-		metaServer.promoteRedisMaster(clusterId, shardId, slave.getIp(), slave.getPort());
+//		metaServer.promoteRedisMaster(clusterId, shardId, slave.getIp(), slave.getPort());
 
 		sleep(6000);
 		role  = getRedisServerRole(slave);

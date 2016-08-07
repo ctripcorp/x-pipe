@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.integratedtest;
 
 import java.io.File;
 
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
@@ -17,12 +18,9 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.core.meta.impl.DefaultMetaOperation;
-import com.ctrip.xpipe.redis.meta.server.dao.memory.MemoryMetaServerDao;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -59,7 +57,7 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 	public void  doStart() throws Exception {
 		
 		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
-		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, integratedTestFile);
+		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, integratedTestFile);
 		applicationContext = start(connectToZk(zkAddress), dcMeta);
 	}
 	
@@ -74,47 +72,10 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 		metaConsole = null;
 	}
 
-	private XpipeMeta extractDcMeta(DcMeta meta) throws Exception {
-		XpipeMeta xpipe = new XpipeMeta();
-		DcMeta dc = new DcMeta();
-		xpipe.addDc(dc);
-
-		dc.setId(meta.getId());
-
-		for (ClusterMeta cluster : meta.getClusters().values()) {
-			ClusterMeta clusterClone = new ClusterMeta();
-			dc.addCluster(clusterClone);
-
-			clusterClone.setId(cluster.getId());
-			clusterClone.setActiveDc(cluster.getActiveDc());
-
-			for (ShardMeta shard : cluster.getShards().values()) {
-				ShardMeta shardClone = new ShardMeta();
-				clusterClone.addShard(shardClone);
-
-				shardClone.setId(shard.getId());
-
-				for (RedisMeta redis : shard.getRedises()) {
-					RedisMeta redisClone = new RedisMeta();
-					shardClone.addRedis(redisClone);
-
-					redisClone.setIp(redis.getIp());
-					redisClone.setMaster(redis.getMaster());
-					redisClone.setPort(redis.getPort());
-
-				}
-			}
-		}
-
-		return xpipe;
-	}
-
 	public ApplicationContext start(CuratorFramework client, DcMeta dcMeta) throws Exception {
 		
 		setupZkNodes(client, dcMeta);
 		
-		XpipeMeta xpipeMeta = extractDcMeta(dcMeta);
-		new DefaultMetaOperation(client).update(xpipeMeta.toString());
 
 		metaConsole.startServer();
 		

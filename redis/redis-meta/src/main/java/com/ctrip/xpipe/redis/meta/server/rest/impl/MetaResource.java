@@ -79,8 +79,6 @@ public class MetaResource extends AbstractController{
 	public void promoteRedisMaster(@PathVariable final String clusterId, @PathVariable final String shardId, @PathVariable("ip") final String promoteIp, @PathVariable("port") final int promotePort) throws Exception {
 
 		logger.info("[promoteRedisMaster]{},{},{}:{}", clusterId , shardId , promoteIp , promotePort);
-
-		metaServer.promoteRedisMaster(clusterId, shardId, promoteIp, promotePort);
 	}
 	
 	@RequestMapping( path = "/setupstream/{clusterId}/{shardId}/{ip}/{port}", method = RequestMethod.POST)

@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
@@ -118,22 +117,24 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	}
 
 	@Override
-	public synchronized void notifySlotChange(int slot) {
-		
-		SlotRefreshCommand cmd = new SlotRefreshCommand(slot);
-		cmd.execute(executors).addListener(new CommandFutureListener<Void>() {
+	public void notifySlotChange(int slotId) {
+		new SlotRefreshCommand(slotId).execute(executors);
+	}
+	
+	
+	@Override
+	public CommandFuture<Void> addSlot(int slotId) {
+		return new SlotAddCommand(slotId).execute(executors);
+	}
 
-			@Override
-			public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
-				if(!commandFuture.isSuccess()){
-					logger.error("[notifySlotChange]", commandFuture.cause());
-				}
-			}
-		});
+	@Override
+	public CommandFuture<Void> deleteSlot(int slotId) {
+		return new SlotDeleteCommand(slotId).execute(executors);
 	}
 
 	@Override
 	public CommandFuture<Void> exportSlot(int slotId) {
+
 		return new SlotExportCommand(slotId).execute();
 	}
 
@@ -162,36 +163,26 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		return false;
 	}
 	
-	
-	class SlotRefreshCommand extends AbstractCommand<Void>{
+	public void doWaitForSlotCommandsFinish() {
+		//TODO wait for slot to clean export info
+	}
+
+	@Override
+	public boolean hasKey(Object key) {
 		
-		private int slot;
-		public SlotRefreshCommand(int slot) {
-			this.slot = slot;
+		Integer serverId = slotManager.getServerIdByKey(key);
+		if(serverId == null){
+			return false;
 		}
+		return serverId == this.getServerId();
+	}
 
-		@Override
-		public String getName() {
-			return "SlotRefreshCommand";
-		}
 
-		@Override
-		protected void doExecute() throws Exception {
-			slotManager.refresh(slot);
-			future.setSuccess();
-		}
-
-		@Override
-		protected void doReset() throws InterruptedException, ExecutionException {
-		}
-	} 
-
-	
 	class SlotImportCommand extends AbstractCommand<Void>{
 		
-		private int []slotIds;
-		public SlotImportCommand(int ...slotIds){
-			this.slotIds = slotIds;
+		private int slotId;
+		public SlotImportCommand(int slotId){
+			this.slotId = slotId;
 		}
 
 		@Override
@@ -202,15 +193,14 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		@Override
 		protected void doExecute() throws Exception {
 			
-			slotManager.refresh(slotIds);
-			for(int slotId : slotIds){
-				SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
-				if(slotInfo.getSlotState() == SLOT_STATE.MOVING && slotInfo.getToServerId() == getServerId()){
-					logger.info("[doExecute][import({})]{}, {}", currentServerId, slotId, slotInfo);
-				}else{
-					throw new IllegalStateException("error import " + slotId + "," + slotInfo);
-				}
+			slotManager.refresh(slotId);
+			SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
+			if(slotInfo.getSlotState() == SLOT_STATE.MOVING && slotInfo.getToServerId() == getServerId()){
+				logger.info("[doExecute][import({})]{}, {}", currentServerId, slotId, slotInfo);
+			}else{
+				throw new IllegalStateException("error import " + slotId + "," + slotInfo);
 			}
+			doSlotImport(slotId);
 			future.setSuccess();
 		}
 		@Override
@@ -221,9 +211,9 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	
 	class SlotExportCommand extends AbstractCommand<Void>{
 		
-		private int []slotIds;
-		public SlotExportCommand(int ...slotIds){
-			this.slotIds = slotIds;
+		private int slotId;
+		public SlotExportCommand(int slotId){
+			this.slotId = slotId;
 		}
 
 		@Override
@@ -234,16 +224,14 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		@Override
 		protected void doExecute() throws Exception {
 			
-			slotManager.refresh(slotIds);
-			for(int slotId : slotIds){
-				SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
-				if(slotInfo.getSlotState() == SLOT_STATE.MOVING && slotInfo.getServerId() == getServerId()){
-					logger.info("[doExecute][export({}){}, {}", currentServerId, slotId, slotInfo, getServerId());
-				}else{
-					throw new IllegalStateException("error export " + slotId + "," + slotInfo);
-				}
+			slotManager.refresh(slotId);
+			SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
+			if(slotInfo.getSlotState() == SLOT_STATE.MOVING && slotInfo.getServerId() == getServerId()){
+				logger.info("[doExecute][export({}){}, {}", currentServerId, slotId, slotInfo, getServerId());
+			}else{
+				throw new IllegalStateException("error export " + slotId + "," + slotInfo);
 			}
-			doWaitForSlotCommandsFinish();
+			doSlotExport(slotId);
 			future.setSuccess();
 		}
 		@Override
@@ -252,7 +240,101 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		}
 	}
 
-	public void doWaitForSlotCommandsFinish() {
-		//TODO wait for slot to clean export info
+	class SlotAddCommand extends AbstractCommand<Void>{
+		
+		private int slotId;
+		public SlotAddCommand(int slotId) {
+			this.slotId = slotId;
+		}
+
+		@Override
+		public String getName() {
+			return "SlotRefreshCommand";
+		}
+
+		@Override
+		protected void doExecute() throws Exception {
+			
+			slotManager.refresh(slotId);
+			SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
+			if(slotInfo.getSlotState() == SLOT_STATE.NORMAL && slotInfo.getServerId() == getServerId()){
+				logger.info("[doExecute][slot add]{}, {}", slotId, slotInfo);
+			}else{
+				throw new IllegalStateException("error add " + slotId + "," + slotInfo);
+			}
+			doSlotAdd(slotId);
+			future.setSuccess();
+		}
+
+		@Override
+		protected void doReset() throws InterruptedException, ExecutionException {
+		}
+	} 
+
+	class SlotDeleteCommand extends AbstractCommand<Void>{
+		
+		private int slotId;
+		public SlotDeleteCommand(int slotId) {
+			this.slotId = slotId;
+		}
+
+		@Override
+		public String getName() {
+			return "SlotRefreshCommand";
+		}
+
+		@Override
+		protected void doExecute() throws Exception {
+			
+			slotManager.refresh(slotId);
+			SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
+			if(slotInfo.getSlotState() == SLOT_STATE.NORMAL && slotInfo.getServerId() != getServerId()){
+				logger.info("[doExecute][slot delete]{}, {}", slotId, slotInfo);
+			}else{
+				throw new IllegalStateException("error delete " + slotId + "," + slotInfo);
+			}
+			doSlotDelete(slotId);
+			future.setSuccess();
+		}
+		@Override
+		protected void doReset() throws InterruptedException, ExecutionException {
+		}
+	} 
+
+	class SlotRefreshCommand extends AbstractCommand<Void>{
+		
+		private int slotId;
+		public SlotRefreshCommand(int slotId) {
+			this.slotId = slotId;
+		}
+
+		@Override
+		public String getName() {
+			return "SlotRefreshCommand";
+		}
+
+		@Override
+		protected void doExecute() throws Exception {
+			
+			slotManager.refresh(slotId);
+			future.setSuccess();
+		}
+		@Override
+		protected void doReset() throws InterruptedException, ExecutionException {
+		}
 	}
+
+	protected void doSlotImport(int slotId) {
+	}
+
+	protected void doSlotAdd(int slotId) {
+	}
+
+	protected  void doSlotExport(int slotId) {
+	} 
+
+	protected void doSlotDelete(int slotId) {
+	}
+
+
 }

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.utils;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /**
  * @author wenchao.meng
@@ -8,6 +9,11 @@ import java.lang.reflect.Method;
  * Jun 14, 2016
  */
 public class ObjectUtils {
+	
+	
+	public static int hashCode(Object ...objects){
+		return Arrays.hashCode(objects);
+	}
 	
 	public static boolean equals(Object obj1, Object obj2){
 		

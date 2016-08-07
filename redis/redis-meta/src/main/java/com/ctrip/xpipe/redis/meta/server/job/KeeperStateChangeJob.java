@@ -57,17 +57,14 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 				break;
 			}
 		}
-		
-		if(activeKeeper == null){
-			throw new IllegalStateException("no activekeeper " + keepers);
-		}
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
-		
-		Command<?> setActiveCommand = createKeeperSetStateCommand(activeKeeper, activeKeeperMaster);
-		chain.add(setActiveCommand);
-		
-		
+
+		if(activeKeeper != null && activeKeeperMaster != null){
+			Command<?> setActiveCommand = createKeeperSetStateCommand(activeKeeper, activeKeeperMaster);
+			chain.add(setActiveCommand);
+		}
+
 		ParallelCommandChain backupChain = new ParallelCommandChain();
 		
 		for(KeeperMeta keeperMeta : keepers){

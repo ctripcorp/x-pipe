@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -50,6 +51,14 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 	private Map<Integer, Set<Integer>> serverMap = new ConcurrentHashMap<>();
 	
 	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+	
+	private ScheduledFuture<?> future;
+	
+	@Override
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+
+	}
 		
 	@Override
 	protected void doStart() throws Exception {
@@ -59,8 +68,8 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 		ensure.ensure(client.getZookeeperClient());
 
 		refresh();
-		
-		scheduled.scheduleWithFixedDelay(new Runnable() {
+
+		future = scheduled.scheduleWithFixedDelay(new Runnable() {
 			@Override
 			public void run() {
 				try{
@@ -72,6 +81,15 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 		}, config.getSlotRefreshMilli(), config.getSlotRefreshMilli(), TimeUnit.MILLISECONDS);
 	}
 
+	
+	@Override
+	protected void doStop() throws Exception {
+		
+		if(future != null){
+			future.cancel(true);
+		}
+		super.doStop();
+	}
 	@Override
 	public Integer getSlotServerId(int slotId) {
 
@@ -183,7 +201,7 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 
 	@Override
 	public int getOrder() {
-		return 0;
+		return ORDER;
 	}
 
 	@Override

@@ -54,7 +54,6 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	public void beforeAbstractRedisKeeperTest() throws Exception {
 		
 		doIdcInit();
-		initRegistry();
 		
 		metaService = getRegistry().getComponent(MetaService.class);
 		

@@ -7,6 +7,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import com.ctrip.xpipe.redis.core.meta.MetaCloneTest;
+import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
 
@@ -20,6 +22,8 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
 	ArrayParserTest.class,
 	BulkStringParserTest.class,
 	ArrayParserTest.class,
+	MetaCloneTest.class,
+	DefaultXpipeMetaManagerTest.class
 })
 public class AllTests {
 

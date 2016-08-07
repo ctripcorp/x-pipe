@@ -12,7 +12,8 @@ import org.springframework.context.annotation.Import;
 
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
-import com.ctrip.xpipe.redis.meta.server.dao.memory.MemoryMetaServerDao;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 
 /**
  * @author shyin
@@ -35,12 +36,13 @@ public class AppTest extends AbstractMetaServerContextTest{
 	public void beforeAppTest(){
 		
 		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "true");
+		System.setProperty(ArrangeTaskExecutor.ARRANGE_TASK_EXECUTOR_START, "true");
 	}
 
 	@Test
 	public void start9747() throws Exception {
 		
-		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
+		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
 		start();
 	}
 
@@ -50,7 +52,7 @@ public class AppTest extends AbstractMetaServerContextTest{
 		this.zkPort = IdcUtil.OY_ZK_PORT;
 		this.serverPort = IdcUtil.OY_METASERVER_PORT;
 
-		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, "metaserver--oy.xml");
+		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, "metaserver--oy.xml");
 		IdcUtil.setToOY();
 		start();
 	}
