@@ -18,6 +18,7 @@
 	</entity>
 	<entity name="shard" implements="java.io.Serializable">
 		<attribute name="id" key="true" />
+		<attribute name="setinelId" value-type="Long"/>
 	</entity>	
 	<entity name="setinel" implements="java.io.Serializable">
 		<attribute name="id" value-type="Long" />

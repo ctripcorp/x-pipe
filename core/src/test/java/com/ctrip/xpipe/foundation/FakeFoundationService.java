@@ -22,6 +22,8 @@ public class FakeFoundationService implements FoundationService {
 	private static AtomicBoolean logged = new AtomicBoolean(false);
 
 	private static String dataCenter = "jq";
+	
+	private String appId = System.getProperty("appId", "appid_xpipe");
 
 	public static void setDataCenter(String dataCenter) {
 		FakeFoundationService.dataCenter = dataCenter;
@@ -38,4 +40,12 @@ public class FakeFoundationService implements FoundationService {
 		return dataCenter;
 	}
 
+	@Override
+	public String getAppId() {
+		return appId;
+	}
+	
+	public void setAppId(String appId) {
+		this.appId = appId;
+	}
 }

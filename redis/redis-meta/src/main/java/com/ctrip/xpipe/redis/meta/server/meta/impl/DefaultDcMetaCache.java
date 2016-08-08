@@ -59,16 +59,27 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	
 	protected DcMetaManager loadMetaManager() {
 		
+		DcMetaManager dcMetaManager = null;
 		if(consoleService != null){
-			logger.info("[loadMetaManager][load from console]");
-			DcMeta dcMeta = consoleService.getDcMeta(currentDc);
-			return DefaultDcMetaManager.buildFromDcMeta(dcMeta);
-		}else{
-			
+			try{
+				logger.info("[loadMetaManager][load from console]");
+				DcMeta dcMeta = consoleService.getDcMeta(currentDc);
+				dcMetaManager = DefaultDcMetaManager.buildFromDcMeta(dcMeta);
+			}catch(Exception e){
+				logger.error("[loadMetaManager][consoleService]", e);
+			}
+		}
+		
+		if(dcMetaManager == null){
 			String fileName = System.getProperty(MEMORY_META_SERVER_DAO_KEY, "memory_meta_server_dao_file.xml");
 			logger.info("[loadMetaManager][load from local file]{}", fileName);
-			return DefaultDcMetaManager.buildFromFile(currentDc, fileName);
+			dcMetaManager = DefaultDcMetaManager.buildFromFile(currentDc, fileName);
 		}
+		
+		if(dcMetaManager == null){
+			throw new IllegalArgumentException("[loadMetaManager][fail]");
+		}
+		return dcMetaManager;
 	}
 
 

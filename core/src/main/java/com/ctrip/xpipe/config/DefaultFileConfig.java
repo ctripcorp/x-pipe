@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.config;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URL;
-import java.util.Properties;
+import java.io.InputStream;
+
+
+import com.ctrip.xpipe.utils.FileUtils;import java.util.Properties;
 
 /**
  * @author wenchao.meng
@@ -17,62 +17,37 @@ public class DefaultFileConfig extends AbstractConfig{
 	
 	private static String DEFAULT_LOCAL_PATH = System.getProperty("localpath", "/opt/settings/xpipe");
 
-	private String localPath;
-	
 	public DefaultFileConfig(){
 	}
 
 	public DefaultFileConfig(String file) {
-		this(file, DEFAULT_LOCAL_PATH);
+		this(DEFAULT_LOCAL_PATH, file);
 	}
 
-	public DefaultFileConfig(String file, String localPath) {
+	public DefaultFileConfig(String localPath, String file) {
 		
-		this.localPath = localPath;
-		properties.putAll(load(file));
+		properties.putAll(load(localPath, file));
 	}
 
-	private Properties load(String file) {
+	private Properties load(String localPath, String file) {
 		
 		Properties properties = new Properties();
-
-		//try file
-		File f = new File(file);
-		if(f.exists()){
-			try {
-				properties.load(new FileInputStream(f));
-				logger.info("[load]{}", f.getAbsolutePath());
-				return properties;
-			} catch (IOException e) {
-				throw new IllegalArgumentException("file load fail:" + file, e);
-			}
-		}
-		
-		if(localPath != null){
-			f = new File(localPath + "/" + file);
-			if(f.exists()){
+		InputStream ins = null;
+		try {
+			ins = FileUtils.getFileInputStream(localPath, file);
+			properties.load(ins);
+		} catch (IOException e) {
+			throw new IllegalArgumentException("file io exception:" + localPath + "," + file, e);
+		}finally{
+			if(ins != null){
 				try {
-					properties.load(new FileInputStream(f));
-					logger.info("[load]{}", f.getAbsolutePath());
-					return properties;
+					ins.close();
 				} catch (IOException e) {
-					throw new IllegalArgumentException("file load fail:" + file, e);
+					logger.error("[load]" + localPath + "," + file, e);
 				}
 			}
 		}
-		
-		//try classpath
-		URL url = getClass().getClassLoader().getResource(file);
-		if(url != null){
-			try {
-				properties.load(url.openStream());
-				logger.info("[load]{}", url);
-			} catch (IOException e) {
-				throw new IllegalArgumentException("classpath load fail:" + file, e);
-			}
-			return properties;
-		}
-		throw new IllegalArgumentException("unfound file:" + file);
+		return properties;
 	}
 
 	@Override

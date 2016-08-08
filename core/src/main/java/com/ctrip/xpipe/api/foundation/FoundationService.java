@@ -18,5 +18,7 @@ public interface FoundationService {
 	 * @return
 	 */
 	String getDataCenter();
+	
+	String getAppId();
 
 }

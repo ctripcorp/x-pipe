@@ -92,7 +92,7 @@
 				<artifactId>core</artifactId>
 				<type>test-jar</type>
 				<version>${project.version}</version>
-                <scope>test</scope>
+				<scope>test</scope>
 			</dependency>
 			<dependency>
 				<groupId>com.ctrip.xpipe.redis</groupId>
@@ -280,18 +280,33 @@
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-assembly-plugin</artifactId>
 					<version>${maven-assembly-plugin.version}</version>
+					<executions>
+						<execution>
+							<phase>package</phase>
+							<goals>
+								<goal>single</goal>
+							</goals>
+							<configuration>
+								<finalName>${project.artifactId}-${project.version}</finalName>
+								<appendAssemblyId>false</appendAssemblyId>
+								<descriptors>
+									<descriptor>src/assembly/assembly-descriptor.xml</descriptor>
+								</descriptors>
+							</configuration>
+						</execution>
+					</executions>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-jar-plugin</artifactId>
 					<version>${maven-jar-plugin.version}</version>
 					<executions>
- 						<execution>
- 							<goals>
+						<execution>
+							<goals>
 								<goal>test-jar</goal>
- 							</goals>
- 						</execution>
- 					</executions>
+							</goals>
+						</execution>
+					</executions>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -363,6 +378,12 @@
 			<modules>
 				<module>services</module>
 			</modules>
+			<dependencies>
+				<dependency>
+					<groupId>com.ctrip.xpipe</groupId>
+					<artifactId>ctrip-service</artifactId>
+				</dependency>
+			</dependencies>
 		</profile>
 
 		<profile>

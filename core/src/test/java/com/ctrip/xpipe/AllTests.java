@@ -2,8 +2,6 @@ package com.ctrip.xpipe;
 
 
 
-
-
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -21,6 +19,7 @@ import com.ctrip.xpipe.lifecycle.SpringComponentRegistryTest;
 import com.ctrip.xpipe.netty.commands.RequestResponseCommandTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
+import com.ctrip.xpipe.utils.FileUtilsTest;
 import com.ctrip.xpipe.utils.OffsetNotifierTest;
 
 /**
@@ -43,7 +42,8 @@ import com.ctrip.xpipe.utils.OffsetNotifierTest;
 	RequestResponseCommandTest.class,
 	CommandRetryWrapperTest.class,
 	SequenceCommandChainTest.class,
-	ParallelCommandChainTest.class
+	ParallelCommandChainTest.class,
+	FileUtilsTest.class
 	})
 public class AllTests {
 

@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.core.meta.impl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.HashSet;
@@ -26,6 +27,7 @@ import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
+import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**
@@ -60,11 +62,10 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 	
 	public void load(String fileName) {
+		
 		try {
-			URL url = getClass().getClassLoader().getResource(".");
-			File file = new File(new File(url.getPath()), fileName);
-			logger.info("[load]{}", file);
-			xpipeMeta = DefaultSaxParser.parse(new FileInputStream(file));
+			InputStream ins = FileUtils.getFileInputStream(fileName);
+			xpipeMeta = DefaultSaxParser.parse(ins);
 		} catch (SAXException | IOException e) {
 			logger.error("[load]" + fileName, e);
 			throw new IllegalStateException("load " + fileName + " failed!", e);

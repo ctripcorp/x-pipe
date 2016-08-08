@@ -16,4 +16,9 @@ public class CtripFoundationService implements FoundationService{
 		return Foundation.server().getDataCenter();
 	}
 
+	@Override
+	public String getAppId() {
+		return Foundation.app().getAppId();
+	}
+
 }
