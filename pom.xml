@@ -350,7 +350,6 @@
 	</dependencies>
 
 	<profiles>
-
 		<profile>
 			<id>services</id>
 			<activation>
@@ -362,14 +361,7 @@
 			<modules>
 				<module>services</module>
 			</modules>
-			<dependencies>
-				<dependency>
-					<groupId>com.ctrip.xpipe</groupId>
-					<artifactId>ctrip-service</artifactId>
-				</dependency>
-			</dependencies>
 		</profile>
-
 		<profile>
 			<id>travis</id>
 			<activation>
