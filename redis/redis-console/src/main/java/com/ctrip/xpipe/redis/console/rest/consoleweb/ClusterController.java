@@ -12,6 +12,10 @@ import org.unidal.dal.jdbc.DalException;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * @author zhangle
+ *
+ */
 @RestController
 public class ClusterController {
 	

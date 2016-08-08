@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.meta.server.keeper.container;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
+
 import com.google.common.collect.Maps;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -16,7 +18,7 @@ import java.util.Map;
 public class DefaultKeeperContainerServiceFactory implements KeeperContainerServiceFactory {
 
     private Map<KeeperContainerMeta, KeeperContainerService> services = Maps.newConcurrentMap();
-    private RestTemplate restTemplate = new RestTemplate();
+    private RestTemplate restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 
     @Override
     public KeeperContainerService getOrCreateKeeperContainerService(KeeperContainerMeta keeperContainerMeta) {
