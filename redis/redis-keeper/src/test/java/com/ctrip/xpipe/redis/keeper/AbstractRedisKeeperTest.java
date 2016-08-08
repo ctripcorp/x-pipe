@@ -192,8 +192,8 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 
 			@Override
-			public boolean isStop() {
-				return false;
+			public boolean isOpen() {
+				return true;
 			}
 
 			@Override
@@ -238,6 +238,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					@Override
 					public boolean isOpen() {
 						return true;
+					}
+
+					@Override
+					public void beforeCommand() {
 					}
 				});
 			}

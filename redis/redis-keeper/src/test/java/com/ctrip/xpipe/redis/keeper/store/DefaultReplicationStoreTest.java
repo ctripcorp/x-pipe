@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -23,7 +24,7 @@ public class DefaultReplicationStoreTest {
 		baseDir.deleteOnExit();
 		System.out.println(baseDir.getCanonicalFile());
 
-		DefaultReplicationStore store = new DefaultReplicationStore(baseDir, 15);
+		DefaultReplicationStore store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig());
 		store.beginRdb("master", -1, -1);
 
 		int cmdCount = 4;
@@ -47,6 +48,10 @@ public class DefaultReplicationStoreTest {
 			@Override
 			public boolean isOpen() {
 				return true;
+			}
+
+			@Override
+			public void beforeCommand() {
 			}
 		});
 

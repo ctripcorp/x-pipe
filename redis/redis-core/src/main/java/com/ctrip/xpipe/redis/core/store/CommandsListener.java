@@ -12,4 +12,6 @@ public interface CommandsListener {
 	boolean isOpen();
 	
 	void onCommand(ByteBuf byteBuf);
+	
+	void beforeCommand();
 }

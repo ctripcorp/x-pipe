@@ -93,7 +93,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 
 		recrodLatestStore(storeBaseDir.getName());
 
-		currentStore.set(new DefaultReplicationStore(storeBaseDir, config.getRedisCommandFileSize()));
+		currentStore.set(new DefaultReplicationStore(storeBaseDir, config));
 		return currentStore.get();
 	}
 
@@ -156,7 +156,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 					File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
 					logger.info("[getCurrent][recover previous]{}", latestStoreDir);
 					if (latestStoreDir.isDirectory()) {
-						currentStore.set(new DefaultReplicationStore(latestStoreDir, config.getRedisCommandFileSize()));
+						currentStore.set(new DefaultReplicationStore(latestStoreDir, config));
 					}
 				}
 			}

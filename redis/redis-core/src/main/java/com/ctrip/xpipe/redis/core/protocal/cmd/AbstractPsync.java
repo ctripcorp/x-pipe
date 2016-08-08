@@ -83,7 +83,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			offset = -1;
 		}else{
 			masterRunidRequest = currentReplicationStore.getMetaStore().getMasterRunid();
-			offset = currentReplicationStore.endOffset() + 1;
+			offset = currentReplicationStore.getEndOffset() + 1;
 		}
 		if(masterRunidRequest == null){
 			masterRunidRequest = "?";
@@ -99,7 +99,9 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	@Override
 	public void clientClosed(NettyClient nettyClient) {
 		
-		super.clientClosed(nettyClient);
+		if (!future().isDone()) {
+			super.clientClosed(nettyClient);
+		}
 		switch(psyncState){
 		case PSYNC_COMMAND_WAITING_REPONSE:
 			break;
@@ -137,6 +139,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 					endReadRdb();
 					
 					if(!saveCommands) {
+						future.setSuccess();
 						try {
 							channel.close();
 						} catch(Exception e) {
@@ -268,4 +271,5 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	protected void doReset() {
 		throw new UnsupportedOperationException("not supported");
 	}
+	
 }

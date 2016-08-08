@@ -29,7 +29,7 @@ public interface RdbFileListener {
 	/**
 	 * @return
 	 */
-   boolean isStop();
+   boolean isOpen();
    
    /**
     * meet exception while reading rdb
