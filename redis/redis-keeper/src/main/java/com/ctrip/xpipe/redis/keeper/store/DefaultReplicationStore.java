@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.keeper.store;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -14,11 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.redis.core.store.CommandStore;
+import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
-import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 
 // TODO make methods correctly sequenced
 public class DefaultReplicationStore implements ReplicationStore {
@@ -43,7 +42,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	private File baseDir;
 
-	private AtomicReference<DefaultRdbStore> rdbStore = new AtomicReference<>();
+	private AtomicReference<DefaultRdbStore> rdbStoreRef = new AtomicReference<>();
 
 	private ConcurrentMap<DefaultRdbStore, Boolean> previousRdbStores = new ConcurrentHashMap<>();
 
@@ -53,9 +52,14 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	private int cmdFileSize;
 
-	public DefaultReplicationStore(File baseDir, int cmdFileSize) throws IOException {
+	private KeeperConfig config;
+
+	private Object lock = new Object();
+
+	public DefaultReplicationStore(File baseDir, KeeperConfig config) throws IOException {
 		this.baseDir = baseDir;
-		this.cmdFileSize = cmdFileSize;
+		this.cmdFileSize = config.getRedisCommandFileSize();
+		this.config = config;
 
 		metaStore = new DefaultMetaStore(baseDir);
 		metaStore.loadMeta();
@@ -65,12 +69,24 @@ public class DefaultReplicationStore implements ReplicationStore {
 		if (meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
-				rdbStore.set(new DefaultRdbStore(rdb, meta.getKeeperBeginOffset() - 1, meta.getRdbFileSize()));
+				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getKeeperBeginOffset() - 1, meta.getRdbFileSize()));
 				cmdStore = new DefaultCommandStore(new File(baseDir, meta.getCmdFilePrefix()), cmdFileSize);
 			}
 		}
+
+		removeUnusedRdbFiles();
 	}
-	
+
+	private void removeUnusedRdbFiles() {
+		File currentRdbFile = rdbStoreRef.get() == null ? null : rdbStoreRef.get().getFile();
+
+		for (File rdbFile : rdbFilesOnFS()) {
+			if (!rdbFile.equals(currentRdbFile)) {
+				log.info("[removeUnusedRdbFile] {}", rdbFile);
+			}
+		}
+	}
+
 	@Override
 	public void close() throws IOException {
 		// TODO
@@ -85,12 +101,11 @@ public class DefaultReplicationStore implements ReplicationStore {
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 		ReplicationStoreMeta newMeta = metaStore.rdbBegun(masterRunid, masterOffset + 1, rdbFile, rdbFileSize, cmdFilePrefix);
 
-		// TODO file naming
 		// beginOffset - 1 == masteroffset
-		rdbStore.set(new DefaultRdbStore(new File(baseDir, newMeta.getRdbFile()), newMeta.getKeeperBeginOffset() - 1, rdbFileSize));
+		rdbStoreRef.set(new DefaultRdbStore(new File(baseDir, newMeta.getRdbFile()), newMeta.getKeeperBeginOffset() - 1, rdbFileSize));
 		cmdStore = new DefaultCommandStore(new File(baseDir, newMeta.getCmdFilePrefix()), cmdFileSize);
-		
-		return rdbStore.get();
+
+		return rdbStoreRef.get();
 	}
 
 	@Override
@@ -100,15 +115,18 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public synchronized void rdbUpdated(String rdbRelativePath, long masterOffset) throws IOException {
-		File rdbFile = new File(baseDir, rdbRelativePath);
-		long rdbFileSize = rdbFile.length();
+	public void rdbUpdated(String rdbRelativePath, long masterOffset) throws IOException {
+		synchronized (lock) {
+			File rdbFile = new File(baseDir, rdbRelativePath);
+			long rdbFileSize = rdbFile.length();
 
-		ReplicationStoreMeta metaDup = metaStore.rdbUpdated(rdbRelativePath, rdbFileSize, masterOffset);
+			ReplicationStoreMeta metaDup = metaStore.rdbUpdated(rdbRelativePath, rdbFileSize, masterOffset);
 
-		log.info("[rdbUpdated] new file {}, rdbFileSize {}", rdbFile, rdbFileSize);
-		previousRdbStores.put(rdbStore.get(), Boolean.TRUE);
-		rdbStore.set(new DefaultRdbStore(rdbFile, metaDup.getRdbLastKeeperOffset(), rdbFileSize, true));
+			log.info("[rdbUpdated] new file {}, rdbFileSize {}, masterOffset {}", rdbFile, rdbFileSize, masterOffset);
+			DefaultRdbStore oldRdbStore = rdbStoreRef.get();
+			rdbStoreRef.set(new DefaultRdbStore(rdbFile, metaDup.getRdbLastKeeperOffset(), rdbFileSize, true));
+			previousRdbStores.put(oldRdbStore, Boolean.TRUE);
+		}
 	}
 
 	@Override
@@ -116,19 +134,13 @@ public class DefaultReplicationStore implements ReplicationStore {
 		return cmdStore;
 	}
 
+	// for test only
 	public RdbStore getRdbStore() {
-		// TODO
-		while (rdbStore.get() == null) {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-			}
-		}
-		return rdbStore.get();
+		return rdbStoreRef.get();
 	}
 
 	@Override
-	public long endOffset() {
+	public long getEndOffset() {
 		if (cmdStore == null) {
 			// TODO
 			return -2L;
@@ -145,23 +157,12 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public boolean gc() {
 		// delete old rdb files
-		if (rdbStore.get() != null) {
-			Set<File> rdbFilesCurrentlyUsing = new HashSet<>();
-
-			File currentRdbFile = rdbStore.get().getFile();
-			rdbFilesCurrentlyUsing.add(currentRdbFile);
-
-			for (DefaultRdbStore rdbStore : previousRdbStores.keySet()) {
-				if (rdbStore.refCount() > 0) {
-					rdbFilesCurrentlyUsing.add(rdbStore.getFile());
-				}
-			}
-
-			for (File rdbFile : rdbFilesOnFS()) {
-				if (!rdbFilesCurrentlyUsing.contains(rdbFile)) {
-					log.info("[GC] delete rdb file {}", rdbFile);
-					rdbFile.delete();
-				}
+		for (DefaultRdbStore rdbStore : previousRdbStores.keySet()) {
+			if (rdbStore.refCount() == 0) {
+				File rdbFile = rdbStore.getFile();
+				log.info("[GC] delete rdb file {}", rdbFile);
+				rdbFile.delete();
+				previousRdbStores.remove(rdbStore);
 			}
 		}
 
@@ -170,7 +171,6 @@ public class DefaultReplicationStore implements ReplicationStore {
 			for (File cmdFile : cmdFilesOnFS()) {
 				long fileStartOffset = cmdStore.extractStartOffset(cmdFile);
 				if (canDeleteCmdFile(cmdStore.lowestReadingOffset(), fileStartOffset, cmdFile.length())) {
-					// TODO
 					log.info("[GC] delete command file {}", cmdFile);
 					cmdFile.delete();
 				}
@@ -181,8 +181,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	private boolean canDeleteCmdFile(long lowestReadingOffset, long fileStartOffset, long fileSize) {
-		// TODO
-		return fileStartOffset < lowestReadingOffset && cmdStore.totalLength() - (fileStartOffset + fileSize) > cmdFileSize * 2;
+		return fileStartOffset < lowestReadingOffset
+				&& cmdStore.totalLength() - (fileStartOffset + fileSize) > cmdFileSize * config.getReplicationStoreCommandFileToKeep();
 	}
 
 	private File[] rdbFilesOnFS() {
@@ -211,27 +211,34 @@ public class DefaultReplicationStore implements ReplicationStore {
 		return metaStore.getKeeperBeginOffset() + cmdStore.totalLength();
 	}
 
-	private boolean isFullSyncPossible() {
-		if(rdbStore.get() == null) {
-			return false;
+	private FullSyncContext lockAndCheckIfFullSyncPossible() {
+		synchronized (lock) {
+			DefaultRdbStore rdbStore = rdbStoreRef.get();
+			if (rdbStore == null) {
+				return new FullSyncContext(false);
+			}
+
+			rdbStore.incrementRefCount();
+			long rdbLastKeeperOffset = rdbStore.lastKeeperOffset();
+			long minCmdKeeperOffset = minCmdKeeperOffset();
+			long maxCmdKeeperOffset = maxCmdKeeperOffset();
+
+			/**
+			 * rdb and cmd is continuous AND not so much cmd after rdb
+			 */
+			long cmdAfterRdbThreshold = config.getReplicationStoreCommandSizeAfterRdbBeforeFullSyncThreshold();
+			boolean fullSyncPossible = minCmdKeeperOffset <= rdbLastKeeperOffset + 1 && maxCmdKeeperOffset - rdbLastKeeperOffset < cmdAfterRdbThreshold;
+
+			log.info("[isFullSyncPossible] {}, {} <= {} + 1 && {} - {} < {}", //
+					fullSyncPossible, minCmdKeeperOffset, rdbLastKeeperOffset, maxCmdKeeperOffset, rdbLastKeeperOffset, cmdAfterRdbThreshold);
+
+			if (fullSyncPossible) {
+				return new FullSyncContext(true, rdbStore);
+			} else {
+				rdbStore.decrementRefCount();
+				return new FullSyncContext(false);
+			}
 		}
-		
-		// TODO temporary stop remove command file
-		long rdbLastKeeperOffset = rdbStore.get().lastKeeperOffset();
-		long minCmdKeeperOffset = minCmdKeeperOffset();
-		long maxCmdKeeperOffset = maxCmdKeeperOffset();
-
-		/**
-		 * rdb and cmd is continuous AND not so much cmd after rdb
-		 */
-		// TODO
-		long cmdAfterRdbThreshold = 100;
-		boolean fullSyncPossible = minCmdKeeperOffset <= rdbLastKeeperOffset + 1 && maxCmdKeeperOffset - rdbLastKeeperOffset < cmdAfterRdbThreshold;
-		
-		log.info("[isFullSyncPossible] {}, {} <= {} + 1 && {} - {} < {}", //
-				fullSyncPossible, minCmdKeeperOffset, rdbLastKeeperOffset, maxCmdKeeperOffset, rdbLastKeeperOffset, cmdAfterRdbThreshold);
-
-		return fullSyncPossible;
 	}
 
 	private String newRdbFileName() {
@@ -239,15 +246,26 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public File newRdbFile() {
+	public File prepareNewRdbFile() {
 		return new File(baseDir, newRdbFileName());
 	}
 
 	@Override
-	public boolean fullSyncIfPossible(RdbFileListener rdbFileListener) throws IOException {
-		if (isFullSyncPossible()) {
+	public boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
+		final FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
+		if (ctx.isFullSyncPossible()) {
 			log.info("[fullSyncToSlave]reuse current rdb to full sync");
-			rdbStore.get().readRdbFile(rdbFileListener);
+			DefaultRdbStore rdbStore = ctx.getRdbStore();
+
+			try {
+				rdbStore.readRdbFile(fullSyncListener);
+			} finally {
+				rdbStore.decrementRefCount();
+			}
+
+			if (fullSyncListener.isOpen()) {
+				getCommandStore().addCommandsListener(rdbStore.lastKeeperOffset() + 1, fullSyncListener);
+			}
 			return true;
 		} else {
 			return false;
@@ -257,6 +275,16 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public boolean isFresh() {
 		return metaStore == null || metaStore.getMasterRunid() == null;
+	}
+
+	@Override
+	public long getKeeperEndOffset() {
+		return metaStore.getKeeperBeginOffset() + cmdStore.totalLength() - 1;
+	}
+
+	@Override
+	public long nextNonOverlappingKeeperBeginOffset() {
+		return metaStore.getKeeperBeginOffset() + cmdStore.totalLength() + 1;
 	}
 
 }

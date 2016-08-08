@@ -32,21 +32,21 @@ public class DefaultCommandStore implements CommandStore {
 	private final String fileNamePrefix;
 
 	private final int maxFileSize;
-	
+
 	private final FilenameFilter fileFilter;
 
-	private final ConcurrentMap<DefaultCommandReader, Boolean> readers = new ConcurrentHashMap<>(); 
-	
+	private final ConcurrentMap<DefaultCommandReader, Boolean> readers = new ConcurrentHashMap<>();
+
 	private final OffsetNotifier offsetNotifier;
-	
+
 	private AtomicReference<CommandFileContext> cmdFileCtxRef = new AtomicReference<>();
-	
+
 	public DefaultCommandStore(File file, int maxFileSize) throws IOException {
 		this.baseDir = file.getParentFile();
 		this.fileNamePrefix = file.getName();
 		this.maxFileSize = maxFileSize;
 		fileFilter = new PrefixFileFilter(fileNamePrefix);
-		
+
 		long currentStartOffset = findMaxStartOffset();
 		File currentFile = fileForStartOffset(currentStartOffset);
 		logger.info("Write to " + currentFile.getName());
@@ -62,7 +62,7 @@ public class DefaultCommandStore implements CommandStore {
 	private long findMaxStartOffset() {
 		long maxStartOffset = 0;
 		File[] files = baseDir.listFiles((FilenameFilter) fileFilter);
-		if(files != null){
+		if (files != null) {
 			for (File file : files) {
 				long startOffset = extractStartOffset(file);
 				if (startOffset > maxStartOffset) {
@@ -90,7 +90,7 @@ public class DefaultCommandStore implements CommandStore {
 				wrote += cmdFileCtx.channel.write(buf);
 			}
 		}
-		
+
 		byteBuf.readerIndex(byteBuf.writerIndex());
 
 		offsetNotifier.offsetIncreased(cmdFileCtx.currentStartOffset + cmdFileCtx.channel.size());
@@ -103,7 +103,6 @@ public class DefaultCommandStore implements CommandStore {
 		return cmdFileCtxRef.get().totalLength();
 	}
 
-	
 	private void rotateFileIfNenessary() throws IOException {
 		CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
 		if (curCmdFileCtx.writeFile.length() >= maxFileSize) {
@@ -111,7 +110,7 @@ public class DefaultCommandStore implements CommandStore {
 			File newFile = new File(baseDir, fileNamePrefix + newStartOffset);
 			cmdFileCtxRef.set(new CommandFileContext(newStartOffset, newFile));
 			logger.info("Rotate to " + newFile.getName());
-			
+
 			curCmdFileCtx.close();
 		}
 	}
@@ -120,8 +119,7 @@ public class DefaultCommandStore implements CommandStore {
 	public CommandReader beginRead(long startOffset) throws IOException {
 		File targetFile = findFileForOffset(startOffset);
 		if (targetFile == null) {
-			// TODO
-			throw new IllegalArgumentException(startOffset + " is illegal");
+			throw new IOException("File for offset " + startOffset + " in dir " + baseDir + " does not exist");
 		}
 		long fileStartOffset = extractStartOffset(targetFile);
 		long channelPosition = startOffset - fileStartOffset;
@@ -131,15 +129,14 @@ public class DefaultCommandStore implements CommandStore {
 	}
 
 	private File findFileForOffset(long targetStartOffset) throws IOException {
-		
+
 		rotateFileIfNenessary();
-		
+
 		File[] files = baseDir.listFiles((FilenameFilter) fileFilter);
-		if(files != null){
+		if (files != null) {
 			for (File file : files) {
 				long startOffset = extractStartOffset(file);
-				if (targetStartOffset >= startOffset
-				      && (targetStartOffset < startOffset + file.length() || targetStartOffset < startOffset + maxFileSize)) {
+				if (targetStartOffset >= startOffset && (targetStartOffset < startOffset + file.length() || targetStartOffset < startOffset + maxFileSize)) {
 					return file;
 				}
 			}
@@ -162,14 +159,14 @@ public class DefaultCommandStore implements CommandStore {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	private class CommandFileContext {
 		public final long currentStartOffset;
 
 		public final RandomAccessFile writeFile;
 
 		public final FileChannel channel;
-		
+
 		public CommandFileContext(long currentStartOffset, File currentFile) throws IOException {
 			this.currentStartOffset = currentStartOffset;
 			writeFile = new RandomAccessFile(currentFile, "rw");
@@ -248,9 +245,9 @@ public class DefaultCommandStore implements CommandStore {
 		public File getCurFile() {
 			return curFile;
 		}
-		
+
 	}
-	
+
 	@Override
 	public boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException {
 		return offsetNotifier.await(offset, timeMilli);
@@ -274,13 +271,21 @@ public class DefaultCommandStore implements CommandStore {
 
 		return lowestReadingOffset;
 	}
-	
+
 	@Override
 	public void addCommandsListener(long offset, CommandsListener listener) throws IOException {
 		logger.info("[addCommandsListener] from offset {}", offset);
-		
-		CommandReader cmdReader = beginRead(offset);
-		try{
+
+		CommandReader cmdReader = null;
+
+		try {
+			cmdReader = beginRead(offset);
+		} finally {
+			// ensure beforeCommand() is always called
+			listener.beforeCommand();
+		}
+
+		try {
 			// TODO stop notifier
 			while (listener.isOpen()) {
 				int read = 0;
@@ -298,11 +303,11 @@ public class DefaultCommandStore implements CommandStore {
 					}
 				}
 			}
-		}catch(Throwable th){
+		} catch (Throwable th) {
 			logger.error("[readCommands][exit]" + listener, th);
 		} finally {
 			cmdReader.close();
 		}
 	}
-	
+
 }

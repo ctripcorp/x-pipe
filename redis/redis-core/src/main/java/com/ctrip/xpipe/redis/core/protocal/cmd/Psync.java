@@ -61,7 +61,7 @@ public class Psync extends AbstractPsync {
 			} catch (IOException e) {
 				logger.error("[handleRedisReponse]" + oldStore, e);
 			}
-			newKeeperBeginOffset = oldStore.getMetaStore().getKeeperBeginOffset() + (oldStore.endOffset() - oldStore.getMetaStore().beginOffset()) + 2;
+			newKeeperBeginOffset = oldStore.nextNonOverlappingKeeperBeginOffset();
 			oldStore.delete();
 		}
 		logger.info("[handleRedisResponse][set keepermeta]{}, {}", masterRunid, newKeeperBeginOffset);

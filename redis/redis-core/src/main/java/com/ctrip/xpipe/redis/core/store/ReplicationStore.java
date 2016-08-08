@@ -24,20 +24,24 @@ public interface ReplicationStore extends Closeable {
 	 */
 	void delete();
 	
-	void rdbUpdated(String rdbFile, long masterOffset) throws IOException;
+	void rdbUpdated(String rdbRelativePath, long masterOffset) throws IOException;
 	
 	/**
 	 * the last byte offset
 	 * 
 	 * @return
 	 */
-	long endOffset();
+	long getEndOffset();
 	
 	boolean gc();
 
-	File newRdbFile();
+	File prepareNewRdbFile();
 
-	boolean fullSyncIfPossible(RdbFileListener defaultRdbFileListener) throws IOException;
+	boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException;
 
 	boolean isFresh();
+
+	long getKeeperEndOffset();
+
+	long nextNonOverlappingKeeperBeginOffset();
 }

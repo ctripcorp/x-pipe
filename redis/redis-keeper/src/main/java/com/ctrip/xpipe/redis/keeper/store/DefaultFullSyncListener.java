@@ -5,23 +5,25 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
-import com.ctrip.xpipe.redis.core.store.RdbFileListener;
+import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.utils.StringUtil;
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author wenchao.meng
  *
  * 2016年5月9日 下午5:31:00
  */
-public class DefaultRdbFileListener implements RdbFileListener{
+public class DefaultFullSyncListener implements FullSyncListener{
 	
-	private static Logger logger = LoggerFactory.getLogger(DefaultRdbFileListener.class);
+	private static Logger logger = LoggerFactory.getLogger(DefaultFullSyncListener.class);
 	
 	private RedisSlave redisSlave;
 	
@@ -29,7 +31,7 @@ public class DefaultRdbFileListener implements RdbFileListener{
 	
 	private AtomicBoolean stop = new AtomicBoolean(false);
 	
-	public DefaultRdbFileListener(RedisSlave redisSlave) {
+	public DefaultFullSyncListener(RedisSlave redisSlave) {
 		this.redisSlave = redisSlave;
 	}
 
@@ -66,8 +68,8 @@ public class DefaultRdbFileListener implements RdbFileListener{
 	}
 	
 	@Override
-   public boolean isStop() {
-	   return stop.get();
+   public boolean isOpen() {
+	   return !stop.get();
    }
 	
 	public void stop() {
@@ -82,10 +84,21 @@ public class DefaultRdbFileListener implements RdbFileListener{
 			redisSlave.close();
 		} catch (IOException e1) {
 			logger.error("[exception]" + redisSlave, e1);
+		} finally {
+			stop();
 		}
 	}
 
 	@Override
 	public void beforeFileData() {
+	}
+
+	@Override
+	public void onCommand(ByteBuf byteBuf) {
+		redisSlave.onCommand(byteBuf);
+	}
+
+	@Override
+	public void beforeCommand() {
 	}
 }

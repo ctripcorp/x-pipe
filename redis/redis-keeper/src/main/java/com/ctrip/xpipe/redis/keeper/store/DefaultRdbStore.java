@@ -32,7 +32,7 @@ public class DefaultRdbStore implements RdbStore {
 
 	private long rdbLastKeeperOffset;
 
-	private AtomicInteger refCount = new AtomicInteger(1);
+	private AtomicInteger refCount = new AtomicInteger(0);
 
 	public DefaultRdbStore(File file, long rdbLastKeeperOffset, long rdbFileSize) throws IOException {
 		this.file = file;
@@ -71,8 +71,6 @@ public class DefaultRdbStore implements RdbStore {
 		} else {
 			status.set(Status.Fail);
 		}
-
-		refCount.decrementAndGet();
 	}
 
 	@Override
@@ -92,7 +90,7 @@ public class DefaultRdbStore implements RdbStore {
 
 		long start = 0;
 
-		while (!rdbFileListener.isStop() && (isRdbWriting(status.get()) || start < channel.size())) {
+		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || start < channel.size())) {
 			if (channel.size() > start) {
 				long end = channel.size();
 				rdbFileListener.onFileData(channel, start, end - start);
@@ -150,6 +148,14 @@ public class DefaultRdbStore implements RdbStore {
 	@Override
 	public long lastKeeperOffset() {
 		return rdbLastKeeperOffset;
+	}
+	
+	public void incrementRefCount() {
+		refCount.incrementAndGet();
+	}
+	
+	public void decrementRefCount() {
+		refCount.decrementAndGet();
 	}
 
 }

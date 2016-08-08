@@ -3,11 +3,11 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
@@ -35,7 +35,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
-import com.ctrip.xpipe.redis.core.store.RdbFileListener;
+import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
@@ -43,7 +43,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
-import com.ctrip.xpipe.redis.keeper.store.DefaultRdbFileListener;
+import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -62,6 +62,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import jline.internal.Log;
 
 /**
  * @author wenchao.meng
@@ -75,6 +76,9 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	private volatile PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 
 	public static final int REPLCONF_INTERVAL_MILLI = 1000;
+
+	// to avoid catch exception, \n should be identical on target platforms
+	private static byte[] NEW_LINE = "\n".getBytes();
 
 	private RedisKeeperServer redisKeeperServer;
 
@@ -149,11 +153,11 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 				p.addLast(handler);
 			}
 		});
-		
+
 		connectUntilConnected(b, asyncReconnect);
 		// TODO close Bootstrap
 	}
-	
+
 	private void connectUntilConnected(final Bootstrap b, final boolean asyncReconnect) {
 		if (tryConnect(b)) {
 			return;
@@ -178,13 +182,13 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 			}
 		}
 	}
-	
+
 	private boolean tryConnect(Bootstrap b) {
 		if (!(getLifecycleState().isStarting() || getLifecycleState().isStarted())) {
 			logger.info("[connectWithMaster][do not connect, is stopped!!]{}", endpoint);
 			return true;
 		}
-		
+
 		try {
 			ChannelFuture f = b.connect(endpoint.getHost(), endpoint.getPort());
 			f.sync();
@@ -293,8 +297,8 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
 		psync.execute();
-		
-		//TODO check and retry psync command
+
+		// TODO check and retry psync command
 	}
 
 	private void listeningPortCommand() throws CommandExecutionException {
@@ -316,7 +320,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 				try {
 
 					logger.debug("[run][send ack]{}", masterChannel);
-					Command<Object> command = new Replconf(clientPool, ReplConfType.ACK, String.valueOf(getCurrentReplicationStore().endOffset()));
+					Command<Object> command = new Replconf(clientPool, ReplConfType.ACK, String.valueOf(getCurrentReplicationStore().getEndOffset()));
 					command.execute();
 				} catch (Throwable th) {
 					logger.error("[run][send replack error]" + DefaultRedisMaster.this, th);
@@ -371,7 +375,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public void fullSyncToSlave(final RedisSlave redisSlave) throws IOException {
 		final ReplicationStore currentStore = replicationStoreManager.createIfNotExist();
-		RdbFileListener rdbListener = new DefaultRdbFileListener(redisSlave);
+		FullSyncListener rdbListener = new DefaultFullSyncListener(redisSlave);
 
 		boolean fullSyncPossible = currentStore.fullSyncIfPossible(rdbListener);
 
@@ -379,9 +383,9 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 			fullSyncLock.lock();
 
 			rdbListener = lockAware(rdbListener, fullSyncLock);
-			
+
 			try {
-				while (true) {
+				while (!Thread.interrupted()) {
 					if (currentStore.fullSyncIfPossible(rdbListener)) {
 						break;
 					}
@@ -390,74 +394,136 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 					if (System.currentTimeMillis() - lastRdbUpdateTime.get() > 5000) {
 
 						logger.info("[fullSyncToSlave]update rdb to full sync");
-						final File rdbFile = currentStore.newRdbFile();
+						File rdbFile = currentStore.prepareNewRdbFile();
 						logger.info("Create file " + rdbFile);
 
-						SettableFuture<Boolean> notifyFuture = SettableFuture.create();
+						SettableFuture<Boolean> endWriteRdbFuture = SettableFuture.create();
+
+						AtomicReference<RdbOnlyPsync> rdbOnlyPsyncRef = new AtomicReference<RdbOnlyPsync>();
+						RdbOnlyReplicationStore rdbOnlyReplicationStore = new RdbOnlyReplicationStore(rdbFile);
+
 						lastRdbUpdateTime.set(System.currentTimeMillis());
-						connectWithMaster(new RdbOnlyPsyncNettyHandler(rdbFile, currentStore, notifyFuture), false);
+						connectWithMaster(new RdbOnlyPsyncNettyHandler(rdbOnlyReplicationStore, rdbOnlyPsyncRef, endWriteRdbFuture), false);
 						lastRdbUpdateTime.set(System.currentTimeMillis());
-						try {
-							notifyFuture.get();
-						} catch (InterruptedException e) {
-							break;
-						} catch (ExecutionException e) {
-							throw new IOException(e);
-						}
+
+						waitUntilPsyncDone(rdbOnlyPsyncRef, rdbOnlyReplicationStore, redisSlave, currentStore, endWriteRdbFuture);
 					} else {
 						try {
+							sendNewLineToRedisSlave(redisSlave);
 							// TODO config
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
 							break;
 						}
 					}
 				}
 			} finally {
-				if(fullSyncLock.isHeldByCurrentThread()) {
+				if (fullSyncLock.isHeldByCurrentThread()) {
 					fullSyncLock.unlock();
 				}
 			}
 		}
 	}
 
-	private RdbFileListener lockAware(final RdbFileListener rdbListener, final ReentrantLock fullSyncLock) {
-		return new RdbFileListener() {
-			
+	private void waitUntilPsyncDone(AtomicReference<RdbOnlyPsync> rdbOnlyPsyncRef, RdbOnlyReplicationStore rdbOnlyReplicationStore, RedisSlave redisSlave,
+			ReplicationStore currentStore, SettableFuture<Boolean> endWriteRdbFuture) {
+		while (!Thread.interrupted()) {
+			boolean psyncFinished = false;
+
+			RdbOnlyPsync rdbOnlyPsync = rdbOnlyPsyncRef.get();
+			if (rdbOnlyPsync != null) {
+				if (rdbOnlyPsync.future().isDone()) {
+					psyncFinished = true;
+
+					File rdbFile = rdbOnlyReplicationStore.getRdbFile();
+					if (rdbOnlyPsync.future().isSuccess()) {
+						/**
+						 * isDone() means endWriteRdb() is called. no exception
+						 * will ever in endWriteRdbFuture
+						 */
+						if (endWriteRdbFuture.isDone()) {
+							try {
+								currentStore.rdbUpdated(rdbFile.getName(), rdbOnlyReplicationStore.getMasterOffset());
+								return;
+							} catch (Exception e) {
+								Log.error("[updateRdb] error update rdb to ReplicationStore", e);
+								rdbFile.delete();
+								return;
+							}
+						}
+					} else {
+						rdbFile.delete();
+						return;
+					}
+				}
+			}
+
+			if (!psyncFinished) {
+				try {
+					sendNewLineToRedisSlave(redisSlave);
+					// TODO config
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+			}
+
+		}
+	}
+
+	private void sendNewLineToRedisSlave(RedisSlave redisSlave) {
+		redisSlave.sendMessage(NEW_LINE);
+	}
+
+	private FullSyncListener lockAware(final FullSyncListener fullSyncListener, final ReentrantLock fullSyncLock) {
+		return new FullSyncListener() {
+
 			public void setRdbFileInfo(long rdbFileSize, long rdbFileKeeperOffset) {
-				rdbListener.setRdbFileInfo(rdbFileSize, rdbFileKeeperOffset);
+				fullSyncListener.setRdbFileInfo(rdbFileSize, rdbFileKeeperOffset);
 			}
 
 			public void onFileData(FileChannel fileChannel, long pos, long len) throws IOException {
-				rdbListener.onFileData(fileChannel, pos, len);
+				fullSyncListener.onFileData(fileChannel, pos, len);
 			}
 
-			public boolean isStop() {
-				return rdbListener.isStop();
+			public boolean isOpen() {
+				return fullSyncListener.isOpen();
 			}
 
 			public void exception(Exception e) {
-				rdbListener.exception(e);
+				fullSyncListener.exception(e);
+			}
+
+			@Override
+			public void onCommand(ByteBuf byteBuf) {
+				fullSyncListener.onCommand(byteBuf);
 			}
 
 			@Override
 			public void beforeFileData() {
 				fullSyncLock.unlock();
 			}
-			
+
+			@Override
+			public void beforeCommand() {
+				fullSyncListener.beforeCommand();
+			}
 		};
 	}
 
 	static class RdbOnlyPsyncNettyHandler extends AbstractNettyHandler {
 		private FixedObjectPool<NettyClient> clientPool;
-		private File rdbFile;
-		private ReplicationStore replicationStore;
-		private SettableFuture<Boolean> notifyFuture;
+		RdbOnlyReplicationStore rdbOnlyReplicationStore;
+		private SettableFuture<Boolean> endWriteRdbFuture;
+		private AtomicReference<RdbOnlyPsync> rdbOnlyPsyncRef;
 
-		public RdbOnlyPsyncNettyHandler(File rdbFile, ReplicationStore replicationStore, SettableFuture<Boolean> notifyFuture) {
-			this.rdbFile = rdbFile;
-			this.replicationStore = replicationStore;
-			this.notifyFuture = notifyFuture;
+		public RdbOnlyPsyncNettyHandler(RdbOnlyReplicationStore rdbOnlyReplicationStore, AtomicReference<RdbOnlyPsync> rdbOnlyPsyncRef,
+				SettableFuture<Boolean> endWriteRdbFuture) {
+			this.rdbOnlyReplicationStore = rdbOnlyReplicationStore;
+			this.rdbOnlyPsyncRef = rdbOnlyPsyncRef;
+			this.endWriteRdbFuture = endWriteRdbFuture;
 		}
 
 		@Override
@@ -475,10 +541,9 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
-			// TODO ensure future is notified
 			clientPool = new FixedObjectPool<NettyClient>(new DefaultNettyClient(ctx.channel()));
-			final RdbOnlyReplicationStore store = new RdbOnlyReplicationStore(rdbFile);
-			RdbOnlyPsync rdbOnlyPsync = new RdbOnlyPsync(clientPool, store);
+			RdbOnlyPsync rdbOnlyPsync = new RdbOnlyPsync(clientPool, rdbOnlyReplicationStore);
+			rdbOnlyPsyncRef.set(rdbOnlyPsync);
 			rdbOnlyPsync.addPsyncObserver(new PsyncObserver() {
 
 				@Override
@@ -491,13 +556,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 				@Override
 				public void endWriteRdb() {
-
-					try {
-						replicationStore.rdbUpdated(rdbFile.getName(), store.getMasterOffset());
-						notifyFuture.set(true);
-					} catch (IOException e) {
-						notifyFuture.setException(e);
-					}
+					endWriteRdbFuture.set(true);
 				}
 
 				@Override

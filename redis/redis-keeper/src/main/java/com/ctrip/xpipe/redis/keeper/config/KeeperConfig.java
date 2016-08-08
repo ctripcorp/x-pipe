@@ -29,6 +29,10 @@ public interface KeeperConfig extends CoreConfig{
 	 */
 	int getMetaRefreshIntervalMillis();
 
-	long getReplicationStoreGcIntervalSeconds();
+	int getReplicationStoreGcIntervalSeconds();
+
+	int getReplicationStoreCommandFileToKeep();
+
+	long getReplicationStoreCommandSizeAfterRdbBeforeFullSyncThreshold();
 
 }

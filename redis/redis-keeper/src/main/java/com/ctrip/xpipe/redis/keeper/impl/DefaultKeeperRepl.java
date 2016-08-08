@@ -1,11 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import java.io.IOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 
@@ -16,8 +10,6 @@ import com.ctrip.xpipe.redis.keeper.KeeperRepl;
  */
 public class DefaultKeeperRepl implements KeeperRepl {
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
-
 	private ReplicationStore replicationStore;
 
 	public DefaultKeeperRepl(ReplicationStore replicationStore) {
@@ -26,25 +18,13 @@ public class DefaultKeeperRepl implements KeeperRepl {
 	}
 
 	@Override
-	public long getBeginOffset() {
+	public long getKeeperBeginOffset() {
 		return replicationStore.getMetaStore().getKeeperBeginOffset();
 	}
 
 	@Override
-	public long getEndOffset() {
-		long delta = replicationStore.endOffset() - replicationStore.getMetaStore().beginOffset();
-		return replicationStore.getMetaStore().getKeeperBeginOffset() + delta;
-	}
-
-	@Override
-	public void addCommandsListener(long offset, CommandsListener commandsListener) {
-
-		try {
-			long replicationStoreOffset = offset - replicationStore.getMetaStore().getKeeperBeginOffset();
-			replicationStore.getCommandStore().addCommandsListener(replicationStoreOffset, commandsListener);
-		} catch (IOException e) {
-			logger.error("[addCommandsListener]" + offset, e);
-		}
+	public long getKeeperEndOffset() {
+		return replicationStore.getKeeperEndOffset();
 	}
 
 }
