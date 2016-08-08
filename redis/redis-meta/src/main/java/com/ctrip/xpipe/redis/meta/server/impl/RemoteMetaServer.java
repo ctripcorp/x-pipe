@@ -57,19 +57,9 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
-	public void updateActiveKeeper(String clusterId, String shardId, KeeperMeta keeper) throws Exception {
-		throw new UnsupportedOperationException();
-	}
 
 	@Override
 	public void updateUpstream(String clusterId, String shardId, String upstream) throws Exception {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void promoteRedisMaster(String clusterId, String shardId, String promoteIp, int promotePort)
-			throws Exception {
 		throw new UnsupportedOperationException();
 	}
 

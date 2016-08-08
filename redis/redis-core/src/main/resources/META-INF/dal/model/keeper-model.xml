@@ -1,24 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <model model-package="com.ctrip.xpipe.redis.core"
 	enable-sax-parser="true" class-suffix="Meta" parent="true">
-	<entity name="xpipe">
+	<entity name="xpipe" implements="java.io.Serializable">
 		<entity-ref name="dc" type="map" />
 	</entity>
-	<entity name="dc">
+	<entity name="metaServer" implements="java.io.Serializable">
+	</entity>
+	<entity name="zkServer" implements="java.io.Serializable">
+	</entity>
+	<entity name="dc" implements="java.io.Serializable">
 		<attribute name="id" key="true" />
 		<entity-ref name="cluster" type="map" />
 	</entity>
-	<entity name="cluster">
+	<entity name="cluster" implements="java.io.Serializable">
 		<attribute name="id" key="true" />
 		<entity-ref name="shard" type="map" />
 	</entity>
-	<entity name="shard">
+	<entity name="shard" implements="java.io.Serializable">
 		<attribute name="id" key="true" />
 	</entity>	
-	<entity name="setinel">
+	<entity name="setinel" implements="java.io.Serializable">
 		<attribute name="id" value-type="Long" />
 	</entity>
-	<entity name="keeperContainer">
+	<entity name="keeperContainer" implements="java.io.Serializable">
 		<attribute name="id" value-type="Long" />
 	</entity>
 	<entity name="keeper" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Keeper">
@@ -31,7 +35,7 @@
 			}
 		</snippet>
 	</entity>
-	<entity name="redis" implements="com.ctrip.xpipe.redis.core.entity.Redis">
+	<entity name="redis" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Redis">
 		<attribute name="offset" value-type="Long" />
 		<snippet>
 			public boolean isMaster(){

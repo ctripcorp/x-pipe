@@ -33,8 +33,18 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	}
 
 	@Override
-	public long getReplicationStoreGcIntervalSeconds() {
+	public int getReplicationStoreGcIntervalSeconds() {
 		return 10;
+	}
+
+	@Override
+	public int getReplicationStoreCommandFileToKeep() {
+		return 2;
+	}
+
+	@Override
+	public long getReplicationStoreCommandSizeAfterRdbBeforeFullSyncThreshold() {
+		return 100;
 	}
 
 }

@@ -21,15 +21,15 @@ public class JqRedisKeeperServerTest extends BaseRedisKeeperServerTest {
 	}
 
 	@Test
-	public void startKeeper6666() throws Exception {
+	public void startKeeper6000() throws Exception {
 
-		startKeeper("keeper6666.xml", "jq");
+		startKeeper("keeper6000.xml", "jq");
 	}
 
 	@Test
-	public void startKeeper7777() throws Exception {
+	public void startKeeper6001() throws Exception {
 
-		startKeeper("keeper7777.xml", "jq");
+		startKeeper("keeper6001.xml", "jq");
 	}
 
 	@After

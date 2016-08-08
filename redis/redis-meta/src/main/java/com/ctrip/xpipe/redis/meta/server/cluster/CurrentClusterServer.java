@@ -12,5 +12,9 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 public interface CurrentClusterServer extends ClusterServer, Lifecycle{
 	
 	Set<Integer>  slots();
+	
 	boolean isLeader();
+
+	boolean hasKey(Object key);
+	
 }

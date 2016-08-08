@@ -27,6 +27,7 @@ public class AbstractRedisKeeperServerStateTest extends AbstractRedisKeeperTest{
 		
 		redisMasterMeta = createRedisMeta();
 		redisKeeperServer = createRedisKeeperServer();
+		initRegistry();
 	}
 	
 

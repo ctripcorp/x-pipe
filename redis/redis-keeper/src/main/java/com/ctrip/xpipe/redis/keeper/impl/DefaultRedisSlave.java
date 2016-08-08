@@ -18,7 +18,6 @@ import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
 import com.ctrip.xpipe.netty.NotClosableFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
-import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -35,7 +34,7 @@ import io.netty.channel.Channel;
  *
  * May 20, 2016 4:34:09 PM
  */
-public class DefaultRedisSlave implements RedisSlave, CommandsListener{
+public class DefaultRedisSlave implements RedisSlave {
 	
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRedisSlave.class);
 	
@@ -124,7 +123,6 @@ public class DefaultRedisSlave implements RedisSlave, CommandsListener{
 		
 		logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
 		slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
-		redisClient.getRedisKeeperServer().getKeeperRepl().addCommandsListener(beginOffset, this);
 	}
 
 	@Override
@@ -209,6 +207,10 @@ public class DefaultRedisSlave implements RedisSlave, CommandsListener{
 		closed.set(true);
 		redisClient.close();
 		psyncExecutor.shutdownNow();
+	}
+	
+	@Override
+	public void beforeCommand() {
 	}
 	
 	

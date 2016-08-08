@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<entities do-package="com.ctrip.xpipe.redis.console.web.model" gen="true">
+<entities do-package="com.ctrip.xpipe.redis.console.model" gen="true">
 	<entity name="dc-tbl" table="DC_TBL" alias="dt">
 		<query-defs>
 			<query name="find-all-dcs" type="SELECT" multiple="true">
@@ -10,12 +10,22 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-dc-by-dc-name" type="SELECT" multiple="false">
+				<param name='dc-name'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-name'/> = ${dc-name}
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
 	<entity name='metaserver-tbl' table="METASERVER_TBL" alias="mt">
 		<query-defs>
-			<query name="find-all-metaserver" type="SELECT" multiple="true">
+			<query name="find-all-by-dc-id" type="SELECT" multiple="true">
 				<param name='dc-id'/>
 				<statement>
 					<![CDATA[
@@ -26,7 +36,7 @@
 				</statement>
 			</query>
 
-			<query name="find-master-metaserver" type="SELECT" multiple="false">
+			<query name="find-master-metaserver-by-dc-id" type="SELECT" multiple="false">
 				<param name='dc-id'/>
 				<statement>
 					<![CDATA[
@@ -50,6 +60,16 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-cluster-by-cluster-name" type="SELECT" multiple="false">
+			<param name='cluster-name'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='cluster-name'/> = ${cluster-name}
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -67,7 +87,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-dc-cluster-by-metaserver" type="SELECT" multiple="true">
+			<query name="find-all-by-metaserver-id" type="SELECT" multiple="true">
 				<param name='metaserver-id'/>
 				<statement>
 					<![CDATA[
@@ -77,18 +97,49 @@
 					]]>
 				</statement>
 			</query>
-		</query-defs>
-	</entity>
-
-	<entity name="shard-tbl" table="SHARD_TBL" alias="st">
-		<query-defs>
-			<query name="find-shard" type="SELECT" multiple="false">
+			<query name="find-all-by-cluster-id" type="SELECT" multiple="true">
 				<param name='cluster-id'/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='cluster-id' /> = ${cluster-id} 
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-by-dc-id" type="SELECT" multiple="true">
+
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-id' /> = ${dc-id} 
+					]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+
+	<entity name="shard-tbl" table="SHARD_TBL" alias="st">
+		<query-defs>
+			<query name="find-all-by-cluster-id" type="SELECT" multiple="true">
+				<param name='cluster-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='cluster-id' /> = ${cluster-id} 
+					]]>
+				</statement>
+			</query>
+			<query name="find-shard-by-shard-name" type="SELECT" multiple="false">
+				<param name='shard-name' />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='shard-name' /> = ${shard-name} 
 					]]>
 				</statement>
 			</query>
@@ -109,12 +160,42 @@
 					]]>
 				</statement>
 			</query>
+			<query name='find-all-by-dc-cluster-id' type='SELECT' multiple='true'>
+				<param name='dc-cluster-id' />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-cluster-id' /> = ${dc-cluster-id}
+					]]>
+				</statement>
+			</query>
+			<query name='find-all-by-shard-id' type='SELECT' multiple='true'>
+				<param name='shard-id' />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='shard-id' /> = ${shard-id}
+					]]>
+				</statement>
+			</query>
+			<query name='find-all-by-setinel-id' type='SELECT' multiple='true'>
+				<param name='setinel-id' />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='setinel-id' /> = ${setinel-id}
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
 	<entity name="redis-tbl" table="REDIS_TBL" alias="rt">
 		<query-defs>
-			<query name='find-all-redis' type='SELECT' multiple="true">
+			<query name='find-all-by-dc-cluster-shard-id' type='SELECT' multiple="true">
 				<param name='dc-cluster-shard-id'/>
 				<statement>
 					<![CDATA[
@@ -124,40 +205,12 @@
 					]]>
 				</statement>
 			</query>
-			<query name='find-all-keeper' type='SELECT' multiple="true">
-				<statement>
-					<![CDATA[
-					SELECT <FIELDS/>
-					FROM <TABLE/>
-					WHERE <FIELD name='redis-role' /> = 'keeper'
-					]]>
-				</statement>
-			</query>
-			<query name='find-master' type='SELECT' multiple='false'>
-				<statement>
-					<![CDATA[
-					SELECT <FIELDS/>
-					FROM <TABLE/>
-					WHERE <FIELD name='redis-role' /> = 'master'
-					]]>
-				</statement>
-			</query>
-			<query name='find-master-keeper' type='SELECT' multiple='false'>
-				<statement>
-					<![CDATA[
-					SELECT <FIELDS/>
-					FROM <TABLE/>
-					WHERE <FIELD name='redis-role' /> = 'keeper'
-					AND <FIELD name='redis-master' /> = NULL
-					]]>
-				</statement>
-			</query>
 		</query-defs>
 	</entity>
 
 	<entity name='keepercontainer-tbl' table='KEEPERCONTAINER_TBL' alias='kct'>
 		<query-defs>
-			<query name='find-all-keeper' type='SELECT' multiple='true'>
+			<query name='find-all-keeper-by-keepercontainer-id' type='SELECT' multiple='true'>
 				<param name='keepercontainer-id'/>
 				<statement>
 					<![CDATA[
@@ -167,6 +220,32 @@
 					]]>
 				</statement>
 			</query>
+			<query name='find-all-by-dc-id' type='SELECT' multiple='true'>
+				<param name='keepercontainer-dc'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='keepercontainer-dc' /> = ${keepercontainer-dc}
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
+	
+	<entity name='setinel-tbl' table='SETINEL_TBL' alias='setinelt'>
+		<query-defs>
+			<query name='find-all-by-dc-id' type='SELECT' multiple='true'>
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-id' /> = ${dc-id}
+					]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+	
 </entities>

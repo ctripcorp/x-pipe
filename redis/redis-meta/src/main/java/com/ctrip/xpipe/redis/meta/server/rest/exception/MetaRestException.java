@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.rest.exception;
 
-import com.ctrip.xpipe.redis.meta.server.exception.RedisMetaServerRuntimeException;
+import com.ctrip.xpipe.redis.meta.server.exception.MetaServerRuntimeException;
 
 /**
  * @author wenchao.meng
  *
  * Aug 3, 2016
  */
-public class MetaRestException extends RedisMetaServerRuntimeException{
+public class MetaRestException extends MetaServerRuntimeException{
 
 	private static final long serialVersionUID = 1L;
 

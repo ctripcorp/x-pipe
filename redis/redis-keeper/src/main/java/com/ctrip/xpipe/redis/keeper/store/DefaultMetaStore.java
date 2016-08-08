@@ -227,6 +227,7 @@ public class DefaultMetaStore implements MetaStore {
 			metaDup.setRdbFile(rdbFile);
 			metaDup.setRdbFileSize(rdbFileSize);
 			metaDup.setRdbLastKeeperOffset(redisOffsetToKeeperOffset(masterOffset, metaDup));
+			log.info("[rdbUpdated] update RdbLastKeeperOffset to {}", metaDup.getRdbLastKeeperOffset());
 
 			saveMeta(metaDup);
 

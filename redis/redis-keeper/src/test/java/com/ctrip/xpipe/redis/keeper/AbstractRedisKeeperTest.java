@@ -54,7 +54,6 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	public void beforeAbstractRedisKeeperTest() throws Exception {
 		
 		doIdcInit();
-		initRegistry();
 		
 		metaService = getRegistry().getComponent(MetaService.class);
 		
@@ -193,8 +192,8 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 
 			@Override
-			public boolean isStop() {
-				return false;
+			public boolean isOpen() {
+				return true;
 			}
 
 			@Override
@@ -239,6 +238,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					@Override
 					public boolean isOpen() {
 						return true;
+					}
+
+					@Override
+					public void beforeCommand() {
 					}
 				});
 			}

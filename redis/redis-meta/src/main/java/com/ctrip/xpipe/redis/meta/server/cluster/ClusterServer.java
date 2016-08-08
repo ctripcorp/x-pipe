@@ -15,8 +15,11 @@ public interface ClusterServer{
 	
 	/**
 	 * reresh slotmanager
+	 * @return 
 	 */
-	void notifySlotChange(int slot);
+	CommandFuture<Void> addSlot(int slot);
+	
+	CommandFuture<Void> deleteSlot(int slot);
 	
 	/**
 	 * notify server to export slot
@@ -29,5 +32,7 @@ public interface ClusterServer{
 	 * @param slotId
 	 */
 	CommandFuture<Void> importSlot(int slotId);
+
+	void notifySlotChange(int slotId);
 	
 }

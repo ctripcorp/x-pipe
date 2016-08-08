@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
+
 import java.util.Map;
 import java.util.Set;
 
@@ -11,6 +12,8 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
  * Jul 22, 2016
  */
 public interface SlotManager extends Lifecycle{
+	
+	public static final int ORDER = 0;
 	
 	public static final int TOTAL_SLOTS = Integer.parseInt(System.getProperty("TOTAL_SLOTS", "1024"));//change only for unit test
 	

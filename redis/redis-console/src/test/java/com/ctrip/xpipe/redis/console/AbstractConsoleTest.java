@@ -8,5 +8,5 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
  * Jun 23, 2016
  */
 public class AbstractConsoleTest extends AbstractRedisTest{
-
+	
 }

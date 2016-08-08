@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: xpipe-keeper-container
+
+server:
+  port: 8080
+  
+logging:
+  file: /opt/logs/100004376/${spring.application.name}.log
+
+endpoints:
+  enabled: false

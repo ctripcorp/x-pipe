@@ -17,7 +17,7 @@ import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTrigger;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.MetaserverLeaderElector;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.dao.memory.MemoryMetaServerDao;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 
@@ -59,7 +59,7 @@ public class TestAppServer extends AbstractLifecycle{
 	@Override
 	public void doStart() throws Exception{
 		
-		System.setProperty(MemoryMetaServerDao.MEMORY_META_SERVER_DAO_KEY, configFile);
+		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, configFile);
 		System.setProperty("TOTAL_SLOTS", String.valueOf(total_slots));
 		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
 		

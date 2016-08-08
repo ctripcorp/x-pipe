@@ -23,6 +23,10 @@ public class DefaultZkClient extends AbstractLifecycle implements ZkClient, TopE
 	
 	private String address;
 	
+	protected void doInitialize() throws Exception {
+		
+	}
+	
 	@Override
 	protected void doStart() throws Exception {
 		

@@ -8,8 +8,8 @@ import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
+import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
-import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
@@ -147,7 +147,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public long endOffset() {
+	public long getEndOffset() {
 		// TODO Auto-generated method stub
 		return 0;
 	}
@@ -180,13 +180,13 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public File newRdbFile() {
+	public File prepareNewRdbFile() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public boolean fullSyncIfPossible(RdbFileListener defaultRdbFileListener) throws IOException {
+	public boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -195,6 +195,18 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	public boolean isFresh() {
 		// TODO Auto-generated method stub
 		return true;
+	}
+
+	@Override
+	public long getKeeperEndOffset() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public long nextNonOverlappingKeeperBeginOffset() {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }

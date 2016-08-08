@@ -57,8 +57,8 @@ public class PsyncHandler extends AbstractCommandHandler{
 		}else if(args[0].equals(redisKeeperServer.getKeeperRunid())){
 			
 			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
-			Long beginOffset = keeperRepl.getBeginOffset();
-			Long endOffset = keeperRepl.getEndOffset();
+			Long beginOffset = keeperRepl.getKeeperBeginOffset();
+			Long endOffset = keeperRepl.getKeeperEndOffset();
 			Long offsetRequest = Long.valueOf(args[1]);
 			
 			if(offsetRequest < beginOffset){
