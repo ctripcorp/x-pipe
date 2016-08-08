@@ -16,11 +16,10 @@ public class DefaultFileConfig extends AbstractConfig{
 	private Properties properties = new Properties();
 	
 	private static String DEFAULT_LOCAL_PATH = System.getProperty("localpath", "/opt/settings/xpipe");
-	
+
 	private String localPath;
 	
 	public DefaultFileConfig(){
-		
 	}
 
 	public DefaultFileConfig(String file) {
@@ -80,12 +79,4 @@ public class DefaultFileConfig extends AbstractConfig{
 	public String get(String key) {
 		return properties.getProperty(key);
 	}
-
-	@Override
-	public String get(String key, String defaultValue) {
-		
-		String value = get(key);
-		return value == null ? defaultValue : value;
-	}
-
 }

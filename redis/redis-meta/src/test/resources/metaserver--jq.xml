@@ -3,8 +3,8 @@
 	<dc id="jq">
 	
 		<keeperContainers>
-			<keeperContainer id="1" ip="1.1.1.1" port="8080" />
-			<keeperContainer id="2" ip="1.1.1.1" port="8081" />
+			<keeperContainer id="1" ip="127.0.0.1" port="8080" />
+			<keeperContainer id="2" ip="127.0.0.1" port="8081" />
 		</keeperContainers>
 
 		<cluster id="cluster1">
