@@ -7,3 +7,6 @@ server:
   
 logging:
   file: /opt/logs/100004376/${spring.application.name}.log
+
+endpoints:
+  enabled: false
