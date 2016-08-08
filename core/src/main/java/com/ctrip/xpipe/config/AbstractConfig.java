@@ -19,6 +19,12 @@ public abstract class AbstractConfig implements Config{
 	private List<ConfigChangeListener> listeners = new LinkedList<>();
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
+
+	@Override
+	public String get(String key, String defaultValue) {
+		String value = get(key);
+		return value == null ? defaultValue : value;
+	}
 	
 	@Override
 	public void addConfigChangeListener(ConfigChangeListener configChangeListener) {
