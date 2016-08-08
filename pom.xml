@@ -53,13 +53,13 @@
 		<dependencies>
 			<dependency>
 				<groupId>com.ctrip.framework</groupId>
-  				<artifactId>framework-foundation</artifactId>
-  				<version>${ctrip-framework-foundation.version}</version>
+				<artifactId>framework-foundation</artifactId>
+				<version>${ctrip-framework-foundation.version}</version>
 			</dependency>
 			<dependency>
-    			<groupId>com.ctrip.framework.apollo</groupId>
-   				<artifactId>apollo-client</artifactId>
-    			<version>${ctrip-apollo.version}</version>
+				<groupId>com.ctrip.framework.apollo</groupId>
+				<artifactId>apollo-client</artifactId>
+				<version>${ctrip-apollo.version}</version>
 			</dependency>
 			<!-- xpipe related -->
 			<dependency>
@@ -217,8 +217,8 @@
 				<version>${spring-boot.version}</version>
 				<exclusions>
 					<exclusion>
-						<groupId>ch.qos.logback</groupId>
-						<artifactId>logback-classic</artifactId>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-starter-logging</artifactId>
 					</exclusion>
 				</exclusions>
 			</dependency>
@@ -337,24 +337,8 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-slf4j-impl</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>jcl-over-slf4j</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-log4j2</artifactId>
 		</dependency>
 
 		<!-- test -->
