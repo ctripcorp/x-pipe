@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
@@ -65,6 +66,8 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 				logger.info("[loadMetaManager][load from console]");
 				DcMeta dcMeta = consoleService.getDcMeta(currentDc);
 				dcMetaManager = DefaultDcMetaManager.buildFromDcMeta(dcMeta);
+			}catch(ResourceAccessException e){
+				logger.error("[loadMetaManager][consoleService]" + e.getMessage());
 			}catch(Exception e){
 				logger.error("[loadMetaManager][consoleService]", e);
 			}

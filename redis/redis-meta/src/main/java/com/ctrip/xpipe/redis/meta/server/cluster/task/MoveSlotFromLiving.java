@@ -72,18 +72,18 @@ public class MoveSlotFromLiving extends AbstractSlotMoveTask{
 		
 		logger.info("[setSuccess]{},{},{}", getSlot(), getFrom(), getTo());
 		
+		setSlotInfo(new SlotInfo(to.getServerId()));
 		getTo().addSlot(slot);
 		getFrom().deleteSlot(slot);
-		setSlotInfo(new SlotInfo(to.getServerId()));
 		future.setSuccess(null);
 	}
 
 
 	private void setFailAndlRollback(Throwable th) throws Exception {
 		
+		setSlotInfo(new SlotInfo(from.getServerId()));
 		getFrom().addSlot(slot);
 		getTo().deleteSlot(slot);
-		setSlotInfo(new SlotInfo(from.getServerId()));
 		future.setFailure(th);
 	}
 

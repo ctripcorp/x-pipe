@@ -33,9 +33,10 @@ public class AbstractExceptionHandler {
 
 	protected ResponseEntity<Map<String, Object>> handleError(HttpServletRequest request, HttpStatus status,
 			Throwable ex) {
+		
 		String message = ex.getMessage();
-
-		logger.error(message, ex);
+		String requestPath = request.getRequestURI() + (request.getQueryString() == null ? "" : ("?" + request.getQueryString()));
+		logger.error(String.format("%s,%s", message, requestPath), ex);
 
 		Map<String, Object> errorAttributes = new HashMap<>();
 

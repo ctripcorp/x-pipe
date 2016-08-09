@@ -57,13 +57,13 @@ public class DefaultClusterController implements ClusterApi{
 
 	@RequestMapping(path = PATH_ADD_SLOT, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
-	public void addSlot(int slotId) throws Exception {
+	public void addSlot(@PathVariable int slotId) throws Exception {
 		currentClusterServer.addSlot(slotId).sync();
 	}
 
 	@RequestMapping(path = PATH_DELETE_SLOT, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
-	public void deleteSlot(int slotId) throws Exception {
+	public void deleteSlot(@PathVariable int slotId) throws Exception {
 		currentClusterServer.deleteSlot(slotId).sync();
 	}
 
@@ -82,7 +82,7 @@ public class DefaultClusterController implements ClusterApi{
 	
 	@RequestMapping(path = PATH_NOTIFY_SLOT_CHANGE, method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
-	public void notifySlotChange(int slotId) throws Exception {
+	public void notifySlotChange(@PathVariable int slotId) throws Exception {
 		currentClusterServer.notifySlotChange(slotId);
 	}
 	

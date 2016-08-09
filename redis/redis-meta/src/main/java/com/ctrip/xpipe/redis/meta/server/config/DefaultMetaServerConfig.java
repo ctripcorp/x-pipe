@@ -1,11 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server.config;
 
 
-import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.config.CompositeConfig;
 import com.ctrip.xpipe.config.DefaultFileConfig;
+import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.utils.IpUtils;
 
@@ -14,7 +15,6 @@ import com.ctrip.xpipe.utils.IpUtils;
  *
  *         Jun 16, 2016 11:50:44 AM
  */
-@Component
 public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaServerConfig {
 	
 	public static String KEY_CONSOLE_ADDRESS = "console.address";
@@ -35,7 +35,8 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	private int defaultMetaServerId = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "1"));
 	private int defaultServerPort = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "8080"));
 	
-	private Config serverConfig = new DefaultFileConfig(META_SRRVER_PROPERTIES_PATH, META_SRRVER_PROPERTIES_FILE); 
+	private Config serverConfig = new CompositeConfig(new DefaultPropertyConfig(), 
+				new DefaultFileConfig(META_SRRVER_PROPERTIES_PATH, META_SRRVER_PROPERTIES_FILE)); 
 
 	@Override
 	public String getConsoleAddress() {

@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.exception.LifecycleLogpassException;
+import com.ctrip.xpipe.exception.LifecycleLogPassRuntimeException;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 
 /**
@@ -65,13 +67,20 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 			if(lifecycle.getLifecycleState().canInitialize()){
 				try{
 					lifecycle.initialize();
-				}catch(Throwable th){
+				}catch(Throwable th){					
+					if(!logpass(th)){
+						throw th;
+					}
 					logger.error("[doInitialize]" + lifecycle, th);
 				}
 			}
 		}
 	}
 	
+	private boolean logpass(Throwable e) {
+		return e instanceof LifecycleLogpassException || e instanceof LifecycleLogPassRuntimeException;
+	}
+
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
@@ -81,6 +90,9 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 				try{
 					lifecycle.start();
 				}catch(Throwable th){
+					if(!logpass(th)){
+						throw th;
+					}
 					logger.error("[doStart]" + lifecycle, th);
 				}
 			}

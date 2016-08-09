@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
 
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -27,5 +26,5 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext{
 		zkClient.setZkAddress(metaServerConfig.getZkConnectionString());
 		return zkClient;
 	}
-
+	
 }
