@@ -9,11 +9,13 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
  * Jun 13, 2016
  */
 public class CtripFoundationService implements FoundationService{
+	
+	private static final String DATA_CENTER_KEY = "DATA_CENTER";
 
 	@Override
 	public String getDataCenter() {
 		
-		return Foundation.server().getDataCenter();
+		return System.getProperty(DATA_CENTER_KEY, Foundation.server().getDataCenter());
 	}
 
 	@Override

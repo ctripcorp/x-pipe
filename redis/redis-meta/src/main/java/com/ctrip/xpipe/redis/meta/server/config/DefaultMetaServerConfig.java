@@ -17,7 +17,7 @@ import com.ctrip.xpipe.utils.IpUtils;
 @Component
 public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaServerConfig {
 	
-	public static String KEY_CONSOLE_ADDRESS = "console.adress";
+	public static String KEY_CONSOLE_ADDRESS = "console.address";
 	public static String KEY_META_REFRESH_MILLI = "meta.refresh.milli";
 	public static String KEY_SLOT_REFRESH_MILLI = "slot.refresh.milli";
 	public static String KEY_LEADER_CHACK_MILLI = "leader.check.milli";
