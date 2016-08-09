@@ -65,7 +65,11 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 
 	@Override
 	protected ApplicationContext createSpringContext() {
-		return new AnnotationConfigApplicationContext(MetaServerContextConfig.class);
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+		context.getEnvironment().setActiveProfiles("test");
+		context.register(MetaServerContextConfig.class);
+		context.refresh();
+		return context;
 	}
 	
 	

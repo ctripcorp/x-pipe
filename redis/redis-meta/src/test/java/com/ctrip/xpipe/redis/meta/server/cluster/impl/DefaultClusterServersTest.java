@@ -7,7 +7,7 @@ import org.junit.Test;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
-import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
 
 
 /**
@@ -35,8 +35,7 @@ public class DefaultClusterServersTest extends AbstractMetaServerContextTest{
 		
 		Assert.assertEquals(1, servers.allClusterServers().size());
 		
-		DefaultMetaServerConfig config2 = new DefaultMetaServerConfig();
-		config2.setDefaultMetaServerId(2);
+		UnitTestServerConfig config2 = new UnitTestServerConfig(2, randomPort());
 		CurrentClusterServer current2 = createAndStart(config2);
 		
 		sleep(500);
