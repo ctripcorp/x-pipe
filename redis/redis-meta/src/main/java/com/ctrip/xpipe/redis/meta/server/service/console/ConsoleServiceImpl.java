@@ -6,26 +6,43 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.annotation.PostConstruct;
+
+/**
+ * @author zhangle
+ *
+ */
 @Service
 public class ConsoleServiceImpl implements ConsoleService {
 
 	@Autowired
-	private RetryableRestTemplate restTemplate;
+	private MetaServerConfig config;
+
+	private RestTemplate restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
+	private String host;
+
+	@PostConstruct
+	public void init(){
+		host = config.getConsoleAddress();
+	}
 
 	@Override
 	public Set<String> getAllDcIds() {
-		String[] dcIds = restTemplate.get("/api/dcids", String[].class);
+		String[] dcIds = restTemplate.getForObject(host + "/api/dcids", String[].class);
 		if (dcIds == null || dcIds.length == 0){
-			return Collections.EMPTY_SET;
+			return Collections.emptySet();
 		}
 		return new HashSet<>(Arrays.asList(dcIds));
 
@@ -33,36 +50,36 @@ public class ConsoleServiceImpl implements ConsoleService {
 
 	@Override
 	public Set<String> getAllClusterIds() {
-		String[] clustersIds = restTemplate.get("/api/clusterids", String[].class);
+		String[] clustersIds = restTemplate.getForObject(host + "/api/clusterids", String[].class);
 		if (clustersIds == null || clustersIds.length == 0){
-			return Collections.EMPTY_SET;
+			return Collections.emptySet();
 		}
 		return new HashSet<>(Arrays.asList(clustersIds));
 	}
 
 	@Override
 	public Set<String> getClusterShardIds(String clusterId) {
-		String[] shardIds = restTemplate.get("/api/cluster/{clusterId}/shardids", String[].class, clusterId);
+		String[] shardIds = restTemplate.getForObject(host + "/api/cluster/{clusterId}/shardids", String[].class, clusterId);
 		if (shardIds == null || shardIds.length == 0){
-			return Collections.EMPTY_SET;
+			return Collections.emptySet();
 		}
 		return new HashSet<>(Arrays.asList(shardIds));
 	}
 
 	@Override
 	public DcMeta getDcMeta(String dcId) {
-		return restTemplate.get("/api/dc/{dcId}", DcMeta.class, dcId);
+		return restTemplate.getForObject(host + "/api/dc/{dcId}", DcMeta.class, dcId);
 	}
 
 	@Override
 	public ClusterMeta getClusterMeta(String dcId, String clusterId) {
-		return restTemplate.get("/api/dc/{dcId}/cluster/{clusterId}", ClusterMeta.class, dcId, clusterId);
+		return restTemplate.getForObject(host + "/api/dc/{dcId}/cluster/{clusterId}", ClusterMeta.class, dcId, clusterId);
 	}
 
 	@Override
 	public ShardMeta getShardMeta(String dcId, String clusterId, String shardId) {
 		return restTemplate
-			.get("/api/dc/{dcId}/cluster/{clusterId}/shard/{shardId}", ShardMeta.class, dcId, clusterId, shardId);
+			.getForObject(host + "/api/dc/{dcId}/cluster/{clusterId}/shard/{shardId}", ShardMeta.class, dcId, clusterId, shardId);
 	}
 
 	@Override
@@ -76,4 +93,6 @@ public class ConsoleServiceImpl implements ConsoleService {
 		throws Exception {
 
 	}
+
+
 }

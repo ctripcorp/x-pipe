@@ -13,6 +13,10 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
+/**
+ * @author zhangle
+ *
+ */
 @RestController
 @RequestMapping("/api")
 public class ConsoleController {

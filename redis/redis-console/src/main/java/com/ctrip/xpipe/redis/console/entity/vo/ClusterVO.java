@@ -6,6 +6,10 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 
+/**
+ * @author zhangle
+ *
+ */
 public class ClusterVO {
 
 	private ClusterTbl baseInfo;
