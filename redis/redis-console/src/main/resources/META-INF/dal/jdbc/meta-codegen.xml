@@ -2,7 +2,7 @@
 <entities>
   <entity name="cluster-tbl" table="CLUSTER_TBL" alias="ct">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
-    <member name="cluster-name" field="cluster_name" value-type="String" length="30" nullable="false" />
+    <member name="cluster-name" field="cluster_name" value-type="String" length="40" nullable="false" />
     <member name="activedc-id" field="activedc_id" value-type="long" length="20" nullable="false" />
     <member name="cluster-description" field="cluster_description" value-type="String" length="180" nullable="false" />
     <member name="cluster-last-modified-time" field="cluster_last_modified_time" value-type="String" length="20" nullable="false" />
