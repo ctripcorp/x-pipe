@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.PostConstruct;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -56,6 +59,8 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
  */
 @Service
 public class MetaInfoService {
+	private static Logger logger = LoggerFactory.getLogger(MetaInfoService.class);
+	
 	public static long REDIS_MASTER_NULL = 0L;
 
 	private DcTblDao dcTblDao;
@@ -71,6 +76,8 @@ public class MetaInfoService {
 	@PostConstruct
 	private void postConstruct() {
 		try {
+			logger.info("[MetaInfoService][Construct Dao]");
+			
 			dcTblDao = ContainerLoader.getDefaultContainer().lookup(DcTblDao.class);
 			clusterTblDao = ContainerLoader.getDefaultContainer().lookup(ClusterTblDao.class);
 			dcClusterTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterTblDao.class);
@@ -81,8 +88,8 @@ public class MetaInfoService {
 			metaserverTblDao = ContainerLoader.getDefaultContainer().lookup(MetaserverTblDao.class);
 			keepercontainerTblDao = ContainerLoader.getDefaultContainer().lookup(KeepercontainerTblDao.class);
 
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (Exception ex) {
+			logger.error("[MetaInfoService],[Construct fail]",ex);
 		}
 
 	}
@@ -91,7 +98,7 @@ public class MetaInfoService {
 	 * @return list of all dc names
 	 * @throws DalException
 	 */
-	public List<String> getAllDcIds() throws DalException {
+	public List<String> getAllDcIds() throws DalException{
 		List<String> dcIds = new ArrayList<String>(5);
 
 		for (DcTbl dc : dcTblDao.findAllDcs(DcTblEntity.READSET_FULL)) {
@@ -106,11 +113,12 @@ public class MetaInfoService {
 	 * @throws DalException
 	 */
 	public List<String> getAllClusterIds() throws DalException {
-		List<String> clusterIds = new ArrayList<String>(10);
+		List<String> clusterIds = new ArrayList<String>(20);
 
 		for (ClusterTbl cluster : clusterTblDao
 				.findAllClusters(ClusterTblEntity.READSET_FULL)) {
 			clusterIds.add(cluster.getClusterName());
+
 		}
 
 		return clusterIds;
@@ -199,9 +207,11 @@ public class MetaInfoService {
 					keeperMeta.setMaster("");
 				} else {
 					StringBuilder sb = new StringBuilder(30);
-					sb.append(redisTbl.getRedisIp());
+					
+					RedisTbl redisMaster = redisTblDao.findByPK(redisTbl.getRedisMaster(), RedisTblEntity.READSET_FULL);
+					sb.append(redisMaster.getRedisIp());
 					sb.append(":");
-					sb.append(String.valueOf(redisTbl.getRedisPort()));
+					sb.append(String.valueOf(redisMaster.getRedisPort()));
 
 					keeperMeta.setMaster(sb.toString());
 				}
@@ -221,9 +231,11 @@ public class MetaInfoService {
 					redisMeta.setMaster("");
 				} else {
 					StringBuilder sb = new StringBuilder(30);
-					sb.append(redisTbl.getRedisIp());
+					
+					RedisTbl redisMaster = redisTblDao.findByPK(redisTbl.getRedisMaster(), RedisTblEntity.READSET_FULL);
+					sb.append(redisMaster.getRedisIp());
 					sb.append(":");
-					sb.append(String.valueOf(redisTbl.getRedisPort()));
+					sb.append(String.valueOf(redisMaster.getRedisPort()));
 
 					redisMeta.setMaster(sb.toString());
 				}
@@ -284,7 +296,6 @@ public class MetaInfoService {
 		List<MetaserverTbl> metaservers = metaserverTblDao.findAllByDcId(
 				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), MetaserverTblEntity.READSET_FULL);
 		for (MetaserverTbl metaserver : metaservers) {
-
 			MetaServerMeta metaserverInfo = new MetaServerMeta();
 			metaserverInfo.setIp(metaserver.getMetaserverIp());
 			metaserverInfo.setPort(metaserver.getMetaserverPort());
@@ -306,7 +317,6 @@ public class MetaInfoService {
 		List<KeepercontainerTbl> keepercontainerTbls = keepercontainerTblDao.findAllByDcId(
 				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), KeepercontainerTblEntity.READSET_FULL);
 		for (KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
-
 			KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
 			keeperContainerMeta.setId(keepercontainerTbl.getKeepercontainerId());
 			keeperContainerMeta.setIp(keepercontainerTbl.getKeepercontainerIp());
@@ -320,7 +330,6 @@ public class MetaInfoService {
 		List<SetinelTbl> setinelTbls = setinelTblDao.findAllByDcId(
 				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), SetinelTblEntity.READSET_FULL);
 		for (SetinelTbl setinelTbl : setinelTbls) {
-
 			SetinelMeta setinelMeta = new SetinelMeta();
 			setinelMeta.setId(setinelTbl.getSetinelId());
 			setinelMeta.setAddress(setinelTbl.getSetinelAddress());
@@ -333,7 +342,7 @@ public class MetaInfoService {
 		List<DcClusterTbl> dcClusterTbls = dcClusterTblDao.findAllByDcId(
 				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), DcClusterTblEntity.READSET_FULL);
 		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
-
+			
 			ClusterMeta clusterMeta = getDcClusterMeta(dcId, clusterTblDao
 					.findByPK(dcClusterTbl.getClusterId(), ClusterTblEntity.READSET_FULL).getClusterName());
 

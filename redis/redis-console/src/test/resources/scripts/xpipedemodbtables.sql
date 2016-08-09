@@ -1,6 +1,7 @@
 -- Xpipe DB Demo
 
 -- DC Table
+drop table if exists DC_TBL;
 create table DC_TBL
 (
 	id bigint unsigned not null auto_increment primary key comment 'primary key',
@@ -13,6 +14,7 @@ create table DC_TBL
 
 
 -- Meta Server Table
+drop table if exists METASERVER_TBL;
 create table METASERVER_TBL
 (
 	id bigint unsigned not null auto_increment primary key comment 'primary key',
@@ -26,6 +28,7 @@ create table METASERVER_TBL
 );
 
 -- Setinel Table
+drop table if exists SETINEL_TBL;
 create table SETINEL_TBL
 (
 	setinel_id bigint unsigned not null auto_increment primary key comment 'setinel id',
@@ -36,10 +39,11 @@ create table SETINEL_TBL
 );
 
 -- Cluster Table
+drop table if exists CLUSTER_TBL;
 create table CLUSTER_TBL
 (
 	id bigint unsigned not null auto_increment primary key comment 'primary key',
-	cluster_name varchar(30) not null unique comment 'cluster name',
+	cluster_name varchar(40) not null unique comment 'cluster name',
 	activedc_id bigint unsigned not null comment 'active dc id',
 	cluster_description varchar(180) not null default 'nothing' comment 'cluster description',
     	cluster_last_modified_time varchar(20) not null default '' comment 'last modified tag',
@@ -48,6 +52,7 @@ create table CLUSTER_TBL
 
 
 -- DC Cluster Table
+drop table if exists DC_CLUSTER_TBL;
 create table DC_CLUSTER_TBL 
 (
 	dc_cluster_id bigint unsigned not null auto_increment primary key comment 'primary key',
@@ -59,6 +64,7 @@ create table DC_CLUSTER_TBL
 );
 
 -- Shard Table
+drop table if exists SHARD_TBL;
 create table SHARD_TBL
 (
 	id bigint unsigned not null auto_increment primary key comment 'primary key',
@@ -69,6 +75,7 @@ create table SHARD_TBL
 
 
 -- DC Cluster Shard Table
+drop table if exists DC_CLUSTER_SHARD_TBL;
 create table DC_CLUSTER_SHARD_TBL
 (
 	dc_cluster_shard_id bigint unsigned not null auto_increment primary key comment 'primary key',
@@ -82,6 +89,7 @@ create table DC_CLUSTER_SHARD_TBL
 
 
 -- Redis Table
+drop table if exists REDIS_TBL;
 create table REDIS_TBL
 (
 	id bigint unsigned not null auto_increment primary key comment 'primary key',
@@ -98,6 +106,7 @@ create table REDIS_TBL
 
 
 -- Keeper Container Table
+drop table if exists KEEPERCONTAINER_TBL;
 create table KEEPERCONTAINER_TBL
 (
 	keepercontainer_id bigint unsigned not null auto_increment primary key comment 'primary key',

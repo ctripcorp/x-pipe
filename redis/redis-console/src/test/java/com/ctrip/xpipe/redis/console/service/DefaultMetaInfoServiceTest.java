@@ -169,9 +169,9 @@ public class DefaultMetaInfoServiceTest extends AbstractRedisTest{
 		DcClusterShardTbl dc_cluster_shard_1 = new DcClusterShardTbl();
 		DcClusterShardTbl dc_cluster_shard_2 = new DcClusterShardTbl();
 		dc_cluster_shard_1.setKeyDcClusterShardId(1).setDcClusterShardId(1).setDcClusterId(1).setShardId(1).setSetinelId(1)
-			.setSetinelMonitorName("setinel1_monitor_1").setDcClusterShardPhase(1).setDataChangeLastTime(new Date());
+			.setDcClusterShardPhase(1).setDataChangeLastTime(new Date());
 		dc_cluster_shard_2.setKeyDcClusterShardId(2).setDcClusterShardId(2).setDcClusterId(2).setShardId(1).setSetinelId(2)
-			.setSetinelMonitorName("setinel2_monitor_2").setDcClusterShardPhase(1).setDataChangeLastTime(new Date());
+			.setDcClusterShardPhase(1).setDataChangeLastTime(new Date());
 		
 		/** RedisTbl **/
 		RedisTbl redis_1 = new RedisTbl();
