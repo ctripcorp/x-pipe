@@ -10,7 +10,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
  */
 public class CtripFoundationService implements FoundationService{
 	
-	private static final String DATA_CENTER_KEY = "DATA_CENTER";
+	private static final String DATA_CENTER_KEY = "XPIPE_DATA_CENTER";
 
 	@Override
 	public String getDataCenter() {

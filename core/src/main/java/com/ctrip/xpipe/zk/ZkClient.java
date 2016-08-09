@@ -14,5 +14,7 @@ public interface ZkClient extends Lifecycle {
 	CuratorFramework get();
 
 	void setZkAddress(String zkAddress);
-	
+
+	String getZkAddress();
+
 }

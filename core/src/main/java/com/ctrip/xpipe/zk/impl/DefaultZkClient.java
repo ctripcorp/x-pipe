@@ -49,6 +49,11 @@ public class DefaultZkClient extends AbstractLifecycle implements ZkClient, TopE
 		this.address = address;
 	}
 	
+	@Override
+	public String getZkAddress(){
+		return this.address;
+	}
+	
 	public void setZkConfig(ZkConfig zkConfig) {
 		this.zkConfig = zkConfig;
 	}

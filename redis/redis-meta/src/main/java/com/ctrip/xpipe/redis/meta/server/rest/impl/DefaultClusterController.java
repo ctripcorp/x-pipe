@@ -13,8 +13,10 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
+import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaServerMetaManager;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterDebugInfo;
+import com.ctrip.xpipe.zk.ZkClient;
 
 /**
  * @author wenchao.meng
@@ -33,6 +35,12 @@ public class DefaultClusterController implements ClusterApi{
 
 	@Autowired
 	private ClusterServers<?> clusterServers;
+	
+	@Autowired
+	private CurrentMetaServerMetaManager  currentMetaServerMetaManager;
+	
+	@Autowired
+	private ZkClient zkClient;
 
 	@RequestMapping(path = "/serverid", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
@@ -83,10 +91,12 @@ public class DefaultClusterController implements ClusterApi{
 	public String debug() {
 		JsonCodec pretty = new JsonCodec(true);
 		return pretty.encode(
-				new ClusterDebugInfo(currentClusterServer.getServerId(), 
+				new ClusterDebugInfo(currentClusterServer.getServerId(),
+						zkClient.getZkAddress(),
 						currentClusterServer.isLeader(), 
 						currentClusterServer.getClusterInfo(), 
 						currentClusterServer.slots(),
+						currentMetaServerMetaManager.allClusters(),
 						clusterServers.allClusterServerInfos(),
 						slotManager.allSlotsInfo()
 						));
