@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.PostConstruct;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -56,6 +59,8 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
  */
 @Service
 public class MetaInfoService {
+	private static Logger logger = LoggerFactory.getLogger(MetaInfoService.class);
+	
 	public static long REDIS_MASTER_NULL = 0L;
 
 	private DcTblDao dcTblDao;
@@ -71,6 +76,8 @@ public class MetaInfoService {
 	@PostConstruct
 	private void postConstruct() {
 		try {
+			logger.info("[MetaInfoService][Construct Dao]");
+			
 			dcTblDao = ContainerLoader.getDefaultContainer().lookup(DcTblDao.class);
 			clusterTblDao = ContainerLoader.getDefaultContainer().lookup(ClusterTblDao.class);
 			dcClusterTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterTblDao.class);
@@ -81,8 +88,8 @@ public class MetaInfoService {
 			metaserverTblDao = ContainerLoader.getDefaultContainer().lookup(MetaserverTblDao.class);
 			keepercontainerTblDao = ContainerLoader.getDefaultContainer().lookup(KeepercontainerTblDao.class);
 
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (Exception ex) {
+			logger.error("[MetaInfoService],[Construct fail]",ex);
 		}
 
 	}
@@ -91,7 +98,7 @@ public class MetaInfoService {
 	 * @return list of all dc names
 	 * @throws DalException
 	 */
-	public List<String> getAllDcIds() throws DalException {
+	public List<String> getAllDcIds() throws DalException{
 		List<String> dcIds = new ArrayList<String>(5);
 
 		for (DcTbl dc : dcTblDao.findAllDcs(DcTblEntity.READSET_FULL)) {
@@ -106,11 +113,12 @@ public class MetaInfoService {
 	 * @throws DalException
 	 */
 	public List<String> getAllClusterIds() throws DalException {
-		List<String> clusterIds = new ArrayList<String>(10);
+		List<String> clusterIds = new ArrayList<String>(20);
 
 		for (ClusterTbl cluster : clusterTblDao
 				.findAllClusters(ClusterTblEntity.READSET_FULL)) {
 			clusterIds.add(cluster.getClusterName());
+
 		}
 
 		return clusterIds;
@@ -144,27 +152,28 @@ public class MetaInfoService {
 		ShardMeta shardMeta = new ShardMeta();
 
 		/** Basic Tbl Info **/
-		DcTbl dcTbl = dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL);
-		ClusterTbl clusterTbl = clusterTblDao.findClusterByClusterName(clusterId, ClusterTblEntity.READSET_FULL);
-		ShardTbl shardTbl = shardTblDao.findShardByShardName(shardId, ShardTblEntity.READSET_FULL);
-		DcClusterTbl dcClusterTbl = dcClusterTblDao.findDcCluster(dcTbl.getId(), clusterTbl.getId(),
+		DcTbl dcInfo = dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL);
+		ClusterTbl clusterInfo = clusterTblDao.findClusterByClusterName(clusterId, ClusterTblEntity.READSET_FULL);
+		ShardTbl shardInfo = shardTblDao.findShardByShardName(shardId, ShardTblEntity.READSET_FULL);
+		DcClusterTbl dcClusterInfo = dcClusterTblDao.findDcCluster(dcInfo.getId(), clusterInfo.getId(),
 				DcClusterTblEntity.READSET_FULL);
-		DcClusterShardTbl dcClusterShardTbl = dcClusterShardTblDao.findDcClusterShard(shardTbl.getId(),
-				dcClusterTbl.getDcClusterId(), DcClusterShardTblEntity.READSET_FULL);
+		DcClusterShardTbl dcClusterShardInfo = dcClusterShardTblDao.findDcClusterShard(shardInfo.getId(),
+				dcClusterInfo.getDcClusterId(), DcClusterShardTblEntity.READSET_FULL);
 
 		/** dc-cluster-shard base info **/
-		shardMeta.setId(shardId);
+		shardMeta.setId(shardInfo.getShardName());
 		/** upstream **/
-		if (clusterTbl.getActivedcId() == dcTbl.getId()) {
+		if (clusterInfo.getActivedcId() == dcInfo.getId()) {
 			shardMeta.setUpstream("");
 		} else {
 			/** find active keeper in active dc **/
-			DcClusterTbl activeDcClusterTbl = dcClusterTblDao.findDcCluster(clusterTbl.getActivedcId(),
-					clusterTbl.getId(), DcClusterTblEntity.READSET_FULL);
-			DcClusterShardTbl activeDcClusterShardTbl = dcClusterShardTblDao.findDcClusterShard(shardTbl.getId(),
-					activeDcClusterTbl.getDcClusterId(), DcClusterShardTblEntity.READSET_FULL);
+			DcClusterTbl activeDcClusterInfo = dcClusterTblDao.findDcCluster(clusterInfo.getActivedcId(),
+					clusterInfo.getId(), DcClusterTblEntity.READSET_FULL);
+			DcClusterShardTbl activeDcClusterShardInfo = dcClusterShardTblDao.findDcClusterShard(shardInfo.getId(),
+					activeDcClusterInfo.getDcClusterId(), DcClusterShardTblEntity.READSET_FULL);
+			
 			List<RedisTbl> activeDcClusterShardRedises = redisTblDao.findAllByDcClusterShardId(
-					activeDcClusterShardTbl.getDcClusterShardId(), RedisTblEntity.READSET_FULL);
+					activeDcClusterShardInfo.getDcClusterShardId(), RedisTblEntity.READSET_FULL);
 			for (RedisTbl activeDcClusterShardRedis : activeDcClusterShardRedises) {
 				if (activeDcClusterShardRedis.getRedisRole().equals("keeper")
 						&& activeDcClusterShardRedis.isKeeperActive() == true) {
@@ -179,34 +188,36 @@ public class MetaInfoService {
 				}
 			}
 		}
-		shardMeta.setSetinelId(dcClusterShardTbl.getSetinelId());
-		shardMeta.setSetinelMonitorName(dcClusterShardTbl.getSetinelMonitorName());
-		shardMeta.setPhase(dcClusterShardTbl.getDcClusterShardPhase());
+		shardMeta.setSetinelId(dcClusterShardInfo.getSetinelId());
+		shardMeta.setSetinelMonitorName(shardInfo.getSetinelMonitorName());
+		shardMeta.setPhase(dcClusterShardInfo.getDcClusterShardPhase());
 
 		/** redis info **/
-		List<RedisTbl> redisTbls = redisTblDao.findAllByDcClusterShardId(dcClusterShardTbl.getDcClusterShardId(),
+		List<RedisTbl> redisInfos = redisTblDao.findAllByDcClusterShardId(dcClusterShardInfo.getDcClusterShardId(),
 				RedisTblEntity.READSET_FULL);
-		for (RedisTbl redisTbl : redisTbls) {
-			String redisRole = redisTbl.getRedisRole();
+		for (RedisTbl redisInfo : redisInfos) {
+			String redisRole = redisInfo.getRedisRole();
 			if (redisRole.equals("keeper")) {
 				/** Keeper **/
 				KeeperMeta keeperMeta = new KeeperMeta();
 
-				keeperMeta.setId(redisTbl.getRedisName());
-				keeperMeta.setIp(redisTbl.getRedisIp());
-				keeperMeta.setPort(redisTbl.getRedisPort());
-				if (redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
+				keeperMeta.setId(redisInfo.getRedisName());
+				keeperMeta.setIp(redisInfo.getRedisIp());
+				keeperMeta.setPort(redisInfo.getRedisPort());
+				if (redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {
 					keeperMeta.setMaster("");
 				} else {
 					StringBuilder sb = new StringBuilder(30);
-					sb.append(redisTbl.getRedisIp());
+					
+					RedisTbl redisMaster = redisTblDao.findByPK(redisInfo.getRedisMaster(), RedisTblEntity.READSET_FULL);
+					sb.append(redisMaster.getRedisIp());
 					sb.append(":");
-					sb.append(String.valueOf(redisTbl.getRedisPort()));
+					sb.append(String.valueOf(redisMaster.getRedisPort()));
 
 					keeperMeta.setMaster(sb.toString());
 				}
-				keeperMeta.setActive(redisTbl.isKeeperActive());
-				keeperMeta.setKeeperContainerId(redisTbl.getKeepercontainerId());
+				keeperMeta.setActive(redisInfo.isKeeperActive());
+				keeperMeta.setKeeperContainerId(redisInfo.getKeepercontainerId());
 				keeperMeta.setParent(shardMeta);
 
 				shardMeta.addKeeper(keeperMeta);
@@ -214,16 +225,18 @@ public class MetaInfoService {
 				/** Redis **/
 				RedisMeta redisMeta = new RedisMeta();
 
-				redisMeta.setId(redisTbl.getRedisName());
-				redisMeta.setIp(redisTbl.getRedisIp());
-				redisMeta.setPort(redisTbl.getRedisPort());
-				if (redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
+				redisMeta.setId(redisInfo.getRedisName());
+				redisMeta.setIp(redisInfo.getRedisIp());
+				redisMeta.setPort(redisInfo.getRedisPort());
+				if (redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {
 					redisMeta.setMaster("");
 				} else {
 					StringBuilder sb = new StringBuilder(30);
-					sb.append(redisTbl.getRedisIp());
+					
+					RedisTbl redisMaster = redisTblDao.findByPK(redisInfo.getRedisMaster(), RedisTblEntity.READSET_FULL);
+					sb.append(redisMaster.getRedisIp());
 					sb.append(":");
-					sb.append(String.valueOf(redisTbl.getRedisPort()));
+					sb.append(String.valueOf(redisMaster.getRedisPort()));
 
 					redisMeta.setMaster(sb.toString());
 				}
@@ -245,22 +258,26 @@ public class MetaInfoService {
 	public ClusterMeta getDcClusterMeta(String dcId, String clusterId) throws DalException {
 		ClusterMeta clusterMeta = new ClusterMeta();
 
-		DcTbl dcTbl = dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL);
-		ClusterTbl clusterTbl = clusterTblDao.findClusterByClusterName(clusterId, ClusterTblEntity.READSET_FULL);
-		DcClusterTbl dcClusterTbl = dcClusterTblDao.findDcCluster(dcTbl.getId(), clusterTbl.getId(),
+		DcTbl dcInfo = dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL);
+		ClusterTbl clusterInfo = clusterTblDao.findClusterByClusterName(clusterId, ClusterTblEntity.READSET_FULL);
+		DcClusterTbl dcClusterInfo = dcClusterTblDao.findDcCluster(dcInfo.getId(), clusterInfo.getId(),
 				DcClusterTblEntity.READSET_FULL);
 
-		clusterMeta.setId(clusterTbl.getClusterName());
-		clusterMeta.setActiveDc(dcTblDao.findByPK(clusterTbl.getActivedcId(), DcTblEntity.READSET_FULL).getDcName());
-		clusterMeta.setPhase(dcClusterTbl.getDcClusterPhase());
-		clusterMeta.setLastModifiedTime(clusterTbl.getClusterLastModifiedTime());
+		clusterMeta.setId(clusterInfo.getClusterName());
+		clusterMeta.setActiveDc(dcTblDao.findByPK(clusterInfo.getActivedcId(), DcTblEntity.READSET_FULL).getDcName());
+		clusterMeta.setPhase(dcClusterInfo.getDcClusterPhase());
+		clusterMeta.setLastModifiedTime(clusterInfo.getClusterLastModifiedTime());
 
 		/** Shards **/
-		List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardTblDao
-				.findAllByDcClusterId(dcClusterTbl.getDcClusterId(), DcClusterShardTblEntity.READSET_FULL);
-		for (DcClusterShardTbl dcClusterShard : dcClusterShardTbls) {
-			ShardMeta shardMeta = getDcClusterShardMeta(dcId, clusterId,
-					shardTblDao.findByPK(dcClusterShard.getShardId(), ShardTblEntity.READSET_FULL).getShardName());
+		List<DcClusterShardTbl> dcClusterShards = dcClusterShardTblDao
+				.findAllByDcClusterId(dcClusterInfo.getDcClusterId(), DcClusterShardTblEntity.READSET_FULL);
+		for (DcClusterShardTbl dcClusterShard : dcClusterShards) {
+			ShardTbl shardInfo = shardTblDao.findByPK(dcClusterShard.getShardId(), ShardTblEntity.READSET_FULL);
+			
+			ShardMeta shardMeta = getDcClusterShardMeta(
+					dcInfo.getDcName(), 
+					clusterInfo.getClusterName(),
+					shardInfo.getShardName());
 
 			clusterMeta.addShard(shardMeta);
 		}
@@ -276,16 +293,18 @@ public class MetaInfoService {
 	public DcMeta getDcMeta(String dcId) throws DalException {
 		DcMeta dcMeta = new DcMeta();
 
+		DcTbl dcInfo = dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL);
+		
 		/** Dc base info **/
-		dcMeta.setId(dcId);
-		dcMeta.setLastModifiedTime(dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getDcLastModifiedTime());
+		dcMeta.setId(dcInfo.getDcName());
+		dcMeta.setLastModifiedTime(dcInfo.getDcLastModifiedTime());
 
 		/** Metaserver Info **/
 		List<MetaserverTbl> metaservers = metaserverTblDao.findAllByDcId(
-				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), MetaserverTblEntity.READSET_FULL);
+				dcInfo.getId(), MetaserverTblEntity.READSET_FULL);
 		for (MetaserverTbl metaserver : metaservers) {
-
 			MetaServerMeta metaserverInfo = new MetaServerMeta();
+			
 			metaserverInfo.setIp(metaserver.getMetaserverIp());
 			metaserverInfo.setPort(metaserver.getMetaserverPort());
 			if (metaserver.getMetaserverRole().equals("master")) {
@@ -294,48 +313,44 @@ public class MetaInfoService {
 				metaserverInfo.setMaster(false);
 			}
 			metaserverInfo.setParent(dcMeta);
-			// metaserver info
-			if (metaserver.getMetaserverRole().equals("master"))
-				metaserverInfo.setMaster(true);
-			else
-				metaserverInfo.setMaster(false);
+
 			dcMeta.getMetaServers().add(metaserverInfo);
 		}
 
 		/** KeeperContainer Info **/
-		List<KeepercontainerTbl> keepercontainerTbls = keepercontainerTblDao.findAllByDcId(
-				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), KeepercontainerTblEntity.READSET_FULL);
-		for (KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
-
+		List<KeepercontainerTbl> keepercontainers = keepercontainerTblDao.findAllByDcId(
+				dcInfo.getId(), KeepercontainerTblEntity.READSET_FULL);
+		for (KeepercontainerTbl keepercontainer : keepercontainers) {
 			KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
-			keeperContainerMeta.setId(keepercontainerTbl.getKeepercontainerId());
-			keeperContainerMeta.setIp(keepercontainerTbl.getKeepercontainerIp());
-			keeperContainerMeta.setPort(keepercontainerTbl.getKeepercontainerPort());
+			
+			keeperContainerMeta.setId(keepercontainer.getKeepercontainerId());
+			keeperContainerMeta.setIp(keepercontainer.getKeepercontainerIp());
+			keeperContainerMeta.setPort(keepercontainer.getKeepercontainerPort());
 			keeperContainerMeta.setParent(dcMeta);
 
 			dcMeta.addKeeperContainer(keeperContainerMeta);
 		}
 
 		/** Setinel Info **/
-		List<SetinelTbl> setinelTbls = setinelTblDao.findAllByDcId(
-				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), SetinelTblEntity.READSET_FULL);
-		for (SetinelTbl setinelTbl : setinelTbls) {
-
+		List<SetinelTbl> setinels = setinelTblDao.findAllByDcId(
+				dcInfo.getId(), SetinelTblEntity.READSET_FULL);
+		for (SetinelTbl setinel : setinels) {
 			SetinelMeta setinelMeta = new SetinelMeta();
-			setinelMeta.setId(setinelTbl.getSetinelId());
-			setinelMeta.setAddress(setinelTbl.getSetinelAddress());
+			
+			setinelMeta.setId(setinel.getSetinelId());
+			setinelMeta.setAddress(setinel.getSetinelAddress());
 			setinelMeta.setParent(dcMeta);
 
 			dcMeta.addSetinel(setinelMeta);
 		}
 
 		/** Cluster Info **/
-		List<DcClusterTbl> dcClusterTbls = dcClusterTblDao.findAllByDcId(
-				dcTblDao.findDcByDcName(dcId, DcTblEntity.READSET_FULL).getId(), DcClusterTblEntity.READSET_FULL);
-		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
-
-			ClusterMeta clusterMeta = getDcClusterMeta(dcId, clusterTblDao
-					.findByPK(dcClusterTbl.getClusterId(), ClusterTblEntity.READSET_FULL).getClusterName());
+		List<DcClusterTbl> dcClusters = dcClusterTblDao.findAllByDcId(
+				dcInfo.getId(), DcClusterTblEntity.READSET_FULL);
+		for (DcClusterTbl dcCluster : dcClusters) {
+			ClusterTbl clusterInfo = clusterTblDao.findByPK(dcCluster.getClusterId(), ClusterTblEntity.READSET_FULL);
+			
+			ClusterMeta clusterMeta = getDcClusterMeta(dcInfo.getDcName(), clusterInfo.getClusterName());
 
 			dcMeta.addCluster(clusterMeta);
 		}
@@ -355,39 +370,44 @@ public class MetaInfoService {
 		List<DC> dcs = new ArrayList<DC>(5);
 
 		/** Cluster base info **/
-		clusterVO.setBaseInfo(clusterTblDao.findClusterByClusterName(clusterId, ClusterTblEntity.READSET_FULL));
+		ClusterTbl clusterInfo = clusterTblDao.findClusterByClusterName(clusterId, ClusterTblEntity.READSET_FULL);
+		clusterVO.setBaseInfo(clusterInfo);
 
 		/** DCS info **/
 		List<DcClusterTbl> dcClusters = dcClusterTblDao.findAllByClusterId(
-				clusterTblDao.findClusterByClusterName(clusterId, ClusterTblEntity.READSET_FULL).getId(),
+				clusterInfo.getId(),
 				DcClusterTblEntity.READSET_FULL);
 		for (DcClusterTbl dcCluster : dcClusters) {
 			DC dc = new DC();
+			
 			/** DC base info **/
-			dc.setBaseInfo(dcTblDao.findByPK(dcCluster.getDcId(), DcTblEntity.READSET_FULL));
+			DcTbl dcInfo = dcTblDao.findByPK(dcCluster.getDcId(), DcTblEntity.READSET_FULL);
+			dc.setBaseInfo(dcInfo);
 
 			/** Get Shards info **/
 			List<Shard> shards = new ArrayList<Shard>(10);
-			List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardTblDao
+			List<DcClusterShardTbl> dcClusterShards = dcClusterShardTblDao
 					.findAllByDcClusterId(dcCluster.getDcClusterId(), DcClusterShardTblEntity.READSET_FULL);
-			for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
+			for (DcClusterShardTbl dcClusterShard : dcClusterShards) {
 				Shard shard = new Shard();
+				
 				/** Shard base info **/
-				shard.setBaseInfo(shardTblDao.findByPK(dcClusterShardTbl.getShardId(), ShardTblEntity.READSET_FULL));
+				ShardTbl shardInfo = shardTblDao.findByPK(dcClusterShard.getShardId(), ShardTblEntity.READSET_FULL);
+				shard.setBaseInfo(shardInfo);
 
 				/** Get Redis info **/
 				List<Redis> redises = new ArrayList<Redis>(20);
-				List<RedisTbl> redisTbls = redisTblDao.findAllByDcClusterShardId(
-						dcClusterShardTbl.getDcClusterShardId(), RedisTblEntity.READSET_FULL);
-				for (RedisTbl redisTbl : redisTbls) {
+				List<RedisTbl> redisInfos = redisTblDao.findAllByDcClusterShardId(
+						dcClusterShard.getDcClusterShardId(), RedisTblEntity.READSET_FULL);
+				for (RedisTbl redisInfo : redisInfos) {
 					Redis redis = new Redis();
 
-					redis.setId(redisTbl.getRedisName());
-					redis.setIp(redisTbl.getRedisIp());
-					redis.setPort(redisTbl.getRedisPort());
+					redis.setId(redisInfo.getRedisName());
+					redis.setIp(redisInfo.getRedisIp());
+					redis.setPort(redisInfo.getRedisPort());
 					redis.setActive(true);
-					if (redisTbl.getRedisRole().equals("redis")) {
-						if (redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
+					if (redisInfo.getRedisRole().equals("redis")) {
+						if (redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {
 							redis.setRole(RedisRole.MASTER);
 						} else {
 							redis.setRole(RedisRole.SLAVE);

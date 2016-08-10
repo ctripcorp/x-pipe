@@ -169,9 +169,9 @@ public class DefaultMetaInfoServiceTest extends AbstractRedisTest{
 		DcClusterShardTbl dc_cluster_shard_1 = new DcClusterShardTbl();
 		DcClusterShardTbl dc_cluster_shard_2 = new DcClusterShardTbl();
 		dc_cluster_shard_1.setKeyDcClusterShardId(1).setDcClusterShardId(1).setDcClusterId(1).setShardId(1).setSetinelId(1)
-			.setSetinelMonitorName("setinel1_monitor_1").setDcClusterShardPhase(1).setDataChangeLastTime(new Date());
+			.setDcClusterShardPhase(1).setDataChangeLastTime(new Date());
 		dc_cluster_shard_2.setKeyDcClusterShardId(2).setDcClusterShardId(2).setDcClusterId(2).setShardId(1).setSetinelId(2)
-			.setSetinelMonitorName("setinel2_monitor_2").setDcClusterShardPhase(1).setDataChangeLastTime(new Date());
+			.setDcClusterShardPhase(1).setDataChangeLastTime(new Date());
 		
 		/** RedisTbl **/
 		RedisTbl redis_1 = new RedisTbl();
@@ -265,8 +265,8 @@ public class DefaultMetaInfoServiceTest extends AbstractRedisTest{
 		when(mockedMetaserverTblDao.findByPK(1, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_1);
 		when(mockedMetaserverTblDao.findByPK(2, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_2);
 		when(mockedMetaserverTblDao.findByPK(3, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_3);
-		when(mockedMetaserverTblDao.findMasterMetaserverByDcId(1, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_1);
-		when(mockedMetaserverTblDao.findMasterMetaserverByDcId(2, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_3);
+		when(mockedMetaserverTblDao.findMasterByDcId(1, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_1);
+		when(mockedMetaserverTblDao.findMasterByDcId(2, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_3);
 		
 		when(mockedKeepercontainerTblDao.findAllByDcId(1, KeepercontainerTblEntity.READSET_FULL)).thenReturn(Arrays.asList(keepercontainer_1,keepercontainer_2));
 		when(mockedKeepercontainerTblDao.findByPK(1, KeepercontainerTblEntity.READSET_FULL)).thenReturn(keepercontainer_1);
