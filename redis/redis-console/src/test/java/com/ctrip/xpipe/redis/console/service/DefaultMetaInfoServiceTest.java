@@ -265,8 +265,8 @@ public class DefaultMetaInfoServiceTest extends AbstractRedisTest{
 		when(mockedMetaserverTblDao.findByPK(1, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_1);
 		when(mockedMetaserverTblDao.findByPK(2, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_2);
 		when(mockedMetaserverTblDao.findByPK(3, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_3);
-		when(mockedMetaserverTblDao.findMasterMetaserverByDcId(1, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_1);
-		when(mockedMetaserverTblDao.findMasterMetaserverByDcId(2, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_3);
+		when(mockedMetaserverTblDao.findMasterByDcId(1, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_1);
+		when(mockedMetaserverTblDao.findMasterByDcId(2, MetaserverTblEntity.READSET_FULL)).thenReturn(meta_3);
 		
 		when(mockedKeepercontainerTblDao.findAllByDcId(1, KeepercontainerTblEntity.READSET_FULL)).thenReturn(Arrays.asList(keepercontainer_1,keepercontainer_2));
 		when(mockedKeepercontainerTblDao.findByPK(1, KeepercontainerTblEntity.READSET_FULL)).thenReturn(keepercontainer_1);

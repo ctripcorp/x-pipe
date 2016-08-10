@@ -9,7 +9,8 @@ create table DC_TBL
 	dc_active tinyint(1) not null default 1 comment 'dc active status',
 	dc_description varchar(180) not null default 'nothing' comment 'dc description',
     	dc_last_modified_time varchar(20) not null default '' comment 'last modified tag',
-	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time',
+	deleted tinyint(1) not null default 0 comment 'deleted or not'
 );
 
 
@@ -24,7 +25,8 @@ create table METASERVER_TBL
 	metaserver_port int not null comment 'metaserver port',
 	metaserver_active tinyint(1) default 1 not null comment 'metaserver active status',
 	metaserver_role varchar(12) not null default 'slave' comment 'metaserver role',
-    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time',
+	deleted tinyint(1) not null default 0 comment 'deleted or not'
 );
 
 -- Setinel Table
@@ -35,7 +37,8 @@ create table SETINEL_TBL
     	dc_id bigint unsigned not null comment 'reference dc id',
     	setinel_address varchar(80) not null comment 'setinel address',
     	setinel_description varchar(120) not null default 'nothing' comment 'setinel description',
-    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time',
+	deleted tinyint(1) not null default 0 comment 'deleted or not'
 );
 
 -- Cluster Table
@@ -47,7 +50,8 @@ create table CLUSTER_TBL
 	activedc_id bigint unsigned not null comment 'active dc id',
 	cluster_description varchar(180) not null default 'nothing' comment 'cluster description',
     	cluster_last_modified_time varchar(20) not null default '' comment 'last modified tag',
-    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time',
+	deleted tinyint(1) not null default 0 comment 'deleted or not'
 );
 
 
@@ -60,7 +64,8 @@ create table DC_CLUSTER_TBL
 	cluster_id bigint unsigned not null comment 'reference cluster id',
 	metaserver_id bigint unsigned not null comment 'reference metaserver id',
     	dc_cluster_phase int not null default 1 comment 'dc cluster phase',
-    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time',
+	deleted tinyint(1) not null default 0 comment 'deleted or not'
 );
 
 -- Shard Table
@@ -70,7 +75,9 @@ create table SHARD_TBL
 	id bigint unsigned not null auto_increment primary key comment 'primary key',
 	shard_name varchar(30) not null comment 'shard name',
 	cluster_id bigint unsigned not null comment 'reference cluster id',
-    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+    	setinel_monitor_name varchar(30) not null default 'default' comment 'setinel monitor name',
+    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time',
+	deleted tinyint(1) not null default 0 comment 'deleted or not'
 );
 
 
@@ -82,9 +89,9 @@ create table DC_CLUSTER_SHARD_TBL
 	dc_cluster_id bigint not null comment 'reference dc cluster id',
 	shard_id bigint unsigned not null comment 'reference shard id',
     	setinel_id bigint unsigned  not null comment 'setinel id',
-    	setinel_monitor_name varchar(30) not null default 'default' comment 'setinel monitor name',
     	dc_cluster_shard_phase int not null default 1 comment 'structure phase',
-    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time',
+	deleted tinyint(1) not null default 0 comment 'deleted or not'
 );
 
 
@@ -101,7 +108,8 @@ create table REDIS_TBL
 	keeper_active tinyint(1) not null default 0 comment 'redis active status',
 	redis_master bigint unsigned default null comment 'redis master id',
 	keepercontainer_id bigint unsigned default null  comment 'keepercontainer id',
-   	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+   	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time',
+	deleted tinyint(1) not null default 0 comment 'deleted or not'
 );
 
 
@@ -114,5 +122,6 @@ create table KEEPERCONTAINER_TBL
 	keepercontainer_ip varchar(40) not null comment 'keepercontainer ip',
 	keepercontainer_port int not null comment 'keepercontainer port',
 	keepercontainer_active tinyint(1) not null default 1 comment 'keepercontainer active status',
-    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time'
+    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP comment 'last modified time',
+	deleted tinyint(1) not null default 0 comment 'deleted or not'
 );

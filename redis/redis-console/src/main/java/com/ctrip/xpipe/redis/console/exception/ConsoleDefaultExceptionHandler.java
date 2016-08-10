@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.HttpMediaTypeException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.unidal.dal.jdbc.DalNotFoundException;
+import org.unidal.dal.jdbc.DalRuntimeException;
 
 import com.ctrip.xpipe.spring.AbstractExceptionHandler;
 
@@ -28,6 +29,12 @@ public class ConsoleDefaultExceptionHandler extends AbstractExceptionHandler {
 	@ExceptionHandler(DalNotFoundException.class)
 	public ResponseEntity<Map<String,Object>> dalNotFound(HttpServletRequest request, DalNotFoundException ex) {
 		return handleError(request,HttpStatus.NOT_FOUND, ex);
+	}
+	
+	// Dal Runtime Exception
+	@ExceptionHandler(DalRuntimeException.class)
+	public ResponseEntity<Map<String,Object>> dalRT(HttpServletRequest request, DalRuntimeException ex) {
+		return handleError(request,HttpStatus.INTERNAL_SERVER_ERROR, ex);
 	}
 	
 	@ExceptionHandler(DataNotFoundException.class)
