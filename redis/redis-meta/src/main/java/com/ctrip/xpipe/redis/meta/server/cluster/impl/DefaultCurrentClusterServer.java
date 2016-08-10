@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
 
+import java.util.HashSet;
 import java.util.Set;
 
 import java.util.concurrent.ExecutionException;
@@ -145,7 +146,11 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 
 	@Override
 	public Set<Integer> slots() {
-		return slotManager.getSlotsByServerId(currentServerId);
+		Set<Integer> slots = slotManager.getSlotsByServerId(currentServerId);
+		if(slots == null){
+			return new HashSet<>();
+		}
+		return slots; 
 	}
 	
 	@Override

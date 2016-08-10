@@ -53,7 +53,10 @@ public class ClusterDebugInfo {
 	}
 	
 	public int getInchargeSlotsSize() {
-		return inchargeSlots.size();
+		if(inchargeSlots != null){
+			return inchargeSlots.size();
+		}
+		return -1;
 	}
 
 	public Set<Integer> getInchargeSlots() {
