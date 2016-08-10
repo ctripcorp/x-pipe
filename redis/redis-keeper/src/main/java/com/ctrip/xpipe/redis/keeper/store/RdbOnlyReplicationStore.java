@@ -7,12 +7,13 @@ import java.io.File;
 import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author marsqing
@@ -33,20 +34,14 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 			@Override
 			public void setMasterAddress(DefaultEndPoint endpoint) {
-				// TODO Auto-generated method stub
-
 			}
 
 			@Override
 			public void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException {
-				// TODO Auto-generated method stub
-
 			}
 
 			@Override
 			public void loadMeta() throws IOException {
-				// TODO Auto-generated method stub
-
 			}
 
 			@Override
@@ -56,70 +51,56 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 			@Override
 			public DefaultEndPoint getMasterAddress() {
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
 			public long getKeeperBeginOffset() {
-				// TODO Auto-generated method stub
 				return 0;
 			}
 
 			@Override
 			public ReplicationStoreMeta dupReplicationStoreMeta() {
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
 			public long beginOffset() {
-				// TODO Auto-generated method stub
 				return 0;
 			}
 
 			@Override
 			public void masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset)
 					throws IOException {
-				// TODO Auto-generated method stub
 
 			}
 
 			@Override
 			public void becomeBackup() throws IOException {
-				// TODO Auto-generated method stub
-
 			}
 
 			@Override
 			public ReplicationStoreMeta rdbUpdated(String rdbFile, long rdbFileSize, long masterOffset) throws IOException {
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
 			public ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, long rdbFileSize, String cmdFilePrefix)
 					throws IOException {
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
 			public long redisOffsetToKeeperOffset(long redisOffset) {
-				// TODO Auto-generated method stub
 				return 0;
 			}
 
 			@Override
 			public void becomeActive() throws IOException {
-				// TODO Auto-generated method stub
-				
 			}
 
 			@Override
 			public void psyncBegun(String keeperRunid, long offset) throws IOException {
-				// TODO Auto-generated method stub
-				
 			}
 		};
 	}
@@ -134,8 +115,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public void close() throws IOException {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -148,25 +127,15 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public long getEndOffset() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public void delete() {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void rdbUpdated(String rdbFile, long masterOffset) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public CommandStore getCommandStore() {
-		return null;
 	}
 
 	@Override
@@ -181,32 +150,37 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public File prepareNewRdbFile() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean isFresh() {
-		// TODO Auto-generated method stub
 		return true;
 	}
 
 	@Override
 	public long getKeeperEndOffset() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public long nextNonOverlappingKeeperBeginOffset() {
-		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	@Override
+	public int appendCommands(ByteBuf byteBuf) throws IOException {
+		return 0;
+	}
+
+	@Override
+	public boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException {
+		return false;
 	}
 
 }

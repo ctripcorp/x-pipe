@@ -96,7 +96,7 @@ public class PsyncHandler extends AbstractCommandHandler{
 				
 				try {
 					ReplicationStore replicationStore = redisSlave.getRedisKeeperServer().getReplicationStore();
-					boolean result = replicationStore.getCommandStore().awaitCommandsOffset(offsetRequest - replicationStore.getMetaStore().getKeeperBeginOffset() - 1, WAIT_OFFSET_TIME_MILLI);
+					boolean result = replicationStore.awaitCommandsOffset(offsetRequest - replicationStore.getMetaStore().getKeeperBeginOffset() - 1, WAIT_OFFSET_TIME_MILLI);
 					if(result){
 						logger.info("[waitForoffset][wait succeed]{}", redisSlave);
 						doPartialSync(redisSlave, offsetRequest);
