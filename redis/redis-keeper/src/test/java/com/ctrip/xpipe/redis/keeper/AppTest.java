@@ -6,7 +6,6 @@ import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import org.junit.Test;
-import org.springframework.boot.actuate.endpoint.SystemPublicMetrics;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ApplicationContext;

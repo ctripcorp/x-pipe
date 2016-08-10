@@ -65,6 +65,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 			try{
 				logger.info("[loadMetaManager][load from console]");
 				DcMeta dcMeta = consoleService.getDcMeta(currentDc);
+				logger.info("[loadMetaManager][load from console]{}", dcMeta);
 				dcMetaManager = DefaultDcMetaManager.buildFromDcMeta(dcMeta);
 			}catch(ResourceAccessException e){
 				logger.error("[loadMetaManager][consoleService]" + e.getMessage());
@@ -114,7 +115,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 				//metaManager.update(dcMeta);
 			}
 		}catch(Throwable th){
-			logger.error("[run]", th);
+			logger.error("[run]" + th.getMessage());
 		}
 	}
 

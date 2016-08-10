@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration status="INFO" monitorInterval="5" >
+<configuration status="TRACE" monitorInterval="5" >
 
     <appenders>
         <console name="Console" target="SYSTEM_OUT">
@@ -8,10 +8,6 @@
 
         <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe/xpipe-test.log"
                      filePattern="target/applogs/xpipe/xpipe-test-%d{yyyy-MM-dd}-%i.log">
-            <Filters>
-                <ThresholdFilter level="INFO"/>
-                <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>
-            </Filters>
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>

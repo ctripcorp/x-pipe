@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
@@ -205,7 +206,13 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 						logger.info("[doCheck][dead keepers]{}", deadKeepers);
 					}
 					for(KeeperMeta deadKeeper : deadKeepers){
-						keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, deadKeeper));
+						try{
+							keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, deadKeeper));
+						}catch(ResourceAccessException e){
+							logger.error(String.format("cluster:%s,shard:%s, keeper:%s, error:" , clusterId, shardId, deadKeeper, e.getMessage()) );
+						}catch(Throwable th){
+							logger.error("[doCheck]", th);
+						}
 					}
 				}
 			}			
