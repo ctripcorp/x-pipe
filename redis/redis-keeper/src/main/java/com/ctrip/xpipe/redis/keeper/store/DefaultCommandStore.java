@@ -254,11 +254,6 @@ public class DefaultCommandStore implements CommandStore {
 	}
 
 	@Override
-	public void awaitCommandsOffset(long offset) throws InterruptedException {
-		offsetNotifier.await(offset);
-	}
-
-	@Override
 	public long lowestReadingOffset() {
 		long lowestReadingOffset = Long.MAX_VALUE;
 

@@ -19,6 +19,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 
+import io.netty.buffer.ByteBuf;
+
 // TODO make methods correctly sequenced
 public class DefaultReplicationStore implements ReplicationStore {
 
@@ -129,7 +131,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		}
 	}
 
-	@Override
+	// fot teset only
 	public CommandStore getCommandStore() {
 		return cmdStore;
 	}
@@ -285,6 +287,16 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public long nextNonOverlappingKeeperBeginOffset() {
 		return metaStore.getKeeperBeginOffset() + cmdStore.totalLength() + 1;
+	}
+
+	@Override
+	public int appendCommands(ByteBuf byteBuf) throws IOException {
+		return cmdStore.appendCommands(byteBuf);
+	}
+
+	@Override
+	public boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException {
+		return cmdStore.awaitCommandsOffset(offset, timeMilli);
 	}
 
 }

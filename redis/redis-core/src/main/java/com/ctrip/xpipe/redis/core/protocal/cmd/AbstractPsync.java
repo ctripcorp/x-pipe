@@ -153,7 +153,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 				if(saveCommands) {
 					try {
 						@SuppressWarnings("unused")
-						int n = currentReplicationStore.getCommandStore().appendCommands(byteBuf);
+						int n = currentReplicationStore.appendCommands(byteBuf);
 					} catch (IOException e) {
 						logger.error("[doHandleResponse][write commands error]" + this, e);
 					}

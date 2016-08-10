@@ -12,8 +12,6 @@ public interface CommandStore {
 
 	boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException;
 
-	void awaitCommandsOffset(long offset) throws InterruptedException;
-
 	void close();
 	
 	

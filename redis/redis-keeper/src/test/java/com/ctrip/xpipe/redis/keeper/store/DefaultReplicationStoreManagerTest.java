@@ -40,7 +40,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest{
 		assertEquals(shardId, mgr.getShardName());
 		assertEquals(currentStore, mgr.getCurrent());
 
-		ReplicationStore newCurrentStore = mgr.create();
+		DefaultReplicationStore newCurrentStore = mgr.create();
 		assertEquals(newCurrentStore, mgr.getCurrent());
 		assertNotEquals(currentStore, mgr.getCurrent());
 
