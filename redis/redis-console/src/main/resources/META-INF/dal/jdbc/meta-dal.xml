@@ -7,6 +7,7 @@
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -17,6 +18,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-name'/> = ${dc-name}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -32,11 +34,12 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-id' /> = ${dc-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>					
 				</statement>
 			</query>
 
-			<query name="find-master-metaserver-by-dc-id" type="SELECT" multiple="false">
+			<query name="find-master-by-dc-id" type="SELECT" multiple="false">
 				<param name='dc-id'/>
 				<statement>
 					<![CDATA[
@@ -44,6 +47,7 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-id' /> = ${dc-id} 
 					AND <FIELD name='metaserver-role' /> = 'master'
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -57,16 +61,18 @@
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
 			<query name="find-cluster-by-cluster-name" type="SELECT" multiple="false">
-			<param name='cluster-name'/>
+				<param name='cluster-name'/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='cluster-name'/> = ${cluster-name}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -84,6 +90,7 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='cluster-id' /> = ${cluster-id} 
 					AND <FIELD name='dc-id' /> = ${dc-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -94,6 +101,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='metaserver-id' /> = ${metaserver-id} 
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -104,17 +112,18 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='cluster-id' /> = ${cluster-id} 
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
 			<query name="find-all-by-dc-id" type="SELECT" multiple="true">
-
 				<param name='dc-id'/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-id' /> = ${dc-id} 
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -130,6 +139,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='cluster-id' /> = ${cluster-id} 
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -140,6 +150,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='shard-name' /> = ${shard-name} 
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -157,6 +168,7 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='shard-id' /> = ${shard-id} 
 					AND <FIELD name='dc-cluster-id' /> = ${dc-cluster-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -167,6 +179,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-cluster-id' /> = ${dc-cluster-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -177,6 +190,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='shard-id' /> = ${shard-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -187,6 +201,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='setinel-id' /> = ${setinel-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -202,6 +217,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-cluster-shard-id' /> = ${dc-cluster-shard-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -217,6 +233,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='keepercontainer-id' /> = ${keepercontainer-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -227,6 +244,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='keepercontainer-dc' /> = ${keepercontainer-dc}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -242,10 +260,11 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-id' /> = ${dc-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
 		</query-defs>
 	</entity>
-	
+
 </entities>
