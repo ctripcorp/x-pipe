@@ -46,7 +46,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 
 	private AtomicReference<Properties> currentMeta = new AtomicReference<Properties>();
 
-	private AtomicReference<ReplicationStore> currentStore = new AtomicReference<ReplicationStore>();
+	private AtomicReference<DefaultReplicationStore> currentStore = new AtomicReference<>();
 
 	// TODO ioc
 	private KeeperConfig config = new DefaultKeeperConfig();
@@ -83,7 +83,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	}
 
 	@Override
-	public synchronized ReplicationStore create() throws IOException {
+	public synchronized DefaultReplicationStore create() throws IOException {
 		// TODO dir naming
 
 		File storeBaseDir = new File(baseDir, UUID.randomUUID().toString());

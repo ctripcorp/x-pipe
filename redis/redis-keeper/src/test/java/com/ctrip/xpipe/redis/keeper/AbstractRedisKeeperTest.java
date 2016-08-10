@@ -210,7 +210,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new String(bachannel.getResult());
 	}
 
-	public String readCommandFileTilEnd(final ReplicationStore replicationStore) throws IOException {
+	public String readCommandFileTilEnd(final DefaultReplicationStore replicationStore) throws IOException {
 
 		final List<ByteBuf> buffs = new LinkedList<>();
 		final AtomicInteger size = new AtomicInteger();
