@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.exception;
 
+import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 
 /**
@@ -17,5 +18,9 @@ public class RedisKeeperRuntimeException extends RedisRuntimeException {
 
     public RedisKeeperRuntimeException(String message, Throwable th) {
         super(message, th);
+    }
+
+    public <T extends Enum<T>> RedisKeeperRuntimeException(ErrorMessage<T> errorMessage, Throwable th) {
+        super(errorMessage, th);
     }
 }
