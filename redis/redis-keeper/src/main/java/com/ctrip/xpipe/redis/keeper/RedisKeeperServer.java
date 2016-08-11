@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.keeper;
 import java.io.IOException;
 import java.util.Set;
 
+import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -66,4 +67,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver{
 	}
 
 	void fullSyncToSlave(RedisSlave redisSlave) throws IOException;
+	
+	KeeperInstanceMeta getKeeperInstanceMeta();
 }

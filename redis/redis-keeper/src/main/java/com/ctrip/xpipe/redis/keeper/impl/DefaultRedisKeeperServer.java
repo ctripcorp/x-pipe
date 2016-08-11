@@ -21,6 +21,7 @@ import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
@@ -417,6 +418,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void fullSyncToSlave(final RedisSlave redisSlave) throws IOException {
 		keeperRedisMaster.fullSyncToSlave(redisSlave);
+	}
+
+	@Override
+	public KeeperInstanceMeta getKeeperInstanceMeta() {
+		return new KeeperInstanceMeta(clusterId, shardId, currentKeeperMeta);
 	}
 
 }
