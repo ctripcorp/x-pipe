@@ -7,6 +7,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
@@ -16,6 +17,7 @@ import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
  *
  * Jun 25, 2016
  */
+@ComponentScan("com.ctrip.xpipe.monitor")
 public abstract class AbstractSpringConfigContext implements ApplicationContextAware{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
