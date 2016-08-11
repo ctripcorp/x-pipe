@@ -4,9 +4,12 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Test;
+
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 
 /**
  * @author marsqing
@@ -21,22 +24,47 @@ public class JqRedisKeeperServerTest extends BaseRedisKeeperServerTest {
 	}
 
 	@Test
-	public void startKeeper6000() throws Exception {
+	public void startKeeper() throws Exception {
 
-		startKeeper("keeper6000.xml", "jq");
+		startKeeper("keeper-start.xml", "jq");
 	}
 
 	@Test
-	public void startKeeper6001() throws Exception {
+	public void testStartStop() throws Exception{
+		
+		startKeeper("keeper-start.xml", "jq");
+		
+		waitForAnyKeyToExit();
+		
+		Map<String, RedisKeeperServer> servers = getRegistry().getComponents(RedisKeeperServer.class);
+		RedisKeeperServer redisKeeperServer = (RedisKeeperServer) servers.values().toArray()[0];
 
-		startKeeper("keeper6001.xml", "jq");
+		logger.info("start stop test");
+		for(int i=0;i<3;i++){
+			
+			sleep(2000);
+			logger.info("[stop]{}", i);
+			redisKeeperServer.stop();
+			sleep(2000);
+			logger.info("[start]{}", i);
+			redisKeeperServer.start();
+		}
+		
+		logger.info("dispose test");
+		redisKeeperServer.stop();
+		redisKeeperServer.dispose();
+		
+		sleep(2000);
+		logger.info("init start test");
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		
+		waitForAnyKeyToExit();
 	}
 
 	@After
 	public void afterOneBoxTest() throws IOException {
 
-		System.out.println("Press any key to exit");
-		System.in.read();
 	}
 
 }

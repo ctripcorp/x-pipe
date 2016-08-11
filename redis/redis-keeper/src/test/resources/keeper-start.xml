@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<xpipe>
+	<dc id="jq">
+		<cluster id="cluster1">
+			<shard id="shard1" active-dc="jq">
+				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6000" active="true" />
+				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6001" active="true" />
+			</shard>
+			<shard id="shard02" />
+		</cluster>
+		<cluster id="cluster02" />
+	</dc>
+	
+	<dc id="oy">
+		<cluster id="cluster1">
+			<shard id="shard1" active-dc="jq">
+				<keeper id="9876543210987654321098765432109876543210" ip="127.0.0.1" port="6100" active="true" />
+			</shard>
+			<shard id="shard2" />
+		</cluster>
+		<cluster id="cluster2" />
+	</dc>
+</xpipe>

@@ -21,6 +21,7 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -49,6 +50,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
@@ -70,8 +72,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private ReplicationStoreManager replicationStoreManager;
 
-    private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-    private EventLoopGroup workerGroup = new NioEventLoopGroup();
+	private ServerSocketChannel serverSocketChannel;
+	
+    private EventLoopGroup bossGroup ;
+    private EventLoopGroup workerGroup;
 
 	private Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>(); 
 	
@@ -122,6 +126,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		
+		bossGroup = new NioEventLoopGroup(1);
+		workerGroup = new NioEventLoopGroup();
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = new RedisKeeperServerStateUnknown(this); 
@@ -136,6 +142,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		
 		this.leaderElector.dispose();
+		bossGroup.shutdownGracefully();
+		workerGroup.shutdownGracefully();
 		super.doDispose();
 	}
 
@@ -164,9 +172,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doStop() throws Exception {
 		
-		if(keeperRedisMaster != null){
-			keeperRedisMaster.stop();
-		}
+		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		
 		this.leaderElector.stop();
 		
@@ -201,8 +207,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private void initAndStartMaster(Endpoint target) {
 		try {
 			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, replicationStoreManager, scheduled);
-			this.keeperRedisMaster.initialize();
-			this.keeperRedisMaster.start();
+			LifecycleHelper.initializeIfPossible(this.keeperRedisMaster);
+			LifecycleHelper.startIfPossible(this.keeperRedisMaster);
 		} catch (Exception e) {
 			logger.error("[doReplicationMaster]" + this + "," + keeperRedisMaster, e);
 		}
@@ -210,9 +216,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private void stopServer() {
 		
-        bossGroup.shutdownGracefully();
-        workerGroup.shutdownGracefully();
-		
+		if(serverSocketChannel != null){
+			serverSocketChannel.close();
+		}
 	}
 
 	protected void startServer() throws InterruptedException {
@@ -230,7 +236,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
                  p.addLast(new NettyMasterHandler(DefaultRedisKeeperServer.this, new CommandHandlerManager()));
              }
          });
-        b.bind(currentKeeperMeta.getPort()).sync();
+        serverSocketChannel = (ServerSocketChannel) b.bind(currentKeeperMeta.getPort()).sync().channel();
     }
 		
 
@@ -390,8 +396,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		if(this.keeperRedisMaster != null){
 			try {
-				this.keeperRedisMaster.stop();
-				this.keeperRedisMaster.dispose();
+				LifecycleHelper.stopIfPossible(this.keeperRedisMaster);
+				LifecycleHelper.disposeIfPossible(this.keeperRedisMaster);
 				this.keeperRedisMaster = null;
 			} catch (Exception e) {
 				logger.error("[reconnectMaster][stop previois master]" + this.keeperRedisMaster, e);

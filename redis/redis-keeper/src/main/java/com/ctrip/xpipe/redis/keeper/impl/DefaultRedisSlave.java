@@ -268,4 +268,9 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 	// delegate methods end
 	
+	@Override
+	public String toString() {
+		return this.redisClient.toString();
+	}
+	
 }

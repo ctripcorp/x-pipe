@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.simpletest;
 
-import org.apache.logging.log4j.LogManager;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,9 +13,7 @@ import org.slf4j.LoggerFactory;
 public class LogTest {
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
-	
-	private org.apache.logging.log4j.Logger log = LogManager.getLogger(getClass());
-	
+		
 	@Test
 	public void test(){
 		
