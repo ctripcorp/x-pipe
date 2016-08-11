@@ -14,6 +14,8 @@ public interface MetaUpdateOperation {
 
 	boolean updateKeeperActive(String dc, String clusterId, String shardId, KeeperMeta activeKeeper);
 	
+	boolean noneKeeperActive(String currentDc, String clusterId, String shardId);
+	
 	boolean updateRedisMaster(String dc, String clusterId, String shardId, RedisMeta redisMaster);
 	
 	void update(DcMeta dcMeta);

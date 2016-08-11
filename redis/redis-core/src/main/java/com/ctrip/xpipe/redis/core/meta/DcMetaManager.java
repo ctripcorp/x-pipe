@@ -52,6 +52,8 @@ public interface DcMetaManager{
 	
 	boolean updateKeeperActive(String clusterId, String shardId, KeeperMeta activeKeeper);
 	
+	boolean noneKeeperActive(String clusterId, String shardId);
+	
 	ClusterMeta removeCluster(String clusterId);
 
 	boolean updateRedisMaster(String clusterId, String shardId, RedisMeta redisMaster);

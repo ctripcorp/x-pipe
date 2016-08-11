@@ -151,7 +151,14 @@ public class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public boolean noneKeeperActive(String clusterId, String shardId) {
+		return metaManager.noneKeeperActive(currentDc, clusterId, shardId) ;
+	}
+
+	@Override
 	public boolean updateRedisMaster(String clusterId, String shardId, RedisMeta redisMaster) {
 		return metaManager.updateRedisMaster(currentDc, clusterId, shardId, redisMaster);
 	}
+
+
 }

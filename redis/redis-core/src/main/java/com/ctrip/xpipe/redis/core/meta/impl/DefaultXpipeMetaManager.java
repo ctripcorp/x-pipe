@@ -230,6 +230,22 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	
+	
+	@Override
+	public boolean noneKeeperActive(String dc, String clusterId, String shardId) {
+		
+		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
+		boolean changed = false;
+		
+		for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
+			if(keeperMeta.isActive()){
+				keeperMeta.setActive(false);
+				changed = true;
+			}
+		}
+		return changed;
+	}
+
 	@Override
 	public boolean updateKeeperActive(String dc, String clusterId, String shardId, KeeperMeta activeKeeper) {
 		
@@ -271,7 +287,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	
 	private boolean valid(KeeperMeta activeKeeper) {
 		
-		if(activeKeeper.getIp() == null || activeKeeper.getPort() == null){
+		if(activeKeeper == null || activeKeeper.getIp() == null || activeKeeper.getPort() == null){
 			return false;
 		}
 		return true;
@@ -450,4 +466,5 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return dcMeta.removeCluster(clusterId);
 	}
 
+	
 }

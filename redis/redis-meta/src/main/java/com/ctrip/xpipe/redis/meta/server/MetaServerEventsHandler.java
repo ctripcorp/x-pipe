@@ -15,11 +15,13 @@ public interface MetaServerEventsHandler {
 	 * 2. notify console
 	 * @param clusterId
 	 * @param shardId
-	 * @param activeKeeper
+	 * @param activeKeeper if activeKeeper == null, means that no keeper is active 
 	 * @throws Exception
 	 */
 	void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) throws Exception;
-	
+
+	void noneActiveElected(String clusterId, String shardId) throws Exception;
+
 	/**
 	 * 1. update dynamic state in memory
 	 * 2. update console

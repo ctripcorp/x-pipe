@@ -62,6 +62,7 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 	public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) throws Exception {
 		
 		logger.info("[keeperActiveElected]{},{},{}", clusterId, shardId, activeKeeper);
+		
 		DcMetaManager currentMeta = currentMetaServerMetaManager.getCurrentMeta();
 		
 		KeeperMeta oldActiveKeeper = currentMeta.getKeeperActive(clusterId, shardId);
@@ -74,6 +75,16 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 		InetSocketAddress activeKeeperMaster = getActiveKeeperMaster(clusterId, shardId);
 
 		executeJob(new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool), new ActiveKeeperChanged(clusterId, shardId, oldActiveKeeper, activeKeeper));
+	}
+
+	@Override
+	public void noneActiveElected(String clusterId, String shardId) throws Exception {
+		
+		DcMetaManager currentMeta = currentMetaServerMetaManager.getCurrentMeta();
+		KeeperMeta oldActiveKeeper = currentMeta.getKeeperActive(clusterId, shardId);
+		logger.info("[noneActiveElected]{},{},oldActive:{}", clusterId, shardId, oldActiveKeeper);
+		currentMeta.noneKeeperActive(clusterId, shardId);
+		
 	}
 
 	private InetSocketAddress getActiveKeeperMaster(String clusterId, String shardId) throws MetaException {
@@ -133,4 +144,5 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 			removeObserver(metaChangeListener);
 		}
 	}
+
 }

@@ -144,10 +144,10 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 		KeeperMeta keeper = klea.select(leaderLatchPath, children, zkClient.get());
 
 		if(keeper == null){
-			logger.error("[updateShardLeader][leader null]{}, {}, {}", children, clusterId, shardId);
+			logger.warn("[updateShardLeader][leader null]{}, {}, {}", children, clusterId, shardId);
+			metaServerEventsHandler.noneActiveElected(clusterId, shardId);
 			return;
 		}
-		
 		aliveKeeper.put(new Pair<String, String>(clusterId, shardId), keeper);
 		metaServerEventsHandler.keeperActiveElected(clusterId, shardId, keeper);
 	}
