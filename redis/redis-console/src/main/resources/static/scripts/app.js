@@ -1,4 +1,6 @@
 var services = angular.module('services', ['ngResource']);
 
-var index_module = angular.module('index', ['services', 'ui.router']);
+var appUtil = angular.module('utils', ['toastr']);
+
+var index_module = angular.module('index', ['services', 'ui.router', 'toastr', 'utils']);
 
