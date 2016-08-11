@@ -209,7 +209,7 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 						try{
 							keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, deadKeeper));
 						}catch(ResourceAccessException e){
-							logger.error(String.format("cluster:%s,shard:%s, keeper:%s, error:" , clusterId, shardId, deadKeeper, e.getMessage()) );
+							logger.error(String.format("cluster:%s,shard:%s, keeper:%s, error:%s" , clusterId, shardId, deadKeeper, e.getMessage()));
 						}catch(Throwable th){
 							logger.error("[doCheck]", th);
 						}

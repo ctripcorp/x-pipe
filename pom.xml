@@ -18,8 +18,6 @@
 	<properties>
 		<netty.version>4.0.36.Final</netty.version>
 		<junit.version>4.12</junit.version>
-		<slf4j.version>1.7.21</slf4j.version>
-		<log4j.version>2.5</log4j.version>
 		<commons-io.version>2.4</commons-io.version>
 		<curator.version>2.8.0</curator.version>
 		<maven-jar-plugin.version>2.6</maven-jar-plugin.version>
@@ -42,6 +40,7 @@
 		<spring-platfrom-bom.version>2.0.5.RELEASE</spring-platfrom-bom.version>
 		<ctrip-framework-foundation.version>1.1.6</ctrip-framework-foundation.version>
 		<ctrip-apollo.version>0.0.8</ctrip-apollo.version>
+		<cat.version>2.0.3</cat.version>
 	</properties>
 
 	<modules>
@@ -124,45 +123,9 @@
 				<version>${netty.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-api</artifactId>
-				<version>${slf4j.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.logging.log4j</groupId>
-				<artifactId>log4j-slf4j-impl</artifactId>
-				<version>${log4j.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.logging.log4j</groupId>
-				<artifactId>log4j-api</artifactId>
-				<version>${log4j.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.logging.log4j</groupId>
-				<artifactId>log4j-core</artifactId>
-				<version>${log4j.version}</version>
-			</dependency>
-			<dependency>
 				<groupId>org.apache.curator</groupId>
 				<artifactId>curator-recipes</artifactId>
 				<version>${curator.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.unidal.framework</groupId>
-				<artifactId>foundation-service</artifactId>
-				<version>${unidal.version}</version>
-				<exclusions>
-					<exclusion>
-						<artifactId>log4j</artifactId>
-						<groupId>log4j</groupId>
-					</exclusion>
-				</exclusions>
-			</dependency>
-			<dependency>
-				<groupId>org.unidal.framework</groupId>
-				<artifactId>dal-jdbc</artifactId>
-				<version>${unidal.jdbc.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.glassfish.jersey.media</groupId>
@@ -222,6 +185,30 @@
 					</exclusion>
 				</exclusions>
 			</dependency>
+
+			<!-- ctrip related -->
+			<dependency>
+				<groupId>org.unidal.framework</groupId>
+				<artifactId>foundation-service</artifactId>
+				<version>${unidal.version}</version>
+				<exclusions>
+					<exclusion>
+						<artifactId>log4j</artifactId>
+						<groupId>log4j</groupId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>org.unidal.framework</groupId>
+				<artifactId>dal-jdbc</artifactId>
+				<version>${unidal.jdbc.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.dianping.cat</groupId>
+				<artifactId>cat-client</artifactId>
+				<version>${cat.version}</version>
+			</dependency>
+
 			<!-- unit test -->
 			<dependency>
 				<groupId>org.unidal.framework</groupId>
@@ -340,13 +327,16 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-log4j2</artifactId>
 		</dependency>
-
-		<!-- test -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
+			<groupId>com.dianping.cat</groupId>
+			<artifactId>cat-client</artifactId>
 		</dependency>
+			<!-- test -->
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-test</artifactId>
+				<scope>test</scope>
+			</dependency>
 	</dependencies>
 
 	<profiles>

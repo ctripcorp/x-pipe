@@ -46,4 +46,10 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     public List<KeeperInstanceMeta> getAllKeepers() {
         return null;
     }
+
+	@Override
+	public void addOrStartKeeper(KeeperTransMeta keeperTransMeta) {
+		// TODO Auto-generated method stub
+		
+	}
 }

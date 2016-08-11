@@ -14,6 +14,8 @@ public interface KeeperContainerService {
 	
 	void addKeeper(KeeperTransMeta keeperTransMeta);
 	
+	void addOrStartKeeper(KeeperTransMeta keeperTransMeta);
+	
 	void removeKeeper(KeeperTransMeta keeperTransMeta);
 
 	void startKeeper(KeeperTransMeta keeperTransMeta);

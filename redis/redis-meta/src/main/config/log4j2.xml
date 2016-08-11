@@ -6,8 +6,8 @@
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
         </console>
 
-        <RollingFile name="RollingFileInfo" fileName="/opt/logs/100004375/metaserve.log"
-                     filePattern="/opt/logs/100004375/metaserve-%d{yyyy-MM-dd}-%i.log">
+        <RollingFile name="RollingFileInfo" fileName="/opt/logs/100004375/metaserver.log"
+                     filePattern="/opt/logs/100004375/metaserver-%d{yyyy-MM-dd}-%i.log">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
