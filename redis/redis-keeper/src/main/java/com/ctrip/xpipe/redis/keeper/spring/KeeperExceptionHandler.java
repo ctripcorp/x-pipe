@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.spring;
 
+
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperBadRequestException;
 import com.ctrip.xpipe.spring.AbstractExceptionHandler;
 
@@ -10,7 +11,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Map;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
@@ -20,7 +20,7 @@ public class KeeperExceptionHandler extends AbstractExceptionHandler{
 
     @ExceptionHandler({HttpRequestMethodNotSupportedException.class, HttpMediaTypeException.class,
             RedisKeeperBadRequestException.class})
-    public ResponseEntity<Map<String, Object>> badRequest(HttpServletRequest request,
+    public ResponseEntity<Object> badRequest(HttpServletRequest request,
                                                           Throwable ex) {
         return handleError(request, BAD_REQUEST, ex);
     }

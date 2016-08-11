@@ -2,6 +2,7 @@ package com.ctrip.xpipe.codec;
 
 import java.io.IOException;
 
+import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -62,7 +63,26 @@ public class JsonCodec extends AbstractCodec{
 		try {
 			return objectMapper.readValue(data, clazz);
 		} catch (IOException e) {
+			throw new IllegalStateException("decode error " + new String(data), e);
+		}
+	}
+
+	@Override
+	public <T> T decode(String data, GenericTypeReference<T> reference) {
+		try {
+			return objectMapper.readValue(data, reference.getJacksonReference());
+		} catch (IOException e) {
 			throw new IllegalStateException("decode error " + data, e);
+		}
+	}
+
+	@Override
+	public <T> T decode(byte[] data, GenericTypeReference<T> reference) {
+		
+		try {
+			return objectMapper.readValue(data, reference.getJacksonReference());
+		} catch (IOException e) {
+			throw new IllegalStateException("decode error " + new String(data), e);
 		}
 	}
 

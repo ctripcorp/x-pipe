@@ -23,4 +23,8 @@ public interface Codec {
 	
 	<T> T decode(byte[] data, Class<T> clazz);
 	
+	<T> T decode(String data, GenericTypeReference<T> reference);
+	
+	<T> T decode(byte []data, GenericTypeReference<T> reference);
+	
 }

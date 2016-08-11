@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.exception;
 
-import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -27,23 +26,23 @@ public class ConsoleDefaultExceptionHandler extends AbstractExceptionHandler {
 
 	// Dal Not Found Exception
 	@ExceptionHandler(DalNotFoundException.class)
-	public ResponseEntity<Map<String,Object>> dalNotFound(HttpServletRequest request, DalNotFoundException ex) {
+	public ResponseEntity<Object> dalNotFound(HttpServletRequest request, DalNotFoundException ex) {
 		return handleError(request,HttpStatus.NOT_FOUND, ex);
 	}
 	
 	// Dal Runtime Exception
 	@ExceptionHandler(DalRuntimeException.class)
-	public ResponseEntity<Map<String,Object>> dalRT(HttpServletRequest request, DalRuntimeException ex) {
+	public ResponseEntity<Object> dalRT(HttpServletRequest request, DalRuntimeException ex) {
 		return handleError(request,HttpStatus.INTERNAL_SERVER_ERROR, ex);
 	}
 	
 	@ExceptionHandler(DataNotFoundException.class)
-	public ResponseEntity<Map<String,Object>> dataNotFound(HttpServletRequest request, DataNotFoundException ex) {
+	public ResponseEntity<Object> dataNotFound(HttpServletRequest request, DataNotFoundException ex) {
 		return handleError(request,HttpStatus.NOT_FOUND, ex);
 	}
 	
 	@ExceptionHandler({HttpRequestMethodNotSupportedException.class, HttpMediaTypeException.class})
-	public ResponseEntity<Map<String, Object>> badRequest(HttpServletRequest request, ServletException ex) {
+	public ResponseEntity<Object> badRequest(HttpServletRequest request, ServletException ex) {
 	    return handleError(request, HttpStatus.BAD_REQUEST, ex);
 	  }
 

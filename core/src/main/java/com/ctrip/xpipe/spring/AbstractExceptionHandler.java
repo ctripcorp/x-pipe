@@ -15,6 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import com.ctrip.xpipe.exception.ErrorMessage;
+import com.ctrip.xpipe.exception.ErrorMessageAware;
+
 /**
  * @author wenchao.meng
  *
@@ -27,26 +30,37 @@ public class AbstractExceptionHandler {
 	
     //处理系统内置的Exception
     @ExceptionHandler(Throwable.class)
-    public ResponseEntity<Map<String, Object>> exception(HttpServletRequest request, Throwable ex) {
+    public ResponseEntity<Object> exception(HttpServletRequest request, Throwable ex) {
         return handleError(request, INTERNAL_SERVER_ERROR, ex);
     }
 
-	protected ResponseEntity<Map<String, Object>> handleError(HttpServletRequest request, HttpStatus status,
+	protected ResponseEntity<Object> handleError(HttpServletRequest request, HttpStatus status,
 			Throwable ex) {
 		
 		String message = ex.getMessage();
 		String requestPath = request.getRequestURI() + (request.getQueryString() == null ? "" : ("?" + request.getQueryString()));
 		logger.error(String.format("%s,%s", message, requestPath), ex);
 
-		Map<String, Object> errorAttributes = new HashMap<>();
-
-		errorAttributes.put("status", status.value());
-		errorAttributes.put("message", message);
-		errorAttributes.put("exception", ex.getClass().getName());
-
+		Object response = null;
+		
+		if(ex instanceof ErrorMessageAware){
+			ErrorMessageAware errorMessageAware = (ErrorMessageAware) ex;
+			ErrorMessage<?> errorMessage = errorMessageAware.getErrorMessage();
+			if(errorMessage != null){
+				response = errorMessage;
+			}
+		}
+		
+		if(response == null){
+		
+			Map<String, Object> errorAttributes = new HashMap<>();
+			errorAttributes.put("message", message);
+			errorAttributes.put("exception", ex.getClass().getName());
+		}
+		
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(APPLICATION_JSON);
-		return new ResponseEntity<>(errorAttributes, headers, status);
+		
+		return new ResponseEntity<>(response, headers, status);
 	}
-
 }

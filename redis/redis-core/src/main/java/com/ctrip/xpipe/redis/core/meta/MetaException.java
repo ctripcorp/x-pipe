@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.meta;
 
-import com.ctrip.xpipe.redis.core.exception.RedisException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 
 /**

@@ -5,10 +5,12 @@ package com.ctrip.xpipe.exception;
  *
  * 2016年3月24日 下午2:58:53
  */
-public class XpipeRuntimeException extends RuntimeException{
+public class XpipeRuntimeException extends RuntimeException implements ErrorMessageAware{
 
 	private static final long serialVersionUID = 1L;
-	
+
+	private ErrorMessage<?>  errorMessage;
+
 	public XpipeRuntimeException(String message){
 		super(message);
 	}
@@ -17,4 +19,17 @@ public class XpipeRuntimeException extends RuntimeException{
 		super(message, th);
 	}
 
+	public <T extends Enum<T>> XpipeRuntimeException(ErrorMessage<T> errorMessage, Throwable th){
+		super(errorMessage.toString(), th);
+		this.errorMessage = errorMessage;
+	}
+
+	@Override
+	public ErrorMessage<?> getErrorMessage() {
+		return errorMessage;
+	}
+	
+	public void setErrorMessage(ErrorMessage<?> errorMessage) {
+		this.errorMessage = errorMessage;
+	}
 }
