@@ -1,0 +1,62 @@
+<div class="col-md-8 col-md-offset-2" style="margin-top: 50px">
+    <div class="widget-box ">
+        <div class="widget-header">
+            <h4>创建集群</h4>
+        </div>
+
+        <div class="widget-body" style="padding-top: 35px;">
+            <form class="form-horizontal" ng-submit="doCluster()">
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">Cluster Name</label>
+
+                    <div class="col-sm-9">
+                        <input type="text" placeholder="集群名称" class="col-xs-10 col-sm-5"
+                               ng-model="cluster.clusterName"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right"> DC </label>
+
+                    <div class="col-sm-9">
+                        <label>
+                            <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
+                                   ng-value="1"/>
+                            <span class="lbl">金桥</span>
+                        </label>
+                        <label>
+                            <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
+                                   ng-value="2"/>
+                            <span class="lbl">金桥</span>
+                        </label>
+                        <label>
+                            <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
+                                   ng-value="3"/>
+                            <span class="lbl">金桥</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right">Cluster Description</label>
+
+                    <div class="col-sm-9">
+                        <textarea rows="4" style="width: 330px;" ng-model="cluster.clusterDescription"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label no-padding-right"></label>
+                    <div class="col-sm-9">
+                        <button class="btn btn-info" type="submit">
+                            <i class="icon-ok bigger-110"></i>
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+

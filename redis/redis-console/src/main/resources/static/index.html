@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="./vendor/css/ace-skins.min.css"/>
     <link rel="stylesheet" href="./vendor/css/ace-rtl.min.css"/>
     <link rel="stylesheet" href="./vendor/css/ace-ie.min.css"/>
+    <link rel="stylesheet" href="./vendor/angular/angular-toastr-1.4.1.min.css"/>
 </head>
 
 <body class="no-skin" ng-app="index">
@@ -90,19 +91,38 @@
     <!--nav-->
     <div id="sidebar" class="sidebar responsive sidebar-fixed">
         <ul class="nav nav-list">
-            <li class="active">
-                <a ui-sref="cluster">
-                    <i class="menu-icon fa fa-tachometer"></i>
-                    <span class="menu-text">Cluster</span>
+
+            <li class="">
+                <a href="#" class="dropdown-toggle">
+                    <i class="menu-icon fa fa-desktop"></i>
+                    <span class="menu-text"> Cluster </span>
+                    <b class="arrow fa fa-angle-down"></b>
                 </a>
                 <b class="arrow"></b>
-            </li>
-            <li>
-                <a ui-sref="page2">
-                    <i class="menu-icon fa fa-tachometer"></i>
-                    <span class="menu-text"> Page2 </span>
-                </a>
-                <b class="arrow"></b>
+                <ul class="submenu">
+                    <li class="active">
+                        <a ui-sref="cluster({clusterName:'xx'})" class="dropdown-toggle">
+                            <i class="menu-icon fa fa-caret-right"></i>
+                            全部信息
+                            <b class="arrow"></b>
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                    <li class="">
+                        <a ui-sref="cluster_list">
+                            <i class="menu-icon fa fa-caret-right"></i>
+                            列表
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                    <li class="">
+                        <a ui-sref="cluster_form">
+                            <i class="menu-icon fa fa-caret-right"></i>
+                            创建
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                </ul>
             </li>
 
             <li class="">
@@ -179,12 +199,25 @@
 <script src="./vendor/angular/angular.min.js"></script>
 <script src="./vendor/angular/angular-resource.min.js"></script>
 <script src="./vendor/angular/angular-ui-router.min.js"></script>
+<script src="./vendor/angular/angular-toastr-1.4.1.tpls.min.js"></script>
+
+<script src="./vendor/js/typeahead-bs2.min.js"></script>
+<script src="./vendor/js/jquery.dataTables.min.js"></script>
+<script src="./vendor/js/jquery.dataTables.bootstrap.js"></script>
+<script src="./vendor/js/ace-elements.min.js"></script>
+
 
 <script src="./scripts/app.js"></script>
 
 <script src="./scripts/services/ClusterService.js"></script>
+<script src="./scripts/services/ShardService.js"></script>
 
 <script src="scripts/router.js"></script>
+
+<script src="scripts/AppUtils.js"></script>
+
 <script src="scripts/controllers/ClusterCtl.js"></script>
+<script src="scripts/controllers/ClusterFormCtl.js"></script>
+<script src="scripts/controllers/ClusterListCtl.js"></script>
 </body>
 </html>
