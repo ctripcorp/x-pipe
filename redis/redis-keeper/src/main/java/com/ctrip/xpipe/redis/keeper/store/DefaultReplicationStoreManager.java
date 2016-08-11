@@ -1,27 +1,20 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-import java.util.Properties;
-import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author marsqing
@@ -220,8 +213,23 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 
 	@Override
 	public void destroy() {
-		
 		logger.info("[destroy]{}", this.baseDir);
-		this.baseDir.delete();
+		recursiveDelete(this.baseDir);
+	}
+
+	//helper method to clean created files
+	private void recursiveDelete(File file) {
+		if (!file.exists() || !file.canWrite()) {
+			return;
+		}
+		if (file.isDirectory()) {
+			File[] children = file.listFiles();
+			if (children != null && children.length > 0) {
+				for (File f : children) {
+					recursiveDelete(f);
+				}
+			}
+		}
+		file.delete();
 	}
 }

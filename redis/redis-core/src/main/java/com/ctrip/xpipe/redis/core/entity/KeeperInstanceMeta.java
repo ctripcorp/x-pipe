@@ -6,7 +6,7 @@ package com.ctrip.xpipe.redis.core.entity;
  * Aug 2, 2016
  */
 public class KeeperInstanceMeta extends KeeperTransMeta{
-	
+
 
 	public KeeperInstanceMeta(){
 		
