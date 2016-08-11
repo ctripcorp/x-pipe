@@ -2,12 +2,14 @@ package com.ctrip.xpipe.redis.core.store;
 
 import java.io.IOException;
 
+import com.ctrip.xpipe.api.lifecycle.Destroyable;
+
 /**
  * @author wenchao.meng
  *
  * May 31, 2016
  */
-public interface ReplicationStoreManager {
+public interface ReplicationStoreManager  extends Destroyable{
 	
 	ReplicationStore createIfNotExist() throws IOException;
 

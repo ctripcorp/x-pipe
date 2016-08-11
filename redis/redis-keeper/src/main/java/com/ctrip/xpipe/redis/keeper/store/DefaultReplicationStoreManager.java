@@ -218,4 +218,10 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 		return replicationStore;
 	}
 
+	@Override
+	public void destroy() {
+		
+		logger.info("[destroy]{}", this.baseDir);
+		this.baseDir.delete();
+	}
 }

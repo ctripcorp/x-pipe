@@ -1,18 +1,17 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
+
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperBadRequestException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.MetaService;
-import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,9 +69,10 @@ public class KeeperContainerService {
     }
 
     private RedisKeeperServer doAdd(KeeperTransMeta keeperTransMeta, KeeperMeta keeperMeta) throws Exception {
-        ReplicationStoreManager replicationStoreManager = createReplicationStoreManager(keeperTransMeta);
+    	
+    	File baseDir = getReplicationStoreDir(keeperMeta);
 
-        return createRedisKeeperServer(keeperMeta, replicationStoreManager, metaService);
+        return createRedisKeeperServer(keeperMeta, baseDir, metaService);
     }
 
     private void enrichKeeperMetaFromKeeperTransMeta(KeeperMeta keeperMeta, KeeperTransMeta keeperTransMeta) {
@@ -83,21 +83,14 @@ public class KeeperContainerService {
     }
 
     private RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper,
-                                                      ReplicationStoreManager replicationStoreManager,
+                                                      File baseDir,
                                                       MetaService metaService) throws Exception {
 
         RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper,
-                replicationStoreManager, metaService, leaderElectorManager);
+                baseDir, metaService, leaderElectorManager);
 
         register(redisKeeperServer);
         return redisKeeperServer;
-    }
-
-    private ReplicationStoreManager createReplicationStoreManager(KeeperTransMeta keeperTransMeta) {
-        File storeDir = getReplicationStoreDir(keeperTransMeta.getKeeperMeta());
-        ReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
-                keeperTransMeta.getClusterId(), keeperTransMeta.getShardId(), storeDir);
-        return replicationStoreManager;
     }
 
     private void register(RedisKeeperServer redisKeeperServer) throws Exception {

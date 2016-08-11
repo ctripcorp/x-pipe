@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.keeper;
 import java.io.IOException;
 import java.util.Set;
 
+import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
@@ -17,7 +18,7 @@ import io.netty.channel.Channel;
  *
  * 2016年3月29日 下午3:09:23
  */
-public interface RedisKeeperServer extends RedisServer, PsyncObserver{
+public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyable{
 	
 	int getListeningPort();
 	

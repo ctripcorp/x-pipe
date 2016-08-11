@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
@@ -38,6 +39,7 @@ import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.thread.NamedThreadFactory;
 import com.ctrip.xpipe.utils.OsUtils;
 
@@ -86,19 +88,19 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private MetaService metaService;
 
-	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, ReplicationStoreManager replicationStoreManager, 
+	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, File baseDir, 
 			MetaService metaService, LeaderElectorManager leaderElectorManager){
-		this(currentKeeperMeta, replicationStoreManager, metaService, null, leaderElectorManager);
+		this(currentKeeperMeta, baseDir, metaService, null, leaderElectorManager);
 	}
 
-	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, ReplicationStoreManager replicationStoreManager, 
+	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, File baseDir, 
 			MetaService metaService, 
 			ScheduledExecutorService scheduled, 
 			LeaderElectorManager leaderElectorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
 		this.shardId = currentKeeperMeta.parent().getId();
 		this.currentKeeperMeta = currentKeeperMeta;
-		this.replicationStoreManager = replicationStoreManager;
+		this.replicationStoreManager = new DefaultReplicationStoreManager(clusterId, shardId, baseDir);
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
 		if(scheduled == null){
@@ -423,6 +425,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public KeeperInstanceMeta getKeeperInstanceMeta() {
 		return new KeeperInstanceMeta(clusterId, shardId, currentKeeperMeta);
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		this.replicationStoreManager.destroy();
 	}
 
 }

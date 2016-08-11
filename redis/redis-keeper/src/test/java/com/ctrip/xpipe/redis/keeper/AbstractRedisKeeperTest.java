@@ -106,21 +106,21 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta) throws Exception {
 
-		String clusterId = getClusterId();
-		String shardId = getShardId();
-
-		ReplicationStoreManager replicationStoreManager = createReplicationStoreManager(clusterId, shardId);
-		return createRedisKeeperServer(keeperMeta, replicationStoreManager, metaService);
+		return createRedisKeeperServer(keeperMeta, metaService);
 	}
 
-	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper,
-			ReplicationStoreManager replicationStoreManager, MetaService metaService) throws Exception {
+	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaService metaService, File baseDir) throws Exception {
 
 		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper,
-				replicationStoreManager, metaService, getRegistry().getComponent(LeaderElectorManager.class));
+				baseDir, metaService, getRegistry().getComponent(LeaderElectorManager.class));
 
 		add(redisKeeperServer);
 		return redisKeeperServer;
+
+	}
+
+	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaService metaService) throws Exception {
+		return createRedisKeeperServer(keeper, metaService, getReplicationStoreManagerBaseDir());
 	}
 
 	/**
@@ -139,11 +139,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new DefaultReplicationStoreManager(clusterId, shardId, storeDir);
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId) {
+	protected File getReplicationStoreManagerBaseDir() {
 
 		String tmpDir = getTestFileDir();
-
-		return new DefaultReplicationStoreManager(clusterId, shardId, new File(tmpDir));
+		return new File(tmpDir);
 	}
 	
 	protected RedisMeta createRedisMeta() {

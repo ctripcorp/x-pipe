@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,14 +29,12 @@ import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaServerLocator;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaService;
 import com.ctrip.xpipe.redis.keeper.meta.MetaService;
-import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
@@ -310,11 +309,9 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	protected void startKeeper(KeeperMeta keeperMeta, MetaService metaService, LeaderElectorManager leaderElectorManager) throws Exception {
 
 		logger.info(remarkableMessage("[startKeeper]{}, {}"), keeperMeta);
-		ReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
-				keeperMeta.parent().parent().getId(), keeperMeta.parent().getId(), 
-				new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort()));
+		File baseDir = new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort());
 
-		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperMeta, replicationStoreManager, metaService, leaderElectorManager);
+		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperMeta, baseDir, metaService, leaderElectorManager);
 		add(redisKeeperServer);
 	}
 
