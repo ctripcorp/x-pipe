@@ -12,9 +12,10 @@ index_module.config(function($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/shards.html',
             controller: 'ClusterCtl'
         })
-        .state('page2', {
-            url: 'page2',
-            templateUrl: 'views/index/page2.html'
+        .state('cluster_dc', {
+            url: '/cluster_dc?clusterName',
+            templateUrl: 'views/index/cluster_dc.html',
+            controller: 'ClusterDcCtl'
         })
         .state('cluster_list', {
             url: '/clusterlist',

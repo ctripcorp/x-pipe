@@ -1,37 +1,19 @@
-<div class="breadcrumbs" id="breadcrumbs">
-    <ul class="breadcrumb">
-        <li>
-            <i class="ace-icon fa fa-home home-icon"></i>
-            <a href="#" ng-bind="cluster.baseInfo.clusterName"></a>
-        </li>
-    </ul>
-
-    <div class="nav-search" id="nav-search2">
-        <form class="form-search" ng-submit="loadCluster()">
-							<span class="input-icon">
-								<input type="text" placeholder="cluster name" class="nav-search-input" ng-model="clusterName">
-								<i class="ace-icon fa fa-search nav-search-icon"></i>
-							</span>
-        </form>
-    </div>
-
-</div>
-
 <div class="page-content">
+    <h3 class="header smaller lighter blue" ng-bind="clusterName"></h3>
     <div class="tabbable">
-        <ul class="nav nav-tabs padding-18 tab-size-bigger" id="myTab">
-            <li ng-repeat="dc in dcs" ng-class="{'active': dcActiveTab == dc.dcName || $index == 0}"
+        <ul class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
+            <li ng-repeat="dc in dcs" ng-class="{'active': dcActiveTab == dc.dcName}"
                 ng-click="switchDc(dc)">
                 <a data-toggle="tab">
                     <i class="blue ace-icon fa fa-question-circle bigger-120"></i>
                     {{dc.dcName}}
                 </a>
             </li>
-
         </ul>
 
         <div class="tab-content no-border padding-24">
-            <div class="tab-pane fade in active">
+
+            <div class="tab-pane fade in active" ng-if="dcs && dcs.length">
                 <div class="col-xs-12">
                     <div class="widget-box transparent" ng-repeat="shard in shards">
                         <div class="widget-header widget-header-flat">
@@ -64,9 +46,9 @@
                                         <th>
                                             <i class="ace-icon fa fa-caret-right blue"></i>ROLE
                                         </th>
-                                        <th class="hidden-480">
+                                      <!--   <th class="hidden-480">
                                             <i class="ace-icon fa fa-caret-right blue"></i>ACTIVE
-                                        </th>
+                                        </th> -->
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -79,12 +61,12 @@
                                         <td>
                                             Redis
                                         </td>
-                                        <td class="hidden-480">
+                                        <!-- <td class="hidden-480">
                                                                 <span class="label label-info arrowed-right arrowed-in"
                                                                       ng-if="redis.active">RUNNING</span>
                                                                 <span class="label label-warning label-sm"
                                                                       ng-if="!redis.active">FAILED</span>
-                                        </td>
+                                        </td> -->
                                     </tr>
                                     <tr ng-repeat="keeper in shard.keepers">
                                         <td ng-bind="keeper.id"></td>
@@ -95,12 +77,12 @@
                                         <td>
                                             Keeper
                                         </td>
-                                        <td class="hidden-480">
+                                       <!--  <td class="hidden-480">
                                                                 <span class="label label-info arrowed-right arrowed-in"
                                                                       ng-if="redis.active">RUNNING</span>
                                                                 <span class="label label-warning label-sm"
                                                                       ng-if="!redis.active">FAILED</span>
-                                        </td>
+                                        </td> -->
                                     </tr>
                                     </tbody>
                                 </table>
@@ -108,6 +90,10 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div ng-if="(!dcs || !dcs.length) && clusterName">
+                无shards
             </div>
 
         </div>

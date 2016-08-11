@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.redis.console.build;
 
-import com.ctrip.xpipe.redis.console.ds.XpipeDataSourceProvider;
 import org.unidal.dal.jdbc.datasource.DataSourceProvider;
 import org.unidal.lookup.configuration.AbstractResourceConfigurator;
 import org.unidal.lookup.configuration.Component;
+
+import com.ctrip.xpipe.redis.console.ds.XpipeDataSourceProvider;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -25,9 +25,43 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         delete_cluster: {
             method: 'DELETE',
             url: '/console/clusters/:clusterName'
+        },
+        find_clusters_batch : {
+        	method : 'GET',
+        	url : '/console/clusters?page=:page&size=:size',
+        	isArray : true
+        },
+        get_clusters_count : {
+        	method : 'GET',
+        	url : '/console/count/clusters'
         }
     });
 
+    function getClustersCount() {
+    	var d = $q.defer();
+    	resource.get_clusters_count({},
+    		function(result) {
+    		d.resolve(result);
+    	}, function(result) {
+    		d.reject(result);
+    	});
+    	return d.promise;
+    }
+    
+    function findClusterBatch(page,size) {
+    	var d = $q.defer();
+    	resource.find_clusters_batch({
+    		page : page,
+    		size : size
+    	},
+    	function(result) {
+    		d.resolve(result);
+    	}, function(result) {
+    		d.reject(result);
+    	});
+    	return d.promise;
+    }
+    
     function loadCluster(clusterName) {
         var d = $q.defer();
         resource.load_cluster({
@@ -108,6 +142,8 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         findAllClusters: findAllClusters,
         createCluster: createCluster,
         updateCluster: updateCluster,
-        deleteCluster: deleteCluster
+        deleteCluster: deleteCluster,
+        findClusterBatch : findClusterBatch,
+        getClustersCount : getClustersCount
     }
 }]);
