@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration status="TRACE" monitorInterval="5" >
+<configuration status="info" monitorInterval="5" packages="com.ctrip.xpipe.utils">
 
     <appenders>
-        <console name="Console" target="SYSTEM_OUT">
+        <console name="console" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
         </console>
 
-        <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe/xpipe-test.log"
-                     filePattern="target/applogs/xpipe/xpipe-test-%d{yyyy-MM-dd}-%i.log">
+        <RollingFile name="rollingFileInfo" fileName="/opt/logs/100004375/metaserver.log"
+                     filePattern="/opt/logs/100004375/metaserver-%d{yyyy-MM-dd}-%i.log">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
             </Policies>
         </RollingFile>
+
+		<CatAppender4Log4j2 name="catAppender"/>
 
     </appenders>
 
@@ -25,19 +27,10 @@
         </logger>
         <logger name="io.netty" level="INFO">
         </logger>
-        <!--  
-        <logger name="io.netty.handler.logging.LoggingHandler" level="DEBUG">
-        </logger>
-        <logger name="com.ctrip.xpipe.redis.protocal.cmd.InOutPayloadReplicationStore" level="DEBUG">
-        </logger>
-        <logger name="com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler" level="DEBUG">
-        </logger>
-        <logger name="com.ctrip.xpipe.redis.keeper.handler.LFHandler" level="DEBUG">
-        </logger>
-        -->
         <root level="INFO">
-            <appender-ref ref="Console"/>
-            <appender-ref ref="RollingFileInfo"/>
+            <appender-ref ref="console"/>
+            <appender-ref ref="rollingFileInfo"/>
+            <appender-ref ref="catAppender"/>
         </root>
     </loggers>
 

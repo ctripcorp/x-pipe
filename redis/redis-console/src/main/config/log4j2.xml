@@ -15,7 +15,7 @@
             </Policies>
         </RollingFile>	
 
-		<CatAppender4Log4j2 name="catAppender4Log4j2"></CatAppender4Log4j2>
+		<CatAppender4Log4j2 name="catAppender"/>
     </appenders>
 
     <loggers>
@@ -28,7 +28,7 @@
         </logger>
         <root level="INFO">
             <appender-ref ref="RollingFileInfo"/>
-            <appender-ref ref="catAppender4Log4j2"/>
+            <appender-ref ref="catAppender"/>
         </root>
     </loggers>
 
