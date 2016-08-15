@@ -23,6 +23,8 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaServerMetaManager;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.utils.StringUtil;
+import com.site.lookup.util.StringUtils;
 
 /**
  * @author marsqing
@@ -89,7 +91,8 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	public KeeperMeta getUpstreamKeeper(String clusterId, String shardId) throws Exception {
 		
 		String address = currentMetaServerMeta.getCurrentMeta().getUpstream(clusterId, shardId);
-		if(address == null){
+		logger.info("[getUpstreamKeeper]-{}-", address);
+		if(StringUtils.isEmpty(address)){
 			return null;
 		}
 		
