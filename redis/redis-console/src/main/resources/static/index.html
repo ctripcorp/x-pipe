@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="./vendor/angular/angular-toastr-1.4.1.min.css"/>
     <link rel="stylesheet" href="./vendor/css/sweet-alert.css"/>
     <link rel="stylesheet" href="./vendor/css/ng-table.min.css"/>
+    <link rel="stylesheet" href="styles/commons.css"/>
 </head>
 
 <body class="no-skin" ng-app="index">
@@ -93,93 +94,11 @@
     <!--nav-->
     <div id="sidebar" class="sidebar responsive sidebar-fixed">
         <ul class="nav nav-list">
-
-            <li class="">
-                <a href="#" class="dropdown-toggle">
+            <li class="active">
+                <a ui-sref="cluster_list">
                     <i class="menu-icon fa fa-desktop"></i>
                     <span class="menu-text"> Cluster </span>
-                    <b class="arrow fa fa-angle-down"></b>
                 </a>
-                <b class="arrow"></b>
-                <ul class="submenu">
-                    <li ng-class="{'active': currentNav == '1-2'}" ng-click="switchNav('1-2')">
-                        <a ui-sref="cluster_list">
-                            <i class="menu-icon fa fa-caret-right"></i>
-                            列表
-                        </a>
-                        <b class="arrow"></b>
-                    </li>
-                    <li ng-class="{'active': currentNav == '1-3'}" ng-click="switchNav('1-3')">
-                        <a ui-sref="cluster_form">
-                            <i class="menu-icon fa fa-caret-right"></i>
-                            创建
-                        </a>
-                        <b class="arrow"></b>
-                    </li>
-                    <li ng-class="{'active': currentNav == '1-1'}" ng-click="switchNav('1-1')">
-                        <a ui-sref="cluster({clusterName:''})" class="dropdown-toggle">
-                            <i class="menu-icon fa fa-caret-right"></i>
-                            Details
-                            <b class="arrow"></b>
-                        </a>
-                        <b class="arrow"></b>
-                    </li>
-                    <li ng-class="{'active': currentNav == '1-4'}" ng-click="switchNav('1-4')">
-                        <a ui-sref="cluster_dc({clusterName:''})" class="dropdown-toggle">
-                            <i class="menu-icon fa fa-caret-right"></i>
-                            DCs
-                            <b class="arrow"></b>
-                        </a>
-                        <b class="arrow"></b>
-                    </li>
-                </ul>
-            </li>
-
-            <li class="">
-                <a href="#" class="dropdown-toggle">
-                    <i class="menu-icon fa fa-desktop"></i>
-                    <span class="menu-text"> 配置 </span>
-                    <b class="arrow fa fa-angle-down"></b>
-                </a>
-                <b class="arrow"></b>
-                <ul class="submenu">
-                    <li class="">
-                        <a href="#" class="dropdown-toggle">
-                            <i class="menu-icon fa fa-caret-right"></i>
-                            DC
-                            <b class="arrow"></b>
-                        </a>
-                        <b class="arrow"></b>
-                    </li>
-                    <li class="">
-                        <a href="#">
-                            <i class="menu-icon fa fa-caret-right"></i>
-                            Cluster
-                        </a>
-                        <b class="arrow"></b>
-                    </li>
-                    <li class="">
-                        <a href="#">
-                            <i class="menu-icon fa fa-caret-right"></i>
-                            Shard
-                        </a>
-                        <b class="arrow"></b>
-                    </li>
-                    <li class="">
-                        <a href="#">
-                            <i class="menu-icon fa fa-caret-right"></i>
-                            Redis
-                        </a>
-                        <b class="arrow"></b>
-                    </li>
-                    <li class="">
-                        <a href="#">
-                            <i class="menu-icon fa fa-caret-right"></i>
-                            KeeperContainer
-                        </a>
-                        <b class="arrow"></b>
-                    </li>
-                </ul>
             </li>
         </ul>
 
@@ -190,7 +109,7 @@
     </div>
 
 
-    <div class="main-content" ui-view></div>
+    <div class="main-content" style="padding-top: 25px;" ui-view></div>
 
 
     <a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
@@ -200,11 +119,12 @@
 
 <script src='./vendor/js/jquery.min.js'></script>
 <script src="./vendor/js/ace-extra.min.js"></script>
-<!--<script src="./vendor/js/respond.min.js"></script>-->
 
 <script src="./vendor/js/bootstrap.min.js"></script>
 <script src="./vendor/js/ace-elements.min.js"></script>
 <script src="./vendor/js/ace.min.js"></script>
+
+<script src="./vendor/js/lodash.min.js"></script>
 
 <script src="./vendor/angular/angular.min.js"></script>
 <script src="./vendor/angular/angular-resource.min.js"></script>
@@ -233,10 +153,13 @@
 
 <script src="scripts/AppUtils.js"></script>
 
+<script src="scripts/directives/confirm.js"></script>
+
 <script src="scripts/controllers/IndexCtl.js"></script>
-<script src="scripts/controllers/ClusterCtl.js"></script>
+<script src="scripts/controllers/ClusterDcShardCtl.js"></script>
 <script src="scripts/controllers/ClusterFormCtl.js"></script>
 <script src="scripts/controllers/ClusterListCtl.js"></script>
 <script src="scripts/controllers/ClusterDcCtl.js"></script>
+<script src="scripts/controllers/ClusterShardsCtl.js"></script>
 </body>
 </html>

@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
-import org.unidal.dal.jdbc.DalNotFoundException;
 import java.util.List;
 
 /**
@@ -23,7 +22,7 @@ public class RedisService extends AbstractConsoleService<RedisTblDao>{
     public List<RedisTbl> findByDcClusterShardId(final long dcClusterShardId){
     	return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
 			@Override
-			public List<RedisTbl> doQuery() throws DalNotFoundException, DalException {
+			public List<RedisTbl> doQuery() throws DalException {
 				return dao.findAllByDcClusterShardId(dcClusterShardId, RedisTblEntity.READSET_FULL);
 			}
     	});
@@ -32,7 +31,7 @@ public class RedisService extends AbstractConsoleService<RedisTblDao>{
     public RedisTbl load(final long id) {
     	return queryHandler.handleQuery(new DalQuery<RedisTbl>() {
 			@Override
-			public RedisTbl doQuery() throws DalNotFoundException, DalException {
+			public RedisTbl doQuery() throws DalException {
 				return dao.findByPK(id, RedisTblEntity.READSET_FULL);
 			}
     	});

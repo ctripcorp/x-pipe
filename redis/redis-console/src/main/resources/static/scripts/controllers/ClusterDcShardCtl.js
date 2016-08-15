@@ -2,21 +2,21 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
     function ($rootScope, $scope, $stateParams, $window, $location, toastr, AppUtil, ClusterService, ShardService, SweetAlert) {
 
         $scope.dcs, $scope.dcActiveTab, $scope.shards;
-
+        $scope.clusterName = $stateParams.clusterName;
+        
         $scope.switchDc = switchDc;
         $scope.loadCluster = loadCluster;
         $scope.loadShards = loadShards;
+        $scope.preCreateRedis = preCreateRedis;
+        $scope.createRedis = createRedis;
 
-        $rootScope.currentNav = '1-1';
-
-        $scope.clusterName = $stateParams.clusterName;
 
         if ($scope.clusterName) {
             loadCluster();
         }
         
         function switchDc(dc) {
-            $scope.dcActiveTab = dc.dcName;
+            $scope.currentDcName = dc.dcName;
             loadShards($scope.clusterName, dc.dcName);
         }
 
@@ -29,7 +29,7 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                         return;
                     }
                     $scope.dcs = result;
-                    $scope.dcActiveTab = $scope.dcs[0].dcName;
+                    $scope.currentDcName = $scope.dcs[0].dcName;
 
                     loadShards($scope.clusterName, $scope.dcs[0].dcName);
 
@@ -41,11 +41,32 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         }
 
         function loadShards(clusterName, dcName) {
-            ShardService.findShards(clusterName, dcName)
+            ShardService.findClusterDcShards(clusterName, dcName)
                 .then(function (result) {
                     $scope.shards = result;
                 }, function (result) {
                     toastr.error(AppUtil.errorMsg(result));
+                });
+        }
+
+
+        $scope.toCreateRedisInShard = {};
+        function preCreateRedis(shard) {
+            $scope.toCreateRedisInShard = shard;
+            $scope.toCreateRedis = {};
+
+            $('#createRedisModal').modal('show');
+        }
+
+
+        function createRedis() {
+            ShardService.bindRedis($scope.clusterName, $scope.currentDcName, 
+                                   $scope.toCreateRedisInShard.shardName,$scope.toCreateRedis)
+                .then(function (result) {
+                    toastr.success('create redis success');     
+                    $window.location.reload();
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result), 'create redis fail');
                 });
         }
 
