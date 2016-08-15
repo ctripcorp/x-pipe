@@ -1,19 +1,29 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>com.ctrip.xpipe</groupId>
-    <artifactId>xpipe-parent</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-  </parent>
-  
-   <groupId>com.ctrip.xpipe.redis</groupId>
-  <artifactId>redis-parent</artifactId>
-  <packaging>pom</packaging>
-  <modules>
-  	<module>redis-core</module>
-  	<module>redis-keeper</module>
-  	<module>redis-meta</module>
-  	<module>redis-console</module>
-  	<module>redis-integrated-test</module>
-  </modules>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.ctrip.xpipe</groupId>
+		<artifactId>xpipe-parent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+
+	<groupId>com.ctrip.xpipe.redis</groupId>
+	<artifactId>redis-parent</artifactId>
+	<packaging>pom</packaging>
+	<modules>
+		<module>redis-core</module>
+		<module>redis-keeper</module>
+		<module>redis-meta</module>
+		<module>redis-console</module>
+		<module>redis-integrated-test</module>
+	</modules>
+
+	<profiles>
+		<profile>
+			<id>services</id>
+			<modules>
+				<module>package</module>
+			</modules>
+		</profile>
+	</profiles>
 </project>
