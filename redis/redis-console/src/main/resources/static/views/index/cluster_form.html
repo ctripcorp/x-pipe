@@ -1,7 +1,8 @@
 <div class="col-md-8 col-md-offset-2" style="margin-top: 50px">
     <div class="widget-box ">
         <div class="widget-header">
-            <h4>创建集群</h4>
+            <h4 ng-if="operateType == 'create'">创建集群</h4>
+            <h4 ng-if="operateType == 'update'">更新集群</h4>
         </div>
 
         <div class="widget-body" style="padding-top: 35px;">
@@ -11,27 +12,24 @@
 
                     <div class="col-sm-9">
                         <input type="text" placeholder="集群名称" class="col-xs-10 col-sm-5"
-                               ng-model="cluster.clusterName"/>
+                               ng-model="cluster.clusterName" ng-disabled="operateType == 'update'"/>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="col-sm-3 control-label no-padding-right"> DC </label>
+                    <label class="col-sm-3 control-label no-padding-right"> Master DC </label>
 
                     <div class="col-sm-9">
                         <label>
                             <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
-                                   ng-value="1"/>
-                            <span class="lbl">金桥</span>
+                                   ng-value="1" ng-checked="cluster.activedcId == 1"
+                                   ng-disabled="operateType == 'update'"/>
+                            <span class="lbl">NTGXH</span>
                         </label>
                         <label>
                             <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
-                                   ng-value="2"/>
-                            <span class="lbl">金桥</span>
-                        </label>
-                        <label>
-                            <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
-                                   ng-value="3"/>
-                            <span class="lbl">金桥</span>
+                                   ng-value="2" ng-checked="cluster.activedcId == 2"
+                                   ng-disabled="operateType == 'update'"/>
+                            <span class="lbl">FAT</span>
                         </label>
                     </div>
                 </div>

@@ -2,7 +2,7 @@ services.service('ShardService', ['$resource', '$q', function ($resource, $q) {
     var resource = $resource('', {}, {
         find_shards: {
             method: 'GET',
-            url: '/console/clusters/:clusterName/dcs/{dcName}/shards',
+            url: '/console/clusters/:clusterName/dcs/:dcName/shards',
             isArray: true
         }
     });

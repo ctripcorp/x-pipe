@@ -1,0 +1,109 @@
+<div class="col-md-8 col-md-offset-2" style="margin-top: 50px">
+    <div>
+        <div class="no-border padding-24">
+
+            <div class="tab-pane fade in active">
+                <div class="col-xs-12">
+                    <div>
+                        <div class="widget-header widget-header-flat">
+                            <h4 class="widget-title lighter">
+                                <i class="ace-icon fa fa-star orange"></i>
+                                已绑定
+                            </h4>
+                        </div>
+
+                        <div class="widget-body">
+                            <div class="widget-main no-padding">
+                                <table class="table table-bordered table-striped">
+                                    <thead class="thin-border-bottom">
+                                    <tr>
+                                        <th>
+                                            <i class="ace-icon fa fa-caret-right blue"></i>DC_NAME
+                                        </th>
+                                        <th>
+                                            <i class="ace-icon fa fa-caret-right blue"></i>DESCRIPTION
+                                        </th>
+                                        <th>
+                                            <i class="ace-icon fa fa-caret-right blue"></i>STATUS
+                                        </th>
+                                        <th>
+                                            <i class="ace-icon fa fa-caret-right blue"></i>OPERATIONS
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr ng-repeat="dc in dcs">
+                                        <td ng-bind="dc.dcName"></td>
+                                        <td ng-bind="dc.dcDescription"></td>
+                                        <td>
+                                        	<span class="label label-info arrowed-right arrowed-in"
+                                            ng-if="cluster.activedcId === dc.id">ACTIVE</span>
+                                            <span class="label label-warning label-sm"
+                                            ng-if="cluster.activedcId !== dc.id">已绑定</span>
+                                        <td>
+                                        	<a ng-if="cluster.activedcId !== dc.id" ng-click="deleteDc({{cluster.clusterName}},dc)">delete</a>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <br/>
+                        <br/>
+                        <br/>
+                        <br/>
+                        
+                        <div class="widget-header widget-header-flat">
+                            <h4 class="widget-title lighter">
+                                <i class="ace-icon fa fa-star orange"></i>
+                                未绑定
+                            </h4>
+                        </div>
+
+                        <div class="widget-body">
+                            <div class="widget-main no-padding">
+                                <table class="table table-bordered table-striped">
+                                    <thead class="thin-border-bottom">
+                                    <tr>
+                                        <th>
+                                            <i class="ace-icon fa fa-caret-right blue"></i>DC_NAME
+                                        </th>
+                                        <th>
+                                            <i class="ace-icon fa fa-caret-right blue"></i>DESCRIPTION
+                                        </th>
+                                        <th>
+                                            <i class="ace-icon fa fa-caret-right blue"></i>STATUS
+                                        </th>
+                                        <th>
+                                            <i class="ace-icon fa fa-caret-right blue"></i>OPERATIONS
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr ng-repeat="dc in unattached_dc">
+                                        <td ng-bind="dc.dcName"></td>
+                                        <td ng-bind="dc.dcDescription"></td>
+                                        <td>
+                                            <span class="label label-warning label-sm">未绑定</span>
+                                        <td>
+                                        	<a ng-click="addDc({{cluster.clusterName}},dc)">绑定</a>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+    </div>
+    <a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
+	    <i class="icon-double-angle-up icon-only bigger-110"></i>
+	</a>
+</div>
+
+
+
+
