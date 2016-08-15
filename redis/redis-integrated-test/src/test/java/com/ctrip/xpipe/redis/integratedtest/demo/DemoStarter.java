@@ -12,8 +12,8 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.integratedtest.multidc.AbstractMultiDcTest;
-import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 
 /**
  * @author wenchao.meng
@@ -106,7 +106,7 @@ public class DemoStarter extends AbstractMultiDcTest{
 
 		DcMeta dcMeta = getDcMeta(dc);
 		
-		MetaService metaService = createMetaService(dcMeta.getMetaServers());
+		MetaServerKeeperService metaService = createMetaService(dcMeta.getMetaServers());
 		LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcMeta);
 		
 		int count = 0;

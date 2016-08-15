@@ -27,6 +27,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
@@ -38,7 +39,6 @@ import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
-import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.thread.NamedThreadFactory;
@@ -90,15 +90,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private LeaderElectorManager leaderElectorManager;
 	
-	private MetaService metaService;
+	private MetaServerKeeperService metaService;
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, File baseDir, 
-			MetaService metaService, LeaderElectorManager leaderElectorManager){
+			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager){
 		this(currentKeeperMeta, baseDir, metaService, null, leaderElectorManager);
 	}
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, File baseDir, 
-			MetaService metaService, 
+			MetaServerKeeperService metaService, 
 			ScheduledExecutorService scheduled, 
 			LeaderElectorManager leaderElectorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
@@ -161,12 +161,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 	
 	private void getCurrentShardStatus() {
-		try{
-			ShardStatus shardStatus = metaService.getShardStatus(clusterId, shardId);
-			this.redisKeeperServerState.setShardStatus(shardStatus);
-		}catch(Exception e){
-			logger.error("[getCurrentShardStatus]" + this, e);
+		
+		ShardStatus shardStatus = metaService.getShardStatus(clusterId, shardId);
+		if(shardStatus == null){
+			logger.warn("[getCurrentShardStatus][null]");
+			return;
 		}
+		this.redisKeeperServerState.setShardStatus(shardStatus);
 	}
 
 	@Override

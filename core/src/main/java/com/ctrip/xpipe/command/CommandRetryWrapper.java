@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.command;
 
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,8 +71,8 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 						logger.info("[future cancel][skip retry]{}, cause:{}", command, future.cause());
 						return;
 					}
-					
-					logger.error("[operationComplete]" + command, commandFuture.cause());
+
+					logCause(commandFuture.cause());
 					
 					int waitMilli = retryWait.retryWaitMilli();
 					logger.info("[retry]{}, {},{}", executeCount.get(), waitMilli, command);
@@ -80,6 +81,18 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 				}
 			}
 		});
+	}
+
+	protected void logCause(Throwable cause) {
+		
+		if(cause instanceof CommandExecutionException){
+			CommandExecutionException cee = (CommandExecutionException) cause;
+			if(cee.getCause() instanceof IOException){
+				logger.info("[logCause]" + cee.getCause().getMessage());
+				return;
+			}
+		}
+		logger.error("[logCause]" + command, cause);
 	}
 
 	@Override

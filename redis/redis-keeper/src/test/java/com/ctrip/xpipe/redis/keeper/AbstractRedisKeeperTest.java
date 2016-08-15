@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
 
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -24,12 +25,12 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 import com.ctrip.xpipe.redis.keeper.spring.KeeperContextConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
@@ -43,7 +44,7 @@ import io.netty.buffer.ByteBuf;
  */
 public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
-	protected MetaService  metaService;
+	protected MetaServerKeeperService  metaService;
 	
 	private String keeperConfigFile = "keeper6666.xml";
 
@@ -54,7 +55,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		
 		doIdcInit();
 		
-		metaService = getRegistry().getComponent(MetaService.class);
+		metaService = getRegistry().getComponent(MetaServerKeeperService.class);
 		
 	}
 	
@@ -109,7 +110,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return createRedisKeeperServer(keeperMeta, metaService);
 	}
 
-	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaService metaService, File baseDir) throws Exception {
+	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaServerKeeperService metaService, File baseDir) throws Exception {
 
 		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper,
 				baseDir, metaService, getRegistry().getComponent(LeaderElectorManager.class));
@@ -119,7 +120,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	}
 
-	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaService metaService) throws Exception {
+	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaServerKeeperService metaService) throws Exception {
 		return createRedisKeeperServer(keeper, metaService, getReplicationStoreManagerBaseDir());
 	}
 

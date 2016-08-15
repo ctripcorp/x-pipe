@@ -29,12 +29,12 @@ import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaServerLocator;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaService;
-import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
@@ -171,7 +171,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		
 		startMetaServers(dcMeta);
 
-		MetaService metaService = createMetaService(dcMeta.getMetaServers());
+		
+		MetaServerKeeperService metaService = createMetaService(dcMeta.getMetaServers());
 		
 		LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcMeta);
 
@@ -227,7 +228,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	}
 
 
-	protected MetaService createMetaService(List<MetaServerMeta> metaServerMetas) {
+	protected MetaServerKeeperService createMetaService(List<MetaServerMeta> metaServerMetas) {
 
 		DefaultMetaServerLocator metaServerLocator = new DefaultMetaServerLocator();
 		metaServerLocator.setAddress(String.format("http://%s:%d", "localhost", metaServerMetas.get(0).getPort()));
@@ -306,7 +307,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		}
 	}
 
-	protected void startKeeper(KeeperMeta keeperMeta, MetaService metaService, LeaderElectorManager leaderElectorManager) throws Exception {
+	protected void startKeeper(KeeperMeta keeperMeta, MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager) throws Exception {
 
 		logger.info(remarkableMessage("[startKeeper]{}, {}"), keeperMeta);
 		File baseDir = new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort());

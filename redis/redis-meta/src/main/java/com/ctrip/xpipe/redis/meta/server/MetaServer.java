@@ -24,11 +24,11 @@ public interface MetaServer extends ClusterServer, TopElement{
 
 	KeeperMeta getUpstreamKeeper(String clusterId, String shardId) throws Exception;
 
-	ShardStatus getShardStatus(String clusterId, String shardId) throws Exception;
-
 	
 	void updateUpstream(String clusterId, String shardId, String upstream) throws Exception;
 	
+
+	ShardStatus getShardStatus(String clusterId, String shardId, ForwardInfo forwardInfo) throws Exception;
 
 	void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo);
 }

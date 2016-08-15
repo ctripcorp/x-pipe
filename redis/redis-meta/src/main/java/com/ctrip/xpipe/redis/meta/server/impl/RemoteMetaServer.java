@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
 
+
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
@@ -26,6 +29,7 @@ import com.ctrip.xpipe.redis.meta.server.rest.exception.CircularForwardException
 public class RemoteMetaServer extends AbstractRemoteClusterServer implements MetaServer{
 	
 	private String pingPath;
+	private String getShardStatusPath;
 
 	public RemoteMetaServer(int currentServerId, int serverId) {
 		super(currentServerId, serverId);
@@ -35,6 +39,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		super(currentServerId, serverId, clusterServerInfo);
 		
 		pingPath = String.format("%s/%s/%s", getHttpHost(), MetaServerKeeperService.PATH_PREFIX, MetaServerKeeperService.PATH_PING);
+		getShardStatusPath = String.format("%s/%s/%s", getHttpHost(), MetaServerKeeperService.PATH_PREFIX, MetaServerKeeperService.PATH_SHARD_STATUS);
 	}
 
 	@Override
@@ -52,11 +57,6 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
-	public ShardStatus getShardStatus(String clusterId, String shardId) throws Exception {
-		throw new UnsupportedOperationException();
-	}
-
 
 	@Override
 	public void updateUpstream(String clusterId, String shardId, String upstream) throws Exception {
@@ -65,9 +65,33 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 
 	@Override
 	public void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo) {
+		
+		checkCircularAndGetHttpHeaders(forwardInfo);
+		
+		logger.info("[ping][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
+
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
+		HttpEntity<KeeperInstanceMeta> entity = new HttpEntity<KeeperInstanceMeta>(keeperInstanceMeta, headers);
+		restTemplate.postForObject(pingPath, entity, String.class, clusterId, shardId);
+	}
+
+
+	@Override
+	public ShardStatus getShardStatus(String clusterId, String shardId, ForwardInfo forwardInfo) throws Exception {
+		
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
+		logger.info("[ping][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
+
+		HttpEntity<Void> entity = new HttpEntity<>(headers);
+		ResponseEntity<ShardStatus> response = restTemplate.exchange(getShardStatusPath, HttpMethod.GET, entity, ShardStatus.class, clusterId, shardId);
+		return response.getBody();
+	}
+
+	
+	private HttpHeaders checkCircularAndGetHttpHeaders(ForwardInfo forwardInfo) {
+		
 		checkCircular(forwardInfo);
 
-		logger.info("[ping][forward]{},{},{}", clusterId, shardId, forwardInfo);
 		if(forwardInfo == null){
 			forwardInfo = new ForwardInfo(ForwardType.FORWARD);
 		}
@@ -75,8 +99,8 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(MetaServerService.HTTP_HEADER_FOWRARD, Codec.DEFAULT.encode(forwardInfo));
-		HttpEntity<KeeperInstanceMeta> entity = new HttpEntity<KeeperInstanceMeta>(keeperInstanceMeta, headers);
-		restTemplate.postForObject(pingPath, entity, String.class, clusterId, shardId);
+		return headers;
+		
 	}
 
 	private void checkCircular(ForwardInfo forwardInfo) {
@@ -84,5 +108,5 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 			throw new CircularForwardException(forwardInfo, getCurrentServerId());
 		}
 	}
-	
+
 }

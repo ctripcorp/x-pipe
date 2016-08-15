@@ -105,11 +105,6 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		this.config = config;
 	}
 
-	@Override
-	public ShardStatus getShardStatus(String clusterId, String shardId) throws Exception {
-		
-		return new ShardStatus(getActiveKeeper(clusterId, shardId), getUpstreamKeeper(clusterId, shardId), getRedisMaster(clusterId, shardId));
-	}
 
 	@Override
 	public void updateUpstream(String clusterId, String shardId, String upstream) throws Exception {
@@ -122,16 +117,21 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 	@ClusterMovingMethod
 	@Override
+	public ShardStatus getShardStatus(String clusterId, String shardId, ForwardInfo forwardInfo) throws Exception {
+		
+		return new ShardStatus(getActiveKeeper(clusterId, shardId), getUpstreamKeeper(clusterId, shardId), getRedisMaster(clusterId, shardId));
+	}
+
+	@ClusterMovingMethod
+	@Override
 	public void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo) {
 		logger.info("[ping]{},{},{},{}", clusterId, shardId, keeperInstanceMeta, forwardInfo);
 		
 	}
 	
-	
 	@Override
 	protected void doSlotAdd(int slotId) {
 		super.doSlotAdd(slotId);
-		
 		currentMetaServerMeta.addSlot(slotId);
 	}
 	

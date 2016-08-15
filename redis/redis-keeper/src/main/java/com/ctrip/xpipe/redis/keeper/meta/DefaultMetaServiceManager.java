@@ -15,6 +15,7 @@ import org.unidal.tuple.Pair;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.utils.OsUtils;
 
@@ -29,7 +30,7 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 	public static int META_GET_INTERVAL = 5;
 	
 	@Autowired
-	private MetaService  metaService;
+	private MetaServerKeeperService  metaService;
 	
 	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount());
 	
@@ -104,7 +105,7 @@ public class DefaultMetaServiceManager extends AbstractObservable implements Met
 	}
 
 	
-	public void setMetaService(MetaService metaService) {
+	public void setMetaService(MetaServerKeeperService metaService) {
 		this.metaService = metaService;
 	}
 

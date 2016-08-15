@@ -160,8 +160,7 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 	@Override
 	public void importSlot(int slotId) {
 		
-		logger.info("[importSlot]{}", slotId);
-		addSlot(slotId);;
+		logger.info("[importSlot][doNothing]{}", slotId);
 	}
 
 	public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) throws Exception {

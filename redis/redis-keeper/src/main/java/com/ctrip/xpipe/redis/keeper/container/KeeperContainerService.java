@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
 
+
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -8,11 +9,11 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.meta.MetaService;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Lists;
@@ -33,7 +34,7 @@ public class KeeperContainerService {
     @Autowired
     private LeaderElectorManager leaderElectorManager;
     @Autowired
-    private MetaService metaService;
+    private MetaServerKeeperService metaService;
     @Autowired
     private KeeperContainerConfig keeperContainerConfig;
 
@@ -203,7 +204,7 @@ public class KeeperContainerService {
 
     private RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper,
                                                       File baseDir,
-                                                      MetaService metaService) throws Exception {
+                                                      MetaServerKeeperService metaService) throws Exception {
 
         RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper,
                 baseDir, metaService, leaderElectorManager);

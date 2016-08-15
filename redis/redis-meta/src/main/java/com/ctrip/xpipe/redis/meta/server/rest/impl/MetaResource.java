@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 
 
@@ -28,11 +27,6 @@ public class MetaResource extends AbstractController{
 	}
 
 	
-	@RequestMapping(path = "/{clusterId}/{shardId}", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public ShardStatus getClusterStatus(@PathVariable final String clusterId, @PathVariable final String shardId,
-			@RequestParam(name = "version", defaultValue = "0") long version) throws Exception {
-		return metaServer.getShardStatus(clusterId, shardId);
-	}
 
 	@RequestMapping( path = "/{clusterId}/{shardId}/keeper/master", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public Object getActiveKeeper(@PathVariable String clusterId, @PathVariable String shardId,

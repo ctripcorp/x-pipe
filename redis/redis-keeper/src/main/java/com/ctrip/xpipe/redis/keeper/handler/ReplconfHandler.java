@@ -37,7 +37,7 @@ public class ReplconfHandler extends AbstractCommandHandler{
 			if(redisClient instanceof RedisSlave){
 				((RedisSlave)redisClient).ack(Long.valueOf(args[1]));
 			}else{
-				logger.warn("[replconf ack received, but we are not slave]" + redisClient + "," + StringUtil.join(" ", args));
+				logger.warn("[replconf ack received, but client is not slave]" + redisClient + "," + StringUtil.join(" ", args));
 			}
 			return;
 		}else if("getack".equalsIgnoreCase(args[0])){

@@ -6,6 +6,8 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +20,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
+import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
@@ -40,19 +43,21 @@ import com.ctrip.xpipe.redis.meta.server.rest.exception.UnfoundAliveSererExcepti
 @RequestMapping(MetaServerService.PATH_PREFIX)
 public class DispatcherMetaServerController extends AbstractController{
 	
+	private static final String MODEL_META_SERVER = "MODEL_META_SERVER";
+	
 	@Autowired
 	public MetaServer currentMetaServer;
 	
 	@Autowired
 	private SlotManager slotManager;
 	
-
 	@Autowired
 	public ClusterServers<MetaServer> servers;
+	
+	@ModelAttribute
+	public void populateModel(@PathVariable final String clusterId, 
+			@RequestHeader(name = MetaServerService.HTTP_HEADER_FOWRARD, required = false) ForwardInfo forwardInfo, Model model){
 
-	@RequestMapping(path = MetaServerKeeperService.PATH_PING, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public void ping(@PathVariable String clusterId, @PathVariable String shardId, KeeperInstanceMeta keeperInstanceMeta, 
-			@RequestHeader(name = MetaServerService.HTTP_HEADER_FOWRARD, required = false) ForwardInfo forwardInfo) {
 		if(forwardInfo != null){
 			logger.info("[ping]{},{}", clusterId, forwardInfo);
 		}
@@ -60,6 +65,25 @@ public class DispatcherMetaServerController extends AbstractController{
 		if(metaServer == null){
 			throw new UnfoundAliveSererException(clusterId, slotManager.getServerIdByKey(clusterId), currentMetaServer.getServerId());
 		}
+		model.addAttribute(MODEL_META_SERVER, metaServer);
+		if(forwardInfo != null){
+			model.addAttribute(forwardInfo);
+		}
+	}
+	
+	
+	@RequestMapping(path = MetaServerKeeperService.PATH_SHARD_STATUS, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public ShardStatus getShardStatus(@PathVariable final String clusterId, @PathVariable final String shardId,
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) throws Exception {
+		
+		return metaServer.getShardStatus(clusterId, shardId, forwardInfo);
+	}
+
+
+	@RequestMapping(path = MetaServerKeeperService.PATH_PING, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public void ping(@PathVariable String clusterId, @PathVariable String shardId, KeeperInstanceMeta keeperInstanceMeta,
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute MetaServer metaServer) {
+		
 		metaServer.ping(clusterId, shardId, keeperInstanceMeta, forwardInfo);
 	}
 

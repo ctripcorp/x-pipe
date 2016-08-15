@@ -68,7 +68,7 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 		KeeperMeta oldActiveKeeper = currentMeta.getKeeperActive(clusterId, shardId);
 		
 		if(!currentMeta.updateKeeperActive(clusterId, shardId, activeKeeper)){
-			logger.info("[updateKeeperActive][keeper active not changed]");
+			logger.info("[keeperActiveElected][keeper active not changed]");
 		}
 		//make sure keeper in proper state
 		List<KeeperMeta> keepers = currentMeta.getKeepers(clusterId, shardId);
@@ -126,6 +126,7 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 			@Override
 			public void run() {
 				try {
+					logger.info("[run]" + command);
 					command.execute().sync();
 					notifyObservers(event);
 				} catch (Exception e) {

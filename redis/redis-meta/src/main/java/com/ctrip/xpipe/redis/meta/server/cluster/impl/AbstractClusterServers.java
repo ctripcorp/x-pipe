@@ -117,7 +117,7 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 
 	private void childrenChanged() throws Exception {
 
-		logger.info("[childrenChanged][{}]{}", currentServer, servers);
+		logger.debug("[childrenChanged][{}]{}", currentServer, servers);
 		
 		CuratorFramework client = zkClient.get();
 		List<String> children = client.getChildren().forPath(MetaZkConfig.getMetaServerRegisterPath());
@@ -129,7 +129,7 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 			byte []data = client.getData().forPath(MetaZkConfig.getMetaServerRegisterPath() + "/" + child);
 			ClusterServerInfo  info = Codec.DEFAULT.decode(data, ClusterServerInfo.class);
 			
-			logger.info("[childrenChanged]{},{}", serverId, info);
+			logger.debug("[childrenChanged]{},{}", serverId, info);
 			currentServers.add(serverId);
 
 			ClusterServer server = servers.get(serverId);

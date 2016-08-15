@@ -77,6 +77,8 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	public static final int REPLCONF_INTERVAL_MILLI = 1000;
 
+	public static final int PSYNC_RETRY_INTERVAL_MILLI = 2000;
+
 	// to avoid catch exception, \n should be identical on target platforms
 	private static byte[] NEW_LINE = "\n".getBytes();
 
@@ -291,14 +293,34 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		});
 	}
 
-	private void psyncCommand() throws CommandExecutionException {
+	private void psyncCommand(){
+		
+		if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
+			logger.info("[psyncCommand][stopped]{}", this);
+			return;
+		}
 
 		Psync psync = new Psync(clientPool, endpoint, replicationStoreManager);
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
-		psync.execute();
+		psync.execute().addListener(new CommandFutureListener<Object>() {
 
-		// TODO check and retry psync command
+			@Override
+			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+				
+				if(!commandFuture.isSuccess()){
+					logger.error("[operationComplete][psyncCommand][fail, retry]", commandFuture.cause());
+					scheduled.schedule(new Runnable() {
+						
+						@Override
+						public void run() {
+							psyncCommand();
+						}
+					}, PSYNC_RETRY_INTERVAL_MILLI, TimeUnit.MILLISECONDS);
+				}
+			}
+		});;
+		
 	}
 
 	private void listeningPortCommand() throws CommandExecutionException {

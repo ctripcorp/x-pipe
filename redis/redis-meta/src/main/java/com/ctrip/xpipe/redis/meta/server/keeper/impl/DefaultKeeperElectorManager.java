@@ -28,6 +28,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.meta.server.MetaServerEventsHandler;
+import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.exception.ZkException;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperLeaderElectAlgorithm;
@@ -54,6 +55,9 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 
 	@Autowired
 	private MetaServerEventsHandler metaServerEventsHandler;
+	
+	@Autowired
+	private CurrentClusterServer currentClusterServer;
 	
 	@Override
 	protected void doInitialize() throws Exception {
@@ -118,6 +122,7 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 			EnsurePath ensure = client.newNamespaceAwareEnsurePath(leaderLatchPath);
 			ensure.ensure(client.getZookeeperClient());
 
+			logger.info("[observeLeader]{}, {} , ({})", cluster.getId(), shard.getId(), currentClusterServer.getServerId());
 			List<String> children = client.getChildren().usingWatcher(new CuratorWatcher() {
 
 				@Override
@@ -127,7 +132,7 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 						logger.info("[cluster clean watch]{}", cluster.getId());
 						return;
 					}
-					logger.info("[process]" + event);
+					logger.info("[process]{}, {}, {}",  event, this.hashCode(), currentClusterServer.getServerId());
 					List<String> children = client.getChildren().usingWatcher(this).forPath(leaderLatchPath);
 					updateShardLeader(children, leaderLatchPath, cluster.getId(),shard.getId());
 				}
@@ -161,7 +166,7 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 			try {
 				watchCluster(nodeAdded.getNode());
 			} catch (Exception e) {
-				logger.error("[update]{}", args);
+				logger.error("[update]{}", e);
 			}
 		}
 
@@ -171,7 +176,7 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 			try {
 				unwatchCluster(nodeDeleted.getNode());
 			} catch (Exception e) {
-				logger.error("[update]{}", args);
+				logger.error("[update]{}", e);
 			}
 		}
 	}

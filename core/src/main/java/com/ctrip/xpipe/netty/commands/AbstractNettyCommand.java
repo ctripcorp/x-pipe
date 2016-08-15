@@ -35,6 +35,7 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 		
 		NettyClient nettyClient = null;
 		try {
+			logger.debug("[doExecute]{}", this);
 			nettyClient = clientPool.borrowObject();
 			ByteBuf byteBuf = getRequest();
 			doSendRequest(nettyClient, byteBuf);
