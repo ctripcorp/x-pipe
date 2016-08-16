@@ -1,0 +1,57 @@
+package com.ctrip.xpipe.pool;
+
+import java.net.InetSocketAddress;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.netty.commands.NettyClientFactory;
+import com.ctrip.xpipe.simpleserver.Server;
+
+import io.netty.channel.Channel;
+
+/**
+ * @author wenchao.meng
+ *
+ * Aug 16, 2016
+ */
+public class XpipeObjectPoolTest extends AbstractTest{
+	
+	private Server serverPort;
+	
+	@Before
+	public void before() throws Exception{
+		serverPort = startEchoServer();
+	}
+	
+	
+	@Test
+	public void testDeadBorrow() throws Exception{
+		
+		NettyClientFactory nettyClientFactory = new NettyClientFactory(new InetSocketAddress("localhost", serverPort.getPort()));
+		XpipeObjectPool<NettyClient> clientPool = new XpipeObjectPool<>(nettyClientFactory);
+		
+		clientPool.initialize();
+		clientPool.start();
+		
+		NettyClient nettyClient = clientPool.borrowObject();
+		Channel channel1 = nettyClient.channel();
+		
+		clientPool.returnObject(nettyClient);
+		
+		NettyClient nettyClient2  = clientPool.borrowObject();
+		Assert.assertEquals(channel1, nettyClient2.channel());
+		
+		logger.info("[testDeadBorrow][close client]");
+		
+		channel1.close();
+		nettyClient2 = clientPool.borrowObject();
+		Assert.assertNotEquals(channel1, nettyClient2.channel());
+		
+		
+	}
+
+}
