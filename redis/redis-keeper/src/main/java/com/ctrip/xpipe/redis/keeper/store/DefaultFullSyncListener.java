@@ -12,9 +12,11 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
 
 /**
  * @author wenchao.meng
@@ -24,6 +26,8 @@ import io.netty.buffer.ByteBuf;
 public class DefaultFullSyncListener implements FullSyncListener{
 	
 	private static Logger logger = LoggerFactory.getLogger(DefaultFullSyncListener.class);
+	
+	private int waitFlushTimeout = 50000;
 	
 	private RedisSlave redisSlave;
 	
@@ -46,7 +50,18 @@ public class DefaultFullSyncListener implements FullSyncListener{
 			return;
 		}
 		writtenLength.addAndGet(len);
-		redisSlave.writeFile(fileChannel, pos, len);
+		ChannelFuture future = redisSlave.writeFile(fileChannel, pos, len);
+		try {
+			future.await(waitFlushTimeout);
+		} catch (InterruptedException e) {
+			logger.error("[onFileData]" + fileChannel + "," + pos + "," + len, e);
+		}
+		if(!future.isDone()){
+			throw new RedisKeeperRuntimeException("[onFileData][flush timeout]" + fileChannel+ "," + pos + "," + len);
+		}
+		if(!future.isSuccess()){
+			throw new RedisKeeperRuntimeException("[onFileData][flush fail]" + fileChannel+ "," + pos + "," + len);
+		}
 	}
 
 	

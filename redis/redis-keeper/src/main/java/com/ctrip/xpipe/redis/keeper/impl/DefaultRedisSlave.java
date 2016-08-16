@@ -28,6 +28,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 
 /**
  * @author wenchao.meng
@@ -91,9 +92,9 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public void writeFile(FileChannel fileChannel, long pos, long len) {
+	public ChannelFuture writeFile(FileChannel fileChannel, long pos, long len) {
 		
-		channel().writeAndFlush(new NotClosableFileRegion(fileChannel, pos, len));
+		return channel().writeAndFlush(new NotClosableFileRegion(fileChannel, pos, len));
 	}
 
 	@Override
