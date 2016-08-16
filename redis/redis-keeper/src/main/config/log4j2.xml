@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration status="trace" monitorInterval="5" packages="com.ctrip.xpipe.utils">
+<configuration status="info" monitorInterval="5" packages="com.ctrip.xpipe.utils">
 
     <appenders>
-        <console name="Console" target="SYSTEM_OUT">
+        <console name="console" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
         </console>
 
-        <RollingFile name="RollingFileInfo" fileName="/opt/logs/100004374/xpipe-console.log"
-                     filePattern="/opt/logs/100004374/xpipe-console-%d{yyyy-MM-dd}-%i.log">
+        <RollingFile name="rollingFileInfo" fileName="/opt/logs/100004376/keepercontainer.log"
+                     filePattern="/opt/logs/100004376/keepercontainer-%d{yyyy-MM-dd}-%i.log">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="500 MB"/>
             </Policies>
-        </RollingFile>	
+        </RollingFile>
 
-		<CatAppender4Log4j2 name="catAppender"/>
+		<CatAppender4Log4j2 name="catAppender4Log4j2"/>
+
     </appenders>
 
     <loggers>
@@ -27,8 +28,8 @@
         <logger name="io.netty" level="INFO">
         </logger>
         <root level="INFO">
-            <appender-ref ref="RollingFileInfo"/>
-            <appender-ref ref="catAppender"/>
+            <appender-ref ref="rollingFileInfo"/>
+            <appender-ref ref="catAppender4Log4j2"/>
         </root>
     </loggers>
 

@@ -42,7 +42,10 @@ public class XpipeKeyedObjectPool<K, V> extends AbstractLifecycle implements Top
 	
 	@Override
 	protected void doInitialize() throws Exception {
-		this.objectPool = new GenericKeyedObjectPool<>(pooledObjectFactory, config);
+		GenericKeyedObjectPool<K, V> genericKeyedObjectPool = new GenericKeyedObjectPool<>(pooledObjectFactory, config);
+		genericKeyedObjectPool.setTestOnBorrow(true);
+		genericKeyedObjectPool.setTestOnCreate(true);
+		this.objectPool = genericKeyedObjectPool;
 	}
 	
 	@Override

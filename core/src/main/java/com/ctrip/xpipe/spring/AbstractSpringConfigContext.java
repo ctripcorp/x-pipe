@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
+import com.ctrip.xpipe.exception.GlobalExceptionHandler;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 
 /**
@@ -23,6 +24,10 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	public static ApplicationContext applicationContext;
+	
+	static{
+		Thread.setDefaultUncaughtExceptionHandler(new GlobalExceptionHandler());
+	}
 
 	@Bean
 	public SpringComponentLifecycleManager getSpringComponentLifecycleManager(){

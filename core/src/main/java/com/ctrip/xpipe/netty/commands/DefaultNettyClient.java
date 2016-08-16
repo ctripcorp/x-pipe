@@ -50,6 +50,8 @@ public class DefaultNettyClient implements NettyClient{
 			public void operationComplete(ChannelFuture future) throws Exception {
 				if(future.isSuccess()){
 					receivers.offer(byteBufReceiver);
+				}else{
+					logger.error("[sendRequest][fail]" + channel, future.cause());
 				}
 			}
 		});

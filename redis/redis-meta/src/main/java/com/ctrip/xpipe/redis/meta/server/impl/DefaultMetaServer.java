@@ -23,7 +23,6 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaServerMetaManager;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.utils.IpUtils;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.site.lookup.util.StringUtils;
 
 /**

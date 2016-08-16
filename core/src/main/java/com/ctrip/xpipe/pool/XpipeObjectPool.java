@@ -33,7 +33,11 @@ public class XpipeObjectPool<T> extends AbstractLifecycle implements SimpleObjec
 	
 	@Override
 	protected void doInitialize() throws Exception {
-		objectPool = new GenericObjectPool<>(factory, config);
+		
+		GenericObjectPool<T> genericObjectPool = new GenericObjectPool<>(factory, config);
+		genericObjectPool.setTestOnBorrow(true);
+		genericObjectPool.setTestOnCreate(true);
+		this.objectPool = genericObjectPool;
 	}
 	
 	public T borrowObject() throws BorrowObjectException {

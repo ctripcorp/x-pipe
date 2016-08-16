@@ -204,6 +204,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 	
 	public void close() throws IOException {
+		logger.info("[close]{}", this);
 		closed.set(true);
 		redisClient.close();
 		psyncExecutor.shutdownNow();

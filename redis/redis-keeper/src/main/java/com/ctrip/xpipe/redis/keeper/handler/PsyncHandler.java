@@ -46,7 +46,16 @@ public class PsyncHandler extends AbstractCommandHandler{
 			
 			@Override
 			public void run() {
-				innerDoHandle(args, redisSlave, redisKeeperServer);
+				try{
+					innerDoHandle(args, redisSlave, redisKeeperServer);
+				}catch(Throwable th){
+					logger.error("[run]" + redisClient, th);
+					try {
+						redisSlave.close();
+					} catch (IOException e) {
+						logger.error("[run][close]" + redisSlave, th);
+					}
+				}
 			}
 		});
 	}

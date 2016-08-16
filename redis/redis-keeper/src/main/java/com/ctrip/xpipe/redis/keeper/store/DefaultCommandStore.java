@@ -245,6 +245,11 @@ public class DefaultCommandStore implements CommandStore {
 		public File getCurFile() {
 			return curFile;
 		}
+		
+		@Override
+		public String toString() {
+			return "curFile:" + curFile;
+		}
 
 	}
 
@@ -280,12 +285,15 @@ public class DefaultCommandStore implements CommandStore {
 			listener.beforeCommand();
 		}
 
+		logger.info("[addCommandsListener] from offset {}, {}", offset, cmdReader);
+		
 		try {
 			// TODO stop notifier
 			while (listener.isOpen()) {
 				int read = 0;
 				ByteBuffer dst = ByteBuffer.allocate(4096);
 				read = cmdReader.read(dst);
+				logger.debug("[addCommandsListener] {}", read);
 				if (read > 0) {
 					dst.flip();
 					listener.onCommand(Unpooled.wrappedBuffer(dst));

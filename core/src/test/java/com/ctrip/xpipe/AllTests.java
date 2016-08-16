@@ -19,6 +19,7 @@ import com.ctrip.xpipe.lifecycle.SpringComponentRegistryTest;
 import com.ctrip.xpipe.netty.commands.RequestResponseCommandTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
+import com.ctrip.xpipe.pool.XpipeObjectPoolTest;
 import com.ctrip.xpipe.utils.FileUtilsTest;
 import com.ctrip.xpipe.utils.OffsetNotifierTest;
 
@@ -29,6 +30,7 @@ import com.ctrip.xpipe.utils.OffsetNotifierTest;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+	XpipeObjectPoolTest.class,
 	DefaultCommandFutureTest.class,
 	DefaultEndPointTest.class,
 	ByteArrayOutputStreamPayloadTest.class,

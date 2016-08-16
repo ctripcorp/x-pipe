@@ -71,6 +71,7 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 					innerDoHandle(args, redisClient, handler);
 				} catch (Exception e) {
 					logger.error("Error process command {} for client {}", Arrays.asList(args), redisClient, e);
+					redisClient.sendMessage(new RedisErrorParser("error:" + e.getMessage()).format());
 				}
 			}
 

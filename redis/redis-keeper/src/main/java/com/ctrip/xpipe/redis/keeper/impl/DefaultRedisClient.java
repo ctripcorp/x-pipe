@@ -189,6 +189,7 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 
 	@Override
 	public void close() {
+		logger.info("[close]{}", this);
 		channel.close();
 		nonPsyncExecutor.shutdownNow();
 	}
