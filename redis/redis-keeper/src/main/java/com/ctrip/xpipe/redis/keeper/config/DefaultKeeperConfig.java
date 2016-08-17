@@ -11,7 +11,13 @@ import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
  */
 @Component
 public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperConfig {
+	
 
+	public static final String KEY_REPLICATION_STORE_GC_INTERVAL_SECONDS = "replicationstore.gc.interval.seconds";
+	public static final String KEY_REPLICATION_STORE_COMMANDFILE_SIZE = "replicationstore.commandfile.size";
+	public static final String KEY_REPLICATION_STORE_COMMANDFILE_NUM_KEEP = "replicationstore.commandfile.num.keep";
+	public static final String KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB = "replicationstore.max.commands.to.transfer";
+	
 	@Override
 	public int getMetaServerConnectTimeout() {
 		return 2000;
@@ -22,10 +28,6 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 		return 2000;
 	}
 
-	@Override
-	public int getRedisCommandFileSize() {
-		return 20;
-	}
 
 	@Override
 	public int getMetaRefreshIntervalMillis() {
@@ -34,17 +36,21 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public int getReplicationStoreGcIntervalSeconds() {
-		return 10;
+		return getIntProperty(KEY_REPLICATION_STORE_GC_INTERVAL_SECONDS, 2);
 	}
 
 	@Override
-	public int getReplicationStoreCommandFileToKeep() {
-		return 2;
+	public int getReplicationStoreCommandFileSize() {
+		return getIntProperty(KEY_REPLICATION_STORE_COMMANDFILE_SIZE, 20);
 	}
 
 	@Override
-	public long getReplicationStoreCommandSizeAfterRdbBeforeFullSyncThreshold() {
-		return 100;
+	public int getReplicationStoreCommandFileNumToKeep() {
+		return getIntProperty(KEY_REPLICATION_STORE_COMMANDFILE_NUM_KEEP, 2);
 	}
 
+	@Override
+	public long getReplicationStoreMaxCommandsToTransferBeforeCreateRdb() {
+		return getIntProperty(KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB, 1000);
+	}
 }

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.multidc.manul;
+package com.ctrip.xpipe.redis.integratedtest.full.multidc.manul;
 
 
 import java.io.File;
@@ -10,7 +10,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.integratedtest.multidc.AbstractMultiDcTest;
+import com.ctrip.xpipe.redis.integratedtest.full.multidc.AbstractMultiDcTest;
 
 /**
  * @author wenchao.meng

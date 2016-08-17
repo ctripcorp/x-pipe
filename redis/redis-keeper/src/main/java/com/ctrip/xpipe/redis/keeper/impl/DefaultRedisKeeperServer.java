@@ -37,6 +37,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
@@ -84,6 +85,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private final String clusterId, shardId;
 	
 	private volatile RedisKeeperServerState redisKeeperServerState;
+	private KeeperConfig keeperConfig; 
 	
 	private KeeperMeta currentKeeperMeta;
 	private LeaderElector leaderElector;
@@ -92,19 +94,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private MetaServerKeeperService metaService;
 
-	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, File baseDir, 
+	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
 			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager){
-		this(currentKeeperMeta, baseDir, metaService, null, leaderElectorManager);
+		this(currentKeeperMeta, keeperConfig, baseDir, metaService, null, leaderElectorManager);
 	}
 
-	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, File baseDir, 
+	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
 			MetaServerKeeperService metaService, 
 			ScheduledExecutorService scheduled, 
 			LeaderElectorManager leaderElectorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
 		this.shardId = currentKeeperMeta.parent().getId();
 		this.currentKeeperMeta = currentKeeperMeta;
-		this.replicationStoreManager = new DefaultReplicationStoreManager(clusterId, shardId, baseDir);
+		this.keeperConfig = keeperConfig;
+		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, baseDir);
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
 		if(scheduled == null){
@@ -161,13 +164,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 	
 	private void getCurrentShardStatus() {
-		
-		ShardStatus shardStatus = metaService.getShardStatus(clusterId, shardId);
-		if(shardStatus == null){
-			logger.warn("[getCurrentShardStatus][null]");
-			return;
+		try{
+			ShardStatus shardStatus = metaService.getShardStatus(clusterId, shardId);
+			if(shardStatus == null){
+				logger.warn("[getCurrentShardStatus][null]");
+				return;
+			}
+			this.redisKeeperServerState.setShardStatus(shardStatus);
+		}catch(Exception e){
+			logger.error("[getCurrentShardStatus]" + clusterId +"," + shardId, e);
 		}
-		this.redisKeeperServerState.setShardStatus(shardStatus);
 	}
 
 	@Override
@@ -432,6 +438,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public KeeperInstanceMeta getKeeperInstanceMeta() {
 		return new KeeperInstanceMeta(clusterId, shardId, currentKeeperMeta);
+	}
+	
+	public KeeperConfig getKeeperConfig() {
+		return keeperConfig;
 	}
 
 	@Override

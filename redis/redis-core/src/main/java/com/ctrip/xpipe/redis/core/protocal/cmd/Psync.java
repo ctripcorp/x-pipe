@@ -32,7 +32,7 @@ public class Psync extends AbstractPsync {
 		currentReplicationStore = getCurrentReplicationStore();
 	}
 	
-	@Override
+	@Override		
 	protected ReplicationStore getCurrentReplicationStore() {
 		
 		try {
@@ -51,11 +51,11 @@ public class Psync extends AbstractPsync {
 	
 	@Override
 	protected void doWhenFullSyncToNonFreshReplicationStore(String masterRunid) throws IOException {
-		logger.info("[handleResponse][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
 		
 		ReplicationStore oldStore = currentReplicationStore;
 		long newKeeperBeginOffset = ReplicationStoreMeta.DEFAULT_KEEPER_BEGIN_OFFSET;
 		if(oldStore != null){
+			logger.info("[doWhenFullSyncToNonFreshReplicationStore][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
 			try {
 				oldStore.close();
 			} catch (IOException e) {
@@ -64,7 +64,7 @@ public class Psync extends AbstractPsync {
 			newKeeperBeginOffset = oldStore.nextNonOverlappingKeeperBeginOffset();
 			oldStore.delete();
 		}
-		logger.info("[handleRedisResponse][set keepermeta]{}, {}", masterRunid, newKeeperBeginOffset);
+		logger.info("[doWhenFullSyncToNonFreshReplicationStore][set keepermeta]{}, {}", masterRunid, newKeeperBeginOffset);
 		currentReplicationStore = createReplicationStore(masterRunid, newKeeperBeginOffset);
 		notifyReFullSync();
 	}

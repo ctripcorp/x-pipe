@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.redis.core.store.CommandStore;
+import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
@@ -60,7 +61,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	public DefaultReplicationStore(File baseDir, KeeperConfig config) throws IOException {
 		this.baseDir = baseDir;
-		this.cmdFileSize = config.getRedisCommandFileSize();
+		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.config = config;
 
 		metaStore = new DefaultMetaStore(baseDir);
@@ -143,7 +144,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public long getEndOffset() {
-		if (cmdStore == null) {
+		if (metaStore == null || metaStore.beginOffset() == null) {
 			// TODO
 			return -2L;
 		} else {
@@ -183,8 +184,8 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	private boolean canDeleteCmdFile(long lowestReadingOffset, long fileStartOffset, long fileSize) {
-		return fileStartOffset < lowestReadingOffset
-				&& cmdStore.totalLength() - (fileStartOffset + fileSize) > cmdFileSize * config.getReplicationStoreCommandFileToKeep();
+		return (fileStartOffset + fileSize < lowestReadingOffset)
+				&& cmdStore.totalLength() - (fileStartOffset + fileSize) > cmdFileSize * config.getReplicationStoreCommandFileNumToKeep();
 	}
 
 	private File[] rdbFilesOnFS() {
@@ -210,7 +211,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	private long maxCmdKeeperOffset() {
-		return metaStore.getKeeperBeginOffset() + cmdStore.totalLength();
+		return metaStore.getKeeperBeginOffset() + (cmdStore == null ? 0 : cmdStore.totalLength());
 	}
 
 	private FullSyncContext lockAndCheckIfFullSyncPossible() {
@@ -228,7 +229,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 			/**
 			 * rdb and cmd is continuous AND not so much cmd after rdb
 			 */
-			long cmdAfterRdbThreshold = config.getReplicationStoreCommandSizeAfterRdbBeforeFullSyncThreshold();
+			long cmdAfterRdbThreshold = config.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
 			boolean fullSyncPossible = minCmdKeeperOffset <= rdbLastKeeperOffset + 1 && maxCmdKeeperOffset - rdbLastKeeperOffset < cmdAfterRdbThreshold;
 
 			log.info("[isFullSyncPossible] {}, {} <= {} + 1 && {} - {} < {}", //
@@ -266,13 +267,21 @@ public class DefaultReplicationStore implements ReplicationStore {
 			}
 
 			if (fullSyncListener.isOpen()) {
-				getCommandStore().addCommandsListener(rdbStore.lastKeeperOffset() + 1, fullSyncListener);
+				addCommandsListener(rdbStore.lastKeeperOffset() + 1, fullSyncListener);
 			}
 			return true;
 		} else {
 			return false;
 		}
 	}
+
+	@Override
+	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
+		
+		long commandOffset = offset - getMetaStore().getKeeperBeginOffset();
+		getCommandStore().addCommandsListener(commandOffset, commandsListener);
+	}
+
 
 	@Override
 	public boolean isFresh() {

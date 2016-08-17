@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.multidc;
+package com.ctrip.xpipe.redis.integratedtest.full.multidc;
 
 
 import org.junit.Test;

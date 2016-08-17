@@ -30,6 +30,8 @@ public interface ReplicationStore extends Closeable {
 	// full sync
 	boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException;
 
+	void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException;
+
 	// meta related
 	MetaStore getMetaStore();
 

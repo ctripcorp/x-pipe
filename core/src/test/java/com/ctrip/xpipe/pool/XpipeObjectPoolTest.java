@@ -31,7 +31,7 @@ public class XpipeObjectPoolTest extends AbstractTest{
 	@Test
 	public void testDeadBorrow() throws Exception{
 		
-		NettyClientFactory nettyClientFactory = new NettyClientFactory(new InetSocketAddress("localhost", serverPort.getPort()));
+		NettyClientFactory nettyClientFactory = new NettyClientFactory(new InetSocketAddress("127.0.0.1", serverPort.getPort()));
 		XpipeObjectPool<NettyClient> clientPool = new XpipeObjectPool<>(nettyClientFactory);
 		
 		clientPool.initialize();

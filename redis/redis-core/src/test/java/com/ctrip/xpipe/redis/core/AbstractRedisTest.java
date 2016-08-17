@@ -210,7 +210,12 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		return getXpipeMeta().getDcs().get(dc).getClusters().get(clusterId).getShards().get(shardId).getKeepers();
 		
 	}
-	
+
+	protected List<RedisMeta> getDcRedises(String dc, String clusterId, String shardId){
+		return getXpipeMeta().getDcs().get(dc).getClusters().get(clusterId).getShards().get(shardId).getRedises();
+		
+	}
+
 	protected List<DcMeta> getDcMetas(){
 		
 		List<DcMeta> result = new LinkedList<>();
@@ -233,6 +238,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		}
 		return null;
 	}
+	
 	
 	protected DcMeta activeDc(){
 		

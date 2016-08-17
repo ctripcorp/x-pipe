@@ -3,11 +3,13 @@ package com.ctrip.xpipe.redis.integratedtest;
 
 
 
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-import com.ctrip.xpipe.redis.integratedtest.multidc.AllMultiDcTests;
-import com.ctrip.xpipe.redis.integratedtest.singledc.AllSingleDcTests;
+
+import com.ctrip.xpipe.redis.integratedtest.full.multidc.AllMultiDcTests;
+import com.ctrip.xpipe.redis.integratedtest.full.singledc.AllSingleDcTests;
 
 /**
  * @author wenchao.meng
@@ -19,6 +21,6 @@ import com.ctrip.xpipe.redis.integratedtest.singledc.AllSingleDcTests;
 	AllMultiDcTests.class,
 	AllSingleDcTests.class
 })
-public class AllTestersV1 {
+public class AllTesters {
 
 }

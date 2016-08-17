@@ -1,4 +1,5 @@
-package com.ctrip.xpipe.redis.integratedtest;
+package com.ctrip.xpipe.redis.integratedtest.full;
+
 
 
 import org.junit.Assert;
@@ -14,17 +15,8 @@ import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServer;
  *
  * Jun 22, 2016
  */
-public abstract class AbstractIntegratedTestTemplate extends AbstractIntegratedTest{
+public abstract class AbstractIntegratedTestTemplate extends AbstractFullIntegrated{
 	
-	
-	protected void sendMessageToMasterAndTestSlaveRedis() {
-		
-		sendRandomMessage(getRedisMaster(), getTestMessageCount());
-		sleep(6000);
-		assertRedisEquals(getRedisMaster(), getRedisSlaves());
-	}
-
-
 	
 	@SuppressWarnings("unused")
 	protected void failOverTestTemplate() throws Exception {

@@ -39,7 +39,7 @@ public class SimpleTest extends AbstractTest{
 	public void testJson(){
 		
 		ReplicationStoreMeta meta = new ReplicationStoreMeta();
-		meta.setBeginOffset(100);
+		meta.setBeginOffset(100L);
 		meta.setMasterRunid("abdc");
 		
 		String json = JSON.toJSONString(meta);

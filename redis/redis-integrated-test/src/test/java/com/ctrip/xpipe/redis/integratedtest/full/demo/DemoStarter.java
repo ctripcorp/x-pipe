@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.demo;
+package com.ctrip.xpipe.redis.integratedtest.full.demo;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
-import com.ctrip.xpipe.redis.integratedtest.multidc.AbstractMultiDcTest;
+import com.ctrip.xpipe.redis.integratedtest.full.multidc.AbstractMultiDcTest;
 
 /**
  * @author wenchao.meng

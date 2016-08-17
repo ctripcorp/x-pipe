@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import org.junit.Before;
@@ -23,7 +25,10 @@ import static org.mockito.Mockito.*;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class KeeperContainerServiceTest {
-    @Mock
+
+    private KeeperConfig keeperConfig = new DefaultKeeperConfig();
+
+	@Mock
     private LeaderElectorManager leaderElectorManager;
     @Mock
     private MetaServerKeeperService metaService;
@@ -44,7 +49,9 @@ public class KeeperContainerServiceTest {
 
         ReflectionTestUtils.setField(keeperContainerService, "leaderElectorManager", leaderElectorManager);
         ReflectionTestUtils.setField(keeperContainerService, "metaService", metaService);
+        ReflectionTestUtils.setField(keeperContainerService, "leaderElectorManager", leaderElectorManager);
         ReflectionTestUtils.setField(keeperContainerService, "keeperContainerConfig", keeperContainerConfig);
+        ReflectionTestUtils.setField(keeperContainerService, "keeperConfig", keeperConfig);
 
         someCluster = "someCluster";
         someShard = "someShard";

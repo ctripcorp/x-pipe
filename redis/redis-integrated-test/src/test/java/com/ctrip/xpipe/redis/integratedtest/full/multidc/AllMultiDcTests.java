@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.singledc;
+package com.ctrip.xpipe.redis.integratedtest.full.multidc;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -12,9 +12,9 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
 	DataSyncTest.class,
-	KeeperFailoverTest.class,
-	RedisFailOverTest.class	
+	RedisFailOverTest.class
+	
 })
-public class AllSingleDcTests {
+public class AllMultiDcTests {
 
 }

@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 
 /**
  * @author wenchao.meng
@@ -61,6 +62,8 @@ public class PsyncHandler extends AbstractCommandHandler{
 	}
 	
 	private void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) {
+		
+		KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
 		if(args[0].equals("?")){
 			doFullSync(redisSlave);
 		}else if(args[0].equals(redisKeeperServer.getKeeperRunid())){
@@ -71,18 +74,16 @@ public class PsyncHandler extends AbstractCommandHandler{
 			Long offsetRequest = Long.valueOf(args[1]);
 			
 			if(offsetRequest < beginOffset){
-				logger.info("[doHandle][offset < beginOffset][begin, end, request]{}, {}, {}" , beginOffset , endOffset);
+				logger.info("[innerDoHandle][offset < beginOffset][begin, end, request]{}, {}, {}" , beginOffset , endOffset, offsetRequest);
 				doFullSync(redisSlave);
 			}else if(offsetRequest > endOffset +1){
-				
-				logger.info("[run][wait for offset]{}, {} > {} + 1", redisSlave, offsetRequest, endOffset);
+				logger.info("[innerDoHandle][wait for offset]{}, {} > {} + 1", redisSlave, offsetRequest, endOffset);
 				waitForoffset(args, redisSlave, offsetRequest);
 			}else{
-				// TODO
-				long maxOffsetLagBeforeFullSync = 10;
-				if(endOffset - offsetRequest < maxOffsetLagBeforeFullSync) {
+				if(endOffset - offsetRequest < keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb()) {
 					doPartialSync(redisSlave, offsetRequest);
 				} else {
+					logger.info("[innerDoHandle][too much commands to transfer]{} - {} < {}", endOffset, offsetRequest, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());
 					doFullSync(redisSlave);
 				}
 			}

@@ -21,7 +21,7 @@ public interface MetaStore {
 	 * 
 	 * @return
 	 */
-	long beginOffset();
+	Long beginOffset();
 	
 	void setMasterAddress(DefaultEndPoint endpoint) throws IOException;
 	

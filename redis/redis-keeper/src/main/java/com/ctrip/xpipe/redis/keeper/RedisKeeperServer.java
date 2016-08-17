@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 
 import io.netty.channel.Channel;
@@ -70,4 +71,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	void fullSyncToSlave(RedisSlave redisSlave) throws IOException;
 	
 	KeeperInstanceMeta getKeeperInstanceMeta();
+	
+	KeeperConfig getKeeperConfig();
 }

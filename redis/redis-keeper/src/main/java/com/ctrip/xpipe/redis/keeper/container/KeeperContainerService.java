@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
@@ -31,6 +32,8 @@ import java.util.Set;
  */
 @Service
 public class KeeperContainerService {
+	@Autowired
+	KeeperConfig keeperConfig;
     @Autowired
     private LeaderElectorManager leaderElectorManager;
     @Autowired
@@ -206,7 +209,7 @@ public class KeeperContainerService {
                                                       File baseDir,
                                                       MetaServerKeeperService metaService) throws Exception {
 
-        RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper,
+        RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper, keeperConfig,
                 baseDir, metaService, leaderElectorManager);
 
         register(redisKeeperServer);

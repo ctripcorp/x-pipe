@@ -23,7 +23,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
  *         Jul 26, 2016 11:23:22 AM
  */
 public class DefaultMetaStore implements MetaStore {
-
+	
 	private static final String META_FILE = "meta.json";
 
 	private static final String ROOT_FILE_PATTERN = "root-%s.json";
@@ -44,7 +44,7 @@ public class DefaultMetaStore implements MetaStore {
 	}
 
 	@Override
-	public long beginOffset() {
+	public Long beginOffset() {
 		return metaRef.get().getBeginOffset();
 	}
 
@@ -244,6 +244,11 @@ public class DefaultMetaStore implements MetaStore {
 	}
 
 	private long redisOffsetToKeeperOffset(long redisOffset, ReplicationStoreMeta meta) {
+		
+		if(meta.getBeginOffset() == null){
+			log.info("[redisOffsetToKeeperOffset][first time create rdb, rdb end set 1]");
+			return meta.getKeeperBeginOffset() - 1; 
+		}
 		return redisOffset - meta.getBeginOffset() + meta.getKeeperBeginOffset();
 	}
 

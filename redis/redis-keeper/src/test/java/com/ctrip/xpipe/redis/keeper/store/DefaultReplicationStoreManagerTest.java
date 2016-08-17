@@ -29,7 +29,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest{
 		File baseDir = new File(getTestFileDir());
 		String clusterId = "cluster1";
 		String shardId = "shard1";
-		DefaultReplicationStoreManager mgr = new DefaultReplicationStoreManager(clusterId, shardId, baseDir);
+		DefaultReplicationStoreManager mgr = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId, shardId, baseDir);
 
 		ReplicationStore currentStore = mgr.getCurrent();
 		assertNull(currentStore);
@@ -52,7 +52,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest{
 		cmdBuf.writeByte(9);
 		newCurrentStore.getCommandStore().appendCommands(cmdBuf);
 
-		DefaultReplicationStoreManager mgr2 = new DefaultReplicationStoreManager(clusterId, shardId, baseDir);
+		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId, shardId, baseDir);;
 		assertEquals(metaStore.getMasterRunid(), mgr2.getCurrent().getMetaStore().getMasterRunid());
 		assertEquals(metaStore.getKeeperBeginOffset(), mgr2.getCurrent().getMetaStore().getKeeperBeginOffset());
 		assertEquals(metaStore.getMasterAddress(), mgr2.getCurrent().getMetaStore().getMasterAddress());

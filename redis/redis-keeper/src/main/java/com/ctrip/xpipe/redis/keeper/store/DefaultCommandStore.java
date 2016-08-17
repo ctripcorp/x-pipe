@@ -141,6 +141,10 @@ public class DefaultCommandStore implements CommandStore {
 				}
 			}
 		}
+		
+		for(File file : files){
+			logger.info("[findFileForOffset]{}, {}", file.getName(), file.length());
+		}
 		return null;
 	}
 

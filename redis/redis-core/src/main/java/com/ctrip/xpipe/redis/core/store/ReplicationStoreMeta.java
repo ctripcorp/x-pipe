@@ -13,11 +13,11 @@ public class ReplicationStoreMeta {
 
 	private String masterRunid;
 	private DefaultEndPoint masterAddress;
-	private long beginOffset;
+	private Long beginOffset;
 	private String rdbFile;
 	private long rdbFileSize;
 	// last offset of rdb in keeper coordinate
-	private long rdbLastKeeperOffset;
+	private Long rdbLastKeeperOffset;
 	private String cmdFilePrefix;
 
 	private boolean active;
@@ -82,11 +82,11 @@ public class ReplicationStoreMeta {
 		this.masterAddress = masterAddress;
 	}
 
-	public long getBeginOffset() {
+	public Long getBeginOffset() {
 		return beginOffset;
 	}
 
-	public void setBeginOffset(long beginOffset) {
+	public void setBeginOffset(Long beginOffset) {
 		this.beginOffset = beginOffset;
 	}
 
@@ -121,11 +121,11 @@ public class ReplicationStoreMeta {
 		this.cmdFilePrefix = cmdFilePrefix;
 	}
 
-	public long getRdbLastKeeperOffset() {
+	public Long getRdbLastKeeperOffset() {
 		return rdbLastKeeperOffset;
 	}
 
-	public void setRdbLastKeeperOffset(long rdbLastKeeperOffset) {
+	public void setRdbLastKeeperOffset(Long rdbLastKeeperOffset) {
 		this.rdbLastKeeperOffset = rdbLastKeeperOffset;
 	}
 	

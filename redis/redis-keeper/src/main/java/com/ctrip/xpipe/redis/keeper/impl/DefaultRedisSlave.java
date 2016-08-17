@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.netty.ChannelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -124,6 +125,11 @@ public class DefaultRedisSlave implements RedisSlave {
 		
 		logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
 		slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
+		try {
+			getRedisKeeperServer().getReplicationStore().addCommandsListener(beginOffset, this);
+		} catch (IOException e) {
+			throw new RedisKeeperRuntimeException("[beginWriteCommands]" + beginOffset + "," + this, e);
+		}
 	}
 
 	@Override

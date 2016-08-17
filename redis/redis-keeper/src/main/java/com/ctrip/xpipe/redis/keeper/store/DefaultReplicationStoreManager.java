@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.apache.commons.io.FileUtils;
@@ -41,12 +41,12 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 
 	private AtomicReference<DefaultReplicationStore> currentStore = new AtomicReference<>();
 
-	// TODO ioc
-	private KeeperConfig config = new DefaultKeeperConfig();
+	private KeeperConfig keeperConfig;
 
-	public DefaultReplicationStoreManager(String clusterName, String shardName, File baseDir) {
+	public DefaultReplicationStoreManager(KeeperConfig keeperConfig, String clusterName, String shardName, File baseDir) {
 		this.clusterName = clusterName;
 		this.shardName = shardName;
+		this.keeperConfig = keeperConfig;
 		this.baseDir = new File(baseDir, clusterName + "/" + shardName);
 		metaFile = new File(this.baseDir, META_FILE);
 
@@ -61,7 +61,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 					e.printStackTrace();
 				}
 			}
-		}, config.getReplicationStoreGcIntervalSeconds(), config.getReplicationStoreGcIntervalSeconds(), TimeUnit.SECONDS);
+		}, keeperConfig.getReplicationStoreGcIntervalSeconds(), keeperConfig.getReplicationStoreGcIntervalSeconds(), TimeUnit.SECONDS);
 	}
 
 	@Override
@@ -86,7 +86,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 
 		recrodLatestStore(storeBaseDir.getName());
 
-		currentStore.set(new DefaultReplicationStore(storeBaseDir, config));
+		currentStore.set(new DefaultReplicationStore(storeBaseDir, keeperConfig));
 		return currentStore.get();
 	}
 
@@ -149,7 +149,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 					File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
 					logger.info("[getCurrent][recover previous]{}", latestStoreDir);
 					if (latestStoreDir.isDirectory()) {
-						currentStore.set(new DefaultReplicationStore(latestStoreDir, config));
+						currentStore.set(new DefaultReplicationStore(latestStoreDir, keeperConfig));
 					}
 				}
 			}

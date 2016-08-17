@@ -9,30 +9,22 @@ import com.ctrip.xpipe.redis.core.config.CoreConfig;
  */
 public interface KeeperConfig extends CoreConfig{
 
-	/**
-	 * @return
-	 */
 	int getMetaServerConnectTimeout();
 
-	/**
-	 * @return
-	 */
 	int getMetaServerReadTimeout();
 
-	/**
-	 * @return
-	 */
-	int getRedisCommandFileSize();
-
-	/**
-	 * @return
-	 */
 	int getMetaRefreshIntervalMillis();
+
+	int getReplicationStoreCommandFileSize();
 
 	int getReplicationStoreGcIntervalSeconds();
 
-	int getReplicationStoreCommandFileToKeep();
+	int getReplicationStoreCommandFileNumToKeep();
 
-	long getReplicationStoreCommandSizeAfterRdbBeforeFullSyncThreshold();
+	/**
+	 * max commands transfered before create new rdb
+	 * @return
+	 */
+	long getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
 
 }

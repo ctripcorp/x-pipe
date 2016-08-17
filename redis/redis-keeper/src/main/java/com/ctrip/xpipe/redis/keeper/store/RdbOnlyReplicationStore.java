@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
@@ -65,8 +66,8 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public long beginOffset() {
-				return 0;
+			public Long beginOffset() {
+				return 0L;
 			}
 
 			@Override
@@ -181,6 +182,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	@Override
 	public boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException {
 		return false;
+	}
+
+	@Override
+	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
+		throw new UnsupportedOperationException();
 	}
 
 }

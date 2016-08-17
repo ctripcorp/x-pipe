@@ -1,10 +1,8 @@
-package com.ctrip.xpipe.redis.integratedtest.multidcv1;
+package com.ctrip.xpipe.redis.integratedtest.full.multidc;
 
 import java.io.IOException;
 
 import org.junit.Test;
-
-import com.ctrip.xpipe.redis.integratedtest.multidc.AbstractMultiDcTest;
 
 /**
  * @author wenchao.meng

@@ -30,6 +30,8 @@ import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.spring.KeeperContextConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
@@ -112,7 +114,17 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaServerKeeperService metaService, File baseDir) throws Exception {
 
-		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper,
+		return createRedisKeeperServer(keeper, getKeeperConfig(), metaService, baseDir);
+
+	}
+
+	protected KeeperConfig getKeeperConfig() {
+		return new DefaultKeeperConfig();
+	}
+
+	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig, MetaServerKeeperService metaService, File baseDir) throws Exception {
+
+		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper, keeperConfig, 
 				baseDir, metaService, getRegistry().getComponent(LeaderElectorManager.class));
 
 		add(redisKeeperServer);
@@ -133,12 +145,19 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 		String tmpDir = getTestFileDir();
 
-		return new DefaultReplicationStoreManager(getClusterId(), getShardId(), new File(tmpDir));
+		return createReplicationStoreManager(getClusterId(), getShardId(), new File(tmpDir));
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, File storeDir) {
-		return new DefaultReplicationStoreManager(clusterId, shardId, storeDir);
+
+		return createReplicationStoreManager(clusterId, shardId, getKeeperConfig(), storeDir);
 	}
+	
+	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, KeeperConfig keeperConfig, File storeDir) {
+		
+		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, storeDir);
+	}
+
 
 	protected File getReplicationStoreManagerBaseDir() {
 

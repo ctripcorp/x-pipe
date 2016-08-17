@@ -1,41 +1,33 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.jboss.netty.util.internal.ConcurrentHashMap;
-import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
-import com.ctrip.xpipe.foundation.FakeFoundationService;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaServerLocator;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaService;
-import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
 /**
@@ -44,159 +36,33 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
  *         Jun 13, 2016
  */
 public abstract class AbstractIntegratedTest extends AbstractRedisTest {
-
+	
 	private String integrated_test_config_file = "integrated-test.xml";
-
-	private String redis_template = "conf/redis_template.conf";
 	
-	private Map<String, DcInfo>  dcs = new ConcurrentHashMap<>();
-	
-	private int consolePort = 8080;
+	private String clusterId = "cluster1", shardId = "shard1";
 	
 	private int testMessageCount = 10000;
 
 	@Before
-	public void beforeAbstractIntegratedTest() throws Exception {
+	public void beforeAbstractIntegratedTest() throws Exception{
 		
-		
-		createDcs();
-
 		initRegistry();
 		startRegistry();
-		
-		if(!stopIntegratedServers()){
-			return;
-		}
-
-		stopXippe();
-
 	}
 
-	protected void stopXippe() throws ExecuteException, IOException {
-		
-		stopConsole();
-		//stop all servers
-		stopAllRedisServer();
-				
-		// stop keeper
-		for (DcMeta dcMeta : getXpipeMeta().getDcs().values()) {
-			stopDc(dcMeta);
-		}
-	}
-
-	protected void stopDc(DcMeta dcMeta) throws ExecuteException, IOException {
-		
-		for(InetSocketAddress address : IpUtils.parse(dcMeta.getZkServer().getAddress())){
-			logger.info(remarkableMessage("[stopZkServer]{}"), address);
-			stopServerListeningPort(address.getPort());
-		}
-		
-		for(MetaServerMeta metaServerMeta : dcMeta.getMetaServers()){
-			logger.info("[stopMetaServer]{}", metaServerMeta);
-			stopServerListeningPort(metaServerMeta.getPort());
-		}
-		
-		for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-			for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
-				for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-					logger.info("[stopKeeperServer]{}", keeperMeta.getPort());
-					stopServerListeningPort(keeperMeta.getPort());
-				}
-				for(RedisMeta redisMeta : shardMeta.getRedises()){
-					logger.info("[stopRedisServer]{}", redisMeta.getPort());
-					stopServerListeningPort(redisMeta.getPort());
-				}
-			}
-		}
-	}
-
-	private void createDcs(){
-		
-		for(DcMeta dcMeta : getXpipeMeta().getDcs().values()){
-			dcs.put(dcMeta.getId(), new DcInfo(dcMeta));
-		}
-	}
-
-	protected void startConsoleServer() throws Exception {
-		
-		logger.info(remarkableMessage("[startConsoleServer]{}"), consolePort);
-		ConsoleStart consoleStart = new ConsoleStart(consolePort);
-		consoleStart.initialize();
-		consoleStart.start();
-		add(consoleStart);
-	}
-
-
-	private void stopConsole() throws ExecuteException, IOException {
-		stopServerListeningPort(consolePort);
-	}
-
-
-	protected boolean staticPort() {
-		return false;
-	}
-
-
-	protected boolean stopIntegratedServers() {
-		return true;
-	}
-
-
-	protected void startXpipe() throws Exception{
-		
-		logger.info(remarkableMessage("startXpipe"));
-		
-		startConsoleServer();
-		
-		for(String dc : getXpipeMeta().getDcs().keySet()){
-			startDc(dc);
-		}
-	}
 	
-
-	protected void startDc(String dc) throws Exception {
-		
-		logger.info(remarkableMessage("[startDc]{}"), dc);
-
-		DcMeta dcMeta = getXpipeMeta().getDcs().get(dc);
-		DcInfo dcInfo = dcs.get(dc);
-		if (dcMeta == null || dcInfo == null) {
-			throw new IllegalStateException("dc not found:" + dc);
-		}
-
-		FakeFoundationService.setDataCenter(dc);
-
-		
-		startZkServer(dcMeta.getZkServer());
-		
-		startMetaServers(dcMeta);
-
-		
-		MetaServerKeeperService metaService = createMetaService(dcMeta.getMetaServers());
-		
-		LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcMeta);
-
-		logger.info("[startDc]{}\n\n", dc);
-
-		for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-			logger.info(remarkableMessage("[startCluster]{}"), clusterMeta.getId());
-			for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
-				logger.info(remarkableMessage("[startShard]{}"), shardMeta.getId());
-				for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-					startKeeper(keeperMeta, metaService, leaderElectorManager);
-				}
-				for (RedisMeta redisMeta : shardMeta.getRedises()) {
-					startRedis(dcMeta, redisMeta);
-				}
-			}
-		}
+	@Override
+	protected String getXpipeMetaConfigFile() {
+		return integrated_test_config_file;
 	}
 
-	protected void startMetaServers(DcMeta dcMeta) throws Exception {
-		
-		for(MetaServerMeta metaServerMeta : dcMeta.getMetaServers()){
-			startMetaServer(metaServerMeta, dcMeta.getZkServer(), dcMeta);
-		}
+
+	public int getTestMessageCount() {
+		return testMessageCount;
+	}
+
+	public String getIntegrated_test_config_file() {
+		return integrated_test_config_file;
 	}
 
 	protected void startZkServer(ZkServerMeta zkServerMeta) {
@@ -212,6 +78,21 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		}
 		int zkPort = Integer.parseInt(parts[1]);
 		startZk(zkPort);
+	}
+	
+	protected void startKeeper(KeeperMeta keeperMeta, MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager) throws Exception {
+		
+		startKeeper(keeperMeta, new DefaultKeeperConfig(), metaService, leaderElectorManager);
+	}
+
+
+	protected void startKeeper(KeeperMeta keeperMeta, KeeperConfig keeperConfig, MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager) throws Exception {
+
+		logger.info(remarkableMessage("[startKeeper]{}, {}"), keeperMeta);
+		File baseDir = new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort());
+
+		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, metaService, leaderElectorManager);
+		add(redisKeeperServer);
 	}
 
 	protected LeaderElectorManager createLeaderElectorManager(DcMeta dcMeta) throws Exception {
@@ -258,9 +139,9 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		executeScript("start_redis.sh", file.getAbsolutePath(), new File(logDir, String.format("%d.log", redisMeta.getPort())).getAbsolutePath());
 	}
 
-	private File createRedisConfigFile(DcMeta dcMeta, RedisMeta redisMeta, File destDir, File dataDir) throws IOException {
+	protected File createRedisConfigFile(DcMeta dcMeta, RedisMeta redisMeta, File destDir, File dataDir) throws IOException {
 
-		try(InputStream ins_template = getClass().getClassLoader().getResourceAsStream(redis_template)){
+		try(InputStream ins_template = getClass().getClassLoader().getResourceAsStream(getRedisTemplate())){
 			int metaServerPort = dcMeta.getMetaServers().get(0).getPort();
 	
 			StringBuilder sb = new StringBuilder();
@@ -296,8 +177,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 				sb.append(line);
 				sb.append("\r\n");
 			}
-	
 			
+			endPrepareRedisConfig(redisMeta, sb);
 			
 			File dstFile = new File(destDir, redisMeta.getPort() + ".conf");
 			try(FileOutputStream fous = new FileOutputStream(dstFile)){
@@ -307,31 +188,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		}
 	}
 
-	protected void startKeeper(KeeperMeta keeperMeta, MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager) throws Exception {
-
-		logger.info(remarkableMessage("[startKeeper]{}, {}"), keeperMeta);
-		File baseDir = new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort());
-
-		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperMeta, baseDir, metaService, leaderElectorManager);
-		add(redisKeeperServer);
-	}
-
-	protected void stopAllRedisServer() throws ExecuteException, IOException {
-
-		executeScript("kill_redis.sh");
-	}
-
-	protected void startMetaServer(MetaServerMeta metaServerMeta, ZkServerMeta zkServerMeta, DcMeta dcMeta) throws Exception {
+	protected void endPrepareRedisConfig(RedisMeta redisMeta, StringBuilder sb) {
 		
-		logger.info(remarkableMessage("[startMetaServer]{}, {}"), metaServerMeta, zkServerMeta);
-				
-		MetaServerPrepareResourcesAndStart startMetaServer = new MetaServerPrepareResourcesAndStart(integrated_test_config_file, zkServerMeta.getAddress(), metaServerMeta.getPort(), dcMeta);
-		startMetaServer.initialize();
-		startMetaServer.start();
-		
-		add(startMetaServer);
-		
-		dcs.get(dcMeta.getId()).setApplicationContext(startMetaServer.getApplicationContext());
 	}
 
 	protected void stopServerListeningPort(int listenPort) throws ExecuteException, IOException {
@@ -339,82 +197,37 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		logger.info("[stopServerListeningPort]{}", listenPort);
 		executeScript("kill_server.sh", String.valueOf(listenPort));
 	}
-
-	public Set<String> getDcs() {
-		return dcs.keySet();
-	}
-
-	public int getTestMessageCount() {
-		return testMessageCount;
-	}
 	
+	public String getClusterId() {
+		return clusterId;
+	}
+
+	public String getShardId() {
+		return shardId;
+	}
+
+	protected abstract String getRedisTemplate();
 	
-	
-	protected Map<String, DcInfo> getDcInfos(){
-		return this.dcs;
+	protected void sendMessageToMasterAndTestSlaveRedis() {
 		
-	}
-
-	protected List<RedisKeeperServer> getRedisKeeperServers(String dc){
-		
-		List<RedisKeeperServer> result = new LinkedList<>();
-		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
-		for(RedisKeeperServer redisKeeperServer : redisKeeperServers.values()){
-			String currentDc = redisKeeperServer.getCurrentKeeperMeta().parent().parent().parent().getId();
-			if(dc.equals(currentDc)){
-				result.add(redisKeeperServer);
-			}
-			
-		}
-		return result;
-	}
-
-	protected void changeRedisMaster(RedisMeta redisMaster, RedisMeta toPromote) {
-		
-		for(DcMeta dcMeta : getXpipeMeta().getDcs().values()){
-			for(ClusterMeta clusterMeta: dcMeta.getClusters().values()){
-				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-					
-					if(shardMeta.getRedises().remove(redisMaster)){
-						for(RedisMeta redisMeta : shardMeta.getRedises()){
-							if(redisMeta.getIp().equals(toPromote.getIp()) && redisMeta.getPort().equals(toPromote.getPort())){
-								redisMeta.setMaster(null);
-								return;
-							}
-						}
-						throw new IllegalStateException("[can not find slave to promte]" + redisMaster + "," + toPromote); 
-					}
-				}
-			}
-		}
-	}
-
-	public RedisKeeperServer getRedisKeeperServerActive(String dc){
-		
-		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
-		
-		for(RedisKeeperServer server : redisKeeperServers.values()){
-			String currentDc =server.getCurrentKeeperMeta().parent().parent().parent().getId(); 
-			if(dc.equals(currentDc)  && server.getRedisKeeperServerState().isActive()){
-				return server;
-			}
-		}
-		return null;
-	}
-
-	public int getConsolePort() {
-		return consolePort;
-	}
-	
-	@Override
-	protected String getXpipeMetaConfigFile() {
-		return integrated_test_config_file;
+		sendRandomMessage(getRedisMaster(), getTestMessageCount());
+		sleep(6000);
+		assertRedisEquals(getRedisMaster(), getRedisSlaves());
 	}
 
 	protected abstract List<RedisMeta> getRedisSlaves();
-	
-	@After
-	public void afterAbstractIntegratedTest(){
+
+	protected List<RedisMeta> getAllRedisSlaves() {
 		
+		List<RedisMeta> result = new LinkedList<>();
+		for(DcMeta dcMeta : getDcMetas()){
+			List<RedisMeta> slaves = getRedisSlaves(dcMeta.getId());
+			Assert.assertTrue(slaves.size() >= 1);
+			result.addAll(slaves);
+		}
+		Assert.assertTrue(result.size() >= 1);
+		return result;
 	}
+
+	
 }
