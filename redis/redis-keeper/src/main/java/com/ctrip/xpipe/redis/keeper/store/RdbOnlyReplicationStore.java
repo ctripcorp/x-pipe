@@ -103,6 +103,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			@Override
 			public void psyncBegun(String keeperRunid, long offset) throws IOException {
 			}
+
+			@Override
+			public void updateKeeperRunid(String keeperRunid) throws IOException {
+				
+			}
 		};
 	}
 

@@ -54,10 +54,27 @@ public class KinfoCommand extends AbstractRedisCommand<ReplicationStoreMeta> {
 		
 		ReplicationStoreMeta meta = null;
 		meta = JSON.parseObject(buff, ReplicationStoreMeta.class);
-		if(meta != null && meta.getMasterRunid() != null && meta.getMasterRunid().length() == RedisProtocol.RUN_ID_LENGTH){
+		if(valid(meta)){
 			return meta;
 		}else{
 			throw new XpipeRuntimeException("[format][wrong meta]" + meta);
 		}
+	}
+
+	private boolean valid(ReplicationStoreMeta meta) {
+		if(meta == null){
+			return false;
+		}
+		if(meta.getMasterRunid() == null || meta.getMasterRunid().length() != RedisProtocol.RUN_ID_LENGTH){
+			return false;
+		}
+		if(meta.getBeginOffset() == null){
+			return false;
+		}
+		if(meta.getMasterAddress() == null){
+			return false;
+		}
+		
+		return true;
 	};
 }

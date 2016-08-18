@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaCloneTest;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 
 /**
  * @author wenchao.meng
@@ -23,7 +24,8 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
 	BulkStringParserTest.class,
 	ArrayParserTest.class,
 	MetaCloneTest.class,
-	DefaultXpipeMetaManagerTest.class
+	DefaultXpipeMetaManagerTest.class,
+	ReplicationStoreMetaTest.class
 })
 public class AllTests {
 

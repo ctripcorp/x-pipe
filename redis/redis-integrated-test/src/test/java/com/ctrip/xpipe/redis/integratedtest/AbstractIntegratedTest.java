@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.io.FileUtils;
@@ -21,6 +22,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
@@ -41,7 +43,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	
 	private String clusterId = "cluster1", shardId = "shard1";
 	
-	private int testMessageCount = 10000;
+	private int defaultTestMessageCount = 10000;
 
 	@Before
 	public void beforeAbstractIntegratedTest() throws Exception{
@@ -56,10 +58,6 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return integrated_test_config_file;
 	}
 
-
-	public int getTestMessageCount() {
-		return testMessageCount;
-	}
 
 	public String getIntegrated_test_config_file() {
 		return integrated_test_config_file;
@@ -82,9 +80,12 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	
 	protected void startKeeper(KeeperMeta keeperMeta, MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager) throws Exception {
 		
-		startKeeper(keeperMeta, new DefaultKeeperConfig(), metaService, leaderElectorManager);
+		startKeeper(keeperMeta, getKeeperConfig(), metaService, leaderElectorManager);
 	}
 
+	protected KeeperConfig getKeeperConfig() {
+		return new DefaultKeeperConfig();
+	}
 
 	protected void startKeeper(KeeperMeta keeperMeta, KeeperConfig keeperConfig, MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager) throws Exception {
 
@@ -208,11 +209,20 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	protected abstract String getRedisTemplate();
 	
-	protected void sendMessageToMasterAndTestSlaveRedis() {
-		
-		sendRandomMessage(getRedisMaster(), getTestMessageCount());
+	protected void sendMesssageToMasterAndTest(int messageCount, RedisMeta ... slaves){
+
+		sendRandomMessage(getRedisMaster(), messageCount);
 		sleep(6000);
-		assertRedisEquals(getRedisMaster(), getRedisSlaves());
+		assertRedisEquals(getRedisMaster(), slaves);
+	}
+
+	protected void sendMesssageToMasterAndTest(RedisMeta ... slaves){
+		sendMesssageToMasterAndTest(defaultTestMessageCount, slaves);
+	}
+
+	
+	protected void sendMessageToMasterAndTestSlaveRedis() {
+		sendMesssageToMasterAndTest(getRedisSlaves().toArray(new RedisMeta[0]));
 	}
 
 	protected abstract List<RedisMeta> getRedisSlaves();
@@ -229,5 +239,51 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return result;
 	}
 
-	
+	public RedisKeeperServer getRedisKeeperServerActive(String dc){
+		
+		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
+		
+		for(RedisKeeperServer server : redisKeeperServers.values()){
+			String currentDc =server.getCurrentKeeperMeta().parent().parent().parent().getId(); 
+			if(dc.equals(currentDc)  && server.getRedisKeeperServerState().isActive()){
+				return server;
+			}
+		}
+		return null;
+	}
+
+	public RedisKeeperServer getRedisKeeperServer(KeeperMeta keeperMeta){
+		
+		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
+		
+		for(RedisKeeperServer server : redisKeeperServers.values()){
+			KeeperMeta currentKeeperMeta = server.getCurrentKeeperMeta();
+			if(MetaUtils.same(currentKeeperMeta, keeperMeta)){
+				return server;
+			}
+		}
+		return null;
+	}
+
+	protected KeeperMeta getKeeperActive(String dc){
+		
+		for(KeeperMeta keeperMeta : getDcKeepers(dc, getClusterId(), getShardId())){
+			if(keeperMeta.isActive()){
+				return keeperMeta;
+			}
+		}
+		return null;
+	}
+
+	protected List<KeeperMeta> getKeepersBackup(String dc){
+		
+		List<KeeperMeta> result = new LinkedList<>();
+		for(KeeperMeta keeperMeta : getDcKeepers(dc, getClusterId(), getShardId())){
+			if(!keeperMeta.isActive()){
+				result.add(keeperMeta);
+			}
+		}
+		return result;
+	}
+
 }

@@ -27,6 +27,7 @@ public class KinfoCommandHandler extends AbstractCommandHandler {
 
 		String result = JSON.toJSONString(keeper.getReplicationStore().getMetaStore().dupReplicationStoreMeta());
 
+		logger.info("[doHandle]{}", result);
 		redisClient.sendMessage(new BulkStringParser(result).format());
 	}
 

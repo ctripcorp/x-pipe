@@ -246,18 +246,6 @@ public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 		}
 	}
 
-	public RedisKeeperServer getRedisKeeperServerActive(String dc){
-		
-		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
-		
-		for(RedisKeeperServer server : redisKeeperServers.values()){
-			String currentDc =server.getCurrentKeeperMeta().parent().parent().parent().getId(); 
-			if(dc.equals(currentDc)  && server.getRedisKeeperServerState().isActive()){
-				return server;
-			}
-		}
-		return null;
-	}
 
 	public int getConsolePort() {
 		return consolePort;

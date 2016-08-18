@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -58,14 +59,17 @@ public class DefaultReplicationStore implements ReplicationStore {
 	private KeeperConfig config;
 
 	private Object lock = new Object();
+	
+	private AtomicInteger rdbUpdateCount = new AtomicInteger();
 
-	public DefaultReplicationStore(File baseDir, KeeperConfig config) throws IOException {
+	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.config = config;
 
 		metaStore = new DefaultMetaStore(baseDir);
 		metaStore.loadMeta();
+		metaStore.updateKeeperRunid(keeperRunid);
 
 		ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
 
@@ -120,6 +124,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public void rdbUpdated(String rdbRelativePath, long masterOffset) throws IOException {
 		synchronized (lock) {
+			rdbUpdateCount.incrementAndGet();
 			File rdbFile = new File(baseDir, rdbRelativePath);
 			long rdbFileSize = rdbFile.length();
 
@@ -148,7 +153,11 @@ public class DefaultReplicationStore implements ReplicationStore {
 			// TODO
 			return -2L;
 		} else {
-			return metaStore.beginOffset() + cmdStore.totalLength() - 1;
+			long beginOffset = metaStore.beginOffset();
+			long totalLength = cmdStore.totalLength();
+			
+			log.info("[getEndOffset]B:{}, L:{}", beginOffset, totalLength);
+			return beginOffset + totalLength - 1;
 		}
 	}
 
@@ -313,4 +322,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		return cmdStore.awaitCommandsOffset(offset, timeMilli);
 	}
 
+	public int getRdbUpdateCount() {
+		return rdbUpdateCount.get();
+	}
 }

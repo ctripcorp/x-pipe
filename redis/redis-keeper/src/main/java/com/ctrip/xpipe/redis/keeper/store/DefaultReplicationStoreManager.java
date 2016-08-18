@@ -32,6 +32,8 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	private String clusterName;
 
 	private String shardName;
+	
+	private String keeperRunid;
 
 	private File baseDir;
 
@@ -43,9 +45,10 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 
 	private KeeperConfig keeperConfig;
 
-	public DefaultReplicationStoreManager(KeeperConfig keeperConfig, String clusterName, String shardName, File baseDir) {
+	public DefaultReplicationStoreManager(KeeperConfig keeperConfig, String clusterName, String shardName, String keeperRunid, File baseDir) {
 		this.clusterName = clusterName;
 		this.shardName = shardName;
+		this.keeperRunid = keeperRunid;
 		this.keeperConfig = keeperConfig;
 		this.baseDir = new File(baseDir, clusterName + "/" + shardName);
 		metaFile = new File(this.baseDir, META_FILE);
@@ -74,6 +77,15 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 		}
 		return currentReplicationStore;
 	}
+	
+	@Override
+	public synchronized ReplicationStore create(String masterRunid, long keeperBeginOffset) throws IOException {
+		ReplicationStore replicationStore = create();
+		
+		replicationStore.getMetaStore().psyncBegun(masterRunid, keeperBeginOffset);
+		
+		return replicationStore;
+	}
 
 	@Override
 	public synchronized DefaultReplicationStore create() throws IOException {
@@ -86,7 +98,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 
 		recrodLatestStore(storeBaseDir.getName());
 
-		currentStore.set(new DefaultReplicationStore(storeBaseDir, keeperConfig));
+		currentStore.set(new DefaultReplicationStore(storeBaseDir, keeperConfig, keeperRunid));
 		return currentStore.get();
 	}
 
@@ -149,7 +161,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 					File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
 					logger.info("[getCurrent][recover previous]{}", latestStoreDir);
 					if (latestStoreDir.isDirectory()) {
-						currentStore.set(new DefaultReplicationStore(latestStoreDir, keeperConfig));
+						currentStore.set(new DefaultReplicationStore(latestStoreDir, keeperConfig, keeperRunid));
 					}
 				}
 			}
@@ -200,15 +212,6 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 		if (replicationStore != null) {
 			replicationStore.gc();
 		}
-	}
-
-	@Override
-	public synchronized ReplicationStore create(String masterRunid, long keeperBeginOffset) throws IOException {
-		ReplicationStore replicationStore = create();
-		
-		replicationStore.getMetaStore().psyncBegun(masterRunid, keeperBeginOffset);
-		
-		return replicationStore;
 	}
 
 	@Override

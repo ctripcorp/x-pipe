@@ -1,5 +1,10 @@
 package com.ctrip.xpipe.redis.core.store;
 
+import java.io.Serializable;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 
 /**
@@ -7,7 +12,8 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
  *
  *         Jun 1, 2016
  */
-public class ReplicationStoreMeta {
+@SuppressWarnings("serial")
+public class ReplicationStoreMeta implements Serializable{
 
 	public static final int DEFAULT_KEEPER_BEGIN_OFFSET = 2;
 
@@ -129,4 +135,13 @@ public class ReplicationStoreMeta {
 		this.rdbLastKeeperOffset = rdbLastKeeperOffset;
 	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+	
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
 }

@@ -107,7 +107,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.shardId = currentKeeperMeta.parent().getId();
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.keeperConfig = keeperConfig;
-		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, baseDir);
+		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir);
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
 		if(scheduled == null){

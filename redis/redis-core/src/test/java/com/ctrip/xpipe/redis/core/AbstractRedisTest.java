@@ -88,12 +88,13 @@ public abstract class AbstractRedisTest extends AbstractTest{
 
 	protected Jedis createJedis(RedisMeta redisMeta) {
 		
-		Jedis jedis = new Jedis(redisMeta.getIp(), redisMeta.getPort()); 
+		String ip = StringUtil.isEmpty(redisMeta.getIp())? "localhost" : redisMeta.getIp();
+		Jedis jedis = new Jedis(ip, redisMeta.getPort()); 
 		logger.info("[createJedis]{}", jedis);
 		return jedis;
 	}
 
-	protected void assertRedisEquals(RedisMeta redisMaster, List<RedisMeta> redisSlaves) {
+	protected void assertRedisEquals(RedisMeta redisMaster, RedisMeta[] slaves) {
 		
 		Map<String, String> values = new HashMap<>(); 
 		Jedis jedis = createJedis(redisMaster);
@@ -102,7 +103,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 			values.put(key, jedis.get(key));
 		}
 
-		for(RedisMeta redisSlave : redisSlaves){
+		for(RedisMeta redisSlave : slaves){
 			
 			logger.info(remarkableMessage("[assertRedisEquals]redisSlave:" + redisSlave));
 			
@@ -120,12 +121,16 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	}
 
 	protected void sendRandomMessage(RedisMeta redisMeta, int count) {
+
+		sendRandomMessage(redisMeta, count, 1024);
+	}
+
+	protected void sendRandomMessage(RedisMeta redisMeta, int count, int messageLength) {
 		
 		Jedis jedis = createJedis(redisMeta);
-		
 		logger.info("[sendRandomMessage][begin]{}", jedis);
 		for(int i=0; i < count; i++){
-			jedis.set(String.valueOf(i), randomString());
+			jedis.set(String.valueOf(i), randomString(messageLength));
 			jedis.incr("incr");
 		}
 		logger.info("[sendRandomMessage][end  ]{}", jedis);

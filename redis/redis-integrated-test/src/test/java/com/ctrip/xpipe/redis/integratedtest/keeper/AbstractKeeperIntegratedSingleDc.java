@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -41,6 +42,7 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		startRedises();
 		startKeepers();
 		makeKeeperRight();
+		sleep(2000);//wait for structure to build
 	}
 
 	private void setFistKeeperActive() {	
@@ -65,18 +67,16 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		}
 	}
 	
-	private DcMeta getDcMeta() {
+	protected DcMeta getDcMeta() {
 		return getDcMeta(dc);
 	}
-	
+
 	protected KeeperMeta getKeeperActive(){
-		
-		for(KeeperMeta keeperMeta : getDcKeepers(dc, getClusterId(), getShardId())){
-			if(keeperMeta.isActive()){
-				return keeperMeta;
-			}
-		}
-		return null;
+		return getKeeperActive(dc);
+	}
+
+	protected List<KeeperMeta> getKeepersBackup() {
+		return getKeepersBackup(dc);
 	}
 	
 	protected void startKeepers() throws Exception{

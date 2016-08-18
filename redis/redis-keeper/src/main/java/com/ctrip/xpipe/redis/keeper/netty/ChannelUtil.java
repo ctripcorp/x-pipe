@@ -3,8 +3,8 @@
  */
 package com.ctrip.xpipe.redis.keeper.netty;
 
+
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

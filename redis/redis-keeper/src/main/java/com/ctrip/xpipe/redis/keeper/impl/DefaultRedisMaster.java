@@ -245,13 +245,18 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 		try {
 			listeningPortCommand();
-			if (redisKeeperServer.getRedisKeeperServerState().sendKinfo()) {
-				kinfoCommand();
-			} else {
-				psyncCommand();
-			}
+			sendReplicationCommand();
 		} catch (CommandExecutionException e) {
 			logger.error("[masterConnected]" + channel, e);
+		}
+	}
+
+	private void sendReplicationCommand() throws CommandExecutionException {
+		
+		if (redisKeeperServer.getRedisKeeperServerState().sendKinfo()) {
+			kinfoCommand();
+		} else {
+			psyncCommand();
 		}
 	}
 
@@ -313,7 +318,12 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 						
 						@Override
 						public void run() {
-							psyncCommand();
+							try {
+								//if backup , send kinfo
+								sendReplicationCommand();
+							} catch (CommandExecutionException e) {
+								logger.error("[run]" + DefaultRedisMaster.this, e);
+							}
 						}
 					}, PSYNC_RETRY_INTERVAL_MILLI, TimeUnit.MILLISECONDS);
 				}

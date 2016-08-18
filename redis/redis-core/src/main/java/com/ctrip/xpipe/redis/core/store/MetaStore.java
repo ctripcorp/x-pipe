@@ -35,7 +35,7 @@ public interface MetaStore {
 	
 	void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException;
 
-	void psyncBegun(String keeperRunid, long offset) throws IOException;
+	void psyncBegun(String masterRunid, long offset) throws IOException;
 	
 	/**
 	 * keeper backup -> active
@@ -64,4 +64,6 @@ public interface MetaStore {
 	ReplicationStoreMeta rdbUpdated(String rdbFile, long rdbFileSize, long masterOffset) throws IOException;
 	
 	long redisOffsetToKeeperOffset(long redisOffset);
+	
+	void updateKeeperRunid(String keeperRunid) throws IOException;
 }
