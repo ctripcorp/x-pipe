@@ -255,6 +255,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
+		
 		final FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
 		if (ctx.isFullSyncPossible()) {
 			log.info("[fullSyncToSlave]reuse current rdb to full sync");
@@ -295,7 +296,11 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public long nextNonOverlappingKeeperBeginOffset() {
-		return metaStore.getKeeperBeginOffset() + cmdStore.totalLength() + 1;
+		
+		long oldKeeperBeginOffset = metaStore.getKeeperBeginOffset();
+		long newKeeperBeginOffset = metaStore.getKeeperBeginOffset() + cmdStore.totalLength() + 1;
+		log.info("[nextNonOverlappingKeeperBeginOffset]{}->{}", oldKeeperBeginOffset, newKeeperBeginOffset);
+		return newKeeperBeginOffset;
 	}
 
 	@Override

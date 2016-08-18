@@ -129,6 +129,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		
+		logger.info("[doInitialize][keeper config]{}", keeperConfig);
 		bossGroup = new NioEventLoopGroup(1);
 		workerGroup = new NioEventLoopGroup();
 		this.leaderElector = createLeaderElector();

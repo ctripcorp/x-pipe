@@ -62,7 +62,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import jline.internal.Log;
 
 /**
  * @author wenchao.meng
@@ -417,7 +416,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 						logger.info("[fullSyncToSlave]update rdb to full sync");
 						File rdbFile = currentStore.prepareNewRdbFile();
-						logger.info("Create file " + rdbFile);
+						logger.info("[fullSyncToSlave]Create file {}", rdbFile);
 
 						SettableFuture<Boolean> endWriteRdbFuture = SettableFuture.create();
 
@@ -450,16 +449,21 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	private void waitUntilPsyncDone(AtomicReference<RdbOnlyPsync> rdbOnlyPsyncRef, RdbOnlyReplicationStore rdbOnlyReplicationStore, RedisSlave redisSlave,
 			ReplicationStore currentStore, SettableFuture<Boolean> endWriteRdbFuture) {
+		
+		logger.info("[waitUntilPsyncDone]{}", redisSlave);
+		
 		while (!Thread.interrupted()) {
 			boolean psyncFinished = false;
 
 			RdbOnlyPsync rdbOnlyPsync = rdbOnlyPsyncRef.get();
 			if (rdbOnlyPsync != null) {
 				if (rdbOnlyPsync.future().isDone()) {
+					logger.info("[waitUntilPsyncDone][done]{}", redisSlave);
 					psyncFinished = true;
 
 					File rdbFile = rdbOnlyReplicationStore.getRdbFile();
 					if (rdbOnlyPsync.future().isSuccess()) {
+						logger.info("[waitUntilPsyncDone][success]{}", redisSlave);
 						/**
 						 * isDone() means endWriteRdb() is called. no exception
 						 * will ever in endWriteRdbFuture
@@ -469,12 +473,14 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 								currentStore.rdbUpdated(rdbFile.getName(), rdbOnlyReplicationStore.getMasterOffset());
 								return;
 							} catch (Exception e) {
-								Log.error("[updateRdb] error update rdb to ReplicationStore", e);
+								logger.error("[updateRdb] error update rdb to ReplicationStore", e);
 								rdbFile.delete();
 								return;
 							}
 						}
 					} else {
+						logger.info("[waitUntilPsyncDone][fail]{}", redisSlave);
+						logger.error("[waitUntilPsyncDone]", rdbOnlyPsync.future().cause());
 						rdbFile.delete();
 						return;
 					}

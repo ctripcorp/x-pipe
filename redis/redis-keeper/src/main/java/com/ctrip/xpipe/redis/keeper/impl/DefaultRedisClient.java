@@ -53,7 +53,7 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	
 	private DefaultRedisClient(Channel channel) {
 		this.channel = channel;
-		String remoteIpLocalPort = ChannelUtil.getRemoteIpLocalPort(channel);
+		String remoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
 		nonPsyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create("RedisClientNonPsync-" + remoteIpLocalPort));
 	}
 	

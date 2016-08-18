@@ -170,7 +170,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	private void beginReadRdb(long fileSize) {
 
 		if(logger.isInfoEnabled()){
-			logger.info("[beginReadRdb]" + this + "," + fileSize);
+			logger.info("[beginReadRdb]{}, rdbFileSize:{}",this, fileSize);
 		}
 		for(PsyncObserver observer : observers){
 			try{

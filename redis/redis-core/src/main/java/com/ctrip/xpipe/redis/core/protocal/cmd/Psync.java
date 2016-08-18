@@ -55,12 +55,13 @@ public class Psync extends AbstractPsync {
 		ReplicationStore oldStore = currentReplicationStore;
 		long newKeeperBeginOffset = ReplicationStoreMeta.DEFAULT_KEEPER_BEGIN_OFFSET;
 		if(oldStore != null){
-			logger.info("[doWhenFullSyncToNonFreshReplicationStore][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
 			try {
+				logger.info("[doWhenFullSyncToNonFreshReplicationStore][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
 				oldStore.close();
 			} catch (IOException e) {
 				logger.error("[handleRedisReponse]" + oldStore, e);
 			}
+			
 			newKeeperBeginOffset = oldStore.nextNonOverlappingKeeperBeginOffset();
 			oldStore.delete();
 		}

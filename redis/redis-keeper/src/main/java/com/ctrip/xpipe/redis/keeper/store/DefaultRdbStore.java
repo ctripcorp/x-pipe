@@ -69,6 +69,7 @@ public class DefaultRdbStore implements RdbStore {
 		if (actualFileLen == rdbFileSize) {
 			status.set(Status.Success);
 		} else {
+			log.info("[endRdb]actual:{}, expected:{}", actualFileLen, rdbFileSize);
 			status.set(Status.Fail);
 		}
 	}
@@ -89,16 +90,21 @@ public class DefaultRdbStore implements RdbStore {
 		rdbFileListener.setRdbFileInfo(rdbFileSize, rdbLastKeeperOffset);
 
 		long start = 0;
-
+		long lastLogTime = System.currentTimeMillis();
 		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || start < channel.size())) {
+			
 			if (channel.size() > start) {
 				long end = channel.size();
 				rdbFileListener.onFileData(channel, start, end - start);
 				start = end;
 			} else {
-				// TODO
 				try {
 					Thread.sleep(100);
+					long currentTime = System.currentTimeMillis();
+					if(currentTime - lastLogTime > 10000){
+						log.info("[doReadRdbFile]status:{}, start:{}, channeSize:{}", status.get(), start, channel.size());
+						lastLogTime = currentTime;
+					}
 				} catch (InterruptedException e) {
 				}
 			}

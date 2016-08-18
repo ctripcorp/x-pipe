@@ -67,7 +67,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	private void initPsyncExecutor(Channel channel) {
-		String getRemoteIpLocalPort = ChannelUtil.getRemoteIpLocalPort(channel);
+		String getRemoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
 		psyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create("RedisClientPsync-" + getRemoteIpLocalPort));
 	}
 

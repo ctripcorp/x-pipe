@@ -16,8 +16,7 @@ public class KeeperMultiDc extends AbstractKeeperIntegratedMultiDc{
 	@Test
 	public void testSync() throws IOException{
 		
-		waitForAnyKeyToExit();
-//		sendMessageToMasterAndTestSlaveRedis();
+		sendMessageToMasterAndTestSlaveRedis();
 	}
 	
 

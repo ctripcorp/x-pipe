@@ -4,6 +4,7 @@
 package com.ctrip.xpipe.redis.keeper.netty;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,17 @@ public class ChannelUtil {
 			logger.warn("Error parse remote ip and local port from Channel {}", channel);
 		}
 
+		return remoteIpLocalPort;
+	}
+
+	public static String getRemoteAddr(Channel channel) {
+		String remoteIpLocalPort = "unknown";
+		try {
+			InetSocketAddress remoteAddr = (InetSocketAddress)channel.remoteAddress();
+			return String.format("R(%s:%d)", remoteAddr.getHostName(), remoteAddr.getPort());
+		} catch (Exception e) {
+			logger.warn("Error parse remote ip and local port from Channel {}", channel);
+		}
 		return remoteIpLocalPort;
 	}
 

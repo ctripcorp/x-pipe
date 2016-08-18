@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.config;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.config.ConfigChangeListener;
 
@@ -62,6 +63,11 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 	@Override
 	public void onChange(String key, String oldValue, String newValue) {
 		
+	}
+	
+	@Override
+	public String toString() {
+		return Codec.DEFAULT.encode(this);
 	}
 
 }

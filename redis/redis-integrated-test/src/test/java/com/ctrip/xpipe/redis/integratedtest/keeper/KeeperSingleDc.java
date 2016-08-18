@@ -15,10 +15,18 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 	
 	@Test
 	public void testSync() throws IOException{
-		
+
 		sendMessageToMasterAndTestSlaveRedis();
 	}
-	
 
+	@Test
+	public void testMakeActiveBackup(){
+		
+	}
+
+	@Test
+	public void testMakeBackupActive(){
+		
+	}
 
 }

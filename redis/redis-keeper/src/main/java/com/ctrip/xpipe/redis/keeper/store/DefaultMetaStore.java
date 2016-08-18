@@ -87,7 +87,7 @@ public class DefaultMetaStore implements MetaStore {
 	}
 
 	private void saveMeta(ReplicationStoreMeta newMeta) throws IOException {
-		log.info("[Metasaved] new: {}\nold: {}", newMeta, metaRef.get());
+		log.info("[Metasaved]\nold:{}\nnew:{}", metaRef.get(), newMeta);
 		metaRef.set(newMeta);
 		// TODO sync with fs?
 		IO.INSTANCE.writeTo(new File(baseDir, META_FILE), JSON.toJSONString(metaRef.get()));
@@ -138,8 +138,7 @@ public class DefaultMetaStore implements MetaStore {
 			metaDup.setRdbFile(rdbFile);
 			metaDup.setRdbFileSize(rdbFileSize);
 			metaDup.setCmdFilePrefix(cmdFilePrefix);
-			long masterOffset = beginOffset - 1;
-			metaDup.setRdbLastKeeperOffset(redisOffsetToKeeperOffset(masterOffset, metaDup));
+			metaDup.setRdbLastKeeperOffset(metaDup.getKeeperBeginOffset() - 1);
 
 			saveMeta(metaDup);
 			return metaDup;
@@ -201,21 +200,8 @@ public class DefaultMetaStore implements MetaStore {
 			ReplicationStoreMeta metaOfLastActiveKeeper = getReplicationStoreMeta(name);
 			if (metaOfLastActiveKeeper == null) {
 				throw new IllegalStateException("can not find meta:" + name);
-			} else {
-				ReplicationStoreMeta newMeta = dupReplicationStoreMeta();
-
-				/**
-				 * Inherit coordinate from last active keeper, so redis slave
-				 * and BackupKeeper can continue cmd from this new ActiveKeeper.
-				 */
-				newMeta.setBeginOffset(metaOfLastActiveKeeper.getBeginOffset());
-				newMeta.setKeeperBeginOffset(metaOfLastActiveKeeper.getKeeperBeginOffset());
-				newMeta.setKeeperRunid(metaOfLastActiveKeeper.getKeeperRunid());
-				newMeta.setMasterAddress(metaOfLastActiveKeeper.getMasterAddress());
-				newMeta.setMasterRunid(metaOfLastActiveKeeper.getMasterRunid());
-
-				saveMeta(newMeta);
-			}
+			} 
+			saveMeta(metaOfLastActiveKeeper);
 		}
 	}
 
