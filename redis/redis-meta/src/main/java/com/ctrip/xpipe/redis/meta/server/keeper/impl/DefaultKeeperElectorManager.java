@@ -102,11 +102,18 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 		
 		logger.info("[unwatchCluster]{}", clusterMeta);
 		watchedClusters.remove(clusterMeta.getId());
+		
+		Set<Pair<String, String>> toDelete = new HashSet<>();
 		for(Pair<String, String> key : aliveKeeper.keySet()){
 			if(key.getKey().equals(clusterMeta.getId())){
-				aliveKeeper.remove(key);
+				toDelete.add(key);
 			}
 		}
+		
+		for(Pair<String, String> key : toDelete){
+			aliveKeeper.remove(key);
+		}
+		
 	}
 
 	private void observeLeader(final ClusterMeta cluster) throws Exception {

@@ -69,6 +69,10 @@ public class DispatchMoving {
 			}
 			forwardInfo.setType(ForwardType.MOVING);
 			Method method = ObjectUtils.getMethod(targetMethodName, MetaServer.class);
+			if(method == null){
+				//impossible to happen
+				throw new IllegalStateException("can not find method " + targetMethodName);
+			}
 			return method.invoke(exportServer, args);
 		}
 		

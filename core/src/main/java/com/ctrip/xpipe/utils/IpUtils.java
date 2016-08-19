@@ -61,6 +61,9 @@ public class IpUtils {
 		
 		try {
 			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+			if(interfaces == null){
+				return null;
+			}
 			while(interfaces.hasMoreElements()){
 				 NetworkInterface current = interfaces.nextElement();
 				 if(current.isLoopback()){

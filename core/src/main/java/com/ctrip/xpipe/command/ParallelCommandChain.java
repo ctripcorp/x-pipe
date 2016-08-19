@@ -45,7 +45,8 @@ public class ParallelCommandChain extends AbstractCommandChain{
 			executors.execute(new Runnable() {
 				@Override
 				public void run() {
-					executeNext().addListener(new CommandFutureListener() {
+					CommandFuture<?> future = executeNext();
+					future.addListener(new CommandFutureListener() {
 
 						@Override
 						public void operationComplete(CommandFuture commandFuture) throws Exception {

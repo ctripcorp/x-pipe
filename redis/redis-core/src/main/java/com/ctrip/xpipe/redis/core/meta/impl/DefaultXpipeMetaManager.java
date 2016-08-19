@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
+import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
@@ -235,8 +236,11 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	public boolean noneKeeperActive(String dc, String clusterId, String shardId) {
 		
 		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
-		boolean changed = false;
 		
+		if(shardMeta == null){
+			throw new RedisRuntimeException(String.format("dc:%s, cluster:%s, shard:%s", dc, clusterId, shardId));
+		}
+		boolean changed = false;
 		for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
 			if(keeperMeta.isActive()){
 				keeperMeta.setActive(false);
@@ -396,8 +400,10 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		if(phase == 1){
 			return newRedisMaster;
 		}
-		
 		KeeperMeta keeperActive = getDirectKeeperActive(oldRedisMaster.parent().getKeepers());
+		if(keeperActive == null){
+			throw new RedisRuntimeException(String.format("can not find active keeper:", oldRedisMaster.parent().getKeepers()));
+		}
 		return String.format("%s:%d", keeperActive.getIp(), keeperActive.getPort());
 	}
 
@@ -415,7 +421,9 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		}
 		logger.info("[updateUpstreamKeeper]{},{},{},{}", dc, clusterId, shardId, address);
 		ShardMeta shardMeta = getDirectShardMeta(activeDc, clusterId, shardId);
-		
+		if(shardMeta == null){
+			throw new RedisRuntimeException(String.format("dc:%s, cluster:%s, shard:%s, address:%s", dc, clusterId, shardId, address));
+		}
 		String oldUpstream = shardMeta.getUpstream();
 		if(ObjectUtils.equals(oldUpstream, address)){
 			return false;

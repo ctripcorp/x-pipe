@@ -95,12 +95,16 @@ public class DefaultDcMetaManager implements DcMetaManager{
 	@Override
 	public RedisMeta getRedisMaster(String clusterId, String shardId) {
 		
-		for(RedisMeta redisMeta : getRedises(clusterId, shardId)){
+		List<RedisMeta> allRedises = getRedises(clusterId, shardId);
+		if(allRedises == null){
+			return null;
+		}
+		
+		for(RedisMeta redisMeta : allRedises){
 			if(redisMeta.isMaster()){
 				return redisMeta;
 			}
 		}
-		
 		return null;
 	}
 

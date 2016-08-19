@@ -250,10 +250,6 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
                     return true;
                 }
 
-                if (waitTime <= 0) {
-                    return isDone();
-                }
-
                 incWaiters();
                 try {
                     for (;;) {

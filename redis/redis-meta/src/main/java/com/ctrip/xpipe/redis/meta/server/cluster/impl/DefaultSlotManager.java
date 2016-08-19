@@ -311,7 +311,12 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 
 	@Override
 	public SlotInfo getSlotInfoByKey(Object key) {
-		return slotsMap.get(getSlotIdByKey(key));
+		try{
+			lock.readLock().lock();
+			return slotsMap.get(getSlotIdByKey(key));
+		}finally{
+			lock.readLock().unlock();
+		}
 	}
 
 	@Override
@@ -332,7 +337,12 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 
 	@Override
 	public Map<Integer, SlotInfo> allSlotsInfo() {
-		return new HashMap<>(slotsMap);
+		try{
+			lock.readLock().lock();
+			return new HashMap<>(slotsMap);
+		}finally{
+			lock.readLock().unlock();
+		}
 	}
 
 }
