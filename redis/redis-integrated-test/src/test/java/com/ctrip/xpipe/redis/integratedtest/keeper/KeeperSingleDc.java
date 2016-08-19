@@ -48,6 +48,14 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 		
 		sleep(2000);
 		Assert.assertEquals(PARTIAL_STATE.PARTIAL, redisKeeperServer.getRedisMaster().partialState());
+		
+		
+		//make sure keeper works
+		sendMessageToMaster();
+		RedisMeta newSlave = createSlave(backupKeeper.getIp(), backupKeeper.getPort());
+		startRedis(getDcMeta(), newSlave);
+		
+		assertRedisEquals();
 	}
 
 	@Test
@@ -102,10 +110,10 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 		
 	}
 
-	private RedisMeta createSlave(String ip, Integer port) {
+	private RedisMeta createSlave(String masterIp, Integer masterPort) {
 		
 		RedisMeta slave = new RedisMeta();
-		slave.setMaster(String.format("%s:%d", ip, port));
+		slave.setMaster(String.format("%s:%d", masterIp, masterPort));
 		slave.setPort(randomPort());		
 		return slave;
 	}

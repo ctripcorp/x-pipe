@@ -4,13 +4,16 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
@@ -44,6 +47,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	private String clusterId = "cluster1", shardId = "shard1";
 	
 	private int defaultTestMessageCount = 10000;
+	
+	private Set<RedisMeta> allRedisStarted = new HashSet<>();
 
 	@Before
 	public void beforeAbstractIntegratedTest() throws Exception{
@@ -138,6 +143,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 		File file = createRedisConfigFile(dcMeta, redisMeta, redisDir, dataDir);
 		executeScript("start_redis.sh", file.getAbsolutePath(), new File(logDir, String.format("%d.log", redisMeta.getPort())).getAbsolutePath());
+		
+		allRedisStarted.add(redisMeta);
 	}
 
 	protected File createRedisConfigFile(DcMeta dcMeta, RedisMeta redisMeta, File destDir, File dataDir) throws IOException {
@@ -211,9 +218,17 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	
 	protected void sendMesssageToMasterAndTest(int messageCount, RedisMeta ... slaves){
 
-		sendRandomMessage(getRedisMaster(), messageCount);
+		sendMessageToMaster(messageCount);
 		sleep(6000);
 		assertRedisEquals(getRedisMaster(), slaves);
+	}
+
+	protected void sendMessageToMaster(){
+		sendMessageToMaster(defaultTestMessageCount);
+	}
+
+	protected void sendMessageToMaster(int messageCount){
+		sendRandomMessage(getRedisMaster(), messageCount);
 	}
 
 	protected void sendMesssageToMasterAndTest(RedisMeta ... slaves){
@@ -284,6 +299,22 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 			}
 		}
 		return result;
+	}
+	
+	protected void assertRedisEquals() {
+		assertRedisEquals(getRedisMaster(), getRedisSlaves().toArray(new RedisMeta[0]));
+	}
+
+	@After
+	public void afterAbstractIntegratedTest(){
+		
+		for(RedisMeta redisMeta : allRedisStarted){
+			try {
+				stopServerListeningPort(redisMeta.getPort());
+			} catch (IOException e) {
+				logger.error("[afterAbstractIntegratedTest][error stop redis]" + redisMeta, e);
+			}
+		}
 	}
 
 }
