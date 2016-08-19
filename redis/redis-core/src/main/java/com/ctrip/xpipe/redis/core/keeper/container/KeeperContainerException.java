@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 /**
  * @author Jason Song(song_s@ctrip.com)
  */
+@SuppressWarnings("serial")
 public class KeeperContainerException extends RedisRuntimeException {
 
     public KeeperContainerException(String message) {
