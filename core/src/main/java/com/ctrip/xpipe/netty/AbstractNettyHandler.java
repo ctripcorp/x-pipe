@@ -12,7 +12,7 @@ import io.netty.channel.ChannelHandlerContext;
  *
  * Jun 2, 2016
  */
-public class AbstractNettyHandler extends ChannelDuplexHandler{
+public abstract class AbstractNettyHandler extends ChannelDuplexHandler{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
