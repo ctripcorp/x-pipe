@@ -372,10 +372,13 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	}
 
 	@Override
-	public void beginWriteRdb() throws IOException {
-
+	public void beginWriteRdb(long fileSize, long offset) throws IOException {
+		
 		partialState = PARTIAL_STATE.FULL;
 		getCurrentReplicationStore().getMetaStore().setMasterAddress(endpoint);
+		if(redisKeeperServer.getRedisKeeperServerState().sendKinfo()){
+			getCurrentReplicationStore().getMetaStore().updateMeta(ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME, offset);
+		}
 	}
 
 	@Override
@@ -423,7 +426,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 					}
 
 					// TODO config
-					if (System.currentTimeMillis() - lastRdbUpdateTime.get() > 5000) {
+					if (System.currentTimeMillis() - lastRdbUpdateTime.get() > 60000) {
 
 						logger.info("[fullSyncToSlave]update rdb to full sync");
 						File rdbFile = currentStore.prepareNewRdbFile();
@@ -600,7 +603,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 				}
 
 				@Override
-				public void beginWriteRdb() {
+				public void beginWriteRdb(long fileSize, long offset) {
 				}
 			});
 			rdbOnlyPsync.execute();

@@ -11,7 +11,7 @@ public interface PsyncObserver {
 	
 	void reFullSync();
 	
-	void beginWriteRdb() throws IOException;
+	void beginWriteRdb(long fileSize, long offset) throws IOException;
 	
 	void endWriteRdb();
 	

@@ -34,6 +34,8 @@ public interface MetaStore {
 	void loadMeta() throws IOException;
 	
 	void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException;
+	
+	void updateMeta(String name, long rdbLastKeeperOffset) throws IOException;
 
 	void psyncBegun(String masterRunid, long offset) throws IOException;
 	

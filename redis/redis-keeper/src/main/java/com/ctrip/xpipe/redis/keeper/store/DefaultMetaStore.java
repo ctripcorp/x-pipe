@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.helper.Files.IO;
@@ -25,6 +24,8 @@ import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
  *         Jul 26, 2016 11:23:22 AM
  */
 public class DefaultMetaStore implements MetaStore {
+	
+	
 	
 	private static final String META_FILE = "meta.json";
 
@@ -92,36 +93,22 @@ public class DefaultMetaStore implements MetaStore {
 		return new ReplicationStoreMeta(metaRef.get());
 	}
 
-	private ReplicationStoreMeta getReplicationStoreMeta(String name) throws IOException {
-		File file = new File(baseDir, String.format(ROOT_FILE_PATTERN, name));
-
-		ReplicationStoreMeta meta = null;
-		if (file.isFile()) {
-			meta = JSON.parseObject(IO.INSTANCE.readFrom(file, "utf-8"), ReplicationStoreMeta.class);
-			log.info("[getReplicationStoreMeta]{}, {}, {}", name, meta, file.getAbsolutePath());
-			log.info("{}", FileUtils.readFileToString(file));
-		}else{
-			throw new RedisKeeperRuntimeException("[getReplicationStoreMeta][not file]" + name + ", " + file.getAbsolutePath());
-		}
-
-		return meta;
-	}
-
 	private void saveMeta(ReplicationStoreMeta newMeta) throws IOException {
+		
 		log.info("[Metasaved]\nold:{}\nnew:{}", metaRef.get(), newMeta);
 		metaRef.set(newMeta);
 		// TODO sync with fs?
-		IO.INSTANCE.writeTo(new File(baseDir, META_FILE), JSON.toJSONString(metaRef.get()));
+		saveMetaToFile(new File(baseDir, META_FILE), metaRef.get());
 	}
 
 	@Override
 	public void loadMeta() throws IOException {
 		synchronized (metaRef) {
+			
 			File metaFile = new File(baseDir, META_FILE);
-			if (metaFile.isFile()) {
-				metaRef.set(JSON.parseObject(IO.INSTANCE.readFrom(metaFile, "utf-8"), ReplicationStoreMeta.class));
-				ReplicationStoreMeta meta = metaRef.get();
-
+			if(metaFile.isFile()){
+				ReplicationStoreMeta meta = loadMetaFromFile(metaFile);
+				metaRef.set(meta);
 				log.info("Meta loaded: {}", meta);
 			} else {
 				metaRef.set(new ReplicationStoreMeta());
@@ -131,10 +118,33 @@ public class DefaultMetaStore implements MetaStore {
 
 	@Override
 	public void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException {
-		// TODO make saveMeta acid
-		File file = new File(baseDir, String.format(ROOT_FILE_PATTERN, name));
+		
+		File file = new File(baseDir, getMetaFileName(name));
+		saveMetaToFile(file, replicationStoreMeta);
+	}
+	
 
-		IO.INSTANCE.writeTo(file, JSON.toJSONString(replicationStoreMeta));
+	private ReplicationStoreMeta getReplicationStoreMeta(String name) throws IOException {
+		
+		File file = new File(baseDir, getMetaFileName(name));
+		ReplicationStoreMeta meta = loadMetaFromFile(file);
+		log.info("[getReplicationStoreMeta]{}, {}, {}", name, meta, file.getAbsolutePath());
+		return meta;
+	}
+
+	private String getMetaFileName(String name) {
+		return String.format(ROOT_FILE_PATTERN, name);
+	}
+
+	@Override
+	public void updateMeta(String name, long rdbLastKeeperOffset) throws IOException {
+		
+		File file = new File(baseDir, getMetaFileName(name));
+		ReplicationStoreMeta meta = getReplicationStoreMeta(name);
+		log.info("[updateMeta][old]{},{}", name, meta);
+		meta.setRdbLastKeeperOffset(rdbLastKeeperOffset);
+		log.info("[updateMeta][new]{},{}", name, meta);
+		saveMetaToFile(file, meta);
 	}
 
 	@Override
@@ -273,5 +283,17 @@ public class DefaultMetaStore implements MetaStore {
 		return redisOffset - meta.getBeginOffset() + meta.getKeeperBeginOffset();
 	}
 
-
+	private void saveMetaToFile(File file, ReplicationStoreMeta replicationStoreMeta) throws IOException {
+		// TODO make saveMeta acid
+		IO.INSTANCE.writeTo(file, JSON.toJSONString(replicationStoreMeta));
+	}
+	
+	private ReplicationStoreMeta loadMetaFromFile(File file) throws IOException{
+		
+		if(file.isFile()){
+			return JSON.parseObject(IO.INSTANCE.readFrom(file, "utf-8"), ReplicationStoreMeta.class);
+		}
+		
+		throw new RedisKeeperRuntimeException("[loadMetaFromFile][not file]" + file.getAbsolutePath());
+	}
 }

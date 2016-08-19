@@ -349,7 +349,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void beginWriteRdb() {
+	public void beginWriteRdb(long fileSize, long offset) {
 	}
 
 	@Override

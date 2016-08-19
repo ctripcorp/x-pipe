@@ -108,6 +108,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			public void updateKeeperRunid(String keeperRunid) throws IOException {
 				
 			}
+
+			@Override
+			public void updateMeta(String name, long rdbLastKeeperOffset) throws IOException {
+				// TODO Auto-generated method stub
+				
+			}
 		};
 	}
 
