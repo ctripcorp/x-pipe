@@ -11,12 +11,13 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-public class DefaultReplicationStoreTest {
+public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 
 	@Test
 	public void test() throws Exception {
@@ -24,7 +25,7 @@ public class DefaultReplicationStoreTest {
 		baseDir.deleteOnExit();
 		System.out.println(baseDir.getCanonicalFile());
 
-		DefaultReplicationStore store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig());
+		DefaultReplicationStore store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid());
 		store.beginRdb("master", -1, -1);
 
 		int cmdCount = 4;

@@ -155,7 +155,23 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	
 	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, KeeperConfig keeperConfig, File storeDir) {
 		
-		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, storeDir);
+		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, randomKeeperRunid(), storeDir);
+	}
+
+	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
+		
+		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir);
+	}
+	
+	protected String randomKeeperRunid(){
+		
+		StringBuilder sb = new StringBuilder();
+		for(int i=0;i<40;i++){
+			int num = (int) (Math.random()*16);
+			sb.append(String.format("%x", num));
+		}
+		return sb.toString();
+		
 	}
 
 
