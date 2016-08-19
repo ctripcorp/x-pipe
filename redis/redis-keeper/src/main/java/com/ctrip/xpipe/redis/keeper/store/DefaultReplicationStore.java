@@ -288,8 +288,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 	@Override
 	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
 		
-		long commandOffset = offset - getMetaStore().getKeeperBeginOffset();
-		getCommandStore().addCommandsListener(commandOffset, commandsListener);
+		getCommandStore().addCommandsListener(offset, commandsListener);
 	}
 
 

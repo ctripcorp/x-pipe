@@ -223,7 +223,8 @@ public class DefaultCommandStore implements CommandStore {
 			try {
 				offsetNotifier.await(curPosition + 1);
 			} catch (InterruptedException e) {
-				// TODO
+				logger.error("[read]", e);
+				Thread.currentThread().interrupt();
 				return 0;
 			}
 			int read = channel.read(dst);
@@ -278,7 +279,7 @@ public class DefaultCommandStore implements CommandStore {
 
 	@Override
 	public void addCommandsListener(long offset, CommandsListener listener) throws IOException {
-		logger.info("[addCommandsListener] from offset {}", offset);
+		logger.info("[addCommandsListener] from offset {}, {}", offset, listener);
 
 		CommandReader cmdReader = null;
 

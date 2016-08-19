@@ -42,7 +42,7 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		startRedises();
 		startKeepers();
 		makeKeeperRight();
-		sleep(2000);//wait for structure to build
+		sleep(3000);//wait for structure to build
 	}
 
 	private void setFistKeeperActive() {	

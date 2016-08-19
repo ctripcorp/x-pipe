@@ -52,9 +52,18 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	private ExecutorService nonPsyncExecutor;
 	
 	private DefaultRedisClient(Channel channel) {
+		
 		this.channel = channel;
 		String remoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
 		nonPsyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create("RedisClientNonPsync-" + remoteIpLocalPort));
+		channel.closeFuture().addListener(new ChannelFutureListener() {
+			
+			@Override
+			public void operationComplete(ChannelFuture future) throws Exception {
+				logger.info("[operationComplete][channel close]{}", future.channel());
+				release();
+			}
+		});
 	}
 	
 	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
@@ -246,5 +255,11 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	@Override
 	public void processCommandSequentially(Runnable runnable) {
 		nonPsyncExecutor.execute(runnable);
+	}
+
+	@Override
+	public void release() throws Exception {
+		logger.info("[release]{}", this);
+		nonPsyncExecutor.shutdownNow();
 	}
 }

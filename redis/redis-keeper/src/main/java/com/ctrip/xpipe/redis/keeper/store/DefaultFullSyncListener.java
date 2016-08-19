@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
@@ -32,8 +31,6 @@ public class DefaultFullSyncListener implements FullSyncListener{
 	private RedisSlave redisSlave;
 	
 	private AtomicLong writtenLength = new AtomicLong();
-	
-	private AtomicBoolean stop = new AtomicBoolean(false);
 	
 	public DefaultFullSyncListener(RedisSlave redisSlave) {
 		this.redisSlave = redisSlave;
@@ -84,24 +81,18 @@ public class DefaultFullSyncListener implements FullSyncListener{
 	
 	@Override
    public boolean isOpen() {
-	   return !stop.get();
+	   return redisSlave.isOpen();
    }
 	
-	public void stop() {
-		stop.set(true);
-	}
-
 	@Override
 	public void exception(Exception e) {
 		
-		logger.error("[exception][close client]" + redisSlave, e);
 		try {
+			logger.error("[exception][close client]" + redisSlave, e);
 			redisSlave.close();
 		} catch (IOException e1) {
 			logger.error("[exception]" + redisSlave, e1);
-		} finally {
-			stop();
-		}
+		} 
 	}
 
 	@Override
@@ -115,5 +106,11 @@ public class DefaultFullSyncListener implements FullSyncListener{
 
 	@Override
 	public void beforeCommand() {
+		redisSlave.beforeCommand();
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("%s:%s", getClass().getSimpleName(), redisSlave);
 	}
 }

@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.utils;
 
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,6 +39,34 @@ public class OffsetNotifierTest extends AbstractTest{
 		long ended = System.currentTimeMillis();
 		
 		Assert.assertTrue(ended - current >= (0.9 * waitMili));
+	}
+	
+	@Test
+	public void testWaitInterrupt() throws IOException{
+
+		final AtomicBoolean interrupted = new AtomicBoolean(false);
+		
+		Thread t = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				try {
+					logger.info("[run][begin wait]");
+					offsetNotifier.await(initPos+1);
+				} catch (InterruptedException e) {
+					logger.error("[]", e);
+					interrupted.set(true);
+				}finally{
+					logger.info("[run][end  wait]");
+				}
+			}
+		});
+		t.start();
+		t.interrupt();
+		
+		sleep(100);
+		
+		Assert.assertTrue(interrupted.get());
 	}
 
 }

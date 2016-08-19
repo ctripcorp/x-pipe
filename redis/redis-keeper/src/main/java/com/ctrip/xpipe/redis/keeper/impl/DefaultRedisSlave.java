@@ -48,6 +48,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	
 	private PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 	
+	@SuppressWarnings("unused")
 	private Long rdbFileOffset;
 	
 	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_NETTY", 5000);
@@ -64,6 +65,7 @@ public class DefaultRedisSlave implements RedisSlave {
 		this.setSlaveListeningPort(redisClient.getSlaveListeningPort());
 		delayMonitor.setDelayInfo(redisClient.channel().remoteAddress().toString());
 		initPsyncExecutor(((DefaultRedisClient)redisClient).channel);
+		this.redisClient.addChannelCloseReleaseResources(this);
 	}
 
 	private void initPsyncExecutor(Channel channel) {
@@ -140,7 +142,6 @@ public class DefaultRedisSlave implements RedisSlave {
 			if(logger.isInfoEnabled()){
 				logger.info("[writeComplete][rdbWriteComplete]" + this);
 			}
-			beginWriteCommands(rdbFileOffset + 1);
 		}
 	}
 
@@ -279,6 +280,13 @@ public class DefaultRedisSlave implements RedisSlave {
 	@Override
 	public String toString() {
 		return this.redisClient.toString();
+	}
+
+	@Override
+	public void release() throws Exception {
+		logger.info("[release]{}", this);
+		psyncExecutor.shutdownNow();
+		closed.set(true);
 	}
 	
 }

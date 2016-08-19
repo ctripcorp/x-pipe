@@ -27,4 +27,5 @@ public interface KeeperConfig extends CoreConfig{
 	 */
 	long getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
 
+	int getRdbDumpMinIntervalMilli();
 }

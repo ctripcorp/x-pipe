@@ -12,6 +12,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int replicationStoreCommandFileSize = 1024;
 	private int replicationStoreCommandFileNumToKeep = 2;
 	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
+	private int rdbDumpMinIntervalMilli = 1000;
 	
 	public TestKeeperConfig(int replicationStoreCommandFileSize, int replicationStoreCommandFileNumToKeep, int replicationStoreMaxCommandsToTransferBeforeCreateRdb) {
 		this.replicationStoreCommandFileNumToKeep = replicationStoreCommandFileNumToKeep;
@@ -65,5 +66,10 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public void setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(
 			int replicationStoreMaxCommandsToTransferBeforeCreateRdb) {
 		this.replicationStoreMaxCommandsToTransferBeforeCreateRdb = replicationStoreMaxCommandsToTransferBeforeCreateRdb;
+	}
+
+	@Override
+	public int getRdbDumpMinIntervalMilli() {
+		return rdbDumpMinIntervalMilli;
 	}
 }

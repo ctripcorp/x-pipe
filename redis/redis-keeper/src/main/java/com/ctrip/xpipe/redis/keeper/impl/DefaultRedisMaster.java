@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.util.Date;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
@@ -425,8 +427,9 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 						break;
 					}
 
+					KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
 					// TODO config
-					if (System.currentTimeMillis() - lastRdbUpdateTime.get() > 60000) {
+					if (System.currentTimeMillis() - lastRdbUpdateTime.get() > keeperConfig.getRdbDumpMinIntervalMilli()) {
 
 						logger.info("[fullSyncToSlave]update rdb to full sync");
 						File rdbFile = currentStore.prepareNewRdbFile();
@@ -444,6 +447,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 						waitUntilPsyncDone(rdbOnlyPsyncRef, rdbOnlyReplicationStore, redisSlave, currentStore, endWriteRdbFuture);
 					} else {
 						try {
+							logger.info("[fullSyncToSlave][interval, lastTime]{}", keeperConfig.getRdbDumpMinIntervalMilli(), new Date(lastRdbUpdateTime.get()));
 							sendNewLineToRedisSlave(redisSlave);
 							// TODO config
 							Thread.sleep(1000);
