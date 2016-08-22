@@ -62,8 +62,10 @@ public class FileUtils {
 		
 		//try classpath
 		URL url = clazz.getResource(fileName);
+		logger.info("[tryResource]{}", url);
 		if(url == null){
 			url = clazz.getClassLoader().getResource(fileName);
+			logger.info("[tryResourceClassLoader]{}", url);
 		}
 		if(url != null){
 			try {
