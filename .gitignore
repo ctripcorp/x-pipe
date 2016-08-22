@@ -1,14 +1,17 @@
 testbin
-target
-.DS_Store
 TODO
 *.swp
+
+#maven
+target
+reports
+
+# eclipse related
 .settings
 .project
 .classpath
 *.class
-.idea
-*.iml
+.DS_Store
 
 # Idea files
 .idea

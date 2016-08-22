@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.utils;
 
+import java.net.InetSocketAddress;
+
 import org.junit.Test;
 
 import com.ctrip.xpipe.AbstractTest;
@@ -16,5 +18,14 @@ public class IpUtilsTest extends AbstractTest{
 		
 		logger.info("{}", IpUtils.getFistNonLocalIpv4ServerAddress());
 	}
+
+	@Test
+	public void testGetIp(){
+		
+		InetSocketAddress address = new InetSocketAddress("localhost", 6379);
+		logger.info("{}", IpUtils.getIp(address));
+		logger.info("{}", address.getAddress().getHostAddress());
+	}
+
 
 }

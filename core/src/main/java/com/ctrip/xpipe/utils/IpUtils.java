@@ -31,13 +31,9 @@ public class IpUtils {
 		if(socketAddress instanceof InetSocketAddress){
 			
 			InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
-			String ip = inetSocketAddress.getAddress().toString(); 
-			if(ip.charAt(0) == '/'){
-				return ip.substring(1);
-			}
+			String ip = inetSocketAddress.getAddress().getHostAddress(); 
 			return ip;
 		}
-		
 		throw new IllegalStateException("unknown socketaddress type:" + socketAddress.getClass() + "," + socketAddress);
 	}
 	
