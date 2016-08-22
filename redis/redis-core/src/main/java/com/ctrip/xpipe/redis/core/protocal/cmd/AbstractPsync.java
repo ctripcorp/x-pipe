@@ -85,6 +85,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			masterRunidRequest = currentReplicationStore.getMetaStore().getMasterRunid();
 			offset = currentReplicationStore.getEndOffset() + 1;
 		}
+		
 		if(masterRunidRequest == null){
 			masterRunidRequest = "?";
 			offset = -1;

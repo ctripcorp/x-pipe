@@ -7,10 +7,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServerTest;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActiveTest;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackupTest;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateUnknownTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManagerTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 
 /**
@@ -24,7 +26,9 @@ import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 	RedisKeeperServerStateBackupTest.class,
 	RedisKeeperServerStateActiveTest.class,
 	RedisKeeperServerStateUnknownTest.class,
-	KeeperContainerServiceTest.class
+	KeeperContainerServiceTest.class,
+	DefaultReplicationStoreManagerTest.class,
+	DefaultRedisKeeperServerTest.class
 })
 public class AllTests {
 

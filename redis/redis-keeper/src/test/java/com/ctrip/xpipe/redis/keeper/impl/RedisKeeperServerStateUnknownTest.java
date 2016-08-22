@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.apache.commons.lang3.SerializationUtils;
@@ -34,7 +35,7 @@ public class RedisKeeperServerStateUnknownTest extends AbstractRedisKeeperServer
 	}
 
 	@Test
-	public void testActive(){
+	public void testActive() throws IOException{
 				
 		//active
 		KeeperMeta keeperMeta = redisKeeperServer.getCurrentKeeperMeta();
@@ -50,7 +51,7 @@ public class RedisKeeperServerStateUnknownTest extends AbstractRedisKeeperServer
 	}
 
 	@Test
-	public void testBackup(){
+	public void testBackup() throws IOException{
 				
 		//active
 		KeeperMeta keeperMeta = SerializationUtils.clone(redisKeeperServer.getCurrentKeeperMeta());;

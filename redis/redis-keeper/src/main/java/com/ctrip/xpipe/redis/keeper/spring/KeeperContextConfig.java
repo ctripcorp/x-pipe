@@ -9,7 +9,6 @@ import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
 import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.zk.ZkClient;
-import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
 
 /**
@@ -22,16 +21,9 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 public class KeeperContextConfig extends AbstractRedisConfigContext{
 		
 	@Bean
-	public LeaderElectorManager geElectorManager(KeeperConfig  keeperConfig){
+	public LeaderElectorManager geElectorManager(KeeperConfig  keeperConfig, ZkClient zkClient){
 		
-		return new DefaultLeaderElectorManager(getZkClient(keeperConfig));
+		return new DefaultLeaderElectorManager(zkClient);
 	}
 
-	private ZkClient getZkClient(KeeperConfig keeperConfig) {
-		
-		DefaultZkClient zkClient = new DefaultZkClient();
-		zkClient.setZkAddress(keeperConfig.getZkConnectionString());
-		return zkClient;
-	}
-	
 }

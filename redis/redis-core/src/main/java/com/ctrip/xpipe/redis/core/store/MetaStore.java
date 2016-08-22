@@ -1,11 +1,9 @@
-/**
- * 
- */
 package com.ctrip.xpipe.redis.core.store;
 
 import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 
 /**
  * @author marsqing
@@ -44,13 +42,15 @@ public interface MetaStore {
 	 * @param name
 	 * @throws IOException
 	 */
-	void becomeActive() throws IOException;
+	void backupBecomeActive() throws IOException;
 	
 	/**
 	 * keeper active -> backup
 	 * @throws IOException 
 	 */
-	void becomeBackup() throws IOException;
+	void activeBecomeBackup() throws IOException;
+	
+	void setKeeperState(KeeperState keeperState) throws IOException;
 
 	ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, long rdbFileSize, String cmdFilePrefix) throws IOException;
 

@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Profile;
 
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.spring.AbstractProfile;
 
 /**
  * @author wenchao.meng
@@ -13,8 +14,8 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
  * Aug 9, 2016
  */
 @Configuration
-@Profile("production")
-public class Production {
+@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
+public class Production extends AbstractProfile{
 	
 	@Bean
 	public MetaServerConfig  getMetaServerConfig(){

@@ -13382,7 +13382,7 @@ var tooltip = $.widget( "ui.tooltip", {
 		// Append the aria-live region so tooltips announce correctly
 		this.liveRegion = $( "<div>" )
 			.attr({
-				role: "log",
+				role: "logger",
 				"aria-live": "assertive",
 				"aria-relevant": "additions"
 			})
@@ -13553,7 +13553,7 @@ var tooltip = $.widget( "ui.tooltip", {
 
 		// Support: Voiceover on OS X, JAWS on IE <= 9
 		// JAWS announces deletions even when aria-relevant="additions"
-		// Voiceover will sometimes re-read the entire log region's contents from the beginning
+		// Voiceover will sometimes re-read the entire logger region's contents from the beginning
 		this.liveRegion.children().hide();
 		if ( content.clone ) {
 			a11yContent = content.clone();

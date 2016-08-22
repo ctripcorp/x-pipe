@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.api.config;
 
+import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.utils.ServicesUtil;
 
 /**
@@ -7,7 +8,7 @@ import com.ctrip.xpipe.utils.ServicesUtil;
  *
  * Jul 21, 2016
  */
-public interface Config {
+public interface Config extends Ordered{
 	
 	public static Config DEFAULT = ServicesUtil.getConfigService();
 

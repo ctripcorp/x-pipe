@@ -16,11 +16,11 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
  */
 public interface RedisKeeperServerState{
 	
-	void becomeActive(InetSocketAddress masterAddress);
+	void becomeActive(InetSocketAddress masterAddress) throws IOException;
 	
-	void becomeBackup(InetSocketAddress masterAddress);
+	void becomeBackup(InetSocketAddress masterAddress) throws IOException;
 	
-	void setShardStatus(ShardStatus shardStatus);
+	void setShardStatus(ShardStatus shardStatus) throws IOException;
 	
 	Endpoint getMaster();
 	
@@ -35,8 +35,6 @@ public interface RedisKeeperServerState{
 	boolean sendKinfo();
 	
 	boolean psync(RedisClient redisClient, String []args);
-	
-	boolean isActive();
 	
 	KeeperState keeperState();
 

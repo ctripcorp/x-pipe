@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Profile;
 
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
+import com.ctrip.xpipe.spring.AbstractProfile;
 
 /**
  * @author wenchao.meng
@@ -14,8 +15,8 @@ import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
  * Aug 9, 2016
  */
 @Configuration
-@Profile("test")
-public class Test {
+@Profile(AbstractProfile.PROFILE_NAME_TEST)
+public class TestProfile extends AbstractProfile{
 	
 	@Bean
 	public MetaServerConfig  getMetaServerConfig(){

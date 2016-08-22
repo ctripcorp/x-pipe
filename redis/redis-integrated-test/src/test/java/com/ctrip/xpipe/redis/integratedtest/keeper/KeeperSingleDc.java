@@ -13,8 +13,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 
 
@@ -24,10 +22,6 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
  * Aug 17, 2016
  */
 public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
-	
-	private int replicationStoreCommandFileSize = 1024;
-	private int replicationStoreCommandFileNumToKeep = 2;
-	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
 	
 	@Test
 	public void testSync() throws IOException{
@@ -96,7 +90,7 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 		logger.info(remarkableMessage("[testReFullSync][sendRandomMessage]"));
 		sendRandomMessage(redisMaster, 1, replicationStoreCommandFileSize);
 		
-		for(int i=0;i<5;i++){
+		for(int i=0;i<3;i++){
 			
 			logger.info(remarkableMessage("[testReFullSync]{}"), i);
 			startRedis(dcMeta, slave1);
@@ -118,9 +112,4 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 		return slave;
 	}
 
-
-	@Override
-	protected KeeperConfig getKeeperConfig() {
-		return new TestKeeperConfig(replicationStoreCommandFileSize, replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb);
-	}
 }

@@ -23,4 +23,9 @@ public class CtripFoundationService implements FoundationService{
 		return Foundation.app().getAppId();
 	}
 
+	@Override
+	public int getOrder() {
+		return HIGHEST_PRECEDENCE;
+	}
+
 }

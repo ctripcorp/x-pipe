@@ -7,11 +7,19 @@ import org.junit.Test;
  *
  * Aug 17, 2016
  */
-public class SimpleTest {
+public class SimpleTest extends AbstractSimpleTest{
+	
 
 	@Test
 	public void test(){
-		
 		System.out.println("nihaoma");
 	}
+	
+	@Test
+	public void testLog(){
+		
+		
+	}
+	
+
 }

@@ -30,17 +30,10 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 	}
 
 	@Override
-	public void becomeBackup(InetSocketAddress masterAddress) {
-		//active changed!
-		try {
-			logger.info("[becomeBackup][active->backup] {}", this);
-			redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
-			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, masterAddress));
-			reconnectMaster();
-		} catch (IOException e) {
-			logger.error("[becomeBackup]" + this, e);
-		}
+	public void becomeBackup(InetSocketAddress masterAddress) throws IOException {
 		
+		logger.info("[becomeBackup]{}", masterAddress);
+		activeToBackup(masterAddress);
 	}
 
 	@Override
@@ -118,11 +111,6 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		}else{
 			logger.warn("[reconnectMaster][can  not reconnect][promotioning...]{}, {}", promotionState, this.redisKeeperServer);
 		}
-	}
-
-	@Override
-	public boolean isActive() {
-		return true;
 	}
 
 	@Override

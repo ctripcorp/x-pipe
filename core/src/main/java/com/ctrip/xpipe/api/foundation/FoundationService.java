@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.api.foundation;
 
+import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.utils.ServicesUtil;
 
 /**
@@ -9,7 +10,7 @@ import com.ctrip.xpipe.utils.ServicesUtil;
  *
  * Jun 13, 2016
  */
-public interface FoundationService {
+public interface FoundationService extends Ordered{
 	
 	public static FoundationService DEFAULT = ServicesUtil.getFoundationService();
 	

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.store;
 
+
 import org.apache.commons.lang3.SerializationUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -7,6 +8,7 @@ import org.junit.Test;
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 
 /**
  * @author wenchao.meng
@@ -28,7 +30,11 @@ public class ReplicationStoreMetaTest extends AbstractRedisTest{
 		
 		meta3.setBeginOffset(meta3.getBeginOffset()+1);
 		Assert.assertNotEquals(meta, meta3);
-
+	}
+	
+	@Test
+	public void testJackson(){
+		
 	}
 	
 
@@ -56,6 +62,7 @@ public class ReplicationStoreMetaTest extends AbstractRedisTest{
 		meta.setMasterRunid(randomString(10));
 		meta.setRdbFile(randomString(10));
 		meta.setRdbFileSize(1000L);
+		meta.setKeeperState(KeeperState.ACTIVE);
 		meta.setRdbLastKeeperOffset(10000L);
 		return meta;
 	}

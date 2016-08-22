@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class XpipeThreadFactory implements ThreadFactory {
-	private static Logger log = LoggerFactory.getLogger(XpipeThreadFactory.class);
+	private static Logger logger = LoggerFactory.getLogger(XpipeThreadFactory.class);
 
 	private final AtomicLong m_threadNumber = new AtomicLong(1);
 
@@ -43,7 +43,7 @@ public class XpipeThreadFactory implements ThreadFactory {
 		group.enumerate(activeThreads);
 		Set<Thread> alives = new HashSet<Thread>(Arrays.asList(activeThreads));
 		Set<Thread> dies = new HashSet<Thread>();
-		log.info("Current ACTIVE thread count is: {}", alives.size());
+		logger.info("Current ACTIVE thread count is: {}", alives.size());
 		long expire = System.currentTimeMillis() + timeoutInMillis;
 		while (System.currentTimeMillis() < expire) {
 			classify(alives, dies, new ClassifyStandard<Thread>() {
@@ -53,18 +53,18 @@ public class XpipeThreadFactory implements ThreadFactory {
 				}
 			});
 			if (alives.size() > 0) {
-				log.info("Alive xpipe threads: {}", alives);
+				logger.info("Alive xpipe threads: {}", alives);
 				try {
 					TimeUnit.SECONDS.sleep(2);
 				} catch (InterruptedException e) {
 					// ignore
 				}
 			} else {
-				log.info("All xpipe threads are shutdown.");
+				logger.info("All xpipe threads are shutdown.");
 				return true;
 			}
 		}
-		log.warn("Some xpipe threads are still alive but expire time has reached, alive threads: {}", alives);
+		logger.warn("Some xpipe threads are still alive but expire time has reached, alive threads: {}", alives);
 		return false;
 	}
 

@@ -29,7 +29,7 @@ import com.ctrip.xpipe.zk.ZkClient;
 @Component
 public class DefaultMetaHolder extends AbstractLifecycleObservable implements MetaHolder, CuratorWatcher {
 
-	private static Logger log = LoggerFactory.getLogger(DefaultMetaHolder.class);
+	private static Logger logger = LoggerFactory.getLogger(DefaultMetaHolder.class);
 
 	@Autowired
 	private ZkClient zkClient;
@@ -62,13 +62,13 @@ public class DefaultMetaHolder extends AbstractLifecycleObservable implements Me
 		byte[] metaBytes = zkClient.get().getData().forPath(metaPath);
 		
 		if (metaBytes == null || metaBytes.length == 0) {
-			log.error("Meta not found in zk, path {}", metaPath);
+			logger.error("Meta not found in zk, path {}", metaPath);
 			throw new RuntimeException("meta not found in zk, path " + metaPath);
 		} else {
 			try {
 				meta = DefaultSaxParser.parse(new ByteArrayInputStream(metaBytes));
 			} catch (Exception e) {
-				log.error("Can not read meta from zk, path {}", metaPath);
+				logger.error("Can not read meta from zk, path {}", metaPath);
 				throw new RuntimeException("Can not read meta from zk, path " + metaPath);
 			}
 		}

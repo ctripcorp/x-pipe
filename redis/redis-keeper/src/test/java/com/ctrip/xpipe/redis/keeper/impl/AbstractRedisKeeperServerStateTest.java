@@ -35,5 +35,11 @@ public class AbstractRedisKeeperServerStateTest extends AbstractRedisKeeperTest{
 	protected ShardStatus createShardStatus(KeeperMeta activeKeeper, KeeperMeta upstreamKeeper, RedisMeta redisMaster) {
 		return new ShardStatus(activeKeeper, upstreamKeeper, redisMaster);
 	}
+
+	@Override
+	protected String getXpipeMetaConfigFile() {
+		return "keeper-test.xml";
+	}
 	
+
 }

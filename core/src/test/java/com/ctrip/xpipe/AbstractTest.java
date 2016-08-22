@@ -38,6 +38,7 @@ import com.ctrip.xpipe.simpleserver.AbstractIoAction;
 import com.ctrip.xpipe.simpleserver.IoAction;
 import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.zk.ZkTestServer;
 
@@ -59,7 +60,7 @@ public class AbstractTest {
 	@Rule
 	public TestName name = new TestName();
 	
-	private Properties properties = new Properties();
+	private static Properties properties = new Properties();
 	
 	
 	@Before
@@ -68,6 +69,8 @@ public class AbstractTest {
 		logger.info(remarkableMessage("[begin test]" + name.getMethodName()));
 		
 		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
+		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
+
 		setProperties();
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
 		
@@ -154,12 +157,18 @@ public class AbstractTest {
 	
 	protected String getTestFileDir(){
 		
-		String userHome = System.getProperty("user.home");
+		String userHome = getUserHome();
 		String testDir = properties.getProperty("test.file.dir"); 
 		String result = testDir.replace("~", userHome);
 		return result + "/" + currentTestName();
-	} 
+	}
+	
+	public static String getUserHome(){
+		
+		return System.getProperty("user.home");
+	}
 
+	
 	protected void sleepSeconds(int seconds){
 		sleep(seconds * 1000);
 	}
@@ -319,8 +328,11 @@ public class AbstractTest {
 			zkTestServer.start();
 			add(zkTestServer);
 		} catch (Exception e) {
+			logger.error("[startZk]", e);
 		}
 	}
+	
+	
 	
 	
 	public static int defaultZkPort(){

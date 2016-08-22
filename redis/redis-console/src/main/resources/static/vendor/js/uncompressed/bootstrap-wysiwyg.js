@@ -212,6 +212,6 @@
 		selectionMarker: 'edit-focus-marker',
 		selectionColor: 'darkgrey',
 		dragAndDropImages: true,
-		fileUploadError: function (reason, detail) { console.log("File upload error", reason, detail); }
+		fileUploadError: function (reason, detail) { console.logger("File upload error", reason, detail); }
 	};
 }(window.jQuery));

@@ -30,6 +30,7 @@ public enum KeeperState {
 			return true;
 		}
 	},
+	
 	ACTIVE {
 		@Override
 		public boolean isActive() {
@@ -40,9 +41,34 @@ public enum KeeperState {
 		public boolean isBackup() {
 			return false;
 		}
+	},
+
+	
+	PRE_ACTIVE {//when restart, state load from local store
+		@Override
+		public boolean isActive() {
+			return false;
+		}
+
+		@Override
+		public boolean isBackup() {
+			return false;
+		}
+	},
+
+	PRE_BACKUP {//when restart, state load from local store
+		@Override
+		public boolean isActive() {
+			return false;
+		}
+
+		@Override
+		public boolean isBackup() {
+			return false;
+		}
 	};
-	
-	
+
+
 	public abstract boolean isActive();
 	public abstract boolean isBackup();
 }

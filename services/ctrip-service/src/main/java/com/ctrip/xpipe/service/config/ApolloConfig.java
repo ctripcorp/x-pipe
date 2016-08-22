@@ -41,4 +41,8 @@ public class ApolloConfig extends AbstractConfig implements ConfigChangeListener
 		return config.getProperty(key, defaultValue);
 	}
 
+	@Override
+	public int getOrder() {
+		return HIGHEST_PRECEDENCE;
+	}
 }

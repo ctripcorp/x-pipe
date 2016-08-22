@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -53,19 +54,23 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
 		
 		RedisKeeperServerState currentState = redisKeeperServer.getRedisKeeperServerState();
-		switch(keeperState){
-			case ACTIVE:
-				currentState.becomeActive(masterAddress);
-				break;
-			case BACKUP:
-				currentState.becomeBackup(masterAddress);
-				break;
-			case UNKNOWN:
-				throw new IllegalStateException("state can not change to unknown!");
-			default:
-				throw new IllegalStateException("unrecognised state:" + keeperState);
+		try{
+			switch(keeperState){
+				case ACTIVE:
+					currentState.becomeActive(masterAddress);
+					break;
+				case BACKUP:
+					currentState.becomeBackup(masterAddress);
+					break;
+				case UNKNOWN:
+					throw new IllegalStateException("state can not change to unknown!");
+				default:
+					throw new IllegalStateException("unrecognised state:" + keeperState);
+			}
+			redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
+		}catch(Exception e){
+			logger.error("[doSetKeeperState]" + String.format("%s, %s, %s", redisClient, keeperState, masterAddress), e);
+			redisClient.sendMessage(new RedisErrorParser(e.getMessage()).format());
 		}
-		
-		redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
 	}
 }

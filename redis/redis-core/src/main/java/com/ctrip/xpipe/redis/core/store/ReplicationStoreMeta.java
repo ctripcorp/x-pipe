@@ -6,6 +6,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 
 /**
  * @author wenchao.meng
@@ -26,7 +27,7 @@ public class ReplicationStoreMeta implements Serializable{
 	private Long rdbLastKeeperOffset;
 	private String cmdFilePrefix;
 
-	private boolean active;
+	private KeeperState keeperState;
 
 	private long keeperBeginOffset = DEFAULT_KEEPER_BEGIN_OFFSET;
 	private String keeperRunid;
@@ -39,7 +40,7 @@ public class ReplicationStoreMeta implements Serializable{
 		this.masterRunid = proto.masterRunid;
 		this.masterAddress = proto.masterAddress;
 		this.beginOffset = proto.beginOffset;
-		this.active = proto.active;
+		this.keeperState = proto.keeperState;
 		this.rdbFile = proto.rdbFile;
 		this.rdbFileSize = proto.rdbFileSize;
 		this.rdbLastKeeperOffset = proto.rdbLastKeeperOffset;
@@ -107,7 +108,7 @@ public class ReplicationStoreMeta implements Serializable{
 	@Override
 	public String toString() {
 		return "ReplicationStoreMeta [masterRunid=" + masterRunid + ", masterAddress=" + masterAddress + ", beginOffset=" + beginOffset + ", rdbFile=" + rdbFile
-				+ ", rdbFileSize=" + rdbFileSize + ", rdbLastKeeperOffset=" + rdbLastKeeperOffset + ", cmdFilePrefix=" + cmdFilePrefix + ", active=" + active
+				+ ", rdbFileSize=" + rdbFileSize + ", rdbLastKeeperOffset=" + rdbLastKeeperOffset + ", cmdFilePrefix=" + cmdFilePrefix + ", keeperState=" + keeperState
 				+ ", keeperBeginOffset=" + keeperBeginOffset + ", keeperRunid=" + keeperRunid + "]";
 	}
 
@@ -133,6 +134,14 @@ public class ReplicationStoreMeta implements Serializable{
 
 	public void setRdbLastKeeperOffset(Long rdbLastKeeperOffset) {
 		this.rdbLastKeeperOffset = rdbLastKeeperOffset;
+	}
+	
+	public KeeperState getKeeperState() {
+		return keeperState;
+	}
+
+	public void setKeeperState(KeeperState keeperState) {
+		this.keeperState = keeperState;
 	}
 	
 	@Override

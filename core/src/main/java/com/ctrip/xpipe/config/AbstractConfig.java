@@ -59,4 +59,10 @@ public abstract class AbstractConfig implements Config{
 			}
 		}
 	}
+	
+	@Override
+	public int getOrder() {
+		
+		return LOWEST_PRECEDENCE;
+	}
 }

@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBuf;
 // TODO make methods correctly sequenced
 public class DefaultReplicationStore implements ReplicationStore {
 
-	private final static Logger log = LoggerFactory.getLogger(DefaultReplicationStore.class);
+	private final static Logger logger = LoggerFactory.getLogger(DefaultReplicationStore.class);
 
 	private final static FileFilter RDB_FILE_FILTER = new FileFilter() {
 
@@ -89,7 +89,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 		for (File rdbFile : rdbFilesOnFS()) {
 			if (!rdbFile.equals(currentRdbFile)) {
-				log.info("[removeUnusedRdbFile] {}", rdbFile);
+				logger.info("[removeUnusedRdbFile] {}", rdbFile);
 			}
 		}
 	}
@@ -101,7 +101,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public RdbStore beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException {
-		log.info("Begin RDB masterRunid:{}, masterOffset:{}, rdbFileSize:{}", masterRunid, masterOffset, rdbFileSize);
+		logger.info("Begin RDB masterRunid:{}, masterOffset:{}, rdbFileSize:{}", masterRunid, masterOffset, rdbFileSize);
 		baseDir.mkdirs();
 
 		String rdbFile = newRdbFileName();
@@ -130,7 +130,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 			ReplicationStoreMeta metaDup = metaStore.rdbUpdated(rdbRelativePath, rdbFileSize, masterOffset);
 
-			log.info("[rdbUpdated] new file {}, rdbFileSize {}, masterOffset {}", rdbFile, rdbFileSize, masterOffset);
+			logger.info("[rdbUpdated] new file {}, rdbFileSize {}, masterOffset {}", rdbFile, rdbFileSize, masterOffset);
 			DefaultRdbStore oldRdbStore = rdbStoreRef.get();
 			rdbStoreRef.set(new DefaultRdbStore(rdbFile, metaDup.getRdbLastKeeperOffset(), rdbFileSize, true));
 			previousRdbStores.put(oldRdbStore, Boolean.TRUE);
@@ -156,7 +156,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 			long beginOffset = metaStore.beginOffset();
 			long totalLength = cmdStore.totalLength();
 			
-			log.info("[getEndOffset]B:{}, L:{}", beginOffset, totalLength);
+			logger.info("[getEndOffset]B:{}, L:{}", beginOffset, totalLength);
 			return beginOffset + totalLength - 1;
 		}
 	}
@@ -172,7 +172,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		for (DefaultRdbStore rdbStore : previousRdbStores.keySet()) {
 			if (rdbStore.refCount() == 0) {
 				File rdbFile = rdbStore.getFile();
-				log.info("[GC] delete rdb file {}", rdbFile);
+				logger.info("[GC] delete rdb file {}", rdbFile);
 				rdbFile.delete();
 				previousRdbStores.remove(rdbStore);
 			}
@@ -183,7 +183,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 			for (File cmdFile : cmdFilesOnFS()) {
 				long fileStartOffset = cmdStore.extractStartOffset(cmdFile);
 				if (canDeleteCmdFile(cmdStore.lowestReadingOffset(), fileStartOffset, cmdFile.length())) {
-					log.info("[GC] delete command file {}", cmdFile);
+					logger.info("[GC] delete command file {}", cmdFile);
 					cmdFile.delete();
 				}
 			}
@@ -241,7 +241,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 			long cmdAfterRdbThreshold = config.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
 			boolean fullSyncPossible = minCmdKeeperOffset <= rdbLastKeeperOffset + 1 && maxCmdKeeperOffset - rdbLastKeeperOffset < cmdAfterRdbThreshold;
 
-			log.info("[isFullSyncPossible] {}, {} <= {} + 1 && {} - {} < {}", //
+			logger.info("[isFullSyncPossible] {}, {} <= {} + 1 && {} - {} < {}", //
 					fullSyncPossible, minCmdKeeperOffset, rdbLastKeeperOffset, maxCmdKeeperOffset, rdbLastKeeperOffset, cmdAfterRdbThreshold);
 
 			if (fullSyncPossible) {
@@ -267,7 +267,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		
 		final FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
 		if (ctx.isFullSyncPossible()) {
-			log.info("[fullSyncToSlave]reuse current rdb to full sync");
+			logger.info("[fullSyncToSlave]reuse current rdb to full sync");
 			DefaultRdbStore rdbStore = ctx.getRdbStore();
 
 			try {
@@ -307,7 +307,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		
 		long oldKeeperBeginOffset = metaStore.getKeeperBeginOffset();
 		long newKeeperBeginOffset = metaStore.getKeeperBeginOffset() + cmdStore.totalLength() + 1;
-		log.info("[nextNonOverlappingKeeperBeginOffset]{}->{}", oldKeeperBeginOffset, newKeeperBeginOffset);
+		logger.info("[nextNonOverlappingKeeperBeginOffset]{}->{}", oldKeeperBeginOffset, newKeeperBeginOffset);
 		return newKeeperBeginOffset;
 	}
 

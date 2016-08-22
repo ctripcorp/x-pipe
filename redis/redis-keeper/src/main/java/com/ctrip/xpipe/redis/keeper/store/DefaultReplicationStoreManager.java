@@ -159,7 +159,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 			if (meta != null) {
 				if (meta.getProperty(LATEST_STORE_DIR) != null) {
 					File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
-					logger.info("[getCurrent][recover previous]{}", latestStoreDir);
+					logger.info("[getCurrent][latest]{}", latestStoreDir);
 					if (latestStoreDir.isDirectory()) {
 						currentStore.set(new DefaultReplicationStore(latestStoreDir, keeperConfig, keeperRunid));
 					}
@@ -233,6 +233,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 				}
 			}
 		}
+		logger.info("[recursiveDelete]", file.getAbsolutePath());
 		file.delete();
 	}
 }

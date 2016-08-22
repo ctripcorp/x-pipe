@@ -44,7 +44,7 @@
  * See the "lang-*.js" files in this directory for code that implements
  * per-language file handlers.
  * <p>
- * Change log:<br>
+ * Change logger:<br>
  * cbeust, 2006/08/22
  * <blockquote>
  *   Java annotations (start with "@") are now captured as literals ("lit")
@@ -131,7 +131,7 @@ var prettyPrint;
       "rescue,retry,self,super,then,true,undef,unless,until,when,yield," +
       "BEGIN,END"];
    var RUST_KEYWORDS = [FLOW_CONTROL_KEYWORDS, "as,assert,const,copy,drop," +
-      "enum,extern,fail,false,fn,impl,let,log,loop,match,mod,move,mut,priv," +
+      "enum,extern,fail,false,fn,impl,let,logger,loop,match,mod,move,mut,priv," +
       "pub,pure,ref,self,static,struct,true,trait,type,unsafe,use"];
   var SH_KEYWORDS = [FLOW_CONTROL_KEYWORDS, "case,done,elif,esac,eval,fi," +
       "function,in,local,set,then,until"];
@@ -1397,7 +1397,7 @@ var prettyPrint;
       recombineTagsAndDecorations(job);
     } catch (e) {
       if (win['console']) {
-        console['log'](e && e['stack'] || e);
+        console['logger'](e && e['stack'] || e);
       }
     }
   }

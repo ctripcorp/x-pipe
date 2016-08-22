@@ -6,16 +6,14 @@
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
         </console>
 
-        <RollingFile name="rollingFileInfo" fileName="/opt/logs/100004375/metaserver.log"
-                     filePattern="/opt/logs/100004375/metaserver-%d{yyyy-MM-dd}-%i.log">
+        <RollingFile name="rollingFileInfo" fileName="/opt/logs/100004375/metaserver.logger"
+                     filePattern="/opt/logs/100004375/metaserver-%d{yyyy-MM-dd}-%i.logger">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
             </Policies>
         </RollingFile>
-
-		<CatAppender4Log4j2 name="catAppender"/>
 
     </appenders>
 
@@ -30,7 +28,6 @@
         <root level="INFO">
             <appender-ref ref="console"/>
             <appender-ref ref="rollingFileInfo"/>
-            <appender-ref ref="catAppender"/>
         </root>
     </loggers>
 

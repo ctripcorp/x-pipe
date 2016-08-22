@@ -1,0 +1,11 @@
+
+spring:
+  application:
+    name: xpipe-metaserver
+  profiles:
+    active: production
+
+
+server:
+  port: 8080
+  

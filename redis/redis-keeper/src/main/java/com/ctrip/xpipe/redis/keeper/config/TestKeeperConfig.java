@@ -13,6 +13,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int replicationStoreCommandFileNumToKeep = 2;
 	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
 	private int rdbDumpMinIntervalMilli = 1000;
+	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 	
 	public TestKeeperConfig(int replicationStoreCommandFileSize, int replicationStoreCommandFileNumToKeep, int replicationStoreMaxCommandsToTransferBeforeCreateRdb) {
 		this.replicationStoreCommandFileNumToKeep = replicationStoreCommandFileNumToKeep;
@@ -71,5 +72,14 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public int getRdbDumpMinIntervalMilli() {
 		return rdbDumpMinIntervalMilli;
+	}
+	
+	@Override
+	public String getZkConnectionString() {
+		return zkAddress;
+	}
+
+	public void setZkAddress(String zkAddress) {
+		this.zkAddress = zkAddress;
 	}
 }

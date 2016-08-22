@@ -36,6 +36,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
+import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBufAllocator;
@@ -175,7 +176,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		if(configFile == null){
 			return null;
 		}
-		InputStream ins = getClass().getClassLoader().getResourceAsStream(configFile);
+		InputStream ins = FileUtils.getFileInputStream(configFile, getClass());
 		return DefaultSaxParser.parse(ins);
 	}
 	

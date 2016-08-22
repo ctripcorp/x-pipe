@@ -309,7 +309,7 @@
 				newKey = key.replace( match[0], match[2].toLowerCase() );
 				map[ newKey ] = key;
 	
-				//console.log( key, match );
+				//console.logger( key, match );
 				if ( match[1] === 'o' )
 				{
 					_fnHungarianMap( o[key] );
@@ -2348,13 +2348,13 @@
 			"cache": false,
 			"type": oSettings.sServerMethod,
 			"error": function (xhr, error, thrown) {
-				var log = oSettings.oApi._fnLog;
+				var logger = oSettings.oApi._fnLog;
 	
 				if ( error == "parsererror" ) {
-					log( oSettings, 0, 'Invalid JSON response', 1 );
+					logger( oSettings, 0, 'Invalid JSON response', 1 );
 				}
 				else if ( xhr.readyState === 4 ) {
-					log( oSettings, 0, 'Ajax error', 7 );
+					logger( oSettings, 0, 'Ajax error', 7 );
 				}
 	
 				_fnProcessingDisplay( oSettings, false );
@@ -4805,7 +4805,7 @@
 	/**
 	 * Log an error message
 	 *  @param {object} settings dataTables settings object
-	 *  @param {int} level log error messages, or display them to the user
+	 *  @param {int} level logger error messages, or display them to the user
 	 *  @param {string} msg error message
 	 *  @param {int} tn Technical note id to get more information about the error.
 	 *  @memberof DataTable#oApi
@@ -4832,8 +4832,8 @@
 				throw new Error(msg);
 			}
 		}
-		else if ( window.console && console.log ) {
-			console.log( msg );
+		else if ( window.console && console.logger ) {
+			console.logger( msg );
 		}
 	}
 	

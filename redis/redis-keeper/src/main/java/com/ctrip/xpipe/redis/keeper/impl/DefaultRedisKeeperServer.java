@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
-
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -25,6 +22,7 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
@@ -38,6 +36,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
@@ -134,10 +133,50 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		workerGroup = new NioEventLoopGroup();
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
-	 	this.redisKeeperServerState = new RedisKeeperServerStateUnknown(this); 
+	 	this.redisKeeperServerState = initKeeperServerState();
+	 	logger.info("[doInitialize]{}", this.redisKeeperServerState.keeperState());
 
 	}
 	
+	private RedisKeeperServerState initKeeperServerState() {
+		
+		try {
+			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
+			if(replicationStore == null){
+				return new RedisKeeperServerStateUnknown(this);  
+			}
+			KeeperState keeperState = replicationStore.getMetaStore().dupReplicationStoreMeta().getKeeperState();
+			if(keeperState == null){
+				logger.warn("[initKeeperServerState][keeperState null]");
+				return new RedisKeeperServerStateUnknown(this);
+			}
+			
+			RedisKeeperServerState redisKeeperServerState = null; 
+			switch(keeperState){
+				case ACTIVE:
+					redisKeeperServerState = new RedisKeeperServerStatePreActive(this);
+					break;
+				case BACKUP:
+					redisKeeperServerState = new RedisKeeperServerStatePreBackup(this);
+					break;
+				case UNKNOWN:
+					redisKeeperServerState = new RedisKeeperServerStateUnknown(this);
+					break;
+				//wrong store state
+				case PRE_ACTIVE:
+				case PRE_BACKUP:
+				default:
+					logger.warn("[initKeeperServerState][error state]{}", keeperState);
+					redisKeeperServerState = new RedisKeeperServerStateUnknown(this);
+					break;
+			}
+			return redisKeeperServerState;
+		} catch (Exception e) {
+			logger.error("[initKeeperServerState]" + this, e);
+		}
+		return new RedisKeeperServerStateUnknown(this);  
+	}
+
 	@Override
 	protected void doDispose() throws Exception {
 
@@ -385,12 +424,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState) {
+	public void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState){
 		
 		RedisKeeperServerState previous = this.redisKeeperServerState;
 		
+		logger.info("[setRedisKeeperServerState]{}->{}", previous, this.redisKeeperServerState);
+		try {
+			getReplicationStore().getMetaStore().setKeeperState(redisKeeperServerState.keeperState());
+		} catch (IOException e) {
+			throw new RedisKeeperRuntimeException("[setRedisKeeperServerState]" + previous + "->" + this.redisKeeperServerState, e);
+		}
 		this.redisKeeperServerState = redisKeeperServerState;
-		
 		notifyObservers(new KeeperServerStateChanged(previous, redisKeeperServerState));
 	}
 
@@ -449,5 +493,4 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public void destroy() throws Exception {
 		this.replicationStoreManager.destroy();
 	}
-
 }

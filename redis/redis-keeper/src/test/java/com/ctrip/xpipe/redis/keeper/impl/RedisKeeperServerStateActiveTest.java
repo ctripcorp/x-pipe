@@ -3,12 +3,14 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.xml.sax.SAXException;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
@@ -32,7 +34,7 @@ public class RedisKeeperServerStateActiveTest extends AbstractRedisKeeperServerS
 
 
 	@Test
-	public void getMaster(){
+	public void getMaster() throws IOException, SAXException{
 		
 		Assert.assertEquals(new InetSocketAddress(redisMasterMeta.getIp(), redisMasterMeta.getPort()), active.getMaster().getSocketAddress());
 		
@@ -53,14 +55,12 @@ public class RedisKeeperServerStateActiveTest extends AbstractRedisKeeperServerS
 	}
 
 	@Test
-	public void testActiveBackup(){
+	public void testActiveBackup() throws IOException{
 
 		active.becomeBackup(new InetSocketAddress("localhost", randomPort()));
 		Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
 		
 	}
-
-	
 
 	@After
 	public void afterRedisKeeperServerStateTest(){

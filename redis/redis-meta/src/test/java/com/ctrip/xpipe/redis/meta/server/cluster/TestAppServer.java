@@ -31,7 +31,7 @@ import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
  */
 @EnableAutoConfiguration
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
-@Import({com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.class, com.ctrip.xpipe.redis.meta.server.spring.Test.class})
+@Import({com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.class, com.ctrip.xpipe.redis.meta.server.spring.TestProfile.class})
 public class TestAppServer extends AbstractLifecycle{
 	
 	private static final int waitForRestartTimeMills = 1000;

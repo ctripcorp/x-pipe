@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
 
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -29,8 +28,6 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
-import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.spring.KeeperContextConfig;
@@ -48,6 +45,8 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected MetaServerKeeperService  metaService;
 	
+	protected KeeperConfig  keeperConfig;
+	
 	private String keeperConfigFile = "keeper6666.xml";
 
 	private int keeperServerPortMin = 7777, keeperServerPortMax = 7877;
@@ -58,6 +57,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		doIdcInit();
 		
 		metaService = getRegistry().getComponent(MetaServerKeeperService.class);
+		keeperConfig = getRegistry().getComponent(KeeperConfig.class);
 		
 	}
 	
@@ -77,34 +77,32 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return createRedisKeeperServer(createKeeperMeta());
 	}
 
-	protected KeeperMeta createKeeperMeta() {
+	protected KeeperMeta createKeeperMeta() throws SAXException, IOException {
 
 		return createKeeperMeta(randomPort(keeperServerPortMin, keeperServerPortMax));
 	}
 
 
-	protected KeeperMeta createKeeperMeta(int port) {
+	protected KeeperMeta createKeeperMeta(int port) throws SAXException, IOException {
 
-		try {
-			
-			XpipeMeta xpipe = DefaultSaxParser.parse(getClass().getClassLoader().getResourceAsStream(keeperConfigFile));
-			for(DcMeta dcMeta : xpipe.getDcs().values()){
-				for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
-					for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-						for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
-							keeperMeta.setPort(port);
-							keeperMeta.setActive(true);
-							keeperMeta.setId(randomString(40));
-							return keeperMeta;
-						}
+		XpipeMeta xpipe = loadXpipeMeta(getXpipeMetaConfigFile());
+		for(DcMeta dcMeta : xpipe.getDcs().values()){
+			for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
+				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+					for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
+						keeperMeta.setPort(port);
+						keeperMeta.setActive(true);
+						keeperMeta.setId(randomString(40));
+						return keeperMeta;
 					}
 				}
 			}
-		} catch (SAXException | IOException e) {
-			throw new IllegalStateException(e);
 		}
-		
 		return null;
+	}
+
+	protected String getKeeperConfigFile() {
+		return keeperConfigFile;
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta) throws Exception {
@@ -119,7 +117,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	}
 
 	protected KeeperConfig getKeeperConfig() {
-		return new DefaultKeeperConfig();
+		return keeperConfig;
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig, MetaServerKeeperService metaService, File baseDir) throws Exception {

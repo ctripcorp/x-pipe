@@ -23,27 +23,6 @@ public class DefaultLeaderElectorManager extends AbstractLifecycle implements Le
 	}
 	
 	@Override
-	protected void doInitialize() throws Exception {
-		zkClient.initialize();
-	}
-
-	@Override
-	protected void doStart() throws Exception {
-		zkClient.start();
-	}
-	
-	@Override
-	protected void doStop() throws Exception {
-		zkClient.stop();
-	}
-
-	
-	@Override
-	protected void doDispose() throws Exception {
-		zkClient.dispose();
-	}
-
-	@Override
 	public LeaderElector createLeaderElector(ElectContext ctx) {
 		return new DefaultLeaderElector(ctx, zkClient.get());
 	}

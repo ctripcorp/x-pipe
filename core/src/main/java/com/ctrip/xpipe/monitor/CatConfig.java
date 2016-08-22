@@ -6,7 +6,9 @@ import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.embedded.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
+import com.ctrip.xpipe.spring.AbstractProfile;
 import com.dianping.cat.servlet.CatFilter;
 import com.dianping.cat.servlet.CatListener;
 
@@ -16,6 +18,7 @@ import com.dianping.cat.servlet.CatListener;
  *         Aug 11, 2016
  */
 @Configuration
+@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class CatConfig {
 
 	@Bean

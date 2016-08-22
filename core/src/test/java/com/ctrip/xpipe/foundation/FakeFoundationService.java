@@ -17,7 +17,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
  */
 public class FakeFoundationService implements FoundationService {
 
-	private static Logger log = LoggerFactory.getLogger(FakeFoundationService.class);
+	private static Logger logger = LoggerFactory.getLogger(FakeFoundationService.class);
 
 	private static AtomicBoolean logged = new AtomicBoolean(false);
 
@@ -31,7 +31,7 @@ public class FakeFoundationService implements FoundationService {
 
 	public FakeFoundationService() {
 		if (logged.compareAndSet(false, true)) {
-			log.info("data center is {}", dataCenter);
+			logger.info("data center is {}", dataCenter);
 		}
 	}
 
@@ -47,5 +47,10 @@ public class FakeFoundationService implements FoundationService {
 	
 	public void setAppId(String appId) {
 		this.appId = appId;
+	}
+
+	@Override
+	public int getOrder() {
+		return LOWEST_PRECEDENCE;
 	}
 }

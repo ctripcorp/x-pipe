@@ -3,6 +3,7 @@ package com.ctrip.xpipe.cluster;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
+import org.apache.curator.utils.EnsurePath;
 
 import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
@@ -33,6 +34,9 @@ public class DefaultLeaderElector extends AbstractLifecycle implements LeaderEle
 	@Override
 	public void elect() throws Exception {
 
+		EnsurePath ensure = zkClient.newNamespaceAwareEnsurePath(ctx.getLeaderElectionZKPath());
+		ensure.ensure(zkClient.getZookeeperClient());
+		
 		latch = new LeaderLatch(zkClient, ctx.getLeaderElectionZKPath(), ctx.getLeaderElectionID());
 		latch.addListener(new LeaderLatchListener() {
 

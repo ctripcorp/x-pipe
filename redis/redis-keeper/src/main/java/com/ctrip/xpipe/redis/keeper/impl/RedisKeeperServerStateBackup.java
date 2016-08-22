@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
@@ -12,7 +13,6 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
@@ -41,19 +41,11 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 	}
 
 	@Override
-	public void becomeActive(InetSocketAddress masterAddress) {
+	public void becomeActive(InetSocketAddress masterAddress) throws IOException {
 		
-		try {
-			logger.info("[becomeActive][backup->active] {}", this);
-			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-			replicationStore.getMetaStore().becomeActive();
-			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, masterAddress));
-			reconnectMaster();
-		} catch (IOException e) {
-			logger.error("[becomeActive]" + this, e);
-		}
+		logger.info("[becomeActive]{}", masterAddress);
+		backupToActive(masterAddress);
 	}
-
 
 	@Override
 	protected void keeperMasterChanged() {
@@ -114,11 +106,6 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		public void release() throws Exception {
 			this.redisClient.getRedisKeeperServer().removeObserver(this);
 		}
-	}
-
-	@Override
-	public boolean isActive() {
-		return false;
 	}
 
 	@Override

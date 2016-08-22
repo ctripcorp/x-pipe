@@ -748,13 +748,13 @@ th {
 .glyphicon-collapse-up:before {
   content: "\e160";
 }
-.glyphicon-log-in:before {
+.glyphicon-logger-in:before {
   content: "\e161";
 }
 .glyphicon-flash:before {
   content: "\e162";
 }
-.glyphicon-log-out:before {
+.glyphicon-logger-out:before {
   content: "\e163";
 }
 .glyphicon-new-window:before {

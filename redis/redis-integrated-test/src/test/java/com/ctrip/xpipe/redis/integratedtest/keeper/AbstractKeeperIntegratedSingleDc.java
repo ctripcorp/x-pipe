@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -29,6 +30,9 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	
 	protected String dc = "jq";
 	
+	private MetaServerKeeperService metaService;
+	private LeaderElectorManager leaderElectorManager;
+	
 	protected SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool = new XpipeKeyedObjectPool<>(new NettyKeyedPoolClientFactory());
 	
 	@Before
@@ -39,10 +43,18 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		startZkServer(getDcMeta().getZkServer());
 		
 		setFistKeeperActive();
+		initResource();
 		startRedises();
 		startKeepers();
 		makeKeeperRight();
 		sleep(3000);//wait for structure to build
+	}
+
+	private void initResource() throws Exception {
+		
+		DcMeta dcMeta = getDcMeta();
+		metaService = createMetaService(dcMeta.getMetaServers());
+		leaderElectorManager = createLeaderElectorManager(dcMeta);
 	}
 
 	private void setFistKeeperActive() {	
@@ -81,14 +93,13 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	
 	protected void startKeepers() throws Exception{
 		
-		DcMeta dcMeta = getDcMeta();
-		MetaServerKeeperService metaService = createMetaService(dcMeta.getMetaServers());
-		LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcMeta);
-		
 		for(KeeperMeta keeperMeta : getDcKeepers(dc, getClusterId(), getShardId())){
 			startKeeper(keeperMeta, metaService, leaderElectorManager);
 		}
-		
+	}
+	
+	protected void startKeeper(KeeperMeta keeperMeta) throws Exception{
+		startKeeper(keeperMeta, metaService, leaderElectorManager);
 	}
 	
 	@Override
@@ -105,6 +116,5 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	protected List<RedisMeta> getRedisSlaves() {
 		return getRedisSlaves(dc);
 	}
-	
-	
+
 }

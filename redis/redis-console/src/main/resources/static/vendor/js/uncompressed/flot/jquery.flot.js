@@ -20,7 +20,7 @@ Licensed under the MIT license.
  *
  *   $.color.parse("#fff").scale('rgb', 0.25).add('a', -0.5).toString()
  *   var c = $.color.extract($("#mydiv"), 'background-color');
- *   console.log(c.r, c.g, c.b, c.a);
+ *   console.logger(c.r, c.g, c.b, c.a);
  *   $.color.make(100, 50, 25, 0.4).toString() // returns "rgba(100,50,25,0.4)"
  *
  * Note that .scale() and .add() return the same modified object
@@ -1693,7 +1693,7 @@ Licensed under the MIT license.
                 noTicks = 0.3 * Math.sqrt(axis.direction == "x" ? surface.width : surface.height);
 
             var delta = (axis.max - axis.min) / noTicks,
-                dec = -Math.floor(Math.log(delta) / Math.LN10),
+                dec = -Math.floor(Math.logger(delta) / Math.LN10),
                 maxDec = opts.tickDecimals;
 
             if (maxDec != null && dec > maxDec) {
@@ -1807,7 +1807,7 @@ Licensed under the MIT license.
                     // we might need an extra decimal since forced
                     // ticks don't necessarily fit naturally
                     if (!axis.mode && opts.tickDecimals == null) {
-                        var extraDec = Math.max(0, -Math.floor(Math.log(axis.delta) / Math.LN10) + 1),
+                        var extraDec = Math.max(0, -Math.floor(Math.logger(axis.delta) / Math.LN10) + 1),
                             ts = axis.tickGenerator(axis);
 
                         // only proceed if the tick interval rounded
@@ -3144,7 +3144,7 @@ Licensed under the MIT license.
     $.plot = function(placeholder, data, options) {
         //var t0 = new Date();
         var plot = new Plot($(placeholder), data, options, $.plot.plugins);
-        //(window.console ? console.log : alert)("time used (msecs): " + ((new Date()).getTime() - t0.getTime()));
+        //(window.console ? console.logger : alert)("time used (msecs): " + ((new Date()).getTime() - t0.getTime()));
         return plot;
     };
 

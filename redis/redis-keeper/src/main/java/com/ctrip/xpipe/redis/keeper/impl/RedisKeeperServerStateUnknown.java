@@ -62,11 +62,6 @@ public class RedisKeeperServerStateUnknown extends AbstractRedisKeeperServerStat
 	}
 
 	@Override
-	public boolean isActive() {
-		return false;
-	}
-
-	@Override
 	public KeeperState keeperState() {
 		return KeeperState.UNKNOWN;
 	}

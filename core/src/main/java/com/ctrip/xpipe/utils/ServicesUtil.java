@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.utils;
 
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.lifecycle.Ordered;
+import com.ctrip.xpipe.lifecycle.OrderedComparator;
 
 /**
  * @author wenchao.meng
@@ -32,7 +37,7 @@ public class ServicesUtil {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private static <T> T load(Class<T> clazz) {
+	private static <T extends Ordered> T load(Class<T> clazz) {
 		
 		T result = (T) allServices.get(clazz);
 		
@@ -42,24 +47,22 @@ public class ServicesUtil {
 				result = (T) allServices.get(clazz);
 				
 				if(result == null){
-					ServiceLoader<T> services = ServiceLoader.load(clazz);
 					
-					int i = 0;
+					ServiceLoader<T> services = ServiceLoader.load(clazz);
+					List<T> sortServices = new LinkedList<>();
 					for(T service : services){
-						
-						result = service;
-						i++;
 						logger.info("[load]{}, {}", service.getClass(), service);
+						sortServices.add(service);
 					}
 					
-					if(i == 0){
+					Collections.sort(sortServices, new OrderedComparator());
+					
+					if(sortServices.size() == 0){
 						throw new IllegalStateException("service not found:" + clazz.getClass().getSimpleName() + ", "
 								+ "if you work in ctrip, add ctrip-service project in your classpath, otherwise implement your own service");
 					}
-					
-					if(i > 1){
-						throw new IllegalStateException("service found more than once");
-					}
+					result = sortServices.get(0);
+					logger.info("[load][use]{}", result);
 					allServices.put(clazz, result);
 				}
 			}

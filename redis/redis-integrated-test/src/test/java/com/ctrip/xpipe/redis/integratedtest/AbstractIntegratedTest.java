@@ -16,6 +16,8 @@ import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
@@ -42,6 +44,8 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
  */
 public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	
+	private static final String logDir = "target/applogs";
+	
 	private String integrated_test_config_file = "integrated-test.xml";
 	
 	private String clusterId = "cluster1", shardId = "shard1";
@@ -49,7 +53,14 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	private int defaultTestMessageCount = 10000;
 	
 	private Set<RedisMeta> allRedisStarted = new HashSet<>();
-
+	
+	static{
+		List<File> result = new LinkedList<>();
+		cleanLog(new File(logDir), result);
+		Logger logger = LoggerFactory.getLogger(AbstractIntegratedTest.class);
+		logger.info("[cleanLog]{}", result);
+	}
+	
 	@Before
 	public void beforeAbstractIntegratedTest() throws Exception{
 		
@@ -58,6 +69,21 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	}
 
 	
+	protected static void cleanLog(File log, List<File> cleanFiles) {
+		
+		if(log.isFile()){
+			cleanFiles.add(log);
+			FileUtils.deleteQuietly(log);
+			return;
+		}
+		if(log.isDirectory()){
+			for(File file : log.listFiles()){
+				cleanLog(file, cleanFiles);
+			}
+		}
+	}
+
+
 	@Override
 	protected String getXpipeMetaConfigFile() {
 		return integrated_test_config_file;
@@ -82,7 +108,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		int zkPort = Integer.parseInt(parts[1]);
 		startZk(zkPort);
 	}
-	
+
 	protected void startKeeper(KeeperMeta keeperMeta, MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager) throws Exception {
 		
 		startKeeper(keeperMeta, getKeeperConfig(), metaService, leaderElectorManager);
@@ -142,7 +168,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		FileUtils.forceMkdir(logDir);
 
 		File file = createRedisConfigFile(dcMeta, redisMeta, redisDir, dataDir);
-		executeScript("start_redis.sh", file.getAbsolutePath(), new File(logDir, String.format("%d.log", redisMeta.getPort())).getAbsolutePath());
+		executeScript("start_redis.sh", file.getAbsolutePath(), new File(logDir, String.format("%d.logger", redisMeta.getPort())).getAbsolutePath());
 		
 		allRedisStarted.add(redisMeta);
 	}
@@ -260,7 +286,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		
 		for(RedisKeeperServer server : redisKeeperServers.values()){
 			String currentDc =server.getCurrentKeeperMeta().parent().parent().parent().getId(); 
-			if(dc.equals(currentDc)  && server.getRedisKeeperServerState().isActive()){
+			if(dc.equals(currentDc)  && server.getRedisKeeperServerState().keeperState().isActive()){
 				return server;
 			}
 		}

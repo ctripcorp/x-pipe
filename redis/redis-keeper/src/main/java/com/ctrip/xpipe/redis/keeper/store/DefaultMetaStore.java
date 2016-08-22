@@ -13,6 +13,7 @@ import org.unidal.helper.Files.IO;
 
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
@@ -31,7 +32,7 @@ public class DefaultMetaStore implements MetaStore {
 
 	private static final String ROOT_FILE_PATTERN = "root-%s.json";
 
-	private final static Logger log = LoggerFactory.getLogger(DefaultMetaStore.class);
+	private final static Logger logger = LoggerFactory.getLogger(DefaultMetaStore.class);
 
 	private final AtomicReference<ReplicationStoreMeta> metaRef = new AtomicReference<>();
 
@@ -61,6 +62,8 @@ public class DefaultMetaStore implements MetaStore {
 			saveMeta(metaDup);
 		}
 	}
+	
+
 
 	@Override
 	public void updateKeeperRunid(String keeperRunid) throws IOException {
@@ -69,7 +72,7 @@ public class DefaultMetaStore implements MetaStore {
 
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 			if(metaDup.getKeeperRunid() != null && !metaDup.getKeeperRunid().equals(keeperRunid)){
-				log.warn("[keeperRunIdChanged]{}->{}", metaDup.getKeeperRunid(), keeperRunid);
+				logger.warn("[keeperRunIdChanged]{}->{}", metaDup.getKeeperRunid(), keeperRunid);
 			}
 			metaDup.setKeeperRunid(keeperRunid);;
 			saveMeta(metaDup);
@@ -95,7 +98,7 @@ public class DefaultMetaStore implements MetaStore {
 
 	private void saveMeta(ReplicationStoreMeta newMeta) throws IOException {
 		
-		log.info("[Metasaved]\nold:{}\nnew:{}", metaRef.get(), newMeta);
+		logger.info("[Metasaved]\nold:{}\nnew:{}", metaRef.get(), newMeta);
 		metaRef.set(newMeta);
 		// TODO sync with fs?
 		saveMetaToFile(new File(baseDir, META_FILE), metaRef.get());
@@ -109,7 +112,7 @@ public class DefaultMetaStore implements MetaStore {
 			if(metaFile.isFile()){
 				ReplicationStoreMeta meta = loadMetaFromFile(metaFile);
 				metaRef.set(meta);
-				log.info("Meta loaded: {}", meta);
+				logger.info("Meta loaded: {}", meta);
 			} else {
 				metaRef.set(new ReplicationStoreMeta());
 			}
@@ -128,7 +131,7 @@ public class DefaultMetaStore implements MetaStore {
 		
 		File file = new File(baseDir, getMetaFileName(name));
 		ReplicationStoreMeta meta = loadMetaFromFile(file);
-		log.info("[getReplicationStoreMeta]{}, {}, {}", name, meta, file.getAbsolutePath());
+		logger.info("[getReplicationStoreMeta]{}, {}, {}", name, meta, file.getAbsolutePath());
 		return meta;
 	}
 
@@ -141,9 +144,9 @@ public class DefaultMetaStore implements MetaStore {
 		
 		File file = new File(baseDir, getMetaFileName(name));
 		ReplicationStoreMeta meta = getReplicationStoreMeta(name);
-		log.info("[updateMeta][old]{},{}", name, meta);
+		logger.info("[updateMeta][old]{},{}", name, meta);
 		meta.setRdbLastKeeperOffset(rdbLastKeeperOffset);
-		log.info("[updateMeta][new]{},{}", name, meta);
+		logger.info("[updateMeta][new]{},{}", name, meta);
 		saveMetaToFile(file, meta);
 	}
 
@@ -188,7 +191,7 @@ public class DefaultMetaStore implements MetaStore {
 
 			saveMeta(metaDup);
 
-			log.info("[masterChanged]newMasterEndpoint: {},  newMasterRunid: {}, keeperOffset: {}, newMasterReplOffset: {}, newBeginOffset: {}", //
+			logger.info("[masterChanged]newMasterEndpoint: {},  newMasterRunid: {}, keeperOffset: {}, newMasterReplOffset: {}, newBeginOffset: {}", //
 					newMasterEndpoint, newMasterRunid, keeperOffset, newMasterReplOffset, newBeginOffset);
 		}
 
@@ -204,9 +207,9 @@ public class DefaultMetaStore implements MetaStore {
 	 */
 
 	@Override
-	public void becomeBackup() throws IOException {
+	public void activeBecomeBackup() throws IOException {
 		synchronized (metaRef) {
-			log.info("[becomeBackup]");
+			logger.info("[becomeBackup]");
 
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 
@@ -217,15 +220,27 @@ public class DefaultMetaStore implements MetaStore {
 			 */
 			metaDup.setBeginOffset(metaDup.getKeeperBeginOffset());
 			metaDup.setMasterRunid(metaDup.getKeeperRunid());
+			metaDup.setKeeperState(KeeperState.BACKUP);
 
 			saveMeta(metaDup);
 		}
 	}
 
 	@Override
-	public void becomeActive() throws IOException {
+	public void setKeeperState(KeeperState keeperState) throws IOException {
 		synchronized (metaRef) {
-			log.info("[becomeActive]");
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			metaDup.setKeeperState(keeperState);;
+
+			saveMeta(metaDup);
+		}
+	}
+
+	@Override
+	public void backupBecomeActive() throws IOException {
+		synchronized (metaRef) {
+			logger.info("[becomeActive]");
 
 			String name = ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME;
 			ReplicationStoreMeta metaOfLastActiveKeeper = getReplicationStoreMeta(name);
@@ -244,6 +259,7 @@ public class DefaultMetaStore implements MetaStore {
 				newMeta.setKeeperRunid(metaOfLastActiveKeeper.getKeeperRunid());
 				newMeta.setMasterAddress(metaOfLastActiveKeeper.getMasterAddress());
 				newMeta.setMasterRunid(metaOfLastActiveKeeper.getMasterRunid());
+				newMeta.setKeeperState(KeeperState.ACTIVE);
 
 				saveMeta(newMeta);
 			} 
@@ -258,7 +274,7 @@ public class DefaultMetaStore implements MetaStore {
 			metaDup.setRdbFile(rdbFile);
 			metaDup.setRdbFileSize(rdbFileSize);
 			metaDup.setRdbLastKeeperOffset(redisOffsetToKeeperOffset(masterOffset, metaDup));
-			log.info("[rdbUpdated] update RdbLastKeeperOffset to {}", metaDup.getRdbLastKeeperOffset());
+			logger.info("[rdbUpdated] update RdbLastKeeperOffset to {}", metaDup.getRdbLastKeeperOffset());
 
 			saveMeta(metaDup);
 
@@ -277,7 +293,7 @@ public class DefaultMetaStore implements MetaStore {
 	private long redisOffsetToKeeperOffset(long redisOffset, ReplicationStoreMeta meta) {
 		
 		if(meta.getBeginOffset() == null){
-			log.info("[redisOffsetToKeeperOffset][first time create rdb, rdb end set 1]");
+			logger.info("[redisOffsetToKeeperOffset][first time create rdb, rdb end set 1]");
 			return meta.getKeeperBeginOffset() - 1; 
 		}
 		return redisOffset - meta.getBeginOffset() + meta.getKeeperBeginOffset();
@@ -296,4 +312,5 @@ public class DefaultMetaStore implements MetaStore {
 		
 		throw new RedisKeeperRuntimeException("[loadMetaFromFile][not file]" + file.getAbsolutePath());
 	}
+
 }

@@ -18,7 +18,7 @@ import io.netty.buffer.ByteBuf;
 
 public class DefaultRdbStore implements RdbStore {
 
-	private final static Logger log = LoggerFactory.getLogger(DefaultRdbStore.class);
+	private final static Logger logger = LoggerFactory.getLogger(DefaultRdbStore.class);
 
 	private RandomAccessFile writeFile;
 
@@ -69,7 +69,7 @@ public class DefaultRdbStore implements RdbStore {
 		if (actualFileLen == rdbFileSize) {
 			status.set(Status.Success);
 		} else {
-			log.info("[endRdb]actual:{}, expected:{}", actualFileLen, rdbFileSize);
+			logger.info("[endRdb]actual:{}, expected:{}", actualFileLen, rdbFileSize);
 			status.set(Status.Fail);
 		}
 	}
@@ -82,7 +82,7 @@ public class DefaultRdbStore implements RdbStore {
 		try (FileChannel channel = new RandomAccessFile(file, "r").getChannel()) {
 			doReadRdbFile(rdbFileListener, channel);
 		} catch (Exception e) {
-			log.error("Error read rdb file", e);
+			logger.error("Error read rdb file", e);
 		}
 	}
 
@@ -102,7 +102,7 @@ public class DefaultRdbStore implements RdbStore {
 					Thread.sleep(100);
 					long currentTime = System.currentTimeMillis();
 					if(currentTime - lastLogTime > 10000){
-						log.info("[doReadRdbFile]status:{}, start:{}, channeSize:{}", status.get(), start, channel.size());
+						logger.info("[doReadRdbFile]status:{}, start:{}, channeSize:{}", status.get(), start, channel.size());
 						lastLogTime = currentTime;
 					}
 				} catch (InterruptedException e) {
@@ -110,7 +110,7 @@ public class DefaultRdbStore implements RdbStore {
 			}
 		}
 
-		log.info("[doReadRdbFile] done with status {}", status.get());
+		logger.info("[doReadRdbFile] done with status {}", status.get());
 		refCount.decrementAndGet();
 
 		switch (status.get()) {
@@ -143,7 +143,7 @@ public class DefaultRdbStore implements RdbStore {
 
 	@Override
 	public boolean delete() {
-		log.info("Delete rdb file {}", file);
+		logger.info("Delete rdb file {}", file);
 		return file.delete();
 	}
 

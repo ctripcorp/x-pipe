@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
@@ -35,14 +36,17 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 			@Override
 			public void setMasterAddress(DefaultEndPoint endpoint) {
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
 			public void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException {
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
 			public void loadMeta() throws IOException {
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
@@ -52,37 +56,38 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 			@Override
 			public DefaultEndPoint getMasterAddress() {
-				return null;
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
 			public long getKeeperBeginOffset() {
-				return 0;
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
 			public ReplicationStoreMeta dupReplicationStoreMeta() {
-				return null;
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
 			public Long beginOffset() {
-				return 0L;
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
 			public void masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset)
 					throws IOException {
-
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
-			public void becomeBackup() throws IOException {
+			public void activeBecomeBackup() throws IOException {
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
 			public ReplicationStoreMeta rdbUpdated(String rdbFile, long rdbFileSize, long masterOffset) throws IOException {
-				return null;
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
@@ -97,22 +102,28 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public void becomeActive() throws IOException {
+			public void backupBecomeActive() throws IOException {
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
 			public void psyncBegun(String keeperRunid, long offset) throws IOException {
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
 			public void updateKeeperRunid(String keeperRunid) throws IOException {
-				
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
 			public void updateMeta(String name, long rdbLastKeeperOffset) throws IOException {
-				// TODO Auto-generated method stub
-				
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void setKeeperState(KeeperState keeperState) throws IOException {
+				throw new UnsupportedOperationException();
 			}
 		};
 	}
@@ -139,15 +150,17 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public long getEndOffset() {
-		return 0;
+		return -1L;
 	}
 
 	@Override
 	public void delete() {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void rdbUpdated(String rdbFile, long masterOffset) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -162,12 +175,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public File prepareNewRdbFile() {
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
-		return false;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -177,22 +190,22 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public long getKeeperEndOffset() {
-		return 0;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public long nextNonOverlappingKeeperBeginOffset() {
-		return 0;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public int appendCommands(ByteBuf byteBuf) throws IOException {
-		return 0;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException {
-		return false;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

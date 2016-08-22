@@ -8,6 +8,8 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 
 /**
  * @author wenchao.meng
@@ -15,6 +17,11 @@ import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
  * Aug 17, 2016
  */
 public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
+
+	protected int replicationStoreCommandFileSize = 1024;
+	private int replicationStoreCommandFileNumToKeep = 2;
+	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
+	
 
 	@Override
 	protected String getRedisTemplate() {
@@ -39,4 +46,10 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 				keeperState, new InetSocketAddress(ip, port));
 		command.execute().sync();
 	}
+	
+	
+	protected KeeperConfig getKeeperConfig() {
+		return new TestKeeperConfig(replicationStoreCommandFileSize, replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb);
+	}
+
 }

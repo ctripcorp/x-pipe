@@ -14,6 +14,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -54,7 +55,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 
 	
 	@Override
-	public void setShardStatus(ShardStatus shardStatus) {
+	public void setShardStatus(ShardStatus shardStatus) throws IOException {
 		
 		if(shardStatus.getRedisMaster() != null && shardStatus.getUpstreamKeeper() != null){
 			logger.error("[setShardStatus][active keeper and upstream keeper both not null]{}, {}", shardStatus.getActiveKeeper(), shardStatus.getUpstreamKeeper());
@@ -95,6 +96,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 			logger.info("[setMasterAddress][master address unchanged]{},{}", this.masterAddress, masterAddress);
 			return;
 		}
+		logger.info("[setMasterAddress]{}, {}", this.masterAddress, masterAddress);
 		this.masterAddress = masterAddress;
 		keeperMasterChanged();
 		
@@ -109,6 +111,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	}
 
 	protected void reconnectMaster(){
+		logger.info("[reconnectMaster]{}", redisKeeperServer);
 		this.redisKeeperServer.reconnectMaster();
 	}
 	
@@ -132,4 +135,22 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	public boolean sendKinfo() {
 		return false;
 	}
+	
+	protected void activeToBackup(InetSocketAddress masterAddress) throws IOException {
+		
+		logger.info("[activeToBackup]{} {}", keeperState(), this);
+		redisKeeperServer.getReplicationStore().getMetaStore().activeBecomeBackup();;
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, masterAddress));
+		reconnectMaster();
+	}
+
+	protected void backupToActive(InetSocketAddress masterAddress) throws IOException {
+		
+		logger.info("[backupBecomeActive]{}, {}", keeperState(), this);
+		ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+		replicationStore.getMetaStore().backupBecomeActive();
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, masterAddress));
+		reconnectMaster();
+	}
+
 }

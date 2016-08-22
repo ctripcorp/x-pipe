@@ -21,10 +21,20 @@ public class FileUtils {
 	
 	public static InputStream getFileInputStream(String fileName) throws FileNotFoundException{
 		
-		return getFileInputStream("./", fileName);
+		return getFileInputStream("./", fileName, FileUtils.class);
 	}
 
 	public static InputStream getFileInputStream(String path, String fileName) throws FileNotFoundException{
+		
+		return getFileInputStream("./", fileName, FileUtils.class);
+	}
+
+	public static InputStream getFileInputStream(String fileName, Class<?> clazz) throws FileNotFoundException{
+		
+		return getFileInputStream("./", fileName, clazz);
+	}
+
+	public static InputStream getFileInputStream(String path, String fileName, Class<?> clazz) throws FileNotFoundException{
 		
 		File f = null;
 		if(path != null){
@@ -51,7 +61,10 @@ public class FileUtils {
 		}
 		
 		//try classpath
-		URL url = FileUtils.class.getClassLoader().getResource(fileName);
+		URL url = clazz.getResource(fileName);
+		if(url == null){
+			url = clazz.getClassLoader().getResource(fileName);
+		}
 		if(url != null){
 			try {
 				logger.info("[load]{}", url);
