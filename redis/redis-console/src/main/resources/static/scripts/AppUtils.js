@@ -1,6 +1,16 @@
 appUtil.service('AppUtil', ['toastr', '$window', function (toastr, $window) {
 
     return {
+        errorMsg: function (response) {
+            if (response.status == -1) {
+                return "您的登录信息已过期,请刷新页面后重试";
+            }
+            var msg = "Code:" + response.status;
+            if (response.data.message != null) {
+                msg += " Msg:" + response.data.message;
+            }
+            return msg;
+        },
         parseParams: function (query, notJumpToHomePage) {
             if (!query) {
                 //如果不传这个参数或者false则返回到首页(参数出错)

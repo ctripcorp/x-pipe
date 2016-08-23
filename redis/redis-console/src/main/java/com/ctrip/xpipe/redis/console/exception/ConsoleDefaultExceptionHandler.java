@@ -41,6 +41,11 @@ public class ConsoleDefaultExceptionHandler extends AbstractExceptionHandler {
 		return handleError(request,HttpStatus.NOT_FOUND, ex);
 	}
 	
+	@ExceptionHandler(BadRequestException.class)
+	public ResponseEntity<Object> badUserRequest(HttpServletRequest request, BadRequestException ex) {
+		return handleError(request,HttpStatus.BAD_REQUEST, ex);
+	}
+	
 	@ExceptionHandler({HttpRequestMethodNotSupportedException.class, HttpMediaTypeException.class})
 	public ResponseEntity<Object> badRequest(HttpServletRequest request, ServletException ex) {
 	    return handleError(request, HttpStatus.BAD_REQUEST, ex);
