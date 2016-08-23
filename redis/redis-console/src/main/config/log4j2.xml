@@ -6,8 +6,8 @@
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
         </console>
 
-        <RollingFile name="RollingFileInfo" fileName="/opt/logs/100004374/xpipe-console.logger"
-                     filePattern="/opt/logs/100004374/xpipe-console-%d{yyyy-MM-dd}-%i.logger">
+        <RollingFile name="RollingFileInfo" fileName="/opt/logs/100004374/xpipe-console.log"
+                     filePattern="/opt/logs/100004374/xpipe-console-%d{yyyy-MM-dd}-%i.log">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>

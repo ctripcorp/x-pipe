@@ -1090,7 +1090,7 @@ require.register("dropzone/lib/dropzone.js", function (exports, module) {
         };
       })(this);
       return dirReader.readEntries(entriesReader, function(error) {
-        return typeof console !== "undefined" && console !== null ? typeof console.logger === "function" ? console.logger(error) : void 0 : void 0;
+        return typeof console !== "undefined" && console !== null ? typeof console.log === "function" ? console.log(error) : void 0 : void 0;
       });
     };
 
