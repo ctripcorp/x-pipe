@@ -11,7 +11,10 @@ reports
 .project
 .classpath
 *.class
+
+# local files
 .DS_Store
+datasources.xml
 
 # Idea files
 .idea
