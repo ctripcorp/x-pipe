@@ -97,6 +97,10 @@ public class AbstractTest {
 			}
 		}
 	}
+	
+	protected String getTestName(){
+		return name.getMethodName();
+	}
 
 	protected void setProperties() {
 		
@@ -319,16 +323,24 @@ public class AbstractTest {
 		System.out.println("type any key to exit..................");
 		System.in.read();
 	}
-	
-	protected void startZk(int zkPort) {
+
+	protected ZkTestServer startRandomZk() {
+		
+		int zkPort = randomInt(2181, 2281);
+		return startZk(zkPort);
+	}
+
+	protected ZkTestServer startZk(int zkPort) {
 		try {
 			logger.info(remarkableMessage("[startZK]{}"), zkPort);
 			ZkTestServer zkTestServer = new ZkTestServer(zkPort);
 			zkTestServer.initialize();
 			zkTestServer.start();
 			add(zkTestServer);
+			return zkTestServer;
 		} catch (Exception e) {
 			logger.error("[startZk]", e);
+			throw new IllegalStateException("[startZk]" + zkPort, e);
 		}
 	}
 	

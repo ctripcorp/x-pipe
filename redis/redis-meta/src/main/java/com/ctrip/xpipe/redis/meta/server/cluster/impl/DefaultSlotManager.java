@@ -161,7 +161,7 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 
 	private void doRefresh() throws NumberFormatException, Exception {
 		
-		logger.info("[doRefresh]");
+		logger.debug("[doRefresh]");
 		
 		Map<Integer, SlotInfo> slotsMap = new ConcurrentHashMap<>();
 		Map<Integer, Set<Integer>> serverMap = new ConcurrentHashMap<>();

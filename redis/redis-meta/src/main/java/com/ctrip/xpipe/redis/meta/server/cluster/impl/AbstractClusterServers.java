@@ -115,9 +115,9 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 		childrenChanged();
 	}
 
-	private void childrenChanged() throws Exception {
+	private synchronized void childrenChanged() throws Exception {
 
-		logger.debug("[childrenChanged][{}]{}", currentServer, servers);
+		logger.info("[childrenChanged][start][{}]{}", currentServerId(), servers);
 		
 		CuratorFramework client = zkClient.get();
 		List<String> children = client.getChildren().forPath(MetaZkConfig.getMetaServerRegisterPath());
@@ -129,19 +129,20 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 			byte []data = client.getData().forPath(MetaZkConfig.getMetaServerRegisterPath() + "/" + child);
 			ClusterServerInfo  info = Codec.DEFAULT.decode(data, ClusterServerInfo.class);
 			
-			logger.debug("[childrenChanged]{},{}", serverId, info);
+			logger.debug("[childrenChanged][{}]{},{}", currentServerId(), serverId, info);
 			currentServers.add(serverId);
 
 			ClusterServer server = servers.get(serverId);
 			if(server == null){
-				logger.info("[childrenChanged][{}][createNew]{}{}", currentServer, child, info);
+				logger.info("[childrenChanged][{}][createNew]{}{}", currentServerId(), child, info);
 				T remoteServer = remoteClusterServerFactory.createClusterServer(serverId, info);
 				servers.put(serverId, remoteServer);
+				logger.info("[childrenChanged][{}][createNew]{}", currentServerId(), servers);
 				serverAdded(remoteServer);
 			}else{
 				if(!info.equals(server.getClusterInfo())){
 					
-					logger.info("[childrenChanged][{}][clusterInfoChanged]{}{}", currentServer, child, info, server.getClusterInfo());
+					logger.info("[childrenChanged][{}][clusterInfoChanged]{}{}", currentServerId(), child, info, server.getClusterInfo());
 					T newServer = remoteClusterServerFactory.createClusterServer(serverId, info);
 					servers.put(serverId, newServer);
 					serverChanged(server, newServer);
@@ -155,14 +156,20 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 			if(!currentServers.contains(old)){
 				
 				ClusterServer serverInfo = servers.remove(old);
-				logger.info("[childrenChanged][remote not exist]{}, {}, current:{}", old, serverInfo, currentServers);
+				logger.info("[childrenChanged][remote not exist][{}]{}, {}, current:{}", currentServerId(), old, serverInfo);
 				remoteDelted(serverInfo);
 				
 			}
 		}
+
+		logger.info("[childrenChanged][ end ][{}]{}", currentServerId(), servers);
 	}
 
 	
+	private Object currentServerId() {
+		return currentServer.getServerId();
+	}
+
 	private void remoteDelted(ClusterServer serverInfo) {
 		notifyObservers(new NodeDeleted<ClusterServer>(serverInfo));
 	}

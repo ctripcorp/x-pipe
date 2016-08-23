@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -9,8 +8,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ctrip.xpipe.api.codec.Codec;
@@ -25,6 +22,8 @@ import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.ctrip.xpipe.zk.EphemeralNodeCreator;
+import com.ctrip.xpipe.zk.NodeTheSame;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -51,6 +50,8 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	private String serverPath;
 		
 	private ExecutorService executors;
+	
+	private EphemeralNodeCreator ephemeralNodeCreator;
 
 	
 	public DefaultCurrentClusterServer() {
@@ -66,36 +67,33 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		
 		setServerId(currentServerId);
 		setClusterServerInfo(new ClusterServerInfo(config.getMetaServerIp(), config.getMetaServerPort()));
+		
 	}
 	
 
 
 	@Override
 	protected void doStart() throws Exception {
-		
-		CuratorFramework client = zkClient.get();		
 
-		if(client.checkExists().forPath(serverPath) != null){
-			
-			ClusterServerInfo info = Codec.DEFAULT.decode(client.getData().forPath(serverPath), ClusterServerInfo.class);
-			if(!info.equals(getClusterInfo())){
-				throw new IllegalStateException("serverId:" + currentServerId + " already exists!");
-			}
-			deleteServerPath();
-			TimeUnit.MILLISECONDS.sleep(50);//make sure server get notification
-		}
-		
-		logger.info("[doStart][createServerPathCreated]{}", serverPath);
-		client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(serverPath, Codec.DEFAULT.encodeAsBytes(getClusterInfo()));
-	}
-
-	private void deleteServerPath() throws Exception {
-		
-		logger.info("[deleteServerPath]{}", serverPath);
-		CuratorFramework client = zkClient.get();
-		client.delete().forPath(serverPath);
-		
-		
+		ephemeralNodeCreator = new EphemeralNodeCreator(
+				zkClient.get(), serverPath, Codec.DEFAULT.encodeAsBytes(getClusterInfo()), new NodeTheSame() {
+					
+					@Override
+					public boolean same(byte[] data) {
+						
+						ClusterServerInfo info = Codec.DEFAULT.decode(data, ClusterServerInfo.class);
+						if(info.equals(getClusterInfo())){
+							try {
+								//make sure server get notification
+								TimeUnit.MILLISECONDS.sleep(50);
+							} catch (InterruptedException e) {
+							}
+							return true;
+						}
+						return false;
+					}
+		});
+		ephemeralNodeCreator.start();
 	}
 
 	@Override
@@ -105,8 +103,8 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 
 	@Override
 	protected void doStop() throws Exception {
-	
-		deleteServerPath();
+
+		ephemeralNodeCreator.stop();
 	}
 	
 	public void setZkClient(ZkClient zkClient) {

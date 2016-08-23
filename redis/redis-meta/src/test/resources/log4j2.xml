@@ -6,8 +6,8 @@
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
         </console>
 
-        <RollingFile name="rollingFileInfo" fileName="/opt/logs/100004375/metaserver.logger"
-                     filePattern="/opt/logs/100004375/metaserver-%d{yyyy-MM-dd}-%i.logger">
+        <RollingFile name="rollingFileInfo" fileName="target/metaserver.log"
+                     filePattern="target/metaserver-%d{yyyy-MM-dd}-%i.log">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
@@ -23,8 +23,8 @@
         </logger>
         <logger name="org.hibernate" level="INFO">
         </logger>
-        <logger name="io.netty" level="INFO">
-        </logger>
+        <logger name="io.netty" level="INFO"/>
+        <logger name="com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractClusterServers" level="DEBUG"/>
         <root level="INFO">
             <appender-ref ref="console"/>
             <appender-ref ref="rollingFileInfo"/>
