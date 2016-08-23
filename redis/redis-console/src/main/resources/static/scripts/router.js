@@ -1,15 +1,20 @@
-index_module.config(function($stateProvider, $urlRouterProvider) {
+index_module.config(function ($stateProvider, $urlRouterProvider) {
 
     $stateProvider
-        .state('cluster', {
-            url: '/cluster?clusterName',
+        .state('cluster_shards', {
+            url: '/cluster_shards?clusterName',
+            templateUrl: 'views/index/cluster_shards.html',
+            controller: 'ClusterShardCtl'
+        })
+        .state('cluster_dc_shards', {
+            url: '/cluster_dc_shards?clusterName',
             params: {
                 clusterName: {
                     value: '',
                     squash: false
                 }
             },
-            templateUrl: 'views/index/shards.html',
+            templateUrl: 'views/index/cluster_dc_shards.html',
             controller: 'ClusterCtl'
         })
         .state('cluster_dc', {
@@ -18,12 +23,12 @@ index_module.config(function($stateProvider, $urlRouterProvider) {
             controller: 'ClusterDcCtl'
         })
         .state('cluster_list', {
-            url: '/clusterlist',
+            url: '/cluster_list',
             templateUrl: 'views/index/cluster_list.html',
             controller: 'ClusterListCtl'
         })
         .state('cluster_form', {
-            url: '/cluster_form?clusterName',
+            url: '/cluster_form?clusterName&type',
             templateUrl: 'views/index/cluster_form.html',
             controller: 'ClusterFromCtl'
 

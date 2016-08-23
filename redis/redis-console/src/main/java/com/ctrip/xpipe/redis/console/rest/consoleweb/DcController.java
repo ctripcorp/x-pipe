@@ -22,7 +22,7 @@ public class DcController {
 	private DcService dcService;
 	
 	@RequestMapping(value = "/dcs/all", method = RequestMethod.GET)
-	public List<DcTbl> findAllClusters() {
+	public List<DcTbl> findAllDcs() {
 		return dcService.findAllDcs();
 	}
 }

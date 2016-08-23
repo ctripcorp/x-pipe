@@ -1,0 +1,19 @@
+table, th {
+    text-align: center;
+}
+
+a {
+    cursor: pointer;
+}
+
+.panel-heading {
+    font-size: 20px;
+}
+
+.modal-dialog .modal-title {
+    text-align: center;
+    font-size: 18px;
+}
+
+
+
