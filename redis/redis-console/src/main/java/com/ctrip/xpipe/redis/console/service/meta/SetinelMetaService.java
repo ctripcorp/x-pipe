@@ -10,5 +10,5 @@ import com.ctrip.xpipe.redis.core.entity.SetinelMeta;
  * Aug 17, 2016
  */
 public interface SetinelMetaService {
-	public SetinelMeta encodeSetinelMeta(SetinelTbl setinel, DcMeta dcMeta);
+	SetinelMeta encodeSetinelMeta(SetinelTbl setinel, DcMeta dcMeta);
 }

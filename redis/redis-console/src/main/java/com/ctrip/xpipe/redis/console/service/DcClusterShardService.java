@@ -1,53 +1,40 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
-import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTblDao;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTblEntity;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import com.ctrip.xpipe.redis.console.query.DalQuery;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.dal.jdbc.DalNotFoundException;
-import org.unidal.lookup.ContainerLoader;
-
 import java.util.List;
 
-import javax.annotation.PostConstruct;
-
+/**
+ * @author shyin
+ *
+ * Aug 20, 2016
+ */
 @Service
-public class DcClusterShardService {
-    private DcClusterShardTblDao dcClusterShardTblDao;
+public class DcClusterShardService extends AbstractConsoleService<DcClusterShardTblDao>{
 
-    @PostConstruct
-    private void postConstruct() {
-        try {
-            dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
-        } catch (ComponentLookupException e) {
-            throw new ServerException("Dao construct failed.", e);
-        }
+    public DcClusterShardTbl load(final long dcClusterId, final long shardId){
+    	return queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>() {
+			@Override
+			public DcClusterShardTbl doQuery() throws DalNotFoundException, DalException {
+				return dao.findDcClusterShard(shardId, dcClusterId, DcClusterShardTblEntity.READSET_FULL);
+			}
+    	});
     }
 
-    public DcClusterShardTbl load(long dcClusterId, long shardId){
-        try {
-            return dcClusterShardTblDao.findDcClusterShard(shardId, dcClusterId, DcClusterShardTblEntity.READSET_FULL);
-        } catch (DalNotFoundException e) {
-            throw new DataNotFoundException("Dc-cluster-shard not found.", e);
-        } catch (DalException e) {
-            throw new ServerException("Load dc-cluster-shard failed.", e);
-        }
-    }
-
-    public DcClusterShardTbl load(String dcName, String clusterName, String shardName) {
-        try {
-            return dcClusterShardTblDao.findDcCluserShardByName(dcName, clusterName, shardName,
-                    DcClusterShardTblEntity.READSET_FULL);
-        } catch (DalNotFoundException e) {
-            throw new DataNotFoundException("Dc-cluster-shard not found.", e);
-        } catch (DalException e) {
-            throw new ServerException("Load dc-cluster-shard failed.", e);
-        }
+    public DcClusterShardTbl load(final String dcName, final String clusterName, final String shardName) {
+    	return queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>(){
+			@Override
+			public DcClusterShardTbl doQuery() throws DalNotFoundException, DalException {
+				return dao.findDcCluserShardByName(dcName, clusterName, shardName, DcClusterShardTblEntity.READSET_FULL);
+			}
+    	});
     }
     
     @Transactional

@@ -38,10 +38,7 @@ public class DcMetaQueryVO {
 	private Map<String, DcClusterTbl> dcClusterMap;
     // Key : pair<clsuter_name, shard_name>
 	private Map<Pair<String, String>,DcClusterShardTbl> dcClusterShardMap;
-	
-	/**
-	 * Constructor
-	 */
+
 	public DcMetaQueryVO(DcTbl dc) {
 		currentDc = dc;
 		allDcs = new HashMap<>();
@@ -54,46 +51,26 @@ public class DcMetaQueryVO {
 		dcClusterShardMap = new HashMap<>();
 	}
 
-
-	/**
-	 * set all dcs
-	 */
 	public void setAllDcs(Map<Long, DcTbl> allDcs) {
 		this.allDcs = allDcs;
 	}
 
-	/**
-	 * set active keeper info
-	 */
 	public void setAllActiveKeepers(Map<Triple<Long,Long,Long>, RedisTbl> allActiveKeepers) {
 		this.allActiveKeepers = allActiveKeepers;
 	}
 
-	/**
-	 * Add cluster info
-	 * @param clusterTbl
-	 */
 	public void addClusterInfo(ClusterTbl clusterTbl) {
 		if(!clusterInfo.containsKey(clusterTbl.getClusterName())) {
 			clusterInfo.put(clusterTbl.getClusterName(), clusterTbl);
 		}
 	}
 	
-	/**
-	 * Add redis info
-	 * @param redisTbl
-	 */
 	public void addRedisInfo(RedisTbl redisTbl) {
 		if(!redisInfo.containsKey(redisTbl.getId())) {
 			redisInfo.put(redisTbl.getId(), redisTbl);
 		}
 	}
 	
-	/**
-	 * Add shard info to shard map
-	 * @param clusterName
-	 * @param shardTbl
-	 */
 	public void addShardMap(String clusterName, ShardTbl shardTbl) {
 		if(!shardMap.containsKey(clusterName)) {
 			shardMap.put(clusterName, new LinkedList<ShardTbl>());
@@ -103,12 +80,6 @@ public class DcMetaQueryVO {
 		}
 	}
 	
-	/**
-	 * Add redis info to redis map
-	 * @param clusterName
-	 * @param shardName
-	 * @param redisTbl
-	 */
 	public void addRedisMap(String clusterName, String shardName, RedisTbl redisTbl) {
 		if(!redisMap.containsKey(clusterName)) {
 			redisMap.put(clusterName, new HashMap<String, List<RedisTbl>>());
@@ -121,86 +92,34 @@ public class DcMetaQueryVO {
 		}
 	}
 	
-	/**
-	 * Add dc-cluster info to map
-	 * @param clusterName
-	 * @param dcClusterTbl
-	 */
 	public void addDcClusterMap(String clusterName, DcClusterTbl dcClusterTbl) {
 		if(!dcClusterMap.containsKey(clusterName)){
 			dcClusterMap.put(clusterName, dcClusterTbl);
 		}
 	}
 	
-	/**
-	 * Add dc-cluster-shard to map
-	 * @param clusterName
-	 * @param shardName
-	 * @param dcClsuterShardTbl
-	 */
 	public void addDcClusterShardMap(String clusterName, String shardName, DcClusterShardTbl dcClsuterShardTbl) {
 		if(!dcClusterShardMap.containsKey(Pair.of(clusterName, shardName))) {
 			dcClusterShardMap.put(Pair.of(clusterName, shardName), dcClsuterShardTbl);
 		}
 	}
 
-	/**
-	 * @return current dc
-	 */
-	public DcTbl getCurrentDc() {
-		return currentDc;
-	}
+	public DcTbl getCurrentDc() {return currentDc;}
 
-	/**
-	 * @return all dcs
-     */
 	public Map<Long, DcTbl> getAllDcs() {return allDcs;}
 
-	/**
-	 * @return all active keepers
-	 */
 	public Map<Triple<Long, Long, Long>, RedisTbl> getAllActiveKeepers() {return allActiveKeepers;}
 
-	/**
-	 * @return the clusterInfo
-	 */
-	public Map<String, ClusterTbl> getClusterInfo() {
-		return clusterInfo;
-	}
+	public Map<String, ClusterTbl> getClusterInfo() {return clusterInfo;}
 
-	/**
-	 * @return the redisInfo
-	 */
-	public Map<Long, RedisTbl> getRedisInfo() {
-		return redisInfo;
-	}
+	public Map<Long, RedisTbl> getRedisInfo() {return redisInfo;}
 
-	/**
-	 * @return the shardMap
-	 */
-	public Map<String, List<ShardTbl>> getShardMap() {
-		return shardMap;
-	}
+	public Map<String, List<ShardTbl>> getShardMap() {return shardMap;}
 
-	/**
-	 * @return the redisMap
-	 */
-	public Map<String, Map<String, List<RedisTbl>>> getRedisMap() {
-		return redisMap;
-	}
+	public Map<String, Map<String, List<RedisTbl>>> getRedisMap() {return redisMap;}
 
-	/**
-	 * @return the dcClusterMap
-	 */
-	public Map<String, DcClusterTbl> getDcClusterMap() {
-		return dcClusterMap;
-	}
+	public Map<String, DcClusterTbl> getDcClusterMap() {return dcClusterMap;}
 
-	/**
-	 * @return the dcClusterShardMap
-	 */
-	public Map<Pair<String, String>, DcClusterShardTbl> getDcClusterShardMap() {
-		return dcClusterShardMap;
-	}
+	public Map<Pair<String, String>, DcClusterShardTbl> getDcClusterShardMap() {return dcClusterShardMap;}
 	
 }

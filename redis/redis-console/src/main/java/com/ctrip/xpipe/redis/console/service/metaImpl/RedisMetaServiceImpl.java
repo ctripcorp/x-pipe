@@ -13,6 +13,11 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * @author shyin
+ *
+ * Aug 17, 2016
+ */
 @Service("redisMetaService")
 public class RedisMetaServiceImpl implements RedisMetaService{
 	public static long REDIS_MASTER_NULL = 0L;

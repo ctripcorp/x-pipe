@@ -14,8 +14,8 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
  */
 public interface DcMetaService {
 	
-	public DcMeta getDcMeta(String dcName);
+	DcMeta getDcMeta(String dcName);
 	
-	public HashMap<Triple<Long, Long, Long>, RedisTbl> loadAllActiveKeepers();
+	HashMap<Triple<Long, Long, Long>, RedisTbl> loadAllActiveKeepers();
 	
 }

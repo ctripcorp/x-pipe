@@ -15,13 +15,13 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
  */
 public interface RedisMetaService {
 	
-	public String encodeRedisAddress(RedisTbl redisTbl);
+	String encodeRedisAddress(RedisTbl redisTbl);
 	
-	public RedisMeta loadRedisMeta(ShardMeta shardMeta,RedisTbl redisTbl, DcMetaQueryVO dcMetaQueryVO); 
+	RedisMeta loadRedisMeta(ShardMeta shardMeta,RedisTbl redisTbl, DcMetaQueryVO dcMetaQueryVO); 
 	
-	public KeeperMeta loadKeeperMeta(ShardMeta shardMeta, RedisTbl redisTbl, DcMetaQueryVO dcMetaQueryVO);
+	KeeperMeta loadKeeperMeta(ShardMeta shardMeta, RedisTbl redisTbl, DcMetaQueryVO dcMetaQueryVO);
 	
-	public RedisMeta getRedisMeta(ShardMeta shardMeta, RedisTbl redisInfo, Map<Long,RedisTbl> redises);
+	RedisMeta getRedisMeta(ShardMeta shardMeta, RedisTbl redisInfo, Map<Long,RedisTbl> redises);
 	
-	public KeeperMeta getKeeperMeta(ShardMeta shardMeta, RedisTbl redisInfo, Map<Long,RedisTbl> redises);
+	KeeperMeta getKeeperMeta(ShardMeta shardMeta, RedisTbl redisInfo, Map<Long,RedisTbl> redises);
 }

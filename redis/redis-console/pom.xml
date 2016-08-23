@@ -8,6 +8,10 @@
    </parent>
    <artifactId>redis-console</artifactId>
    <dependencies>
+   	  <dependency>
+         <groupId>com.ctrip.xpipe.redis</groupId>
+         <artifactId>redis-core</artifactId>
+      </dependency>
       <dependency>
          <groupId>javax.servlet</groupId>
          <artifactId>javax.servlet-api</artifactId>
@@ -20,14 +24,6 @@
          <groupId>org.springframework</groupId>
          <artifactId>spring-tx</artifactId>
       </dependency>
-      <dependency>
-         <groupId>com.ctrip.xpipe.redis</groupId>
-         <artifactId>redis-core</artifactId>
-      </dependency>
-      <dependency>
-    	<groupId>com.fasterxml.jackson.core</groupId>
-    	<artifactId>jackson-databind</artifactId>
-	  </dependency>
       <!-- test -->
 	   <dependency>
 		   <groupId>com.ctrip.xpipe</groupId>
@@ -62,45 +58,9 @@
          <artifactId>mysql-connector-java</artifactId>
       </dependency>
    </dependencies>
-	<profiles>
-		<profile>
-			<id>services</id>
-			<dependencies>
-				<dependency>
-					<groupId>com.ctrip.xpipe</groupId>
-					<artifactId>ctrip-service</artifactId>
-				</dependency>
-			</dependencies>
-		</profile>
-	</profiles>
+
    <build>
       <plugins>
-         	<plugin>
-            	<groupId>org.springframework.boot</groupId>
-            	<artifactId>spring-boot-maven-plugin</artifactId>
-            	<configuration>
-					<mainClass>com.ctrip.xpipe.redis.console.App</mainClass>
-					<executable>true</executable>
-				</configuration>
-       		</plugin>
-			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-						<configuration>
-							<finalName>${project.artifactId}-${project.version}</finalName>
-							<appendAssemblyId>false</appendAssemblyId>
-							<descriptors>
-								<descriptor>src/assembly/assembly-descriptor.xml</descriptor>
-							</descriptors>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
          <plugin>
             <groupId>org.unidal.maven.plugins</groupId>
             <artifactId>codegen-maven-plugin</artifactId>
@@ -136,58 +96,6 @@
             </executions>
          </plugin>
       </plugins>
-      <pluginManagement>
-         <plugins>
-            <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-      			<plugin>
-      				<groupId>org.eclipse.m2e</groupId>
-      				<artifactId>lifecycle-mapping</artifactId>
-      				<version>1.0.0</version>
-      				<configuration>
-      					<lifecycleMappingMetadata>
-      						<pluginExecutions>
-      							<pluginExecution>
-      								<pluginExecutionFilter>
-      									<groupId>
-      										org.unidal.maven.plugins
-      									</groupId>
-      									<artifactId>
-	      									codegen-maven-plugin
-    	  								</artifactId>
-      									<versionRange>
-      										[2.4.2,)
-      									</versionRange>
-      									<goals>
-      										<goal>dal-jdbc</goal>
-      									</goals>
-      								</pluginExecutionFilter>
-      								<action>
-      									<ignore></ignore>
-      								</action>
-      							</pluginExecution>
-      							<pluginExecution>
-      								<pluginExecutionFilter>
-      									<groupId>
-      										org.unidal.maven.plugins
-      									</groupId>
-      									<artifactId>
-      										plexus-maven-plugin
-      									</artifactId>
-      									<versionRange>[2.4.2,)</versionRange>
-      									<goals>
-      										<goal>plexus</goal>
-      									</goals>
-      								</pluginExecutionFilter>
-      								<action>
-      									<ignore></ignore>
-      								</action>
-      								</pluginExecution>
-      						</pluginExecutions>
-      					</lifecycleMappingMetadata>
-      				</configuration>
-      			</plugin>
-         </plugins>
-      </pluginManagement>
    </build>
    <properties>
       <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>

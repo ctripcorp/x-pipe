@@ -19,9 +19,9 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
  */
 public interface ShardMetaService {
 
-	public ShardMeta loadShardMeta(ClusterMeta clusterMeta,ClusterTbl clusterTbl, ShardTbl shardTbl, DcMetaQueryVO dcMetaQueryVO);
+	ShardMeta loadShardMeta(ClusterMeta clusterMeta,ClusterTbl clusterTbl, ShardTbl shardTbl, DcMetaQueryVO dcMetaQueryVO);
 	
-	public ShardMeta getShardMeta(String dcName, String clusterName, String shardName);
+	ShardMeta getShardMeta(String dcName, String clusterName, String shardName);
 	
-	public ShardMeta encodeShardMeta(DcTbl dcInfo, ClusterTbl clusterInfo, ShardTbl shardInfo, Map<Triple<Long,Long,Long>,RedisTbl> activekeepers);
+	ShardMeta encodeShardMeta(DcTbl dcInfo, ClusterTbl clusterInfo, ShardTbl shardInfo, Map<Triple<Long,Long,Long>,RedisTbl> activekeepers);
 }

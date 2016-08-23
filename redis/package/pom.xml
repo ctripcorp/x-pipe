@@ -12,8 +12,8 @@
 	<modules>
 		<module>redis-metaserver-package</module>
 		<module>redis-keeper-package</module>
-	    	<module>package-redis-console</module>
-  </modules>
+	    <module>redis-console-package</module>
+    </modules>
 
 
 	<profiles>

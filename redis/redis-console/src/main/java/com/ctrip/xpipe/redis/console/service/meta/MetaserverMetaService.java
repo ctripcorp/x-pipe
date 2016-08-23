@@ -10,5 +10,5 @@ import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
  * Aug 17, 2016
  */
 public interface MetaserverMetaService {
-	public MetaServerMeta encodeMetaserver(MetaserverTbl metaserver, DcMeta dcMeta);
+	MetaServerMeta encodeMetaserver(MetaserverTbl metaserver, DcMeta dcMeta);
 }

@@ -71,7 +71,7 @@ public class ConsoleController {
 	public List<String> getAllDcs(){
 		List<String> result = new LinkedList<String>();
 		
-		for(DcTbl dc : dcService.findAllDcs()) {
+		for(DcTbl dc : dcService.findAllDcNames()) {
 			result.add(dc.getDcName());
 		}
 
@@ -82,7 +82,7 @@ public class ConsoleController {
 	public List<String> getAllClusters() {
 		List<String> result = new LinkedList<String>();
 		
-		for(ClusterTbl cluster : clusterService.findAllClusters()) {
+		for(ClusterTbl cluster : clusterService.findAllClusterNames()) {
 			result.add(cluster.getClusterName());
 		}
 		
@@ -93,7 +93,7 @@ public class ConsoleController {
 	public List<String> getAllShards(@PathVariable String clusterId) {
 		List<String> result = new LinkedList<String>();
 		
-		for(ShardTbl shard : shardService.loadAllByClusterName(clusterId)) {
+		for(ShardTbl shard : shardService.findAllShardNamesByClusterName(clusterId)) {
 			result.add(shard.getShardName());
 		}
 		

@@ -1,55 +1,42 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
-import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
-import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
 import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
+import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.dal.jdbc.DalNotFoundException;
-import org.unidal.lookup.ContainerLoader;
-
-import javax.annotation.PostConstruct;
-
 import java.util.List;
 
+/**
+ * @author shyin
+ * 
+ * Aug 20, 2016
+ */
 @Service
-public class RedisService {
-    private RedisTblDao redisTblDao;
+public class RedisService extends AbstractConsoleService<RedisTblDao>{
 
-    @PostConstruct
-    private void postConstruct() {
-        try {
-            redisTblDao = ContainerLoader.getDefaultContainer().lookup(RedisTblDao.class);
-        } catch (ComponentLookupException e) {
-            throw new ServerException("Dao construct failed.", e);
-        }
-    }
-
-    public List<RedisTbl> findByDcClusterShardId(long dcClusterShardId){
-        try {
-            return redisTblDao.findAllByDcClusterShardId(dcClusterShardId, RedisTblEntity.READSET_FULL);
-        } catch (DalNotFoundException e) {
-            throw new DataNotFoundException("Redises not found.", e);
-        } catch (DalException e) {
-            throw new ServerException("Load redises failed.", e);
-        }
+    public List<RedisTbl> findByDcClusterShardId(final long dcClusterShardId){
+    	return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+			@Override
+			public List<RedisTbl> doQuery() throws DalNotFoundException, DalException {
+				return dao.findAllByDcClusterShardId(dcClusterShardId, RedisTblEntity.READSET_FULL);
+			}
+    	});
     }
     
-    public RedisTbl load(long id) {
-    	try {
-			return redisTblDao.findByPK(id, RedisTblEntity.READSET_FULL);
-		} catch (DalNotFoundException e) {
-            throw new DataNotFoundException("Redise not found by id.", e);
-        } catch (DalException e) {
-            throw new ServerException("Load redise failed.", e);
-        }
+    public RedisTbl load(final long id) {
+    	return queryHandler.handleQuery(new DalQuery<RedisTbl>() {
+			@Override
+			public RedisTbl doQuery() throws DalNotFoundException, DalException {
+				return dao.findByPK(id, RedisTblEntity.READSET_FULL);
+			}
+    	});
     }
 
     public RedisTbl findActiveKeeper(List<RedisTbl> redises) {
@@ -65,12 +52,12 @@ public class RedisService {
     
     @Transactional
     public void createRedis(RedisTbl redis) {
-    	/** TODO **/
+    	// TODO
     }
     
     @Transactional
     public void deleteRedis(String redisName) {
-    	/** TODO **/
+    	// TODO
     }
     
     @Transactional
@@ -86,7 +73,7 @@ public class RedisService {
     	}
     	
     	try {
-			redisTblDao.deleteBatch((RedisTbl[])redises.toArray(),RedisTblEntity.UPDATESET_FULL);
+			dao.deleteBatch((RedisTbl[])redises.toArray(),RedisTblEntity.UPDATESET_FULL);
 		} catch (DalException e) {
 			throw new BadRequestException("Redises cannot be deleted.");
 		}

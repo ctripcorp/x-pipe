@@ -6,7 +6,6 @@ package com.ctrip.xpipe.redis.console.exception;
  * @Author zhangle
  */
 public class ServerException extends RedisConsoleRuntimeException{
-
     private static final long serialVersionUID = 1L;
 
     public ServerException(String message) {

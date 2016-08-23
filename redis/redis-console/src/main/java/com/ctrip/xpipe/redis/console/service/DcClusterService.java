@@ -1,25 +1,24 @@
 package com.ctrip.xpipe.redis.console.service;
 
 
-import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import com.ctrip.xpipe.redis.console.query.DalQuery;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.dal.jdbc.DalNotFoundException;
-import org.unidal.lookup.ContainerLoader;
-
 import java.util.List;
 
-import javax.annotation.PostConstruct;
-
+/**
+ * @author shyin
+ *
+ * Aug 20, 2016
+ */
 @Service
-public class DcClusterService {
-    private DcClusterTblDao dcClusterTblDao;
-    
+public class DcClusterService extends AbstractConsoleService<DcClusterTblDao>{
     @Autowired
     private DcService dcService;
     @Autowired
@@ -27,33 +26,22 @@ public class DcClusterService {
     @Autowired
     private MetaserverService metaserverService;
 
-    @PostConstruct
-    private void postConstruct() {
-        try {
-            dcClusterTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterTblDao.class);
-        } catch (ComponentLookupException e) {
-            throw new ServerException("Dao construct failed.", e);
-        }
+    public DcClusterTbl load(final long dcId, final long clusterId) {
+    	return queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
+			@Override
+			public DcClusterTbl doQuery() throws DalNotFoundException, DalException {
+	    		return dao.findDcClusterById(dcId, clusterId, DcClusterTblEntity.READSET_FULL);
+			}
+    	});
     }
 
-    public DcClusterTbl load(long dcId, long clusterId) {
-        try {
-            return dcClusterTblDao.findDcClusterById(dcId, clusterId, DcClusterTblEntity.READSET_FULL);
-        } catch (DalNotFoundException e) {
-            throw new DataNotFoundException("Dc-cluster not found.", e);
-        } catch (DalException e) {
-            throw new ServerException("Load dc-cluster failed.", e);
-        }
-    }
-
-    public DcClusterTbl load(String dcName, String clusterName){
-        try {
-            return dcClusterTblDao.findDcClusterByName(dcName, clusterName, DcClusterTblEntity.READSET_FULL);
-        } catch (DalNotFoundException e) {
-            throw new DataNotFoundException("Dc-cluster not found.", e);
-        } catch (DalException e) {
-            throw new ServerException("Load dc-cluster failed.", e);
-        }
+    public DcClusterTbl load(final String dcName, final String clusterName){
+    	return queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
+			@Override
+			public DcClusterTbl doQuery() throws DalNotFoundException, DalException {
+				return dao.findDcClusterByName(dcName, clusterName, DcClusterTblEntity.READSET_FULL);
+			}
+    	});
     }
     
     @Transactional
@@ -74,25 +62,25 @@ public class DcClusterService {
     	proto.setDcClusterPhase(1);
     	
     	try {
-			dcClusterTblDao.insert(proto);
+			dao.insert(proto);
 		} catch (DalException e) {
 			throw new ServerException("Cannot create dc-cluster.");
 		}
     }
     
     public List<DcClusterTbl> loadAllByClusterName(String clusterName) {
-    	/** TODO **/
+    	// TODO
     	return null;
     }
     
     @Transactional
     public void deleteDcClusters(String dcName, String clusterName) {
-    	/** TODO **/
+    	// TODO
     }
     
     @Transactional
     public void deleteDcClustersBatch(List<DcClusterTbl> dcClusters) {
-    	/** TODO **/
+    	// TODO
     }
     
 }

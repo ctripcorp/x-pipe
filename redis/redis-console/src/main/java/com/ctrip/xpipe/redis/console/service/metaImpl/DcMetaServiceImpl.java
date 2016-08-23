@@ -4,8 +4,6 @@ import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.DcTblDao;
-import com.ctrip.xpipe.redis.console.model.DcTblEntity;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.MetaserverTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
@@ -23,13 +21,8 @@ import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 
 import org.apache.commons.lang3.tuple.Triple;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.unidal.dal.jdbc.DalException;
-import org.unidal.dal.jdbc.DalNotFoundException;
-import org.unidal.lookup.ContainerLoader;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -38,13 +31,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import javax.annotation.PostConstruct;
-
+/**
+ * @author shyin
+ *
+ * Aug 17, 2016
+ */
 @Service("dcMetaService")
 public class DcMetaServiceImpl implements DcMetaService{
-	
-	private DcTblDao dcTblDao;
-
 	@Autowired
 	private DcService dcService;
 	@Autowired
@@ -62,15 +55,6 @@ public class DcMetaServiceImpl implements DcMetaService{
 	@Autowired
 	private ClusterMetaService clusterMetaService;
 	
-    @PostConstruct
-    private void postConstruct() {
-        try {
-        	dcTblDao = ContainerLoader.getDefaultContainer().lookup(DcTblDao.class);
-        } catch (ComponentLookupException e) {
-            throw new ServerException("Dao construct failed.", e);
-        }
-    }
-
     @Override
     public DcMeta getDcMeta(final String dcName) {
     	ExecutorService fixedThreadPool = Executors.newFixedThreadPool(6);
@@ -129,7 +113,7 @@ public class DcMetaServiceImpl implements DcMetaService{
 	    		dcMeta.addKeeperContainer(keepercontainerMetaService.encodeKeepercontainerMeta(keepercontainer, dcMeta));
 	    	}
 	    	
-			DcMetaQueryVO dcMetaQueryVO = loadMetaVO(dcInfo, loadDcMetaDetails(dcName));
+			DcMetaQueryVO dcMetaQueryVO = loadMetaVO(dcInfo, dcService.findAllDetails(dcName));
 			dcMetaQueryVO.setAllActiveKeepers(future_allactivekeepers.get());
 			dcMetaQueryVO.setAllDcs(future_alldcs.get());
 
@@ -145,71 +129,31 @@ public class DcMetaServiceImpl implements DcMetaService{
 		}
     	return dcMeta;
     }
-    
 
-    /**
-     * Get all details inside dc
-     * @param dcName
-     * @return list of all details 
-     */
-    private List<DcTbl> loadDcMetaDetails(String dcName) {
-    	try {
-			return dcTblDao.findDcDetailsByDcName(dcName, DcTblEntity.READSET_FULL_ALL);
-		} catch (DalNotFoundException e) {
-            throw new DataNotFoundException("Dc-meta details not found.", e);
-        } catch (DalException e) {
-            throw new ServerException("Load dc-meta details failed.", e);
-        }
-    }
-
-	/**
-	 * Get all active keepers
-	 * @return map of all active keepers , key : <dcId, clusterId, shardId>
-     */
     @Override
 	public HashMap<Triple<Long, Long, Long>, RedisTbl> loadAllActiveKeepers() {
 		HashMap<Triple<Long, Long, Long>, RedisTbl> results = new HashMap<>();
 
-		try {
-			for (DcTbl dcTbl : dcTblDao.findAllActiveKeeper(DcTblEntity.READSET_FULL_ALL)) {
-                if(! results.containsKey(Triple.of(dcTbl.getId(), dcTbl.getClusterInfo().getId(), dcTbl.getShardInfo().getId()))) {
-                    results.put(Triple.of(dcTbl.getId(), dcTbl.getClusterInfo().getId(), dcTbl.getShardInfo().getId()), dcTbl.getRedisInfo());
-                }
-            }
-		} catch (DalNotFoundException e) {
-			throw new DataNotFoundException("All-active-keeper not found.", e);
-		} catch (DalException e) {
-			throw new ServerException("Load all-active-keeper failed.", e);
+		for (DcTbl dcTbl : dcService.findAllActiveKeepers()) {
+			if(! results.containsKey(Triple.of(dcTbl.getId(), dcTbl.getClusterInfo().getId(), dcTbl.getShardInfo().getId()))) {
+				results.put(Triple.of(dcTbl.getId(), dcTbl.getClusterInfo().getId(), dcTbl.getShardInfo().getId()), dcTbl.getRedisInfo());
+			}
 		}
 
 		return results;
 	}
 
-	/**
-	 * Get all dc
-	 * @return map of all dcs
-     */
 	private HashMap<Long, DcTbl> loadAllDcs() {
 		HashMap<Long, DcTbl> results = new HashMap<>();
 
-		try {
-			for(DcTbl dcTbl : dcTblDao.findAllDcs(DcTblEntity.READSET_FULL)) {
-                results.put(dcTbl.getId(), dcTbl);
-            }
-		} catch (DalNotFoundException e) {
-			throw new DataNotFoundException("All-dc not found.", e);
-		} catch (DalException e) {
-			throw new ServerException("Load all-dc failed.", e);
+		for(DcTbl dcTbl : dcService.findAllDcs()) {
+			results.put(dcTbl.getId(), dcTbl);
 		}
+
 
 		return results;
 	}
 
-    /**
-     * parse DcMetaQuery results to DcMetaQueryVO
-     * @param dcMetaDetails
-     * @return dc-meta-query vo
-     */
     private DcMetaQueryVO loadMetaVO(DcTbl currentDc, List<DcTbl> dcMetaDetails) {
     	DcMetaQueryVO result = new DcMetaQueryVO(currentDc);
     	

@@ -34,6 +34,11 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * @author shyin
+ *
+ * Aug 17, 2016
+ */
 @Service("shardMetaService")
 public class ShardMetaServiceImpl implements ShardMetaService{
 	@Autowired
@@ -190,11 +195,6 @@ public class ShardMetaServiceImpl implements ShardMetaService{
 		}
 	}
 	
-	/**
-	 * Generate redis map according to redis list
-	 * @param redises
-	 * @return
-	 */
 	private Map<Long,RedisTbl> generateRedisMap(List<RedisTbl> redises) {
 		Map<Long,RedisTbl> result = new HashMap<Long,RedisTbl>(redises.size());
 		for(RedisTbl redis : redises) {

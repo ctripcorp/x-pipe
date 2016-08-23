@@ -7,10 +7,6 @@ package com.ctrip.xpipe.redis.console.exception;
  * Aug 15, 2016
  */
 public class BadRequestException extends RedisConsoleRuntimeException{
-
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 
 

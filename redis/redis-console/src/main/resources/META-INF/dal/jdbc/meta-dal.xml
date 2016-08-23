@@ -22,6 +22,9 @@
 				<readset-ref name="FULL" relation-name="dc-cluster-shard-info"/>
 				<readset-ref name="FULL" relation-name="redis-info"/>
 			</readset>
+			<readset name="NAME">
+				<member name='dc-name'/>
+			</readset>
 		</readsets>
 		
 		<query-defs>
@@ -109,8 +112,6 @@
 	</entity>
 
 	<entity name="cluster-tbl" table="CLUSTER_TBL" alias="ct">
-		<var name="page-count" value-type="int"/>
-		<var name="id-offset" value-type="int"/>
 		<member name="count" value-type="long" select-expr="COUNT(*)" all="false" />
 	
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
@@ -120,6 +121,9 @@
 		<readsets>
 			<readset name="COUNT">
 				<member name="count"/>
+			</readset>
+			<readset name="NAME">
+				<member name='cluster-name'/>
 			</readset>
 			<readset name="FULL_RELATED_DC">
 				<readset-ref name="FULL"/>
@@ -145,18 +149,6 @@
 		        FROM <TABLE/>
 		        WHERE <FIELD name="deleted"/> = 0
 				]]>
-				</statement>
-			</query>
-			<query name="find-clusters-batch" type="SELECT" multiple="true">
-				<param name="page-count"/>
-				<param name="id-offset"/>
-				<statement>
-					<![CDATA[
-					SELECT <FIELDS/>
-					FROM <TABLE/>
-					WHERE <FIELD name='deleted'/> = 0
-					LIMIT ${id-offset}, ${page-count}
-					]]>
 				</statement>
 			</query>
 			<query name="find-all-clusters" type="SELECT" multiple="true">
@@ -227,6 +219,12 @@
 		<var name="cluster-name" value-type="String"/>
 
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
+
+		<readsets>
+			<readset name="NAME">
+				<member name='shard-name'/>
+			</readset>
+		</readsets>
 
 		<query-defs>
 			<query name="find-all-by-cluster-id" type="SELECT" multiple="true">

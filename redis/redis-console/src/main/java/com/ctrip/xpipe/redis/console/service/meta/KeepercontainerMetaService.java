@@ -10,5 +10,5 @@ import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
  * Aug 17, 2016
  */
 public interface KeepercontainerMetaService {
-	public KeeperContainerMeta encodeKeepercontainerMeta(KeepercontainerTbl keepercontainer, DcMeta dcMeta);
+	KeeperContainerMeta encodeKeepercontainerMeta(KeepercontainerTbl keepercontainer, DcMeta dcMeta);
 }

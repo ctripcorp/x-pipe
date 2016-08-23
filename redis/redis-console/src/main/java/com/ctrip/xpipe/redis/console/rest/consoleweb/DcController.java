@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.DcService;
 
+/**
+ * @author shyin
+ *
+ * Aug 22, 2016
+ */
 @RestController
 @RequestMapping("console")
 public class DcController {

@@ -30,6 +30,11 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * @author shyin
+ *
+ * Aug 17, 2016
+ */
 @Service("clusterMetaService")
 public class ClusterMetaServiceImpl implements ClusterMetaService {
 	@Autowired
