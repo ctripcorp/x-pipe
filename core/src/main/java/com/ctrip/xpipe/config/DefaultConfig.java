@@ -7,7 +7,7 @@ import com.ctrip.xpipe.api.config.Config;
  */
 public class DefaultConfig extends AbstractConfig {
 	
-    private Config config = new CompositeConfig(new DefaultPropertyConfig());
+    private Config config = new CompositeConfig(new DefaultFileConfig(), new DefaultPropertyConfig());
 
     @Override
     public String get(String key) {

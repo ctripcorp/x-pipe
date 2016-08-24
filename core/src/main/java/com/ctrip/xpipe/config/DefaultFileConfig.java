@@ -16,8 +16,11 @@ public class DefaultFileConfig extends AbstractConfig{
 	private Properties properties = new Properties();
 	
 	private static String DEFAULT_LOCAL_PATH = System.getProperty("localpath", "/opt/settings/xpipe");
+	private static String DEFAULT_CONFIG_FILE = System.getProperty("configFile", "xpipe.properties");
+	
 
 	public DefaultFileConfig(){
+		this(DEFAULT_CONFIG_FILE);
 	}
 
 	public DefaultFileConfig(String file) {
