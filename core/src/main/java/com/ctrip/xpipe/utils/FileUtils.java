@@ -26,7 +26,7 @@ public class FileUtils {
 
 	public static InputStream getFileInputStream(String path, String fileName) throws FileNotFoundException{
 		
-		return getFileInputStream("./", fileName, FileUtils.class);
+		return getFileInputStream(path, fileName, FileUtils.class);
 	}
 
 	public static InputStream getFileInputStream(String fileName, Class<?> clazz) throws FileNotFoundException{

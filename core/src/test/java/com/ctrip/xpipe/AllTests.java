@@ -47,8 +47,9 @@ import com.ctrip.xpipe.zk.EphemeralNodeCreatorTest;
 	SequenceCommandChainTest.class,
 	ParallelCommandChainTest.class,
 	FileUtilsTest.class,
-	EphemeralNodeCreatorTest.class	
-	})
+	EphemeralNodeCreatorTest.class,
+	FileUtilsTest.class
+})
 public class AllTests {
 
 }

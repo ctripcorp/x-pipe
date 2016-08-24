@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.utils;
 
+
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -25,6 +29,26 @@ public class FileUtilsTest extends AbstractTest{
 		}catch(FileNotFoundException e){
 			
 		}
-}
+	}
+	
+	@Test
+	public void testAbsolute() throws IOException{
+		
+		String testDir = getTestFileDir();
+		logger.info("[testAbsolute]{}", testDir);
+		
+		String fileName = getTestName() + ".txt";
+		File file = new File(testDir, fileName);
+		String value = randomString();
+		
+		org.apache.commons.io.FileUtils.write(file, value);
+
+		InputStream ins = FileUtils.getFileInputStream(new File(testDir).getAbsolutePath(), fileName);
+		
+		Assert.assertNotNull(ins);
+		
+		
+		
+	}
 
 }
