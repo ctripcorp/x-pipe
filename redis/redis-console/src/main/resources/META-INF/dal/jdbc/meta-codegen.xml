@@ -7,6 +7,7 @@
     <member name="cluster-description" field="cluster_description" value-type="String" length="1024" nullable="false" />
     <member name="cluster-last-modified-time" field="cluster_last_modified_time" value-type="String" length="40" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
+    <member name="is-xpipe-interested" field="is_xpipe_interested" value-type="boolean" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
@@ -22,7 +23,9 @@
         <param name="key-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}
+        AND <FIELD name='deleted'/> = 0
+        ]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -32,7 +35,9 @@
         <param name="key-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}
+        AND <FIELD name='deleted'/> = 0
+        ]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-id" />
@@ -62,7 +67,8 @@
         <param name="key-dc-cluster-shard-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='dc-cluster-shard-id'/> = ${key-dc-cluster-shard-id}]]></statement>
+        WHERE <FIELD name='dc-cluster-shard-id'/> = ${key-dc-cluster-shard-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -72,7 +78,8 @@
         <param name="key-dc-cluster-shard-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='dc-cluster-shard-id'/> = ${key-dc-cluster-shard-id}]]></statement>
+        WHERE <FIELD name='dc-cluster-shard-id'/> = ${key-dc-cluster-shard-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-dc-cluster-shard-id" />
@@ -102,7 +109,8 @@
         <param name="key-dc-cluster-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='dc-cluster-id'/> = ${key-dc-cluster-id}]]></statement>
+        WHERE <FIELD name='dc-cluster-id'/> = ${key-dc-cluster-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -112,7 +120,8 @@
         <param name="key-dc-cluster-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='dc-cluster-id'/> = ${key-dc-cluster-id}]]></statement>
+        WHERE <FIELD name='dc-cluster-id'/> = ${key-dc-cluster-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-dc-cluster-id" />
@@ -143,7 +152,8 @@
         <param name="key-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -153,7 +163,8 @@
         <param name="key-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-id" />
@@ -183,7 +194,8 @@
         <param name="key-keepercontainer-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='keepercontainer-id'/> = ${key-keepercontainer-id}]]></statement>
+        WHERE <FIELD name='keepercontainer-id'/> = ${key-keepercontainer-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -193,7 +205,8 @@
         <param name="key-keepercontainer-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='keepercontainer-id'/> = ${key-keepercontainer-id}]]></statement>
+        WHERE <FIELD name='keepercontainer-id'/> = ${key-keepercontainer-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-keepercontainer-id" />
@@ -226,7 +239,8 @@
         <param name="key-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -236,7 +250,8 @@
         <param name="key-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-id" />
@@ -270,7 +285,8 @@
         <param name="key-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -280,7 +296,8 @@
         <param name="key-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-id" />
@@ -309,7 +326,8 @@
         <param name="key-setinel-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}]]></statement>
+        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -319,7 +337,8 @@
         <param name="key-setinel-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}]]></statement>
+        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-setinel-id" />
@@ -348,7 +367,8 @@
         <param name="key-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -358,7 +378,8 @@
         <param name="key-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}
+        AND <FIELD name='deleted'/> = 0]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-id" />

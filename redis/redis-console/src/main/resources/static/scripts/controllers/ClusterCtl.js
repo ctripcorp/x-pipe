@@ -1,29 +1,53 @@
-index_module.controller('ClusterCtl', ['$scope', '$window', 'ClusterService',
-         function ($scope, $window, ClusterService) {
+index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '$window', '$location', 'toastr', 'AppUtil', 'ClusterService', 'ShardService','SweetAlert',
+    function ($rootScope, $scope, $stateParams, $window, $location, toastr, AppUtil, ClusterService, ShardService, SweetAlert) {
 
-             $scope.clusterName = "";
+        $scope.dcs, $scope.dcActiveTab, $scope.shards;
 
-             $scope.switchDc = switchDc;
-             
-             $scope.loadCluster = loadCluster;
+        $scope.switchDc = switchDc;
+        $scope.loadCluster = loadCluster;
+        $scope.loadShards = loadShards;
 
-             function switchDc(dc) {
-                 $scope.dcActiveTab = dc.baseInfo.dcName;
-             }
+        $rootScope.currentNav = '1-1';
 
-             function loadCluster() {
-                 ClusterService.load_cluster($scope.clusterName)
-                     .then(function (result) {
-                         $scope.cluster = result;
-                         if (result && result.dcs && result.dcs.length) {
-                             $scope.dcActiveTab = result.dcs[0].baseInfo.dcName;
-                         }
-                     }, function (result) {
+        $scope.clusterName = $stateParams.clusterName;
 
-                     });
-             }
+        if ($scope.clusterName) {
+            loadCluster();
+        }
+        
+        function switchDc(dc) {
+            $scope.dcActiveTab = dc.dcName;
+            loadShards($scope.clusterName, dc.dcName);
+        }
 
-             
-             
-             
-         }]);
+        function loadCluster() {
+            ClusterService.findClusterDCs($scope.clusterName)
+                .then(function (result) {
+                    if (!result || result.length == 0) {
+                        $scope.dcs = [];
+                        $scope.shards = [];
+                        return;
+                    }
+                    $scope.dcs = result;
+                    $scope.dcActiveTab = $scope.dcs[0].dcName;
+
+                    loadShards($scope.clusterName, $scope.dcs[0].dcName);
+
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result));
+                });
+
+
+        }
+
+        function loadShards(clusterName, dcName) {
+            ShardService.findShards(clusterName, dcName)
+                .then(function (result) {
+                    $scope.shards = result;
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result));
+                });
+        }
+
+
+    }]);
