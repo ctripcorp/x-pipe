@@ -11,6 +11,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,12 +122,15 @@ public class EphemeralNodeCreator implements Startable, Stoppable{
 
 	private void checkReplace() throws Exception {
 
-		logger.info("[doCreate][already exists]{}, {}", path, new String(data));
 		byte []zkData = client.getData().forPath(path);
 		
 		if(nodeTheSame.same(zkData)){
 			logger.info("[doCreate][replace, delete]{}, {}", path, new String(data));
-			client.delete().forPath(path);
+			try{
+				client.delete().forPath(path);
+			}catch(NoNodeException e){
+				logger.warn("[checkReplace][already deleted]{}", path);
+			}
 			doCreate();
 		}else{
 			throw new EphemeralNodeCanNotReplaceException(path, zkData, data);

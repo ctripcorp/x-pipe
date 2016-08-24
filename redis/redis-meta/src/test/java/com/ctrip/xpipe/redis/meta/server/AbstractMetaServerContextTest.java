@@ -66,10 +66,14 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	@Override
 	protected ApplicationContext createSpringContext() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		context.getEnvironment().setActiveProfiles("test");
 		context.register(MetaServerContextConfig.class);
 		context.refresh();
 		return context;
+	}
+	
+	protected CurrentClusterServer getCurrentClusterServer(){
+		
+		return getBean(CurrentClusterServer.class);
 	}
 	
 	
@@ -99,7 +103,6 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 		current.setConfig(metaServerConfig);
 		current.initialize();
 		current.start();
-	
 		return current;
 	}
 
