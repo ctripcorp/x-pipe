@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
@@ -74,7 +75,8 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     	});
     }
     
-    public ClusterTbl createCluster(ClusterTbl cluster) {
+    @DalTransaction
+    public ClusterTbl createCluster(final ClusterTbl cluster) {
     	ClusterTbl proto = dao.createLocal();
 		
 		proto.setClusterName(cluster.getClusterName());
