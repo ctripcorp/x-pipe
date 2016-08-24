@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.configuration;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 /**
  * @author shyin
@@ -8,5 +9,6 @@ import org.springframework.context.annotation.Configuration;
  * Jul 28, 2016
  */
 @Configuration
+@EnableAspectJAutoProxy
 public class WebConfig {
 }

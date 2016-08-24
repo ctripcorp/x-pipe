@@ -1,59 +1,108 @@
-<div class="col-md-8 col-md-offset-2" style="margin-top: 50px">
-    <div class="widget-box ">
-        <div class="widget-header">
-            <h4 ng-if="operateType == 'create'">创建集群</h4>
+<div class="col-md-8 col-md-offset-2">
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <span ng-if="operateType == 'create'">创建集群</span>
             <h4 ng-if="operateType == 'update'">更新集群</h4>
+            <h4 ng-if="operateType == 'retrieve'">集群信息</h4>
         </div>
+        <div class="panel-body">
 
-        <div class="widget-body" style="padding-top: 35px;">
-            <form class="form-horizontal" ng-submit="doCluster()">
+            <form class="form-horizontal" ng-submit="doCluster()" ng-show="operateType != 'retrieve'">
                 <div class="form-group">
-                    <label class="col-sm-3 control-label no-padding-right">Cluster Name</label>
+                    <label class="col-sm-4 control-label no-padding-right">Cluster Name</label>
 
-                    <div class="col-sm-9">
-                        <input type="text" placeholder="集群名称" class="col-xs-10 col-sm-5"
+                    <div class="col-sm-7">
+                        <input type="text" placeholder="集群名称" class="col-xs-10 col-sm-4"
                                ng-model="cluster.clusterName" ng-disabled="operateType == 'update'"/>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="col-sm-3 control-label no-padding-right"> Master DC </label>
+                    <label class="col-sm-4 control-label no-padding-right"> Master DC </label>
 
-                    <div class="col-sm-9">
-                        <label>
+                    <div class="col-sm-7">
+                        <label ng-repeat="dc in allDcs">
                             <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
-                                   ng-value="1" ng-checked="cluster.activedcId == 1"
+                                   ng-value="dc.id" ng-checked="cluster.activedcId == dc.id"
                                    ng-disabled="operateType == 'update'"/>
-                            <span class="lbl">NTGXH</span>
-                        </label>
-                        <label>
-                            <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
-                                   ng-value="2" ng-checked="cluster.activedcId == 2"
-                                   ng-disabled="operateType == 'update'"/>
-                            <span class="lbl">FAT</span>
+                            <span class="lbl" ng-bind="dc.dcName"></span>
                         </label>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="col-sm-3 control-label no-padding-right">Cluster Description</label>
+                    <label class="col-sm-4 control-label no-padding-right">Cluster Description</label>
 
-                    <div class="col-sm-9">
+                    <div class="col-sm-7">
                         <textarea rows="4" style="width: 330px;" ng-model="cluster.clusterDescription"></textarea>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="col-sm-3 control-label no-padding-right"></label>
-                    <div class="col-sm-9">
+                    <label class="col-sm-4 control-label no-padding-right"></label>
+                    <div class="col-sm-7">
                         <button class="btn btn-info" type="submit">
                             <i class="icon-ok bigger-110"></i>
-                            Submit
+                            提交
                         </button>
                     </div>
                 </div>
             </form>
+
+            <div class="form-horizontal" ng-show="operateType == 'retrieve'">
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right">Cluster Name</label>
+
+                    <div class="col-sm-7">
+                        <label ng-bind="cluster.clusterName"></label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> Master DC </label>
+
+                    <div class="col-sm-7" ng-bind="getDcName(cluster.activedcId)">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right">Cluster Description</label>
+
+                    <div class="col-sm-7">
+                        <label ng-bind="cluster.clusterDescription"></label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right">View</label>
+
+                    <div class="col-sm-7">
+                        <a href="/#/cluster_dc?clusterName={{cluster.clusterName}}">DC</a>&nbsp;
+                        <a href="/#/cluster_shards?clusterName={{cluster.clusterName}}">Shards</a>&nbsp;
+                        <a href="/#/cluster_dc_shards?clusterName={{cluster.clusterName}}">Detail</a>
+                    </div>
+                </div>
+
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"></label>
+                    <div class="col-sm-7">
+
+                        <a href="/#/cluster_form?clusterName={{cluster.clusterName}}&type=update" class="btn btn-warning"
+                           type="button">
+                            修改
+                        </a>
+                        <a class="btn btn-danger" type="button" ng-click="preDeleteCluster()">
+                            删除
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+
+<xpipeconfirmdialog xpipe-dialog-id="'deleteClusterConfirm'" xpipe-title="'delete cluster'"
+                    xpipe-detail="'are you sure delete?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="deleteCluster"></xpipeconfirmdialog>
 
 
 
