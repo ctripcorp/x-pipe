@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
-import org.unidal.dal.jdbc.DalNotFoundException;
 import java.util.List;
 
 
@@ -22,7 +21,7 @@ public class KeepercontainerService extends AbstractConsoleService<Keepercontain
     public List<KeepercontainerTbl> findByDcName(final String dcName) {
     	return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
 			@Override
-			public List<KeepercontainerTbl> doQuery() throws DalNotFoundException, DalException {
+			public List<KeepercontainerTbl> doQuery() throws DalException {
 				return dao.findByDcName(dcName, KeepercontainerTblEntity.READSET_FULL);
 			}
     	});
