@@ -244,6 +244,7 @@ public class RequestResponseCommandTest extends AbstractTest{
 			byte []buff = new byte[readable];
 			byteBuf.readBytes(buff);
 			result.write(buff);
+			logger.info("[doReceiveResponse]{}, {}", readable, new String(buff));
 			if(result.size() >= request.length()){
 				return new String(result.toByteArray());
 			}
