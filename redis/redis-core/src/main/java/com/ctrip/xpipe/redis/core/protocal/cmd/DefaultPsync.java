@@ -17,14 +17,14 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
  *
  * 2016年3月24日 下午2:24:38
  */
-public class Psync extends AbstractPsync {
+public class DefaultPsync extends AbstractPsync {
 	
 	private ReplicationStoreManager replicationStoreManager;
 	
 	private Endpoint masterEndPoint;
 	
 	
-	public Psync(SimpleObjectPool<NettyClient> clientPool, 
+	public DefaultPsync(SimpleObjectPool<NettyClient> clientPool, 
 			Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager) {
 		super(clientPool, true);
 		this.masterEndPoint = masterEndPoint;
@@ -61,13 +61,12 @@ public class Psync extends AbstractPsync {
 			} catch (IOException e) {
 				logger.error("[handleRedisReponse]" + oldStore, e);
 			}
-			
 			newKeeperBeginOffset = oldStore.nextNonOverlappingKeeperBeginOffset();
 			oldStore.delete();
+			notifyReFullSync();
 		}
 		logger.info("[doWhenFullSyncToNonFreshReplicationStore][set keepermeta]{}, {}", masterRunid, newKeeperBeginOffset);
 		currentReplicationStore = createReplicationStore(masterRunid, newKeeperBeginOffset);
-		notifyReFullSync();
 	}
 	
 	private ReplicationStore createReplicationStore(String masterRunid, long keeperBeginOffset) {

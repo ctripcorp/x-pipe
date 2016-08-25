@@ -208,14 +208,21 @@ public class DefaultReplicationStore implements ReplicationStore {
 	}
 
 	private long minCmdKeeperOffset() {
+		
 		long minCmdOffset = Long.MAX_VALUE; // start from zero
-
-		for (File cmdFile : cmdFilesOnFS()) {
-			minCmdOffset = Math.min(cmdStore.extractStartOffset(cmdFile), minCmdOffset);
+		File[] files = cmdFilesOnFS();
+		
+		
+		if(files == null || files.length == 0){
+			logger.info("[minCmdKeeperOffset][no cmd files][start offset 0]");
+			minCmdOffset = 0L;
+		}else{
+			for (File cmdFile : files) {
+				minCmdOffset = Math.min(cmdStore.extractStartOffset(cmdFile), minCmdOffset);
+			}
 		}
 
 		long minCmdKeeperOffset = minCmdOffset + metaStore.getKeeperBeginOffset();
-
 		return minCmdKeeperOffset;
 	}
 

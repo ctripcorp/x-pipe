@@ -9,10 +9,23 @@ import java.io.IOException;
  */
 public interface PsyncObserver {
 	
+	
+	/**
+	 * get FULLSYNC response
+	 */
+	void onFullSync();
+
 	void reFullSync();
-	
-	void beginWriteRdb(long fileSize, long offset) throws IOException;
-	
+
+	/**
+	 * get rdb length
+	 * @param fileSize
+	 * @param offset
+	 * @throws IOException
+	 */
+	void beginWriteRdb(long fileSize, long masterRdbOffset) throws IOException;
+
+
 	void endWriteRdb();
 	
 	void onContinue();

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.thread;
+package com.ctrip.xpipe.concurrent;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;

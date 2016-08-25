@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.netty.ChannelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
@@ -74,8 +75,8 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public void setSlaveState(SLAVE_STATE slaveState) {
-		this.slaveState = slaveState;
+	public void waitForRdbDumping() {
+		this.slaveState = SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING;
 	}
 
 	@Override
@@ -125,9 +126,9 @@ public class DefaultRedisSlave implements RedisSlave {
 	@Override
 	public void beginWriteCommands(long beginOffset) {
 		
-		logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
-		slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
 		try {
+			logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
+			slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
 			getRedisKeeperServer().getReplicationStore().addCommandsListener(beginOffset, this);
 		} catch (IOException e) {
 			throw new RedisKeeperRuntimeException("[beginWriteCommands]" + beginOffset + "," + this, e);

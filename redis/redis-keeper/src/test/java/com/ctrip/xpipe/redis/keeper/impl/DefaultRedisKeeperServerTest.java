@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 
 /**
@@ -14,7 +15,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
  *
  *         2016年4月21日 下午5:42:29
  */
-public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperTest {
+public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest {
 	
 	@Before
 	public void beforeDefaultRedisKeeperServerTest() throws Exception {

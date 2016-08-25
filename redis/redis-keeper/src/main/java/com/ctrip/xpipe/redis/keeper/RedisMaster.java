@@ -1,43 +1,30 @@
 package com.ctrip.xpipe.redis.keeper;
 
-import java.io.IOException;
+
+
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.LifecycleStateAware;
 import com.ctrip.xpipe.api.server.PartialAware;
-import com.ctrip.xpipe.exception.XpipeException;
-import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 
 /**
  * @author wenchao.meng
  *
  * May 20, 2016 3:54:13 PM
  */
-public interface RedisMaster extends RedisRole, PsyncObserver, Lifecycle, LifecycleStateAware, PartialAware{
+public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, PartialAware{
 	
-	/**
-	 * @param channel
-	 * @param msg
-	 * @throws XpipeException 
-	 */
-	void handleResponse(Channel channel, ByteBuf msg) throws XpipeException;
-
-	/**
-	 * @param channel
-	 */
-	void masterDisconntected(Channel channel);
-
-	/**
-	 * @param channel
-	 */
-	void masterConnected(Channel channel);
 
 	Endpoint masterEndPoint();
 	
-	void fullSyncToSlave(RedisSlave redisSlave) throws IOException;
-		
+	ReplicationStoreManager getReplicationStoreManager();
+	
+	ReplicationStore getCurrentReplicationStore();
+
+	RdbDumper createRdbDumper();
+	
 }

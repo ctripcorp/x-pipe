@@ -32,20 +32,6 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole,
 			throw new IllegalArgumentException("unsupported capa type:" + capaString);
 		}
 	}
-	
-	public static enum SLAVE_STATE{
-		REDIS_REPL_SEND_BULK("send_bulk"),
-		REDIS_REPL_ONLINE("online");
-		
-		private String desc;
-		SLAVE_STATE(String desc){
-			this.desc = desc;
-		}
-		public String getDesc() {
-			return desc;
-		}
-	}
-	
 	RedisSlave becomeSlave();
 	
 	RedisKeeperServer getRedisKeeperServer();

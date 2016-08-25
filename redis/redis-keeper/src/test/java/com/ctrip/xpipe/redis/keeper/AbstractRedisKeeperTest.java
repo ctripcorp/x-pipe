@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -10,27 +9,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
-import org.junit.Before;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.xml.sax.SAXException;
 
-import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.spring.KeeperContextConfig;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 
@@ -43,102 +30,16 @@ import io.netty.buffer.ByteBuf;
  */
 public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
-	protected MetaServerKeeperService  metaService;
+	protected String getClusterId() {
+		return currentTestName() + "-clusterId";
+	}
+
+	protected String getShardId() {
+
+		return currentTestName() + "-shardId";
+	}
+
 	
-	protected KeeperConfig  keeperConfig;
-	
-	private String keeperConfigFile = "keeper6666.xml";
-
-	private int keeperServerPortMin = 7777, keeperServerPortMax = 7877;
-
-	@Before
-	public void beforeAbstractRedisKeeperTest() throws Exception {
-		
-		doIdcInit();
-		
-		metaService = getRegistry().getComponent(MetaServerKeeperService.class);
-		keeperConfig = getRegistry().getComponent(KeeperConfig.class);
-		
-	}
-	
-	@Override
-	protected ApplicationContext createSpringContext() {
-		
-		return new AnnotationConfigApplicationContext(KeeperContextConfig.class);
-	}
-	
-	
-
-	protected void doIdcInit() {
-	}
-
-	protected RedisKeeperServer createRedisKeeperServer() throws Exception {
-
-		return createRedisKeeperServer(createKeeperMeta());
-	}
-
-	protected KeeperMeta createKeeperMeta() throws SAXException, IOException {
-
-		return createKeeperMeta(randomPort(keeperServerPortMin, keeperServerPortMax));
-	}
-
-
-	protected KeeperMeta createKeeperMeta(int port) throws SAXException, IOException {
-
-		XpipeMeta xpipe = loadXpipeMeta(getXpipeMetaConfigFile());
-		for(DcMeta dcMeta : xpipe.getDcs().values()){
-			for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
-				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-					for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
-						keeperMeta.setPort(port);
-						keeperMeta.setActive(true);
-						keeperMeta.setId(randomString(40));
-						return keeperMeta;
-					}
-				}
-			}
-		}
-		return null;
-	}
-
-	protected String getKeeperConfigFile() {
-		return keeperConfigFile;
-	}
-
-	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta) throws Exception {
-
-		return createRedisKeeperServer(keeperMeta, metaService);
-	}
-
-	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaServerKeeperService metaService, File baseDir) throws Exception {
-
-		return createRedisKeeperServer(keeper, getKeeperConfig(), metaService, baseDir);
-
-	}
-
-	protected KeeperConfig getKeeperConfig() {
-		return keeperConfig;
-	}
-
-	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig, MetaServerKeeperService metaService, File baseDir) throws Exception {
-
-		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper, keeperConfig, 
-				baseDir, metaService, getRegistry().getComponent(LeaderElectorManager.class));
-
-		add(redisKeeperServer);
-		return redisKeeperServer;
-
-	}
-
-	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaServerKeeperService metaService) throws Exception {
-		return createRedisKeeperServer(keeper, metaService, getReplicationStoreManagerBaseDir());
-	}
-
-	/**
-	 * user default infor
-	 * 
-	 * @return
-	 */
 	protected ReplicationStoreManager createReplicationStoreManager() {
 
 		String tmpDir = getTestFileDir();
@@ -151,6 +52,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return createReplicationStoreManager(clusterId, shardId, getKeeperConfig(), storeDir);
 	}
 	
+	protected KeeperConfig getKeeperConfig() {
+		return new TestKeeperConfig();
+	}
+
 	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, KeeperConfig keeperConfig, File storeDir) {
 		
 		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, randomKeeperRunid(), storeDir);
@@ -162,46 +67,18 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	}
 	
 	protected String randomKeeperRunid(){
-		
-		StringBuilder sb = new StringBuilder();
-		for(int i=0;i<40;i++){
-			int num = (int) (Math.random()*16);
-			sb.append(String.format("%x", num));
-		}
-		return sb.toString();
-		
-	}
 
+		return RunidGenerator.DEFAULT.generateRunid();
+	}
+	
 
 	protected File getReplicationStoreManagerBaseDir() {
 
 		String tmpDir = getTestFileDir();
 		return new File(tmpDir);
 	}
+
 	
-	protected RedisMeta createRedisMeta() {
-		
-		return createRedisMeta("localhost", randomPort());
-	}
-
-	protected RedisMeta createRedisMeta(String host, int port) {
-		
-		RedisMeta redisMeta = new RedisMeta();
-		redisMeta.setIp(host);
-		redisMeta.setPort(port);
-		return redisMeta;
-	}
-	
-
-	protected String getClusterId() {
-		return currentTestName() + "-clusterId";
-	}
-
-	protected String getShardId() {
-
-		return currentTestName() + "-shardId";
-	}
-
 	protected String readRdbFileTilEnd(DefaultReplicationStore replicationStore) throws IOException, InterruptedException {
 
 		final ByteArrayWritableByteChannel bachannel = new ByteArrayWritableByteChannel();

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -69,8 +70,9 @@ public class DefaultRdbStore implements RdbStore {
 		if (actualFileLen == rdbFileSize) {
 			status.set(Status.Success);
 		} else {
-			logger.info("[endRdb]actual:{}, expected:{}", actualFileLen, rdbFileSize);
+			logger.error("[endRdb]actual:{}, expected:{}", actualFileLen, rdbFileSize);
 			status.set(Status.Fail);
+			throw new RdbStoreExeption(rdbFileSize, actualFileLen);
 		}
 	}
 

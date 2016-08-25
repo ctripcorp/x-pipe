@@ -2,11 +2,11 @@ package com.ctrip.xpipe.redis.keeper.netty;
 
 
 
+
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.netty.AbstractNettyHandler;
 import com.ctrip.xpipe.netty.ByteBufReadAction;
-import com.ctrip.xpipe.redis.keeper.RedisMaster;
-import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisMaster;
+import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -20,10 +20,10 @@ import io.netty.channel.ChannelHandlerContext;
 public class NettySlaveHandler extends AbstractNettyHandler{
 
 	
-	private RedisMaster redisMaster;
+	private RedisMasterReplication redisMasterReplication;
 	
-	public NettySlaveHandler(DefaultRedisMaster redisMaster) {
-		this.redisMaster = redisMaster;
+	public NettySlaveHandler(RedisMasterReplication redisMasterReplication) {
+		this.redisMasterReplication = redisMasterReplication;
 	}
 
 	@Override
@@ -35,7 +35,7 @@ public class NettySlaveHandler extends AbstractNettyHandler{
 			logger.info("[channelActive]" + channel);
 		}
 		
-		redisMaster.masterConnected(channel);
+		redisMasterReplication.masterConnected(channel);
 		super.channelActive(ctx);
 	}
 
@@ -47,7 +47,7 @@ public class NettySlaveHandler extends AbstractNettyHandler{
 			logger.info("[channelInactive]" + ctx.channel());
 		}
 		
-		redisMaster.masterDisconntected(ctx.channel());
+		redisMasterReplication.masterDisconntected(ctx.channel());
 		super.channelInactive(ctx);
 	}
 	
@@ -58,7 +58,7 @@ public class NettySlaveHandler extends AbstractNettyHandler{
 		byteBufReadPolicy.read(ctx.channel(), byteBuf, new ByteBufReadAction() {
 			@Override
 			public void read(Channel channel, ByteBuf byteBuf) throws XpipeException {
-				redisMaster.handleResponse(channel, byteBuf);
+				redisMasterReplication.handleResponse(channel, byteBuf);
 			}
 		});
 		super.channelRead(ctx, msg);

@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit;
  */
 public interface Command<V> {
 	
+	CommandFuture<V> future();
+	
 	CommandFuture<V> execute() ;
 
 	CommandFuture<V> execute(ExecutorService executors) ;

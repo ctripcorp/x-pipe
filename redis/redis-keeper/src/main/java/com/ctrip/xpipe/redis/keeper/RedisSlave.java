@@ -15,7 +15,7 @@ import io.netty.channel.ChannelFuture;
  */
 public interface RedisSlave extends RedisClient, PartialAware, CommandsListener{
 	
-	void setSlaveState(SLAVE_STATE slaveState);
+	void waitForRdbDumping();
 	
 	SLAVE_STATE getSlaveState();
 

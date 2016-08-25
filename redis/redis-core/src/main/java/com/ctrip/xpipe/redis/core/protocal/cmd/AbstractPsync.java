@@ -9,6 +9,7 @@ import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
@@ -27,7 +28,7 @@ import io.netty.channel.Channel;
  *
  * 2016年3月24日 下午2:24:38
  */
-public abstract class AbstractPsync extends AbstractRedisCommand<Object> implements BulkStringParserListener{
+public abstract class AbstractPsync extends AbstractRedisCommand<Object> implements BulkStringParserListener, Psync{
 	
 	
 	public static final String FULL_SYNC = "FULLRESYNC";
@@ -38,7 +39,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	protected volatile ReplicationStore  	    currentReplicationStore;
 	
 	private String masterRunid;
-	private long   offset;
+	private long   masterRdbOffset;
 	
 	private List<PsyncObserver> observers = new LinkedList<PsyncObserver>();
 	
@@ -68,7 +69,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		return "psync";
 	}
 	
-	
+	@Override
 	public void addPsyncObserver(PsyncObserver observer){
 		this.observers.add(observer);
 	}
@@ -77,6 +78,8 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	protected ByteBuf getRequest() {
 		
 		String masterRunidRequest = null;
+		
+		long offset = -1;
 		
 		if(currentReplicationStore == null){
 			masterRunidRequest = "?";
@@ -104,15 +107,15 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			super.clientClosed(nettyClient);
 		}
 		switch(psyncState){
-		case PSYNC_COMMAND_WAITING_REPONSE:
-			break;
-		case READING_RDB:
-			endReadRdb();
-			break;
-		case READING_COMMANDS:
-			break;
-		default:
-			throw new IllegalStateException("unknown state:" + psyncState);
+			case PSYNC_COMMAND_WAITING_REPONSE:
+				break;
+			case READING_RDB:
+				endReadRdb();
+				break;
+			case READING_COMMANDS:
+				break;
+			default:
+				throw new IllegalStateException("unknown state:" + psyncState);
 		}
 	}
 		
@@ -141,11 +144,6 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 					
 					if(!saveCommands) {
 						future.setSuccess();
-						try {
-							channel.close();
-						} catch(Exception e) {
-							// ignore it
-						}
 					}
 				}else{
 					break;
@@ -175,17 +173,17 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		}
 		for(PsyncObserver observer : observers){
 			try{
-				observer.beginWriteRdb(fileSize, offset);
+				observer.beginWriteRdb(fileSize, masterRdbOffset);
 			}catch(Throwable th){
 				logger.error("[beginReadRdb]" + this, th);
 			}
 		}
 
 		try {
-			rdbStore = currentReplicationStore.beginRdb(masterRunid, offset, fileSize);
+			rdbStore = currentReplicationStore.beginRdb(masterRunid, masterRdbOffset, fileSize);
 			inOutPayloadReplicationStore.setRdbStore(rdbStore);
 		} catch (IOException e) {
-			logger.error("[beginReadRdb]" + masterRunid + "," + offset, e);
+			logger.error("[beginReadRdb]" + masterRunid + "," + masterRdbOffset, e);
 		}
 	}
 
@@ -222,12 +220,13 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 				throw new RedisRuntimeException("unknown reply:" + psync);
 			}
 			masterRunid = split[1];
-			offset = Long.parseLong(split[2]);
+			masterRdbOffset = Long.parseLong(split[2]);
 			if(logger.isInfoEnabled()){
-				logger.info("[readRedisResponse]{},{},{}", this, masterRunid, offset);
+				logger.info("[readRedisResponse]{},{},{}", this, masterRunid, masterRdbOffset);
 			}
 			psyncState = PSYNC_STATE.READING_RDB;
 			
+			notifyFullSync();
 			if(currentReplicationStore == null || !currentReplicationStore.isFresh()){
 				doWhenFullSyncToNonFreshReplicationStore(masterRunid);
 			}
@@ -239,6 +238,13 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			throw new RedisRuntimeException("unknown reply:" + psync);
 		}
 	}
+
+	private void notifyFullSync() {
+		for(PsyncObserver observer : observers){
+			observer.onFullSync();
+		}
+	}
+
 
 	protected abstract void doWhenFullSyncToNonFreshReplicationStore(String masterRunid) throws IOException;
 

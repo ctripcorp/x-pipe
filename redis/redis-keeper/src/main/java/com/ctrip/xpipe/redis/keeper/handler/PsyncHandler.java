@@ -4,7 +4,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 import java.io.IOException;
 
-import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
@@ -133,7 +133,7 @@ public class PsyncHandler extends AbstractCommandHandler{
 		if(logger.isInfoEnabled()){
 			logger.info("[doPartialSync]" + redisSlave);
 		}
-		SimpleStringParser simpleStringParser = new SimpleStringParser(Psync.PARTIAL_SYNC);
+		SimpleStringParser simpleStringParser = new SimpleStringParser(DefaultPsync.PARTIAL_SYNC);
 		redisSlave.sendMessage(simpleStringParser.format());
 		redisSlave.beginWriteCommands(offset);
 		redisSlave.partialSync();

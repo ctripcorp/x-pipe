@@ -5,7 +5,7 @@ import org.junit.Before;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 
 
@@ -15,7 +15,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
  *
  * Jun 12, 2016
  */
-public class AbstractRedisKeeperServerStateTest extends AbstractRedisKeeperTest{
+public class AbstractRedisKeeperServerStateTest extends AbstractRedisKeeperContextTest{
 	
 	protected RedisKeeperServer redisKeeperServer;
 
@@ -40,6 +40,5 @@ public class AbstractRedisKeeperServerStateTest extends AbstractRedisKeeperTest{
 	protected String getXpipeMetaConfigFile() {
 		return "keeper-test.xml";
 	}
-	
 
 }

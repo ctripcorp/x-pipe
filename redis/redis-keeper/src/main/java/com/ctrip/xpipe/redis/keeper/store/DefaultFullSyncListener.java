@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.redis.core.protocal.cmd.Psync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -70,7 +70,7 @@ public class DefaultFullSyncListener implements FullSyncListener{
 		}
 
 		SimpleStringParser simpleStringParser = new SimpleStringParser(
-				StringUtil.join(" ", Psync.FULL_SYNC, redisSlave.getRedisKeeperServer().getKeeperRunid(), String.valueOf(rdbFileKeeperOffset)));
+				StringUtil.join(" ", DefaultPsync.FULL_SYNC, redisSlave.getRedisKeeperServer().getKeeperRunid(), String.valueOf(rdbFileKeeperOffset)));
 		
 		logger.info("[setRdbFileInfo]{},{}", simpleStringParser.getPayload(), redisSlave);
 		redisSlave.sendMessage(simpleStringParser.format());

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -9,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
@@ -16,6 +18,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ElectContext;
+import com.ctrip.xpipe.concurrent.NamedThreadFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -27,9 +30,11 @@ import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
+import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
@@ -40,8 +45,8 @@ import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
+import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
-import com.ctrip.xpipe.thread.NamedThreadFactory;
 import com.ctrip.xpipe.utils.OsUtils;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -92,6 +97,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private LeaderElectorManager leaderElectorManager;
 	
 	private MetaServerKeeperService metaService;
+	
+	private volatile AtomicReference<RdbDumper> rdbDumper;
+	
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
 			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager){
@@ -477,8 +485,37 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	@Override
 	public void fullSyncToSlave(final RedisSlave redisSlave) throws IOException {
-		keeperRedisMaster.fullSyncToSlave(redisSlave);
+		
+		logger.info("[fullSyncToSlave]{}", redisSlave);
+		if(rdbDumper.get() == null){
+			FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
+			if(!getCurrentReplicationStore().fullSyncIfPossible(fullSyncListener)){
+				//go dump rdb
+				redisSlave.waitForRdbDumping();
+				dumpNewRdb();
+			}
+		}else{
+			rdbDumper.get().tryFullSync(redisSlave);
+		}
 	}
+	
+	private void dumpNewRdb() {
+		
+		RdbDumper rdbDumper = null;
+		try {
+			rdbDumper = keeperRedisMaster.createRdbDumper();
+			setRdbDumper(rdbDumper);
+			rdbDumper.execute();
+		} catch (RdbDumperAlreadyExist e) {
+			logger.error("[dumpNewRdb]", e);
+		}
+	}
+
+	
+	public void setRdbDumper(RdbDumper rdbDumper) throws RdbDumperAlreadyExist {
+		setRdbDumper(rdbDumper, false);
+	}
+	
 
 	@Override
 	public KeeperInstanceMeta getKeeperInstanceMeta() {
@@ -492,5 +529,45 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void destroy() throws Exception {
 		this.replicationStoreManager.destroy();
+	}
+
+	@Override
+	public void onFullSync() {
+		
+	}
+
+	@Override
+	public void setRdbDumper(RdbDumper newDumper, boolean force) throws RdbDumperAlreadyExist {
+		
+		if(newDumper == null){
+			throw new IllegalArgumentException("new dumper null");
+		}
+		
+		logger.info("[setRdbDumper]{},{}", newDumper, force);
+		
+		if(rdbDumper.compareAndSet(null, newDumper)){
+			return;
+		}
+		
+		RdbDumper olRdbDumper = rdbDumper.get();
+		if(force){
+			try {
+				logger.info("[setRdbDumper][cancel old dumper]{}", olRdbDumper);
+				olRdbDumper.future().cancel(true);
+			} catch (Exception e) {
+				logger.error("[setRdbDumper][error cancel]" + olRdbDumper, e);
+			}
+			rdbDumper.set(newDumper);
+		}else{
+			throw new RdbDumperAlreadyExist(olRdbDumper);
+		}
+	}
+
+	@Override
+	public void clearRdbDumper(RdbDumper oldDumper) {
+		
+		if(!rdbDumper.compareAndSet(oldDumper, null)){
+			logger.warn("[clearRdbDumper][current is not request]{}, {}", oldDumper, rdbDumper.get());
+		}
 	}
 }

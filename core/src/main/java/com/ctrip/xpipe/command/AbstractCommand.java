@@ -43,6 +43,11 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	}
 
 	@Override
+	public CommandFuture<V> future() {
+		return future;
+	}
+	
+	@Override
 	public CommandFuture<V> execute(){
 		return execute(MoreExecutors.sameThreadExecutor());
 	}
