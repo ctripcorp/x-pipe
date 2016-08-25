@@ -1,0 +1,81 @@
+<div class="col-md-8 col-md-offset-2">
+    <div class="panel panel-primary">
+        <header class="panel-heading">
+            <div class="row">
+                <div class="col-md-6" ng-bind="clusterName">
+                </div>
+                <div class="col-md-6 text-right">
+                    <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateShard()">添加shard</button>
+                </div>
+            </div>
+        </header>
+        <table class="table table-bordered table-hover">
+            <thead>
+            <tr>
+                <td>shard name</td>
+                <td>setinel_monitor_name</td>
+                <td>operate</td>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>shard1</td>
+                <td>name1</td>
+                <td>
+                    <a ng-click="preDeleteShard(shard.shardName)">删除</a>
+                </td>
+            </tr>
+            <tr>
+                <td>shard1</td>
+                <td>name1</td>
+                <td>
+                    <a href="#">删除</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<form class="modal fade form-horizontal" id="createShardModal" tabindex="-1" role="dialog"
+      ng-submit="createShard()">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header panel-primary">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <div class="modal-title">
+                    <span style="">创建Shard</span>
+
+                </div>
+            </div>
+            <div class="modal-body form-horizontal">
+                <div class="form-group" valdr-form-group>
+                    <label class="col-sm-4 control-label">
+                        <apollorequiredfiled></apollorequiredfiled>
+                        shard name</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" ng-model="shard.shardName" ng-required="true">
+                    </div>
+                </div>
+                <div class="form-group" valdr-form-group>
+                    <label class="col-sm-4 control-label">
+                        setinel monitor name
+                    </label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" ng-model="shard.setinelMonitorName" ng-required="true">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary">创建
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<xpipeconfirmdialog xpipe-dialog-id="'deleteShardConfirm'" xpipe-title="'删除shard'"
+                    xpipe-detail="'删除shard将会删除shard下面所有的redis,以及所有dc下面的物理shard'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="deleteShard"></xpipeconfirmdialog>

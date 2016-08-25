@@ -10,10 +10,22 @@ public class DalQueryHandler {
 	public <T> T handleQuery(DalQuery<T> query) {
 		try {
 			return query.doQuery();
-		} catch(DalNotFoundException e) {
-			throw new DataNotFoundException("Data not found.", e);
 		} catch(DalException e) {
+			if(e instanceof DalNotFoundException) {
+				throw new DataNotFoundException("Data not found.",e);
+			}
 			throw new ServerException("Load data failed.", e);
+		}
+	}
+	
+	public <T> T tryGet(DalQuery<T> query) {
+		try {
+			return query.doQuery();
+		} catch(DalException e) {
+			if(e instanceof DalNotFoundException) {
+				return null;
+			}
+			throw new ServerException("Try get data fail.", e);
 		}
 	}
 
