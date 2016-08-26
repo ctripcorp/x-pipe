@@ -27,7 +27,6 @@
 		<dependency>
 			<groupId>com.dianping.cat</groupId>
 			<artifactId>cat-client</artifactId>
-			<version>${cat.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.ctrip.xpipe</groupId>

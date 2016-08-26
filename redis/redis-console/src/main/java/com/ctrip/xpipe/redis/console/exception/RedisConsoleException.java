@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.core.exception.RedisException;
  * Jun 27, 2016
  */
 public class RedisConsoleException extends RedisException{
-
 	private static final long serialVersionUID = 1L;
 
 	public RedisConsoleException(String message) {
