@@ -24,13 +24,11 @@ import com.ctrip.xpipe.spring.AbstractExceptionHandler;
 @ControllerAdvice
 public class ConsoleDefaultExceptionHandler extends AbstractExceptionHandler {
 
-	// Dal Not Found Exception
 	@ExceptionHandler(DalNotFoundException.class)
 	public ResponseEntity<Object> dalNotFound(HttpServletRequest request, DalNotFoundException ex) {
 		return handleError(request,HttpStatus.NOT_FOUND, ex);
 	}
 	
-	// Dal Runtime Exception
 	@ExceptionHandler(DalRuntimeException.class)
 	public ResponseEntity<Object> dalRT(HttpServletRequest request, DalRuntimeException ex) {
 		return handleError(request,HttpStatus.INTERNAL_SERVER_ERROR, ex);
@@ -39,6 +37,11 @@ public class ConsoleDefaultExceptionHandler extends AbstractExceptionHandler {
 	@ExceptionHandler(DataNotFoundException.class)
 	public ResponseEntity<Object> dataNotFound(HttpServletRequest request, DataNotFoundException ex) {
 		return handleError(request,HttpStatus.NOT_FOUND, ex);
+	}
+	
+	@ExceptionHandler(BadRequestException.class)
+	public ResponseEntity<Object> badUserRequest(HttpServletRequest request, BadRequestException ex) {
+		return handleError(request,HttpStatus.BAD_REQUEST, ex);
 	}
 	
 	@ExceptionHandler({HttpRequestMethodNotSupportedException.class, HttpMediaTypeException.class})
