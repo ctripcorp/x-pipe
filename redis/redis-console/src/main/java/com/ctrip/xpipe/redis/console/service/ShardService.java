@@ -64,14 +64,22 @@ public class ShardService extends AbstractConsoleService<ShardTblDao>{
     	});
     }
     
-    public void deleteShards(String clusterName, String shardName) {
-    	// TODO
-    	/** Delete shard-info together with dc-clsuter-shard && redises under d-c-s **/
+    public void deleteShards(final String clusterName, final String shardName) {
+    	final ShardTbl shard = queryHandler.tryGet(new DalQuery<ShardTbl>() {
+			@Override
+			public ShardTbl doQuery() throws DalException {
+				return dao.findShard(clusterName, shardName, ShardTblEntity.READSET_FULL);
+			}
+    	});
+    	
+    	if(null != shard) {
+    		queryHandler.handleQuery(new DalQuery<Integer>() {
+    			@Override
+    			public Integer doQuery() throws DalException {
+    				return shardDao.deleteShardsBatch(shard);
+    			}
+        	});
+    	}
     }
-    
-    public void deleteShardsBatch(List<ShardTbl> shards) {
-    	// TODO
-    }
-    
-    
+     
 }
