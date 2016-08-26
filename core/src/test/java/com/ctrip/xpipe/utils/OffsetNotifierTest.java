@@ -62,6 +62,7 @@ public class OffsetNotifierTest extends AbstractTest{
 			}
 		});
 		t.start();
+		sleep(10);
 		t.interrupt();
 		
 		sleep(100);
