@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.integratedtest.function;
 
+import com.google.common.util.concurrent.SettableFuture;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPubSub;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -8,10 +10,12 @@ import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -75,9 +79,9 @@ public class LatencyTest {
         System.out.println(String.format("Writing [%d, %d)", startInclusive, stopExclusive));
         long start = System.currentTimeMillis();
         for (long i = startInclusive; i < stopExclusive; i++) {
-            masterJedis.set(String.format("%s-%d", keyPrefix, i), String.valueOf(System.currentTimeMillis()));
+            masterJedis.publish(String.format("%s-%d", keyPrefix, i), String.valueOf(System.currentTimeMillis()));
             //uncomment following code to control write speed
-            /*if (i != 0 && i % 10000 == 0) {
+            /*if (i != 0 && i % 2000 == 0) {
                 try {
                     TimeUnit.SECONDS.sleep(1);
                 } catch (InterruptedException e) {
@@ -85,7 +89,7 @@ public class LatencyTest {
             }*/
         }
         long stop = System.currentTimeMillis();
-        double duration = (double)(stop - start) / (double)1000;
+        double duration = (double) (stop - start) / (double) 1000;
         double qps = (stopExclusive - startInclusive) / duration;
         System.out.println(String.format("Write completed, estimated qps: %s", decimalFormat.format(qps)));
     }
@@ -103,33 +107,41 @@ public class LatencyTest {
         System.out.println(String.format("Start reading %d records with keyPrefix: %s", total, keyPrefix));
 
         final String finalKeyPrefix = keyPrefix;
+        final AtomicLong totalDelay = new AtomicLong();
+        final AtomicLong counter = new AtomicLong();
+        final SettableFuture<Boolean> readCompleted = SettableFuture.create();
+
         executorService.submit(new Runnable() {
             @Override
             public void run() {
-                long totalDelay = 0;
-                Jedis slaveJedis = createJedis("localhost", 6379);
-                for (long i = 0; i < total; i++) {
-                    while (true) {
-                        String value = slaveJedis.get(String.format("%s-%d", finalKeyPrefix, i));
-                        if (value == null) {
-                            try {
-                                TimeUnit.MICROSECONDS.sleep(1);
-                            } catch (InterruptedException e) {
-                            }
-                            continue;
-                        }
-
-                        totalDelay += System.currentTimeMillis() - Long.valueOf(value);
-                        if (i != 0 && i % countIndicator == 0) {
-                            System.out.println(String.format("%d records read", i));
-                        }
-                        break;
-                    }
+                try {
+                    readCompleted.get();
+                    double avgDelay = (double) totalDelay.get() / (double) (total);
+                    System.out.println(String.format("Read completed, average delay is: %s ms", decimalFormat.format
+                            (avgDelay)));
+                } catch (Throwable ex) {
+                    ex.printStackTrace();
                 }
-                double avgDelay = (double) totalDelay / (double) (total);
-                System.out.println(String.format("Read completed, average delay is: %s ms", decimalFormat.format
-                        (avgDelay)));
-                readStarted.set(false);
+            }
+        });
+
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                final Jedis slaveJedis = createJedis("localhost", 6379);
+                slaveJedis.psubscribe(new JedisPubSub() {
+                    @Override
+                    public void onPMessage(String pattern, String channel, String message) {
+                        totalDelay.addAndGet(System.currentTimeMillis() - Long.valueOf(message));
+                        long current = counter.incrementAndGet();
+                        if (current != 0 && current % countIndicator == 0) {
+                            System.out.println(String.format("%d records read", current));
+                        }
+                        if (current >= total) {
+                            readCompleted.set(true);
+                        }
+                    }
+                }, String.format("%s*", finalKeyPrefix));
             }
         });
     }
@@ -149,7 +161,8 @@ public class LatencyTest {
 
         LatencyTest latencyTest = new LatencyTest(total, totalPartition);
         System.out.println(String.format(
-                "X-pipe latency test. Total count: %d, partition: %d. Please input write or read to start.", total, totalPartition));
+                "X-pipe latency test. Total count: %d, partition: %d. Please input write or read to start.", total,
+                totalPartition));
         while (true) {
             System.out.print("> ");
             String input = new BufferedReader(new InputStreamReader(System.in)).readLine();
