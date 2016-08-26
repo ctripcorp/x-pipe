@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.config;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import com.ctrip.xpipe.api.config.Config;
 
 /**
@@ -9,10 +12,17 @@ import com.ctrip.xpipe.api.config.Config;
  */
 public class CompositeConfig extends AbstractConfig{
 
-	private Config []configs;
+	private List<Config> configs = new LinkedList<>();
 
-	public CompositeConfig(Config ... configs) {
-		this.configs = configs;
+	public CompositeConfig(Config ... configsArgu) {
+		for(Config config : configsArgu){
+			configs.add(config);
+		}
+	}
+	
+	public void addConfig(Config config){
+		
+		configs.add(config);
 	}
 	
 	@Override
