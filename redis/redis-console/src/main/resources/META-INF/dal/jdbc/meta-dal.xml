@@ -171,6 +171,17 @@
 					]]>
 				</statement>
 			</query>
+			<query name='delete' type='UPDATE' batch='false'>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -208,6 +219,28 @@
 					AND ct.cluster_name = ${cluster-name}
 					AND dt.deleted = 0
 					AND ct.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-by-cluster-id" type="SELECT" multiple="true">
+				<param name="cluster-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='cluster-id' /> = ${cluster-id} 
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="delete-batch" type="UPDATE" batch="true">
+				<param name="dc-cluster-id"/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1
+					WHERE <FIELD name='dc-cluster-id' /> = ${dc-cluster-id} 
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
@@ -266,6 +299,28 @@
 					]]>
 				</statement>
 			</query>
+			<query name='delete-shards-batch' type='UPDATE' batch='true'>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+        			SET <FIELD name='deleted'/> = 1
+       				WHERE <FIELD name='id'/> = ${id}
+        			AND <FIELD name='deleted'/> = 0
+        			]]>
+				</statement>
+			</query>
+			<query name='delete-shard' type='UPDATE'>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+        			SET <FIELD name='deleted'/> = 1
+       				WHERE <FIELD name='id'/> = ${id}
+        			AND <FIELD name='deleted'/> = 0
+        			]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -317,6 +372,66 @@
 					]]>
 				</statement>
 			</query>
+			<query name='find-all-by-dc-cluster-id' type='SELECT' multiple='true'>
+				<param name='dc-cluster-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> 
+					WHERE <FIELD name='dc-cluster-id' /> = ${dc-cluster-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='find-all-by-shard-id' type='SELECT' multiple='true'>
+				<param name='shard-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> 
+					WHERE <FIELD name='shard-id' /> = ${shard-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='find-all-by-dc-cluster-names' type='SELECT' multiple='true'>
+				<param name="dc-name"/>
+				<param name="cluster-name"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='dc-info'/>, <TABLE name='cluster-info'/>, <TABLE name='dc-cluster-info'/>
+					WHERE <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
+					AND dct.dc_id = dt.id
+					AND dct.cluster_id = ct.id
+					AND dt.dc_name = ${dc-name}
+					AND ct.cluster_name = ${cluster-name}
+					AND dt.deleted = 0
+					AND ct.deleted = 0
+					AND dct.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='insert-batch' type='INSERT' batch='true'>
+				<statement>
+					<![CDATA[
+					INSERT INTO <TABLE/>(<FIELDS/>)
+        			VALUES(<VALUES/>)
+        			]]>
+        		</statement>
+			</query>
+			<query name='delete-dc-cluster-shards-batch' type='UPDATE' batch='true'>
+				<param name='dc-cluster-shard-id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+        			SET <FIELD name='deleted'/> = 1
+       				WHERE <FIELD name='dc-cluster-shard-id'/> = ${dc-cluster-shard-id}
+        			AND <FIELD name='deleted'/> = 0
+        			]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -333,14 +448,35 @@
 					]]>
 				</statement>
 			</query>
+			<query name='find-by-name' type='SELECT' multiple="false">
+				<param name='redis-name'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='redis-name' /> = ${redis-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name='delete-batch' type="UPDATE" batch="true">
-				<param name='dc-cluster-shard-id'/>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+        			SET <FIELD name='deleted'/> = 1
+       				WHERE <FIELD name='id'/> = ${id}
+        			AND <FIELD name='deleted'/> = 0
+        			]]>
+				</statement>
+			</query>
+			<query name='delete-by-name' type="UPDATE" batch="false">
+				<param name='name'/>
 				<statement>
 					<![CDATA[
 					UPDATE <TABLE/>
         			SET <FIELDS/>
-       				WHERE <FIELD name='dc-cluster-shard-id'/> = ${dc-cluster-shard-id}
-        			AND <FIELD name='deleted'/> = 0
+       				WHERE <FIELD name='redis-name'/> = ${name}
         			]]>
 				</statement>
 			</query>
@@ -366,6 +502,20 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-active-by-dc-name" type="SELECT" multiple="false">
+				<param name="dc-name"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name="dc-info"/>
+					WHERE <FIELD name='dc-id'/> = dt.id
+					AND dt.dc_name = ${dc-name}
+					AND <FIELD name='metaserver-active'/> = 1
+					AND dt.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -385,6 +535,15 @@
 					AND dt.dc_name = ${dc-name}
 					AND dt.deleted = 0
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='find-all' type='SELECT' multiple='true'>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>

@@ -1,0 +1,127 @@
+<div>
+    <h3 class="header smaller lighter blue" ng-bind="clusterName"></h3>
+    <div>
+        <ul class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
+            <li ng-repeat="dc in dcs" ng-class="{'active': currentDcName == dc.dcName}"
+                ng-click="switchDc(dc)">
+                <a data-toggle="tab">
+                    {{dc.dcName}}
+                </a>
+            </li>
+        </ul>
+
+
+        <div ng-if="dcs && dcs.length">
+            <div class="col-xs-12">
+                <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="shard in shards">
+                    <header class="panel-heading">
+                        <div class="row">
+                            <div class="col-md-6">{{shard.id}}</div>
+                            <div class="col-md-6 text-right">
+                                <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateRedis(shard,'redis')">新增Redis</button>
+                                <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateRedis(shard,'keeper')">新增Keeper</button>
+                            </div>
+                        </div>
+
+
+                    </header>
+
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                        <tr>
+                            <th>
+                                role
+                            </th>
+                            <th>
+                                ip
+                            </th>
+                            <th>
+                                port
+                            </th>
+                            <th>
+                                operate
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="redis in shard.redises">
+                            <td title="{{redis.id}}">
+                                Redis
+                            </td>
+                            <td ng-bind="redis.ip">
+                            </td>
+                            <td ng-bind="redis.port">
+                            </td>
+                            <td>
+                                <a ng-click="preDeleteRedis(shard, redis)">删除</a>
+                            </td>
+                        </tr>
+                        <tr ng-repeat="keeper in shard.keepers">
+                            <td title="{{keeper.id}}">
+                                Keeper
+                            </td>
+                            <td ng-bind="keeper.ip">
+                            </td>
+                            <td ng-bind="keeper.port">
+                            </td>
+                            <td>
+                                <a ng-click="preDeleteRedis(shard, keeper)">删除</a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+        <div ng-if="(!dcs || !dcs.length) && clusterName">
+            无shards
+        </div>
+
+    </div>
+</div>
+
+<form class="modal fade form-horizontal" id="createRedisModal" tabindex="-1" role="dialog"
+      ng-submit="createRedis()">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header panel-primary">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <div class="modal-title">
+                    <span style="">Create Redis</span>
+
+                </div>
+            </div>
+            <div class="modal-body form-horizontal">
+                <div class="form-group" valdr-form-group>
+                    <label class="col-sm-4 control-label">
+                        <apollorequiredfiled></apollorequiredfiled>
+                        ip</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" ng-model="toCreateRedis.redisIp" ng-required="true">
+                    </div>
+                </div>
+                <div class="form-group" valdr-form-group>
+                    <label class="col-sm-4 control-label">
+                        port
+                    </label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" ng-model="toCreateRedis.redisPort" ng-required="true">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary">创建
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<xpipeconfirmdialog xpipe-dialog-id="'deleteRedisConfirm'" xpipe-title="'delete redis'"
+                    xpipe-detail="'are you sure delete?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="deleteRedis"></xpipeconfirmdialog>
+

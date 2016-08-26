@@ -1,5 +1,5 @@
-index_module.controller('ClusterDcCtl', ['$rootScope', '$scope', '$window','$stateParams', 'AppUtil', 'toastr', 'ClusterService','DcService', 'SweetAlert',
-    function ($rootScope, $scope, $window,$stateParams, AppUtil, toastr, ClusterService,DcService, SweetAlert) {
+index_module.controller('ClusterDcCtl', ['$rootScope', '$scope', '$window','$stateParams', 'AppUtil', 'toastr', 'ClusterService','DcService',
+    function ($rootScope, $scope, $window,$stateParams, AppUtil, toastr, ClusterService,DcService) {
 	  
         $rootScope.currentNav = '1-4';
         
@@ -7,39 +7,47 @@ index_module.controller('ClusterDcCtl', ['$rootScope', '$scope', '$window','$sta
         
         $scope.unattached_dc = [];
 
-        if ($scope.clusterName) {
-            loadCluster();            
-        }
-        
-        function addDc(dc) {
-        	
-        }
-        
-        function deleteDc(dc) {
-        	SweetAlert.swal({
-     		   title: "Are you sure?",
-     		   text: "Your will remove dc:" + dc.dcName + "!",
-     		   type: "warning",
-     		   showCancelButton: true,
-     		   confirmButtonColor: "#DD6B55",confirmButtonText: "Yes, delete it!",
-     		   cancelButtonText: "No, cancel plx!",
-     		   closeOnConfirm: false,
-     		   closeOnCancel: false }, 
-     		function(isConfirm){ 
-     		   if (isConfirm) {
-     			   DcService.deleteCluster(dc.dcName)
-                    .then(function (result) {
-                        location.reload(true);
-                    }, function (result) {
-                        toastr.error(AppUtil.errorMsg(result));
-                    })
-     		   } else {
-     		      SweetAlert.swal("Cancelled", "Delete cancelled :)", "error");
-     		   }
-     		});
-        }
-        
-        
+		if ($scope.clusterName) {
+			loadCluster();
+		}
+
+		$scope.preBindDc = preBindDc;
+		$scope.bindDc = bindDc;
+		$scope.preUnbindDc = preUnbindDc;
+		$scope.unbindDc = unbindDc;
+
+		$scope.toBindDc = {};
+		function preBindDc(dc) {
+			$scope.toBindDc = dc;
+			$('#bindDcConfirm').modal('show');
+		}
+
+		function bindDc(dc) {
+			ClusterService.bindDc($scope.clusterName, dc.dcName)
+				.then(function (result) {
+					toastr.success("bind success");
+					$window.location.reload();
+				}, function (result) {
+					toastr.error("bind fail");
+				});
+		}
+
+		$scope.toUnbindDc = {};
+		function preUnbindDc(dc) {
+			$scope.toUnbindDc = dc;
+			$('#unbindDcConfirm').modal('show');
+		}
+
+		function unbindDc(dc) {
+			ClusterService.unbindDc($scope.clusterName, dc.dcName)
+				.then(function (result) {
+					toastr.success("unbind success");
+					$window.location.reload();
+				}, function (result) {
+					toastr.error("unbind fail");
+				});
+		}
+
         function loadCluster() {
         	ClusterService.load_cluster($scope.clusterName)
         		.then(function(result) {
