@@ -22,8 +22,8 @@ index_module.controller('ClusterDcCtl', ['$rootScope', '$scope', '$window','$sta
 			$('#bindDcConfirm').modal('show');
 		}
 
-		function bindDc() {
-			ClusterService.bindDc($scope.clusterName, $scope.toBindDc.dcName)
+		function bindDc(dc) {
+			ClusterService.bindDc($scope.clusterName, dc.dcName)
 				.then(function (result) {
 					toastr.success("bind success");
 					$window.location.reload();
@@ -38,8 +38,8 @@ index_module.controller('ClusterDcCtl', ['$rootScope', '$scope', '$window','$sta
 			$('#unbindDcConfirm').modal('show');
 		}
 
-		function unbindDc() {
-			ClusterService.unbindDc($scope.clusterName, $scope.toUnbindDc.dcName)
+		function unbindDc(dc) {
+			ClusterService.unbindDc($scope.clusterName, dc.dcName)
 				.then(function (result) {
 					toastr.success("unbind success");
 					$window.location.reload();

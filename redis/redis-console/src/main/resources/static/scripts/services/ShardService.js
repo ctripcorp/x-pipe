@@ -12,23 +12,23 @@ services.service('ShardService', ['$resource', '$q', function ($resource, $q) {
         },
         createShard: {
             method: 'POST',
-            url: '/console/shards'
+            url: '/console/clusters/:clusterName/shards'
         },
         delete_shard: {
             method: 'DELETE',
-            url: '/clusters/:clusterName/shards/:shardName'
+            url: '/console/clusters/:clusterName/shards/:shardName'
         },
         bind_redis: {
             method: 'POST',
-            url: '/clusters/:clusterName/dcs/:dcName/shards/:shardName/redises'
+            url: '/console/clusters/:clusterName/dcs/:dcName/shards/:shardName/redises'
         },
         unbind_redis: {
             method: 'DELETE',
-            url: '/clusters/:clusterName/dcs/:dcName/shards/:shardName/redises/:redisName'
+            url: '/console/clusters/:clusterName/dcs/:dcName/shards/:shardName/redises/:redisName'
         },
         update_redis: {
             method: 'PUT',
-            url: '/clusters/:clusterName/dcs/:dcName/shards/:shardName/redises/:redisName'
+            url: '/console/clusters/:clusterName/dcs/:dcName/shards/:shardName/redises/:redisName'
         }
     });
 
@@ -49,24 +49,26 @@ services.service('ShardService', ['$resource', '$q', function ($resource, $q) {
     function findClusterShards(clusterName) {
         var d = $q.defer();
         resource.find_cluster_shards({
-                                         clusterName: clusterName
-                                     },
-                                     function (result) {
-                                         d.resolve(result);
-                                     }, function (result) {
+        	clusterName: clusterName
+        },
+        	function (result) {
+        		d.resolve(result);
+        	}, function (result) {
                 d.reject(result);
             });
         return d.promise;
     }
 
-    function create_shard(shard) {
+    function create_shard(clusterName,shard) {
         var d = $q.defer();
-        resource.createShard({}, shard,
-                             function (result) {
-                                  d.resolve(result);
-                              }, function (result) {
-                d.reject(result);
-            });
+        resource.createShard({
+        	clusterName : clusterName
+        }, shard,
+        function (result) {
+            d.resolve(result);
+        }, function (result) {
+            d.reject(result);
+        });
         return d.promise;
     }
 

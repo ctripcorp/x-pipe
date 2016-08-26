@@ -27,7 +27,7 @@ public class DalTransactionAspect {
 	@PostConstruct
 	private void postConstruct() {
 		try {
-			transactionManager = (TransactionManager) ContainerLoader.getDefaultContainer().lookup(TransactionManager.class);
+			transactionManager = ContainerLoader.getDefaultContainer().lookup(TransactionManager.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot find transaction manager.",e);
 		}

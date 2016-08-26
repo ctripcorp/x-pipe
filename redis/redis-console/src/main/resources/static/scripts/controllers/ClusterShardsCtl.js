@@ -21,6 +21,10 @@ index_module.controller('ClusterShardCtl',
                                      .then(function (result) {
                                          $scope.cluster = result;
                                      });
+                                 ShardService.findClusterShards($scope.clusterName)
+                                 	.then(function (result) {
+                                 		$scope.shards = result;
+                                 	});
                              }
 
                              function preCreateShard() {
@@ -29,7 +33,7 @@ index_module.controller('ClusterShardCtl',
                              }
 
                              function createShard() {
-                                 ShardService.createShard(shard).then(function (result) {
+                                 ShardService.createShard($scope.clusterName, $scope.shard).then(function (result) {
                                      toastr.success("create success");
                                      $('#createShardModal').modal('hide');
                                      $window.location.reload();
@@ -45,15 +49,13 @@ index_module.controller('ClusterShardCtl',
                              }
                              
                              function deleteShard() {
-                                 toastr.success("delete success");
-                                 // ShardService.delete_shard($scope.clusterName, toDeleteShard)
-                                 //     .then(function (result) {
-                                 //         toastr.success("delete success");
-                                 //         $window.location.reload();
-                                 //     }, function (result) {
-                                 //         toastr.error(AppUtil.errorMsg(result), "delete fail");
-                                 //     })
-
+                            	 ShardService.deleteShard($scope.clusterName, toDeleteShard)
+                            	 	.then(function(result) {
+                            	 		toastr.success("delete success");
+                            	 		$window.location.reload();
+                            	 	}, function (result) {
+                            	 		toastr.error(AppUtil.errorMsg(result), "delete fail");
+                            	 	});
                              }
 
                          }]);

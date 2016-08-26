@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.rest.consoleweb;
 
 
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -33,7 +34,7 @@ public class ShardController {
   }
 
   @RequestMapping("/clusters/{clusterName}/shards")
-  public List<ShardTbl> findShards(String clusterName) {
+  public List<ShardTbl> findShards(@PathVariable String clusterName) {
     return shardService.loadAllByClusterName(clusterName);
   }
 
@@ -44,7 +45,7 @@ public class ShardController {
 
   @RequestMapping(value = "/clusters/{clusterName}/shards/{shardName}", method = RequestMethod.DELETE)
   public void deleteShard(@PathVariable String clusterName, @PathVariable String shardName) {
-
+	  shardService.deleteShards(clusterName, shardName);
   }
 
 

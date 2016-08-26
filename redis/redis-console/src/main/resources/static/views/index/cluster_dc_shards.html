@@ -18,7 +18,8 @@
                         <div class="row">
                             <div class="col-md-6">{{shard.id}}</div>
                             <div class="col-md-6 text-right">
-                                <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateRedis(shard)">新增Redis</button>
+                                <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateRedis(shard,'redis')">新增Redis</button>
+                                <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateRedis(shard,'keeper')">新增Keeper</button>
                             </div>
                         </div>
 
@@ -29,7 +30,7 @@
                         <thead>
                         <tr>
                             <th>
-                                redis name
+                                role
                             </th>
                             <th>
                                 ip
@@ -38,38 +39,33 @@
                                 port
                             </th>
                             <th>
-                                role
-                            </th>
-                            <th>
                                 operate
                             </th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr ng-repeat="redis in shard.redises">
-                            <td ng-bind="redis.id"></td>
+                            <td title="{{redis.id}}">
+                                Redis
+                            </td>
                             <td ng-bind="redis.ip">
                             </td>
                             <td ng-bind="redis.port">
                             </td>
                             <td>
-                                Redis
-                            </td>
-                            <td>
-                                <a href="#">删除</a>
+                                <a ng-click="preDeleteRedis(shard, redis)">删除</a>
                             </td>
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
-                            <td ng-bind="keeper.id"></td>
+                            <td title="{{keeper.id}}">
+                                Keeper
+                            </td>
                             <td ng-bind="keeper.ip">
                             </td>
                             <td ng-bind="keeper.port">
                             </td>
                             <td>
-                                Keeper
-                            </td>
-                            <td>
-                                <a href="#">删除</a>
+                                <a ng-click="preDeleteRedis(shard, keeper)">删除</a>
                             </td>
                         </tr>
                         </tbody>
@@ -104,7 +100,7 @@
                         <apollorequiredfiled></apollorequiredfiled>
                         ip</label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="shard.shardName" ng-required="true">
+                        <input type="text" class="form-control" ng-model="toCreateRedis.redisIp" ng-required="true">
                     </div>
                 </div>
                 <div class="form-group" valdr-form-group>
@@ -112,7 +108,7 @@
                         port
                     </label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="shard.setinelMonitorName" ng-required="true">
+                        <input type="text" class="form-control" ng-model="toCreateRedis.redisPort" ng-required="true">
                     </div>
                 </div>
             </div>
@@ -124,3 +120,8 @@
         </div>
     </div>
 </form>
+
+<xpipeconfirmdialog xpipe-dialog-id="'deleteRedisConfirm'" xpipe-title="'delete redis'"
+                    xpipe-detail="'are you sure delete?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="deleteRedis"></xpipeconfirmdialog>
+
