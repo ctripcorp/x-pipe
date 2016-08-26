@@ -310,6 +310,17 @@
         			]]>
 				</statement>
 			</query>
+			<query name='delete-shard' type='UPDATE'>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+        			SET <FIELD name='deleted'/> = 1
+       				WHERE <FIELD name='id'/> = ${id}
+        			AND <FIELD name='deleted'/> = 0
+        			]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -437,6 +448,17 @@
 					]]>
 				</statement>
 			</query>
+			<query name='find-by-name' type='SELECT' multiple="false">
+				<param name='redis-name'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='redis-name' /> = ${redis-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name='delete-batch' type="UPDATE" batch="true">
 				<param name='id'/>
 				<statement>
@@ -445,6 +467,16 @@
         			SET <FIELD name='deleted'/> = 1
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
+        			]]>
+				</statement>
+			</query>
+			<query name='delete-by-name' type="UPDATE" batch="false">
+				<param name='name'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+        			SET <FIELDS/>
+       				WHERE <FIELD name='redis-name'/> = ${name}
         			]]>
 				</statement>
 			</query>

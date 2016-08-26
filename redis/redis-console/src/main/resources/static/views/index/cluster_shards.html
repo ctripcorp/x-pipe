@@ -18,18 +18,11 @@
             </tr>
             </thead>
             <tbody>
-            <tr>
-                <td>shard1</td>
-                <td>name1</td>
+            <tr ng-repeat="shard in shards">
+                <td>{{shard.shardName}}</td>
+                <td>{{shard.setinelMonitorName}}</td>
                 <td>
                     <a ng-click="preDeleteShard(shard.shardName)">删除</a>
-                </td>
-            </tr>
-            <tr>
-                <td>shard1</td>
-                <td>name1</td>
-                <td>
-                    <a href="#">删除</a>
                 </td>
             </tr>
             </tbody>
