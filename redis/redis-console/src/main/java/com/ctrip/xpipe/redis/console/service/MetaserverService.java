@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
-import org.unidal.dal.jdbc.DalNotFoundException;
 import java.util.List;
 
 
@@ -23,7 +22,7 @@ public class MetaserverService extends AbstractConsoleService<MetaserverTblDao>{
     public List<MetaserverTbl> findByDcName(final String dcName) {
     	return queryHandler.handleQuery(new DalQuery<List<MetaserverTbl>>() {
 			@Override
-			public List<MetaserverTbl> doQuery() throws DalNotFoundException, DalException {
+			public List<MetaserverTbl> doQuery() throws DalException {
 				return dao.findByDcName(dcName, MetaserverTblEntity.READSET_FULL);
 			}
     	});

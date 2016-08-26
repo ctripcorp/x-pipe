@@ -4,6 +4,7 @@ import org.unidal.dal.jdbc.datasource.DataSourceProvider;
 import org.unidal.lookup.configuration.AbstractResourceConfigurator;
 import org.unidal.lookup.configuration.Component;
 
+import com.ctrip.xpipe.redis.console.daltransaction.XpipeDalTransactionManager;
 import com.ctrip.xpipe.redis.console.ds.XpipeDataSourceProvider;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ public class ComponentsConfigurator extends AbstractResourceConfigurator {
         all.add(C(DataSourceProvider.class, XpipeDataSourceProvider.class)
                 .config(E("datasourceFile").value("datasources.xml"),
                         E("baseDirRef").value("FXXPIPE_HOME")));
+        all.add(A(XpipeDalTransactionManager.class));
         return all;
     }
 

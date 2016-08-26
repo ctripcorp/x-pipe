@@ -34,6 +34,14 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         get_clusters_count : {
         	method : 'GET',
         	url : '/console/count/clusters'
+        },
+        bind_dc: {
+            method: 'POST',
+            url: '/console/clusters/:clusterName/dcs/:dcName'
+        },
+        unbind_dc: {
+            method: 'DELETE',
+            url: '/console/clusters/:clusterName/dcs/:dcName'
         }
     });
 
@@ -62,6 +70,19 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
     	return d.promise;
     }
     
+    function findClusterDCs(clusterName) {
+        var d = $q.defer();
+        resource.find_cluster_dcs({
+                                      clusterName: clusterName
+                                  },
+                                  function (result) {
+                                      d.resolve(result);
+                                  }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     function loadCluster(clusterName) {
         var d = $q.defer();
         resource.load_cluster({
@@ -75,14 +96,29 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         return d.promise;
     }
 
-    function findClusterDCs(clusterName) {
+    function bindDc(clusterName, dcName) {
         var d = $q.defer();
-        resource.find_cluster_dcs({
-                                      clusterName: clusterName
-                                  },
-                                  function (result) {
-                                      d.resolve(result);
-                                  }, function (result) {
+        resource.bind_dc({
+                                  clusterName: clusterName,
+                                  dcName: dcName
+                              },
+                              function (result) {
+                                  d.resolve(result);
+                              }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function unbindDc(clusterName, dcName) {
+        var d = $q.defer();
+        resource.unbind_dc({
+                                  clusterName: clusterName,
+                                  dcName: dcName
+                              },
+                              function (result) {
+                                  d.resolve(result);
+                              }, function (result) {
                 d.reject(result);
             });
         return d.promise;
@@ -144,6 +180,8 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         updateCluster: updateCluster,
         deleteCluster: deleteCluster,
         findClusterBatch : findClusterBatch,
-        getClustersCount : getClustersCount
+        getClustersCount : getClustersCount,
+        bindDc: bindDc,
+        unbindDc: unbindDc
     }
 }]);
