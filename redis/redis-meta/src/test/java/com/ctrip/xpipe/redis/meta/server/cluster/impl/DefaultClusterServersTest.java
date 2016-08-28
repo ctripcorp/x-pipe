@@ -51,8 +51,8 @@ public class DefaultClusterServersTest extends AbstractMetaServerContextTest{
 		
 		Assert.assertEquals(1, servers.allClusterServers().size());
 
-		logger.info(remarkableMessage("[testServers][start server2]"));
 		UnitTestServerConfig config20 = new UnitTestServerConfig(2, randomPort());
+		logger.info(remarkableMessage("[testServers][start server2]{}"), config20);
 		@SuppressWarnings("unused")
 		CurrentClusterServer current20 = createAndStart(config20);
 		sleep(500);
@@ -60,9 +60,9 @@ public class DefaultClusterServersTest extends AbstractMetaServerContextTest{
 		Assert.assertEquals(2, servers.allClusterServers().size());
 
 
-		UnitTestServerConfig config21 = new UnitTestServerConfig(2, randomPort());
+		UnitTestServerConfig config21 = new UnitTestServerConfig(2, config20.getMetaServerPort() + 1);
 		try{
-			logger.info(remarkableMessage("[testServers][start server2 with another port again]"));
+			logger.info(remarkableMessage("[testServers][start server2 with another port again]{}"), config21);
 			@SuppressWarnings("unused")
 			CurrentClusterServer current21 = createAndStart(config21);
 			Assert.fail();

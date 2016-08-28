@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.config;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.utils.IpUtils;
 
 /**
@@ -82,5 +83,10 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	
 	public void setMetaServerPort(int metaServerPort) {
 		this.metaServerPort = metaServerPort;
+	}
+	
+	@Override
+	public String toString() {
+		return Codec.DEFAULT.encode(this);
 	}
 }
