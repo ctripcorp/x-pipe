@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 
@@ -208,7 +209,8 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		
 		try {
 			logger.info("[doOnFullSync]{}", masterChannel);
-			rdbDumper  = new RedisMasterReplicationRdbDumper(redisKeeperServer);
+			RdbDumper rdbDumper  = new RedisMasterReplicationRdbDumper(this, redisKeeperServer);
+			setRdbDumper(rdbDumper);
 			redisKeeperServer.setRdbDumper(rdbDumper, true);
 		} catch (RdbDumperAlreadyExist e) {
 			//impossible to happen

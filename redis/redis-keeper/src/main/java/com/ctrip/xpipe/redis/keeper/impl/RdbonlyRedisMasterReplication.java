@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
-import java.io.File;
 import java.io.IOException;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
+import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -24,19 +23,20 @@ import io.netty.channel.ChannelFutureListener;
 public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplication{
 
 	private RdbOnlyReplicationStore rdbOnlyReplicationStore;
+	private DumpedRdbStore dumpedRdbStore;
 	
 	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, RdbDumper rdbDumper) {
 		super(redisKeeperServer, redisMaster);
-		this.rdbDumper = rdbDumper;
+		setRdbDumper(rdbDumper);
 	}
 	
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		
-		File newRdbFile = rdbDumper.prepareRdbFile();
-		logger.info("[doInitialize][newRdbFile]{}", newRdbFile);
-		rdbOnlyReplicationStore = new RdbOnlyReplicationStore(newRdbFile);
+		dumpedRdbStore = getRdbDumper().prepareRdbStore();
+		logger.info("[doInitialize][newRdbFile]{}", dumpedRdbStore);
+		rdbOnlyReplicationStore = new RdbOnlyReplicationStore(dumpedRdbStore);
 		
 	}
 
@@ -50,7 +50,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 			public void operationComplete(ChannelFuture future) throws Exception {
 				if(!future.isSuccess()){
 					logger.info("[operationComplete][fail]", future.cause());
-					rdbDumper.dumpFail(future.cause());
+					dumpFail(future.cause());
 				}
 			}
 		});
@@ -68,7 +68,6 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	protected Psync createPsync() {
 		
-		rdbDumper.prepareDump();
 		Psync psync = new RdbOnlyPsync(clientPool, rdbOnlyReplicationStore);
 		psync.addPsyncObserver(this);
 		return psync;

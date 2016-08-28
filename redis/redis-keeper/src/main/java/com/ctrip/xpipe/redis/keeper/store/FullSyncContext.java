@@ -1,7 +1,6 @@
-/**
- * 
- */
 package com.ctrip.xpipe.redis.keeper.store;
+
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 
 /**
  * @author marsqing
@@ -12,13 +11,13 @@ public class FullSyncContext {
 
 	private boolean fullSyncPossible;
 
-	private DefaultRdbStore rdbStore;
+	private RdbStore rdbStore;
 
 	public FullSyncContext(boolean fullSyncPossible) {
 		this.fullSyncPossible = fullSyncPossible;
 	}
 
-	public FullSyncContext(boolean fullSyncPossible, DefaultRdbStore rdbStore) {
+	public FullSyncContext(boolean fullSyncPossible, RdbStore rdbStore) {
 		this.fullSyncPossible = fullSyncPossible;
 		this.rdbStore = rdbStore;
 	}
@@ -27,7 +26,7 @@ public class FullSyncContext {
 		return fullSyncPossible;
 	}
 
-	public DefaultRdbStore getRdbStore() {
+	public RdbStore getRdbStore() {
 		return rdbStore;
 	}
 }

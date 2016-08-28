@@ -19,7 +19,7 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
  */
 public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements RdbDumper{
 	
-	private volatile RdbDumpState rdbDumpState = RdbDumpState.NORMAL;
+	private volatile RdbDumpState rdbDumpState = RdbDumpState.WAIT_DUMPPING;
 	
 	protected RedisKeeperServer redisKeeperServer;
 	
@@ -78,8 +78,8 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 					public void run() {
 						try {
 							redisKeeperServer.fullSyncToSlave(redisSlave);
-						} catch (IOException e) {
-							logger.error(String.format("fullsync to slave:" + redisSlave, e));
+						} catch (Exception e) {
+							logger.error(String.format("fullsync to slave:%s", redisSlave), e);
 						}
 					}
 				});
@@ -113,37 +113,35 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 
 
 	@Override
-	public void prepareDump() {
-		setRdbDumpState(RdbDumpState.WAIT_DUMPPING);
-	}
-
-	@Override
 	public void beginReceiveRdbData(long masterOffset) {
+		logger.info("[beginReceiveRdbData]{}", this);
 		setRdbDumpState(RdbDumpState.DUMPING);
 		
 	}
 
 	@Override
 	public void dumpFinished() {
-		
+		logger.info("[dumpFinished]{}", this);
 		setRdbDumpState(RdbDumpState.NORMAL);
 		future.setSuccess();
 	}
 
 	@Override
 	public void dumpFail(Throwable th) {
-		logger.info("[dumpFail]" + redisKeeperServer, th);
+		
+		if(future.isDone()){
+			logger.info("[dumpFail][already done]{}, {}" , this, th.getMessage());
+			return;
+		}
+		
+		logger.info("[dumpFail]{}, {}", this, th.getMessage());
 		setRdbDumpState(RdbDumpState.FAIL);
 		future.setFailure(th);;
 	}
 	
 	@Override
 	public void exception(Throwable th) {
-		
-		logger.info("[exception]", th);
-		if(!future.isDone()){
-			dumpFail(th);
-		}
+		dumpFail(th);
 	}
 
 }

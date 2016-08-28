@@ -21,6 +21,7 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	protected int replicationStoreCommandFileSize = 1024;
 	private int replicationStoreCommandFileNumToKeep = 2;
 	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
+	private int minTimeMilliToGcAfterCreate = 2000;
 	
 
 	@Override
@@ -49,7 +50,8 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	
 	
 	protected KeeperConfig getKeeperConfig() {
-		return new TestKeeperConfig(replicationStoreCommandFileSize, replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb);
+		return new TestKeeperConfig(replicationStoreCommandFileSize, replicationStoreCommandFileNumToKeep, 
+				replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
 	}
 
 }

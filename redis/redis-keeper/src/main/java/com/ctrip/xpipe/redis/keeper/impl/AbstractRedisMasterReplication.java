@@ -49,7 +49,7 @@ import io.netty.handler.logging.LoggingHandler;
  */
 public abstract class AbstractRedisMasterReplication extends AbstractLifecycle implements RedisMasterReplication{
 	
-	protected RdbDumper rdbDumper;
+	private AtomicReference<RdbDumper> rdbDumper = new AtomicReference<RdbDumper>(null);
 	
 	protected FixedObjectPool<NettyClient> clientPool;
 
@@ -69,7 +69,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	
 	protected RedisKeeperServer redisKeeperServer;
 	
-	protected AtomicReference<Command<?>> currentCommand;
+	protected AtomicReference<Command<?>> currentCommand = new AtomicReference<Command<?>>(null);
 		
 	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster){
 		
@@ -161,10 +161,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	
 	@Override
 	public void masterDisconntected(Channel channel) {
-		if(rdbDumper != null){
-			rdbDumper.exception(new IOException("master closed:" + channel));
-		}
 		
+		dumpFail(new IOException("master closed:" + channel));
 	}
 	
 	protected void executeCommand(Command<?> command){
@@ -231,9 +229,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 				if(!commandFuture.isSuccess()){
 					logger.error("[operationComplete][psyncCommand][fail]", commandFuture.cause());
 					
-					if(rdbDumper != null){
-						rdbDumper.dumpFail(commandFuture.cause());
-					}
+					dumpFail(commandFuture.cause());
 					psyncFail(commandFuture.cause());
 				}
 			}
@@ -261,7 +257,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 		logger.info("[stopReplication]{}", redisMaster.masterEndPoint());
 		if (masterChannel != null && masterChannel.isOpen()) {
-			masterChannel.disconnect();
+			masterChannel.close();
 		}
 	}
 	
@@ -275,7 +271,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	public String toString() {
 		
-		return String.format("%s(redisMaster:%s)", getClass().getSimpleName(), redisMaster);
+		return String.format("%s(redisMaster:%s, %s)", getClass().getSimpleName(), redisMaster, masterChannel);
 	}
 
 	@Override
@@ -295,15 +291,16 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	public void beginWriteRdb(long fileSize, long masterRdbOffset) throws IOException{
 		
-		rdbDumper.beginReceiveRdbData(masterRdbOffset);
 		doBeginWriteRdb(fileSize, masterRdbOffset);
+		rdbDumper.get().beginReceiveRdbData(masterRdbOffset);
 	}
 	
 	protected abstract void doBeginWriteRdb(long fileSize, long masterRdbOffset) throws IOException;
 
 	@Override
 	public void endWriteRdb(){
-		rdbDumper.dumpFinished();
+		
+		dumpFinished();
 		doEndWriteRdb();
 	}
 	
@@ -316,4 +313,33 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	
 	protected abstract void doOnContinue();
 	
+	protected void dumpFinished(){
+		logger.info("[dumpFinished]{}", this);
+		
+		RdbDumper dumper = rdbDumper.get();
+		if(dumper != null){
+			rdbDumper.set(null);
+			dumper.dumpFinished();
+		}
+	}
+	protected void dumpFail(Throwable th){
+		
+		RdbDumper dumper = rdbDumper.get();
+		if(dumper != null){
+			rdbDumper.set(null);
+			dumper.dumpFail(th);
+		}
+	}
+	
+	public void setRdbDumper(RdbDumper dumper) {
+		
+		if(this.rdbDumper.get() != null){
+			logger.info("[setRdbDumper][replace]{}", this.rdbDumper.get());
+		}
+		this.rdbDumper.set(dumper);
+	}
+	
+	public RdbDumper getRdbDumper() {
+		return rdbDumper.get();
+	}
 }

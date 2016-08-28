@@ -12,17 +12,21 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int replicationStoreCommandFileSize = 1024;
 	private int replicationStoreCommandFileNumToKeep = 2;
 	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
+	private int minTimeMilliToGcAfterCreate = 2000;
 	private int rdbDumpMinIntervalMilli = 1000;
+	
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 	
 	
 	public TestKeeperConfig(){
 		
 	}
-	public TestKeeperConfig(int replicationStoreCommandFileSize, int replicationStoreCommandFileNumToKeep, int replicationStoreMaxCommandsToTransferBeforeCreateRdb) {
+	public TestKeeperConfig(int replicationStoreCommandFileSize, int replicationStoreCommandFileNumToKeep, 
+			int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) {
 		this.replicationStoreCommandFileNumToKeep = replicationStoreCommandFileNumToKeep;
 		this.replicationStoreCommandFileSize = replicationStoreCommandFileSize;
 		this.replicationStoreMaxCommandsToTransferBeforeCreateRdb = replicationStoreMaxCommandsToTransferBeforeCreateRdb;
+		this.minTimeMilliToGcAfterCreate = minTimeMilliToGcAfterCreate;
 	}
 	
 	@Override
@@ -85,5 +89,10 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	public void setZkAddress(String zkAddress) {
 		this.zkAddress = zkAddress;
+	}
+
+	@Override
+	public int getReplicationStoreMinTimeMilliToGcAfterCreate() {
+		return minTimeMilliToGcAfterCreate;
 	}
 }

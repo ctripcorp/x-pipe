@@ -29,9 +29,11 @@ import org.junit.rules.TestName;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.simpleserver.AbstractIoAction;
@@ -62,9 +64,10 @@ public class AbstractTest {
 	
 	private static Properties properties = new Properties();
 	
+	private ComponentRegistry startedComponentRegistry;
 	
 	@Before
-	public void beforeAbstractTest() throws IOException{
+	public void beforeAbstractTest() throws Exception{
 		
 		logger.info(remarkableMessage("[begin test]" + name.getMethodName()));
 		
@@ -73,7 +76,10 @@ public class AbstractTest {
 
 		setProperties();
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
-		
+
+		startedComponentRegistry = new CreatedComponentRedistry();
+		startedComponentRegistry.initialize();
+		startedComponentRegistry.start();
 		
 		Thread.setDefaultUncaughtExceptionHandler(new DefaultExceptionHandler());
 		InputStream fins = getClass().getClassLoader().getResourceAsStream("xpipe-test.properties");
@@ -286,10 +292,8 @@ public class AbstractTest {
 
 		int i = min;
 		for(;i<=max;i++){
-
-			int port = randomInt(min, max);
-			if(isUsable(port)){
-				return port;
+			if(isUsable(i)){
+				return i;
 			}
 		}
 		
@@ -334,9 +338,7 @@ public class AbstractTest {
 		try {
 			logger.info(remarkableMessage("[startZK]{}"), zkPort);
 			ZkTestServer zkTestServer = new ZkTestServer(zkPort);
-			zkTestServer.initialize();
-			zkTestServer.start();
-			add(zkTestServer);
+			addToStartedRegistry(zkTestServer);
 			return zkTestServer;
 		} catch (Exception e) {
 			logger.error("[startZk]", e);
@@ -391,10 +393,12 @@ public class AbstractTest {
 				};
 			}
 		});
-		server.initialize();
-		server.start();
-		add(server);
+		addToStartedRegistry(server);
 		return server;
+	}
+	
+	protected void addToStartedRegistry(Lifecycle lifecycle) throws Exception{
+		startedComponentRegistry.add(lifecycle);
 	}
 
 
@@ -402,12 +406,11 @@ public class AbstractTest {
 	public void afterAbstractTest() throws IOException{
 		
 		try {
-			if(componentRegistry.getLifecycleState() != null && componentRegistry.getLifecycleState().canStop()){
-				componentRegistry.stop();
-			}
-			if(componentRegistry.getLifecycleState() != null && componentRegistry.getLifecycleState().canDispose()){
-				componentRegistry.dispose();
-			}
+			LifecycleHelper.stopIfPossible(componentRegistry);
+			LifecycleHelper.disposeIfPossible(componentRegistry);
+			
+			LifecycleHelper.stopIfPossible(startedComponentRegistry);
+			LifecycleHelper.disposeIfPossible(startedComponentRegistry);
 		} catch (Exception e) {
 			logger.error("[afterAbstractTest]", e);
 		}

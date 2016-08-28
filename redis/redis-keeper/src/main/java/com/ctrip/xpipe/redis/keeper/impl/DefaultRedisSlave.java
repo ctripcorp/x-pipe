@@ -1,10 +1,14 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
@@ -54,6 +58,10 @@ public class DefaultRedisSlave implements RedisSlave {
 	
 	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_NETTY", 5000);
 	private boolean debugDelay = Boolean.parseBoolean(System.getProperty("DEBUG_DELAY"));
+	
+	private ScheduledExecutorService scheduled;
+	private ScheduledFuture<?> 		  pingFuture;
+	private final int pingIntervalMilli = 1000;
 
 	private ExecutorService psyncExecutor;
 
@@ -65,18 +73,35 @@ public class DefaultRedisSlave implements RedisSlave {
 		this.redisClient = redisClient;
 		this.setSlaveListeningPort(redisClient.getSlaveListeningPort());
 		delayMonitor.setDelayInfo(redisClient.channel().remoteAddress().toString());
-		initPsyncExecutor(((DefaultRedisClient)redisClient).channel);
 		this.redisClient.addChannelCloseReleaseResources(this);
+		initExecutor(((DefaultRedisClient)redisClient).channel);
 	}
 
-	private void initPsyncExecutor(Channel channel) {
+	private void initExecutor(Channel channel) {
+		
 		String getRemoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
-		psyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create("RedisClientPsync-" + getRemoteIpLocalPort));
+		String threadPrefix = "RedisClientPsync-" + getRemoteIpLocalPort;
+		psyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create(threadPrefix));
+		scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create(threadPrefix));
 	}
 
 	@Override
 	public void waitForRdbDumping() {
+		
 		this.slaveState = SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING;
+		
+		logger.info("[waitForRdbDumping][begin ping]{}", this);
+		pingFuture = scheduled.scheduleAtFixedRate(new Runnable() {
+			
+			@Override
+			public void run() {
+				try{
+					sendMessage("\n".getBytes());
+				}catch(Exception e){
+					logger.error("[run][sendPing]" + redisClient, e);
+				}
+			}
+		}, pingIntervalMilli, pingIntervalMilli, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -117,6 +142,11 @@ public class DefaultRedisSlave implements RedisSlave {
 		partialState = PARTIAL_STATE.FULL;
 		slaveState = SLAVE_STATE.REDIS_REPL_SEND_BULK;
 		this.rdbFileOffset = rdbFileOffset;
+		
+		if(pingFuture != null){
+			logger.info("[beginWriteRdb][cancel ping]{}", this);
+			pingFuture.cancel(true);
+		}
 		
     	RequestStringParser parser = new RequestStringParser(String.valueOf((char)RedisClientProtocol.DOLLAR_BYTE)
     			+String.valueOf(rdbFileSize)); 
@@ -213,10 +243,12 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 	
 	public void close() throws IOException {
+		
 		logger.info("[close]{}", this);
 		closed.set(true);
 		redisClient.close();
 		psyncExecutor.shutdownNow();
+		scheduled.shutdownNow();
 	}
 	
 	@Override

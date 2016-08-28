@@ -1,14 +1,11 @@
-/**
- * 
- */
 package com.ctrip.xpipe.redis.keeper.store;
 
-import java.io.File;
 import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
@@ -24,14 +21,14 @@ import io.netty.buffer.ByteBuf;
  */
 public class RdbOnlyReplicationStore implements ReplicationStore {
 
-	private File rdbFile;
+	private DumpedRdbStore dumpedRdbStore;
 	private DefaultRdbStore rdbStore;
 	private String masterRunid;
 	private long masterOffset;
 	private MetaStore metaStore;
 
-	public RdbOnlyReplicationStore(File rdbFile) {
-		this.rdbFile = rdbFile;
+	public RdbOnlyReplicationStore(DumpedRdbStore dumpedRdbStore) {
+		this.dumpedRdbStore = dumpedRdbStore;
 		metaStore = new MetaStore() {
 
 			@Override
@@ -128,10 +125,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 		};
 	}
 
-	public File getRdbFile() {
-		return rdbFile;
-	}
-
 	public long getMasterOffset() {
 		return masterOffset;
 	}
@@ -144,8 +137,9 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	public RdbStore beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException {
 		this.masterRunid = masterRunid;
 		this.masterOffset = masterOffset;
-		rdbStore = new DefaultRdbStore(rdbFile, masterOffset, rdbFileSize);
-		return rdbStore;
+		dumpedRdbStore.setMasterOffset(masterOffset);
+		dumpedRdbStore.setRdbFileSize(rdbFileSize);
+		return dumpedRdbStore;
 	}
 
 	@Override
@@ -159,11 +153,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void rdbUpdated(String rdbFile, long masterOffset) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public MetaStore getMetaStore() {
 		return metaStore;
 	}
@@ -171,11 +160,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	@Override
 	public boolean gc() {
 		return rdbStore.delete();
-	}
-
-	@Override
-	public File prepareNewRdbFile() {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -210,6 +194,16 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public DumpedRdbStore prepareNewRdb() throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void rdbUpdated(DumpedRdbStore dumpedRdbStore) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 

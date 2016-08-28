@@ -70,7 +70,14 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	@Override
 	public synchronized ReplicationStore createIfNotExist() throws IOException {
 
-		ReplicationStore currentReplicationStore = getCurrent();
+		ReplicationStore currentReplicationStore = null;
+		
+		try{
+			currentReplicationStore = getCurrent();
+		}catch(Exception e){
+			logger.error("[createIfNotExist]" + baseDir, e);
+		}
+		
 		if (currentReplicationStore == null) {
 			logger.info("[createIfNotExist]{}", baseDir);
 			currentReplicationStore = create();

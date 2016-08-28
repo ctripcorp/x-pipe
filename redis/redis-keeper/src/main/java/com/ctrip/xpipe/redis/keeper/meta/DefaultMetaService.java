@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
@@ -55,7 +56,12 @@ public class DefaultMetaService implements MetaServerKeeperService {
 				try{
 					return restTemplate.getForObject(url, ShardStatus.class, urlVariables);
 				}catch(Exception e){
-					logger.error("[apply]"+ url, e);
+					
+					if(ExceptionUtils.isIoException(e)){
+						logger.error("[apply]{},{}", url, e);
+					}else{
+						logger.error("[apply]"+ url, e);
+					}
 					return null;
 				}
 			}

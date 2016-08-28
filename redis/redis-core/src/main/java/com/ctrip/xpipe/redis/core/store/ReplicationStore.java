@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 
 import io.netty.buffer.ByteBuf;
@@ -18,9 +17,9 @@ public interface ReplicationStore extends Closeable {
 	// rdb related
 	RdbStore beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException;
 
-	File prepareNewRdbFile();
+	DumpedRdbStore prepareNewRdb() throws IOException;
 
-	void rdbUpdated(String rdbRelativePath, long masterOffset) throws IOException;
+	void rdbUpdated(DumpedRdbStore dumpedRdbStore) throws IOException;
 
 	// command related
 	int appendCommands(ByteBuf byteBuf) throws IOException;

@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.keeper;
 
-
-import java.io.File;
 import java.io.IOException;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 
 /**
  * @author wenchao.meng
@@ -15,10 +14,8 @@ public interface RdbDumper extends Command<Void>{
 
 	void tryFullSync(RedisSlave redisSlave) throws IOException;
 
-	File prepareRdbFile();
+	DumpedRdbStore prepareRdbStore() throws IOException;
 
-	void prepareDump();
-	
 	void beginReceiveRdbData(long masterOffset);
 	
 	void dumpFinished();

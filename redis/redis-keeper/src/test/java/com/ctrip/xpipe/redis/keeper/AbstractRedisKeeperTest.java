@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -79,12 +80,12 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	}
 
 	
-	protected String readRdbFileTilEnd(DefaultReplicationStore replicationStore) throws IOException, InterruptedException {
+	protected String readRdbFileTilEnd(ReplicationStore replicationStore) throws IOException, InterruptedException {
 
 		final ByteArrayWritableByteChannel bachannel = new ByteArrayWritableByteChannel();
 		final CountDownLatch latch = new CountDownLatch(1);
 
-		replicationStore.getRdbStore().readRdbFile(new RdbFileListener() {
+		((DefaultReplicationStore)replicationStore).getRdbStore().readRdbFile(new RdbFileListener() {
 
 			@Override
 			public void setRdbFileInfo(long rdbFileSize, long rdbFileOffset) {
@@ -119,7 +120,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new String(bachannel.getResult());
 	}
 
-	public String readCommandFileTilEnd(final DefaultReplicationStore replicationStore) throws IOException {
+	public String readCommandFileTilEnd(final ReplicationStore replicationStore) throws IOException {
 
 		final List<ByteBuf> buffs = new LinkedList<>();
 		final AtomicInteger size = new AtomicInteger();
@@ -135,7 +136,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 			
 			private void doRun() throws IOException {
-				replicationStore.getCommandStore().addCommandsListener(0, new CommandsListener() {
+				replicationStore.addCommandsListener(replicationStore.getMetaStore().getKeeperBeginOffset(), new CommandsListener() {
 					
 					@Override
 					public void onCommand(ByteBuf byteBuf) {

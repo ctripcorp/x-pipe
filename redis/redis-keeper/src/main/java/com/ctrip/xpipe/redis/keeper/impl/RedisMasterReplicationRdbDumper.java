@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
+import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 
 /**
  * @author wenchao.meng
@@ -12,8 +14,10 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
  */
 public class RedisMasterReplicationRdbDumper extends AbstractRdbDumper{
 
-	public RedisMasterReplicationRdbDumper(RedisKeeperServer redisKeeperServer) {
+	private RedisMasterReplication redisMasterReplication;
+	public RedisMasterReplicationRdbDumper(RedisMasterReplication redisMasterReplication, RedisKeeperServer redisKeeperServer) {
 		super(redisKeeperServer);
+		this.redisMasterReplication = redisMasterReplication;
 	}
 
 	@Override
@@ -33,7 +37,13 @@ public class RedisMasterReplicationRdbDumper extends AbstractRdbDumper{
 	}
 
 	@Override
-	public File prepareRdbFile() {
+	public DumpedRdbStore prepareRdbStore() throws IOException {
 		throw new UnsupportedOperationException();
 	}
+	
+	@Override
+	public String toString() {
+		return String.format("%s", redisMasterReplication);
+	}
+
 }

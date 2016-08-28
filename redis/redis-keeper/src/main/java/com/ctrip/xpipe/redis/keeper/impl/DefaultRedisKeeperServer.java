@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.ctrip.xpipe.api.cluster.LeaderElector;
@@ -98,9 +99,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private MetaServerKeeperService metaService;
 	
-	private volatile AtomicReference<RdbDumper> rdbDumper;
+	private volatile AtomicReference<RdbDumper> rdbDumper = new AtomicReference<RdbDumper>(null);
+	//for test
+	private AtomicInteger  rdbDumpTryCount = new AtomicInteger();
 	
-
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
 			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager){
 		this(currentKeeperMeta, keeperConfig, baseDir, metaService, null, leaderElectorManager);
@@ -486,8 +488,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void fullSyncToSlave(final RedisSlave redisSlave) throws IOException {
 		
-		logger.info("[fullSyncToSlave]{}", redisSlave);
+		logger.info("[fullSyncToSlave]{}, {}", redisSlave, rdbDumper.get());
 		if(rdbDumper.get() == null){
+			logger.info("[fullSyncToSlave][dumper null]{}", redisSlave);
 			FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
 			if(!getCurrentReplicationStore().fullSyncIfPossible(fullSyncListener)){
 				//go dump rdb
@@ -544,7 +547,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		
 		logger.info("[setRdbDumper]{},{}", newDumper, force);
-		
+		rdbDumpTryCount.incrementAndGet();
 		if(rdbDumper.compareAndSet(null, newDumper)){
 			return;
 		}
@@ -566,8 +569,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void clearRdbDumper(RdbDumper oldDumper) {
 		
+		logger.info("[clearRdbDumper]{}", oldDumper);
 		if(!rdbDumper.compareAndSet(oldDumper, null)){
 			logger.warn("[clearRdbDumper][current is not request]{}, {}", oldDumper, rdbDumper.get());
 		}
+	}
+	
+	public int getRdbDumpTryCount() {
+		return rdbDumpTryCount.get();
 	}
 }

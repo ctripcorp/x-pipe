@@ -23,31 +23,32 @@ public class DefaultRdbStore implements RdbStore {
 
 	private RandomAccessFile writeFile;
 
-	private File file;
+	protected File file;
 
 	private FileChannel channel;
 
-	private long rdbFileSize;
+	protected long rdbFileSize;
 
 	private AtomicReference<Status> status = new AtomicReference<>(Status.Writing);
 
-	private long rdbLastKeeperOffset;
+	protected long rdbLastKeeperOffset;
 
 	private AtomicInteger refCount = new AtomicInteger(0);
-
+	
 	public DefaultRdbStore(File file, long rdbLastKeeperOffset, long rdbFileSize) throws IOException {
+
 		this.file = file;
 		this.rdbFileSize = rdbFileSize;
 		this.rdbLastKeeperOffset = rdbLastKeeperOffset;
-		writeFile = new RandomAccessFile(file, "rw");
-		channel = writeFile.getChannel();
+		
+		if(file.length() > 0){
+			checkAndSetRdbState();
+		}else{
+			writeFile = new RandomAccessFile(file, "rw");
+			channel = writeFile.getChannel();
+		}
 	}
-
-	public DefaultRdbStore(File file, long rdbLastKeeperOffset, long rdbFileSize, boolean alreadyWrote) throws IOException {
-		this(file, rdbLastKeeperOffset, rdbFileSize);
-		endRdb();
-	}
-
+	
 	@Override
 	public int writeRdb(ByteBuf byteBuf) throws IOException {
 		// TODO ByteBuf to ByteBuffer correct?
@@ -64,9 +65,16 @@ public class DefaultRdbStore implements RdbStore {
 
 	@Override
 	public void endRdb() throws IOException {
-		long actualFileLen = writeFile.length();
-		writeFile.close();
+		try{
+			checkAndSetRdbState();
+		}finally{
+			writeFile.close();
+		}
+	}
 
+	private void checkAndSetRdbState() {
+		
+		long actualFileLen = file.length();
 		if (actualFileLen == rdbFileSize) {
 			status.set(Status.Success);
 		} else {
@@ -74,6 +82,7 @@ public class DefaultRdbStore implements RdbStore {
 			status.set(Status.Fail);
 			throw new RdbStoreExeption(rdbFileSize, actualFileLen);
 		}
+		
 	}
 
 	@Override
@@ -89,11 +98,12 @@ public class DefaultRdbStore implements RdbStore {
 	}
 
 	private void doReadRdbFile(RdbFileListener rdbFileListener, FileChannel channel) throws IOException {
+		
 		rdbFileListener.setRdbFileInfo(rdbFileSize, rdbLastKeeperOffset);
 
 		long start = 0;
 		long lastLogTime = System.currentTimeMillis();
-		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || start < channel.size())) {
+		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && start < channel.size()))) {
 			
 			if (channel.size() > start) {
 				long end = channel.size();
@@ -116,17 +126,17 @@ public class DefaultRdbStore implements RdbStore {
 		refCount.decrementAndGet();
 
 		switch (status.get()) {
-		case Success:
-			rdbFileListener.onFileData(channel, start, -1L);
-			break;
-
-		case Fail:
-			// TODO
-			rdbFileListener.exception(new Exception(""));
-			break;
-
-		default:
-			break;
+		
+			case Success:
+				rdbFileListener.onFileData(channel, start, -1L);
+				break;
+	
+			case Fail:
+				rdbFileListener.exception(new Exception("[rdb error]"));
+				break;
+	
+			default:
+				break;
 		}
 	}
 
@@ -149,7 +159,8 @@ public class DefaultRdbStore implements RdbStore {
 		return file.delete();
 	}
 
-	public File getFile() {
+	@Override
+	public File getRdbFile() {
 		return file;
 	}
 
@@ -164,6 +175,11 @@ public class DefaultRdbStore implements RdbStore {
 	
 	public void decrementRefCount() {
 		refCount.decrementAndGet();
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("rdbFileSize:%d, rdbLastKeeperOffset:%d,file:%s", rdbFileSize, rdbLastKeeperOffset, file);
 	}
 
 }

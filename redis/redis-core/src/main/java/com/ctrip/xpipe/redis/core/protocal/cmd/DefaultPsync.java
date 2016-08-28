@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
  *
  * 2016年3月24日 下午2:24:38
  */
-public class DefaultPsync extends AbstractPsync {
+public class DefaultPsync extends AbstractReplicationStorePsync{
 	
 	private ReplicationStoreManager replicationStoreManager;
 	
@@ -36,7 +36,7 @@ public class DefaultPsync extends AbstractPsync {
 	protected ReplicationStore getCurrentReplicationStore() {
 		
 		try {
-			return replicationStoreManager.getCurrent();
+			return replicationStoreManager.createIfNotExist();
 		} catch (IOException e) {
 			logger.error("[doRequest]" + this + replicationStoreManager, e);
 			throw new XpipeRuntimeException("[doRequest]getReplicationStore failed." + replicationStoreManager, e);

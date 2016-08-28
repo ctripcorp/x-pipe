@@ -281,8 +281,8 @@ public class DefaultCommandStore implements CommandStore {
 
 	@Override
 	public void addCommandsListener(long offset, CommandsListener listener) throws IOException {
+		
 		logger.info("[addCommandsListener] from offset {}, {}", offset, listener);
-
 		CommandReader cmdReader = null;
 
 		try {
@@ -305,8 +305,11 @@ public class DefaultCommandStore implements CommandStore {
 					dst.flip();
 					listener.onCommand(Unpooled.wrappedBuffer(dst));
 				} else {
+					
 					try {
-						// TODO
+						if(read < 0){
+							logger.error("[addCommandsListener]read size:" + read);
+						}
 						Thread.sleep(100);
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();

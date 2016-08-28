@@ -112,6 +112,9 @@ public class Server extends AbstractLifecycle{
 				logger.error("[run]" + socket, e);
 			}finally{
 				try {
+					if(ioAction instanceof DeadAware){
+						((DeadAware) ioAction).setDead();
+					}
 					connected.decrementAndGet();
 					socket.close();
 				} catch (IOException e) {

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -15,7 +16,6 @@ import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
-import com.ctrip.xpipe.redis.keeper.RedisSlave;
 
 
 /**
@@ -24,9 +24,6 @@ import com.ctrip.xpipe.redis.keeper.RedisSlave;
  *         May 22, 2016 6:36:21 PM
  */
 public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster {
-
-	// to avoid catch exception, \n should be identical on target platforms
-	private static byte[] NEW_LINE = "\n".getBytes();
 
 	private RedisKeeperServer redisKeeperServer;
 
@@ -45,7 +42,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		this.replicationStoreManager = replicationStoreManager;
 		this.endpoint = endpoint;
 		this.scheduled = scheduled;
-		redisMasterReplication = new DefaultRedisMasterReplication(this, redisKeeperServer, this.scheduled);
+		redisMasterReplication = new DefaultRedisMasterReplication(this, this.redisKeeperServer, this.scheduled);
 	}
 	
 	@Override
@@ -99,11 +96,6 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public PARTIAL_STATE partialState() {
 		return redisMasterReplication.partialState();
-	}
-
-	protected void sendNewLineToRedisSlave(RedisSlave redisSlave) {
-		//TODO put it in redisslave
-		redisSlave.sendMessage(NEW_LINE);
 	}
 
 	

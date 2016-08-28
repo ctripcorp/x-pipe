@@ -55,11 +55,6 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 	protected void doIdcInit() {
 	}
 
-	protected RedisKeeperServer createRedisKeeperServer() throws Exception {
-
-		return createRedisKeeperServer(createKeeperMeta());
-	}
-
 	protected KeeperMeta createKeeperMeta() throws SAXException, IOException {
 
 		return createKeeperMeta(randomPort(keeperServerPortMin, keeperServerPortMax));
@@ -88,9 +83,23 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 		return keeperConfigFile;
 	}
 
+	protected RedisKeeperServer createRedisKeeperServer(KeeperConfig keeperConfig) throws Exception {
+		
+		return createRedisKeeperServer(createKeeperMeta(), keeperConfig, metaService, getReplicationStoreManagerBaseDir());
+	}
+	
+	protected RedisKeeperServer createRedisKeeperServer() throws Exception {
+
+		return createRedisKeeperServer(createKeeperMeta());
+	}
+
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta) throws Exception {
 
 		return createRedisKeeperServer(keeperMeta, metaService);
+	}
+	
+	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaServerKeeperService metaService) throws Exception {
+		return createRedisKeeperServer(keeper, metaService, getReplicationStoreManagerBaseDir());
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaServerKeeperService metaService, File baseDir) throws Exception {
@@ -107,14 +116,8 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 
 		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper, keeperConfig, 
 				baseDir, metaService, getRegistry().getComponent(LeaderElectorManager.class));
-
-		add(redisKeeperServer);
 		return redisKeeperServer;
 
-	}
-
-	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, MetaServerKeeperService metaService) throws Exception {
-		return createRedisKeeperServer(keeper, metaService, getReplicationStoreManagerBaseDir());
 	}
 
 	protected RedisMeta createRedisMeta() {

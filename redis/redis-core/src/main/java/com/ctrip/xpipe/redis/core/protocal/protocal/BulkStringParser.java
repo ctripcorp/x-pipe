@@ -49,6 +49,10 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 		this.bulkStringParserListener = bulkStringParserListener;
 	}
 
+	public void setBulkStringParserListener(BulkStringParserListener bulkStringParserListener) {
+		this.bulkStringParserListener = bulkStringParserListener;
+	}
+	
 	/**
 	 * 返回值暂时没用
 	 * @throws IOException 

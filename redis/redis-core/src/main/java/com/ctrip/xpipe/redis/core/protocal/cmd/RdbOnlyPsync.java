@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
  *
  *         Jul 21, 2016 5:29:44 PM
  */
-public class RdbOnlyPsync extends AbstractPsync {
+public class RdbOnlyPsync extends AbstractReplicationStorePsync{
 
 	public RdbOnlyPsync(SimpleObjectPool<NettyClient> clientPool, ReplicationStore store) {
 		super(clientPool, false);

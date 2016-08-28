@@ -34,7 +34,7 @@ public class TestProfile extends AbstractProfile{
 	
 	@Bean
 	public KeeperConfig getKeeperConfig(){
-		return new TestKeeperConfig(1024, 2, 1024);
+		return new TestKeeperConfig(1024, 2, 1024, 2000);
 	}
 	
 	@Bean

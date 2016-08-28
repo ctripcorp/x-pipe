@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 
@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.keeper.RedisMaster;
  */
 public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 
-	private File rdbFile;
+	private DumpedRdbStore dumpedRdbStore;
 	
 	private RedisMaster redisMaster;
 	
@@ -71,20 +71,27 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 	}
 
 	@Override
-	public File prepareRdbFile() {
+	public DumpedRdbStore prepareRdbStore() throws IOException {
 		
-		rdbFile = redisMaster.getCurrentReplicationStore().prepareNewRdbFile();
-		logger.info("[prepareRdbFile]{}", rdbFile);
-		return rdbFile;
+		dumpedRdbStore = redisMaster.getCurrentReplicationStore().prepareNewRdb();
+		logger.info("[prepareRdbStore]{}", dumpedRdbStore);
+		return dumpedRdbStore;
 	}
-
+	
 	@Override
 	public void beginReceiveRdbData(long masterOffset) {
+		
 		try {
-			redisMaster.getCurrentReplicationStore().rdbUpdated(rdbFile.getName(), masterOffset);
+			logger.info("[beginReceiveRdbData][update rdb]{}", dumpedRdbStore);
+			redisMaster.getCurrentReplicationStore().rdbUpdated(dumpedRdbStore);
 			super.beginReceiveRdbData(masterOffset);
 		} catch (IOException e) {
 			logger.error("[waitUntilPsyncDone]", e);
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("%s(%s)", getClass().getSimpleName(), rdbonlyRedisMasterReplication);
 	}
 }

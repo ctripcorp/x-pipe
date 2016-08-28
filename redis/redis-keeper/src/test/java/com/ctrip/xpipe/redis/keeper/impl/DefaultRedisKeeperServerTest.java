@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,7 +17,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 	
 	@Before
 	public void beforeDefaultRedisKeeperServerTest() throws Exception {
-		
+
 	}
 	
 	@Test
@@ -45,8 +43,9 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer = createRedisKeeperServer();
 		redisKeeperServer.initialize();
 		Assert.assertEquals(KeeperState.PRE_BACKUP, redisKeeperServer.getRedisKeeperServerState().keeperState());
-
 	}
+	
+	
 	@Override
 	protected String getXpipeMetaConfigFile() {
 		return "keeper-test.xml";

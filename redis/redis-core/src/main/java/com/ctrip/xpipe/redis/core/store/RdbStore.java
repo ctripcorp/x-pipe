@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.store;
 
+import java.io.File;
 import java.io.IOException;
 
 import io.netty.buffer.ByteBuf;
@@ -21,5 +22,12 @@ public interface RdbStore {
 	boolean delete();
 	
 	long lastKeeperOffset();
+
+	File getRdbFile();
+
+	void incrementRefCount();
+
+	void decrementRefCount();
+	
 
 }

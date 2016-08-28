@@ -184,7 +184,7 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
 	public void setFailure(Throwable cause) {
 		
 		if(isDone()){
-			throw new IllegalStateException(alreadyComplete(cause));
+			throw new IllegalStateException(alreadyComplete(cause), cause);
 		}
 		
 		synchronized (this) {

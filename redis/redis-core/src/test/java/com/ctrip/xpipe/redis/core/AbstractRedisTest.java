@@ -35,6 +35,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
+import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -109,7 +110,10 @@ public abstract class AbstractRedisTest extends AbstractTest{
 			logger.info(remarkableMessage("[assertRedisEquals]redisSlave:" + redisSlave));
 			
 			Jedis slave = createJedis(redisSlave);
-			Assert.assertEquals(values.size(), slave.keys("*").size());
+			int sizeExpected = values.size();
+			int sizeReal = slave.keys("*").size();
+			
+			Assert.assertEquals(sizeExpected, sizeReal);
 			
 			for(Entry<String, String> entry : values.entrySet()){
 				
@@ -289,6 +293,17 @@ public abstract class AbstractRedisTest extends AbstractTest{
 
 	public XpipeMeta getXpipeMeta() {
 		return xpipeMeta;
+	}
+
+	protected FakeRedisServer startFakeRedisServer() throws Exception {
+		return startFakeRedisServer(0);
+	}
+
+	protected FakeRedisServer startFakeRedisServer(int sleepBeforeSendRdb) throws Exception {
+		int port = randomPort(6379, 6479); 
+		FakeRedisServer fakeRedisServer = new FakeRedisServer(port, sleepBeforeSendRdb);
+		addToStartedRegistry(fakeRedisServer);
+		return fakeRedisServer;
 	}
 
 	
