@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.monitor.CatUtils;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
@@ -26,6 +27,8 @@ import com.ctrip.xpipe.zk.ZkClient;
 public abstract class AbstractResharding extends AbstractCommand<Void> implements ReshardingTask{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
+	
+	private static String MONITOR_NAME = "resharding";  
 	
 	protected ExecutorService executors;
 	
@@ -52,8 +55,9 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 	@Override
 	protected void doExecute() throws Exception {
 		
-		doShardingTask();
+		CatUtils.newFutureTaskTransaction(MONITOR_NAME, getName(), future);
 		
+		doShardingTask();
 		allTaskSubmited();
 	}
 	
@@ -84,6 +88,9 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 	protected void executeTask(SlotMoveTask task) {
 		
 		totalTasks.incrementAndGet();
+		
+		CatUtils.newFutureTaskTransaction(MONITOR_NAME + "-" + getName(), task.toString(), task.future());
+		
 		task.execute(executors).addListener(new MoveListener());
 	}
 

@@ -3,7 +3,7 @@
 
     <appenders>
         <console name="console" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C]%m%n"/>
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
         </console>
 
         <RollingFile name="rollingFileInfo" fileName="target/metaserver.log"
@@ -22,6 +22,7 @@
         <logger name="org.springframework" level="WARN"/>
         <logger name="io.netty" level="INFO"/>
         <logger name="org.apache.zookeeper.server.ZooKeeperServer" level="WARN"/>
+        <logger name="com.ctrip.xpipe.monitor.CatUtils" level="DEBUG"/>
         
         <logger name="com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractClusterServers" level="DEBUG"/>
         <root level="INFO">
