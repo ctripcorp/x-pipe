@@ -120,11 +120,11 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 		for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
 			for(ShardMeta shardMeta : clusterMeta.getShards().values()){
 				String path = MetaZkConfig.getKeeperLeaderLatchPath(clusterMeta.getId(), shardMeta.getId());
-				client.newNamespaceAwareEnsurePath(path).ensure(client.getZookeeperClient());
+				client.createContainers(path);
 			}
 		}
 		String metaPath = MetaZkConfig.getMetaRootPath();
-		client.newNamespaceAwareEnsurePath(metaPath).ensure(client.getZookeeperClient());
+		client.createContainers(metaPath);
 	}
 	
 	

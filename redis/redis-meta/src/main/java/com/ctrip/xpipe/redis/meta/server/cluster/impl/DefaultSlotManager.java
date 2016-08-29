@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.EnsurePath;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -64,8 +63,7 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 	protected void doStart() throws Exception {
 
 		CuratorFramework client = zkClient.get();
-		EnsurePath ensure = client.newNamespaceAwareEnsurePath(MetaZkConfig.getMetaServerSlotsPath());
-		ensure.ensure(client.getZookeeperClient());
+		client.createContainers(MetaZkConfig.getMetaServerSlotsPath());
 
 		refresh();
 

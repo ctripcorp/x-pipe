@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.WatchedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -126,8 +125,7 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 			
 			final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(cluster.getId(), shard.getId());
 			
-			EnsurePath ensure = client.newNamespaceAwareEnsurePath(leaderLatchPath);
-			ensure.ensure(client.getZookeeperClient());
+			client.createContainers(leaderLatchPath);
 
 			logger.info("[observeLeader]{}, {} , ({})", cluster.getId(), shard.getId(), currentClusterServer.getServerId());
 			List<String> children = client.getChildren().usingWatcher(new CuratorWatcher() {

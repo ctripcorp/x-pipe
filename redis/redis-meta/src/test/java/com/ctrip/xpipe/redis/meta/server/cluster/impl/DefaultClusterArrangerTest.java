@@ -4,7 +4,6 @@ package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 import java.util.List;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.EnsurePath;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,8 +29,7 @@ public class DefaultClusterArrangerTest extends AbstractMetaServerContextTest{
 	public void testInitArrange() throws Exception{
 		
 		CuratorFramework client = getCurator();
-		EnsurePath ensure = client.newNamespaceAwareEnsurePath(MetaZkConfig.getMetaServerSlotsPath());
-		ensure.ensure(client.getZookeeperClient());
+		client.createContainers(MetaZkConfig.getMetaServerSlotsPath());
 		
 		List<String> children = client.getChildren().forPath(MetaZkConfig.getMetaServerSlotsPath());
 		Assert.assertEquals(0, children.size());

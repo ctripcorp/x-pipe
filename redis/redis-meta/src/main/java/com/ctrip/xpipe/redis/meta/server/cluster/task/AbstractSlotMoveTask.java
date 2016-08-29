@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
+
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.EnsurePath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +45,7 @@ public abstract class AbstractSlotMoveTask extends AbstractCommand<Void> impleme
 		CuratorFramework client = zkClient.get();
 
 		String path = getSlotZkPath();
-		EnsurePath ensurePath = client.newNamespaceAwareEnsurePath(path);
-		ensurePath.ensure(client.getZookeeperClient());
+		client.createContainers(path);
 		client.setData().forPath(path, slotInfo.encode());
 	}
 

@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.WatchedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -67,8 +66,7 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 		
 		CuratorFramework client = zkClient.get();
 
-		EnsurePath ensure = client.newNamespaceAwareEnsurePath(MetaZkConfig.getMetaServerRegisterPath());
-		ensure.ensure(client.getZookeeperClient());
+		client.createContainers(MetaZkConfig.getMetaServerRegisterPath());
 		
 		watchServers();
 		
