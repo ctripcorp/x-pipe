@@ -1,4 +1,5 @@
 services.service('DcService', ['$resource', '$q', function ($resource, $q) {
+    
     var resource = $resource('', {}, {
         load_all_dc: {
             method: 'GET',

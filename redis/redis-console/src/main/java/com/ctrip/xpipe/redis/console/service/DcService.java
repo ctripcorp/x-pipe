@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
-import org.unidal.dal.jdbc.DalNotFoundException;
 import java.util.List;
 
 /**
@@ -21,7 +20,7 @@ public class DcService extends AbstractConsoleService<DcTblDao>{
     public DcTbl load(final String dcName) {
     	return queryHandler.handleQuery(new DalQuery<DcTbl>() {
 			@Override
-			public DcTbl doQuery() throws DalNotFoundException, DalException {
+			public DcTbl doQuery() throws DalException {
 				return dao.findDcByDcName(dcName, DcTblEntity.READSET_FULL);
 			}
     	});
@@ -30,7 +29,7 @@ public class DcService extends AbstractConsoleService<DcTblDao>{
     public DcTbl load(final long dcId) {
     	return queryHandler.handleQuery(new DalQuery<DcTbl>(){
 			@Override
-			public DcTbl doQuery() throws DalNotFoundException, DalException {
+			public DcTbl doQuery() throws DalException {
 				return dao.findByPK(dcId, DcTblEntity.READSET_FULL);
 			}
     	});
@@ -39,7 +38,7 @@ public class DcService extends AbstractConsoleService<DcTblDao>{
     public List<DcTbl> findAllDcs() {
     	return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
 			@Override
-			public List<DcTbl> doQuery() throws DalNotFoundException, DalException {
+			public List<DcTbl> doQuery() throws DalException {
 				return dao.findAllDcs(DcTblEntity.READSET_FULL);
 			}
     	});
@@ -48,7 +47,7 @@ public class DcService extends AbstractConsoleService<DcTblDao>{
     public List<DcTbl> findAllDcNames() {
     	return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
 			@Override
-			public List<DcTbl> doQuery() throws DalNotFoundException, DalException {
+			public List<DcTbl> doQuery() throws DalException {
 				return dao.findAllDcs(DcTblEntity.READSET_NAME);
 			}
     	});
@@ -57,7 +56,7 @@ public class DcService extends AbstractConsoleService<DcTblDao>{
     public List<DcTbl> findClusterRelatedDc(final String clusterName) {
     	return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
 			@Override
-			public List<DcTbl> doQuery() throws DalNotFoundException, DalException {
+			public List<DcTbl> doQuery() throws DalException {
 				return dao.findClusterRelatedDc(clusterName, DcTblEntity.READSET_FULL);
 			}
     	});
@@ -66,7 +65,7 @@ public class DcService extends AbstractConsoleService<DcTblDao>{
     public List<DcTbl> findAllDetails(final String dcName) {
     	return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
 			@Override
-			public List<DcTbl> doQuery() throws DalNotFoundException, DalException {
+			public List<DcTbl> doQuery() throws DalException {
 				return dao.findDcDetailsByDcName(dcName, DcTblEntity.READSET_FULL_ALL);
 			}
     	});
@@ -75,7 +74,7 @@ public class DcService extends AbstractConsoleService<DcTblDao>{
     public List<DcTbl> findAllActiveKeepers() {
     	return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
 			@Override
-			public List<DcTbl> doQuery() throws DalNotFoundException, DalException {
+			public List<DcTbl> doQuery() throws DalException {
 				return dao.findAllActiveKeeper(DcTblEntity.READSET_FULL_ALL);
 			}
     	});

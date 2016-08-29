@@ -11,6 +11,11 @@ import org.unidal.lookup.ContainerLoader;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.query.DalQueryHandler;
 
+/**
+ * @author shyin
+ *
+ * Aug 29, 2016
+ */
 public abstract class AbstractConsoleService<T> {
 	protected DalQueryHandler queryHandler = new DalQueryHandler();
 
