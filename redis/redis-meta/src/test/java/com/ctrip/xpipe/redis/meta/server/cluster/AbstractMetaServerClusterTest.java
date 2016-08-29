@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
 import org.springframework.context.ApplicationContext;
+
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
@@ -19,7 +20,6 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
  */
 public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 	
-	private List<TestAppServer>  servers = new LinkedList<>();
 	private int zkPort = portUsable(defaultZkPort());
 	
 	@Before
@@ -53,19 +53,17 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 			
 			int port = portUsable(defaultMetaServerPort());
 			TestAppServer testAppServer = new TestAppServer(i + 1, port, zkPort);
-			testAppServer.initialize();
-			testAppServer.start();
-			servers.add(testAppServer);
+			addToStartedRegistry(testAppServer);
 		}
 	}
 	
 	public List<TestAppServer> getServers() {
-		return servers;
+		return new LinkedList<>(getStartedComponentRegistry().getComponents(TestAppServer.class).values());
 	}
 	
 	public TestAppServer getLeader(){
 		
-		for(TestAppServer server : servers){
+		for(TestAppServer server : getServers()){
 			if(server.isLeader()){
 				return server;
 			}
@@ -75,7 +73,7 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 
 	public TestAppServer getRandomNotLeader(){
 		
-		for(TestAppServer server : servers){
+		for(TestAppServer server : getServers()){
 			if(!server.isLeader()){
 				return server;
 			}

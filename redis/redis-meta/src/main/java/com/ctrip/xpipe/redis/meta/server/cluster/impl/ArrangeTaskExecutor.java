@@ -44,7 +44,9 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 	protected void doStart() throws Exception {
 		
 		if(Boolean.parseBoolean(System.getProperty(ARRANGE_TASK_EXECUTOR_START, "true"))){
-			XpipeThreadFactory.create("ArrangeTaskExecutor").newThread(this).start();
+			XpipeThreadFactory.create(
+					String.format("ArrangeTaskExecutor-(%d)", currentClusterServer.getServerId()) 
+					).newThread(this).start();
 		}
 	}
 	
@@ -78,10 +80,18 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 		return 0;
 	}
 
+	private boolean shouldExit() {
+		
+		if(getLifecycleState().isStarted() || getLifecycleState().isStarting()){
+			return false;
+		}
+		return true;
+	}
+
 	@Override
 	public void run() {
 		
-		while(getLifecycleState().isStarted() || getLifecycleState().isStarting()){
+		while(!shouldExit()){
 			try{
 				executeTask();
 			}catch(Throwable th){
@@ -100,9 +110,14 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 		
 		ReshardingTask task = null;
 		try{
-			
 			task = tasks.take();
-			logger.info("[executeTask][begin]{}, {}", task, currentClusterServer.getServerId());
+			
+			if(shouldExit()){
+				logger.info("[executeTask][exit drop task]{}", task);
+				return;
+			}
+			
+			logger.info("[executeTask][begin]{}", task);
 			
 			try {
 				slotManager.refresh();//get most refresh info
@@ -120,8 +135,9 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 				logger.error("[executTask][fail]" + task, currentTask.cause());
 			}
 		}finally{
-			logger.info("[executeTask][ end ]{}, {}", task, currentClusterServer.getServerId());
+			logger.info("[executeTask][ end ]{}", task);
 			currentTask = null;
 		}
 	}
+
 }

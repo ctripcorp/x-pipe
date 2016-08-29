@@ -76,9 +76,9 @@ public class SpringComponentRegistry extends AbstractComponentRegistry{
 		Map<String, Lifecycle> beans = applicationContext.getBeansOfType(Lifecycle.class);
 		for(Entry<String, Lifecycle> entry : beans.entrySet()){
 			
+			@SuppressWarnings("unused")
 			String name = entry.getKey();
 			Lifecycle bean = entry.getValue();
-			logger.info("[lifecycleCallable]{}", name);
 			if(bean instanceof TopElement){
 				result.add((Lifecycle)bean);
 			}
