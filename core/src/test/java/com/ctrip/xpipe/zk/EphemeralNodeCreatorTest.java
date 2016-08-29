@@ -55,6 +55,7 @@ public class EphemeralNodeCreatorTest extends AbstractTest{
 			ephemeralNodeCreator.start();
 			Assert.assertNotNull(client.checkExists().forPath(path));;
 			ephemeralNodeCreator.stop();
+			sleep(10);
 		}
 	}
 	
