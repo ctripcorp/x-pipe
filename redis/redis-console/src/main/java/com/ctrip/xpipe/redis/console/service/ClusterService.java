@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 
@@ -21,6 +22,8 @@ import java.util.List;
  */
 @Service
 public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
+	@Autowired
+	private DcService dcService;
     @Autowired
     private ClusterDao clusterDao;
     
@@ -118,11 +121,14 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     }
     
     public void deleteCluster(final String clusterName) {
-    	final ClusterTbl cluster = load(clusterName);
+    	ClusterTbl proto = load(clusterName);
+    	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+    	
+    	final ClusterTbl queryProto = proto;
     	queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				return clusterDao.deleteCluster(cluster);
+				return clusterDao.deleteCluster(queryProto);
 			}
     	});
     	
@@ -131,13 +137,14 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     	
     }
     
-    
-    // TODO
     public void bindDc(final String clusterName, final String dcName) {
+    	final ClusterTbl cluster = load(clusterName);
+    	final DcTbl dc = dcService.load(dcName);
+    	
     	queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				return clusterDao.bindDc(clusterName, dcName);
+				return clusterDao.bindDc(cluster, dc);
 			}
     	});
     	
@@ -145,12 +152,14 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     	/** Notify meta server **/
     }
     
-    // TODO
     public void unbindDc(final String clusterName, final String dcName) {
+    	final ClusterTbl cluster = load(clusterName);
+    	final DcTbl dc = dcService.load(dcName);
+    	
     	queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				return clusterDao.unbindDc(clusterName, dcName);
+				return clusterDao.unbindDc(cluster, dc);
 			}
     	});
     	

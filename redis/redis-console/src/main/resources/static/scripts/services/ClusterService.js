@@ -101,7 +101,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         resource.bind_dc({
                                   clusterName: clusterName,
                                   dcName: dcName
-                              },
+                              },{},
                               function (result) {
                                   d.resolve(result);
                               }, function (result) {
@@ -115,7 +115,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         resource.unbind_dc({
                                   clusterName: clusterName,
                                   dcName: dcName
-                              },
+                              },{},
                               function (result) {
                                   d.resolve(result);
                               }, function (result) {

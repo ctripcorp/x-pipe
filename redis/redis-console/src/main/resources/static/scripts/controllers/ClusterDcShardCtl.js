@@ -9,6 +9,9 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         $scope.loadShards = loadShards;
         $scope.preCreateRedis = preCreateRedis;
         $scope.createRedis = createRedis;
+        $scope.preDeleteRedis = preDeleteRedis;
+        $scope.deleteRedis = deleteRedis;
+
 
 
         if ($scope.clusterName) {
@@ -51,17 +54,18 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
 
 
         $scope.toCreateRedisInShard = {};
-        function preCreateRedis(shard) {
+        function preCreateRedis(shard, type) {
             $scope.toCreateRedisInShard = shard;
             $scope.toCreateRedis = {};
+            $scope.toCreateRedis.redisRole = type;
 
             $('#createRedisModal').modal('show');
         }
 
 
         function createRedis() {
-            ShardService.bindRedis($scope.clusterName, $scope.currentDcName, 
-                                   $scope.toCreateRedisInShard.shardName,$scope.toCreateRedis)
+            ShardService.bindRedis($scope.clusterName, $scope.currentDcName,
+                                   $scope.toCreateRedisInShard.id, $scope.toCreateRedis)
                 .then(function (result) {
                     toastr.success('create redis success');     
                     $window.location.reload();
@@ -69,6 +73,27 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                     toastr.error(AppUtil.errorMsg(result), 'create redis fail');
                 });
         }
+
+        $scope.toDeleteRedis = {};
+        $scope.toDeleteRedisInShard = {};
+        function preDeleteRedis(shard, redis) {
+            $scope.toDeleteRedisInShard = shard;
+            $scope.toDeleteRedis = redis;
+            $('#deleteRedisConfirm').modal('show');
+        }
+
+        function deleteRedis() {
+            ShardService.unbindRedis($scope.clusterName, $scope.currentDcName,
+                                     $scope.toDeleteRedisInShard.id, $scope.toDeleteRedis.id)
+                .then(function (result) {
+                    toastr.success('delete success');
+                    $window.location.reload();
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result), 'delete fail');
+                });
+
+        }
+
 
 
     }]);

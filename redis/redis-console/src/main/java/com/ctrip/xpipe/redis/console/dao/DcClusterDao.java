@@ -21,9 +21,11 @@ import com.ctrip.xpipe.redis.console.model.DcClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.DcClusterTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 
+
 /**
  * @author shyin
  *
+ * Aug 29, 2016
  */
 @Repository
 public class DcClusterDao extends AbstractXpipeConsoleDAO{
@@ -45,7 +47,7 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public void deleteDcClustersBatch(List<DcClusterTbl> dcClusters) throws DalException {
-		if(null == dcClusters) return;
+		if(null == dcClusters) throw new DalException("Null cannot be deleted.");
 		
 		List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
 		for(final DcClusterTbl dcCluster : dcClusters) {
@@ -64,17 +66,23 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 		
 		dcClusterTblDao.deleteBatch(dcClusters.toArray(new DcClusterTbl[dcClusters.size()]), DcClusterTblEntity.UPDATESET_FULL);
 	}
-	
-	
-	
-	public int bindDc(String clusterName, String dcName) {
-		// TODO
-		return 0;
-	}
-	
-	public int unbindDc(String clusterName, String dcName) {
-		// TODO
-		return 0;
+
+	@DalTransaction
+	public void deleteDcClustersBatch(final DcClusterTbl dcCluster) throws DalException  {
+		if(null == dcCluster) throw new DalException("Null cannot be deleted.");
+		
+		List<DcClusterShardTbl> dcClusterShards = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>(){
+			@Override
+			public List<DcClusterShardTbl> doQuery() throws DalException {
+				return dcClusterShardTblDao.findAllByDcClusterId(dcCluster.getDcClusterId(), DcClusterShardTblEntity.READSET_FULL);
+			}
+		});
+		
+		if(null != dcClusterShards) {
+			dcClusterShardDao.deleteDcClusterShardsBatch(dcClusterShards);
+		}
+		
+		dcClusterTblDao.deleteBatch(dcCluster, DcClusterTblEntity.UPDATESET_FULL);
 	}
 	
 }

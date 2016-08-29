@@ -14,6 +14,7 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -32,11 +33,12 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+
 
 /**
  * @author shyin
  *
+ * Aug 29, 2016
  */
 @Repository
 public class ShardDao extends AbstractXpipeConsoleDAO{
@@ -84,7 +86,9 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
 			for(DcClusterTbl dcCluster : dcClusters) {
 				DcClusterShardTbl dcClusterShardProto = dcClusterShardTblDao.createLocal();
-				dcClusterShardProto.setDcClusterId(dcCluster.getDcClusterId()).setShardId(result.getId());
+				dcClusterShardProto.setDcClusterId(dcCluster.getDcClusterId())
+					.setShardId(result.getId())
+					.setDcClusterShardPhase(XpipeConsoleConstant.DEFAULT_DC_CLUSTER_PHASE);
 				if(null != mapSetinels.get(dcCluster.getDcId())) {
 					dcClusterShardProto.setSetinelId(mapSetinels.get(dcCluster.getDcId()).getSetinelId());
 				}
@@ -98,7 +102,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public void deleteShardsBatch(List<ShardTbl> shards) throws DalException {
-		if(null == shards) return;
+		if(null == shards) throw new DalException("Null cannot be deleted.");
 		
 		List<DcClusterShardTbl> relatedDcClusterShards = new LinkedList<DcClusterShardTbl>();
 		for(final ShardTbl shard : shards) {
@@ -121,16 +125,20 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public int deleteShardsBatch(final ShardTbl shard) throws DalException {
+		if(null == shard) throw new DalException("Null cannot be deleted.");
+		
 		List<DcClusterShardTbl> relatedDcClusterShards = queryHandler.tryGet(new DalQuery<List<DcClusterShardTbl>>() {
 			@Override
 			public List<DcClusterShardTbl> doQuery() throws DalException {
 				return dcClusterShardTblDao.findAllByShardId(shard.getId(), DcClusterShardTblEntity.READSET_FULL);
 			}
 		});
-		dcClusterShardDao.deleteDcClusterShardsBatch(relatedDcClusterShards);
+		if(null != relatedDcClusterShards) {
+			dcClusterShardDao.deleteDcClusterShardsBatch(relatedDcClusterShards);
+		}
 		
 		ShardTbl proto = shard;
-		shard.setShardName(DataModifiedTimeGenerator.generateModifiedTime() + "-" + shard.getShardName());
+		proto.setShardName(generateDeletedName(shard.getShardName()));
 		return shardTblDao.deleteShard(proto, ShardTblEntity.UPDATESET_FULL);
 	}
 	

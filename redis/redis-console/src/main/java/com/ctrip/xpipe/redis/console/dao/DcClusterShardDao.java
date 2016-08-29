@@ -20,9 +20,11 @@ import com.ctrip.xpipe.redis.console.model.RedisTblDao;
 import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 
+
 /**
  * @author shyin
  *
+ * Aug 29, 2016
  */
 @Repository
 public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
@@ -41,7 +43,7 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public void deleteDcClusterShardsBatch(List<DcClusterShardTbl> dcClusterShards) throws DalException {
-		if(null == dcClusterShards) return;
+		if(null == dcClusterShards) throw new DalException("Null cannot be deleted.");
 		
 		List<RedisTbl> redises = new LinkedList<RedisTbl>();
 		for(final DcClusterShardTbl dcClusterShard : dcClusterShards) {
@@ -60,4 +62,5 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 		
 		dcClusterShardTblDao.deleteDcClusterShardsBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]), DcClusterShardTblEntity.UPDATESET_FULL);
 	}
+
 }

@@ -53,24 +53,4 @@ public class DcClusterShardService extends AbstractConsoleService<DcClusterShard
     	});
     }
     
-    public DcClusterShardTbl createDcClusterShard(String dcName, String clusterName, String shardName) {
-    	// TODO
-    	return null;
-    }
-    
-    public int createDcClusterShardsBatch(List<DcClusterShardTbl> dcClusterShards) {
-    	// TODO
-    	return 0;
-    }
-    
-    public void deleteDcClusterShards(String dcName, String clusterName, String shardName) {
-    	// TODO
-    }
-    
-    public int deleteDcClusterShardsBatch(List<DcClusterShardTbl> dcClusterShards) {
-    	// TODO
-    	// delete together with redis inside it
-    	return 0;
-    }
-    
 }

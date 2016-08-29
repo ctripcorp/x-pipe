@@ -63,21 +63,8 @@ public class DcClusterService extends AbstractConsoleService<DcClusterTblDao>{
 		} catch (DalException e) {
 			throw new ServerException("Cannot create dc-cluster.");
 		}
-    	
+ 	
     	return load(dcName, clusterName);
-    }
-    
-    public List<DcClusterTbl> loadAllByClusterName(String clusterName) {
-    	// TODO
-    	return null;
-    }
-    
-    public void deleteDcCluster(String dcName, String clusterName) {
-    	// TODO
-    }
-    
-    public void deleteDcClustersBatch(List<DcClusterTbl> dcClusters) {
-    	// TODO
     }
     
 }

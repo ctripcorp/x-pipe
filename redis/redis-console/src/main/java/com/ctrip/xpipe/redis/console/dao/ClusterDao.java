@@ -35,11 +35,12 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+
 
 /**
  * @author shyin
  *
+ * Aug 29, 2016
  */
 @Repository
 public class ClusterDao extends AbstractXpipeConsoleDAO{
@@ -65,6 +66,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			shardTblDao = ContainerLoader.getDefaultContainer().lookup(ShardTblDao.class);
 			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
 			metaserverTblDao = ContainerLoader.getDefaultContainer().lookup(MetaserverTblDao.class);
+			setinelTblDao = ContainerLoader.getDefaultContainer().lookup(SetinelTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}
@@ -111,49 +113,79 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			}
 		});
 		
-		shardDao.deleteShardsBatch(shards);
+		if(null != shards) {
+			shardDao.deleteShardsBatch(shards);
+		}
 		
-		dcClusterDao.deleteDcClustersBatch(dcClusters);
+		if(null != dcClusters) {
+			dcClusterDao.deleteDcClustersBatch(dcClusters);
+		}
 		
 		ClusterTbl proto = cluster;
-		proto.setClusterName(DataModifiedTimeGenerator.generateModifiedTime() + "-" + cluster.getClusterName());
-		return clusterTblDao.delete(proto, ClusterTblEntity.UPDATESET_FULL);
+		proto.setClusterName(generateDeletedName(cluster.getClusterName()));
+		return clusterTblDao.deleteCluster(proto, ClusterTblEntity.UPDATESET_FULL);
 		
 	}
 
 	@DalTransaction
-	public int bindDc(String clusterName, String dcName) throws DalException {
-		// TODO
-		ClusterTbl cluster = clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
-		DcTbl dc = dcTblDao.findDcByDcName(dcName, DcTblEntity.READSET_FULL);
-		MetaserverTbl activeMetaserver = metaserverTblDao.findActiveByDcName(dcName, MetaserverTblEntity.READSET_FULL);
-		SetinelTbl setinel = setinelTblDao.findByDcName(dcName, SetinelTblEntity.READSET_FULL).get(0);
-		List<ShardTbl> shards = shardTblDao.findAllByClusterName(clusterName, ShardTblEntity.READSET_FULL);
+	public int bindDc(final ClusterTbl cluster, final DcTbl dc) throws DalException {
+		MetaserverTbl activeMetaserver = queryHandler.tryGet(new DalQuery<MetaserverTbl>() {
+			@Override
+			public MetaserverTbl doQuery() throws DalException {
+				return metaserverTblDao.findActiveByDcId(dc.getId(), MetaserverTblEntity.READSET_FULL); 
+			}
+		});
+		List<SetinelTbl> setinels = queryHandler.tryGet(new DalQuery<List<SetinelTbl>>() {
+			@Override
+			public List<SetinelTbl> doQuery() throws DalException {
+				return setinelTblDao.findByDcId(dc.getId(), SetinelTblEntity.READSET_FULL);
+			}
+		});
+		List<ShardTbl> shards = queryHandler.tryGet(new DalQuery<List<ShardTbl>>() {
+			@Override
+			public List<ShardTbl> doQuery() throws DalException {
+				return shardTblDao.findAllByClusterId(cluster.getId(), ShardTblEntity.READSET_FULL);
+			}
+		});
 		
 		DcClusterTbl proto = dcClusterTblDao.createLocal();
 		proto.setDcId(dc.getId())
 			.setClusterId(cluster.getId())
-			.setMetaserverId(activeMetaserver.getId());
+			.setMetaserverId(null == activeMetaserver? 0 : activeMetaserver.getId())
+			.setDcClusterPhase(XpipeConsoleConstant.DEFAULT_DC_CLUSTER_PHASE);
 		dcClusterTblDao.insert(proto);
-		DcClusterTbl dcCluster = dcClusterTblDao.findDcClusterByName(dcName, clusterName, DcClusterTblEntity.READSET_FULL);
+		DcClusterTbl dcCluster = dcClusterTblDao.findDcClusterByName(dc.getDcName(), cluster.getClusterName(), DcClusterTblEntity.READSET_FULL);
 		
-		
-		List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
-		for(ShardTbl shard : shards) {
-			DcClusterShardTbl dcClusterShard = dcClusterShardTblDao.createLocal();
-			dcClusterShard.setDcClusterId(dcCluster.getDcClusterId())
-				.setShardId(shard.getId())
-				.setSetinelId(setinel.getSetinelId());
-			dcClusterShards.add(dcClusterShard);
+		if(null != shards) {
+			SetinelTbl setinel = (null == setinels? setinelTblDao.createLocal().setSetinelId(0) : setinels.get(0));
+			List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
+			for(ShardTbl shard : shards) {
+				DcClusterShardTbl dcClusterShard = dcClusterShardTblDao.createLocal();
+				dcClusterShard.setDcClusterId(dcCluster.getDcClusterId())
+					.setShardId(shard.getId())
+					.setSetinelId(setinel.getSetinelId())
+					.setDcClusterShardPhase(XpipeConsoleConstant.DEFAULT_DC_CLUSTER_PHASE);
+				dcClusterShards.add(dcClusterShard);
+			}
+			dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
 		}
-		dcClusterShardTblDao.insertBatch((DcClusterShardTbl[]) dcClusterShards.toArray());
 		
 		return 0;
 	}
 	
 	@DalTransaction
-	public int unbindDc(String clusterName, String dcName) throws DalException {
-		// TODO
+	public int unbindDc(final ClusterTbl cluster, final DcTbl dc) throws DalException {
+		DcClusterTbl dcCluster = queryHandler.tryGet(new DalQuery<DcClusterTbl>() {
+			@Override
+			public DcClusterTbl doQuery() throws DalException {
+				return dcClusterTblDao.findDcClusterById(dc.getId(), cluster.getId(), DcClusterTblEntity.READSET_FULL); 
+			}
+		});
+		
+		if(null != dcCluster) {
+			dcClusterDao.deleteDcClustersBatch(dcCluster);
+		}
+		
 		return 0;
 	}
 }

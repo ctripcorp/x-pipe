@@ -38,6 +38,7 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 
 	   private Logger m_logger;
 
+	   @Override
 	   public void closeConnection() {
 	      TransactionInfo trxInfo = m_threadLocalData.get();
 
@@ -51,7 +52,7 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	         }
 	      }
 	   }
-
+	   
 	   private void closeConnection(Connection connection) {
 	      if (connection != null) {
 	         try {
@@ -62,6 +63,7 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	      }
 	   }
 
+	   @Override
 	   public void commitTransaction() {
 	      TransactionInfo trxInfo = m_threadLocalData.get();
 
@@ -97,6 +99,7 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	      m_logger = logger;
 	   }
 
+	   @Override
 	   public Connection getConnection(QueryContext ctx) {
 	      String logicalName = ctx.getEntityInfo().getLogicalName();
 	      TableProvider tableProvider = m_tableProviderManager.getTableProvider(logicalName);
@@ -158,12 +161,14 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	      }
 	   }
 
+	   @Override
 	   public boolean isInTransaction() {
 	      TransactionInfo trxInfo = m_threadLocalData.get();
 
 	      return trxInfo.isInTransaction();
 	   }
 
+	   @Override
 	   public void rollbackTransaction() {
 	      TransactionInfo trxInfo = m_threadLocalData.get();
 
@@ -194,6 +199,7 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	      
 	   }
 
+	   @Override
 	   public void startTransaction(String datasource) {
 	      TransactionInfo trxInfo = m_threadLocalData.get();
 
