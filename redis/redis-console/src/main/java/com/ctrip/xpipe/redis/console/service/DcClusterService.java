@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
-import org.unidal.dal.jdbc.DalNotFoundException;
 import java.util.List;
 
 /**
@@ -28,7 +27,7 @@ public class DcClusterService extends AbstractConsoleService<DcClusterTblDao>{
     public DcClusterTbl load(final long dcId, final long clusterId) {
     	return queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
 			@Override
-			public DcClusterTbl doQuery() throws DalNotFoundException, DalException {
+			public DcClusterTbl doQuery() throws DalException {
 	    		return dao.findDcClusterById(dcId, clusterId, DcClusterTblEntity.READSET_FULL);
 			}
     	});
@@ -37,13 +36,13 @@ public class DcClusterService extends AbstractConsoleService<DcClusterTblDao>{
     public DcClusterTbl load(final String dcName, final String clusterName){
     	return queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
 			@Override
-			public DcClusterTbl doQuery() throws DalNotFoundException, DalException {
+			public DcClusterTbl doQuery() throws DalException {
 				return dao.findDcClusterByName(dcName, clusterName, DcClusterTblEntity.READSET_FULL);
 			}
     	});
     }
     
-    public void addDcCluster(String dcName, String clusterName) {
+    public DcClusterTbl addDcCluster(String dcName, String clusterName) {
     	DcTbl dcInfo = dcService.load(dcName);
     	ClusterTbl clusterInfo = clusterService.load(clusterName);
     	List<MetaserverTbl> metaservers = metaserverService.findByDcName(dcInfo.getDcName());
@@ -64,19 +63,8 @@ public class DcClusterService extends AbstractConsoleService<DcClusterTblDao>{
 		} catch (DalException e) {
 			throw new ServerException("Cannot create dc-cluster.");
 		}
-    }
-    
-    public List<DcClusterTbl> loadAllByClusterName(String clusterName) {
-    	// TODO
-    	return null;
-    }
-    
-    public void deleteDcClusters(String dcName, String clusterName) {
-    	// TODO
-    }
-    
-    public void deleteDcClustersBatch(List<DcClusterTbl> dcClusters) {
-    	// TODO
+ 	
+    	return load(dcName, clusterName);
     }
     
 }

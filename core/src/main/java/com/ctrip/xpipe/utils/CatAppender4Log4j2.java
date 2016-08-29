@@ -37,7 +37,6 @@ public final class CatAppender4Log4j2 extends AbstractAppender{
 	 */
 	protected CatAppender4Log4j2(String name, Filter filter, Layout<? extends Serializable> layout) {
 		super(name, filter, layout);
-		// TODO Auto-generated constructor stub
 	}
 
 	/* (non-Javadoc)

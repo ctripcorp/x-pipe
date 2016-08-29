@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.rest.consoleweb;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,8 +22,6 @@ public class ClusterController {
 	private DcService dcService;
 	@Autowired
 	private ClusterService clusterService;
-	@Autowired
-	private DcClusterService dcClusterService;
 	
 	@RequestMapping(value = "/clusters/{clusterName}/dcs", method = RequestMethod.GET)
 	public List<DcTbl> findClusterDcs(@PathVariable String clusterName) {
@@ -45,7 +42,7 @@ public class ClusterController {
 	public Long getClustersCount() {
 		return clusterService.getAllCount();
 	}
-
+	
 	@RequestMapping(value = "/clusters", method = RequestMethod.POST)
 	public ClusterTbl createCluster(@RequestBody ClusterTbl cluster) {
 		return clusterService.createCluster(cluster);
@@ -60,19 +57,15 @@ public class ClusterController {
 	public void deleteCluster(@PathVariable String clusterName) {
 		clusterService.deleteCluster(clusterName);
 	}
-	
-	@RequestMapping(value = "/clusters/{clusterName}/dcs/{dcName}" , method = RequestMethod.POST)
-	public void addClusterRelatedDc(@PathVariable String clusterName, @PathVariable String dcName) {
-		/** Add dc-cluster **/
-		dcClusterService.addDcCluster(dcName, clusterName);
-		/** Add dc-cluster-shard for all shards inside dc **/
-		// TODO
-		
+
+	@RequestMapping(value = "/clusters/{clusterName}/dcs/{dcName}", method = RequestMethod.POST)
+	public void bindDc(@PathVariable String clusterName, @PathVariable String dcName) {
+		clusterService.bindDc(clusterName, dcName);
 	}
-	
-	@RequestMapping(value = "/clusters/{clusterName}/dcs/{dcName}" , method = RequestMethod.DELETE)
-	public void deleteClusterRelatedDc(@PathVariable String clusterName, @PathVariable String dcName) {
-		// TODO
+
+	@RequestMapping(value = "/clusters/{clusterName}/dcs/{dcName}", method = RequestMethod.DELETE)
+	public void unbindDc(@PathVariable String clusterName, @PathVariable String dcName) {
+		clusterService.unbindDc(clusterName, dcName);
 	}
 
 }
