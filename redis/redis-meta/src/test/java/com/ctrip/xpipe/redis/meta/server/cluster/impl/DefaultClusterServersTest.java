@@ -25,6 +25,7 @@ public class DefaultClusterServersTest extends AbstractMetaServerContextTest{
 		
 		initRegistry();
 		startRegistry();
+		sleep(100);
 		
 		servers = (AbstractClusterServers<?>) getBean(ClusterServers.class);
 	}
@@ -47,7 +48,6 @@ public class DefaultClusterServersTest extends AbstractMetaServerContextTest{
 	@Test
 	public void testStartServerWithDifferentConfig() throws Exception{
 		
-		sleep(100);
 		
 		Assert.assertEquals(1, servers.allClusterServers().size());
 
@@ -73,7 +73,6 @@ public class DefaultClusterServersTest extends AbstractMetaServerContextTest{
 
 	@Test
 	public void testStartServerWithSameConfig() throws Exception{
-		sleep(100);
 		
 		Assert.assertEquals(1, servers.allClusterServers().size());
 

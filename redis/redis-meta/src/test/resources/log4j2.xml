@@ -3,7 +3,7 @@
 
     <appenders>
         <console name="console" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C]%m%n"/>
         </console>
 
         <RollingFile name="rollingFileInfo" fileName="target/metaserver.log"
@@ -19,11 +19,10 @@
 
     <loggers>
         <!--过滤掉spring和hibernate的一些无用的debug信息-->
-        <logger name="org.springframework" level="INFO">
-        </logger>
-        <logger name="org.hibernate" level="INFO">
-        </logger>
+        <logger name="org.springframework" level="WARN"/>
         <logger name="io.netty" level="INFO"/>
+        <logger name="org.apache.zookeeper.server.ZooKeeperServer" level="WARN"/>
+        
         <logger name="com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractClusterServers" level="DEBUG"/>
         <root level="INFO">
             <appender-ref ref="console"/>

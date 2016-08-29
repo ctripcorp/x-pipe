@@ -22,6 +22,8 @@ import java.util.List;
  */
 @Service
 public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
+	public static int NO_ACTIVE_DC = 0;
+	
 	@Autowired
 	private DcService dcService;
     @Autowired
@@ -76,7 +78,7 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     
     public ClusterTbl createCluster(final ClusterTbl cluster) {
     	// ensure active dc assigned
-    	if(0 == cluster.getActivedcId()) {
+    	if(NO_ACTIVE_DC == cluster.getActivedcId()) {
     		throw new BadRequestException("No active dc assigned.");
     	}
     	ClusterTbl proto = dao.createLocal();

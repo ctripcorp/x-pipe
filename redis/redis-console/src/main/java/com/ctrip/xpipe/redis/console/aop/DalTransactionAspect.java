@@ -8,6 +8,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Component;
+
 import org.unidal.dal.jdbc.transaction.TransactionManager;
 import org.unidal.lookup.ContainerLoader;
 
@@ -23,7 +24,7 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 @Aspect
 @Component
 public class DalTransactionAspect {
-	private Config config = Config.DEFAULT;
+	Config config = Config.DEFAULT;
 	private TransactionManager transactionManager;
 	
 	@PostConstruct

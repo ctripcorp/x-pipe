@@ -65,7 +65,8 @@ public class EphemeralNodeCreator implements Startable, Stoppable{
 			throw new Exception("not started yet!");
 		}
 
-		
+		logger.info("[stop]{}", this);
+
 		byte []zkData = client.getData().forPath(path);
 		if(nodeTheSame.same(zkData)){
 			
@@ -82,6 +83,8 @@ public class EphemeralNodeCreator implements Startable, Stoppable{
 			throw new Exception("already started!");
 		}
 		
+		logger.info("[start]{}", this);
+		
 		doCreate();
 		client.getConnectionStateListenable().addListener(connectionStateListener);
 	}
@@ -93,7 +96,7 @@ public class EphemeralNodeCreator implements Startable, Stoppable{
 				logger.info("[doCreate][stopped]{}", path);
 				return;
 			}
-			logger.info("[doCreate]{}, {}", path, new String(data));
+			logger.info("[doCreate]{}, {}, {}", path, new String(data), this);
 			client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path, data);
 			client.checkExists().usingWatcher(new CuratorWatcher() {
 				

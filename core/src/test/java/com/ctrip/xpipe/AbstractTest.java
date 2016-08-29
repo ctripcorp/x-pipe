@@ -400,6 +400,10 @@ public class AbstractTest {
 	protected void addToStartedRegistry(Lifecycle lifecycle) throws Exception{
 		startedComponentRegistry.add(lifecycle);
 	}
+	
+	public ComponentRegistry getStartedComponentRegistry() {
+		return startedComponentRegistry;
+	}
 
 
 	@After

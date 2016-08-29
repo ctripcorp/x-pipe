@@ -37,7 +37,6 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 	@Autowired
 	private MetaServerConfig config;
 	
-	
 	private ApplicationContext applicationContext;
 	
 	private LeaderLatch leaderLatch;
@@ -64,7 +63,7 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 
 	@Override
 	public void isLeader() {
-		logger.info("[isLeader]");
+		logger.info("[isLeader]({})", config.getMetaServerId());
 		isLeader = true;
 		Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
 		for(Entry<String, LeaderAware> entry : leaderawares.entrySet()){
@@ -75,7 +74,7 @@ public class MetaserverLeaderElector extends AbstractLifecycleObservable impleme
 
 	@Override
 	public void notLeader() {
-		logger.info("[notLeader]");
+		logger.info("[notLeader]{}", config.getMetaServerId());
 		isLeader = false;
 		Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
 		for(Entry<String, LeaderAware> entry : leaderawares.entrySet()){
