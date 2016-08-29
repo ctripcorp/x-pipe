@@ -62,6 +62,6 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public
 	int getReplicationStoreMinTimeMilliToGcAfterCreate(){
-		return getIntProperty(KEY_REPLICATION_STORE_MINITIME_GC_AFTERCREATE, 3600000);
+		return getIntProperty(KEY_REPLICATION_STORE_MINITIME_GC_AFTERCREATE, 60000);
 	}
 }
