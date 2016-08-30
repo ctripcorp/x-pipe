@@ -7,7 +7,11 @@ import org.junit.Before;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
@@ -27,11 +31,13 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
  */
 public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	
-	private String xpipeConfig = "meta-test.xml";
+	private String xpipeConfig = "metaserver--jq.xml";
 	
 	protected MetaServerConfig  config = new DefaultMetaServerConfig();
 
 	private String zkAddress;
+	
+	private String dc = FoundationService.DEFAULT.getDataCenter();
 
 	@Before
 	public void beforeAbstractMetaServerTest() throws Exception{
@@ -53,7 +59,7 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	@Override
 	protected void setProperties() {
 		super.setProperties();
-		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
+		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, xpipeConfig);
 		System.setProperty("TOTAL_SLOTS", "16");
 	}
 	
@@ -106,6 +112,12 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 		return current;
 	}
 
+	protected ClusterMeta randomClusterMeta() {
+		
+		DcMeta dcMeta = getDcMeta(dc);
+		ClusterMeta clusterMeta = (ClusterMeta) dcMeta.getClusters().values().toArray()[0];
+		return MetaClone.clone(clusterMeta);
+	}
 	
 	@Override
 	protected String getXpipeMetaConfigFile() {

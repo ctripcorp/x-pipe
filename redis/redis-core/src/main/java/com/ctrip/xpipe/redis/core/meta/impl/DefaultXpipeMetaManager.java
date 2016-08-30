@@ -238,7 +238,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
 		
 		if(shardMeta == null){
-			throw new RedisRuntimeException(String.format("dc:%s, cluster:%s, shard:%s", dc, clusterId, shardId));
+			throw new RedisRuntimeException(String.format("[shard not found]dc:%s, cluster:%s, shard:%s", dc, clusterId, shardId));
 		}
 		boolean changed = false;
 		for(KeeperMeta keeperMeta : shardMeta.getKeepers()){

@@ -1,19 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.impl;
 
 
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.WatchedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
@@ -45,9 +40,7 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 	@Autowired
 	private ZkClient zkClient;
 	
-	private Map<Pair<String, String>, KeeperMeta> aliveKeeper = new ConcurrentHashMap<>();
-	
-	private Set<String> watchedClusters = new HashSet<>();
+	private LeaderWatchedShards leaderWatchedShards = new LeaderWatchedShards();
 	
 	@Autowired
 	private CurrentMetaServerMetaManager currentMetaServerMetaManager; 
@@ -85,14 +78,13 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 
 	@Override
 	public KeeperMeta getActive(String clusterId, String shardId) {
-		return aliveKeeper.get(new Pair<String, String>(clusterId, shardId));
+		return leaderWatchedShards.getActiveKeeper(clusterId, shardId);
 	}
 
 	@Override
 	public void watchCluster(ClusterMeta clusterMeta) throws Exception {
 
 		logger.info("[observeCluster]{}", clusterMeta);
-		watchedClusters.add(clusterMeta.getId());
 		observeLeader(clusterMeta);
 	}
 	
@@ -100,19 +92,7 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 	public void unwatchCluster(ClusterMeta clusterMeta) throws Exception {
 		
 		logger.info("[unwatchCluster]{}", clusterMeta);
-		watchedClusters.remove(clusterMeta.getId());
-		
-		Set<Pair<String, String>> toDelete = new HashSet<>();
-		for(Pair<String, String> key : aliveKeeper.keySet()){
-			if(key.getKey().equals(clusterMeta.getId())){
-				toDelete.add(key);
-			}
-		}
-		
-		for(Pair<String, String> key : toDelete){
-			aliveKeeper.remove(key);
-		}
-		
+		leaderWatchedShards.removeByClusterId(clusterMeta.getId());
 	}
 
 	private void observeLeader(final ClusterMeta cluster) throws Exception {
@@ -125,15 +105,19 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 			
 			final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(cluster.getId(), shard.getId());
 			
+			if(!leaderWatchedShards.addIfNotExist(cluster.getId(), shard.getId())){
+				logger.warn("[observeLeader][already watched]{}, {}", cluster.getId(), shard.getId());
+				continue;
+			}
+			
 			client.createContainers(leaderLatchPath);
-
 			logger.info("[observeLeader]{}, {} , ({})", cluster.getId(), shard.getId(), currentClusterServer.getServerId());
 			List<String> children = client.getChildren().usingWatcher(new CuratorWatcher() {
 
 				@Override
 				public void process(WatchedEvent event) throws Exception {
 					
-					if(!watchedClusters.contains(cluster.getId())){
+					if(!leaderWatchedShards.hasCluster(cluster.getId())){
 						logger.info("[cluster clean watch]{}", cluster.getId());
 						return;
 					}
@@ -158,7 +142,7 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 			metaServerEventsHandler.noneActiveElected(clusterId, shardId);
 			return;
 		}
-		aliveKeeper.put(new Pair<String, String>(clusterId, shardId), keeper);
+		leaderWatchedShards.setActiveKeeper(clusterId, shardId, keeper);
 		metaServerEventsHandler.keeperActiveElected(clusterId, shardId, keeper);
 	}
 
@@ -185,5 +169,6 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 			}
 		}
 	}
-
+	
+	
 }

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.keepercontainer;
+package com.ctrip.xpipe.redis.meta.server.keeper.container;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
