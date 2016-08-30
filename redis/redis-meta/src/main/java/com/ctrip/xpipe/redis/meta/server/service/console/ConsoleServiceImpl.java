@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -29,6 +31,8 @@ public class ConsoleServiceImpl implements ConsoleService {
 
 	@Autowired
 	private MetaServerConfig config;
+	
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	private RestTemplate restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 	private String host;
@@ -36,6 +40,7 @@ public class ConsoleServiceImpl implements ConsoleService {
 	@PostConstruct
 	public void init(){
 		host = config.getConsoleAddress();
+		logger.info("[init][console address]{}", host);
 	}
 
 	@Override

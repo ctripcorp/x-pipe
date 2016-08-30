@@ -7,7 +7,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebIntegrationTest(randomPort = true)
-@SpringApplicationConfiguration(classes = Application.class)
+@SpringApplicationConfiguration(classes = MetaServerApplication.class)
 public class AbstractIntegrationTest {
 
 }

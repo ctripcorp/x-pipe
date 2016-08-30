@@ -12,7 +12,6 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import com.ctrip.xpipe.exception.GlobalExceptionHandler;
-import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 
 /**
  * @author wenchao.meng
@@ -30,11 +29,6 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 		Thread.setDefaultUncaughtExceptionHandler(new GlobalExceptionHandler());
 	}
 
-	@Bean
-	public SpringComponentLifecycleManager getSpringComponentLifecycleManager(){
-		return new SpringComponentLifecycleManager();
-	}
-	
 	@Bean
 	public HandlerExceptionResolver getHandlerExceptionResolver(){
 		return new ExceptionLoggerResolver();

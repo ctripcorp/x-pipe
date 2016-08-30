@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration status="info" monitorInterval="5" packages="com.ctrip.xpipe.utils">
+<configuration status="info" shutdownHook="disable" monitorInterval="5" packages="com.ctrip.xpipe.utils">
 
     <appenders>
         <console name="console" target="SYSTEM_OUT">

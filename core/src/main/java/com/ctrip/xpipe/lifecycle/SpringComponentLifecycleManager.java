@@ -1,40 +1,34 @@
 package com.ctrip.xpipe.lifecycle;
 
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
 
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 
 /**
  * @author wenchao.meng
  *
  * Jun 17, 2016
  */
-public class SpringComponentLifecycleManager implements ApplicationContextAware{
-	
+public class SpringComponentLifecycleManager implements ApplicationContextAware, ApplicationListener<ApplicationEvent>{
+
+	private Logger logger = LoggerFactory.getLogger(SpringComponentLifecycleManager.class);
+
 	private ComponentRegistry componentRegistry;
 	private static ApplicationContext applicationContext;
-	private Logger logger = LoggerFactory.getLogger(SpringComponentLifecycleManager.class);
 	
-	//for test
-	public static String SPRING_COMPONENT_START_KEY = "springComponentStart"; 
-	private boolean  springComponentStart = Boolean.parseBoolean(System.getProperty("springComponentStart", "true"));
 	
-	@PostConstruct
 	public void startAll() throws Exception{
 
-		if(!springComponentStart){
-			logger.warn("[startAll][no return]");
-			springComponentStart = true;
-			return;
-		}
 		componentRegistry.initialize();
 		componentRegistry.start();
 	}
@@ -46,7 +40,6 @@ public class SpringComponentLifecycleManager implements ApplicationContextAware{
 		componentRegistry = new SpringComponentRegistry(applicationContext);
 	}
 	
-	@PreDestroy
 	public void stopAll() throws Exception{
 
 		componentRegistry.stop();
@@ -55,5 +48,27 @@ public class SpringComponentLifecycleManager implements ApplicationContextAware{
 	
 	public static ApplicationContext getApplicationContext() {
 		return applicationContext;
+	}
+
+	@Override
+	public void onApplicationEvent(ApplicationEvent event) {
+		
+		if(event instanceof ContextRefreshedEvent){
+			try {
+				logger.info("[onApplicationEvent][ContextRefreshedEvent, startAll]");
+				startAll();
+			} catch (Exception e) {
+				throw new XpipeRuntimeException("[startAll][fail]", e);
+			}
+		}
+		
+		if(event instanceof ContextClosedEvent){
+			try {
+				logger.info("[onApplicationEvent][ContextClosedEvent, stopAll]");
+				stopAll();
+			} catch (Exception e) {
+				throw new XpipeRuntimeException("[stopAll][fail]", e);
+			}
+		}
 	}
 }

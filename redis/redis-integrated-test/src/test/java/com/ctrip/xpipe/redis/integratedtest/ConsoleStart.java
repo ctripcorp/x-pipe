@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
+
 import java.io.File;
 
 import org.unidal.test.jetty.JettyServer;
 
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 
 /**
  * @author wenchao.meng
@@ -23,7 +23,6 @@ public class ConsoleStart extends AbstractLifecycle{
 	}
 	@Override
 	protected void doStart() throws Exception {
-		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "true");
 		consoleJettyServer.startServer();
 		
 	}

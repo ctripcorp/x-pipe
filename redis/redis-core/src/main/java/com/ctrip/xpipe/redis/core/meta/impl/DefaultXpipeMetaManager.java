@@ -474,5 +474,12 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return dcMeta.removeCluster(clusterId);
 	}
 
+
+	@Override
+	public DcMeta getDcMeta(String dcId) {
+		
+		return clone(xpipeMeta.getDcs().get(dcId));
+	}
+
 	
 }

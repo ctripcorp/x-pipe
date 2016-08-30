@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
+import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -21,5 +22,9 @@ public class Production extends AbstractProfile{
 	public MetaServerConfig  getMetaServerConfig(){
 		return new DefaultMetaServerConfig();
 	}
-
+	
+	@Bean
+	public SpringComponentLifecycleManager getSpringComponentLifecycleManager(){
+		return new SpringComponentLifecycleManager();
+	}
 }

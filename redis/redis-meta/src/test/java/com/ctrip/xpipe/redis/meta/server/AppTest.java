@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 
-import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
+import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
@@ -35,7 +35,6 @@ public class AppTest extends AbstractMetaServerContextTest{
 	@Before
 	public void beforeAppTest(){
 		
-		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "true");
 		System.setProperty(ArrangeTaskExecutor.ARRANGE_TASK_EXECUTOR_START, "true");
 	}
 
@@ -58,11 +57,13 @@ public class AppTest extends AbstractMetaServerContextTest{
 	}
 	
 	
-	public void start(){
+	public void start() throws Exception{
 		
 		System.setProperty("server.port", String.valueOf(serverPort));
 		startZk(zkPort);
-		SpringApplication.run(AppTest.class, new String[]{});
+		SpringComponentRegistry regitstry = SpringApplication.run(AppTest.class, new String[]{}).getBean(SpringComponentRegistry.class);
+		addToStartedRegistry(regitstry);
+		
 	}
 
 	

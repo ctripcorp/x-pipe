@@ -7,6 +7,7 @@ import java.util.Set;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
@@ -59,6 +60,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	String getUpstream(String dc, String clusterId, String shardId) throws MetaException;
 	
 	KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta);
+
+	DcMeta getDcMeta(String dc);
 
 
 }

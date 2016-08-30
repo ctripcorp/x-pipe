@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
 
-
-
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -16,7 +13,7 @@ import org.springframework.core.env.PropertySource;
 import org.springframework.web.context.support.StandardServletEnvironment;
 
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
+import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTrigger;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.MetaserverLeaderElector;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
@@ -43,6 +40,7 @@ public class TestAppServer extends AbstractLifecycle{
 	private int serverId; 
 	private String configFile = DEFAULT_CONFIG_FILE;
 	private ConfigurableApplicationContext context;
+	private SpringComponentRegistry manager;
 	
 	public TestAppServer(){
 		this(1, 9747, 2181);
@@ -65,7 +63,6 @@ public class TestAppServer extends AbstractLifecycle{
 		
 		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, configFile);
 		System.setProperty("TOTAL_SLOTS", String.valueOf(total_slots));
-		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
 		
 		SpringApplication application = new SpringApplication(TestAppServer.class);
 		application.setEnvironment(createEnvironment());
@@ -85,12 +82,15 @@ public class TestAppServer extends AbstractLifecycle{
 		ArrangeTaskTrigger arrangeTaskTrigger = context.getBean(ArrangeTaskTrigger.class);
 		arrangeTaskTrigger.setWaitForRestartTimeMills(waitForRestartTimeMills);
 
-		SpringComponentLifecycleManager manager = context.getBean(SpringComponentLifecycleManager.class);
-		manager.startAll();
+		manager = context.getBean(SpringComponentRegistry.class);
+		manager.initialize();
+		manager.start();
 	}
 	
 	@Override
 	public void doStop() throws Exception {
+		manager.stop();
+		manager.dispose();
 		context.close();
 	}
 	
@@ -170,8 +170,10 @@ public class TestAppServer extends AbstractLifecycle{
 	
 	public static void main(String []argc) throws Exception{
 		
-		new TestAppServer(1, 9747, 2181).start();
-		new TestAppServer(2, 9748, 2182).start();
+		TestAppServer server = new TestAppServer(1, 9747, 2181);
+		server.initialize();
+		server.start();		
+//		new TestAppServer(2, 9748, 2182).start();
 		
 	}
 }

@@ -24,16 +24,17 @@ import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
+ * TODO to fix use spring boot
  * @author wenchao.meng
  *
  * Jun 20, 2016
  */
 public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 
-	private Logger logger = LoggerFactory.getLogger(SpringComponentLifecycleManager.class);
+	private Logger logger = LoggerFactory.getLogger(MetaServerPrepareResourcesAndStart.class);
 	
 	private String integratedTestFile;
-	private MetaConsole metaConsole;
+	private MetaJettyServer metaJettyServer;
 	private int serverPort;
 	private String zkAddress;
 	private DcMeta dcMeta;
@@ -50,13 +51,12 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 	
 	@Override
 	public void doInitialize() throws Exception {
-		metaConsole = new MetaConsole();
+		metaJettyServer = new MetaJettyServer();
 	}
 	
 	@Override
 	public void  doStart() throws Exception {
 		
-		System.setProperty(SpringComponentLifecycleManager.SPRING_COMPONENT_START_KEY, "false");
 		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, integratedTestFile);
 		applicationContext = start(connectToZk(zkAddress), dcMeta);
 	}
@@ -64,12 +64,12 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 
 	@Override
 	public void doStop() throws Exception {
-		metaConsole.stopServer();
+		metaJettyServer.stopServer();
 	}
 	
 	@Override
 	protected void doDispose() throws Exception {
-		metaConsole = null;
+		metaJettyServer = null;
 	}
 
 	public ApplicationContext start(CuratorFramework client, DcMeta dcMeta) throws Exception {
@@ -77,7 +77,7 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 		setupZkNodes(client, dcMeta);
 		
 
-		metaConsole.startServer();
+		metaJettyServer.startServer();
 		
 		return setupResouces(dcMeta);
 	}
@@ -133,7 +133,7 @@ public class MetaServerPrepareResourcesAndStart extends AbstractLifecycle {
 	}
 	
 
-	public class MetaConsole extends JettyServer{
+	public class MetaJettyServer extends JettyServer{
 
 		@Override
 		protected int getServerPort() {

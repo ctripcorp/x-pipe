@@ -164,5 +164,9 @@ public class DefaultDcMetaManager implements DcMetaManager{
 		return metaManager.updateRedisMaster(currentDc, clusterId, shardId, redisMaster);
 	}
 
+	@Override
+	public String toString() {
+		return String.format("dc:%s, meta:%s", currentDc, metaManager.getDcMeta(currentDc));
+	}
 
 }
