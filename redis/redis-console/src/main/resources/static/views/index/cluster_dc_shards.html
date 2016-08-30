@@ -1,5 +1,10 @@
 <div>
-    <h3 class="header smaller lighter blue" ng-bind="clusterName"></h3>
+    <h3 class="header smaller lighter blue">
+    	&nbsp;&nbsp;&nbsp;&nbsp;
+    	<a href="/#/cluster_form?clusterName={{clusterName}}&type=retrieve">{{clusterName}}</a>
+    	<span> > </span>
+    	<a href="/#/cluster_dc_shards?clusterName={{clusterName}}">详情</a>
+    </h3>
     <div>
         <ul class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
             <li ng-repeat="dc in dcs" ng-class="{'active': currentDcName == dc.dcName}"
@@ -30,16 +35,16 @@
                         <thead>
                         <tr>
                             <th>
-                                role
+                                角色
                             </th>
                             <th>
-                                ip
+                                IP
                             </th>
                             <th>
-                                port
+                                端口
                             </th>
                             <th>
-                                operate
+                                操作
                             </th>
                         </tr>
                         </thead>
@@ -121,7 +126,7 @@
     </div>
 </form>
 
-<xpipeconfirmdialog xpipe-dialog-id="'deleteRedisConfirm'" xpipe-title="'delete redis'"
-                    xpipe-detail="'are you sure delete?'"
+<xpipeconfirmdialog xpipe-dialog-id="'deleteRedisConfirm'" xpipe-title="'删除redis'"
+                    xpipe-detail="'您确定删除该Redis实例吗?'"
                     xpipe-show-cancel-btn="true" xpipe-confirm="deleteRedis"></xpipeconfirmdialog>
 
