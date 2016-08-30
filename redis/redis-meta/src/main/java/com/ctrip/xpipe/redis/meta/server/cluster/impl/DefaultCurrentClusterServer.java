@@ -6,8 +6,10 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.nodes.PersistentNode;
+import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ctrip.xpipe.api.codec.Codec;
@@ -22,8 +24,6 @@ import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.ctrip.xpipe.zk.EphemeralNodeCreator;
-import com.ctrip.xpipe.zk.NodeTheSame;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -51,10 +51,10 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		
 	private ExecutorService executors;
 	
-	private EphemeralNodeCreator ephemeralNodeCreator;
-
+	private PersistentNode persistentNode;
 	
 	public DefaultCurrentClusterServer() {
+		
 	}
 
 	@Override
@@ -68,32 +68,24 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		setServerId(currentServerId);
 		setClusterServerInfo(new ClusterServerInfo(config.getMetaServerIp(), config.getMetaServerPort()));
 		
+		
 	}
 	
 
 
 	@Override
 	protected void doStart() throws Exception {
+		
+		CuratorFramework client = zkClient.get();
+		
+		if(client.checkExists().forPath(serverPath) != null){ 
+			
+			byte []data = client.getData().forPath(serverPath);
+			throw new IllegalStateException("server already exist:" + new String(data));
+		}
 
-		ephemeralNodeCreator = new EphemeralNodeCreator(
-				zkClient.get(), serverPath, Codec.DEFAULT.encodeAsBytes(getClusterInfo()), new NodeTheSame() {
-					
-					@Override
-					public boolean same(byte[] data) {
-						
-						ClusterServerInfo info = Codec.DEFAULT.decode(data, ClusterServerInfo.class);
-						if(info.equals(getClusterInfo())){
-							try {
-								//make sure server get notification
-								TimeUnit.MILLISECONDS.sleep(50);
-							} catch (InterruptedException e) {
-							}
-							return true;
-						}
-						return false;
-					}
-		});
-		ephemeralNodeCreator.start();
+		persistentNode = new PersistentNode(zkClient.get(), CreateMode.EPHEMERAL, false, serverPath, Codec.DEFAULT.encodeAsBytes(getClusterInfo()));
+		persistentNode.start();
 	}
 
 	@Override
@@ -103,8 +95,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 
 	@Override
 	protected void doStop() throws Exception {
-
-		ephemeralNodeCreator.stop();
+		persistentNode.close();
 	}
 	
 	public void setZkClient(ZkClient zkClient) {

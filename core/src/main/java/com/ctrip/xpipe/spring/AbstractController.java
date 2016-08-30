@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.rest.impl;
+package com.ctrip.xpipe.spring;
 
 
 
@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 public class AbstractController {
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
+	
 	
 
 }

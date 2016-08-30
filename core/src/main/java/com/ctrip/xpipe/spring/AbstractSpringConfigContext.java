@@ -9,6 +9,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.web.servlet.HandlerInterceptor;
 
 import com.ctrip.xpipe.exception.GlobalExceptionHandler;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
@@ -37,6 +38,12 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 	@Bean
 	public HandlerExceptionResolver getHandlerExceptionResolver(){
 		return new ExceptionLoggerResolver();
+	}
+	
+	@Bean
+	public HandlerInterceptor  logApiIntercept(){
+		
+		return new LoggingHandlerInterceptor();
 	}
 	
 	

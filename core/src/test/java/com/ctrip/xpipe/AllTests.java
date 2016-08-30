@@ -22,7 +22,6 @@ import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
 import com.ctrip.xpipe.pool.XpipeObjectPoolTest;
 import com.ctrip.xpipe.utils.FileUtilsTest;
 import com.ctrip.xpipe.utils.OffsetNotifierTest;
-import com.ctrip.xpipe.zk.EphemeralNodeCreatorTest;
 
 /**
  * @author wenchao.meng
@@ -47,7 +46,6 @@ import com.ctrip.xpipe.zk.EphemeralNodeCreatorTest;
 	SequenceCommandChainTest.class,
 	ParallelCommandChainTest.class,
 	FileUtilsTest.class,
-	EphemeralNodeCreatorTest.class,
 	FileUtilsTest.class
 })
 public class AllTests {

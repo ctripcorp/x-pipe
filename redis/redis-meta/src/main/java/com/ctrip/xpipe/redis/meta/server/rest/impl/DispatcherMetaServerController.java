@@ -32,6 +32,7 @@ import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardType;
 import com.ctrip.xpipe.redis.meta.server.rest.exception.MovingTargetException;
 import com.ctrip.xpipe.redis.meta.server.rest.exception.UnfoundAliveSererException;
+import com.ctrip.xpipe.spring.AbstractController;
 
 /**
  * dispatch service to proper server

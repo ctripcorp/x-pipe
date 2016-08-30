@@ -35,7 +35,7 @@ public class DefaultCurrentClusterServerTest extends AbstractMetaServerContextTe
 		
 		currentServer.initialize();
 		currentServer.start();
-		
+		sleep(10);
 		Stat stat = getCurator().checkExists().forPath(MetaZkConfig.getMetaServerRegisterPath() + "/" + config.getMetaServerId());
 		Assert.assertNotNull(stat);
 		
@@ -44,13 +44,13 @@ public class DefaultCurrentClusterServerTest extends AbstractMetaServerContextTe
 		Assert.assertNull(stat);
 	}
 
-	@Test
+	@Test(expected = IllegalStateException.class)
 	public void testRestartHard() throws Exception{
 
 		currentServer.initialize();
 		currentServer.start();
 		
-		
+		sleep(10);
 		Stat stat1 = getCurator().checkExists().forPath(MetaZkConfig.getMetaServerRegisterPath() + "/" + config.getMetaServerId());
 		Assert.assertNotNull(stat1);
 

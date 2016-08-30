@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
+import com.ctrip.xpipe.spring.AbstractController;
 
 
 @RestController

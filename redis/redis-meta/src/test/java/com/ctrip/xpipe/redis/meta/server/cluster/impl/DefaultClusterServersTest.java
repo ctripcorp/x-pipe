@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,7 +9,6 @@ import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
-import com.ctrip.xpipe.zk.EphemeralNodeCanNotReplaceException;
 
 
 /**
@@ -66,11 +66,12 @@ public class DefaultClusterServersTest extends AbstractMetaServerContextTest{
 			@SuppressWarnings("unused")
 			CurrentClusterServer current21 = createAndStart(config21);
 			Assert.fail();
-		}catch(EphemeralNodeCanNotReplaceException e){
+		}catch(IllegalStateException e){
 			//pass
 		}
 	}
 
+	@SuppressWarnings("unused")
 	@Test
 	public void testStartServerWithSameConfig() throws Exception{
 		
@@ -81,30 +82,16 @@ public class DefaultClusterServersTest extends AbstractMetaServerContextTest{
 		CurrentClusterServer current2 = createAndStart(config2);
 		sleep(500);
 		Assert.assertEquals(2, servers.allClusterServers().size());
-		
-		
-		
 
-		logger.info(remarkableMessage("[testServers][start server2 again]"));
-		CurrentClusterServer current2Copy = createAndStart(config2);
-		sleep(500);
-		Assert.assertEquals(2, servers.allClusterServers().size());
-
-	
-		logger.info(remarkableMessage("[testServers][stop server2 copy]"));
 		try{
-			current2Copy.stop();
-		}catch(Exception e){
-			logger.warn("[stopfail]", e);
+			logger.info(remarkableMessage("[testServers][start server2 again]"));
+			CurrentClusterServer current2Copy = createAndStart(config2);
+			Assert.fail();
+		}catch(IllegalStateException e){
+			
 		}
-		
 		sleep(500);
 		Assert.assertEquals(2, servers.allClusterServers().size());
-
-		logger.info(remarkableMessage("[testServers][stop server2]"));
-		current2.stop();
-		sleep(500);
-		Assert.assertEquals(1, servers.allClusterServers().size());
 	}
 
 }
