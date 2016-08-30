@@ -63,7 +63,7 @@
                         setinel 监控名称
                     </label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="shard.setinelMonitorName" ng-required="true">
+                        <input type="text" class="form-control" ng-value="{{clusterName}}-{{shard.shardName}}" ng-model="shard.setinelMonitorName" ng-required="true">
                     </div>
                 </div>
             </div>
