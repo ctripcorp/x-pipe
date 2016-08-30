@@ -13,4 +13,7 @@ public class DataModifiedTimeGenerator {
 		return new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
 	}
 
+	protected static String generateModifiedTime(Date date) {
+		return new SimpleDateFormat("yyyyMMddHHmmssSSS").format(date);
+	}
 }
