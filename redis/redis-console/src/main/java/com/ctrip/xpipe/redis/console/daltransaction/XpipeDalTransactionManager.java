@@ -37,7 +37,11 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	   private DataSourceManager m_dataSourceManager;
 
 	   private Logger m_logger;
-
+	   
+	   protected ThreadLocalTransactionInfo getThreadLocalTransactionInfo() {
+		   return m_threadLocalData;
+	   }
+	   
 	   @Override
 	   public void closeConnection() {
 	      TransactionInfo trxInfo = m_threadLocalData.get();
