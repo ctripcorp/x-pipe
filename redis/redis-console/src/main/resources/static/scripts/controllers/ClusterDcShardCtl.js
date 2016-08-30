@@ -67,10 +67,10 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
             ShardService.bindRedis($scope.clusterName, $scope.currentDcName,
                                    $scope.toCreateRedisInShard.id, $scope.toCreateRedis)
                 .then(function (result) {
-                    toastr.success('create redis success');     
+                    toastr.success('创建成功');     
                     $window.location.reload();
                 }, function (result) {
-                    toastr.error(AppUtil.errorMsg(result), 'create redis fail');
+                    toastr.error(AppUtil.errorMsg(result), '创建失败');
                 });
         }
 
@@ -86,10 +86,10 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
             ShardService.unbindRedis($scope.clusterName, $scope.currentDcName,
                                      $scope.toDeleteRedisInShard.id, $scope.toDeleteRedis.id)
                 .then(function (result) {
-                    toastr.success('delete success');
+                    toastr.success('删除成功');
                     $window.location.reload();
                 }, function (result) {
-                    toastr.error(AppUtil.errorMsg(result), 'delete fail');
+                    toastr.error(AppUtil.errorMsg(result), '删除失败');
                 });
 
         }

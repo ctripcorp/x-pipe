@@ -86,14 +86,14 @@ index_module.controller('ClusterFromCtl',
                                  ClusterService.deleteCluster($scope.cluster.clusterName)
                                      .then(function (result) {
                                          $('#deleteClusterConfirm').modal('hide');
-                                         toastr.success('delete cluster success');
+                                         toastr.success('删除成功');
                                          setTimeout(function () {
                                              $window.location.href = '/#/cluster_list';
                                          },1000);
 
 
                                      }, function (result) {
-                                         toastr.error(AppUtil.errorMsg(result), 'delete cluster fail');
+                                         toastr.error(AppUtil.errorMsg(result), '删除失败');
                                      })
                              }
                          }]);

@@ -52,6 +52,15 @@ public class DcService extends AbstractConsoleService<DcTblDao>{
 			}
     	});
     }
+    
+    public List<DcTbl> findAllDcBasic() {
+    	return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
+			@Override
+			public List<DcTbl> doQuery() throws DalException {
+				return dao.findAllDcs(DcTblEntity.READSET_BASIC);
+			}
+    	});
+    }
 
     public List<DcTbl> findClusterRelatedDc(final String clusterName) {
     	return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
