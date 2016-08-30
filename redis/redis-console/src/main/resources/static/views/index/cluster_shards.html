@@ -1,8 +1,15 @@
 <div class="col-md-8 col-md-offset-2">
+	<h3 class="header smaller lighter blue">
+    	<a href="/#/cluster_form?clusterName={{clusterName}}&type=retrieve">{{clusterName}}</a>
+    	<span> > </span>
+    	<a href="/#/cluster_shards?clusterName={{clusterName}}">shards</a>
+    </h3>
+
     <div class="panel panel-primary">
         <header class="panel-heading">
             <div class="row">
-                <div class="col-md-6" ng-bind="clusterName">
+                <div class="col-md-6">
+    				<a href="/#/cluster_form?clusterName={{clusterName}}&type=retrieve" style="color:white">{{clusterName}}</a>
                 </div>
                 <div class="col-md-6 text-right">
                     <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateShard()">添加shard</button>
@@ -12,9 +19,9 @@
         <table class="table table-bordered table-hover">
             <thead>
             <tr>
-                <td>shard name</td>
-                <td>setinel_monitor_name</td>
-                <td>operate</td>
+                <td>shard 名称</td>
+                <td>setinel 监控名称</td>
+                <td>操作</td>
             </tr>
             </thead>
             <tbody>
@@ -46,14 +53,14 @@
                 <div class="form-group" valdr-form-group>
                     <label class="col-sm-4 control-label">
                         <apollorequiredfiled></apollorequiredfiled>
-                        shard name</label>
+                        shard 名称</label>
                     <div class="col-sm-6">
                         <input type="text" class="form-control" ng-model="shard.shardName" ng-required="true">
                     </div>
                 </div>
                 <div class="form-group" valdr-form-group>
                     <label class="col-sm-4 control-label">
-                        setinel monitor name
+                        setinel 监控名称
                     </label>
                     <div class="col-sm-6">
                         <input type="text" class="form-control" ng-model="shard.setinelMonitorName" ng-required="true">
