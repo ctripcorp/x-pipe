@@ -13,15 +13,25 @@ import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.DcTblDao;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.redis.console.model.MetaserverTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
 import com.ctrip.xpipe.redis.console.service.metaImpl.ClusterMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.metaImpl.DcMetaServiceImpl;
+import com.ctrip.xpipe.redis.console.service.metaImpl.KeepercontainerMetaServiceImpl;
+import com.ctrip.xpipe.redis.console.service.metaImpl.MetaserverMetaServiceImpl;
+import com.ctrip.xpipe.redis.console.service.metaImpl.RedisMetaServiceImpl;
+import com.ctrip.xpipe.redis.console.service.metaImpl.SetinelMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.metaImpl.ShardMetaServiceImpl;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
+import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
+import com.ctrip.xpipe.redis.core.entity.SetinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 
@@ -60,7 +70,7 @@ public class MetaServiceTest extends AbstractRedisTest{
 	private ClusterMetaServiceImpl clusterMetaService;
 	@InjectMocks
 	private ShardMetaServiceImpl shardMetaService;
-	
+
 	@Before
 	public void setUp() {
 		MockitoAnnotations.initMocks(this);
@@ -87,6 +97,39 @@ public class MetaServiceTest extends AbstractRedisTest{
 		ClusterMeta clusterMeta = xpipeMeta.getDcs().get("ntgxh").getClusters().get("cluster1");
 		
 		assertEquals(clusterMetaService.getClusterMeta("ntgxh", "cluster1"), clusterMeta);
+	}
+	
+	@Test
+	public void testKeepercontainerMetaService() {
+		KeeperContainerMeta expect = new KeeperContainerMeta().setId(1L).setIp("1").setPort(1).setParent(null);
+		
+		KeepercontainerTbl keepercontainerTbl = new KeepercontainerTbl().setKeepercontainerId(1).setKeepercontainerIp("1").setKeepercontainerPort(1);
+		
+		assertEquals(expect,new KeepercontainerMetaServiceImpl().encodeKeepercontainerMeta(keepercontainerTbl, null));
+	}
+	
+	@Test
+	public void testMetaserverMetaService() {
+		MetaServerMeta expect = new MetaServerMeta().setIp("1").setPort(1).setMaster(true).setParent(null);
+		
+		MetaserverTbl metaserverTbl = new MetaserverTbl().setMetaserverIp("1").setMetaserverPort(1).setMetaserverRole("master");
+		assertEquals(expect,new MetaserverMetaServiceImpl().encodeMetaserver(metaserverTbl, null));
+	}
+	
+	@Test
+	public void testSetinelMetaService() {
+		SetinelMeta expect = new SetinelMeta().setId(1L).setAddress("1").setParent(null);
+		
+		SetinelTbl setinelTbl = new SetinelTbl().setSetinelId(1L).setSetinelAddress("1");
+		assertEquals(expect,new SetinelMetaServiceImpl().encodeSetinelMeta(setinelTbl, null));
+	}
+	
+	@Test
+	public void testRedisMetaService() {
+		String expect = "127.0.0.1:8080";
+		RedisTbl redisTbl = new RedisTbl().setRedisIp("127.0.0.1").setRedisPort(8080);
+		
+		assertEquals(expect, new RedisMetaServiceImpl().encodeRedisAddress(redisTbl));
 	}
 	
 	@SuppressWarnings("unchecked")

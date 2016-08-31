@@ -34,11 +34,11 @@ index_module.controller('ClusterShardCtl',
 
                              function createShard() {
                                  ShardService.createShard($scope.clusterName, $scope.shard).then(function (result) {
-                                     toastr.success("create success");
+                                     toastr.success("创建成功");
                                      $('#createShardModal').modal('hide');
                                      $window.location.reload();
                                  }, function (result) {
-                                     toastr.error(AppUtil.errorMsg(result), "create fail");
+                                     toastr.error(AppUtil.errorMsg(result), "创建失败");
                                  })
                              }
 
@@ -51,10 +51,10 @@ index_module.controller('ClusterShardCtl',
                              function deleteShard() {
                             	 ShardService.deleteShard($scope.clusterName, toDeleteShard)
                             	 	.then(function(result) {
-                            	 		toastr.success("delete success");
+                            	 		toastr.success("删除成功");
                             	 		$window.location.reload();
                             	 	}, function (result) {
-                            	 		toastr.error(AppUtil.errorMsg(result), "delete fail");
+                            	 		toastr.error(AppUtil.errorMsg(result), "删除失败");
                             	 	});
                              }
 

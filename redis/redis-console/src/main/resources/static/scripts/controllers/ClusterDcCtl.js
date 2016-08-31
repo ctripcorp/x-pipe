@@ -25,10 +25,10 @@ index_module.controller('ClusterDcCtl', ['$rootScope', '$scope', '$window','$sta
 		function bindDc() {
 			ClusterService.bindDc($scope.clusterName, $scope.toBindDc.dcName)
 				.then(function (result) {
-					toastr.success("bind success");
+					toastr.success("绑定成功");
 					$window.location.reload();
 				}, function (result) {
-					toastr.error("bind fail");
+					toastr.error("绑定失败");
 				});
 		}
 
@@ -41,10 +41,10 @@ index_module.controller('ClusterDcCtl', ['$rootScope', '$scope', '$window','$sta
 		function unbindDc() {
 			ClusterService.unbindDc($scope.clusterName, $scope.toUnbindDc.dcName)
 				.then(function (result) {
-					toastr.success("unbind success");
+					toastr.success("解绑成功");
 					$window.location.reload();
 				}, function (result) {
-					toastr.error("unbind fail");
+					toastr.error("解绑失败");
 				});
 		}
 
