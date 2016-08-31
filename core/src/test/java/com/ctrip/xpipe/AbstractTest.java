@@ -68,7 +68,7 @@ public class AbstractTest {
 	@Before
 	public void beforeAbstractTest() throws Exception{
 		
-		logger.info(remarkableMessage("[begin test]" + name.getMethodName()));
+		logger.info(remarkableMessage("[begin test][{}]{}") , getClass().getSimpleName(), name.getMethodName());
 		
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty("cat.client.enabled", "false");
@@ -419,6 +419,6 @@ public class AbstractTest {
 		}
 		File file = new File(getTestFileDir());
 		FileUtils.forceDelete(file);
-		logger.info(remarkableMessage("[end   test]" + name.getMethodName()));
+		logger.info(remarkableMessage("[end   test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
 	}
 }

@@ -25,6 +25,8 @@
         <logger name="org.springframework" level="WARN"/>
         <logger name="io.netty" level="INFO"/>
         <logger name="org.apache.zookeeper.server.ZooKeeperServer" level="WARN"/>
+        <logger name="org.apache.zookeeper.ZooKeeper" level="WARN"/>
+        
         <!--  
         <logger name="io.netty.handler.logging.LoggingHandler" level="DEBUG">
         </logger>

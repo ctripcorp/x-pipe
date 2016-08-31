@@ -23,12 +23,12 @@
 
     <loggers>
         <!--过滤掉spring和hibernate的一些无用的debug信息-->
-        <logger name="org.springframework" level="INFO">
-        </logger>
-        <logger name="org.hibernate" level="INFO">
-        </logger>
-        <logger name="io.netty" level="INFO">
-        </logger>
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.hibernate" level="INFO"/>
+        <logger name="io.netty" level="INFO"/>
+        <logger name="com.ctrip.xpipe.lifecycle.CreatedComponentRedistry" level="WARN"/>
+		<logger name="com.ctrip.xpipe.lifecycle.SpringComponentRegistry" level="WARN"/>
+        
         <!--  
         <logger name="io.netty.handler.logging.LoggingHandler" level="DEBUG">
         </logger>

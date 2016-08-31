@@ -23,12 +23,8 @@ public class MetaCloneTest extends AbstractRedisTest{
 		
 		DcMeta dcMeta = xpipeMeta.getDcs().values().iterator().next();
 		
-		logger.info("{}", dcMeta);
-		
 		DcMeta clone = MetaClone.clone(dcMeta);
 		
-		logger.info("{}", dcMeta);
-
 		Assert.assertEquals(dcMeta, clone);
 		
 		clone.setId(randomString());
