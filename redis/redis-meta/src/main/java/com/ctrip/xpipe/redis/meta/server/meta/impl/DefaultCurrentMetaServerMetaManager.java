@@ -42,7 +42,6 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 @Component
 public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObservable implements CurrentMetaServerMetaManager{
 	
-	
 	private int deadKeeperCheckIntervalMilli = 10000;
 	
 	@Autowired

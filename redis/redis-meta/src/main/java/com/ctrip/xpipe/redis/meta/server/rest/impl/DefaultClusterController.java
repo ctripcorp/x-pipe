@@ -108,7 +108,4 @@ public class DefaultClusterController implements ClusterApi{
 		slotManager.refresh();
 		clusterServers.refresh();
 	}
-
-
-	
 }

@@ -40,17 +40,41 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 	
 	public static final String ARRANGE_TASK_EXECUTOR_START = "ArrangeTaskExecutorStart";
 	
+	private Thread taskThread;
+	
 	@Override
-	protected void doStart() throws Exception {
-		
-		if(Boolean.parseBoolean(System.getProperty(ARRANGE_TASK_EXECUTOR_START, "true"))){
-			XpipeThreadFactory.create(
-					String.format("ArrangeTaskExecutor-(%d)", currentClusterServer.getServerId()) 
-					).newThread(this).start();
-		}
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+		taskThread = XpipeThreadFactory.create(
+				String.format("ArrangeTaskExecutor-(%d)", currentClusterServer.getServerId()) 
+				).newThread(this);
+
 	}
 	
+	@Override
+	protected void doStart() throws Exception {
+
+		startTaskThread();
+	}
 	
+	private void startTaskThread() {
+
+		if(!Boolean.parseBoolean(System.getProperty(ARRANGE_TASK_EXECUTOR_START, "true"))){
+			logger.info("[startTaskThread][system start false property]{}", ARRANGE_TASK_EXECUTOR_START);
+			return;
+		}
+
+		if(shouldExit()){
+			logger.info("[startTaskThread][should exit]");
+			return;
+		}
+		
+		if(!taskThread.isAlive()){
+			taskThread.start();
+		}
+	}
+
+
 	@Override
 	protected void doStop() throws Exception {
 	}
@@ -63,6 +87,8 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 		}else{
 			logger.error("[offset][fail]{}", task);
 		}
+		
+		startTaskThread();
 	}
 	
 	public void clearTasks(){

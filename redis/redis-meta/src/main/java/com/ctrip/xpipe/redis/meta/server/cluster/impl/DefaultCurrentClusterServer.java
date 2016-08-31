@@ -329,6 +329,4 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 
 	protected void doSlotDelete(int slotId) {
 	}
-
-
 }
