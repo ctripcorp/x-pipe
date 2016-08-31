@@ -25,6 +25,11 @@
 			<readset name="NAME">
 				<member name='dc-name'/>
 			</readset>
+			<readset name="BASIC">
+				<member name='id'/>
+				<member name='dc-name'/>
+				<member name='dc-description'/>
+			</readset>
 		</readsets>
 		
 		<query-defs>

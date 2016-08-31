@@ -23,6 +23,6 @@ public class DcController {
 	
 	@RequestMapping(value = "/dcs/all", method = RequestMethod.GET)
 	public List<DcTbl> findAllDcs() {
-		return dcService.findAllDcs();
+		return dcService.findAllDcBasic();
 	}
 }

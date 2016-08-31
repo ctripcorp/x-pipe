@@ -1,4 +1,10 @@
 <div class="col-md-8 col-md-offset-2">
+	<h3 class="header smaller lighter blue">
+    	<a href="/#/cluster_form?clusterName={{clusterName}}&type=retrieve">{{clusterName}}</a>
+    	<span> > </span>
+    	<a href="/#/cluster_dc?clusterName={{clusterName}}">数据中心</a>
+    </h3>
+    
     <div class="panel panel-primary">
         <header class="panel-heading">
             已绑定
@@ -7,16 +13,16 @@
             <thead class="thin-border-bottom">
             <tr>
                 <th>
-                    DC_NAME
+                    数据中心
                 </th>
                 <th>
-                    DESCRIPTION
+                    描述
                 </th>
                 <th>
-                    STATUS
+                    状态
                 </th>
                 <th>
-                    OPERATIONS
+                    操作
                 </th>
             </tr>
             </thead>
@@ -26,12 +32,12 @@
                 <td ng-bind="dc.dcDescription"></td>
                 <td>
 					<span class="label label-info arrowed-right arrowed-in"
-						ng-if="cluster.activedcId === dc.id">ACTIVE</span>
+						ng-if="cluster.activedcId === dc.id">主数据中心</span>
 					<span class="label label-warning label-sm"
-						ng-if="cluster.activedcId !== dc.id">已绑定</span>
+						ng-if="cluster.activedcId !== dc.id">从数据中心</span>
                 <td>
                     <a ng-if="cluster.activedcId !== dc.id"
-                       ng-click="preUnbindDc(dc)">unbind</a>
+                       ng-click="preUnbindDc(dc)">解除绑定</a>
                 </td>
             </tr>
             </tbody>
@@ -48,13 +54,13 @@
             <thead>
             <tr>
                 <th>
-                    dc name
+                    数据中心
                 </th>
                 <th>
-                    description
+                    描述
                 </th>
                 <th>
-                    operates
+                    操作
                 </th>
             </tr>
             </thead>
@@ -72,12 +78,12 @@
 </div>
 
 
-<xpipeconfirmdialog xpipe-dialog-id="'unbindDcConfirm'" xpipe-title="'unbind dc'"
-                    xpipe-detail="'are you sure unbind dc(' + toUnbindDc.dcName + ')?'"
+<xpipeconfirmdialog xpipe-dialog-id="'unbindDcConfirm'" xpipe-title="'解绑数据中心'"
+                    xpipe-detail="'您确定要将数据中心 (' + toUnbindDc.dcName + ')从当前cluster中解绑吗?'"
                     xpipe-show-cancel-btn="true" xpipe-confirm="unbindDc"></xpipeconfirmdialog>
 
-<xpipeconfirmdialog xpipe-dialog-id="'bindDcConfirm'" xpipe-title="'bind dc'"
-                    xpipe-detail="'are you sure bind dc(' + toBindDc.dcName +')?'"
+<xpipeconfirmdialog xpipe-dialog-id="'bindDcConfirm'" xpipe-title="'绑定数据中心'"
+                    xpipe-detail="'您确定要将数据中心(' + toBindDc.dcName +')绑定到当前cluster吗?'"
                     xpipe-show-cancel-btn="true" xpipe-confirm="bindDc"></xpipeconfirmdialog>
 
 
