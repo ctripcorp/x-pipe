@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
+
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -140,17 +139,4 @@ public class DispatcherMetaServerController extends AbstractController{
 	public List<KeeperTransMeta> getKeepersByKeeperContainer(KeeperContainerMeta keeperContainerMeta) {
 		return null;
 	}
-
-	@RequestMapping(path = MetaServerKeeperService.PATH_PREFIX + "/slots", method = RequestMethod.GET)
-	public Set<Integer> getSlots(){
-		
-		return slotManager.getSlotsByServerId(currentMetaServer.getServerId());
-	}
-
-	@RequestMapping(path = MetaServerKeeperService.PATH_PREFIX + "/debugslots", method = RequestMethod.GET)
-	public Map<Integer, SlotInfo> getSlotsInfo(){
-
-		return slotManager.allSlotsInfo();
-	}
-
 }

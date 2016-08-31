@@ -62,7 +62,7 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 	
 	private DcMetaManager currentServerMeta;
 	
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create("CHECK_DEAD_KEEPER"));
+	private ScheduledExecutorService scheduled;
 	private ScheduledFuture<?> scheduledFuture;
 	
 	
@@ -71,6 +71,7 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 		super.doInitialize();
 		
 		currentServerMeta = DefaultDcMetaManager.buildForDc(FoundationService.DEFAULT.getDataCenter());
+		scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create(String.format("CHECK_DEAD_KEEPER(%d)", currentClusterServer.getServerId())));
 	}
 	
 	
@@ -86,7 +87,11 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 				addCluster(clusterId);
 			}
 		}
-		scheduledFuture = scheduled.scheduleWithFixedDelay(new DeadKeeperChecker(), deadKeeperCheckIntervalMilli, deadKeeperCheckIntervalMilli, TimeUnit.MILLISECONDS);
+		scheduledFuture = scheduled.scheduleWithFixedDelay(
+				new DeadKeeperChecker(), 
+				deadKeeperCheckIntervalMilli, 
+				deadKeeperCheckIntervalMilli, 
+				TimeUnit.MILLISECONDS);
 	}
 
 	
@@ -99,6 +104,13 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 		super.doStop();
 	}
 	
+	
+	@Override
+	protected void doDispose() throws Exception {
+		
+		scheduled.shutdownNow();
+		super.doDispose();
+	}
 	private void addCluster(String clusterId) {
 		
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);

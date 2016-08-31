@@ -166,7 +166,9 @@ public class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public String toString() {
-		return String.format("dc:%s, meta:%s", currentDc, metaManager.getDcMeta(currentDc));
+		
+		DcMeta dcMeta = metaManager.getDcMeta(currentDc);
+		return String.format("dc:%s, meta:%s", currentDc, dcMeta);
 	}
 
 }

@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.core.cluster.ClusterMovingMethod;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
@@ -154,5 +155,10 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	protected void doSlotImport(int slotId) {
 		super.doSlotImport(slotId);
 		currentMetaServerMeta.importSlot(slotId);
+	}
+
+	@Override
+	public DcMetaManager getCurrentMeta() {
+		return currentMetaServerMeta.getCurrentMeta();
 	}
 }

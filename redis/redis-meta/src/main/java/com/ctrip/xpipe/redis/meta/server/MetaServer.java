@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
@@ -31,4 +32,7 @@ public interface MetaServer extends ClusterServer, TopElement{
 	ShardStatus getShardStatus(String clusterId, String shardId, ForwardInfo forwardInfo) throws Exception;
 
 	void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo);
+	
+	DcMetaManager getCurrentMeta();
+
 }

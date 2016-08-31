@@ -11,6 +11,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
@@ -107,6 +108,11 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		if(forwardInfo != null && forwardInfo.hasServer(getCurrentServerId())){
 			throw new CircularForwardException(forwardInfo, getCurrentServerId());
 		}
+	}
+
+	@Override
+	public DcMetaManager getCurrentMeta() {
+		throw new UnsupportedOperationException();
 	}
 
 }
