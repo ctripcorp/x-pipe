@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
-
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -12,6 +11,8 @@ import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.zk.ZkClient;
+import com.ctrip.xpipe.zk.impl.TestZkClient;
 
 /**
  * @author wenchao.meng
@@ -29,6 +30,13 @@ public class TestProfile extends AbstractProfile implements ApplicationContextAw
 		return new UnitTestServerConfig();
 	}
 	
+	@Bean
+	public ZkClient getZkClient(){
+		
+		ZkClient zkClient = new TestZkClient();
+		return zkClient;
+	}
+
 	@Bean
 	public SpringComponentRegistry getSpringRegistry(){
 		return new SpringComponentRegistry(applicationContext);

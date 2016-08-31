@@ -13,8 +13,10 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
+import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
@@ -34,6 +36,7 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
+
 /**
  * @author wenchao.meng
  *
@@ -43,6 +46,8 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObservable implements CurrentMetaServerMetaManager{
 	
 	private int deadKeeperCheckIntervalMilli = 10000;
+	
+	private int slotCheckInterval = 60000;
 	
 	@Autowired
 	private SlotManager slotManager;
@@ -60,9 +65,10 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 	private DcMetaCache dcMetaCache;
 	
 	private DcMetaManager currentServerMeta;
+	private Set<Integer>   currentSlots = new HashSet<>();
 	
 	private ScheduledExecutorService scheduled;
-	private ScheduledFuture<?> scheduledFuture;
+	private ScheduledFuture<?> deadCheckFuture, slotCheckFuture;
 	
 	
 	@Override
@@ -78,28 +84,68 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 	protected void doStart() throws Exception {
 		super.doStart();
 		
-		Set<String> clusterIds = dcMetaCache.getClusters();
-
-		for(String clusterId : clusterIds){
-			
-			if(currentClusterServer.hasKey(clusterId)){
-				addCluster(clusterId);
-			}
+		for(Integer slotId : currentClusterServer.slots()){
+			addSlot(slotId);
 		}
-		scheduledFuture = scheduled.scheduleWithFixedDelay(
+		
+		deadCheckFuture = scheduled.scheduleWithFixedDelay(
 				new DeadKeeperChecker(), 
 				deadKeeperCheckIntervalMilli, 
 				deadKeeperCheckIntervalMilli, 
 				TimeUnit.MILLISECONDS);
+		
+		slotCheckFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+			
+			@Override
+			protected void doRun() {
+				checkAddOrRemoveSlots();
+			}
+		}, slotCheckInterval, slotCheckInterval, TimeUnit.SECONDS);
 	}
 
 	
+	protected void checkAddOrRemoveSlots() {
+		
+		
+		Set<Integer> slots = slotManager.getSlotsByServerId(currentClusterServer.getServerId(), false);
+		
+		Pair<Set<Integer>, Set<Integer>> result = getAddAndRemove(slots, currentSlots);
+		
+		for(Integer slotId : result.getKey()){
+			addSlot(slotId);
+		}
+
+		for(Integer slotId : result.getValue()){
+			deleteSlot(slotId);
+		}
+	}
+
+
+	protected Pair<Set<Integer>, Set<Integer>> getAddAndRemove(Set<Integer> future, Set<Integer> current) {
+		
+		Set<Integer> added = new HashSet<>(future);
+		added.removeAll(current);
+		
+		if(added.size() > 0){
+			logger.info("[checkAddOrRemoveSlots][to add]{}", added);
+		}
+		
+		Set<Integer> toRemove = new HashSet<>(current);
+		toRemove.removeAll(future);
+
+		if(toRemove.size() > 0){
+			logger.info("[checkAddOrRemoveSlots][toRemove]{}", toRemove);
+		}
+		
+		return new Pair<>(added, toRemove);
+	}
+
+
 	@Override
 	protected void doStop() throws Exception {
 		
-		if(scheduledFuture != null){
-			scheduledFuture.cancel(true);
-		}
+		deadCheckFuture.cancel(true);
+		slotCheckFuture.cancel(true);
 		super.doStop();
 	}
 	
@@ -137,8 +183,9 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 	@Override
 	public void deleteSlot(int slotId) {
 		
+		currentSlots.remove(slotId);
 		logger.info("[deleteSlot]{}", slotId);
-		for(String clusterId : dcMetaCache.getClusters()){
+		for(String clusterId : currentServerMeta.getClusters()){
 			
 			int currentSlotId = slotManager.getSlotIdByKey(clusterId);
 			if(currentSlotId == slotId){
@@ -151,6 +198,7 @@ public class DefaultCurrentMetaServerMetaManager extends AbstractLifecycleObserv
 	@Override
 	public void addSlot(int slotId) {
 		
+		currentSlots.add(slotId);
 		logger.info("[addSlot]{}", slotId);
 		for(String clusterId : dcMetaCache.getClusters()){
 			

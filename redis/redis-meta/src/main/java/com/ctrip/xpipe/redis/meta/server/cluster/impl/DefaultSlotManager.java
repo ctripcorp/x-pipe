@@ -106,9 +106,31 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 
 	@Override
 	public Set<Integer> getSlotsByServerId(int serverId) {
+		return getSlotsByServerId(serverId, true);
+	}
+
+	@Override
+	public Set<Integer> getSlotsByServerId(int serverId, boolean includeMoving) {
+
 		try{
 			lock.readLock().lock();
-			return serverMap.get(serverId);
+
+			if(includeMoving){
+				return serverMap.get(serverId);
+			}else{
+				Set<Integer> slots = new HashSet<>(serverMap.get(serverId));
+				
+				
+				Set<Integer> movingSlots = new HashSet<>();
+				for(Integer slotId : slots){
+					SlotInfo slotInfo = slotsMap.get(slotId);
+					if(slotInfo.getSlotState() == SLOT_STATE.MOVING){
+						movingSlots.add(slotId);
+					}
+				}
+				slots.removeAll(movingSlots);
+				return slots;
+			}
 		}finally{
 			lock.readLock().unlock();
 		}
@@ -342,5 +364,6 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 			lock.readLock().unlock();
 		}
 	}
+
 
 }

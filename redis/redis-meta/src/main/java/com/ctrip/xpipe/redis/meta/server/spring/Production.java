@@ -8,6 +8,8 @@ import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.zk.ZkClient;
+import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
 /**
  * @author wenchao.meng
@@ -26,5 +28,13 @@ public class Production extends AbstractProfile{
 	@Bean
 	public SpringComponentLifecycleManager getSpringComponentLifecycleManager(){
 		return new SpringComponentLifecycleManager();
+	}
+	
+	@Bean
+	public ZkClient getZkClient(MetaServerConfig metaServerConfig){
+		
+		DefaultZkClient zkClient = new DefaultZkClient();
+		zkClient.setZkAddress(metaServerConfig.getZkConnectionString());
+		return zkClient;
 	}
 }

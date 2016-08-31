@@ -8,7 +8,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
@@ -22,7 +21,7 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.zk.ZkClient;
-import com.ctrip.xpipe.zk.impl.DefaultZkClient;
+import com.ctrip.xpipe.zk.impl.TestZkClient;
 
 /**
  * @author wenchao.meng
@@ -86,10 +85,8 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	public ZkClient getZkClient() throws Exception {
 		
 		try{
-			ZkClient zkClient = getBean(ZkClient.class);
-			((DefaultZkClient)zkClient).setZkAddress(zkAddress);
-			LifecycleHelper.initializeIfPossible(zkClient);
-			LifecycleHelper.startIfPossible(zkClient);
+			TestZkClient zkClient = getBean(TestZkClient.class);
+			zkClient.setZkAddress(zkAddress);
 			return zkClient;
 		}catch(Exception e){
 			logger.info(e.getMessage());

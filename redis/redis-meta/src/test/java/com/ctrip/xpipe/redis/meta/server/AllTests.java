@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterArrangerTest
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.LeaderWatchedShardsTest;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaServerMetaManagerTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 
@@ -33,7 +34,8 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 	DefaultCurrentClusterServerTest.class,
 	DefaultKeeperContainerServiceFactoryTest.class,
 	ForwardInfoEditorTest.class,
-	LeaderWatchedShardsTest.class
+	LeaderWatchedShardsTest.class,
+	DefaultCurrentMetaServerMetaManagerTest.class
 })
 public class AllTests {
 

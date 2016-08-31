@@ -18,6 +18,7 @@ import com.ctrip.xpipe.zk.ZkConfig;
 public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElement {
 
 	private CuratorFramework client;
+	private ZkConfig zkConfig = new DefaultZkConfig();
 	
 	private String address = System.getProperty("zkAddress", "localhost:2181");
 	
@@ -43,7 +44,6 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 		}
 
 		try {
-			ZkConfig zkConfig = new DefaultZkConfig();
 			client = zkConfig.create(address);
 			return client;
 		} catch (InterruptedException e) {
@@ -64,5 +64,9 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 	
 	public void setClient(CuratorFramework client) {
 		this.client = client;
+	}
+	
+	public void setZkConfig(ZkConfig zkConfig) {
+		this.zkConfig = zkConfig;
 	}
 }

@@ -2,11 +2,9 @@ package com.ctrip.xpipe.redis.meta.server.cluster;
 
 
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
@@ -18,8 +16,8 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTrigger;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.MetaserverLeaderElector;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
-import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
+import com.ctrip.xpipe.zk.impl.TestZkClient;
 
 /**
  * @author wenchao.meng
@@ -27,7 +25,6 @@ import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
  * Aug 1, 2016
  */
 @EnableAutoConfiguration
-@AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @Import({com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.class, com.ctrip.xpipe.redis.meta.server.spring.TestProfile.class})
 public class TestAppServer extends AbstractLifecycle{
 	
@@ -68,7 +65,7 @@ public class TestAppServer extends AbstractLifecycle{
 		application.setEnvironment(createEnvironment());
 		context = application.run(new String[]{});
 		
-		DefaultZkClient client = context.getBean(DefaultZkClient.class);
+		TestZkClient client = context.getBean(TestZkClient.class);
 		DefaultZkConfig zkConfig = new DefaultZkConfig();
 		zkConfig.setZkSessionTimeoutMillis(zkSessionTimeoutMillis);
 		client.setZkConfig(zkConfig);

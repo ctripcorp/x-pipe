@@ -67,6 +67,7 @@ public class SpringComponentLifecycleManager implements ApplicationContextAware,
 				logger.info("[onApplicationEvent][ContextClosedEvent, stopAll]");
 				stopAll();
 			} catch (Exception e) {
+				logger.error("[onApplicationEvent][stop all]", e);
 				throw new XpipeRuntimeException("[stopAll][fail]", e);
 			}
 		}

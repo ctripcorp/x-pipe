@@ -23,6 +23,8 @@ public interface SlotManager extends Lifecycle{
 	
 	Set<Integer> getSlotsByServerId(int serverId);
 
+	Set<Integer> getSlotsByServerId(int serverId, boolean includeMoving);
+
 	int getSlotsSizeByServerId(int serverId);
 
 	void refresh() throws Exception;
