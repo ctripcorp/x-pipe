@@ -1,12 +1,9 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
 import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
-
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
@@ -86,24 +83,6 @@ public class RedisService extends AbstractConsoleService<RedisTblDao>{
 				return dao.updateByPK(toDeleteRedis, RedisTblEntity.UPDATESET_FULL);
 			}
 		});
-    }
-
-    public void deleteRedisBatch(List<RedisTbl> redises) {
-    	if(null == redises) {
-    		return ;
-    	}
-    	
-    	for(RedisTbl redis : redises) {
-    		RedisTbl proto = redis;
-    		proto.setRedisName(DataModifiedTimeGenerator.generateModifiedTime() + "-" + redis.getRedisName());
-    		proto.setDeleted(true);
-    	}
-    	
-    	try {
-			dao.deleteBatch((RedisTbl[])redises.toArray(),RedisTblEntity.UPDATESET_FULL);
-		} catch (DalException e) {
-			throw new BadRequestException("Redises cannot be deleted.");
-		}
     }
     
 }
