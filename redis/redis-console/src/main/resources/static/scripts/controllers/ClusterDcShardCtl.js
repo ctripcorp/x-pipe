@@ -1,5 +1,5 @@
-index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '$window', '$location', 'toastr', 'AppUtil', 'ClusterService', 'ShardService','SweetAlert',
-    function ($rootScope, $scope, $stateParams, $window, $location, toastr, AppUtil, ClusterService, ShardService, SweetAlert) {
+index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '$window', '$location', 'toastr', 'AppUtil', 'ClusterService', 'ShardService',
+    function ($rootScope, $scope, $stateParams, $window, $location, toastr, AppUtil, ClusterService, ShardService) {
 
         $scope.dcs, $scope.dcActiveTab, $scope.shards;
         $scope.clusterName = $stateParams.clusterName;
@@ -7,11 +7,6 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         $scope.switchDc = switchDc;
         $scope.loadCluster = loadCluster;
         $scope.loadShards = loadShards;
-        $scope.preCreateRedis = preCreateRedis;
-        $scope.createRedis = createRedis;
-        $scope.preDeleteRedis = preDeleteRedis;
-        $scope.deleteRedis = deleteRedis;
-
 
 
         if ($scope.clusterName) {
@@ -51,49 +46,5 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                     toastr.error(AppUtil.errorMsg(result));
                 });
         }
-
-
-        $scope.toCreateRedisInShard = {};
-        function preCreateRedis(shard, type) {
-            $scope.toCreateRedisInShard = shard;
-            $scope.toCreateRedis = {};
-            $scope.toCreateRedis.redisRole = type;
-
-            $('#createRedisModal').modal('show');
-        }
-
-
-        function createRedis() {
-            ShardService.bindRedis($scope.clusterName, $scope.currentDcName,
-                                   $scope.toCreateRedisInShard.id, $scope.toCreateRedis)
-                .then(function (result) {
-                    toastr.success('创建成功');     
-                    $window.location.reload();
-                }, function (result) {
-                    toastr.error(AppUtil.errorMsg(result), '创建失败');
-                });
-        }
-
-        $scope.toDeleteRedis = {};
-        $scope.toDeleteRedisInShard = {};
-        function preDeleteRedis(shard, redis) {
-            $scope.toDeleteRedisInShard = shard;
-            $scope.toDeleteRedis = redis;
-            $('#deleteRedisConfirm').modal('show');
-        }
-
-        function deleteRedis() {
-            ShardService.unbindRedis($scope.clusterName, $scope.currentDcName,
-                                     $scope.toDeleteRedisInShard.id, $scope.toDeleteRedis.id)
-                .then(function (result) {
-                    toastr.success('删除成功');
-                    $window.location.reload();
-                }, function (result) {
-                    toastr.error(AppUtil.errorMsg(result), '删除失败');
-                });
-
-        }
-
-
 
     }]);

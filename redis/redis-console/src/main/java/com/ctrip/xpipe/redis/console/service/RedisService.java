@@ -1,9 +1,16 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.console.dao.RedisDao;
+import com.ctrip.xpipe.redis.console.enums.RedisRole;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
+import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
 import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.google.common.base.Strings;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
@@ -16,7 +23,10 @@ import java.util.List;
  */
 @Service
 public class RedisService extends AbstractConsoleService<RedisTblDao>{
-
+	@Autowired
+	DcClusterShardService dcClusterShardService;
+	@Autowired
+	RedisDao redisDao;
 
     public List<RedisTbl> findByDcClusterShardId(final long dcClusterShardId){
     	return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
@@ -35,17 +45,50 @@ public class RedisService extends AbstractConsoleService<RedisTblDao>{
 			}
     	});
     }
-
-    public RedisTbl findActiveKeeper(List<RedisTbl> redises) {
-    	RedisTbl result = null;
-    	for(RedisTbl redis : redises) {
-    		if(redis.getRedisRole().equals("keeper") && (redis.isKeeperActive() == true )) {
-    			result = redis;
-    			break;
-    		}
+    
+    // TODO
+    public RedisTbl bindRedis(final String clusterName, final String dcName, final String shardName, RedisTbl redis) {
+    	DcClusterShardTbl dcClusterShard = dcClusterShardService.load(dcName, clusterName, shardName);
+    	validateRedis(redis);
+    	
+    	if("redis".equals(redis.getRedisRole())) {
+    		return createRedis(dcClusterShard, redis);
     	}
-    	return result;
+    	if ("keeper".equals(redis.getRedisRole())) {
+    		return createKeeper(dcClusterShard, redis);
+    	}
+    	
+    	throw new BadRequestException("Invalid redis role");
     }
+    
+    // TODO
+    private RedisTbl createRedis(DcClusterShardTbl dcClusterShard, RedisTbl redis) {
+    	RedisTbl proto = dao.createLocal();
+    	proto.setDcClusterShardId(dcClusterShard.getDcClusterShardId())
+    			.setRedisIp(redis.getRedisIp())
+    			.setRedisPort(redis.getRedisPort())
+    			.setRedisRole(redis.getRedisRole());
+    	// redis master check
+    	 
+    	
+    	return null;
+    }
+    
+    // TODO
+    private RedisTbl createKeeper(DcClusterShardTbl dcClusterShard, RedisTbl redis) {
+    	return null;
+    }
+    
+    // TODO
+    private void validateRedis(RedisTbl redis) {
+    	if(redis.getRedisPort() <= 0 || Strings.isNullOrEmpty(redis.getRedisIp()) || !isValidRedisRole(redis.getRedisRole())) {
+    		throw new BadRequestException("Invalid redis configuration.");
+    	}
+    }
+    
+    private boolean isValidRedisRole(String type) {
+        return RedisRole.KEEPER.getValue().equals(type) || RedisRole.REDIS.getValue().equals(type);
+      }
     
     public RedisTbl createRedis(final RedisTbl redis) {
 		redis.setId(0);
@@ -85,4 +128,15 @@ public class RedisService extends AbstractConsoleService<RedisTblDao>{
 		});
     }
     
+    public RedisTbl findActiveKeeper(List<RedisTbl> redises) {
+    	RedisTbl result = null;
+    	for(RedisTbl redis : redises) {
+    		if(redis.getRedisRole().equals("keeper") && (redis.isKeeperActive() == true )) {
+    			result = redis;
+    			break;
+    		}
+    	}
+    	return result;
+    }
+
 }

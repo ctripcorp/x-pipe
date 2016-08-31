@@ -307,10 +307,11 @@
 			</query>
 			<query name='delete-shards-batch' type='UPDATE' batch='true'>
 				<param name='id'/>
+				<param name='shard-name'/>
 				<statement>
 					<![CDATA[
 					UPDATE <TABLE/>
-        			SET <FIELD name='deleted'/> = 1
+        			SET <FIELD name='deleted'/> = 1, <FIELD name='shard-name'/> = ${shard-name}
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>
@@ -468,10 +469,11 @@
 			</query>
 			<query name='delete-batch' type="UPDATE" batch="true">
 				<param name='id'/>
+				<param name='redis-name'/>
 				<statement>
 					<![CDATA[
 					UPDATE <TABLE/>
-        			SET <FIELD name='deleted'/> = 1
+        			SET <FIELD name='deleted'/> = 1, <FIELD name='redis-name'/> = ${redis-name}
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>

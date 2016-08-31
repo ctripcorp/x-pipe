@@ -36,7 +36,7 @@ import org.springframework.stereotype.Service;
  * Aug 17, 2016
  */
 @Service("clusterMetaService")
-public class ClusterMetaServiceImpl implements ClusterMetaService {
+public class ClusterMetaServiceImpl extends AbstractMetaService implements ClusterMetaService {
 	@Autowired
 	private DcService dcService;
 	@Autowired

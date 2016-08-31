@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * Aug 17, 2016
  */
 @Service("dcMetaService")
-public class DcMetaServiceImpl implements DcMetaService{
+public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaService{
 	@Autowired
 	private DcService dcService;
 	@Autowired
@@ -155,9 +155,13 @@ public class DcMetaServiceImpl implements DcMetaService{
 	}
 
     private DcMetaQueryVO loadMetaVO(DcTbl currentDc, List<DcTbl> dcMetaDetails) {
+    	logger.info("[CurrentDC]:" + coder.encode(currentDc));
+    	logger.info("[DcMetaDetails]:" + coder.encode(dcMetaDetails));
     	DcMetaQueryVO result = new DcMetaQueryVO(currentDc);
     	
     	for(DcTbl dcMetaDetail : dcMetaDetails) {
+    		logger.info("[LoadInfo]" + coder.encode(dcMetaDetail));
+    		
 	        /** Cluster Info **/
 	        result.addClusterInfo(dcMetaDetail.getClusterInfo());
 	        
