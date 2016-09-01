@@ -40,7 +40,7 @@ import org.springframework.stereotype.Service;
  * Aug 17, 2016
  */
 @Service("shardMetaService")
-public class ShardMetaServiceImpl implements ShardMetaService{
+public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMetaService{
 	@Autowired
 	private DcService dcService;
 	@Autowired
