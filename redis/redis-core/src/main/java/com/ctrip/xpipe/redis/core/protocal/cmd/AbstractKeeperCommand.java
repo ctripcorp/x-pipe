@@ -73,7 +73,7 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 		
 		@Override
 		public String toString() {
-			return String.format("%s %s %s", getName(), SET_STATE, state.toString(), masterAddress.toString());
+			return String.format("%s %s %s %s", getName(), SET_STATE, state.toString(), masterAddress.toString());
 		}
 	}
 }

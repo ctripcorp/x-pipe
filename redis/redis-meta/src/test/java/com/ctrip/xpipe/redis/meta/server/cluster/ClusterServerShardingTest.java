@@ -30,7 +30,7 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 		
 		sleep(1000);
 		
-		for(TestAppServer server : getServers()){
+		for(TestMetaServer server : getServers()){
 			ApplicationContext context = server.getContext();
 			SlotManager slotManager = context.getBean(SlotManager.class);
 			slotManager.refresh();
@@ -45,7 +45,7 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 
 		createMetaServers(serverCount);
 		sleep(1000);
-		for(TestAppServer server : getServers()){
+		for(TestMetaServer server : getServers()){
 			if(!server.isLeader()){
 				logger.info(remarkableMessage("[testShutdownOther][begin]{}"), server);
 				server.stop();
@@ -53,8 +53,8 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 				break;
 			}
 		}
-		sleep(TestAppServer.getWaitforrestarttimemills() + 1000);
-		TestAppServer leader = getLeader();
+		sleep(TestMetaServer.getWaitforrestarttimemills() + 1000);
+		TestMetaServer leader = getLeader();
 		SlotManager slotManager = leader.getContext().getBean(SlotManager.class);
 		slotManager.refresh();
 		
@@ -77,7 +77,7 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 		
 		createMetaServers(1);
 		sleep(1000);
-		TestAppServer server = getLeader();
+		TestMetaServer server = getLeader();
 		server.stop();
 	}
 
@@ -86,8 +86,8 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 
 		createMetaServers(serverCount);
 		sleep(1000);
-		TestAppServer leader = null;
-		for(TestAppServer server : getServers()){
+		TestMetaServer leader = null;
+		for(TestMetaServer server : getServers()){
 			if(server.isLeader()){
 				logger.info(remarkableMessage("[testShutdownLeader][begin]{}"), server);
 				leader = server;
@@ -97,9 +97,9 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 			}
 		}
 		
-		sleep(TestAppServer.getZksessiontimeoutmillis() + 1000);
+		sleep(TestMetaServer.getZksessiontimeoutmillis() + 1000);
 		
-		TestAppServer newLeader = getLeader();
+		TestMetaServer newLeader = getLeader();
 		logger.info("[testShutdownLeader][new leader]{}", newLeader);
 		Assert.assertNotEquals(leader, newLeader);
 		

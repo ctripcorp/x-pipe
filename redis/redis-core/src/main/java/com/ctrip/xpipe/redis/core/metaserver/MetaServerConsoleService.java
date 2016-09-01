@@ -1,12 +1,10 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
 
-
 import java.net.InetSocketAddress;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
 /**
  * used for console
@@ -15,10 +13,14 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
  * Aug 2, 2016
  */
 public interface MetaServerConsoleService extends MetaServerService{
+	
+	public static final String PATH_CLUSTER_CHANGE = "/clusterchange/{clusterId}";
 
-	void shardChanged(String clusterId, ShardMeta shardMeta);
+	void clusterAdded(String clusterId, ClusterMeta clusterMeta);
 
-	void clusterChanged(ClusterMeta clusterMeta);
+	void clusterModified(String clusterId, ClusterMeta clusterMeta);
+
+	void clusterDeleted(String clusterId);
 
 	/**
 	 * used by backup dc

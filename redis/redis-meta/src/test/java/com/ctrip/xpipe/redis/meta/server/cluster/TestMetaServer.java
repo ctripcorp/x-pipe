@@ -26,7 +26,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClient;
  */
 @EnableAutoConfiguration
 @Import({com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.class, com.ctrip.xpipe.redis.meta.server.spring.TestProfile.class})
-public class TestAppServer extends AbstractLifecycle{
+public class TestMetaServer extends AbstractLifecycle{
 	
 	private static final int waitForRestartTimeMills = 1000;
 	private static final int zkSessionTimeoutMillis = 5000;
@@ -39,16 +39,16 @@ public class TestAppServer extends AbstractLifecycle{
 	private ConfigurableApplicationContext context;
 	private SpringComponentRegistry manager;
 	
-	public TestAppServer(){
+	public TestMetaServer(){
 		this(1, 9747, 2181);
 	}
 
-	public TestAppServer(int serverId, int serverPort, int zkPort){
+	public TestMetaServer(int serverId, int serverPort, int zkPort){
 		this(serverId, serverPort, zkPort, DEFAULT_CONFIG_FILE);
 	}
 	
 
-	public TestAppServer(int serverId, int serverPort, int zkPort, String configFile){
+	public TestMetaServer(int serverId, int serverPort, int zkPort, String configFile){
 		this.serverId = serverId;
 		this.serverPort = serverPort;
 		this.zkPort = zkPort;
@@ -61,7 +61,7 @@ public class TestAppServer extends AbstractLifecycle{
 		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, configFile);
 		System.setProperty("TOTAL_SLOTS", String.valueOf(total_slots));
 		
-		SpringApplication application = new SpringApplication(TestAppServer.class);
+		SpringApplication application = new SpringApplication(TestMetaServer.class);
 		application.setEnvironment(createEnvironment());
 		context = application.run(new String[]{});
 		
@@ -167,7 +167,7 @@ public class TestAppServer extends AbstractLifecycle{
 	
 	public static void main(String []argc) throws Exception{
 		
-		TestAppServer server = new TestAppServer(1, 9747, 2181);
+		TestMetaServer server = new TestMetaServer(1, 9747, 2181);
 		server.initialize();
 		server.start();		
 //		new TestAppServer(2, 9748, 2182).start();

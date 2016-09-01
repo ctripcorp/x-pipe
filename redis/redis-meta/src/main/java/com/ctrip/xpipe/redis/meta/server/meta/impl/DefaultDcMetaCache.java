@@ -55,6 +55,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		
+		logger.info("[doInitialize][dc]{}", currentDc);
 		this.dcMetaManager = loadMetaManager();
 	}
 	

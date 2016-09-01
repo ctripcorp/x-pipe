@@ -7,5 +7,6 @@ package com.ctrip.xpipe.redis.meta.server.rest;
  */
 public enum ForwardType {
 	FORWARD,
-	MOVING
+	MOVING,
+	MULTICASTING
 }

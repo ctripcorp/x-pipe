@@ -8,7 +8,7 @@ import java.util.List;
  *
  * Aug 3, 2016
  */
-public class ForwardInfo {
+public class ForwardInfo implements Cloneable{
 	
 	private ForwardType type;
 	
@@ -64,5 +64,18 @@ public class ForwardInfo {
 	@Override
 	public String toString() {
 		return String.format("type:%s, fromServers:%s", type, forwardServers);
+	}
+	
+	@Override
+	public ForwardInfo clone() {
+		
+		ForwardInfo forwardInfo;
+		try {
+			forwardInfo = (ForwardInfo) super.clone();
+			forwardInfo.forwardServers = new LinkedList<>(forwardServers);
+			return forwardInfo;
+		} catch (CloneNotSupportedException e) {
+		}
+		return null;
 	}
 }

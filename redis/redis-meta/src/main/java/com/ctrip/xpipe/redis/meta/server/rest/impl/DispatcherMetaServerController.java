@@ -1,25 +1,20 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
-
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
@@ -59,7 +54,7 @@ public class DispatcherMetaServerController extends AbstractController{
 			@RequestHeader(name = MetaServerService.HTTP_HEADER_FOWRARD, required = false) ForwardInfo forwardInfo, Model model){
 
 		if(forwardInfo != null){
-			logger.info("[ping]{},{}", clusterId, forwardInfo);
+			logger.info("[populateModel]{},{}", clusterId, forwardInfo);
 		}
 		MetaServer metaServer = getMetaServer(clusterId, forwardInfo);
 		if(metaServer == null){
@@ -81,7 +76,7 @@ public class DispatcherMetaServerController extends AbstractController{
 
 
 	@RequestMapping(path = MetaServerKeeperService.PATH_PING, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public void ping(@PathVariable String clusterId, @PathVariable String shardId, KeeperInstanceMeta keeperInstanceMeta,
+	public void ping(@PathVariable String clusterId, @PathVariable String shardId, @RequestBody KeeperInstanceMeta keeperInstanceMeta,
 			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute MetaServer metaServer) {
 		
 		metaServer.ping(clusterId, shardId, keeperInstanceMeta, forwardInfo);
@@ -108,35 +103,46 @@ public class DispatcherMetaServerController extends AbstractController{
 		return servers.getClusterServer(serverId);
 	}
 
-	public void addKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
+	@RequestMapping(path = MetaServerConsoleService.PATH_CLUSTER_CHANGE, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public void clusterAdded(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta, @ModelAttribute ForwardInfo forwardInfo) {
 		
-	}
-
-	public void removeKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
+		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MULTICASTING){
+			logger.info("[clusterAdded][multicast message][do now]");
+			currentMetaServer.clusterAdded(clusterMeta, forwardInfo);
+			return;
+		}
 		
-	}
-
-	public void setKeepers(String clusterId, String shardId, KeeperMeta keeperMeta, List<KeeperMeta> keeperMetas) {
-		
-	}
-
-	public void clusterChanged(String clusterId) {
-		
-	}
-
-	public DcMeta getDynamicInfo() {
-		return null;
-	}
-
-	public List<MetaServerMeta> getAllMetaServers() {
-		return null;
-	}
-
-	public List<KeeperTransMeta> getAllKeepersByKeeperContainer(KeeperContainerMeta keeperContainerMeta) {
-		return null;
+		for(MetaServer metaServer : servers.allClusterServers()){
+			metaServer.clusterAdded(clusterMeta, forwardInfo.clone());
+		}
 	}
 	
-	public List<KeeperTransMeta> getKeepersByKeeperContainer(KeeperContainerMeta keeperContainerMeta) {
-		return null;
+	@RequestMapping(path = MetaServerConsoleService.PATH_CLUSTER_CHANGE, method = RequestMethod.PUT,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public void clusterModified(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta, @ModelAttribute ForwardInfo forwardInfo) {
+		
+		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MULTICASTING){
+			logger.info("[clusterModified][multicast message][do now]");
+			currentMetaServer.clusterModified(clusterMeta, forwardInfo);
+			return;
+		}
+		
+		for(MetaServer metaServer : servers.allClusterServers()){
+			metaServer.clusterModified(clusterMeta, forwardInfo.clone());
+		}
 	}
+
+	@RequestMapping(path = MetaServerConsoleService.PATH_CLUSTER_CHANGE, method = RequestMethod.DELETE)
+	public void clusterDeleted(@PathVariable String clusterId, @ModelAttribute ForwardInfo forwardInfo) {
+
+		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MULTICASTING){
+			logger.info("[clusterDeleted][multicast message][do now]");
+			currentMetaServer.clusterDeleted(clusterId, forwardInfo);
+			return;
+		}
+		
+		for(MetaServer metaServer : servers.allClusterServers()){
+			metaServer.clusterDeleted(clusterId, forwardInfo.clone());
+		}
+	}
+
 }

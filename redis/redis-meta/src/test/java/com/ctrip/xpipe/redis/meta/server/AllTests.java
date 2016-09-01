@@ -10,6 +10,7 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersMulticastTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTriggerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterArrangerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServerTest;
@@ -17,6 +18,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainer
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.LeaderWatchedShardsTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaServerMetaManagerTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
+import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 
 
@@ -31,11 +33,13 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 	DefaultClusterArrangerTest.class,
 	DefaultClusterServersTest.class,
 	ClusterServerShardingTest.class,
+	ClusterServersMulticastTest.class,
 	DefaultCurrentClusterServerTest.class,
 	DefaultKeeperContainerServiceFactoryTest.class,
 	ForwardInfoEditorTest.class,
 	LeaderWatchedShardsTest.class,
-	DefaultCurrentMetaServerMetaManagerTest.class
+	DefaultCurrentMetaServerMetaManagerTest.class,
+	ForwardInfoTest.class
 })
 public class AllTests {
 

@@ -52,18 +52,18 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 		for(int i=0 ; i<serverCount ; i++){
 			
 			int port = portUsable(defaultMetaServerPort());
-			TestAppServer testAppServer = new TestAppServer(i + 1, port, zkPort);
+			TestMetaServer testAppServer = new TestMetaServer(i + 1, port, zkPort);
 			addToStartedRegistry(testAppServer);
 		}
 	}
 	
-	public List<TestAppServer> getServers() {
-		return new LinkedList<>(getStartedComponentRegistry().getComponents(TestAppServer.class).values());
+	public List<TestMetaServer> getServers() {
+		return new LinkedList<>(getStartedComponentRegistry().getComponents(TestMetaServer.class).values());
 	}
 	
-	public TestAppServer getLeader(){
+	public TestMetaServer getLeader(){
 		
-		for(TestAppServer server : getServers()){
+		for(TestMetaServer server : getServers()){
 			if(server.isLeader()){
 				return server;
 			}
@@ -71,9 +71,9 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 		return null;
 	}
 
-	public TestAppServer getRandomNotLeader(){
+	public TestMetaServer getRandomNotLeader(){
 		
-		for(TestAppServer server : getServers()){
+		for(TestMetaServer server : getServers()){
 			if(!server.isLeader()){
 				return server;
 			}

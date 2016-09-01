@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.cluster;
+package com.ctrip.xpipe.redis.meta.server.cluster.manul;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
@@ -13,6 +13,9 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
+import com.ctrip.xpipe.redis.meta.server.cluster.AbstractMetaServerClusterTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
+import com.ctrip.xpipe.redis.meta.server.cluster.TestMetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
@@ -68,7 +71,7 @@ public class ManualTest extends AbstractMetaServerClusterTest{
 	public void pingMoving() throws Exception{
 		
 		int currentServerId = 2, toServerId = 3;
-		int slotId = clusterId.hashCode()%TestAppServer.total_slots;
+		int slotId = clusterId.hashCode()%TestMetaServer.total_slots;
 		logger.info("[pingMoving]{}", slotId);
 
 		CuratorFramework client = getCuratorFramework(2181);

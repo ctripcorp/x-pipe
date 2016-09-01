@@ -326,7 +326,7 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 	@Override
 	public int getSlotIdByKey(Object key) {
 		
-		return key.hashCode()%TOTAL_SLOTS;
+		return Math.abs(key.hashCode())%TOTAL_SLOTS;
 	}
 
 	@Override

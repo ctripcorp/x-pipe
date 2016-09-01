@@ -12,6 +12,7 @@ import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.cluster.ClusterMovingMethod;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -160,5 +161,22 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Override
 	public DcMetaManager getCurrentMeta() {
 		return currentMetaServerMeta.getCurrentMeta();
+	}
+
+	@Override
+	public void clusterAdded(ClusterMeta clusterMeta, ForwardInfo forwardInfo) {
+		logger.info("[clusterAdded]");
+	}
+
+	@Override
+	public void clusterModified(ClusterMeta clusterMeta, ForwardInfo forwardInfo) {
+		logger.info("[clusterModified]");
+		
+	}
+
+	@Override
+	public void clusterDeleted(String clusterId, ForwardInfo forwardInfo) {
+		logger.info("[clusterDeleted]");
+		
 	}
 }
