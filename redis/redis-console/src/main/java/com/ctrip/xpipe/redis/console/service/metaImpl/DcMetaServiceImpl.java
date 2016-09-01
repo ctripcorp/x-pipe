@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.console.service.meta.KeepercontainerMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.MetaserverMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.SetinelMetaService;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
+import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 
 import org.apache.commons.lang3.tuple.Triple;
@@ -59,6 +60,8 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
     public DcMeta getDcMeta(final String dcName) {
     	ExecutorService fixedThreadPool = Executors.newFixedThreadPool(6);
     	DcMeta dcMeta = new DcMeta();
+    	dcMeta.setId(dcName);
+    	dcMeta.setLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
     	
     	Future<DcTbl> future_dcInfo = fixedThreadPool.submit(new Callable<DcTbl>() {
 			@Override
@@ -100,23 +103,36 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
     	DcTbl dcInfo;
 		try {
 			dcInfo = future_dcInfo.get();
+			if(null == dcInfo) return dcMeta;
+			
 			dcMeta.setId(dcInfo.getDcName());
 	    	dcMeta.setLastModifiedTime(dcInfo.getDcLastModifiedTime());
 	    	
-	    	for(MetaserverTbl metaserver : future_metaservers.get()) {
-	    		dcMeta.addMetaServer(metaserverMetaService.encodeMetaserver(metaserver, dcMeta));
+	    	if(null != future_metaservers.get()) {
+	    		for(MetaserverTbl metaserver : future_metaservers.get()) {
+		    		dcMeta.addMetaServer(metaserverMetaService.encodeMetaserver(metaserver, dcMeta));
+		    	}
 	    	}
-	    	for(SetinelTbl setinel : future_setinels.get()) {
-	    		dcMeta.addSetinel(setinelMetaService.encodeSetinelMeta(setinel, dcMeta));
+	    	if(null != future_setinels.get()) {
+	    		for(SetinelTbl setinel : future_setinels.get()) {
+		    		dcMeta.addSetinel(setinelMetaService.encodeSetinelMeta(setinel, dcMeta));
+		    	}
 	    	}
-	    	for(KeepercontainerTbl keepercontainer : future_keepercontainers.get()) {
-	    		dcMeta.addKeeperContainer(keepercontainerMetaService.encodeKeepercontainerMeta(keepercontainer, dcMeta));
+	    	if(null != future_keepercontainers.get()) {
+	    		for(KeepercontainerTbl keepercontainer : future_keepercontainers.get()) {
+		    		dcMeta.addKeeperContainer(keepercontainerMetaService.encodeKeepercontainerMeta(keepercontainer, dcMeta));
+		    	}
 	    	}
 	    	
+	    	
 			DcMetaQueryVO dcMetaQueryVO = loadMetaVO(dcInfo, dcService.findAllDetails(dcName));
-			dcMetaQueryVO.setAllActiveKeepers(future_allactivekeepers.get());
-			dcMetaQueryVO.setAllDcs(future_alldcs.get());
-
+			if(null != future_allactivekeepers.get()) {
+				dcMetaQueryVO.setAllActiveKeepers(future_allactivekeepers.get());
+			}
+			if(null != future_alldcs.get()) {
+				dcMetaQueryVO.setAllDcs(future_alldcs.get());
+			}
+			
 			for(ClusterTbl cluster : dcMetaQueryVO.getClusterInfo().values()){
 				dcMeta.addCluster(clusterMetaService.loadClusterMeta(dcMeta, cluster, dcMetaQueryVO));
 			}
@@ -133,30 +149,34 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
     @Override
 	public HashMap<Triple<Long, Long, Long>, RedisTbl> loadAllActiveKeepers() {
 		HashMap<Triple<Long, Long, Long>, RedisTbl> results = new HashMap<>();
-
-		for (DcTbl dcTbl : dcService.findAllActiveKeepers()) {
-			if(! results.containsKey(Triple.of(dcTbl.getId(), dcTbl.getClusterInfo().getId(), dcTbl.getShardInfo().getId()))) {
-				results.put(Triple.of(dcTbl.getId(), dcTbl.getClusterInfo().getId(), dcTbl.getShardInfo().getId()), dcTbl.getRedisInfo());
+		
+		List<DcTbl> allActiveKeepers = dcService.findAllActiveKeepers();
+		if(null != allActiveKeepers) {
+			for (DcTbl dcTbl : dcService.findAllActiveKeepers()) {
+				if(! results.containsKey(Triple.of(dcTbl.getId(), dcTbl.getClusterInfo().getId(), dcTbl.getShardInfo().getId()))) {
+					results.put(Triple.of(dcTbl.getId(), dcTbl.getClusterInfo().getId(), dcTbl.getShardInfo().getId()), dcTbl.getRedisInfo());
+				}
 			}
 		}
-
+		
 		return results;
 	}
 
 	private HashMap<Long, DcTbl> loadAllDcs() {
 		HashMap<Long, DcTbl> results = new HashMap<>();
 
-		for(DcTbl dcTbl : dcService.findAllDcs()) {
-			results.put(dcTbl.getId(), dcTbl);
+		List<DcTbl> allDcs = dcService.findAllDcs();
+		if(null != allDcs) {
+			for(DcTbl dcTbl : allDcs) {
+				results.put(dcTbl.getId(), dcTbl);
+			}
 		}
-
 
 		return results;
 	}
 
     private DcMetaQueryVO loadMetaVO(DcTbl currentDc, List<DcTbl> dcMetaDetails) {
     	logger.info("[CurrentDC]:" + coder.encode(currentDc));
-    	logger.info("[DcMetaDetails]:" + coder.encode(dcMetaDetails));
     	DcMetaQueryVO result = new DcMetaQueryVO(currentDc);
     	
     	for(DcTbl dcMetaDetail : dcMetaDetails) {

@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.query;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.dal.jdbc.DalNotFoundException;
 
-import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 
 /**
@@ -17,7 +16,7 @@ public class DalQueryHandler {
 			return query.doQuery();
 		} catch(DalException e) {
 			if(e instanceof DalNotFoundException) {
-				throw new DataNotFoundException("Data not found.",e);
+				return null;
 			}
 			throw new ServerException("Load data failed.", e);
 		}

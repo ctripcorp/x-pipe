@@ -59,6 +59,7 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 	@Override
 	public ShardMeta loadShardMeta(ClusterMeta clusterMeta,ClusterTbl clusterTbl, ShardTbl shardTbl, DcMetaQueryVO dcMetaQueryVO) {
 		ShardMeta shardMeta = new ShardMeta();
+		if(null == clusterTbl || null == shardTbl) return shardMeta;
 		
 		shardMeta.setId(shardTbl.getShardName());
 		if(clusterTbl.getActivedcId() == dcMetaQueryVO.getCurrentDc().getId()) {
@@ -118,6 +119,10 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 		});
 		
 		try {
+			if(null == future_dcInfo.get() || null == future_clusterInfo.get() || null == future_shardInfo.get()
+					|| null == future_dcClusterInfo.get() || null == future_dcClusterShardInfo.get()) {
+				return new ShardMeta().setId(shardName);
+			}
 			return getShardMeta(future_dcInfo.get(),future_clusterInfo.get(),future_shardInfo.get(),
 					future_dcClusterInfo.get(), future_dcClusterShardInfo.get());
 		} catch (ExecutionException e) {
@@ -131,27 +136,36 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 
 	private ShardMeta getShardMeta(DcTbl dcInfo, ClusterTbl clusterInfo, ShardTbl shardInfo, DcClusterTbl dcClusterInfo, DcClusterShardTbl dcClusterShardInfo) {
 		ShardMeta shardMeta = new ShardMeta();
+		if(null == dcInfo || null == clusterInfo || null == shardInfo || null == dcClusterInfo || null == dcClusterShardInfo) {
+			return shardMeta;
+		}
 		
 		shardMeta.setId(shardInfo.getShardName());
 		if(clusterInfo.getActivedcId() == dcInfo.getId()) {
 			shardMeta.setUpstream("");
 		} else {
 			DcClusterTbl activeDcCluster = dcClusterService.load(clusterInfo.getActivedcId(), clusterInfo.getId());
-			DcClusterShardTbl activeDcClusterShard = dcClusterShardService.load(activeDcCluster.getDcClusterId(), shardInfo.getId());
-			RedisTbl activeKeeper = redisService.findActiveKeeper(redisService.findByDcClusterShardId(activeDcClusterShard.getDcClusterShardId()));
-			shardMeta.setUpstream(redisMetaService.encodeRedisAddress(activeKeeper));
+			if(null != activeDcCluster) {
+				DcClusterShardTbl activeDcClusterShard = dcClusterShardService.load(activeDcCluster.getDcClusterId(), shardInfo.getId());
+				if(null != activeDcClusterShard) {
+					RedisTbl activeKeeper = redisService.findActiveKeeper(redisService.findByDcClusterShardId(activeDcClusterShard.getDcClusterShardId()));
+					shardMeta.setUpstream(redisMetaService.encodeRedisAddress(activeKeeper));
+				}
+			}
 		}
 		shardMeta.setSetinelId(dcClusterShardInfo.getSetinelId());
 		shardMeta.setSetinelMonitorName(shardInfo.getSetinelMonitorName());
 		shardMeta.setPhase(dcClusterShardInfo.getDcClusterShardPhase());
 		
 		List<RedisTbl> shard_redises = redisService.findByDcClusterShardId(dcClusterShardInfo.getDcClusterShardId());
-		Map<Long,RedisTbl> redises = generateRedisMap(shard_redises);
-		for(RedisTbl redis : shard_redises) {
-			if(redis.getRedisRole().equals("keeper")) {
-				addKeeperMeta(shardMeta,redis,redises);
-			} else {
-				addRedisMeta(shardMeta,redis,redises);
+		if(null != shard_redises) {
+			Map<Long,RedisTbl> redises = generateRedisMap(shard_redises);
+			for(RedisTbl redis : shard_redises) {
+				if(redis.getRedisRole().equals("keeper")) {
+					addKeeperMeta(shardMeta,redis,redises);
+				} else {
+					addRedisMeta(shardMeta,redis,redises);
+				}
 			}
 		}
 		
@@ -161,7 +175,8 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 	@Override
 	public ShardMeta encodeShardMeta(DcTbl dcInfo, ClusterTbl clusterInfo, ShardTbl shardInfo, Map<Triple<Long,Long,Long>,RedisTbl> activekeepers) {
 		ShardMeta shardMeta = new ShardMeta();
-
+		if(null == shardInfo || null == dcInfo || null == clusterInfo) return shardMeta;
+		
 		shardMeta.setId(shardInfo.getShardName());
 		if(clusterInfo.getActivedcId() == dcInfo.getId()) {
 			shardMeta.setUpstream("");
@@ -175,20 +190,23 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 		try {
 			DcClusterTbl dcClusterInfo = dcClusterService.load(dcInfo.getId(), clusterInfo.getId());
 			DcClusterShardTbl dcClusterShardInfo = dcClusterShardService.load(dcClusterInfo.getDcClusterId(), shardInfo.getId());
-
+			if(null == dcClusterInfo || null == dcClusterShardInfo) return shardMeta;
+			
 			shardMeta.setSetinelId(dcClusterShardInfo.getSetinelId());
 			shardMeta.setPhase(dcClusterShardInfo.getDcClusterShardPhase());
 
 			List<RedisTbl> shard_redises = redisService.findByDcClusterShardId(dcClusterShardInfo.getDcClusterShardId());
-			Map<Long,RedisTbl> redises = generateRedisMap(shard_redises);
-			for(RedisTbl redis : shard_redises) {
-				if(redis.getRedisRole().equals("keeper")) {
-					addKeeperMeta(shardMeta,redis,redises);
-				} else {
-					addRedisMeta(shardMeta,redis,redises);
+			if(null != shard_redises) {
+				Map<Long,RedisTbl> redises = generateRedisMap(shard_redises);
+				for(RedisTbl redis : shard_redises) {
+					if(redis.getRedisRole().equals("keeper")) {
+						addKeeperMeta(shardMeta,redis,redises);
+					} else {
+						addRedisMeta(shardMeta,redis,redises);
+					}
 				}
 			}
-
+			
 			return shardMeta;
 		} catch (DataNotFoundException e) {
 			return shardMeta;
@@ -197,8 +215,10 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 	
 	private Map<Long,RedisTbl> generateRedisMap(List<RedisTbl> redises) {
 		Map<Long,RedisTbl> result = new HashMap<Long,RedisTbl>(redises.size());
-		for(RedisTbl redis : redises) {
-			result.put(redis.getId(), redis);
+		if(null != redises) {
+			for(RedisTbl redis : redises) {
+				result.put(redis.getId(), redis);
+			}
 		}
 		return result;
 	}

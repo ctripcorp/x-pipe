@@ -42,23 +42,26 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 	public RedisMeta loadRedisMeta(ShardMeta shardMeta, RedisTbl redisTbl, DcMetaQueryVO dcMetaQueryVO) {
 		RedisMeta redisMeta = new RedisMeta();
 		
-		redisMeta.setId(redisTbl.getRedisName());
-		redisMeta.setIp(redisTbl.getRedisIp());
-		redisMeta.setPort(redisTbl.getRedisPort());
-		if(redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
-			redisMeta.setMaster("");
-		} else {
-			if(dcMetaQueryVO.getRedisInfo().containsKey(redisTbl.getRedisMaster())) {
-				redisMeta.setMaster(encodeRedisAddress(dcMetaQueryVO.getRedisInfo().get(redisTbl.getRedisMaster())));
+		if(null != redisTbl) {
+			redisMeta.setId(redisTbl.getRedisName());
+			redisMeta.setIp(redisTbl.getRedisIp());
+			redisMeta.setPort(redisTbl.getRedisPort());
+			if(redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
+				redisMeta.setMaster("");
 			} else {
-				for(RedisTbl redis : dcMetaQueryVO.getAllActiveKeepers().values()) {
-					if (redis.getId() == redisTbl.getRedisMaster()) {
-						redisMeta.setMaster(encodeRedisAddress(redis));
-						break;
+				if(dcMetaQueryVO.getRedisInfo().containsKey(redisTbl.getRedisMaster())) {
+					redisMeta.setMaster(encodeRedisAddress(dcMetaQueryVO.getRedisInfo().get(redisTbl.getRedisMaster())));
+				} else {
+					for(RedisTbl redis : dcMetaQueryVO.getAllActiveKeepers().values()) {
+						if (redis.getId() == redisTbl.getRedisMaster()) {
+							redisMeta.setMaster(encodeRedisAddress(redis));
+							break;
+						}
 					}
 				}
 			}
 		}
+		
 		redisMeta.setParent(shardMeta);
 		return redisMeta;
 	}
@@ -67,25 +70,28 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 	public KeeperMeta loadKeeperMeta(ShardMeta shardMeta, RedisTbl redisTbl, DcMetaQueryVO dcMetaQueryVO) {
 		KeeperMeta keeperMeta = new KeeperMeta();
 		
-		keeperMeta.setId(redisTbl.getRedisName());
-		keeperMeta.setIp(redisTbl.getRedisIp());
-		keeperMeta.setPort(redisTbl.getRedisPort());
-		if(redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
-			keeperMeta.setMaster("");
-		} else {
-			if(dcMetaQueryVO.getRedisInfo().containsKey(redisTbl.getRedisMaster())) {
-				keeperMeta.setMaster(encodeRedisAddress(dcMetaQueryVO.getRedisInfo().get(redisTbl.getRedisMaster())));
+		if(null != redisTbl) {
+			keeperMeta.setId(redisTbl.getRedisName());
+			keeperMeta.setIp(redisTbl.getRedisIp());
+			keeperMeta.setPort(redisTbl.getRedisPort());
+			if(redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
+				keeperMeta.setMaster("");
 			} else {
-				for(RedisTbl redis : dcMetaQueryVO.getAllActiveKeepers().values()) {
-					if(redis.getId() == redisTbl.getRedisMaster()) {
-						keeperMeta.setMaster(encodeRedisAddress(redis));
-						break;
+				if(dcMetaQueryVO.getRedisInfo().containsKey(redisTbl.getRedisMaster())) {
+					keeperMeta.setMaster(encodeRedisAddress(dcMetaQueryVO.getRedisInfo().get(redisTbl.getRedisMaster())));
+				} else {
+					for(RedisTbl redis : dcMetaQueryVO.getAllActiveKeepers().values()) {
+						if(redis.getId() == redisTbl.getRedisMaster()) {
+							keeperMeta.setMaster(encodeRedisAddress(redis));
+							break;
+						}
 					}
 				}
 			}
+			keeperMeta.setActive(redisTbl.isKeeperActive());
+			keeperMeta.setKeeperContainerId(redisTbl.getKeepercontainerId());
 		}
-		keeperMeta.setActive(redisTbl.isKeeperActive());
-		keeperMeta.setKeeperContainerId(redisTbl.getKeepercontainerId());
+		
 		keeperMeta.setParent(shardMeta);
 		return keeperMeta;
 	}
@@ -94,20 +100,22 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 	public RedisMeta getRedisMeta(ShardMeta shardMeta, RedisTbl redisInfo, Map<Long,RedisTbl> redises) {
 		RedisMeta redisMeta = new RedisMeta();
 		
-		redisMeta.setId(redisInfo.getRedisName());
-		redisMeta.setIp(redisInfo.getRedisIp());
-		redisMeta.setPort(redisInfo.getRedisPort());
-		if(redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {
-			redisMeta.setMaster("");
-		} else {
-			if(null != redises.get(redisInfo.getRedisMaster())) {
-				redisMeta.setMaster(encodeRedisAddress(redises.get(redisInfo.getRedisMaster())));
+		if(null != redisInfo) {
+			redisMeta.setId(redisInfo.getRedisName());
+			redisMeta.setIp(redisInfo.getRedisIp());
+			redisMeta.setPort(redisInfo.getRedisPort());
+			if(redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {
+				redisMeta.setMaster("");
 			} else {
-				redisMeta.setMaster(encodeRedisAddress(redisService.load(redisInfo.getRedisMaster())));
+				if(null != redises.get(redisInfo.getRedisMaster())) {
+					redisMeta.setMaster(encodeRedisAddress(redises.get(redisInfo.getRedisMaster())));
+				} else {
+					redisMeta.setMaster(encodeRedisAddress(redisService.load(redisInfo.getRedisMaster())));
+				}
 			}
 		}
+		
 		redisMeta.setParent(shardMeta);
-				
 		return redisMeta;
 	}
 
@@ -115,20 +123,23 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 	public KeeperMeta getKeeperMeta(ShardMeta shardMeta, RedisTbl redisInfo, Map<Long,RedisTbl> redises) {
 		KeeperMeta keeperMeta = new KeeperMeta();
 		
-		keeperMeta.setId(redisInfo.getRedisName());
-		keeperMeta.setIp(redisInfo.getRedisIp());
-		keeperMeta.setPort(redisInfo.getRedisPort());
-		if(redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {
-			keeperMeta.setMaster("");
-		} else {
-			if(null != redises.get(redisInfo.getRedisMaster())) {
-				keeperMeta.setMaster(encodeRedisAddress(redises.get(redisInfo.getRedisMaster())));
+		if(null != redisInfo) {
+			keeperMeta.setId(redisInfo.getRedisName());
+			keeperMeta.setIp(redisInfo.getRedisIp());
+			keeperMeta.setPort(redisInfo.getRedisPort());
+			if(redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {
+				keeperMeta.setMaster("");
 			} else {
-				keeperMeta.setMaster(encodeRedisAddress(redisService.load(redisInfo.getRedisMaster())));
+				if(null != redises.get(redisInfo.getRedisMaster())) {
+					keeperMeta.setMaster(encodeRedisAddress(redises.get(redisInfo.getRedisMaster())));
+				} else {
+					keeperMeta.setMaster(encodeRedisAddress(redisService.load(redisInfo.getRedisMaster())));
+				}
 			}
+			keeperMeta.setActive(redisInfo.isKeeperActive());
+			keeperMeta.setKeeperContainerId(redisInfo.getKeepercontainerId());
 		}
-		keeperMeta.setActive(redisInfo.isKeeperActive());
-		keeperMeta.setKeeperContainerId(redisInfo.getKeepercontainerId());
+		
 		keeperMeta.setParent(shardMeta);
 		
 		return keeperMeta;
