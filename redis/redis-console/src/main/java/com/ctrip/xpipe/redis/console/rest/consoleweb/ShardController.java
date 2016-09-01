@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
 
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
+import com.ctrip.xpipe.redis.console.service.meta.ShardMetaService;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,18 +25,25 @@ import java.util.List;
 public class ShardController {
 
   @Autowired
-  private ClusterMetaService clusterService;
+  private ClusterMetaService clusterMetaService;
+  @Autowired
+  private ShardMetaService shardMetaService;
   @Autowired
   private ShardService shardService;
 
   @RequestMapping("/clusters/{clusterName}/dcs/{dcName}/shards")
-  public List<ShardMeta> findShardMeta(@PathVariable String clusterName, @PathVariable String dcName){
-    return new ArrayList<ShardMeta>(clusterService.getClusterMeta(dcName, clusterName).getShards().values());
+  public List<ShardMeta> findShardMetas(@PathVariable String clusterName, @PathVariable String dcName){
+    return new ArrayList<ShardMeta>(clusterMetaService.getClusterMeta(dcName, clusterName).getShards().values());
   }
 
   @RequestMapping("/clusters/{clusterName}/shards")
   public List<ShardTbl> findShards(@PathVariable String clusterName) {
     return shardService.loadAllByClusterName(clusterName);
+  }
+  
+  @RequestMapping("/clusters/{clusterName}/dcs/{dcName}/shards/{shardName}")
+  public ShardMeta findShardMeta(@PathVariable String clusterName, @PathVariable String dcName, @PathVariable String shardName) {
+	  return shardMetaService.getShardMeta(dcName, clusterName, shardName);
   }
 
   @RequestMapping(value = "/clusters/{clusterName}/shards", method = RequestMethod.POST)

@@ -1,8 +1,8 @@
 <div class="col-md-8 col-md-offset-2">
 	<h3 class="header smaller lighter blue">
-    	<a href="/#/cluster_form?clusterName={{clusterName}}&type=retrieve">{{clusterName}}</a>
+    	<a href="/#/cluster_list?clusterName={{clusterName}}">{{clusterName}}</a>
     	<span> > </span>
-    	<a href="/#/cluster_shards?clusterName={{clusterName}}">shards</a>
+    	<span>shards</span>
     </h3>
 
     <div class="panel panel-primary">
@@ -63,7 +63,7 @@
                         setinel 监控名称
                     </label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-value="{{clusterName}}-{{shard.shardName}}" ng-model="shard.setinelMonitorName" ng-required="true">
+                        <input type="text" class="form-control" ng-model="shard.setinelMonitorName" ng-required="true">
                     </div>
                 </div>
             </div>

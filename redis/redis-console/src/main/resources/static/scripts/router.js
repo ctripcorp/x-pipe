@@ -17,13 +17,18 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/cluster_dc_shards.html',
             controller: 'ClusterCtl'
         })
+        .state('cluster_dc_shard_update', {
+        	url: '/cluster_dc_shard_update?clusterName&shardName',
+        	templateUrl: 'views/index/cluster_dc_shard_update.html',
+        	controller: 'ClusterDcShardUpdateCtl'
+        })
         .state('cluster_dc', {
             url: '/cluster_dc?clusterName',
             templateUrl: 'views/index/cluster_dc.html',
             controller: 'ClusterDcCtl'
         })
         .state('cluster_list', {
-            url: '/cluster_list',
+            url: '/cluster_list?clusterName',
             templateUrl: 'views/index/cluster_list.html',
             controller: 'ClusterListCtl'
         })

@@ -95,7 +95,7 @@
     <div id="sidebar" class="sidebar responsive sidebar-fixed">
         <ul class="nav nav-list">
             <li class="active">
-                <a ui-sref="cluster_list">
+                <a ui-sref="cluster_list({clusterName:''})">
                     <i class="menu-icon fa fa-desktop"></i>
                     <span class="menu-text"> Cluster 列表 </span>
                 </a>
@@ -161,5 +161,6 @@
 <script src="scripts/controllers/ClusterListCtl.js"></script>
 <script src="scripts/controllers/ClusterDcCtl.js"></script>
 <script src="scripts/controllers/ClusterShardsCtl.js"></script>
+<script src="scripts/controllers/ClusterDcShardUpdateCtl.js"></script>
 </body>
 </html>

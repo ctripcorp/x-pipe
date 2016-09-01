@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
  * Aug 17, 2016
  */
 @Service("redisMetaService")
-public class RedisMetaServiceImpl implements RedisMetaService{
+public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMetaService{
 	public static long REDIS_MASTER_NULL = 0L;
 	
 	@Autowired

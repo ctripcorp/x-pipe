@@ -119,6 +119,9 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 		}
 		dcClusterShardDao.deleteDcClusterShardsBatch(relatedDcClusterShards);
 		
+		for(ShardTbl shard : shards) {
+			shard.setShardName(generateDeletedName(shard.getShardName()));
+		}
 		shardTblDao.deleteShardsBatch(shards.toArray(new ShardTbl[shards.size()]), ShardTblEntity.UPDATESET_FULL);
 		
 	}

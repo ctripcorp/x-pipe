@@ -1,9 +1,15 @@
 <div class="col-md-8 col-md-offset-2">
+	<h3 class="header smaller lighter blue" ng-if="operateType !== 'create' ">
+    	<a href="/#/cluster_list?clusterName={{cluster.clusterName}}">{{cluster.clusterName}}</a>
+    	<span> > </span>
+    	<span>Cluster信息</span>
+    </h3>
+
     <div class="panel panel-primary">
         <div class="panel-heading">
-            <span ng-if="operateType == 'create'">创建集群</span>
-            <h4 ng-if="operateType == 'update'">更新集群</h4>
-            <h4 ng-if="operateType == 'retrieve'">集群信息</h4>
+            <span ng-if="operateType == 'create'">创建Cluster</span>
+            <h4 ng-if="operateType == 'update'">更新Cluster</h4>
+            <h4 ng-if="operateType == 'retrieve'">Cluster信息</h4>
         </div>
         <div class="panel-body">
 
@@ -78,7 +84,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+ <!--                <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right">链接</label>
 
                     <div class="col-sm-7">
@@ -86,7 +92,7 @@
                         <a href="/#/cluster_shards?clusterName={{cluster.clusterName}}">Shards</a>&nbsp;&nbsp;&nbsp;
                         <a href="/#/cluster_dc_shards?clusterName={{cluster.clusterName}}">详情</a>
                     </div>
-                </div>
+                </div> -->
 
 
                 <div class="form-group">
