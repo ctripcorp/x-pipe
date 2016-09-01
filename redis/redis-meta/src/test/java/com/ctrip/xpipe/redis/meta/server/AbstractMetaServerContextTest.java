@@ -48,7 +48,8 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 		}
 		
 		zkAddress = String.format("localhost:%d", zkPort);
-		getZkClient();//set zk address and start
+		TestZkClient client = getBean(TestZkClient.class);
+		client.setZkAddress(zkAddress);
 	}
 	
 	protected boolean isStartZk() {
@@ -83,10 +84,15 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	
 	
 	public ZkClient getZkClient() throws Exception {
+		return createZkClient();
+	}
+
+	public ZkClient createZkClient() throws Exception {
 		
 		try{
-			TestZkClient zkClient = getBean(TestZkClient.class);
+			TestZkClient zkClient = new TestZkClient();
 			zkClient.setZkAddress(zkAddress);
+			addToStartedRegistry(zkClient);
 			return zkClient;
 		}catch(Exception e){
 			logger.info(e.getMessage());
@@ -102,10 +108,9 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	public CurrentClusterServer createAndStart(MetaServerConfig metaServerConfig) throws Exception{
 		
 		DefaultCurrentClusterServer current = new DefaultCurrentClusterServer();
-		current.setZkClient(getZkClient());
+		current.setZkClient(createZkClient());
 		current.setConfig(metaServerConfig);
-		current.initialize();
-		current.start();
+		addToStartedRegistry(current);
 		return current;
 	}
 

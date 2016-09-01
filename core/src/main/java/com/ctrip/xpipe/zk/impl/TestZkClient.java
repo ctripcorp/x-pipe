@@ -5,6 +5,7 @@ package com.ctrip.xpipe.zk.impl;
 
 import org.apache.curator.framework.CuratorFramework;
 
+import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -17,7 +18,7 @@ import com.ctrip.xpipe.zk.ZkConfig;
  */
 public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElement {
 
-	private CuratorFramework client;
+	private volatile CuratorFramework client;
 	private ZkConfig zkConfig = new DefaultZkConfig();
 	
 	private String address = System.getProperty("zkAddress", "localhost:2181");
@@ -31,6 +32,15 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 		
 	}
 
+	
+	@Override
+	protected void doDispose() throws Exception {
+		super.doDispose();
+		if(client != null){
+			client.close();
+			client = null;
+		}
+	}
 	
 	@Override
 	protected void doStop() throws Exception {
@@ -68,5 +78,10 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 	
 	public void setZkConfig(ZkConfig zkConfig) {
 		this.zkConfig = zkConfig;
+	}
+	
+	@Override
+	public int getOrder() {
+		return Ordered.HIGHEST_PRECEDENCE;
 	}
 }
