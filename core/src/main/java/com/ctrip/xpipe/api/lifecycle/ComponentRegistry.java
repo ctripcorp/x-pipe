@@ -9,7 +9,7 @@ import java.util.Map;
  *
  * Jun 12, 2016
  */
-public interface ComponentRegistry extends Lifecycle{
+public interface ComponentRegistry extends Lifecycle, Destroyable{
 	
 	String add(Object component) throws Exception;
 	

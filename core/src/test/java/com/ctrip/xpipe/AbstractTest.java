@@ -1,7 +1,5 @@
 package com.ctrip.xpipe;
 
-
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,7 +27,6 @@ import org.junit.rules.TestName;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
@@ -337,7 +334,9 @@ public class AbstractTest {
 		try {
 			logger.info(remarkableMessage("[startZK]{}"), zkPort);
 			ZkTestServer zkTestServer = new ZkTestServer(zkPort);
-			addToStartedRegistry(zkTestServer);
+			zkTestServer.initialize();
+			zkTestServer.start();
+			add(zkTestServer);
 			return zkTestServer;
 		} catch (Exception e) {
 			logger.error("[startZk]", e);
@@ -392,18 +391,12 @@ public class AbstractTest {
 				};
 			}
 		});
-		addToStartedRegistry(server);
+		server.initialize();
+		server.start();
+		add(server);
 		return server;
 	}
 	
-	protected void addToStartedRegistry(Lifecycle lifecycle) throws Exception{
-		startedComponentRegistry.add(lifecycle);
-	}
-	
-	public ComponentRegistry getStartedComponentRegistry() {
-		return startedComponentRegistry;
-	}
-
 
 	@After
 	public void afterAbstractTest() throws IOException{
@@ -411,9 +404,7 @@ public class AbstractTest {
 		try {
 			LifecycleHelper.stopIfPossible(componentRegistry);
 			LifecycleHelper.disposeIfPossible(componentRegistry);
-			
-			LifecycleHelper.stopIfPossible(startedComponentRegistry);
-			LifecycleHelper.disposeIfPossible(startedComponentRegistry);
+			componentRegistry.destroy();
 		} catch (Exception e) {
 			logger.error("[afterAbstractTest]", e);
 		}

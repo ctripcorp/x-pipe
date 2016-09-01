@@ -24,8 +24,9 @@ public class DefaultCurrentClusterServerTest extends AbstractMetaServerContextTe
 		
 		currentServer = new DefaultCurrentClusterServer();
 		currentServer.setConfig(config);
-		
 		currentServer.setZkClient(getZkClient());
+		
+		add(currentServer);
 	}
 	
 	
@@ -35,7 +36,7 @@ public class DefaultCurrentClusterServerTest extends AbstractMetaServerContextTe
 		
 		currentServer.initialize();
 		currentServer.start();
-		sleep(20);
+		sleep(100);
 		Stat stat = getCurator().checkExists().forPath(MetaZkConfig.getMetaServerRegisterPath() + "/" + config.getMetaServerId());
 		Assert.assertNotNull(stat);
 		
@@ -51,7 +52,7 @@ public class DefaultCurrentClusterServerTest extends AbstractMetaServerContextTe
 		currentServer.initialize();
 		currentServer.start();
 		
-		sleep(20);
+		sleep(100);
 		Stat stat1 = getCurator().checkExists().forPath(MetaZkConfig.getMetaServerRegisterPath() + "/" + config.getMetaServerId());
 		Assert.assertNotNull(stat1);
 		

@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 public class ComponentTest {
 	
 	public ComponentTest(){
-		System.out.println("ComponentTest");
 	}
 	
 

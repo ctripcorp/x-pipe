@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.spring.AbstractController;
 
 /**
@@ -26,6 +28,10 @@ public class CurrentMetaServerController extends AbstractController{
 	
 	@Autowired
 	private MetaServer 	currentMetaServer;
+	
+	@Autowired
+	private DcMetaCache dcMetaCache;
+
 
 	
 	@RequestMapping(path = "/slots", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -37,9 +43,30 @@ public class CurrentMetaServerController extends AbstractController{
 	@RequestMapping(path = "/debug", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public String getCurrentMeta(){
 		
-		String currentMeta = currentMetaServer.getCurrentMeta().toString(); 
-		return currentMeta;
+		String currentMeta = currentMetaServer.getCurrentMeta().toString();
+		String allMeta = ((DefaultDcMetaCache)dcMetaCache).getDcMeta().toString();
+		
+		return String.format("current:%s\nall:%s\n", currentMeta, allMeta);
 	}
 
+	public static class DebugInfo{
+		
+		private String currentMeta;
+		private String allMeta;
+		
+		public DebugInfo(String currentMeta, String allMeta){
+			this.currentMeta = currentMeta;
+			this.allMeta = allMeta;
+		}
+		
+		public String getCurrentMeta() {
+			return currentMeta;
+		}
+		
+		public String getAllMeta() {
+			return allMeta;
+		}
+		
+	}
 
 }

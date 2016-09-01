@@ -92,7 +92,8 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 		try{
 			TestZkClient zkClient = new TestZkClient();
 			zkClient.setZkAddress(zkAddress);
-			addToStartedRegistry(zkClient);
+			zkClient.initialize();zkClient.start();
+			add(zkClient);
 			return zkClient;
 		}catch(Exception e){
 			logger.info(e.getMessage());
@@ -110,7 +111,9 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 		DefaultCurrentClusterServer current = new DefaultCurrentClusterServer();
 		current.setZkClient(createZkClient());
 		current.setConfig(metaServerConfig);
-		addToStartedRegistry(current);
+		current.initialize();
+		current.start();
+		add(current);
 		return current;
 	}
 

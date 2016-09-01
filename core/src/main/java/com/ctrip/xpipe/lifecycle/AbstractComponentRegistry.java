@@ -99,29 +99,16 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 		}
 	}
 
-	
 	@Override
-	protected void doStop() throws Exception {
-
-		List<Lifecycle> components = lifecycleCallable();
-		Collections.reverse(components);
+	public void destroy() throws Exception {
 		
-		for(Lifecycle lifecycle : components){
-				if(lifecycle.getLifecycleState().canStop()){
-					try{
-						lifecycle.stop();
-					}catch(Throwable th){
-						logger.error("[doStop]" + lifecycle, th);
-					}
-				}
-		}
-		super.doStop();
-		
+		logger.info("[destroy]");
+		stopAllComponents();
+		disposeAllComponents();
+		cleanComponents();
 	}
-	
-	@Override
-	protected void doDispose() throws Exception {
 
+	private void disposeAllComponents() {
 		List<Lifecycle> components = lifecycleCallable();
 		Collections.reverse(components);
 		
@@ -134,6 +121,37 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 				}
 			}
 		}
+	}
+
+	private void stopAllComponents() {
+		
+		List<Lifecycle> components = lifecycleCallable();
+		Collections.reverse(components);
+		
+		for(Lifecycle lifecycle : components){
+				if(lifecycle.getLifecycleState().canStop()){
+					try{
+						lifecycle.stop();
+					}catch(Throwable th){
+						logger.error("[doStop]" + lifecycle, th);
+					}
+			}
+		}
+	}
+
+	protected abstract void cleanComponents() throws Exception;
+
+	@Override
+	protected void doStop() throws Exception {
+
+		stopAllComponents();
+		super.doStop();
+		
+	}
+	
+	@Override
+	protected void doDispose() throws Exception {
+		disposeAllComponents();
 		super.doDispose();
 	}
 	

@@ -61,8 +61,10 @@ public class AppTest extends AbstractMetaServerContextTest{
 		
 		System.setProperty("server.port", String.valueOf(serverPort));
 		startZk(zkPort);
-		SpringComponentRegistry regitstry = SpringApplication.run(AppTest.class, new String[]{}).getBean(SpringComponentRegistry.class);
-		addToStartedRegistry(regitstry);
+		SpringComponentRegistry registry = SpringApplication.run(AppTest.class, new String[]{}).getBean(SpringComponentRegistry.class);
+		registry.initialize();
+		registry.start();
+		add(registry);
 		
 	}
 

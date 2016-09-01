@@ -96,7 +96,7 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 
 	@Override
 	protected void doAdd(String name, Object component) throws Exception {
-		
+	
 		if(component instanceof Lifecycle){
 			
 			Lifecycle lifecycle = (Lifecycle) component;
@@ -112,6 +112,19 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 						lifecycle.start();
 					}
 				}
+				
+				if(getLifecycleState().isStopping() || getLifecycleState().isPositivelyStopped()){
+					if(lifecycle.getLifecycleState().canStop()){
+						lifecycle.stop();
+					}
+				}
+				
+				if(getLifecycleState().isDisposing() || getLifecycleState().isPositivelyDisposed()){
+					if(lifecycle.getLifecycleState().canDispose()){
+						lifecycle.dispose();
+					}
+				}
+
 			}
 		}
 		
@@ -135,4 +148,10 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 		}
 		return sort(result);
 	}
+
+	@Override
+	protected void cleanComponents() {
+		components.clear();
+	}
+	
 }

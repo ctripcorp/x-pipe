@@ -88,5 +88,8 @@ public class SpringComponentRegistry extends AbstractComponentRegistry{
 	}
 
 
-
+	@Override
+	protected void cleanComponents() throws Exception {
+		//nothing to do
+	}
 }

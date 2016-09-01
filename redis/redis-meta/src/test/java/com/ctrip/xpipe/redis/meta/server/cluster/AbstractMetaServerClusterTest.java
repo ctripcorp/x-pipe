@@ -52,13 +52,15 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 		for(int i=0 ; i<serverCount ; i++){
 			
 			int port = portUsable(defaultMetaServerPort());
-			TestMetaServer testAppServer = new TestMetaServer(i + 1, port, zkPort);
-			addToStartedRegistry(testAppServer);
+			TestMetaServer testMetaServer = new TestMetaServer(i + 1, port, zkPort);
+			testMetaServer.initialize();
+			testMetaServer.start();
+			add(testMetaServer);
 		}
 	}
 	
 	public List<TestMetaServer> getServers() {
-		return new LinkedList<>(getStartedComponentRegistry().getComponents(TestMetaServer.class).values());
+		return new LinkedList<>(getRegistry().getComponents(TestMetaServer.class).values());
 	}
 	
 	public TestMetaServer getLeader(){

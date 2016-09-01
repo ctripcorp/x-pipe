@@ -53,7 +53,9 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractRedi
 				replicationStoreCommandFileNumToKeep, 
 				replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
 		redisKeeperServer = createRedisKeeperServer(keeperConfig);
-		addToStartedRegistry(redisKeeperServer);
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		add(redisKeeperServer);
 		redisKeeperServer.getRedisKeeperServerState().becomeActive(new InetSocketAddress("localhost", fakeRedisServer.getPort()));
 	}
 

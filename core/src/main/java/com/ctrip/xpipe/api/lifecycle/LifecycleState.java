@@ -25,10 +25,14 @@ public interface LifecycleState{
 	
 	boolean isStopped();
 	
+	boolean isPositivelyStopped();
+	
 	boolean isDisposing();
 	
 	boolean isDisposed();
-	
+
+	boolean isPositivelyDisposed();
+
 	String getPhaseName();
 	
 	void setPhaseName(String name);

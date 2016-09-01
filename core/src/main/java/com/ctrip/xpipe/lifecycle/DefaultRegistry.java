@@ -130,4 +130,9 @@ public class DefaultRegistry extends AbstractComponentRegistry{
 		}
 		return sort(result);
 	}
+	
+	@Override
+	protected void cleanComponents() throws Exception {
+		createdRegistry.destroy();
+	}
 }

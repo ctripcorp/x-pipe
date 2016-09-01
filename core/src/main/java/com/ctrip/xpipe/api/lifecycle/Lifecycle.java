@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.api.lifecycle;
 
-import org.slf4j.Logger;
-
 /**
  * @author wenchao.meng
  *

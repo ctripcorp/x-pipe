@@ -91,6 +91,13 @@ public class DefaultLifecycleState extends DefaultLifecycleController implements
 						Disposable.PHASE_NAME_BEGIN, 
 						Disposable.PHASE_NAME_END));
 	}
+	
+	@Override
+	public boolean isPositivelyStopped() {
+		
+		String phaseName = getPhaseName();
+		return phaseName != null && phaseNameIn(phaseName, Stoppable.PHASE_NAME_END, Disposable.PHASE_NAME_BEGIN, Disposable.PHASE_NAME_END);
+	}
 
 	private boolean phaseNameIn(String phaseName, String ... ins) {
 		
@@ -114,6 +121,13 @@ public class DefaultLifecycleState extends DefaultLifecycleController implements
 		
 		String phaseName = getPhaseName();
 		return phaseName == null  || (phaseName != null && phaseName.equals(Disposable.PHASE_NAME_END));
+	}
+
+	@Override
+	public boolean isPositivelyDisposed() {
+		
+		String phaseName = getPhaseName();
+		return phaseName != null && phaseNameIn(getPhaseName(), Disposable.PHASE_NAME_END);
 	}
 
 	@Override
@@ -164,4 +178,5 @@ public class DefaultLifecycleState extends DefaultLifecycleController implements
 	public boolean canDispose() {
 		return lifecycleController.canDispose(getPhaseName());
 	}
+
 }

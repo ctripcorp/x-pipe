@@ -131,10 +131,13 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		
 		DefaultZkClient zkClient = new DefaultZkClient();
 		zkClient.setZkAddress(dcMeta.getZkServer().getAddress());
-		addToStartedRegistry(zkClient);
+		zkClient.initialize();zkClient.start();
+		add(zkClient);
 		
 		DefaultLeaderElectorManager leaderElectorManager = new DefaultLeaderElectorManager(zkClient);
-		addToStartedRegistry(leaderElectorManager);
+		leaderElectorManager.initialize();
+		leaderElectorManager.start();
+		add(leaderElectorManager);
 		return leaderElectorManager;
 	}
 
