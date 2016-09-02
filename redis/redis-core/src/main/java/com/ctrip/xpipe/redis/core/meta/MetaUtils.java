@@ -23,7 +23,7 @@ public class MetaUtils {
 		
 	}
 
-	private static boolean theSame(Redis redisMeta1, Redis redisMeta2) {
+	public static boolean theSame(Redis redisMeta1, Redis redisMeta2) {
 		
 		if(!ObjectUtils.equals(redisMeta1.getIp(), redisMeta2.getIp())){
 			return false;

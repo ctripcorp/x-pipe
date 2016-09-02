@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
  *
  * Sep 2, 2016
  */
-public class ClusterMetaComparator extends AbstractMetaComparator<ShardMeta>{
+public class ClusterMetaComparator extends AbstractMetaComparator<ShardMeta, ClusterChange>{
 	
 	private ClusterMeta current, future;
 	
@@ -37,7 +37,7 @@ public class ClusterMetaComparator extends AbstractMetaComparator<ShardMeta>{
 		for(String shardId : result.getMiddle()){
 			ShardMeta currentMeta = current.findShard(shardId);
 			ShardMeta futureMeta = future.findShard(shardId);
-			if(!currentMeta.equals(future)){
+			if(!reflectionEquals(currentMeta, futureMeta)){
 				
 				ShardMetaComparator comparator = new ShardMetaComparator(currentMeta, futureMeta);
 				comparator.compare();
@@ -45,4 +45,13 @@ public class ClusterMetaComparator extends AbstractMetaComparator<ShardMeta>{
 			}
 		}
 	}
+	
+	public ClusterMeta getCurrent() {
+		return current;
+	}
+	
+	public ClusterMeta getFuture() {
+		return future;
+	}
+
 }

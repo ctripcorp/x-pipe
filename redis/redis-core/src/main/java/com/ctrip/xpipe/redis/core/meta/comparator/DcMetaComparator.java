@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
  *
  * Sep 2, 2016
  */
-public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta>{
+public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta, DcChange>{
 	
 	private DcMeta current, future;
 	
@@ -41,12 +41,11 @@ public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta>{
 		for(String clusterId : intersectionClusterIds){
 			ClusterMeta currentMeta = current.findCluster(clusterId);
 			ClusterMeta futureMeta = future.findCluster(clusterId);
-			if(!currentMeta.equals(futureMeta)){
+			if(!reflectionEquals(currentMeta, futureMeta)){
 				ClusterMetaComparator clusterMetaComparator = new ClusterMetaComparator(currentMeta, futureMeta);
 				clusterMetaComparator.compare();
 				modified.add(clusterMetaComparator);
 			}
 		}
 	}
-
 }

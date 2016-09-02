@@ -15,7 +15,7 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
  */
 public class DefaultRunIdGeneratorTest extends AbstractRedisTest{
 	
-	private int count = 1 << 20;
+	private int count = 1 << 10;
 	
 	@Test
 	public void testGenerate(){

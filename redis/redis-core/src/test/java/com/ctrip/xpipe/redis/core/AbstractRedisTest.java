@@ -183,6 +183,27 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		InputStream ins = FileUtils.getFileInputStream(configFile, getClass());
 		return DefaultSaxParser.parse(ins);
 	}
+
+
+	protected ClusterMeta getCluster(String dc, String clusterId) {
+		
+		DcMeta dcMeta = getDcMeta(dc);
+		if(dcMeta == null){
+			return null;
+		}
+		ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+		return clusterMeta;
+	}
+
+	protected ShardMeta getShard(String dc, String clusterId, String shardId){
+		
+		ClusterMeta clusterMeta = getCluster(dc, clusterId);
+		if(clusterMeta == null){
+			return null;
+		}
+		return clusterMeta.getShards().get(shardId);
+	}
+	
 	
 	protected List<RedisMeta> getRedises(String dc) {
 
@@ -315,4 +336,5 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		FakeFoundationService.setDataCenter(dc);
 		return dc;
 	}
+
 }

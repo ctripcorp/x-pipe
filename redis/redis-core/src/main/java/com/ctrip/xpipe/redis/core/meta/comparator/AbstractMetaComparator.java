@@ -1,12 +1,17 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
+
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
 
+import com.ctrip.xpipe.redis.core.BaseEntity;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 
 /**
@@ -14,15 +19,17 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparator;
  *
  * Sep 2, 2016
  */
-public abstract class AbstractMetaComparator<T> implements MetaComparator<T>{
+public abstract class AbstractMetaComparator<T, C extends Enum<C>> implements MetaComparator<T, C>{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected Set<T> added = new HashSet<>(); 
 	protected Set<T> removed = new HashSet<>(); 
 	@SuppressWarnings("rawtypes")
-	protected Set<MetaComparator>  modified= new HashSet<>(); 
+	protected Set<MetaComparator>  modified= new HashSet<>();
 	
+	protected List<ConfigChanged<C>> configChanged = new LinkedList<>();
+
 
 	
 	/**
@@ -57,6 +64,14 @@ public abstract class AbstractMetaComparator<T> implements MetaComparator<T>{
 	@Override
 	public Set<MetaComparator> getMofified() {
 		return modified;
+	}
+	
+	public List<ConfigChanged<C>> getConfigChanged() {
+		return new LinkedList<>(configChanged);
+	}
+	
+	protected boolean reflectionEquals(BaseEntity<?> currentMeta, BaseEntity<?> futureMeta) {
+		return EqualsBuilder.reflectionEquals(currentMeta, futureMeta, "hash");
 	}
 
 }
