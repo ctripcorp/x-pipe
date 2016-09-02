@@ -10,6 +10,7 @@ import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.query.DalQueryHandler;
+import com.ctrip.xpipe.redis.console.util.SetOperationUtil;
 
 /**
  * @author shyin
@@ -18,6 +19,7 @@ import com.ctrip.xpipe.redis.console.query.DalQueryHandler;
  */
 public abstract class AbstractConsoleService<T> {
 	protected DalQueryHandler queryHandler = new DalQueryHandler();
+	protected SetOperationUtil setOperator = new SetOperationUtil();
 
 	protected T dao;
 

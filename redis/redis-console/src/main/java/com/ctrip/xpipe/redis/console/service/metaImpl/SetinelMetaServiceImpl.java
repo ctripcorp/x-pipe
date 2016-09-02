@@ -19,9 +19,11 @@ public class SetinelMetaServiceImpl implements SetinelMetaService {
 	public SetinelMeta encodeSetinelMeta(SetinelTbl setinel, DcMeta dcMeta) {
 		SetinelMeta setinelMeta = new SetinelMeta();
 		
-		setinelMeta.setId(setinel.getSetinelId());
-		setinelMeta.setAddress(setinel.getSetinelAddress());
-		setinelMeta.setParent(dcMeta);
+		if(null != setinel) {
+			setinelMeta.setId(setinel.getSetinelId());
+			setinelMeta.setAddress(setinel.getSetinelAddress());
+			setinelMeta.setParent(dcMeta);
+		}
 
 		return setinelMeta;
 	}

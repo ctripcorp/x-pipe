@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.ShardMetaService;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
+import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 
@@ -54,11 +55,13 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 	public ClusterMeta loadClusterMeta(DcMeta dcMeta, ClusterTbl clusterTbl, DcMetaQueryVO dcMetaQueryVO) {
 		ClusterMeta clusterMeta = new ClusterMeta();
 		
-		clusterMeta.setId(clusterTbl.getClusterName());
-		clusterMeta.setActiveDc(dcMetaQueryVO.getAllDcs().get(clusterTbl.getActivedcId()).getDcName());
-		clusterMeta.setPhase(dcMetaQueryVO.getDcClusterMap().get(clusterTbl.getClusterName())
-				.getDcClusterPhase());
-		clusterMeta.setLastModifiedTime(clusterTbl.getClusterLastModifiedTime());
+		if(null != clusterTbl) {
+			clusterMeta.setId(clusterTbl.getClusterName());
+			clusterMeta.setActiveDc(dcMetaQueryVO.getAllDcs().get(clusterTbl.getActivedcId()).getDcName());
+			clusterMeta.setPhase(dcMetaQueryVO.getDcClusterMap().get(clusterTbl.getClusterName())
+					.getDcClusterPhase());
+			clusterMeta.setLastModifiedTime(clusterTbl.getClusterLastModifiedTime());
+		}
 		clusterMeta.setParent(dcMeta);
 		
 		for(ShardTbl shard : dcMetaQueryVO.getShardMap().get(clusterTbl.getClusterName())) {
@@ -72,6 +75,7 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 	public ClusterMeta getClusterMeta(final String dcName, final String clusterName) {
 		ExecutorService fixedThreadPool = Executors.newFixedThreadPool(6);
 		ClusterMeta clusterMeta =  new ClusterMeta();
+		clusterMeta.setId(clusterName);
 		
 		Future<DcTbl> future_dcInfo = fixedThreadPool.submit(new Callable<DcTbl>(){
 			@Override
@@ -108,17 +112,23 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 		try {
 			ClusterTbl clusterInfo = future_clusterInfo.get();
 			DcClusterTbl dcClusterInfo = future_dcClusterInfo.get();
-			
-			clusterMeta.setId(clusterInfo.getClusterName());
-			clusterMeta.setActiveDc(dcService.load(clusterInfo.getActivedcId()).getDcName());
-			clusterMeta.setPhase(dcClusterInfo.getDcClusterPhase());
-			clusterMeta.setLastModifiedTime(clusterInfo.getClusterLastModifiedTime());
-			
 			DcTbl dcInfo = future_dcInfo.get();
+			
+			if(null != clusterInfo && null != dcClusterInfo) {
+				clusterMeta.setId(clusterInfo.getClusterName());
+				clusterMeta.setActiveDc(dcService.load(clusterInfo.getActivedcId()).getDcName());
+				clusterMeta.setPhase(dcClusterInfo.getDcClusterPhase());
+				clusterMeta.setLastModifiedTime(clusterInfo.getClusterLastModifiedTime());
+			} else {
+				clusterMeta.setLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+			}
+			
 			List<ShardTbl> shards = future_ShardsInfo.get();
 			HashMap<Triple<Long, Long, Long>, RedisTbl> activekeepers = future_activekeepersInfo.get();
-			for(ShardTbl shard : shards) {
-				clusterMeta.addShard(shardMetaService.encodeShardMeta(dcInfo, clusterInfo, shard, activekeepers));
+			if(null != shards) {
+				for(ShardTbl shard : shards) {
+					clusterMeta.addShard(shardMetaService.encodeShardMeta(dcInfo, clusterInfo, shard, activekeepers));
+				}
 			}
 		} catch (ExecutionException e) {
 			throw new DataNotFoundException("Cannot construct cluster-meta", e);

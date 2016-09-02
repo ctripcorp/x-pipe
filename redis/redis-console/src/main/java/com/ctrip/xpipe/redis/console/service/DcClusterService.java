@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service;
 
 
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
@@ -8,7 +9,6 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
-import java.util.List;
 
 /**
  * @author shyin
@@ -21,8 +21,6 @@ public class DcClusterService extends AbstractConsoleService<DcClusterTblDao>{
     private DcService dcService;
     @Autowired
     private ClusterService clusterService;
-    @Autowired
-    private MetaserverService metaserverService;
 
     public DcClusterTbl load(final long dcId, final long clusterId) {
     	return queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
@@ -45,17 +43,11 @@ public class DcClusterService extends AbstractConsoleService<DcClusterTblDao>{
     public DcClusterTbl addDcCluster(String dcName, String clusterName) {
     	DcTbl dcInfo = dcService.load(dcName);
     	ClusterTbl clusterInfo = clusterService.load(clusterName);
-    	List<MetaserverTbl> metaservers = metaserverService.findByDcName(dcInfo.getDcName());
+    	if(null == dcInfo || null == clusterInfo) throw new BadRequestException("Cannot add dc-cluster to an unknown dc or cluster");
     	
     	DcClusterTbl proto = new DcClusterTbl();
     	proto.setDcId(dcInfo.getId());
     	proto.setClusterId(clusterInfo.getId());
-    	for(MetaserverTbl metaserver : metaservers) {
-    		if(metaserver.isMetaserverActive()) {
-    			proto.setMetaserverId(metaserver.getId());
-    			break;
-    		}
-    	}
     	proto.setDcClusterPhase(1);
     	
     	try {

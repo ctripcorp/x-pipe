@@ -19,12 +19,14 @@ public class MetaserverMetaServiceImpl implements MetaserverMetaService {
 	public MetaServerMeta encodeMetaserver(MetaserverTbl metaserver, DcMeta dcMeta) {
 		MetaServerMeta metaserverMeta = new MetaServerMeta();
 		
-		metaserverMeta.setIp(metaserver.getMetaserverIp());
-		metaserverMeta.setPort(metaserver.getMetaserverPort());
-		if (metaserver.getMetaserverRole().equals("master")) {
-			metaserverMeta.setMaster(true);
-		} else {
-			metaserverMeta.setMaster(false);
+		if(null != metaserver) {
+			metaserverMeta.setIp(metaserver.getMetaserverIp());
+			metaserverMeta.setPort(metaserver.getMetaserverPort());
+			if (metaserver.getMetaserverRole().equals("master")) {
+				metaserverMeta.setMaster(true);
+			} else {
+				metaserverMeta.setMaster(false);
+			}
 		}
 		metaserverMeta.setParent(dcMeta);
 		

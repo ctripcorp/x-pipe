@@ -103,6 +103,8 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     
     public void updateCluster(final String clusterName, final ClusterTbl clusterTbl) {
     	ClusterTbl proto = load(clusterName);
+    	if(null == proto) throw new BadRequestException("Cannot find cluster");
+    	
 		if(proto.getId() != clusterTbl.getId()) {
 			throw new BadRequestException("Cluster not match.");
 		}
@@ -124,6 +126,7 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     
     public void deleteCluster(final String clusterName) {
     	ClusterTbl proto = load(clusterName);
+    	if(null == proto) throw new BadRequestException("Cannot find cluster");
     	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
     	
     	final ClusterTbl queryProto = proto;
@@ -142,6 +145,7 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     public void bindDc(final String clusterName, final String dcName) {
     	final ClusterTbl cluster = load(clusterName);
     	final DcTbl dc = dcService.load(dcName);
+    	if(null == dc || null == cluster) throw new BadRequestException("Cannot bind dc due to unknown dc or cluster");
     	
     	queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
@@ -157,6 +161,7 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     public void unbindDc(final String clusterName, final String dcName) {
     	final ClusterTbl cluster = load(clusterName);
     	final DcTbl dc = dcService.load(dcName);
+    	if(null == dc || null == cluster) throw new BadRequestException("Cannot unbind dc due to unknown dc or cluster");
     	
     	queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override

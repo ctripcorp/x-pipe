@@ -17,12 +17,12 @@ import com.ctrip.xpipe.redis.console.service.DcService;
  */
 @RestController
 @RequestMapping("console")
-public class DcController {
+public class DcController extends AbstractConsoleController{
 	@Autowired
 	private DcService dcService;
 	
 	@RequestMapping(value = "/dcs/all", method = RequestMethod.GET)
 	public List<DcTbl> findAllDcs() {
-		return dcService.findAllDcBasic();
+		return valueOrEmptySet(DcTbl.class, dcService.findAllDcBasic());
 	}
 }

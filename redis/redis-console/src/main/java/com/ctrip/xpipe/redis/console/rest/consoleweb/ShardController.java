@@ -22,7 +22,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("console")
-public class ShardController {
+public class ShardController extends AbstractConsoleController{
 
   @Autowired
   private ClusterMetaService clusterMetaService;
@@ -38,7 +38,7 @@ public class ShardController {
 
   @RequestMapping("/clusters/{clusterName}/shards")
   public List<ShardTbl> findShards(@PathVariable String clusterName) {
-    return shardService.loadAllByClusterName(clusterName);
+	return valueOrEmptySet(ShardTbl.class, shardService.loadAllByClusterName(clusterName));
   }
   
   @RequestMapping("/clusters/{clusterName}/dcs/{dcName}/shards/{shardName}")
