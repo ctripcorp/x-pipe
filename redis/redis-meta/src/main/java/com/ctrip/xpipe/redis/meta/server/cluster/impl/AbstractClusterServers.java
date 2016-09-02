@@ -108,6 +108,11 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 
 	@Override
 	public void process(WatchedEvent event) throws Exception {
+		
+		if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
+			logger.info("[process][stopped, exit]{}", event);
+			return;
+		}
 		logger.info("[process]{}", event);
 		watchServers();
 		childrenChanged();

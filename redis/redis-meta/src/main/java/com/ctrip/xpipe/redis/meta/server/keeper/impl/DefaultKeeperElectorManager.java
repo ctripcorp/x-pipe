@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.impl;
 
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -111,24 +112,43 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 			}
 			
 			client.createContainers(leaderLatchPath);
-			logger.info("[observeLeader]{}, {} , ({})", cluster.getId(), shard.getId(), currentClusterServer.getServerId());
-			List<String> children = client.getChildren().usingWatcher(new CuratorWatcher() {
-
-				@Override
-				public void process(WatchedEvent event) throws Exception {
-					
-					if(!leaderWatchedShards.hasCluster(cluster.getId())){
-						logger.info("[cluster clean watch]{}", cluster.getId());
-						return;
-					}
-					logger.info("[process]{}, {}, {}",  event, this.hashCode(), currentClusterServer.getServerId());
-					List<String> children = client.getChildren().usingWatcher(this).forPath(leaderLatchPath);
-					updateShardLeader(children, leaderLatchPath, cluster.getId(),shard.getId());
-				}
-			}).forPath(leaderLatchPath);
-
+			List<String> children = observeLeader(client, cluster.getId(), shard.getId(), leaderLatchPath);
 			updateShardLeader(children, leaderLatchPath, cluster.getId(), shard.getId());
 		}
+	}
+
+	private List<String> observeLeader(final CuratorFramework client, final String clusterId, final String shardId, final String leaderLatchPath) throws Exception {
+
+		if(!leaderWatchedShards.hasCluster(clusterId)){
+			logger.info("[cluster clean watch]{}", clusterId);
+			return Collections.emptyList();
+		}
+		
+		if(getLifecycleState().isDisposing() || getLifecycleState().isDisposed()){
+			logger.info("[disposed clean watch]{}", clusterId);
+			return Collections.emptyList();
+		}
+		
+		logger.info("[observeLeader]({}){}, {}", currentClusterServer.getServerId(), clusterId, shardId);
+
+		List<String> children = client.getChildren().usingWatcher(new CuratorWatcher() {
+
+			@Override
+			public void process(WatchedEvent event) throws Exception {
+				
+				observeLeader(client, clusterId, shardId, leaderLatchPath);
+				
+				if(getLifecycleState().isDisposing() || getLifecycleState().isDisposed()){
+					logger.info("[process][dispose][stop]{},{}", clusterId, shardId);
+					return;
+				}
+				logger.info("[process]{}, {}, {}",  event, this.hashCode(), currentClusterServer.getServerId());
+				List<String> children = client.getChildren().usingWatcher(this).forPath(leaderLatchPath);
+				updateShardLeader(children, leaderLatchPath, clusterId, shardId);
+			}
+		}).forPath(leaderLatchPath);
+		return children;
+
 	}
 
 	private void updateShardLeader(List<String> children, String leaderLatchPath, String clusterId, String shardId) throws Exception {
