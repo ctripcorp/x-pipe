@@ -24,7 +24,7 @@ public class DefaultCurrentClusterServerTest extends AbstractMetaServerContextTe
 		
 		currentServer = new DefaultCurrentClusterServer();
 		currentServer.setConfig(config);
-		currentServer.setZkClient(getZkClient());
+		currentServer.setZkClient(createZkClient());
 		
 		add(currentServer);
 	}
@@ -58,7 +58,7 @@ public class DefaultCurrentClusterServerTest extends AbstractMetaServerContextTe
 		
 		DefaultCurrentClusterServer newServer = new DefaultCurrentClusterServer();
 		newServer.setConfig(config);
-		newServer.setZkClient(getZkClient());
+		newServer.setZkClient(createZkClient());
 		newServer.initialize();
 		newServer.start();
 

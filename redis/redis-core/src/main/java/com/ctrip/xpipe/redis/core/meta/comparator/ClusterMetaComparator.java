@@ -1,0 +1,48 @@
+package com.ctrip.xpipe.redis.core.meta.comparator;
+
+import java.util.Set;
+
+import org.unidal.tuple.Triple;
+
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+
+/**
+ * @author wenchao.meng
+ *
+ * Sep 2, 2016
+ */
+public class ClusterMetaComparator extends AbstractMetaComparator<ShardMeta>{
+	
+	private ClusterMeta current, future;
+	
+	public ClusterMetaComparator(ClusterMeta current, ClusterMeta future) {
+		this.current = current;
+		this.future = future;
+	}
+
+	@Override
+	public void compare() {
+		
+		Triple<Set<String>, Set<String>, Set<String>> result = getDiff(current.getShards().keySet(), future.getShards().keySet());
+		
+		for(String shardId : result.getFirst()){
+			added.add(future.findShard(shardId));
+		}
+
+		for(String shardId : result.getLast()){
+			removed.add(current.findShard(shardId));
+		}
+
+		for(String shardId : result.getMiddle()){
+			ShardMeta currentMeta = current.findShard(shardId);
+			ShardMeta futureMeta = future.findShard(shardId);
+			if(!currentMeta.equals(future)){
+				
+				ShardMetaComparator comparator = new ShardMetaComparator(currentMeta, futureMeta);
+				comparator.compare();
+				modified.add(comparator);
+			}
+		}
+	}
+}

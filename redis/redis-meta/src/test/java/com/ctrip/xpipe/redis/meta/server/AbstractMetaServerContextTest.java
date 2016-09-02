@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.meta.server;
 
 
 
+import java.util.Map;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
 import org.springframework.context.ApplicationContext;
@@ -48,8 +50,12 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 		}
 		
 		zkAddress = String.format("localhost:%d", zkPort);
-		TestZkClient client = getBean(TestZkClient.class);
-		client.setZkAddress(zkAddress);
+		try{
+			TestZkClient client = getBean(TestZkClient.class);
+			client.setZkAddress(zkAddress);
+		}catch(IllegalStateException e){
+			//not found, if not
+		}
 	}
 	
 	protected boolean isStartZk() {
@@ -84,7 +90,12 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	
 	
 	public ZkClient getZkClient() throws Exception {
-		return createZkClient();
+		
+		Map<String, ZkClient> result = getRegistry().getComponents(ZkClient.class);
+		if(result.size() > 0){
+			return (ZkClient) result.values().toArray()[0];
+		}
+		throw new IllegalStateException("non zk client found");
 	}
 
 	public ZkClient createZkClient() throws Exception {

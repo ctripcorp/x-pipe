@@ -6,9 +6,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
 
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
@@ -21,8 +19,6 @@ import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
  * Jul 28, 2016
  */
 
-@EnableAutoConfiguration
-@Import(com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.class)
 public class AppTest extends AbstractMetaServerContextTest{
 	
 	private int zkPort = IdcUtil.JQ_ZK_PORT;
@@ -61,7 +57,7 @@ public class AppTest extends AbstractMetaServerContextTest{
 		
 		System.setProperty("server.port", String.valueOf(serverPort));
 		startZk(zkPort);
-		SpringComponentRegistry registry = SpringApplication.run(AppTest.class, new String[]{}).getBean(SpringComponentRegistry.class);
+		SpringComponentRegistry registry = SpringApplication.run(MetaServerApplication.class, new String[]{}).getBean(SpringComponentRegistry.class);
 		registry.initialize();
 		registry.start();
 		add(registry);
