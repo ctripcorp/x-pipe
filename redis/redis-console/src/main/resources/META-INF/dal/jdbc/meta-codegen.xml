@@ -262,7 +262,7 @@
   </entity>
   <entity name="redis-tbl" table="REDIS_TBL" alias="rt">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
-    <member name="redis-name" field="redis_name" value-type="String" length="128" nullable="false" />
+    <member name="run-id" field="run_id" value-type="String" length="128" nullable="false" />
     <member name="dc-cluster-shard-id" field="dc_cluster_shard_id" value-type="long" length="19" nullable="false" />
     <member name="redis-ip" field="redis_ip" value-type="String" length="40" nullable="false" />
     <member name="redis-port" field="redis_port" value-type="int" length="10" nullable="false" />

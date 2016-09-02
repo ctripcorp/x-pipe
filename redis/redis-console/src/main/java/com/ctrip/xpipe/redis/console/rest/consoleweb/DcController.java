@@ -33,7 +33,6 @@ public class DcController extends AbstractConsoleController{
 
 	@RequestMapping(value = "/dcs/{dcName}/keepercontainers", method = RequestMethod.GET)
 	public List<KeepercontainerTbl> findKeeperContainer(@PathVariable String dcName){
-    return keepercontainerService.findByDcName(dcName);
-
+		return keepercontainerService.findByDcName(dcName);
 	}
 }

@@ -54,26 +54,26 @@
                         </thead>
                         <tbody>
                         <tr ng-repeat="redis in dcShards[currentDcName].redises">
-                            <td title="{{redis.id}}">
-                                <span class="label label-info" ng-if="redis.master == 'true'">
+                            <td title="{{redis.runId}}">
+                                <span class="label label-info" ng-if="redis.redisMaster == 0">
                                     Master</span>  Redis
                             </td>
-                            <td ng-bind="redis.ip">
+                            <td ng-bind="redis.redisIp">
                             </td>
-                            <td ng-bind="redis.port">
+                            <td ng-bind="redis.redisPort">
                             </td>
                             <td>
                                 <a ng-click="preDeleteRedis(redis)">删除</a>
                             </td>
                         </tr>
                         <tr ng-repeat="keeper in dcShards[currentDcName].keepers">
-                            <td title="{{keeper.id}}">
-                                <span class="label label-info" ng-if="keeper.active">
+                            <td title="{{keeper.runId}}">
+                                <span class="label label-info" ng-if="keeper.keeperActive">
                                     active</span>  Keeper
                             </td>
-                            <td ng-bind="keeper.ip">
+                            <td ng-bind="keeper.redisIp">
                             </td>
-                            <td ng-bind="keeper.port">
+                            <td ng-bind="keeper.redisPort">
                             </td>
                             <td>
                                 <a ng-click="preDeleteRedis(keeper)">删除</a>
@@ -113,7 +113,7 @@
                         <apollorequiredfiled></apollorequiredfiled>
                         IP</label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="toCreateRedis.ip" ng-required="true">
+                        <input type="text" class="form-control" ng-model="toCreateRedis.redisIp" ng-required="true">
                     </div>
                 </div>
 
@@ -122,7 +122,7 @@
                         port
                     </label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="toCreateRedis.port" ng-required="true">
+                        <input type="text" class="form-control" ng-model="toCreateRedis.redisPort" ng-required="true">
                     </div>
                 </div>
 
@@ -132,10 +132,10 @@
                     </label>
                     <div class="col-sm-6">
                         <label class="radio-inline">
-                            <input type="radio" name="isMaster" value="true" ng-model="toCreateRedis.master"> 是
+                            <input type="radio" name="isMaster" value="0" ng-model="toCreateRedis.redisMaster"> 是
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="isMaster" value="false" ng-model="toCreateRedis.master"
+                            <input type="radio" name="isMaster" value="-1" ng-model="toCreateRedis.redisMaster"
                                    ng-checked="true"> 否
                         </label>
 
@@ -165,96 +165,65 @@
                 <div class="alert alert-danger" role="alert" ng-show="createKeeperErrorMsg">
                     {{createKeeperErrorMsg}}
                 </div>
-                <div ng-show="!hasActiveKeeper">
-                    <div class="form-group">
-
-                        <label class="col-sm-4 control-label">
-                            <label class="label label-purple">active</label>
-                            IP
-                        </label>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" ng-model="toCreateActiveKeeper.ip" ng-required="true">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="col-sm-4 control-label">
-                            port
-                        </label>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" ng-model="toCreateActiveKeeper.port" ng-required="true">
-                        </div>
-                    </div>
-
+                <div>
                     <div class="form-group">
                         <label class="col-sm-4 control-label">
                             KeeperContainer
                         </label>
                         <div class="col-sm-6">
-                            <select class="form-control" ng-model="toCreateActiveKeeper.keeperContainerId"
-                                    >
-                                <option ng-repeat="keeperContainer in freeKeeperContainers"
-                                        value="{{keeperContainer.keyKeepercontainerId}}"
-                                ng-bind="keeperContainer.keepercontainerIp + ':' + keeperContainer.keepercontainerPort"></option>
+                            <select class="form-control" ng-model="toCreateFirstKeeper.keepercontainerId">
+                                <option ng-repeat="keeperContainer in keeperContainers"
+                                        value="{{keeperContainer.keepercontainerId}}"
+                                ng-bind="keeperContainer.keepercontainerIp"></option>
                             </select>
-
                         </div>
                     </div>
-
-
-                    <hr>
-                </div>
-
-                <div ng-repeat="toCreateBackupKeeper in toCreateBackupKeepers">
-                    <div class="form-group">
-                        <label class="col-sm-4 control-label">
-                            <label class="label label-pink">backup</label>
-                            IP</label>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" ng-model="toCreateBackupKeeper.ip"
-                                   ng-required="true">
-                        </div>
-                    </div>
-
                     <div class="form-group">
                         <label class="col-sm-4 control-label">
                             port
                         </label>
                         <div class="col-sm-6">
-                            <input type="text" class="form-control" ng-model="toCreateBackupKeeper.port"
-                                   ng-required="true">
-                        </div>
-                        <div class="col-md-2" ng-show="$index > 0">
-                            <button class="btn btn-danger btn-xs" type="button"
-                                    ng-click="removeCreateBackupKeeperForm($index)">remove
-                            </button>
+                            <input type="text" class="form-control" ng-model="toCreateFirstKeeper.redisPort" ng-required="true">
                         </div>
                     </div>
+                    <hr/>
+                </div>
 
+                <div ng-repeat="toCreateOtherKeeper in toCreateOtherKeepers">
                     <div class="form-group">
                         <label class="col-sm-4 control-label">
                             KeeperContainer
                         </label>
                         <div class="col-sm-6">
                             <span style="color: red" ng-show="freeKeeperContainers.length <= 0">no more keeper containers</span>
-                            <select class="form-control" ng-model="toCreateBackupKeeper.keeperContainerId"
-                            ng-show="freeKeeperContainers.length" >
-                                <option ng-repeat="keeperContainer in freeKeeperContainers"
+                            <select class="form-control" ng-model="toCreateOtherKeeper.keepercontainerId">
+                                <option ng-repeat="keeperContainer in keeperContainers"
                                         value="{{keeperContainer.keepercontainerId}}"
-                                        ng-bind="keeperContainer.keepercontainerIp + ':' + keeperContainer.keepercontainerPort"></option>
+                                        ng-bind="keeperContainer.keepercontainerIp"></option>
                             </select>
-
                         </div>
                     </div>
-
-                    <hr>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            port
+                        </label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" ng-model="toCreateOtherKeeper.redisPort"
+                                   ng-required="true">
+                        </div>
+                        <div class="col-md-2" ng-show="$index >= 0">
+                            <button class="btn btn-danger btn-xs" type="button"
+                                    ng-click="removeCreateBackupKeeperForm($index)">remove
+                            </button>
+                        </div>
+                    </div>
+                    <hr/>
                 </div>
 
                 <div class="form-group text-center">
                     <button class="btn btn-default btn-xs" type="button" ng-click="addCreateBackupKeeperForm()">add
                         backup keeper
                     </button>
-
                 </div>
 
             </div>

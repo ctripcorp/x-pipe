@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
 /**
  * @author zhangle 16/8/24
@@ -21,8 +21,8 @@ public class RedisController extends AbstractConsoleController{
 	
 	@RequestMapping(value = "/clusters/{clusterName}/dcs/{dcName}/shards/{shardName}", method = RequestMethod.POST)
 	public void updateRedises(@PathVariable String clusterName, @PathVariable String dcName,
-			@PathVariable String shardName, @RequestBody ShardMeta shardMeta) {
-		redisService.updateRedises(clusterName,dcName,shardName,shardMeta);
+			@PathVariable String shardName, @RequestBody ShardModel shardModel) {
+		redisService.updateRedises(clusterName,dcName,shardName,shardModel);
 	}
   
 }

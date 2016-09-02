@@ -22,7 +22,6 @@ index_module.controller('ClusterDcShardUpdateCtl',
                              $scope.createKeeper = createKeeper;
                              $scope.addCreateBackupKeeperForm = addCreateBackupKeeperForm;
                              $scope.removeCreateBackupKeeperForm = removeCreateBackupKeeperForm;
-                             $scope.selectKeeperContainer = selectKeeperContainer;
 
                              $scope.preDeleteRedis = preDeleteRedis;
                              $scope.deleteRedis = deleteRedis;
@@ -91,6 +90,7 @@ index_module.controller('ClusterDcShardUpdateCtl',
 
                              function createRedis() {
                                  $scope.toCreateRedis.id = 0;
+                                 if($scope.hasRedisMaster == true) $scope.toCreateRedis.redisMaster = -1;
                                  var shard = $scope.dcShards[$scope.currentDcName];
                                  shard.redises.push($scope.toCreateRedis);
                                  $scope.toCreateRedis = {};
@@ -100,30 +100,19 @@ index_module.controller('ClusterDcShardUpdateCtl',
                              }
 
                              function addCreateBackupKeeperForm() {
-                                 $scope.toCreateBackupKeepers.push({});
+                                 $scope.toCreateOtherKeepers.push({});
                              }
 
                              function removeCreateBackupKeeperForm(index) {
-                                 $scope.toCreateBackupKeepers.splice(index, 1);
-                             }
-                             
-                             function selectKeeperContainer(selectedKeeperContainerId) {
-                                 var index = indexOfKeeperContainer(selectedKeeperContainerId, $scope.freeKeeperContainers);
-                                 if (index >= 0){
-                                     $scope.freeKeeperContainers = _.clone($scope.freeKeeperContainers);
-                                     $scope.freeKeeperContainers.splice(index, 1);
-                                 }
+                                 $scope.toCreateOtherKeepers.splice(index, 1);
                              }
 
                              function preCreateKeeper() {
-                                 if (!$scope.hasActiveKeeper) {
-                                     $scope.toCreateActiveKeeper = {};
-                                     $scope.toCreateActiveKeeper.active = true;
-                                 }
+                                 $scope.toCreateFirstKeeper = {};
 
                                  // init backup container
-                                 $scope.toCreateBackupKeepers = [];
-                                 $scope.toCreateBackupKeepers.push({});
+                                 $scope.toCreateOtherKeepers = [];
+                                 $scope.toCreateOtherKeepers.push({});
 
                                  $('#createKeeperModal').modal('show');
                              }
@@ -132,21 +121,35 @@ index_module.controller('ClusterDcShardUpdateCtl',
                                  $scope.createKeeperErrorMsg = '';
                                  var shard = $scope.dcShards[$scope.currentDcName];
 
-                                 if (!$scope.hasActiveKeeper){
-                                     if (!validKeeper($scope.toCreateActiveKeeper)){
+                                     if (!validKeeper($scope.toCreateFirstKeeper)){
                                          $scope.createKeeperErrorMsg = "valid form content please check";
                                          return;
                                      }else {
-                                         shard.keepers.push($scope.toCreateActiveKeeper);
+                                    	 var keeperContainerId = $scope.toCreateFirstKeeper.keepercontainerId;
+                                    	 for(var i = 0 ; i != $scope.keeperContainers.length; ++i) {
+                                    		 if($scope.keeperContainers[i].keepercontainerId === parseInt(keeperContainerId)) {
+                                    			 $scope.toCreateFirstKeeper.redisIp = $scope.keeperContainers[i].keepercontainerIp;
+                                    			 break;
+                                    		 }
+                                    	 }
+                                    	 $scope.toCreateFirstKeeper.id = 0;
+                                         shard.keepers.push($scope.toCreateFirstKeeper);
                                      }
-                                 }
 
-                                 $scope.toCreateBackupKeepers.forEach(function (backupKeeper) {
-                                     if (!validKeeper(backupKeeper)){
+                                 $scope.toCreateOtherKeepers.forEach(function (otherKeeper) {
+                                     if (!validKeeper(otherKeeper)){
                                          $scope.createKeeperErrorMsg = "valid form content please check";
                                          return;
                                      }else {
-                                         shard.keepers.push(backupKeeper);
+                                    	 var keeperContainerId = otherKeeper.keepercontainerId;
+                                    	 for(var i = 0 ; i != $scope.keeperContainers.length; ++i) {
+                                    		 if($scope.keeperContainers[i].keepercontainerId === parseInt(keeperContainerId)) {
+                                    			 otherKeeper.redisIp = $scope.keeperContainers[i].keepercontainerIp;
+                                    			 break;
+                                    		 }
+                                    	 }
+                                    	 otherKeeper.id = 0;
+                                         shard.keepers.push(otherKeeper);
                                      }
                                  });
 
@@ -158,7 +161,7 @@ index_module.controller('ClusterDcShardUpdateCtl',
                              }
 
                              function validKeeper(keeper) {
-                                 return keeper && keeper.ip && keeper.port;
+                                 return keeper && keeper.redisPort;
                              }
 
                              function preDeleteRedis(redis) {
@@ -202,24 +205,13 @@ index_module.controller('ClusterDcShardUpdateCtl',
 
                                  var shard = $scope.dcShards[$scope.currentDcName];
 
-                                 //pre check
-                                 //must have and only have one active keeper
-                                 var activeKeeperCnt = 0;
-                                 shard.keepers.forEach(function (keeper) {
-                                     if (keeper.active){
-                                         activeKeeperCnt ++;
-                                     }
-                                 });
-                                 if (activeKeeperCnt != 1){
-                                    toastr.error("must have and only have one active keeper");
-                                     return;
-                                 }
-
                                  RedisService.updateShardRedis($scope.clusterName, $scope.currentDcName, shard.id, shard)
                                      .then(function (result) {
-                                         toastr.success("operator success");
+                                         toastr.success("operation success");
+                                         $window.location.href =
+                                             "/#/cluster_dc_shards?clusterName=" + $scope.clusterName;
                                      }, function (result) {
-                                         toastr.error(AppUtil.errorMsg(result), "operator fail");
+                                         toastr.error(AppUtil.errorMsg(result), "operation fail");
                                      });
 
                              }
@@ -231,43 +223,16 @@ index_module.controller('ClusterDcShardUpdateCtl',
 
                                  if (shard.redises && shard.redises.length) {
                                      shard.redises.forEach(function (redis) {
-                                         if (redis.master == "" || redis.master == "true") {
+                                         if (redis.redisMaster == 0) {
                                              $scope.hasRedisMaster = true;
-                                             redis.master = "true";
-                                         } else {
-                                             redis.master = "false";
-                                         }
-
-                                     })
-                                 }
-
-                                 $scope.freeKeeperContainers = $scope.keeperContainers;
-                                 $scope.hasActiveKeeper = false;
-                                 if (shard.keepers && shard.keepers.length > 0){
-                                     shard.keepers.forEach(function (keeper) {
-                                         var index = indexOfKeeperContainer(keeper.keeperContainerId, $scope.keeperContainers);
-                                         if (index >= 0){
-                                             $scope.freeKeeperContainers.splice(index, 1);
-                                         }
-                                         if (keeper.active){
-                                             $scope.hasActiveKeeper = true;
                                          }
                                      })
                                  }
+                                 
+                                 if(shard.upstream === "0.0.0.0:0000") {
+                                	 $scope.hasRedisMaster = true;
+                                 }
 
                              }
-
-                             function indexOfKeeperContainer(keeperContainerId, keeperContainers) {
-                                 var index = -1;
-                                 keeperContainers.forEach(function (keeperContainer, i) {
-                                     if (keeperContainer.keepercontainerId == keeperContainerId){
-                                         index = i;
-                                         return;
-                                     }
-                                 })
-
-                                 return index;
-                             }
-
 
                          }]);
