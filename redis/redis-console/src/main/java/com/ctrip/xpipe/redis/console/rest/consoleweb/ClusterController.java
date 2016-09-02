@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
 import java.util.List;
 
 /**
@@ -17,7 +18,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("console")
-public class ClusterController {
+public class ClusterController extends AbstractConsoleController{
 	@Autowired
 	private DcService dcService;
 	@Autowired
@@ -25,22 +26,22 @@ public class ClusterController {
 	
 	@RequestMapping(value = "/clusters/{clusterName}/dcs", method = RequestMethod.GET)
 	public List<DcTbl> findClusterDcs(@PathVariable String clusterName) {
-		return dcService.findClusterRelatedDc(clusterName);
+		return valueOrEmptySet(DcTbl.class, dcService.findClusterRelatedDc(clusterName));
 	}
 
 	@RequestMapping(value = "/clusters/{clusterName}", method = RequestMethod.GET)
 	public ClusterTbl loadCluster(@PathVariable String clusterName) {
-		return clusterService.load(clusterName);
+		return valueOrDefault(ClusterTbl.class, clusterService.load(clusterName));
 	}
 
 	@RequestMapping(value = "/clusters/all", method = RequestMethod.GET)
 	public List<ClusterTbl> findAllClusters() {
-		return clusterService.findAllClusters();
+		return valueOrEmptySet(ClusterTbl.class, clusterService.findAllClusters());
 	}
 	
 	@RequestMapping(value = "/count/clusters", method= RequestMethod.GET)
 	public Long getClustersCount() {
-		return clusterService.getAllCount();
+		return valueOrDefault(Long.class, clusterService.getAllCount());
 	}
 	
 	@RequestMapping(value = "/clusters", method = RequestMethod.POST)

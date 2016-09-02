@@ -18,11 +18,13 @@ public class KeepercontainerMetaServiceImpl implements KeepercontainerMetaServic
 	public KeeperContainerMeta encodeKeepercontainerMeta(KeepercontainerTbl keepercontainer, DcMeta dcMeta) {
 		KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
 		
-		keeperContainerMeta.setId(keepercontainer.getKeepercontainerId());
-		keeperContainerMeta.setIp(keepercontainer.getKeepercontainerIp());
-		keeperContainerMeta.setPort(keepercontainer.getKeepercontainerPort());
-		keeperContainerMeta.setParent(dcMeta);
-
+		if(null != keepercontainer) {
+			keeperContainerMeta.setId(keepercontainer.getKeepercontainerId());
+			keeperContainerMeta.setIp(keepercontainer.getKeepercontainerIp());
+			keeperContainerMeta.setPort(keepercontainer.getKeepercontainerPort());
+			keeperContainerMeta.setParent(dcMeta);
+		}
+		
 		return keeperContainerMeta;
 	}
 

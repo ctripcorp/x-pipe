@@ -2,9 +2,6 @@ package com.ctrip.xpipe.redis.console.dao;
 
 import org.springframework.stereotype.Repository;
 
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
-
 /**
  * @author shyin
  *
@@ -12,7 +9,5 @@ import com.ctrip.xpipe.redis.console.model.RedisTbl;
  */
 @Repository
 public class RedisDao  extends AbstractXpipeConsoleDAO{
-	public RedisTbl bindRedis(DcClusterShardTbl dcClusterShard, RedisTbl redis) {
-		return null;
-	}
+	
 }
