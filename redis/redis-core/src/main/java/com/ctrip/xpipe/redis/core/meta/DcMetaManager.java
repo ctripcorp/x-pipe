@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
@@ -46,15 +47,17 @@ public interface DcMetaManager{
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
 	String getUpstream(String clusterId, String shardId) throws MetaException;
-
+	
+	DcMeta getDcMeta();
 	
 	void update(ClusterMeta clusterMeta);
-	
+
+	ClusterMeta removeCluster(String clusterId);
+
 	boolean updateKeeperActive(String clusterId, String shardId, KeeperMeta activeKeeper);
 	
 	boolean noneKeeperActive(String clusterId, String shardId);
 	
-	ClusterMeta removeCluster(String clusterId);
 
 	boolean updateRedisMaster(String clusterId, String shardId, RedisMeta redisMaster);
 }

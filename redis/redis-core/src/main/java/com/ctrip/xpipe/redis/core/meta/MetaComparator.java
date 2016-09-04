@@ -22,4 +22,13 @@ public interface MetaComparator<T, C extends Enum<C>> {
 	void compare();
 
 	List<ConfigChanged<C>> getConfigChanged();
+	
+	/**
+	 * add or remvoed or removed
+	 * @return
+	 */
+	int totalChangedCount();
+	
+	
+	void accept(MetaComparatorVisitor<T> visitor);
 }

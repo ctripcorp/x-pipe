@@ -18,11 +18,11 @@ import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
  */
 public class DefaultCurrentMetaServerMetaManagerTest extends AbstractMetaServerContextTest{
 	
-	private DefaultCurrentMetaServerMetaManager   currentMetaServerMetaManager;
+	private DefaultCurrentMetaManager   currentMetaServerMetaManager;
 	
 	@Before
 	public void beforeDefaultCurrentMetaServerMetaManagerTest(){
-		currentMetaServerMetaManager = getBean(DefaultCurrentMetaServerMetaManager.class);
+		currentMetaServerMetaManager = getBean(DefaultCurrentMetaManager.class);
 	}
 	
 	@Test

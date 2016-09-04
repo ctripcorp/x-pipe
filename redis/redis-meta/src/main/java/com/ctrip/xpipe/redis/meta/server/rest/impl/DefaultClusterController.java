@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaServerMetaManager;
+import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterDebugInfo;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -37,7 +37,7 @@ public class DefaultClusterController implements ClusterApi{
 	private ClusterServers<?> clusterServers;
 	
 	@Autowired
-	private CurrentMetaServerMetaManager  currentMetaServerMetaManager;
+	private CurrentMetaManager  currentMetaServerMetaManager;
 	
 	@Autowired
 	private ZkClient zkClient;

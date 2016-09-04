@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.meta;
 
 
+
 import java.util.Set;
 
 import com.ctrip.xpipe.api.observer.Observable;
@@ -20,4 +21,12 @@ public interface DcMetaCache extends Observable{
 	ClusterMeta getClusterMeta(String clusterId);
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
+
+	void clusterAdded(ClusterMeta clusterMeta);
+
+	void clusterModified(ClusterMeta clusterMeta);
+
+	void clusterDeleted(String clusterId);
+		
+
 }

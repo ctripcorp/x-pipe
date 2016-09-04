@@ -13,6 +13,7 @@ import org.unidal.tuple.Triple;
 
 import com.ctrip.xpipe.redis.core.BaseEntity;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
+import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 
 /**
  * @author wenchao.meng
@@ -72,6 +73,34 @@ public abstract class AbstractMetaComparator<T, C extends Enum<C>> implements Me
 	
 	protected boolean reflectionEquals(BaseEntity<?> currentMeta, BaseEntity<?> futureMeta) {
 		return EqualsBuilder.reflectionEquals(currentMeta, futureMeta, "hash");
+	}
+	
+	@Override
+	public int totalChangedCount() {
+		return added.size() + removed.size() + modified.size();
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@Override
+	public void accept(MetaComparatorVisitor<T> visitor) {
+		
+		for(T ad : added){
+			visitor.visitAdded(ad);
+		}
+		
+		for(MetaComparator comparator : modified){
+			visitor.visitModified(comparator);
+		}
+		
+		for(T rm : removed){
+			visitor.visitRemoved(rm);
+		}
+	}
+	
+	
+	@Override
+	public String toString() {
+		return String.format("added:%s, removed:%s, changed:%s", added, removed, modified);
 	}
 
 }

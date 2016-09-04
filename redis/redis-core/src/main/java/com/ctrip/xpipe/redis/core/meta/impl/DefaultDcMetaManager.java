@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 
@@ -169,6 +170,11 @@ public class DefaultDcMetaManager implements DcMetaManager{
 		
 		DcMeta dcMeta = metaManager.getDcMeta(currentDc);
 		return String.format("dc:%s, meta:%s", currentDc, dcMeta);
+	}
+
+	@Override
+	public DcMeta getDcMeta() {
+		return MetaClone.clone(metaManager.getDcMeta(currentDc));
 	}
 
 }

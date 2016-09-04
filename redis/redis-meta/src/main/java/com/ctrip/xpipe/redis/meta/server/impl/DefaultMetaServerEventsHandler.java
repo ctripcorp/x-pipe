@@ -19,12 +19,10 @@ import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
-import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.meta.server.MetaServerEventsHandler;
-import com.ctrip.xpipe.redis.meta.server.impl.event.ActiveKeeperChanged;
 import com.ctrip.xpipe.redis.meta.server.impl.event.RedisMasterChanged;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaServerMetaManager;
+import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
@@ -46,7 +44,7 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 	private List<MetaChangeListener>  metaChangeListeners;
 
 	@Autowired
-	private CurrentMetaServerMetaManager  currentMetaServerMetaManager;
+	private CurrentMetaManager  currentMetaServerMetaManager;
 	
 	
 	@Override
@@ -63,39 +61,26 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 		
 		logger.info("[keeperActiveElected]{},{},{}", clusterId, shardId, activeKeeper);
 		
-		DcMetaManager currentMeta = currentMetaServerMetaManager.getCurrentMeta();
-		
-		KeeperMeta oldActiveKeeper = currentMeta.getKeeperActive(clusterId, shardId);
-		
-		if(!currentMeta.updateKeeperActive(clusterId, shardId, activeKeeper)){
-			logger.info("[keeperActiveElected][keeper active not changed]");
-		}
-		//make sure keeper in proper state
-		List<KeeperMeta> keepers = currentMeta.getKeepers(clusterId, shardId);
+		List<KeeperMeta> keepers = currentMetaServerMetaManager.getKeepers(clusterId, shardId);
 		InetSocketAddress activeKeeperMaster = getActiveKeeperMaster(clusterId, shardId);
 
-		executeJob(new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool), new ActiveKeeperChanged(clusterId, shardId, oldActiveKeeper, activeKeeper));
+		executeJob(new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool));
 	}
 
 	@Override
 	public void noneActiveElected(String clusterId, String shardId) throws Exception {
-		
-		DcMetaManager currentMeta = currentMetaServerMetaManager.getCurrentMeta();
-		KeeperMeta oldActiveKeeper = currentMeta.getKeeperActive(clusterId, shardId);
-		logger.info("[noneActiveElected]{},{},oldActive:{}", clusterId, shardId, oldActiveKeeper);
-		currentMeta.noneKeeperActive(clusterId, shardId);
+		//TODO
 		
 	}
 
 	private InetSocketAddress getActiveKeeperMaster(String clusterId, String shardId) throws MetaException {
 		
-		DcMetaManager currentMeta = currentMetaServerMetaManager.getCurrentMeta();
 
-		RedisMeta redisMeta = currentMeta.getRedisMaster(clusterId, shardId);
+		RedisMeta redisMeta = currentMetaServerMetaManager.getRedisMaster(clusterId, shardId);
 		if(redisMeta != null){
 			return new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort());
 		}
-		String upstream = currentMeta.getUpstream(clusterId, shardId);
+		String upstream = currentMetaServerMetaManager.getUpstream(clusterId, shardId);
 		String []sp = upstream.split("\\s*:\\s*");
 		if(sp.length != 2){
 			throw  new IllegalStateException("upstream address error:" + clusterId + "," + shardId + "," + upstream);
@@ -106,12 +91,10 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 	@Override
 	public void redisMasterChanged(String clusterId, String shardId, RedisMeta redisMaster) throws Exception {
 		
-		DcMetaManager currentMeta = currentMetaServerMetaManager.getCurrentMeta();
-
 		logger.info("[redisMasterChanged]{}, {}, {}", clusterId, shardId, redisMaster);
 		
-		RedisMeta oldRedisMaster = currentMeta.getRedisMaster(clusterId, shardId);
-		if(!currentMeta.updateRedisMaster(clusterId, shardId, redisMaster)){
+		RedisMeta oldRedisMaster = currentMetaServerMetaManager.getRedisMaster(clusterId, shardId);
+		if(!currentMetaServerMetaManager.updateRedisMaster(clusterId, shardId, redisMaster)){
 			logger.info("[redisMasterChanged][redis master not changed]");
 			return ;
 		}
@@ -119,7 +102,7 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 		notifyObservers(new RedisMasterChanged(clusterId, shardId, oldRedisMaster, redisMaster));
 	}
 
-	private void executeJob(final Command<?> command, final Object event){
+	private void executeJob(final Command<?> command){
 		
 		executors.execute(new Runnable() {
 			
@@ -128,9 +111,8 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 				try {
 					logger.info("[run]" + command);
 					command.execute().sync();
-					notifyObservers(event);
 				} catch (Exception e) {
-					logger.error("[run]" + command + "," + event, e);
+					logger.error("[run]" + command, e);
 				}
 			}
 		});

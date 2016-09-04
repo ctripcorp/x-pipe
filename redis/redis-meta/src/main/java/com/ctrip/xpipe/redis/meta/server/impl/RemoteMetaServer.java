@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
@@ -92,11 +91,6 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 
 	
 	@Override
-	public DcMetaManager getCurrentMeta() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public void clusterAdded(ClusterMeta clusterMeta, ForwardInfo forwardInfo) {
 		
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, ForwardType.MULTICASTING);
@@ -154,6 +148,12 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		if(forwardInfo != null && forwardInfo.hasServer(getCurrentServerId())){
 			throw new CircularForwardException(forwardInfo, getCurrentServerId());
 		}
+	}
+
+	@Override
+	public String getCurrentMeta() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
 
+
 import java.net.InetSocketAddress;
 
 import javax.annotation.Resource;
@@ -16,13 +17,13 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaServerMetaManager;
+import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.site.lookup.util.StringUtils;
@@ -45,7 +46,10 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	private MetaServerConfig config;
 	
 	@Autowired
-	private CurrentMetaServerMetaManager currentMetaServerMeta;
+	private CurrentMetaManager currentMetaServerMeta;
+	
+	@Autowired
+	private DcMetaCache dcMetaCache;
 	
 	@Override
 	protected void doInitialize() throws Exception {
@@ -80,18 +84,18 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Override
 	public KeeperMeta getActiveKeeper(String clusterId, String shardId) {
 		
-		return currentMetaServerMeta.getCurrentMeta().getKeeperActive(clusterId, shardId);
+		return currentMetaServerMeta.getKeeperActive(clusterId, shardId);
 	}
 
 	@Override
 	public RedisMeta getRedisMaster(String clusterId, String shardId) {
-		return currentMetaServerMeta.getCurrentMeta().getRedisMaster(clusterId, shardId);
+		return currentMetaServerMeta.getRedisMaster(clusterId, shardId);
 	}
 		
 	@Override
 	public KeeperMeta getUpstreamKeeper(String clusterId, String shardId) throws Exception {
 		
-		String address = currentMetaServerMeta.getCurrentMeta().getUpstream(clusterId, shardId);
+		String address = currentMetaServerMeta.getUpstream(clusterId, shardId);
 		logger.info("[getUpstreamKeeper]-{}-", address);
 		if(StringUtils.isEmpty(address)){
 			return null;
@@ -159,24 +163,26 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	}
 
 	@Override
-	public DcMetaManager getCurrentMeta() {
-		return currentMetaServerMeta.getCurrentMeta();
+	public String getCurrentMeta() {
+		return currentMetaServerMeta.toString();
 	}
 
 	@Override
 	public void clusterAdded(ClusterMeta clusterMeta, ForwardInfo forwardInfo) {
-		logger.info("[clusterAdded]");
+		logger.info("[clusterAdded]{}", clusterMeta);
+		dcMetaCache.clusterAdded(clusterMeta);
 	}
 
 	@Override
 	public void clusterModified(ClusterMeta clusterMeta, ForwardInfo forwardInfo) {
-		logger.info("[clusterModified]");
+		logger.info("[clusterModified]{}", clusterMeta);
+		dcMetaCache.clusterModified(clusterMeta);
 		
 	}
 
 	@Override
 	public void clusterDeleted(String clusterId, ForwardInfo forwardInfo) {
-		logger.info("[clusterDeleted]");
-		
+		logger.info("[clusterDeleted]{}", clusterId);
+		dcMetaCache.clusterDeleted(clusterId);
 	}
 }

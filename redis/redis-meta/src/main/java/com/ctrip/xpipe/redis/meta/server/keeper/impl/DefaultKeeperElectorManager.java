@@ -13,21 +13,18 @@ import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
-import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
-import com.ctrip.xpipe.observer.NodeAdded;
-import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.MetaServerEventsHandler;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.exception.ZkException;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperLeaderElectAlgorithm;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaServerMetaManager;
+import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -36,7 +33,7 @@ import com.ctrip.xpipe.zk.ZkClient;
  * Jul 7, 2016
  */
 @Component
-public class DefaultKeeperElectorManager extends AbstractLifecycleObservable implements KeeperElectorManager, Observer, TopElement{
+public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver implements KeeperElectorManager, Observer, TopElement{
 	
 	@Autowired
 	private ZkClient zkClient;
@@ -44,7 +41,7 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 	private LeaderWatchedShards leaderWatchedShards = new LeaderWatchedShards();
 	
 	@Autowired
-	private CurrentMetaServerMetaManager currentMetaServerMetaManager; 
+	private CurrentMetaManager currentMetaServerMetaManager; 
 
 	@Autowired
 	private MetaServerEventsHandler metaServerEventsHandler;
@@ -82,45 +79,40 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 		return leaderWatchedShards.getActiveKeeper(clusterId, shardId);
 	}
 
-	@Override
-	public void watchCluster(ClusterMeta clusterMeta) throws Exception {
-
-		logger.info("[observeCluster]{}", clusterMeta);
-		observeLeader(clusterMeta);
-	}
-	
-	@Override
-	public void unwatchCluster(ClusterMeta clusterMeta) throws Exception {
-		
-		logger.info("[unwatchCluster]{}", clusterMeta);
-		leaderWatchedShards.removeByClusterId(clusterMeta.getId());
-	}
-
 	private void observeLeader(final ClusterMeta cluster) throws Exception {
 
 		logger.info("[observeLeader]{}", cluster.getId());
 		
+		for (final ShardMeta shard : cluster.getShards().values()) {
+			observerShardLeader(cluster.getId(), shard.getId());
+		}
+	}
+
+	private void observerShardLeader(String clusterId, String shardId) {
+		
+		final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterId, shardId);
+		
+		if(!leaderWatchedShards.addIfNotExist(clusterId, shardId)){
+			logger.warn("[observeLeader][already watched]{}, {}", clusterId, shardId);
+			return;
+		}
+		
+		logger.info("[observerShardLeader]{}, {}", clusterId, shardId);
 		final CuratorFramework client = zkClient.get();
 		
-		for (final ShardMeta shard : cluster.getShards().values()) {
-			
-			final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(cluster.getId(), shard.getId());
-			
-			if(!leaderWatchedShards.addIfNotExist(cluster.getId(), shard.getId())){
-				logger.warn("[observeLeader][already watched]{}, {}", cluster.getId(), shard.getId());
-				continue;
-			}
-			
+		try {
 			client.createContainers(leaderLatchPath);
-			List<String> children = observeLeader(client, cluster.getId(), shard.getId(), leaderLatchPath);
-			updateShardLeader(children, leaderLatchPath, cluster.getId(), shard.getId());
+			List<String> children = observeLeader(client, clusterId, shardId, leaderLatchPath);
+			updateShardLeader(children, leaderLatchPath, clusterId, shardId);
+		} catch (Exception e) {
+			logger.error("[observerShardLeader]" + clusterId + "," + shardId, e);
 		}
 	}
 
 	private List<String> observeLeader(final CuratorFramework client, final String clusterId, final String shardId, final String leaderLatchPath) throws Exception {
 
-		if(!leaderWatchedShards.hasCluster(clusterId)){
-			logger.info("[cluster clean watch]{}", clusterId);
+		if(!leaderWatchedShards.hasClusterShard(clusterId, shardId)){
+			logger.info("[observeLeader][clean watch]{}, {}", clusterId, shardId);
 			return Collections.emptyList();
 		}
 		
@@ -166,29 +158,50 @@ public class DefaultKeeperElectorManager extends AbstractLifecycleObservable imp
 		metaServerEventsHandler.keeperActiveElected(clusterId, shardId, keeper);
 	}
 
+
 	@Override
-	@SuppressWarnings("unchecked")
-	public void update(Object args, Observable observable) {
+	protected void handleClusterModified(ClusterMetaComparator comparator) {
 		
-		if(args instanceof NodeAdded<?>){
-			NodeAdded<ClusterMeta> nodeAdded = (NodeAdded<ClusterMeta>) args;
+		String clusterId = comparator.getCurrent().getId();
+				
+		for(ShardMeta shardMeta : comparator.getAdded()){
 			try {
-				watchCluster(nodeAdded.getNode());
+				observerShardLeader(clusterId, shardMeta.getId());
 			} catch (Exception e) {
-				logger.error("[update]{}", e);
+				logger.error("[handleClusterModified]" + clusterId + "," + shardMeta.getId(), e);
 			}
 		}
 
-		if(args instanceof NodeDeleted<?>){
-			
-			NodeDeleted<ClusterMeta> nodeDeleted = (NodeDeleted<ClusterMeta>) args;
+		for(ShardMeta shardMeta : comparator.getRemoved()){
 			try {
-				unwatchCluster(nodeDeleted.getNode());
+				
+				String shardId = shardMeta.getId();
+				logger.info("[unwatchShard]{}, {}", clusterId, shardId);
+				leaderWatchedShards.remove(clusterId, shardId);;
 			} catch (Exception e) {
-				logger.error("[update]{}", e);
+				logger.error("[handleClusterModified]" + clusterId + "," + shardMeta.getId(), e);
 			}
 		}
+
+	
 	}
-	
-	
+
+	@Override
+	protected void handleClusterDeleted(ClusterMeta clusterMeta) {
+		try {
+			logger.info("[handleClusterDeleted]{}", clusterMeta);
+			leaderWatchedShards.removeByClusterId(clusterMeta.getId());
+		} catch (Exception e) {
+			logger.error("[handleClusterDeleted]" + clusterMeta.getId(), e);
+		}
+	}
+
+	@Override
+	protected void handleClusterAdd(ClusterMeta clusterMeta) {
+		try {
+			observeLeader(clusterMeta);
+		} catch (Exception e) {
+			logger.error("[handleClusterAdd]" + clusterMeta.getId(), e);
+		}
+	}
 }

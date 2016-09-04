@@ -22,14 +22,13 @@ public class LeaderWatchedShardsTest extends AbstractMetaServerTest{
 		Assert.assertTrue(leaderWatchedShards.addIfNotExist(clusterId, shardId));
 		Assert.assertFalse(leaderWatchedShards.addIfNotExist(clusterId, shardId));
 		
-		Assert.assertTrue(leaderWatchedShards.hasCluster(clusterId));
+		Assert.assertTrue(leaderWatchedShards.hasClusterShard(clusterId, shardId));
 		
 		leaderWatchedShards.removeByClusterId(clusterId);
 		
-		Assert.assertFalse(leaderWatchedShards.hasCluster(clusterId));
+		Assert.assertFalse(leaderWatchedShards.hasClusterShard(clusterId, shardId));
 		
 		Assert.assertTrue(leaderWatchedShards.addIfNotExist(clusterId, shardId));
-		
 	}
 
 }

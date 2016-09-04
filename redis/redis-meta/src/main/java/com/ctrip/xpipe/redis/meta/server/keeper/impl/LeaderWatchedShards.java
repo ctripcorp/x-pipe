@@ -17,7 +17,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 public class LeaderWatchedShards {
 	
 	private Map<Pair<String, String>, LeaderMeta>  leaderMetas = new ConcurrentHashMap<>();
-	private Set<String> allClusters = new HashSet<>();
 	
 	/**
 	 * @param clusterId
@@ -30,9 +29,7 @@ public class LeaderWatchedShards {
 		if(leaderMetas.get(key) != null){
 			return false;
 		}
-		
-		allClusters.add(clusterId);
-		
+				
 		synchronized (leaderMetas) {
 			if(leaderMetas.get(key) != null){
 				return false;
@@ -64,13 +61,17 @@ public class LeaderWatchedShards {
 		
 	}
 
-	public boolean hasCluster(String clusterId){
-		return allClusters.contains(clusterId);
+	public boolean hasClusterShard(String clusterId, String shardId){
+		return leaderMetas.get(new Pair<>(clusterId, shardId)) != null;
+	}
+	
+	public void remove(String clusterId, String shardId){
+		synchronized (leaderMetas) {
+			leaderMetas.remove(new Pair<>(clusterId, shardId));
+		}
 	}
 	
 	public void removeByClusterId(String clusterId){
-		
-		allClusters.remove(clusterId);
 		
 		synchronized (leaderMetas) {
 			

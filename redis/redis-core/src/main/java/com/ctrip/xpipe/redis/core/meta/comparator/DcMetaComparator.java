@@ -17,6 +17,38 @@ public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta, DcChan
 	private DcMeta current, future;
 	
 	
+	public static DcMetaComparator  buildComparator(DcMeta current, DcMeta future){
+		
+		DcMetaComparator dcMetaComparator = new DcMetaComparator(current, future);
+		dcMetaComparator.compare();
+		return dcMetaComparator;
+	}
+	
+	public static DcMetaComparator buildClusterRemoved(String clusterId){
+		DcMetaComparator dcMetaComparator = new DcMetaComparator();
+		ClusterMeta clusterMeta = new ClusterMeta(clusterId);
+		dcMetaComparator.removed.add(clusterMeta);
+		return dcMetaComparator;
+	}
+
+	public static DcMetaComparator buildClusterChanged(ClusterMeta current, ClusterMeta future){
+		
+		DcMetaComparator dcMetaComparator = new DcMetaComparator();
+		if(current == null){
+			dcMetaComparator.added.add(future);
+			return dcMetaComparator;
+		}
+		
+		ClusterMetaComparator clusterMetaComparator = new ClusterMetaComparator(current, future);
+		clusterMetaComparator.compare();
+		dcMetaComparator.modified.add(clusterMetaComparator);
+		return dcMetaComparator;
+	}
+
+	private DcMetaComparator(){
+		
+	}
+	
 	public DcMetaComparator(DcMeta current, DcMeta future){
 		this.current = current;
 		this.future = future;

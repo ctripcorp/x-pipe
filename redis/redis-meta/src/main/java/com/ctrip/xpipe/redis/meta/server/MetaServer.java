@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
@@ -32,12 +31,12 @@ public interface MetaServer extends ClusterServer, TopElement{
 
 	void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo);
 	
-	DcMetaManager getCurrentMeta();
-	
 	void clusterAdded(ClusterMeta clusterMeta, ForwardInfo forwardInfo);
 
 	void clusterModified(ClusterMeta clusterMeta, ForwardInfo forwardInfo);
 
 	void clusterDeleted(String clusterId, ForwardInfo forwardInfo);
+
+	String getCurrentMeta();
 
 }
