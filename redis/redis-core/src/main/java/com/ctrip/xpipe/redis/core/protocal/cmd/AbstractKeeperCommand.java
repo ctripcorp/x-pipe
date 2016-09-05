@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 
@@ -20,12 +21,16 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 	public static String GET_STATE = "getstate";
 	
 	public static String SET_STATE = "setstate";
+
 	
-		
 	public AbstractKeeperCommand(SimpleObjectPool<NettyClient> clientPool) {
 		super(clientPool);
 	}
 
+	public AbstractKeeperCommand(KeeperMeta keeperMeta){
+		super(keeperMeta.getIp(), keeperMeta.getPort());
+	}
+	
 	@Override
 	public String getName() {
 		return "keeper";
@@ -35,6 +40,10 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 
 		public KeeperGetStateCommand(SimpleObjectPool<NettyClient> clientPool) {
 			super(clientPool);
+		}
+		
+		public KeeperGetStateCommand(KeeperMeta keeperMeta) {
+			super(keeperMeta);
 		}
 
 		@Override
@@ -59,6 +68,14 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 			this.masterAddress = masterAddress;
 		}
 
+		public KeeperSetStateCommand(KeeperMeta keeperMeta, KeeperState state, InetSocketAddress masterAddress) {
+			super(keeperMeta);
+			this.state = state;
+			this.masterAddress = masterAddress;
+			
+		}
+
+		
 		@Override
 		protected String format(Object payload) {
 			

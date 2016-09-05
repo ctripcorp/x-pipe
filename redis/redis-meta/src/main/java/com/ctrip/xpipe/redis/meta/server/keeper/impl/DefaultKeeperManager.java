@@ -8,9 +8,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
@@ -30,6 +32,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  *
  * Sep 4, 2016
  */
+@Component
 public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements KeeperManager, TopElement{
 
 	private int deadKeeperCheckIntervalMilli = 10000;
@@ -86,21 +89,37 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		
 		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
 			for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
-				keeperStateController.removeKeeper(new KeeperTransMeta(clusterMeta.getId(), shardMeta.getId(), keeperMeta));
+				removeKeeper(clusterMeta.getId(), shardMeta.getId(), keeperMeta);
 			}
 		}
 	}
+
+	private void removeKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
+		try{
+			keeperStateController.removeKeeper(new KeeperTransMeta(clusterId, shardId, keeperMeta));
+		}catch(Exception e){
+			ExceptionUtils.logException(logger, e, String.format("[removeKeeper]%s:%s,%s", clusterId, shardId, keeperMeta));
+		}
+	}
+
+	private void addKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
+		try{
+			keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, keeperMeta));
+		}catch(Exception e){
+			ExceptionUtils.logException(logger, e, String.format("[addKeeper]%s:%s,%s", clusterId, shardId, keeperMeta));
+		}
+	}
+
 
 	@Override
 	protected void handleClusterAdd(ClusterMeta clusterMeta) {
 		
 		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
 			for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
-				keeperStateController.addKeeper(new KeeperTransMeta(clusterMeta.getId(), shardMeta.getId(), keeperMeta));
+				addKeeper(clusterMeta.getId(), shardMeta.getId(), keeperMeta);
 			}
 		}
 	}
-	
 	
 	protected List<KeeperMeta> getDeadKeepers(List<KeeperMeta> allKeepers, List<KeeperMeta> aliveKeepers) {
 		
@@ -174,7 +193,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitAdded(ShardMeta added) {
 			logger.info("[visitAdded][add shard]{}", added);
 			for(KeeperMeta keeperMeta : added.getKeepers()){
-				keeperStateController.addKeeper(new KeeperTransMeta(clusterId, added.getId(), keeperMeta));
+				addKeeper(clusterId, added.getId(), keeperMeta);
 			}
 		}
 
@@ -190,7 +209,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitRemoved(ShardMeta removed) {
 			logger.info("[visitRemoved][remove shard]{}", removed);
 			for(KeeperMeta keeperMeta : removed.getKeepers()){
-				keeperStateController.addKeeper(new KeeperTransMeta(clusterId, removed.getId(), keeperMeta));
+				removeKeeper(clusterId, removed.getId(), keeperMeta);
 			}
 		}
 	}
@@ -209,7 +228,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitAdded(Redis added) {
 			
 			if(added instanceof KeeperMeta){
-				keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, (KeeperMeta) added));
+				addKeeper(clusterId, shardId, (KeeperMeta) added);
 			}else{
 				logger.debug("[visitAdded][do nothng]{}", added);
 			}
@@ -225,7 +244,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitRemoved(Redis removed) {
 
 			if(removed instanceof KeeperMeta){
-				keeperStateController.removeKeeper(new KeeperTransMeta(clusterId, shardId, (KeeperMeta) removed));
+				removeKeeper(clusterId, shardId, (KeeperMeta) removed);
 			}else{
 				logger.debug("[visitAdded][do nothng]{}", removed);
 			}

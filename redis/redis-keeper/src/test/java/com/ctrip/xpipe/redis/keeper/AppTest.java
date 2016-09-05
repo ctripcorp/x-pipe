@@ -5,6 +5,9 @@ import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
+import com.ctrip.xpipe.redis.keeper.spring.TestWithoutZkProfile;
+import com.ctrip.xpipe.spring.AbstractProfile;
+
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -31,6 +34,7 @@ public class AppTest extends AbstractRedisKeeperTest {
     }
 
     private void start() throws Exception {
+    	System.setProperty(AbstractProfile.PROFILE_KEY, TestWithoutZkProfile.PROFILE_NO_ZK);
         ConfigurableApplicationContext context =
                 new SpringApplicationBuilder(AppTest.class).run();
         initComponentRegistry(context);

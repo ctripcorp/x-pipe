@@ -14,12 +14,16 @@ import com.ctrip.xpipe.pool.XpipeObjectPool;
  */
 public class NettyPoolUtil {
 	
-	public static SimpleObjectPool<NettyClient>  createNettyPool(InetSocketAddress target) throws Exception{
+	public static SimpleObjectPool<NettyClient>  createNettyPool(InetSocketAddress target){
 		
-		XpipeObjectPool<NettyClient> xpipeObjectPool = new XpipeObjectPool<>(new NettyClientFactory(target));
-		xpipeObjectPool.initialize();
-		xpipeObjectPool.start();
-		return xpipeObjectPool;
+		try {
+			XpipeObjectPool<NettyClient> xpipeObjectPool = new XpipeObjectPool<>(new NettyClientFactory(target));
+			xpipeObjectPool.initialize();
+			xpipeObjectPool.start();
+			return xpipeObjectPool;
+		} catch (Exception e) {
+			throw new IllegalStateException("[createNettyPool]" + target, e);
+		}
 	}
 
 }

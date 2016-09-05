@@ -185,7 +185,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		
 		ClusterMeta clusterMeta = dcMetaManager.get().removeCluster(clusterId);
 		logger.info("[clusterDeleted]{}", clusterMeta);
-		DcMetaComparator dcMetaComparator = DcMetaComparator.buildClusterRemoved(clusterId);
+		DcMetaComparator dcMetaComparator = DcMetaComparator.buildClusterRemoved(clusterMeta);
 		notifyObservers(dcMetaComparator);
 	}
 }

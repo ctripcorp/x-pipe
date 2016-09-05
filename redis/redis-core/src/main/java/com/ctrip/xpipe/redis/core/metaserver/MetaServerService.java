@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
-import java.util.List;
-
-import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 
 /**
  * @author wenchao.meng
@@ -15,9 +12,5 @@ public interface MetaServerService {
 
 	public static final String HTTP_HEADER_FOWRARD = "forward";
 	
-	public static final String PATH_GET_ALL_META_SERVERS = "/getallmetaservers";
 	
-	
-	List<MetaServerMeta> getAllMetaServers();
-
 }

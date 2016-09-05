@@ -33,7 +33,7 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 			if(args[0].equalsIgnoreCase(AbstractKeeperCommand.GET_STATE)){
 				
 				KeeperState keeperState = redisClient.getRedisKeeperServer().getRedisKeeperServerState().keeperState();
-				redisClient.sendMessage(keeperState.toString().getBytes());
+				redisClient.sendMessage(new SimpleStringParser(keeperState.toString()).format());
 			}else if(args[0].equalsIgnoreCase(AbstractKeeperCommand.SET_STATE)){
 				
 				if(args.length >= 4){

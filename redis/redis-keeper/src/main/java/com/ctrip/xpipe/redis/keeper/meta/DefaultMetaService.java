@@ -2,21 +2,18 @@ package com.ctrip.xpipe.redis.keeper.meta;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerLocator;
+import com.ctrip.xpipe.redis.core.metaserver.impl.AbstractMetaService;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.google.common.base.Function;
 
 /**
@@ -25,9 +22,8 @@ import com.google.common.base.Function;
  *         May 30, 2016 2:19:44 PM
  */
 @Component
-public class DefaultMetaService implements MetaServerKeeperService {
+public class DefaultMetaService extends AbstractMetaService implements MetaServerKeeperService {
 
-	private static Logger logger = LoggerFactory.getLogger(DefaultMetaService.class);
 
 	@SuppressWarnings("unused")
 	@Autowired
@@ -36,7 +32,6 @@ public class DefaultMetaService implements MetaServerKeeperService {
 	@Autowired
 	private MetaServerLocator metaServerLocator;
 	
-	private RestTemplate restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 	
 	@Override
 	public ShardStatus getShardStatus(String clusterId, String shardId) {
@@ -68,20 +63,6 @@ public class DefaultMetaService implements MetaServerKeeperService {
 		});
 	}
 
-	private <T> T pollMetaServer(Function<String, T> fun) {
-		List<String> metaServerList = metaServerLocator.getMetaServerList();
-
-		for (String url : metaServerList) {
-			T result = fun.apply(url);
-			if (result != null) {
-				return result;
-			} else {
-				continue;
-			}
-		}
-		return null;
-	}
-
 	public void setConfig(KeeperConfig config) {
 		this.config = config;
 	}
@@ -89,13 +70,6 @@ public class DefaultMetaService implements MetaServerKeeperService {
 	public void setMetaServerLocator(MetaServerLocator metaServerLocator) {
 		this.metaServerLocator = metaServerLocator;
 	}
-
-	@Override
-	public List<MetaServerMeta> getAllMetaServers() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 
 	@Override
 	public void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta) {
@@ -108,4 +82,8 @@ public class DefaultMetaService implements MetaServerKeeperService {
 		return null;
 	}
 
+	@Override
+	protected List<String> getMetaServerList() {
+		return metaServerLocator.getMetaServerList();
+	}
 }

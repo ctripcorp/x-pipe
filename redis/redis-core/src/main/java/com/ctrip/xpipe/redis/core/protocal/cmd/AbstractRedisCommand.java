@@ -25,6 +25,10 @@ import io.netty.channel.Channel;
  */
 public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestResponseCommand<T> {
 
+	public AbstractRedisCommand(String host, int port){
+		super(host, port);
+	}
+
 	public AbstractRedisCommand(SimpleObjectPool<NettyClient> clientPool) {
 		super(clientPool);
 	}

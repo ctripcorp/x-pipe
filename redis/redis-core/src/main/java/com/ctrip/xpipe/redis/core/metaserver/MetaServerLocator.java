@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.meta;
+package com.ctrip.xpipe.redis.core.metaserver;
 
 import java.util.List;
 

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.cluster;
 
+import com.ctrip.xpipe.api.codec.Codec;
+
 /**
  * @author marsqing
  *
@@ -22,6 +24,11 @@ public class ElectContext {
 
 	public String getLeaderElectionID() {
 		return leaderElectionID;
+	}
+	
+	@Override
+	public String toString() {
+		return Codec.DEFAULT.encode(this);
 	}
 
 }

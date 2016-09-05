@@ -9,7 +9,6 @@ import javax.annotation.PostConstruct;
  */
 public class DefaultKeeperContainerConfig implements KeeperContainerConfig {
     public static final String REPLICATION_STORE_DIR = "replication.store.dir";
-    public static final String META_SERVER_URL = "meta.server.url";
     private Config config;
 
     @PostConstruct

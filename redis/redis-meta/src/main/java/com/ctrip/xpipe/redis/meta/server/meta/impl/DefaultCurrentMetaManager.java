@@ -71,6 +71,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	
 	
 	@Override
+	public synchronized void addObserver(Observer observer) {
+		super.addObserver(observer);
+		logger.info("[addObserver]{}", observer);
+	}
+	
+	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
 		
@@ -150,7 +156,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			logger.warn("[handleClusterChanged][but we do not has it]{}", clusterMetaComparator);
 			addCluster(clusterId);
 		}
-		
 	}
 
 
@@ -163,14 +168,25 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		notifyObservers(new NodeAdded<ClusterMeta>(clusterMeta));
 	}
 
-	private void removeCluster(String clusterId) {
+	private void destroyCluster(ClusterMeta clusterMeta){
+		//keeper in clustermeta, keepermanager remove keeper
+		removeCluster(clusterMeta);
+	}
+	
+	private void removeCluster(ClusterMeta clusterMeta) {
 		
-		logger.info("[removeCluster]{}, {}", clusterId);
-		boolean result = currentClusters.remove(clusterId);
+		logger.info("[removeCluster]{}", clusterMeta.getId());
+		boolean result = currentClusters.remove(clusterMeta.getId());
 		if(result){
-			ClusterMeta clusterMeta = new ClusterMeta(clusterId);
 			notifyObservers(new NodeDeleted<ClusterMeta>(clusterMeta));
 		}
+	}
+
+
+
+	private void removeClusterInterested(String clusterId) {
+		//notice
+		removeCluster(new ClusterMeta(clusterId));
 	}
 
 	@Override
@@ -187,7 +203,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			
 			int currentSlotId = slotManager.getSlotIdByKey(clusterId);
 			if(currentSlotId == slotId){
-				removeCluster(clusterId);
+				removeClusterInterested(clusterId);
 			}
 		}
 	}
@@ -243,21 +259,30 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		for(ClusterMeta clusterMeta : comparator.getAdded()){
 			if(currentClusterServer.hasKey(clusterMeta.getId())){
 				addCluster(clusterMeta.getId());
+			}else{
+				logger.info("[dcMetaChange][add][not interested]{}", clusterMeta.getId());
 			}
 		}
 		
 		for(ClusterMeta clusterMeta : comparator.getRemoved()){
-			removeCluster(clusterMeta.getId());
+			if(currentClusterServer.hasKey(clusterMeta.getId())){
+				destroyCluster(clusterMeta);
+			}else{
+				logger.info("[dcMetaChange][destroy][not interested]{}", clusterMeta.getId());
+			}
+
 		}
 		
 		for(@SuppressWarnings("rawtypes") MetaComparator changedComparator : comparator.getMofified()){
 			ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) changedComparator;
-			if(currentClusterServer.hasKey(clusterMetaComparator.getCurrent().getId())){
+			String clusterId = clusterMetaComparator.getCurrent().getId();
+			if(currentClusterServer.hasKey(clusterId)){
 				handleClusterChanged(clusterMetaComparator);
+			}else{
+				logger.info("[dcMetaChange][change][not interested]{}", clusterId);
 			}
 		}
 	}
-
 
 	@Override
 	public RedisMeta getRedisMaster(String clusterId, String shardId) {

@@ -32,7 +32,7 @@ public class DefaultLeaderElector extends AbstractLifecycle implements LeaderEle
 	
 	@Override
 	public void elect() throws Exception {
-
+		
 		zkClient.createContainers(ctx.getLeaderElectionZKPath());
 		
 		latch = new LeaderLatch(zkClient, ctx.getLeaderElectionZKPath(), ctx.getLeaderElectionID());
@@ -47,8 +47,9 @@ public class DefaultLeaderElector extends AbstractLifecycle implements LeaderEle
 			}
 		});
 
-		// TODO delay start until other parts of keeper is ready
+		logger.info("[elect]{}", ctx);
 		latch.start();
+		logger.info("[elect]{}", ctx);
 	}
 
 	@Override

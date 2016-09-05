@@ -57,7 +57,7 @@ public class DefaultKeeperStateController implements KeeperStateController{
 		logger.info("[addKeeper]{}", keeperTransMeta);
 		
 		KeeperContainerService keeperContainerService = getKeeperContainerService(keeperTransMeta);
-		keeperContainerService.addKeeper(keeperTransMeta);
+		keeperContainerService.addOrStartKeeper(keeperTransMeta);
 	}
 
 	@Override

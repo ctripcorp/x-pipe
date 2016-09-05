@@ -20,11 +20,9 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.MetaServerEventsHandler;
-import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.exception.ZkException;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperLeaderElectAlgorithm;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -41,20 +39,8 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	private LeaderWatchedShards leaderWatchedShards = new LeaderWatchedShards();
 	
 	@Autowired
-	private CurrentMetaManager currentMetaServerMetaManager; 
-
-	@Autowired
 	private MetaServerEventsHandler metaServerEventsHandler;
 	
-	@Autowired
-	private CurrentClusterServer currentClusterServer;
-	
-	@Override
-	protected void doInitialize() throws Exception {
-		
-		super.doInitialize();
-		currentMetaServerMetaManager.addObserver(this);
-	}
 	
 	@Override
 	public List<KeeperMeta> getAllAliveKeepers(String clusterId, String shardId) {

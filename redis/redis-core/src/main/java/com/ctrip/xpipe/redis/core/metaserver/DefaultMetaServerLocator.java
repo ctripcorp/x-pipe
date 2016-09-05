@@ -1,25 +1,23 @@
-package com.ctrip.xpipe.redis.keeper.meta;
+package com.ctrip.xpipe.redis.core.metaserver;
 
 import java.util.Arrays;
 import java.util.List;
 
-import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
+import com.ctrip.xpipe.redis.core.config.MetaServerAddressAware;
 import com.google.common.base.Strings;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 /**
  * @author marsqing
  *
  *         May 30, 2016 2:25:03 PM
  */
-@Component
 public class DefaultMetaServerLocator implements MetaServerLocator {
-	@Autowired
-	private KeeperContainerConfig keeperContainerConfig;
+	
+	private MetaServerAddressAware metaServerAddressAware;
     private String addressOverride;
 
-	public DefaultMetaServerLocator() {
+	public DefaultMetaServerLocator(MetaServerAddressAware metaServerAddressAware) {
+		this.metaServerAddressAware = metaServerAddressAware;
 		
 	}
 
@@ -33,7 +31,7 @@ public class DefaultMetaServerLocator implements MetaServerLocator {
 	}
 
 	private String getAddress() {
-		return Strings.isNullOrEmpty(addressOverride) ? keeperContainerConfig.getMetaServerUrl() : addressOverride;
+		return Strings.isNullOrEmpty(addressOverride) ? metaServerAddressAware.getMetaServerUrl() : addressOverride;
 	}
 
 }

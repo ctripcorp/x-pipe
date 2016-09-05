@@ -22,18 +22,19 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.redis.core.config.MetaServerAddressAware;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.redis.core.metaserver.DefaultMetaServerLocator;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaServerLocator;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaService;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
@@ -142,10 +143,15 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	}
 
 
-	protected MetaServerKeeperService createMetaService(List<MetaServerMeta> metaServerMetas) {
+	protected MetaServerKeeperService createMetaService(final List<MetaServerMeta> metaServerMetas) {
 
-		DefaultMetaServerLocator metaServerLocator = new DefaultMetaServerLocator();
-		metaServerLocator.setAddress(String.format("http://%s:%d", "localhost", metaServerMetas.get(0).getPort()));
+		DefaultMetaServerLocator metaServerLocator = new DefaultMetaServerLocator(new MetaServerAddressAware() {
+			
+			@Override
+			public String getMetaServerUrl() {
+				return String.format("http://%s:%d", "localhost", metaServerMetas.get(0).getPort());
+			}
+		});
 
 		DefaultMetaService metaService = new DefaultMetaService();
 		metaService.setConfig(new DefaultKeeperConfig());

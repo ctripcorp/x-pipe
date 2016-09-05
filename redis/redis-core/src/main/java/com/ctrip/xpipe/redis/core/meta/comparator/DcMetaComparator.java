@@ -24,9 +24,8 @@ public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta, DcChan
 		return dcMetaComparator;
 	}
 	
-	public static DcMetaComparator buildClusterRemoved(String clusterId){
+	public static DcMetaComparator buildClusterRemoved(ClusterMeta clusterMeta){
 		DcMetaComparator dcMetaComparator = new DcMetaComparator();
-		ClusterMeta clusterMeta = new ClusterMeta(clusterId);
 		dcMetaComparator.removed.add(clusterMeta);
 		return dcMetaComparator;
 	}

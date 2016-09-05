@@ -25,6 +25,10 @@ import io.netty.channel.Channel;
  */
 public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNettyCommand<V> implements ByteBufReceiver, RequestResponseCommand<V>{
 	
+	public AbstractNettyRequestResponseCommand(String host, int port){
+		super(host, port);
+	}
+	
 	public AbstractNettyRequestResponseCommand(SimpleObjectPool<NettyClient> clientPool) {
 		super(clientPool);
 	}
@@ -124,7 +128,9 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 
 	@Override
 	public void clientClosed(NettyClient nettyClient) {
-		future().setFailure(new IOException("remote closed:" + nettyClient));
+		if(!future.isDone()){
+			future.setFailure(new IOException("remote closed:" + nettyClient));
+		}
 	}
 
 	protected abstract V doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception;

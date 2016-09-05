@@ -74,6 +74,38 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 	}
 
 	@Test
+	public void testBackupActiveChangeManyTimes() throws Exception{
+		RedisMeta redisMaster = getRedisMaster();
+		
+		KeeperMeta activeKeeper = getKeeperActive();
+		KeeperMeta backupKeeper = getKeepersBackup().get(0);
+		
+		for(int i=0;i<3;i++){
+			
+			logger.info(remarkableMessage("------{}-------"), i);
+			//exchange role
+			//make backup active
+			logger.info(remarkableMessage("make keeper active {}:{}"), backupKeeper.getIp(), backupKeeper.getPort());
+			setKeeperState(backupKeeper, KeeperState.ACTIVE, redisMaster.getIp(), redisMaster.getPort());
+			//make active backup
+			logger.info(remarkableMessage("make keeper backup {}:{}"), activeKeeper.getIp(), activeKeeper.getPort());
+			setKeeperState(activeKeeper, KeeperState.BACKUP, backupKeeper.getIp(), backupKeeper.getPort());
+			
+			sleep(2000);
+			Assert.assertEquals(KeeperState.ACTIVE, getKeeperState(backupKeeper));
+			Assert.assertEquals(KeeperState.BACKUP, getKeeperState(activeKeeper));
+
+			
+			KeeperMeta tmp = backupKeeper;
+			backupKeeper = activeKeeper;
+			activeKeeper = tmp;
+		}
+				
+
+	}
+	
+	
+	@Test
 	public void testReFullSync() throws ExecuteException, IOException{
 		
 		RedisMeta redisMaster = getRedisMaster();
