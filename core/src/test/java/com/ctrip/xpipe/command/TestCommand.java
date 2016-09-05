@@ -52,9 +52,9 @@ public class TestCommand extends AbstractCommand<String>{
 				try {
 					logger.info("[doExecute][begin]{}", this);
 					if(e != null){
-						future.setFailure(e);
+						future().setFailure(e);
 					}else{
-						future.setSuccess(successMessage);
+						future().setSuccess(successMessage);
 					}
 				}finally{
 					logger.info("[doExecute][ end ]{}", this);

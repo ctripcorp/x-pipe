@@ -98,6 +98,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	public boolean receive(Channel channel, ByteBuf byteBuf) {
 		
 		if(future().isDone()){
+			logger.debug("[receive][done, return]{}", channel);
 			return true;
 		}
 		
@@ -128,8 +129,8 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 
 	@Override
 	public void clientClosed(NettyClient nettyClient) {
-		if(!future.isDone()){
-			future.setFailure(new IOException("remote closed:" + nettyClient));
+		if(!future().isDone()){
+			future().setFailure(new IOException("remote closed:" + nettyClient));
 		}
 	}
 

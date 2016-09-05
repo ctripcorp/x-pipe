@@ -33,13 +33,13 @@ public class SequenceCommandChain extends AbstractCommandChain{
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void executeChain(){
 		
-		if(future.isCancelled()){
+		if(future().isCancelled()){
 			return;
 		}
 		
 		CommandFuture<?> currentFuture = executeNext();
 		if(currentFuture == null){
-			future.setSuccess(getResult());
+			future().setSuccess(getResult());
 			return;
 		}
 		
@@ -66,7 +66,7 @@ public class SequenceCommandChain extends AbstractCommandChain{
 			return;
 		}
 		
-		future.setFailure(new CommandChainException("execute count:" + (executeCount()), getResult()));
+		future().setFailure(new CommandChainException("execute count:" + (executeCount()), getResult()));
 	}
 
 }

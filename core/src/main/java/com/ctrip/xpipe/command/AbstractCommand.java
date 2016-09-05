@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +32,8 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	
 	protected ScheduledExecutorService scheduled;
 	
-	protected CommandFuture<V> future = new DefaultCommandFuture<>(this);
+	protected AtomicReference<CommandFuture<V>> future = new AtomicReference<CommandFuture<V>>(new DefaultCommandFuture<>(this));
 
-	
 	public AbstractCommand(ScheduledExecutorService scheduled) {
 		this.scheduled = scheduled;
 	}
@@ -44,7 +44,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 
 	@Override
 	public CommandFuture<V> future() {
-		return future;
+		return future.get();
 	}
 	
 	@Override
@@ -55,7 +55,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	@Override
 	public CommandFuture<V> execute(ExecutorService executors) {
 		
-		future.addListener(new CommandFutureListener<V>() {
+		future().addListener(new CommandFutureListener<V>() {
 
 			@Override
 			public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
@@ -72,13 +72,13 @@ public abstract class AbstractCommand<V> implements Command<V>{
 				try{
 					doExecute();
 				}catch(Exception e){
-					if(!future.isDone()){
-						future.setFailure(e);
+					if(!future().isDone()){
+						future().setFailure(e);
 					}
 				}
 			}
 		});
-		return future;
+		return future();
 	}
 	
 	
@@ -99,7 +99,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 			}
 		}, time, timeUnit);
 
-		future.addListener(new CommandFutureListener<V>() {
+		future().addListener(new CommandFutureListener<V>() {
 
 			@Override
 			public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
@@ -109,18 +109,18 @@ public abstract class AbstractCommand<V> implements Command<V>{
 				}
 			}
 		});
-		return future;
+		return future.get();
 	}
 	
 	@Override
 	public void reset() throws InterruptedException, ExecutionException {
 		
-		if(!future.isDone()){
+		if(!future().isDone()){
 			logger.info("[reset][not done]{}", this);
-			future.cancel(true);
+			future().cancel(true);
 		}
 
-		future = new DefaultCommandFuture<>(this);
+		future.set(new DefaultCommandFuture<>(this));
 		logger.info("[reset]{}", this);
 		doReset();
 	}

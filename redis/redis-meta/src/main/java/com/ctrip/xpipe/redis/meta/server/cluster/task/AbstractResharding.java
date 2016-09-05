@@ -55,7 +55,7 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 	@Override
 	protected void doExecute() throws Exception {
 		
-		CatUtils.newFutureTaskTransaction(MONITOR_NAME, getName(), future);
+		CatUtils.newFutureTaskTransaction(MONITOR_NAME, getName(), future());
 		
 		doShardingTask();
 		allTaskSubmited();
@@ -123,7 +123,7 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 		
 		if(allTaskSubmited && completedTasks.get() >= totalTasks.get()){
 			logger.info("[checkTaskFinish][finish]");
-			future.setSuccess(null);
+			future().setSuccess(null);
 		}
 	}
 	

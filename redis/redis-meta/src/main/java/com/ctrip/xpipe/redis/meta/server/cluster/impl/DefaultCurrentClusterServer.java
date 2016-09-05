@@ -195,7 +195,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 				throw new IllegalStateException("error import " + slotId + "," + slotInfo);
 			}
 			doSlotImport(slotId);
-			future.setSuccess();
+			future().setSuccess();
 		}
 		@Override
 		protected void doReset() throws InterruptedException, ExecutionException {
@@ -226,7 +226,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 				throw new IllegalStateException("error export " + slotId + "," + slotInfo);
 			}
 			doSlotExport(slotId);
-			future.setSuccess();
+			future().setSuccess();
 		}
 		@Override
 		protected void doReset() throws InterruptedException, ExecutionException {
@@ -257,7 +257,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 				throw new IllegalStateException("error add " + slotId + "," + slotInfo);
 			}
 			doSlotAdd(slotId);
-			future.setSuccess();
+			future().setSuccess();
 		}
 
 		@Override
@@ -288,7 +288,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 				throw new IllegalStateException("error delete " + slotId + "," + slotInfo);
 			}
 			doSlotDelete(slotId);
-			future.setSuccess();
+			future().setSuccess();
 		}
 		@Override
 		protected void doReset() throws InterruptedException, ExecutionException {
@@ -311,7 +311,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		protected void doExecute() throws Exception {
 			
 			slotManager.refresh(slotId);
-			future.setSuccess();
+			future().setSuccess();
 		}
 		@Override
 		protected void doReset() throws InterruptedException, ExecutionException {

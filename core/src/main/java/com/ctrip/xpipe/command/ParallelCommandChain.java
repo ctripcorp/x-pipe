@@ -66,7 +66,7 @@ public class ParallelCommandChain extends AbstractCommandChain{
 			completed.add(commandFuture);
 		}
 		
-		if(future.isCancelled()){
+		if(future().isCancelled()){
 			return;
 		}
 		
@@ -80,9 +80,9 @@ public class ParallelCommandChain extends AbstractCommandChain{
 				}
 			}
 			if(!fail){
-				future.setSuccess(getResult());
+				future().setSuccess(getResult());
 			}else{
-				future.setFailure(new CommandChainException("execute failure", getResult()));
+				future().setFailure(new CommandChainException("execute failure", getResult()));
 			}
 		}
 	}

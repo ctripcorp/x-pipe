@@ -123,7 +123,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 				if( payload != null){
 					psyncState = PSYNC_STATE.READING_COMMANDS;
 					if(!saveCommands) {
-						future.setSuccess();
+						future().setSuccess();
 					}
 					endReadRdb();
 				}else{

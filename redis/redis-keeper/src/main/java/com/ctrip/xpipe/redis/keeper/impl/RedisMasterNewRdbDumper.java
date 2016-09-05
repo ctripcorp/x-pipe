@@ -36,7 +36,7 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 		rdbonlyRedisMasterReplication.initialize();
 		rdbonlyRedisMasterReplication.start();
 		
-		future.addListener(new CommandFutureListener<Void>() {
+		future().addListener(new CommandFutureListener<Void>() {
 			
 			@Override
 			public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {

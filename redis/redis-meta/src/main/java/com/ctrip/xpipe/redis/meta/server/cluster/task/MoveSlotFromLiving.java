@@ -75,7 +75,7 @@ public class MoveSlotFromLiving extends AbstractSlotMoveTask{
 		setSlotInfo(new SlotInfo(to.getServerId()));
 		getTo().addSlot(slot);
 		getFrom().deleteSlot(slot);
-		future.setSuccess(null);
+		future().setSuccess(null);
 	}
 
 
@@ -84,7 +84,7 @@ public class MoveSlotFromLiving extends AbstractSlotMoveTask{
 		setSlotInfo(new SlotInfo(from.getServerId()));
 		getFrom().addSlot(slot);
 		getTo().deleteSlot(slot);
-		future.setFailure(th);
+		future().setFailure(th);
 	}
 
 

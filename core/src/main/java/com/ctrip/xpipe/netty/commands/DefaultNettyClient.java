@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.netty.commands;
 
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,7 @@ public class DefaultNettyClient implements NettyClient{
 	private Logger logger = LoggerFactory.getLogger(DefaultNettyClient.class);
 	
 	private Channel channel;
-	private Queue<ByteBufReceiver> receivers = new ConcurrentLinkedQueue<>();
+	private LinkedBlockingQueue<ByteBufReceiver> receivers = new LinkedBlockingQueue<>();
 	
 	public DefaultNettyClient(Channel channel) {
 		this.channel = channel;
@@ -49,6 +48,7 @@ public class DefaultNettyClient implements NettyClient{
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception {
 				if(future.isSuccess()){
+					logger.debug("[operationComplete][add receiver]{}", byteBufReceiver);
 					receivers.offer(byteBufReceiver);
 				}else{
 					logger.error("[sendRequest][fail]" + channel, future.cause());
@@ -66,6 +66,8 @@ public class DefaultNettyClient implements NettyClient{
 			if(result){
 				receivers.poll();
 			}
+		}else{
+			logger.error("[handleResponse][no receiver]");
 		}
 	}
 

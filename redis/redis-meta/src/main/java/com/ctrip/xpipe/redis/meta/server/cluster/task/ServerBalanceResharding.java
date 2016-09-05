@@ -24,7 +24,7 @@ public class ServerBalanceResharding extends AbstractResharding{
 		Set<? extends ClusterServer> aliveServers = servers.allClusterServers();
 		if(aliveServers.size() == 0){
 			logger.info("[doExecute][no aliveServers]{}", aliveServers);
-			future.setSuccess(null);
+			future().setSuccess(null);
 			return;
 		}
 		
@@ -44,7 +44,7 @@ public class ServerBalanceResharding extends AbstractResharding{
 		
 		if(easyServer == null){
 			logger.info("[doExecute][no easy server][exit]{}", servers.allClusterServers());
-			future.setSuccess(null);
+			future().setSuccess(null);
 			return;
 		}
 		

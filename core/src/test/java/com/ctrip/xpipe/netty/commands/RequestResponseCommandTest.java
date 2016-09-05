@@ -51,7 +51,7 @@ public class RequestResponseCommandTest extends AbstractTest{
 	public void testReset() throws CommandExecutionException, InterruptedException, ExecutionException{
 
 		String request = randomString(10) + "\r\n";
-		TestCommand command = new TestCommand(request, clientPool, scheduler);
+		TestCommand command = new TestCommand(request, 1000, clientPool, scheduler, null);
 		CommandFuture<String> future = command.execute(); 
 		String result = future.get();
 		Assert.assertEquals(request, result);

@@ -123,20 +123,20 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 	public void dumpFinished() {
 		logger.info("[dumpFinished]{}", this);
 		setRdbDumpState(RdbDumpState.NORMAL);
-		future.setSuccess();
+		future().setSuccess();
 	}
 
 	@Override
 	public void dumpFail(Throwable th) {
 		
-		if(future.isDone()){
+		if(future().isDone()){
 			logger.info("[dumpFail][already done]{}, {}" , this, th.getMessage());
 			return;
 		}
 		
 		logger.info("[dumpFail]{}, {}", this, th.getMessage());
 		setRdbDumpState(RdbDumpState.FAIL);
-		future.setFailure(th);;
+		future().setFailure(th);;
 	}
 	
 	@Override

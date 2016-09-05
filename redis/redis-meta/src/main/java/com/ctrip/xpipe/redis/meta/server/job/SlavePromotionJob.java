@@ -39,7 +39,7 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 	@Override
 	protected void doExecute() {
 	
-		XpipeThreadFactory.create("SLAVE_PROMOTION_JOB").newThread(new SlavePromotionTask(future)).start();
+		XpipeThreadFactory.create("SLAVE_PROMOTION_JOB").newThread(new SlavePromotionTask(future())).start();
 	}
 	
 	

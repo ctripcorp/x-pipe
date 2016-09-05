@@ -33,7 +33,7 @@ public class MoveSlotFromDeadOrEmpty extends AbstractSlotMoveTask{
 		logger.info("[doExecute]{},{}->{}", slot, from, to);
 		setSlotInfo(new SlotInfo(getTo().getServerId()));
 		to.addSlot(slot);
-		future.setSuccess(null);
+		future().setSuccess(null);
 	}
 
 	@Override

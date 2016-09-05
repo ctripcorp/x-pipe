@@ -36,7 +36,7 @@ public abstract class AbstractDirectMoveSharding extends AbstractResharding{
 		logger.info("[doExecute][aliveServers]{}", aliveServers);
 		if(aliveServers.size() == 0){
 			logger.info("[doExecute][no aliveServers]{}");
-			future.setSuccess(null);
+			future().setSuccess(null);
 			return;
 		}
 

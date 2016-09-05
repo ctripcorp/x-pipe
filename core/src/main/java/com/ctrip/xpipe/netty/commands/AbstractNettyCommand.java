@@ -54,7 +54,7 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 		}finally{
 			
 			if(poolCreated){
-				future.addListener(new CommandFutureListener<V>() {
+				future().addListener(new CommandFutureListener<V>() {
 
 					@Override
 					public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
@@ -84,10 +84,6 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 		
 	}
 	
-	public CommandFuture<V> future() {
-		return future;
-	}
-
 	protected SimpleObjectPool<NettyClient> getClientPool() {
 		return clientPool;
 	}

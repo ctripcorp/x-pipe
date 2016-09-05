@@ -117,7 +117,7 @@ public class AbstractRemoteClusterServer extends AbstractClusterServer implement
 		protected void doExecute() throws Exception {
 		
 			restTemplate.postForObject(path, null, String.class, slotId);
-			future.setSuccess();
+			future().setSuccess();
 		}
 
 		@Override
