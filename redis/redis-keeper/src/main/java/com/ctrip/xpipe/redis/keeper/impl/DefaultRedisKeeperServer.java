@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -28,7 +27,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
@@ -97,6 +95,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private LeaderElectorManager leaderElectorManager;
 	
+	@SuppressWarnings("unused")
 	private MetaServerKeeperService metaService;
 	
 	private volatile AtomicReference<RdbDumper> rdbDumper = new AtomicReference<RdbDumper>(null);
@@ -206,26 +205,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		super.doStart();
 		
 		
-		getCurrentShardStatus();
-		
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
 		this.leaderElector.start();
 	}
 	
-	private void getCurrentShardStatus() {
-		try{
-			ShardStatus shardStatus = metaService.getShardStatus(clusterId, shardId);
-			if(shardStatus == null){
-				logger.warn("[getCurrentShardStatus][null]");
-				return;
-			}
-			this.redisKeeperServerState.setShardStatus(shardStatus);
-		}catch(Exception e){
-			logger.error("[getCurrentShardStatus]" + clusterId +"," + shardId, e);
-		}
-	}
-
 	@Override
 	protected void doStop() throws Exception {
 		
