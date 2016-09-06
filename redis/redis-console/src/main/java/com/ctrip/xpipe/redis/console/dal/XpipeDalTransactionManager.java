@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.daltransaction;
+package com.ctrip.xpipe.redis.console.dal;
 
 import java.sql.Connection;
 import java.sql.SQLException;

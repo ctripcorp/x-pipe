@@ -58,7 +58,7 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
 	
     @Override
     public DcMeta getDcMeta(final String dcName) {
-    	ExecutorService fixedThreadPool = Executors.newFixedThreadPool(6);
+    	ExecutorService fixedThreadPool = Executors.newFixedThreadPool(7);
     	DcMeta dcMeta = new DcMeta();
     	dcMeta.setId(dcName);
     	dcMeta.setLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
@@ -99,6 +99,12 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
 				return loadAllDcs();
 			}
     	});
+    	Future<List<DcTbl>> future_allDetails = fixedThreadPool.submit(new Callable<List<DcTbl>>() {
+			@Override
+			public List<DcTbl> call() throws Exception {
+				return dcService.findAllDetails(dcName);
+			}
+		});
     	
     	DcTbl dcInfo;
 		try {
@@ -125,7 +131,7 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
 	    	}
 	    	
 	    	
-			DcMetaQueryVO dcMetaQueryVO = loadMetaVO(dcInfo, dcService.findAllDetails(dcName));
+			DcMetaQueryVO dcMetaQueryVO = loadMetaVO(dcInfo, future_allDetails.get());
 			if(null != future_allactivekeepers.get()) {
 				dcMetaQueryVO.setAllActiveKeepers(future_allactivekeepers.get());
 			}
@@ -176,12 +182,9 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
 	}
 
     private DcMetaQueryVO loadMetaVO(DcTbl currentDc, List<DcTbl> dcMetaDetails) {
-    	logger.info("[CurrentDC]:" + coder.encode(currentDc));
     	DcMetaQueryVO result = new DcMetaQueryVO(currentDc);
     	
     	for(DcTbl dcMetaDetail : dcMetaDetails) {
-    		logger.info("[LoadInfo]" + coder.encode(dcMetaDetail));
-    		
 	        /** Cluster Info **/
 	        result.addClusterInfo(dcMetaDetail.getClusterInfo());
 	        
