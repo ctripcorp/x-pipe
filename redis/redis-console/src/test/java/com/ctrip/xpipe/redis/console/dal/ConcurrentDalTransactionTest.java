@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.daltransaction;
+package com.ctrip.xpipe.redis.console.dal;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -20,7 +20,7 @@ import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
 import org.unidal.dal.jdbc.mapping.TableProviderManager;
 
-import com.ctrip.xpipe.redis.console.daltransaction.XpipeDalTransactionManager;
+import com.ctrip.xpipe.redis.console.dal.XpipeDalTransactionManager;
 
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
