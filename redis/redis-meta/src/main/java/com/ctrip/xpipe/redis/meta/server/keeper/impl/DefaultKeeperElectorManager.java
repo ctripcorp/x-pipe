@@ -121,7 +121,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 					return;
 				}
 				logger.info("[process]{}, {}, {}",  event, this.hashCode(), currentClusterServer.getServerId());
-				List<String> children = client.getChildren().usingWatcher(this).forPath(leaderLatchPath);
+				List<String> children = client.getChildren().forPath(leaderLatchPath);
 				updateShardLeader(children, leaderLatchPath, clusterId, shardId);
 			}
 		}).forPath(leaderLatchPath);

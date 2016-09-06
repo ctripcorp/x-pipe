@@ -2,9 +2,7 @@ package com.ctrip.xpipe.redis.core.meta.impl;
 
 
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -36,6 +34,22 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest{
 		metaManager = (DefaultXpipeMetaManager) DefaultXpipeMetaManager.buildFromFile("file-dao-test.xml");
 		add(metaManager);
 	}
+	
+	@Test
+	public void testHas(){
+		
+		Assert.assertTrue(metaManager.hasCluster(dc, clusterId));;
+		Assert.assertFalse(metaManager.hasCluster(dc, randomString()));;
+		Assert.assertFalse(metaManager.hasCluster(randomString(), clusterId));;
+
+		Assert.assertTrue(metaManager.hasShard(dc, clusterId, shardId));;
+		Assert.assertFalse(metaManager.hasShard(dc, clusterId, randomString()));;
+		Assert.assertFalse(metaManager.hasShard(dc, randomString(), shardId));;
+		Assert.assertFalse(metaManager.hasShard(randomString(), clusterId, shardId));;
+
+		
+		
+}
 	
 	@Test
 	public void testSetKeeperAlive(){
@@ -70,27 +84,6 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest{
 		
 	}
 	
-	private KeeperMeta createNonExistKeeper(List<KeeperMeta> allKeepers) {
-		
-		Set<Integer>  ports = new HashSet<>();
-		for(KeeperMeta keeperMeta : allKeepers){
-			ports.add(keeperMeta.getPort());
-		}
-		
-		int port = randomPort();
-		while(true){
-			
-			if(!ports.contains(port)){
-				break;
-			}
-			port = randomPort();
-		}
-
-		KeeperMeta result = new KeeperMeta();
-		result.setPort(port).setIp("localhost");
-		return result;
-	}
-
 	@Test
 	public void testUpdateKeeperActive() throws MetaException{
 		

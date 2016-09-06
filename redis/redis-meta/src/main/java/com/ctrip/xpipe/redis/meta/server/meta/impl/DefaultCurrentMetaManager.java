@@ -145,6 +145,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		
 		String clusterId = clusterMetaComparator.getCurrent().getId();
 		if(dynamicMetaManager.getClusters().contains(clusterId)){
+			dynamicMetaManager.update(clusterMetaComparator.getFuture());
 			notifyObservers(clusterMetaComparator);
 		}else{
 			logger.warn("[handleClusterChanged][but we do not has it]{}", clusterMetaComparator);
@@ -230,14 +231,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		logger.info("[importSlot][doNothing]{}", slotId);
 	}
 
-	public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) throws Exception {
-		
-	}
-
-	public void redisMasterChanged(String clusterId, String shardId, RedisMeta redisMaster) throws Exception {
-		
-	}
-
 	@Override
 	public void update(Object args, Observable observable) {
 		
@@ -278,6 +271,17 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 	}
 
+	
+	@Override
+	public boolean hasCluster(String clusterId) {
+		return dynamicMetaManager.hasCluster(clusterId);
+	}
+
+	@Override
+	public boolean hasShard(String clusterId, String shardId) {
+		return dynamicMetaManager.hasShard(clusterId, shardId);
+	}
+	
 	@Override
 	public RedisMeta getRedisMaster(String clusterId, String shardId) {
 		return dynamicMetaManager.getRedisMaster(clusterId, shardId);
@@ -310,8 +314,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	public KeeperMeta getKeeperActive(String clusterId, String shardId) {
 		return dynamicMetaManager.getKeeperActive(clusterId, shardId);
 	}
-
-
+	
+	/*******************update dynamic info*************************/
 	@Override
 	public boolean updateKeeperActive(String clusterId, String shardId, KeeperMeta activeKeeper) {
 		return dynamicMetaManager.updateKeeperActive(clusterId, shardId, activeKeeper);

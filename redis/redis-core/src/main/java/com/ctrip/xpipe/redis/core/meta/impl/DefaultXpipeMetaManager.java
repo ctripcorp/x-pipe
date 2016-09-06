@@ -523,4 +523,22 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return result;
 	}
 
+	@Override
+	public boolean hasCluster(String dcId, String clusterId) {
+		DcMeta dcMeta = getDirectDcMeta(dcId);
+		if(dcMeta == null){
+			return false;
+		}
+		return dcMeta.getClusters().get(clusterId) != null;
+	}
+
+	@Override
+	public boolean hasShard(String dcId, String clusterId, String shardId) {
+		ShardMeta shardMeta = getDirectShardMeta(dcId, clusterId, shardId);
+		if(shardMeta == null){
+			return false;
+		}
+		return true;
+	}
+
 }

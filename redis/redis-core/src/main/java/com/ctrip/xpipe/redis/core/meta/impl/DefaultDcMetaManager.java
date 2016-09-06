@@ -187,4 +187,15 @@ public class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 
+	@Override
+	public boolean hasCluster(String clusterId) {
+		return metaManager.hasCluster(currentDc, clusterId);
+	}
+
+	@Override
+	public boolean hasShard(String clusterId, String shardId) {
+		return metaManager.hasShard(currentDc, clusterId, shardId);
+	}
+
+
 }

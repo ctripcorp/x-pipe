@@ -8,6 +8,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.unidal.tuple.Pair;
 
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 
 
@@ -16,7 +18,7 @@ import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
  *
  * Aug 31, 2016
  */
-public class DefaultCurrentMetaServerMetaManagerTest extends AbstractMetaServerContextTest{
+public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest{
 	
 	private DefaultCurrentMetaManager   currentMetaServerMetaManager;
 	
@@ -25,6 +27,20 @@ public class DefaultCurrentMetaServerMetaManagerTest extends AbstractMetaServerC
 		currentMetaServerMetaManager = getBean(DefaultCurrentMetaManager.class);
 	}
 	
+	@Test
+	public void testAdd(){
+		
+		DcMetaComparator add = DcMetaComparator.buildClusterChanged(null, randomCluster());
+		currentMetaServerMetaManager.update(add, null);
+		
+	}
+	
+	
+	private ClusterMeta randomCluster() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 	@Test
 	public void testAddOrRemove(){
 		

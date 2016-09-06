@@ -1,15 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.manul;
 
+
 import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
@@ -43,7 +41,7 @@ public class ClusterChange extends AbstractMetaServerClusterTest{
 		
 		sleep(2000);
 		
-		ClusterMeta clusterMeta = randomCluster();
+		ClusterMeta clusterMeta = randomCluster(dc);
 		
 		metaServerConsoleService.clusterAdded(clusterId, clusterMeta);
 		
@@ -99,31 +97,7 @@ public class ClusterChange extends AbstractMetaServerClusterTest{
 		waitForAnyKeyToExit();
 	}
 
-	private void changeClusterKeeper(ClusterMeta clusterMeta) {
-		
-		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-			
-			KeeperMeta keeperMeta = shardMeta.getKeepers().get(0);
-			keeperMeta.setPort(keeperMeta.getPort() + 10000);
-		}
-	}
 
-
-	private ClusterMeta randomCluster() {
-		
-		DcMeta dcMeta = getDcMeta(dc);
-		ClusterMeta clusterMeta = (ClusterMeta) MetaClone.clone(dcMeta.getClusters().get(clusterId));
-		clusterMeta.setId(randomString(10));
-		
-		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-			for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
-				keeperMeta.setPort(keeperMeta.getPort() + 10000);
-			}
-		}
-		return clusterMeta;
-	}
-
-	
 	@Override
 	protected String getXpipeMetaConfigFile() {
 		return TestMetaServer.DEFAULT_CONFIG_FILE;

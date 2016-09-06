@@ -18,6 +18,10 @@ public interface CurrentMetaManager extends Observable{
 	
 	Set<String> allClusters();
 	
+	boolean hasCluster(String clusterId);
+	
+	boolean hasShard(String clusterId, String shardId);
+	
 	void deleteSlot(int slotId);
 	
 	void addSlot(int slotId);
@@ -32,12 +36,14 @@ public interface CurrentMetaManager extends Observable{
 
 	String getUpstream(String clusterId, String shardId);
 
-
 	List<KeeperMeta> getKeepers(String clusterId, String shardId);
 
 	ClusterMeta getClusterMeta(String clusterId);
 
 	List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId);
+	
+	
+	/*************update support*****************/
 
 	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
 	

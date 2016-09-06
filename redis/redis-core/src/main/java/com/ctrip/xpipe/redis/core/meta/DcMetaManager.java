@@ -21,6 +21,10 @@ public interface DcMetaManager{
 	
 	Set<String> getClusters();
 	
+	boolean hasCluster(String clusterId);
+	
+	boolean hasShard(String clusterId, String shardId);
+	
 	ClusterMeta getClusterMeta(String clusterId);
 	
 	ShardMeta getShardMeta(String clusterId, String shardId);
