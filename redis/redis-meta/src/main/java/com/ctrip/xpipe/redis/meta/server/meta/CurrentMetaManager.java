@@ -37,8 +37,9 @@ public interface CurrentMetaManager extends Observable{
 
 	ClusterMeta getClusterMeta(String clusterId);
 
-	List<KeeperMeta> getAllAliveKeepers(String clusterId, String shardId);
-	
+	List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId);
+
+	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
 	
 	boolean updateKeeperActive(String clusterId, String shardId, KeeperMeta activeKeeper);
 

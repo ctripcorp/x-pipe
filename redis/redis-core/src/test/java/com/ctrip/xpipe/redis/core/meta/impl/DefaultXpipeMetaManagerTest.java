@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.core.meta.impl;
 
 
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -35,6 +37,60 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest{
 		add(metaManager);
 	}
 	
+	@Test
+	public void testSetKeeperAlive(){
+		
+		List<KeeperMeta> allSurvice = metaManager.getAllSurviceKeepers(dc, clusterId, shardId);
+		logger.info("[testSetKeeperAlive][allAlive]{}", allSurvice);
+		Assert.assertEquals(0, allSurvice.size());
+		
+		List<KeeperMeta> allKeepers = metaManager.getKeepers(dc, clusterId, shardId);
+		for(KeeperMeta allOne : allKeepers){
+			allOne.setSurvive(true);
+		}
+
+		allSurvice = metaManager.getAllSurviceKeepers(dc, clusterId, shardId);
+		Assert.assertEquals(0, allSurvice.size());
+
+		metaManager.setSurviveKeepers(dc, clusterId, shardId, allKeepers);
+
+		
+		allSurvice = metaManager.getAllSurviceKeepers(dc, clusterId, shardId);
+		Assert.assertEquals(allKeepers.size(), allSurvice.size());
+		
+
+		try{
+			KeeperMeta nonExist = createNonExistKeeper(allKeepers);
+			allKeepers.add(nonExist);
+			metaManager.setSurviveKeepers(dc, clusterId, shardId, allKeepers);
+			Assert.fail();
+		}catch(IllegalArgumentException e){
+			
+		}
+		
+	}
+	
+	private KeeperMeta createNonExistKeeper(List<KeeperMeta> allKeepers) {
+		
+		Set<Integer>  ports = new HashSet<>();
+		for(KeeperMeta keeperMeta : allKeepers){
+			ports.add(keeperMeta.getPort());
+		}
+		
+		int port = randomPort();
+		while(true){
+			
+			if(!ports.contains(port)){
+				break;
+			}
+			port = randomPort();
+		}
+
+		KeeperMeta result = new KeeperMeta();
+		result.setPort(port).setIp("localhost");
+		return result;
+	}
+
 	@Test
 	public void testUpdateKeeperActive() throws MetaException{
 		

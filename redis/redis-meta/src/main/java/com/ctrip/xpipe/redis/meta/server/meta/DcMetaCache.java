@@ -27,6 +27,8 @@ public interface DcMetaCache extends Observable{
 	void clusterModified(ClusterMeta clusterMeta);
 
 	void clusterDeleted(String clusterId);
+	
+	String getCurrentDc();
 		
 
 }

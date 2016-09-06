@@ -63,5 +63,5 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 
 	DcMeta getDcMeta(String dc);
 
-
+	List<KeeperMeta> getAllSurviceKeepers(String currentDc, String clusterId, String shardId);
 }

@@ -22,7 +22,9 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
+import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.FileUtils;
@@ -248,6 +250,33 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			}
 		}
 		return changed;
+	}
+	
+	@Override
+	public void setSurviveKeepers(String dcId, String clusterId, String shardId, List<KeeperMeta> surviveKeepers) {
+		
+		List<KeeperMeta> keepers = getDirectKeepers(dcId, clusterId, shardId);;
+		
+		List<KeeperMeta> unfoundKeepers = new LinkedList<>();
+		
+		for(KeeperMeta active : surviveKeepers){
+			boolean found = false;
+			for(KeeperMeta current :keepers){
+				if(MetaUtils.same(active, current)){
+					found = true;
+					current.setSurvive(true);
+					break;
+				}
+			}
+			if(!found){
+				unfoundKeepers.add(active);
+			}
+		}
+		
+		if(unfoundKeepers.size() > 0){
+			throw new IllegalArgumentException("unfound keeper set active:" + unfoundKeepers);
+		}
+		
 	}
 
 	@Override
@@ -481,5 +510,17 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return clone(xpipeMeta.getDcs().get(dcId));
 	}
 
-	
+	@Override
+	public List<KeeperMeta> getAllSurviceKeepers(String dcId, String clusterId, String shardId) {
+		List<KeeperMeta> keepers = getDirectKeepers(dcId, clusterId, shardId);
+		List<KeeperMeta> result = new LinkedList<>();
+		
+		for(KeeperMeta keeper : keepers){
+			if(keeper.isSurvive()){
+				result.add(MetaClone.clone(keeper));
+			}
+		}
+		return result;
+	}
+
 }

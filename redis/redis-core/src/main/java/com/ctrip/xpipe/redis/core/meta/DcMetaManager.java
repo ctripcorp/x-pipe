@@ -58,6 +58,11 @@ public interface DcMetaManager{
 	
 	boolean noneKeeperActive(String clusterId, String shardId);
 	
-
 	boolean updateRedisMaster(String clusterId, String shardId, RedisMeta redisMaster);
+
+	List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId);
+
+	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
+
+	
 }

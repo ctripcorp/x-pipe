@@ -188,4 +188,9 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		DcMetaComparator dcMetaComparator = DcMetaComparator.buildClusterRemoved(clusterMeta);
 		notifyObservers(dcMetaComparator);
 	}
+
+	@Override
+	public String getCurrentDc() {
+		return currentDc;
+	}
 }

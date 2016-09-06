@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
 
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 
@@ -28,7 +26,7 @@ public interface MetaServerConsoleService extends MetaServerService{
 	 * @param shardId
 	 * @param upstreamAddress
 	 */
-	void upstreamChange(String clusterId, String shardId, InetSocketAddress upstreamAddress);
+	void upstreamChange(String clusterId, String shardId, String ip, int port);
 	/**
 	 * @return
 	 */

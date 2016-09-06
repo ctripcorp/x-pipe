@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,10 +41,6 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		restTemplate.delete(changeClusterPath, clusterId);
 	}
 
-	@Override
-	public void upstreamChange(String clusterId, String shardId, InetSocketAddress upstreamAddress) {
-		
-	}
 
 	@Override
 	public DcMeta getDynamicInfo() {
@@ -59,6 +54,11 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		List<String> result = new ArrayList<>();
 		result.add(metaServerAddress);
 		return result;
+	}
+
+	@Override
+	public void upstreamChange(String clusterId, String shardId, String ip, int port) {
+		
 	}
 
 }
