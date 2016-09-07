@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 public class AbstractMetaServerTest extends AbstractRedisTest{
 	
 	private String xpipeConfig = "meta-test.xml";
+	private String dc = "jq";
 	
 	protected MetaServerConfig  config = new DefaultMetaServerConfig();
 
@@ -29,4 +30,8 @@ public class AbstractMetaServerTest extends AbstractRedisTest{
 		return xpipeConfig;
 	}
 
+	
+	public String getDc() {
+		return dc;
+	}
 }

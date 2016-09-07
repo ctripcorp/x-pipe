@@ -22,13 +22,12 @@ import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
+import com.ctrip.xpipe.redis.meta.server.meta.CurrentMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -53,7 +52,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	@Autowired
 	private DcMetaCache dcMetaCache;
 	
-	private DcMetaManager dynamicMetaManager;
+	private CurrentMeta currentMeta = new CurrentMeta();;
 	
 	private Set<Integer>   currentSlots = new HashSet<>();
 	
@@ -65,7 +64,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 
-		dynamicMetaManager = DefaultDcMetaManager.buildForDc(dcMetaCache.getCurrentDc());
 		dcMetaCache.addObserver(this);
 		scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create(String.format("CURRENT_META_MANAGER(%d)", currentClusterServer.getServerId())));
 	}
@@ -144,8 +142,9 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	private void handleClusterChanged(ClusterMetaComparator clusterMetaComparator) {
 		
 		String clusterId = clusterMetaComparator.getCurrent().getId();
-		if(dynamicMetaManager.getClusters().contains(clusterId)){
-			dynamicMetaManager.update(clusterMetaComparator.getFuture());
+		if(currentMeta.hasCluster(clusterId)){
+			
+			currentMeta.changeCluster(clusterMetaComparator);
 			notifyObservers(clusterMetaComparator);
 		}else{
 			logger.warn("[handleClusterChanged][but we do not has it]{}", clusterMetaComparator);
@@ -159,7 +158,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
 		
 		logger.info("[addCluster]{}, {}", clusterId, clusterMeta);
-		dynamicMetaManager.update(clusterMeta);
+		currentMeta.addCluster(clusterMeta);
 		notifyObservers(new NodeAdded<ClusterMeta>(clusterMeta));
 	}
 
@@ -171,7 +170,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	private void removeCluster(ClusterMeta clusterMeta) {
 		
 		logger.info("[removeCluster]{}", clusterMeta.getId());
-		boolean result = dynamicMetaManager.removeCluster(clusterMeta.getId()) != null;
+		boolean result = currentMeta.removeCluster(clusterMeta.getId()) != null;
 		if(result){
 			notifyObservers(new NodeDeleted<ClusterMeta>(clusterMeta));
 		}
@@ -186,7 +185,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@Override
 	public Set<String> allClusters() {
-		return new HashSet<>(dynamicMetaManager.getClusters());
+		return new HashSet<>(currentMeta.allClusters());
 	}
 
 	@Override
@@ -194,7 +193,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		
 		currentSlots.remove(slotId);
 		logger.info("[deleteSlot]{}", slotId);
-		for(String clusterId : new HashSet<>(dynamicMetaManager.getClusters())){
+		for(String clusterId : new HashSet<>(currentMeta.allClusters())){
 			
 			int currentSlotId = slotManager.getSlotIdByKey(clusterId);
 			if(currentSlotId == slotId){
@@ -274,70 +273,70 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	
 	@Override
 	public boolean hasCluster(String clusterId) {
-		return dynamicMetaManager.hasCluster(clusterId);
+		return currentMeta.hasCluster(clusterId);
 	}
 
 	@Override
 	public boolean hasShard(String clusterId, String shardId) {
-		return dynamicMetaManager.hasShard(clusterId, shardId);
+		return currentMeta.hasShard(clusterId, shardId);
 	}
 	
 	@Override
 	public RedisMeta getRedisMaster(String clusterId, String shardId) {
-		return dynamicMetaManager.getRedisMaster(clusterId, shardId);
+		return ((DefaultDcMetaCache)dcMetaCache).getDcMeta().getRedisMaster(clusterId, shardId);
 	}
 
 
 	@Override
 	public String getUpstream(String clusterId, String shardId) {
-		return dynamicMetaManager.getUpstream(clusterId, shardId);
+		return ((DefaultDcMetaCache)dcMetaCache).getDcMeta().getUpstream(clusterId, shardId);
 	}
 
 
 	@Override
 	public List<KeeperMeta> getKeepers(String clusterId, String shardId) {
-		return dynamicMetaManager.getKeepers(clusterId, shardId);
+		return ((DefaultDcMetaCache)dcMetaCache).getDcMeta().getKeepers(clusterId, shardId);
 	}
 
 	@Override
 	public ClusterMeta getClusterMeta(String clusterId) {
-		return dynamicMetaManager.getClusterMeta(clusterId);
+		return dcMetaCache.getClusterMeta(clusterId);
 	}
 
 
 	@Override
-	public List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId) {
-		return dynamicMetaManager.getAllSurviveKeepers(clusterId, shardId);
+	public List<KeeperMeta> getSurviveKeepers(String clusterId, String shardId) {
+		return currentMeta.getSurviveKeepers(clusterId, shardId);
 	}
 
 	@Override
 	public KeeperMeta getKeeperActive(String clusterId, String shardId) {
-		return dynamicMetaManager.getKeeperActive(clusterId, shardId);
+		return currentMeta.getKeeperActive(clusterId, shardId);
 	}
 	
 	/*******************update dynamic info*************************/
 	@Override
 	public boolean updateKeeperActive(String clusterId, String shardId, KeeperMeta activeKeeper) {
-		return dynamicMetaManager.updateKeeperActive(clusterId, shardId, activeKeeper);
+		return currentMeta.setKeeperActive(clusterId, shardId, activeKeeper);
 	}
 
 	@Override
 	public void noneKeeperActive(String clusterId, String shardId) {
-		dynamicMetaManager.noneKeeperActive(clusterId, shardId);
-		
-	}
-	@Override
-	public boolean updateRedisMaster(String clusterId, String shardId, RedisMeta redisMaster) {
-		return dynamicMetaManager.updateRedisMaster(clusterId, shardId, redisMaster);
+		currentMeta.setKeeperActive(clusterId, shardId, null);
 	}
 
 	@Override
-	public void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers) {
-		dynamicMetaManager.setSurviveKeepers(clusterId, shardId, surviceKeepers);
+	public void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper) {
+		currentMeta.setSurviveKeepers(clusterId, shardId, surviceKeepers, activeKeeper);
 	}
 	
 	@Override
 	public String toString() {
-		return dynamicMetaManager.toString();
+		return currentMeta.toString();
+	}
+
+	@Override
+	public boolean watchIfNotWatched(String clusterId, String shardId) {
+		return currentMeta.watchIfNotWatched(clusterId, shardId);
 	}
 }

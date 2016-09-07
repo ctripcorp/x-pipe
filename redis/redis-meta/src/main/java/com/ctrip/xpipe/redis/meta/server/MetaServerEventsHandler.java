@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
 /**
  * @author wenchao.meng
@@ -21,15 +20,5 @@ public interface MetaServerEventsHandler {
 	void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) throws Exception;
 
 	void noneActiveElected(String clusterId, String shardId) throws Exception;
-
-	/**
-	 * 1. update dynamic state in memory
-	 * 2. update console
-	 * @param clusterId
-	 * @param shardId
-	 * @param redisMaster
-	 * @throws Exception
-	 */
-	void redisMasterChanged(String clusterId, String shardId, RedisMeta redisMaster) throws Exception;
 
 }

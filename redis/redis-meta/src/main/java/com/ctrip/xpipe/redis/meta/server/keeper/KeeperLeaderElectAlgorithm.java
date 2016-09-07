@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper;
 
-import java.util.List;
 
-import org.apache.curator.framework.CuratorFramework;
+import java.util.List;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 
@@ -13,5 +12,5 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
  */
 public interface KeeperLeaderElectAlgorithm {
 
-	KeeperMeta select(String leaderLatchPath, List<String> children, CuratorFramework curatorFramework) throws Exception;
+	KeeperMeta select(List<KeeperMeta> toBeSelected) throws Exception;
 }

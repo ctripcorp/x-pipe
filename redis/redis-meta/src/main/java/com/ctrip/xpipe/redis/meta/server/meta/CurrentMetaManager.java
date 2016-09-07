@@ -40,17 +40,19 @@ public interface CurrentMetaManager extends Observable{
 
 	ClusterMeta getClusterMeta(String clusterId);
 
-	List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId);
+	List<KeeperMeta> getSurviveKeepers(String clusterId, String shardId);
 	
 	
 	/*************update support*****************/
+	
+	
 
-	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
+	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper);
 	
 	boolean updateKeeperActive(String clusterId, String shardId, KeeperMeta activeKeeper);
 
 	void noneKeeperActive(String clusterId, String shardId);
 
-	boolean updateRedisMaster(String clusterId, String shardId, RedisMeta redisMaster);
+	boolean watchIfNotWatched(String clusterId, String shardId);
 
 }

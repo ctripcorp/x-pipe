@@ -160,7 +160,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 					
 					String shardId = shardMeta.getId();
 					List<KeeperMeta> allKeepers = shardMeta.getKeepers();
-					List<KeeperMeta> aliveKeepers = currentMetaManager.getAllSurviveKeepers(clusterId, shardId);
+					List<KeeperMeta> aliveKeepers = currentMetaManager.getSurviveKeepers(clusterId, shardId);
 					List<KeeperMeta> deadKeepers = getDeadKeepers(allKeepers, aliveKeepers);
 					
 					if(deadKeepers.size() > 0){

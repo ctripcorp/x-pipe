@@ -20,7 +20,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.meta.server.MetaServerEventsHandler;
-import com.ctrip.xpipe.redis.meta.server.impl.event.RedisMasterChanged;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -61,7 +60,11 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 		
 		logger.info("[keeperActiveElected]{},{},{}", clusterId, shardId, activeKeeper);
 		
-		List<KeeperMeta> keepers = currentMetaServerMetaManager.getKeepers(clusterId, shardId);
+		List<KeeperMeta> keepers = currentMetaServerMetaManager.getSurviveKeepers(clusterId, shardId);
+		if(keepers == null || keepers.size() == 0){
+			logger.info("[keeperActiveElected][none keeper survice, do nothing]");
+			return;
+		}
 		InetSocketAddress activeKeeperMaster = getActiveKeeperMaster(clusterId, shardId);
 
 		executeJob(new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool));
@@ -88,19 +91,6 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 		return new InetSocketAddress(sp[0], Integer.parseInt(sp[1]));
 	}
 
-	@Override
-	public void redisMasterChanged(String clusterId, String shardId, RedisMeta redisMaster) throws Exception {
-		
-		logger.info("[redisMasterChanged]{}, {}, {}", clusterId, shardId, redisMaster);
-		
-		RedisMeta oldRedisMaster = currentMetaServerMetaManager.getRedisMaster(clusterId, shardId);
-		if(!currentMetaServerMetaManager.updateRedisMaster(clusterId, shardId, redisMaster)){
-			logger.info("[redisMasterChanged][redis master not changed]");
-			return ;
-		}
-		
-		notifyObservers(new RedisMasterChanged(clusterId, shardId, oldRedisMaster, redisMaster));
-	}
 
 	private void executeJob(final Command<?> command){
 		
