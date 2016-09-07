@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
  *
  * Aug 7, 2016
  */
-public interface MetaServerEventsHandler {
+public interface MetaServerStateChangeHandler {
 
 	/**
 	 * 1. make sure keeper is at proper state
@@ -18,7 +18,5 @@ public interface MetaServerEventsHandler {
 	 * @throws Exception
 	 */
 	void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) throws Exception;
-
-	void noneActiveElected(String clusterId, String shardId) throws Exception;
 
 }

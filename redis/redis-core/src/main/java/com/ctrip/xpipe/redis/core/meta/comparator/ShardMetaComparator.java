@@ -88,14 +88,22 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChan
 	}
 	
 	
-	public class UpstreamChanged implements ConfigChanged<ShardChange>{
+	public static class UpstreamChanged implements ConfigChanged<ShardChange>{
 		
 		private String current, future;
-		public UpstreamChanged(String current, String future){
+		private String clusterId, shardId;
+		public UpstreamChanged(String clusterId, String shardId, String current, String future){
 			this.current = current;
 			this.future = future;
+			this.clusterId = clusterId;
+			this.shardId = shardId;
 		}
-
+		public String getClusterId() {
+			return clusterId;
+		}
+		public String getShardId() {
+			return shardId;
+		}
 		public String getCurrent() {
 			return current;
 		}

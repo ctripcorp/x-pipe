@@ -164,7 +164,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 	@Override
 	public String getCurrentMeta() {
-		return currentMetaServerMeta.toString();
+		return currentMetaServerMeta.getCurrentMetaDesc();
 	}
 
 	@Override

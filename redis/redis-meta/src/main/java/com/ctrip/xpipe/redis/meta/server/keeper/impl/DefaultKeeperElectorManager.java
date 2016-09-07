@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.impl;
 
 
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -22,7 +23,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
-import com.ctrip.xpipe.redis.meta.server.MetaServerEventsHandler;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperLeaderElectAlgorithm;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -38,9 +38,6 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	@Autowired
 	private ZkClient zkClient;
 	
-	
-	@Autowired
-	private MetaServerEventsHandler metaServerEventsHandler;
 	
 	private void observeLeader(final ClusterMeta cluster) throws Exception {
 
@@ -134,7 +131,6 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		
 
 		currentMetaManager.setSurviveKeepers(clusterId, shardId, surviveKeepers, activeKeeper);
-		metaServerEventsHandler.keeperActiveElected(clusterId, shardId, activeKeeper);
 	}
 
 

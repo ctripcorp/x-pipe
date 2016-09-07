@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
+
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
@@ -101,7 +101,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	}
 
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		throw new UnsupportedOperationException();
 		
 	}

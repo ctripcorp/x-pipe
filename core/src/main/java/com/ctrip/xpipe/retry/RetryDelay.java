@@ -1,15 +1,13 @@
 package com.ctrip.xpipe.retry;
 
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng
  *
  * Jul 9, 2016
  */
-public class RetryDelay extends AbstractRetryWait{
+public class RetryDelay extends AbstractRetryPolicy{
 	
-	private AtomicInteger  count = new AtomicInteger(0);
 	private int delayBaseMilli;
 	
 	public RetryDelay(int delayBaseMilli){
@@ -17,11 +15,9 @@ public class RetryDelay extends AbstractRetryWait{
 	}
 
 	@Override
-	public int retryWaitMilli() {
-		
-		int current = count.incrementAndGet();
-		
-		return current * delayBaseMilli;
+	protected int getSleepTime(int currentRetryTime) {
+		return currentRetryTime * delayBaseMilli;
 	}
+
 
 }

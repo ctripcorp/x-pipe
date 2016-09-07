@@ -6,7 +6,7 @@ package com.ctrip.xpipe.retry;
  *
  * Jul 9, 2016
  */
-public class NoRetry extends RetryNTimes{
+public class NoRetry<V> extends RetryNTimes<V>{
 	public NoRetry() {
 		super(0);
 	}

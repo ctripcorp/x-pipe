@@ -1,21 +1,21 @@
 package com.ctrip.xpipe.retry;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import com.ctrip.xpipe.api.retry.RetryType;
-import com.ctrip.xpipe.api.retry.RetryWait;
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.retry.RetryPolicy;
+import com.ctrip.xpipe.api.retry.RetryTemplate;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 
 /**
  * @author wenchao.meng
  *
  * Jul 9, 2016
  */
-public class RetryNTimes extends AbstractRetryTemplate{
+public class RetryNTimes<V> extends AbstractRetryTemplate<V>{
 	
 	private int n;
-	private RetryWait retryWait;
-
+	private RetryPolicy retryPolicy;
 
 	public RetryNTimes(int n, int delayBaseMilli) {
 		this(n, new RetryDelay(delayBaseMilli));
@@ -25,40 +25,40 @@ public class RetryNTimes extends AbstractRetryTemplate{
 		this(n, new NoWaitRetry());
 	}
 
-	public RetryNTimes(int n, RetryWait retryWait) {
+	public RetryNTimes(int n, RetryPolicy retryPolicy) {
 		this.n = n;
-		this.retryWait = retryWait;
+		this.retryPolicy = retryPolicy;
 	}
 
+	public static <V> RetryTemplate<V> retryForEver(RetryPolicy retryPolicy){
+		return new RetryNTimes<>(-1, retryPolicy);
+	}
+	
+	public static <V> RetryTemplate<V> noRetry(){
+		return new RetryNTimes<>(0);
+	}
+	
 	@Override
-	public boolean execute(Callable<RetryType> action){
+	public V execute(Command<V> command) throws InterruptedException{
 		
-		for(int i=0;i<=n;i++){
-			try{
-				if(i >= 1){
-					int wait = retryWait.retryWaitMilli();
-					logger.info("[execute][retry]{}, {}, {}", i, wait, action);
-					try{
-						TimeUnit.MILLISECONDS.wait(wait);
-					}catch(Exception e){
-						//noop
-					}
-				}
-				RetryType type = action.call();
-				switch(type){
-					case SUCCESS:
-						return true;
-					case FAIL_PASS:
-						break;
-					default:
-						continue;
-				}
-			}catch(Exception e){
-				logger.error("[execute]" + action, e);
-			}finally{
+		for(int i=0;n== -1 || i<=n;i++){
+			
+			if(i >= 1){
+				logger.info("[execute][retry]{}, {}", i, command);
+				retryPolicy.retryWaitMilli(true);
 			}
+			
+			try {
+				return command.execute().get(retryPolicy.waitTimeoutMilli(), TimeUnit.MILLISECONDS);
+			}catch (Exception e) {
+				ExceptionUtils.logException(logger, e, e.getMessage());
+				if(!retryPolicy.retry(e)){
+					logger.info("[execute][no retry]", e);
+					break;
+				}
+			}
+			command.reset();
 		}
-
-		return false;
+		return null;
 	}
 }

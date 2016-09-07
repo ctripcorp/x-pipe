@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
-import java.util.concurrent.ExecutionException;
-
 import org.springframework.web.client.RestTemplate;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
@@ -121,7 +119,7 @@ public class AbstractRemoteClusterServer extends AbstractClusterServer implement
 		}
 
 		@Override
-		protected void doReset() throws InterruptedException, ExecutionException {
+		protected void doReset(){
 			
 		}
 	}

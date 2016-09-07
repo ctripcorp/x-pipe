@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.impl;
+package com.ctrip.xpipe.redis.meta.server.keeper;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -19,7 +19,8 @@ import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
-import com.ctrip.xpipe.redis.meta.server.MetaServerEventsHandler;
+import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
+import com.ctrip.xpipe.redis.meta.server.impl.MetaChangeListener;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -30,9 +31,9 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  * Jul 8, 2016
  */
 @Component
-public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable implements MetaServerEventsHandler{
+public class DefaultKeeperStateChangeHandler extends AbstractLifecycleObservable implements MetaServerStateChangeHandler{
 	
-	protected static Logger logger = LoggerFactory.getLogger(DefaultMetaServerEventsHandler.class);
+	protected static Logger logger = LoggerFactory.getLogger(DefaultKeeperStateChangeHandler.class);
 	
 	@Resource( name = "clientPool" )
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
@@ -68,12 +69,6 @@ public class DefaultMetaServerEventsHandler extends AbstractLifecycleObservable 
 		InetSocketAddress activeKeeperMaster = getActiveKeeperMaster(clusterId, shardId);
 
 		executeJob(new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool));
-	}
-
-	@Override
-	public void noneActiveElected(String clusterId, String shardId) throws Exception {
-		//TODO
-		
 	}
 
 	private InetSocketAddress getActiveKeeperMaster(String clusterId, String shardId) throws MetaException {

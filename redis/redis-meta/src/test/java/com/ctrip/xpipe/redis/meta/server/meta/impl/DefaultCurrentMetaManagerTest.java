@@ -30,7 +30,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 	@Test
 	public void testAdd(){
 		
-		DcMetaComparator add = DcMetaComparator.buildClusterChanged(null, randomCluster(dc));
+		DcMetaComparator add = DcMetaComparator.buildClusterChanged(null, differentCluster(dc));
 		currentMetaServerMetaManager.update(add, null);
 		
 	}

@@ -11,7 +11,7 @@ import com.ctrip.xpipe.api.retry.RetryTemplate;
  *
  * Jul 9, 2016
  */
-public abstract class AbstractRetryTemplate implements RetryTemplate{
+public abstract class AbstractRetryTemplate<V> implements RetryTemplate<V>{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 

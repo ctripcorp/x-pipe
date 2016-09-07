@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -25,11 +24,6 @@ public class RedisMasterReplicationRdbDumper extends AbstractRdbDumper{
 		//nothing to do
 	}
 
-	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
-		
-	}
-	
 	@Override
 	protected void doCancel() {
 		super.doCancel();

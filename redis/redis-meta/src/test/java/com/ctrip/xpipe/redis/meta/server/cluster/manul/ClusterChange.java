@@ -41,7 +41,7 @@ public class ClusterChange extends AbstractMetaServerClusterTest{
 		
 		sleep(2000);
 		
-		ClusterMeta clusterMeta = randomCluster(dc);
+		ClusterMeta clusterMeta = differentCluster(dc);
 		
 		metaServerConsoleService.clusterAdded(clusterId, clusterMeta);
 		

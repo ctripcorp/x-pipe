@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
-import java.util.concurrent.ExecutionException;
-
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -37,7 +35,7 @@ public class MoveSlotFromDeadOrEmpty extends AbstractSlotMoveTask{
 	}
 
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		
 	}
 

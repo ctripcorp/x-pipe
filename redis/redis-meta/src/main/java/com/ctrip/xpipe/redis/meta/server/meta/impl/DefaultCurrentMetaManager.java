@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
+import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMeta;
@@ -59,11 +60,14 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	private ScheduledExecutorService scheduled;
 	private ScheduledFuture<?> 		slotCheckFuture;
 	
+	@Autowired
+	private List<MetaServerStateChangeHandler> stateHandlers;
 	
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 
+		logger.info("[doInitialize]{}", stateHandlers);
 		dcMetaCache.addObserver(this);
 		scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create(String.format("CURRENT_META_MANAGER(%d)", currentClusterServer.getServerId())));
 	}
@@ -317,21 +321,19 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	/*******************update dynamic info*************************/
 	@Override
 	public boolean updateKeeperActive(String clusterId, String shardId, KeeperMeta activeKeeper) {
-		return currentMeta.setKeeperActive(clusterId, shardId, activeKeeper);
-	}
-
-	@Override
-	public void noneKeeperActive(String clusterId, String shardId) {
-		currentMeta.setKeeperActive(clusterId, shardId, null);
+		boolean result = currentMeta.setKeeperActive(clusterId, shardId, activeKeeper);
+		notifyKeeperActiveElected(clusterId, shardId, activeKeeper);
+		return result;
 	}
 
 	@Override
 	public void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper) {
 		currentMeta.setSurviveKeepers(clusterId, shardId, surviceKeepers, activeKeeper);
+		notifyKeeperActiveElected(clusterId, shardId, activeKeeper);
 	}
 	
 	@Override
-	public String toString() {
+	public String getCurrentMetaDesc() {
 		return currentMeta.toString();
 	}
 
@@ -339,4 +341,16 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	public boolean watchIfNotWatched(String clusterId, String shardId) {
 		return currentMeta.watchIfNotWatched(clusterId, shardId);
 	}
+	
+	private void notifyKeeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {
+		
+		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
+			try {
+				stateHandler.keeperActiveElected(clusterId, shardId, activeKeeper);
+			} catch (Exception e) {
+				logger.error("[setSurviveKeepers]" + clusterId + "," + shardId + "," + activeKeeper, e);
+			}
+		}
+	}
+
 }

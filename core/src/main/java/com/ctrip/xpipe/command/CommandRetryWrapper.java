@@ -2,7 +2,6 @@ package com.ctrip.xpipe.command;
 
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -12,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.api.retry.RetryWait;
+import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.retry.NoWaitRetry;
 
 /**
@@ -25,7 +24,7 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 	protected Logger logger = LoggerFactory.getLogger(CommandRetryWrapper.class);
 	
 	private int retryTimes;
-	private RetryWait retryWait;
+	private RetryPolicy retryWait;
 	private AtomicInteger executeCount = new AtomicInteger();
 	
 	private Command<V> command;
@@ -35,7 +34,7 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 		this(0, new NoWaitRetry(), command);
 	}
 	
-	public CommandRetryWrapper(int retryTimes, RetryWait retryWait, Command<V> command) {
+	public CommandRetryWrapper(int retryTimes, RetryPolicy retryWait, Command<V> command) {
 		
 		this.retryTimes = retryTimes;
 		this.retryWait = retryWait;
@@ -96,7 +95,7 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 	}
 
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		throw new UnsupportedOperationException();
 	}
 	

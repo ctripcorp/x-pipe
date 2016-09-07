@@ -369,7 +369,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		}
 	}
 
-	protected ClusterMeta randomCluster(String dc) {
+	protected ClusterMeta differentCluster(String dc) {
 		
 		DcMeta dcMeta = getDcMeta(dc);
 		ClusterMeta clusterMeta = (ClusterMeta) MetaClone.clone((ClusterMeta)dcMeta.getClusters().values().toArray()[0]);

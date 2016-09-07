@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.command;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -64,7 +63,7 @@ public class TestCommand extends AbstractCommand<String>{
 	}
 
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		
 	}
 }
