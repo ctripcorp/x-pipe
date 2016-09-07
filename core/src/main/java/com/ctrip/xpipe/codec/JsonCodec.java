@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -30,11 +31,15 @@ public class JsonCodec extends AbstractCodec{
 		
 		objectMapper = new ObjectMapper();
 		objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		
 		if(indent){
 			objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 		}
 		if(privateVisible){
 			objectMapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+			objectMapper.setVisibility(PropertyAccessor.GETTER, Visibility.NONE);
+			objectMapper.setVisibility(PropertyAccessor.IS_GETTER, Visibility.NONE);
 		}
 	}
 
