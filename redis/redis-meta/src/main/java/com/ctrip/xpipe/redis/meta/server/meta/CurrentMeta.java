@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author wenchao.meng
@@ -209,6 +210,7 @@ public class CurrentMeta {
 			return watched.compareAndSet(false, true);
 		}
 
+		@JsonIgnore
 		public boolean setActiveKeeper(KeeperMeta activeKeeper) {
 			
 			if(!checkIn(surviveKeepers, activeKeeper)){
@@ -221,6 +223,7 @@ public class CurrentMeta {
 			this.shardId = shardId;
 		}
 		
+		@JsonIgnore
 		public KeeperMeta getActiveKeeper() {
 			for(KeeperMeta survive : surviveKeepers){
 				if(survive.isActive()){

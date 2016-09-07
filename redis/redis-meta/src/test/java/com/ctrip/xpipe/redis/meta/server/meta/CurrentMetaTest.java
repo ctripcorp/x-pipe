@@ -40,6 +40,10 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 	@Test
 	public void testToString(){
 		
+		List<KeeperMeta> allKeepers = getDcKeepers(getDc(), clusterId, shardId);
+		
+		currentMeta.setSurviveKeepers(clusterId, shardId, allKeepers, allKeepers.get(0));
+		
 		String json = currentMeta.toString();
 		logger.info("[testToString]{}", json);
 		CurrentMeta de = CurrentMeta.fromJson(json);
