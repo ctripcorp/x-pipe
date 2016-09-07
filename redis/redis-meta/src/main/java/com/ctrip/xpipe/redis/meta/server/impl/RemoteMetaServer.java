@@ -33,6 +33,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	private String pingPath;
 	private String getShardStatusPath;
 	private String changeClusterPath;
+	private String upstreamChangePath;
 
 	public RemoteMetaServer(int currentServerId, int serverId) {
 		super(currentServerId, serverId);
@@ -44,6 +45,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		pingPath = String.format("%s/%s/%s", getHttpHost(), MetaServerKeeperService.PATH_PREFIX, MetaServerKeeperService.PATH_PING);
 		getShardStatusPath = String.format("%s/%s/%s", getHttpHost(), MetaServerKeeperService.PATH_PREFIX, MetaServerKeeperService.PATH_SHARD_STATUS);
 		changeClusterPath = String.format("%s/%s/%s", getHttpHost(), MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_CLUSTER_CHANGE);
+		upstreamChangePath = String.format("%s/%s/%s", getHttpHost(), MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_UPSTREAM_CHANGE);
 	}
 
 	@Override
@@ -61,11 +63,6 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		throw new UnsupportedOperationException();
 	}
 
-
-	@Override
-	public void updateUpstream(String clusterId, String shardId, String upstream) throws Exception {
-		throw new UnsupportedOperationException();
-	}
 
 	@Override
 	public void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo) {
@@ -94,7 +91,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	public void clusterAdded(ClusterMeta clusterMeta, ForwardInfo forwardInfo) {
 		
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, ForwardType.MULTICASTING);
-		logger.info("[clusterAdded][forward]{},{},{} --> {}", clusterMeta.getId(), forwardInfo, this);
+		logger.info("[clusterAdded][forward]{},{}--> {}", clusterMeta.getId(), forwardInfo, this);
 		
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(clusterMeta, headers);
 		restTemplate.exchange(changeClusterPath, HttpMethod.POST, entity, String.class, clusterMeta.getId());
@@ -105,7 +102,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	public void clusterModified(ClusterMeta clusterMeta, ForwardInfo forwardInfo) {
 
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, ForwardType.MULTICASTING);
-		logger.info("[clusterModified][forward]{},{},{} --> {}", clusterMeta.getId(), forwardInfo, this);
+		logger.info("[clusterModified][forward]{},{} --> {}", clusterMeta.getId(), forwardInfo, this);
 		
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(clusterMeta, headers);
 		restTemplate.exchange(changeClusterPath, HttpMethod.PUT, entity, String.class, clusterMeta.getId());
@@ -116,12 +113,23 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	public void clusterDeleted(String clusterId, ForwardInfo forwardInfo) {
 
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, ForwardType.MULTICASTING);
-		logger.info("[clusterModified][forward]{},{},{} --> {}", clusterId, forwardInfo, this);
+		logger.info("[clusterModified][forward]{},{} --> {}", clusterId, forwardInfo, this);
 		
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
 		restTemplate.exchange(changeClusterPath, HttpMethod.DELETE, entity, String.class, clusterId);
 	}
 
+	@Override
+	public void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo)
+			throws Exception {
+		
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, ForwardType.MULTICASTING);
+		logger.info("[updateUpstream][forward]{},{},{}:{}, {}--> {}", clusterId, shardId, ip, port, forwardInfo, this);
+		
+		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
+		restTemplate.exchange(upstreamChangePath, HttpMethod.PUT, entity, String.class, clusterId, shardId, ip, port);
+		
+	}
 
 	private HttpHeaders checkCircularAndGetHttpHeaders(ForwardInfo forwardInfo, ForwardType forwardType) {
 		
@@ -152,9 +160,6 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 
 	@Override
 	public String getCurrentMeta() {
-		// TODO Auto-generated method stub
 		return null;
 	}
-
-
 }

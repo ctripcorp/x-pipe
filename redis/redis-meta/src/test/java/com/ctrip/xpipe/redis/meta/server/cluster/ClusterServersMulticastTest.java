@@ -38,6 +38,22 @@ public class ClusterServersMulticastTest extends AbstractMetaServerClusterTest{
 		}
 	}
 
+	
+	@Test
+	public void testUpdateUpstream() throws Exception{
+		
+		createMetaServers(metaServerCount);
+		sleep(1000);
+		logger.info(remarkableMessage("[testUpdateUpstream][begin send upstream update message]"));
+		
+		for(TestMetaServer server : getServers()){
+			String path = getUpstreamChangePath(server);
+			logger.info("[testClusterChanged]{}", path);
+			restTemplate.put(path, null, "cluster1", "shard1", "localhost", 7777);
+		}
+	}
+
+
 	private ClusterMeta randomCluster() {
 		
 		ClusterMeta clusterMeta = new ClusterMeta();
@@ -47,6 +63,10 @@ public class ClusterServersMulticastTest extends AbstractMetaServerClusterTest{
 
 	private String getChangeClusterPath(TestMetaServer server) {
 		return String.format("http://localhost:%d/%s/%s", server.getServerPort(), MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_CLUSTER_CHANGE);
+	}
+
+	private String getUpstreamChangePath(TestMetaServer server) {
+		return String.format("http://localhost:%d/%s/%s", server.getServerPort(), MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_UPSTREAM_CHANGE);
 	}
 
 }

@@ -145,4 +145,19 @@ public class DispatcherMetaServerController extends AbstractController{
 		}
 	}
 
+	@RequestMapping(path = MetaServerConsoleService.PATH_UPSTREAM_CHANGE, method = RequestMethod.PUT)
+	public void upstreamChange(@PathVariable String clusterId, @PathVariable String shardId, 
+			@PathVariable String ip, @PathVariable int port,@ModelAttribute ForwardInfo forwardInfo) throws Exception {
+
+		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MULTICASTING){
+			logger.info("[upstreamChange][multicast message][do now]");
+			currentMetaServer.updateUpstream(clusterId, shardId, ip, port, forwardInfo);
+			return;
+		}
+		
+		for(MetaServer metaServer : servers.allClusterServers()){
+			metaServer.updateUpstream(clusterId, shardId, ip, port, forwardInfo.clone());
+		}
+	}
+
 }
