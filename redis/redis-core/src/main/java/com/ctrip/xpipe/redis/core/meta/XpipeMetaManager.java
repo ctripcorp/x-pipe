@@ -55,8 +55,6 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 
 	List<String> getBackupDc(String clusterId) throws MetaException;
 
-	boolean updateUpstreamKeeper(String dc, String clusterId, String shardId, String address) throws MetaException;
-
 	String getUpstream(String dc, String clusterId, String shardId) throws MetaException;
 	
 	KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta);

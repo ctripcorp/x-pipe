@@ -153,35 +153,4 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest{
 			}
 		}
 	}
-
-	@Test
-	public void testUpdateUpstream() throws MetaException{
-		
-		String activeDc = metaManager.getActiveDc(clusterId);
-		try{
-			metaManager.updateUpstreamKeeper(activeDc, clusterId, shardId, "");
-			Assert.fail();
-		}catch(Exception e){
-		}
-
-		List<String> backDcs = metaManager.getBackupDc(clusterId);
-		
-		Assert.assertTrue(backDcs.size() >= 1);
-		
-		
-		for(String dc : backDcs){
-			
-			String upstream = metaManager.getUpstream(dc, clusterId, shardId);
-			Assert.assertNull(upstream);
-			
-			String address = null;
-			Assert.assertFalse(metaManager.updateUpstreamKeeper(dc, clusterId, shardId, address));
-			
-			address = "127.0.0.1:8080";
-			Assert.assertTrue(metaManager.updateUpstreamKeeper(dc, clusterId, shardId, address));
-			Assert.assertFalse(metaManager.updateUpstreamKeeper(dc, clusterId, shardId, address));
-		}		
-		
-	}
-
 }

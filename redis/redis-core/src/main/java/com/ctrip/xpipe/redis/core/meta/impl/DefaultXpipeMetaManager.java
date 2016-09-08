@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
 
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -28,7 +29,6 @@ import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.FileUtils;
-import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**
  * @author wenchao.meng
@@ -442,26 +442,6 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
-	public boolean updateUpstreamKeeper(String dc, String clusterId, String shardId, String address) throws MetaException {
-		
-		String activeDc = getActiveDc(clusterId);
-		if(dc.equalsIgnoreCase(activeDc)){
-			throw new MetaException("[updateUpstreamKeeper][dc active, can not update upstream]"+ dc + "," + clusterId);
-		}
-		logger.info("[updateUpstreamKeeper]{},{},{},{}", dc, clusterId, shardId, address);
-		ShardMeta shardMeta = getDirectShardMeta(activeDc, clusterId, shardId);
-		if(shardMeta == null){
-			throw new RedisRuntimeException(String.format("dc:%s, cluster:%s, shard:%s, address:%s", dc, clusterId, shardId, address));
-		}
-		String oldUpstream = shardMeta.getUpstream();
-		if(ObjectUtils.equals(oldUpstream, address)){
-			return false;
-		}
-		shardMeta.setUpstream(address);
-		return true;
-	}
-
-	@Override
 	public String getUpstream(String dc, String clusterId, String shardId) throws MetaException {
 		
 		ShardMeta shardMeta = getShardMeta(dc, clusterId, shardId);
@@ -555,7 +535,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		if(shardMeta == null){
 			throw new IllegalArgumentException("unfound shard:" + clusterId + "," + shardId);
 		}
+		logger.info("[updateUpstreamKeeper]{},{},{},{}, {}", dc, clusterId, shardId, ip, port);
 		shardMeta.setUpstream(String.format("%s:%d", ip,port));
 	}
-
 }
