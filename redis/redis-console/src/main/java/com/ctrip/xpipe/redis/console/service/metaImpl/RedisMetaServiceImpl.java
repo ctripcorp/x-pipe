@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.metaImpl;
 
+import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
@@ -28,7 +29,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 	@Override
 	public String encodeRedisAddress(RedisTbl redisTbl) {
 		if(null == redisTbl) {
-			return "";
+			return XpipeConsoleConstant.DEFAULT_ADDRESS;
 		} else {
 			StringBuilder sb = new StringBuilder(30);
 			sb.append(redisTbl.getRedisIp());
@@ -43,7 +44,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 		RedisMeta redisMeta = new RedisMeta();
 		
 		if(null != redisTbl) {
-			redisMeta.setId(redisTbl.getRedisName());
+			redisMeta.setId(redisTbl.getRunId());
 			redisMeta.setIp(redisTbl.getRedisIp());
 			redisMeta.setPort(redisTbl.getRedisPort());
 			if(redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
@@ -71,7 +72,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 		KeeperMeta keeperMeta = new KeeperMeta();
 		
 		if(null != redisTbl) {
-			keeperMeta.setId(redisTbl.getRedisName());
+			keeperMeta.setId(redisTbl.getRunId());
 			keeperMeta.setIp(redisTbl.getRedisIp());
 			keeperMeta.setPort(redisTbl.getRedisPort());
 			if(redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
@@ -101,7 +102,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 		RedisMeta redisMeta = new RedisMeta();
 		
 		if(null != redisInfo) {
-			redisMeta.setId(redisInfo.getRedisName());
+			redisMeta.setId(redisInfo.getRunId());
 			redisMeta.setIp(redisInfo.getRedisIp());
 			redisMeta.setPort(redisInfo.getRedisPort());
 			if(redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {
@@ -124,7 +125,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 		KeeperMeta keeperMeta = new KeeperMeta();
 		
 		if(null != redisInfo) {
-			keeperMeta.setId(redisInfo.getRedisName());
+			keeperMeta.setId(redisInfo.getRunId());
 			keeperMeta.setIp(redisInfo.getRedisIp());
 			keeperMeta.setPort(redisInfo.getRedisPort());
 			if(redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {

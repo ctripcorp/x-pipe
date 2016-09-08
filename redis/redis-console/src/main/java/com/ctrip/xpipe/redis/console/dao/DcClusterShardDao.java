@@ -56,7 +56,7 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 			
 			if(null != relatedRedises) {
 				for(RedisTbl redis : relatedRedises) {
-					redis.setRedisName(generateDeletedName(redis.getRedisName()));
+					redis.setRunId(generateDeletedName(redis.getRunId()));
 				}
 				redises.addAll(relatedRedises);
 			}
