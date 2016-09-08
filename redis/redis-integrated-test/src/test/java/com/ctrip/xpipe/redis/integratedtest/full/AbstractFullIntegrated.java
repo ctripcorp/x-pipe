@@ -25,8 +25,8 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import com.ctrip.xpipe.redis.integratedtest.ConsoleStart;
 import com.ctrip.xpipe.redis.integratedtest.DcInfo;
-import com.ctrip.xpipe.redis.integratedtest.MetaServerPrepareResourcesAndStart;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.utils.IpUtils;
 
 /**
@@ -191,22 +191,22 @@ public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 	protected void startMetaServer(MetaServerMeta metaServerMeta, ZkServerMeta zkServerMeta, DcMeta dcMeta) throws Exception {
 		
 		logger.info(remarkableMessage("[startMetaServer]{}, {}"), metaServerMeta, zkServerMeta);
-				
-		MetaServerPrepareResourcesAndStart startMetaServer = new MetaServerPrepareResourcesAndStart(getIntegrated_test_config_file(), zkServerMeta.getAddress(), metaServerMeta.getPort(), dcMeta);
-		startMetaServer.initialize();
-		startMetaServer.start();
 		
-		add(startMetaServer);
+		DcInfo dcInfo = getDcInfos().get(dcMeta.getId());		
 		
-		dcs.get(dcMeta.getId()).setApplicationContext(startMetaServer.getApplicationContext());
+		TestMetaServer testMetaServer = new TestMetaServer(dcInfo.getIncreaseServerId(), metaServerMeta.getPort(), zkServerMeta.getAddress(), getIntegrated_test_config_file());
+		testMetaServer.initialize();
+		testMetaServer.start();
+		
+		add(testMetaServer);
+		
+		dcInfo.setApplicationContext(testMetaServer.getContext());
 	}
 
 	public Set<String> getDcs() {
 		return dcs.keySet();
 	}
 
-	
-	
 	protected Map<String, DcInfo> getDcInfos(){
 		return this.dcs;
 		

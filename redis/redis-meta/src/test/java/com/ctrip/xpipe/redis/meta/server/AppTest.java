@@ -12,6 +12,7 @@ import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
+import com.ctrip.xpipe.zk.impl.TestZkClient;
 
 /**
  * @author shyin
@@ -41,6 +42,7 @@ public class AppTest extends AbstractMetaServerContextTest{
 		start();
 	}
 
+	
 	@Test
 	public void start9748() throws Exception {
 		
@@ -57,7 +59,10 @@ public class AppTest extends AbstractMetaServerContextTest{
 		
 		System.setProperty("server.port", String.valueOf(serverPort));
 		startZk(zkPort);
+		
 		SpringComponentRegistry registry = SpringApplication.run(MetaServerApplication.class, new String[]{}).getBean(SpringComponentRegistry.class);
+		TestZkClient testZkClient = registry.getComponent(TestZkClient.class);
+		testZkClient.setZkAddress(String.format("localhost:%d", zkPort));
 		registry.initialize();
 		registry.start();
 		add(registry);

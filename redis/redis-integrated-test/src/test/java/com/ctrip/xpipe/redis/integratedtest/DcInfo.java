@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
 
+
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.springframework.context.ApplicationContext;
 
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -13,6 +16,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 public class DcInfo {
 
 	private ApplicationContext applicationContext;
+	private AtomicInteger serverId = new AtomicInteger();
 	private DcMeta dcMeta;
 
 	public DcInfo(DcMeta dcMeta) {
@@ -31,4 +35,7 @@ public class DcInfo {
 		return dcMeta;
 	}
 	
+	public int getIncreaseServerId(){
+		return serverId.incrementAndGet();
+	}
 }

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
+import java.net.InetSocketAddress;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ctrip.xpipe.api.command.Command;
@@ -25,6 +27,8 @@ public class ConsoleNotifycationTask extends AbstractOneThreadTaskExecutor imple
 	@Autowired
 	private ConsoleService consoleService;
 	
+	private String dc = FoundationService.DEFAULT.getDataCenter();
+	
 	@Override
 	public void keeperActiveElected(final String clusterId, final String shardId, final KeeperMeta activeKeeper) throws Exception {
 		
@@ -37,7 +41,7 @@ public class ConsoleNotifycationTask extends AbstractOneThreadTaskExecutor imple
 
 			@Override
 			protected void doExecute() throws Exception {
-				consoleService.keeperActiveChanged(FoundationService.DEFAULT.getDataCenter(), clusterId, shardId, activeKeeper);
+				consoleService.keeperActiveChanged(dc, clusterId, shardId, activeKeeper);
 				future().setSuccess();
 			}
 
@@ -57,5 +61,10 @@ public class ConsoleNotifycationTask extends AbstractOneThreadTaskExecutor imple
 	
 	public void setConsoleService(ConsoleService consoleService) {
 		this.consoleService = consoleService;
+	}
+
+	@Override
+	public void keeperMasterChanged(String clusterId, String shardId, InetSocketAddress newMaster) {
+		//nothing to do
 	}
 }

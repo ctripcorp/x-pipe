@@ -10,10 +10,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
@@ -21,7 +25,9 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
+import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
@@ -30,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * Sep 6, 2016
  */
 public class CurrentMeta {
+	
 	
 	private Map<String, CurrentClusterMeta> currentMetas = new ConcurrentHashMap<>();
 	
@@ -152,6 +159,9 @@ public class CurrentMeta {
 	
 	public static class CurrentClusterMeta{
 		
+		@JsonIgnore
+		private static Logger logger = LoggerFactory.getLogger(CurrentClusterMeta.class);
+		
 		private String clusterId;
 		private Map<String, CurrentShardMeta> clusterMetas = new ConcurrentHashMap<>();
 		
@@ -168,15 +178,50 @@ public class CurrentMeta {
 
 		public void addShard(final ShardMeta shardMeta) {
 			
-			@SuppressWarnings("unused")
 			CurrentShardMeta currentShardMeta = MapUtils.getOrCreate(clusterMetas, shardMeta.getId(), new ObjectFactory<CurrentShardMeta>() {
 				@Override
 				public CurrentShardMeta create() {
-					return new CurrentShardMeta(shardMeta.getId());
+					return new CurrentShardMeta(clusterId, shardMeta.getId());
 				}
 			});
 			
+			InetSocketAddress inetSocketAddress = getDefaultKeeperMaster(shardMeta);
+			logger.info("[addShard][default keeper master]{}", inetSocketAddress);
+			currentShardMeta.setKeeperMaster(inetSocketAddress);
 		}
+		
+		private InetSocketAddress getDefaultKeeperMaster(ShardMeta shardMeta) {
+			
+			RedisMeta redisMaster = null;
+			for(RedisMeta redisMeta : shardMeta.getRedises()){
+				if(redisMeta.isMaster()){
+					redisMaster = redisMeta;
+				}
+			}
+			
+			if(redisMaster != null){
+				return new InetSocketAddress(redisMaster.getIp(), redisMaster.getPort());
+			}
+			
+			String upstream = shardMeta.getUpstream();
+			try{
+				if(!StringUtil.isEmpty(upstream)){
+					return IpUtils.parseSingle(upstream);
+				}
+			}catch(Exception e){
+				logger.error("[getDefaultKeeperMaster]", e);
+			}
+			
+			if(shardMeta.getRedises().size() == 0){
+				logger.warn("[getDefaultKeeperMaster][no redis]{}", shardMeta);
+				return null;
+			}
+			
+			RedisMeta redisMeta = shardMeta.getRedises().get(0);
+			logger.warn("[getDefaultKeeperMaster][no redis master, no upstream, use first redis instead]{}, {}", clusterId, redisMaster);
+			return new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort());
+		}
+		
 		public void removeShard(ShardMeta shardMeta) {
 			clusterMetas.remove(shardMeta.getId());
 		}
@@ -197,8 +242,11 @@ public class CurrentMeta {
 	
 	public static class CurrentShardMeta{
 		
+		@JsonIgnore
+		private Logger logger = LoggerFactory.getLogger(getClass());
+
 		private AtomicBoolean     watched = new AtomicBoolean(false);
-		private String 			  shardId;
+		private String 			  clusterId, shardId;
 		private List<KeeperMeta>  surviveKeepers = new LinkedList<>();
 		private InetSocketAddress keeperMaster;
 		
@@ -219,7 +267,8 @@ public class CurrentMeta {
 			return doSetActive(activeKeeper);
 		}
 		
-		public CurrentShardMeta(String shardId) {
+		public CurrentShardMeta(String clusterId, String shardId) {
+			this.clusterId = clusterId;
 			this.shardId = shardId;
 		}
 		
@@ -245,10 +294,11 @@ public class CurrentMeta {
 				if(!checkIn(surviveKeepers, activeKeeper)){
 					throw new IllegalArgumentException("active not in all survivors " + activeKeeper + ", all:" + this.surviveKeepers);
 				}
-	
 				this.surviveKeepers = (List<KeeperMeta>) MetaClone.clone((Serializable)surviveKeepers);
+				logger.info("[setSurviveKeepers]{},{},{}, {}", clusterId, shardId, surviveKeepers, activeKeeper);
 				doSetActive(activeKeeper);
 			}else{
+				logger.info("[setSurviveKeepers][survive keeper none, clear]{},{},{}, {}", clusterId, shardId, surviveKeepers, activeKeeper);
 				this.surviveKeepers.clear();
 			}
 		}
@@ -256,6 +306,7 @@ public class CurrentMeta {
 		public boolean doSetActive(KeeperMeta activeKeeper) {
 			
 			boolean changed = false;
+			logger.info("[doSetActive]{},{},{}", clusterId, shardId, activeKeeper);
 			for(KeeperMeta survive : this.surviveKeepers){
 				
 				if(MetaUtils.same(survive, activeKeeper)){
@@ -286,6 +337,7 @@ public class CurrentMeta {
 		}
 
 		public void setKeeperMaster(InetSocketAddress keeperMaster) {
+			logger.info("[setKeeperMaster]{},{},{}", clusterId, shardId, keeperMaster);
 			this.keeperMaster = keeperMaster;
 		}
 		

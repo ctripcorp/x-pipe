@@ -68,4 +68,6 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	boolean hasCluster(String currentDc, String clusterId);
 
 	boolean hasShard(String currentDc, String clusterId, String shardId);
+
+	void updateUpstream(String currentDc, String clusterId, String shardId, String ip, int port);
 }

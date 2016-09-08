@@ -1,11 +1,15 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
+import org.junit.Assert;
 import org.junit.Test;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
+
 
 /**
  * @author wenchao.meng
@@ -49,7 +53,11 @@ public class ClusterServersMulticastTest extends AbstractMetaServerClusterTest{
 		for(TestMetaServer server : getServers()){
 			String path = getUpstreamChangePath(server);
 			logger.info("[testClusterChanged]{}", path);
-			restTemplate.put(path, null, "cluster1", "shard1", "localhost", 7777);
+			try{
+				restTemplate.put(path, null, "cluster1", "shard1", "localhost", 7777);
+				Assert.fail();
+			}catch(HttpServerErrorException e){
+			}
 		}
 	}
 

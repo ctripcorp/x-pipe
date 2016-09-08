@@ -73,7 +73,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 	
 	@Override
-	public String getActiveDc(String clusterId) throws MetaException {
+	public String getActiveDc(String clusterId){
 		
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
 			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
@@ -86,7 +86,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 	
 	@Override
-	public List<String> getBackupDc(String clusterId) throws MetaException {
+	public List<String> getBackupDc(String clusterId) {
 
 		String activeDc = getActiveDc(clusterId);
 		List<String> result = new LinkedList<>();
@@ -539,6 +539,23 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			return false;
 		}
 		return true;
+	}
+
+	@Override
+	public void updateUpstream(String dc, String clusterId, String shardId, String ip, int port) {
+		ClusterMeta clusterMeta = getDirectClusterMeta(dc, clusterId);
+		if(clusterMeta == null){
+			throw new IllegalArgumentException("unfound clusterId:" + clusterId);
+		}
+		String activedc = clusterMeta.getActiveDc();
+		if(dc.equalsIgnoreCase(activedc)){
+			throw new IllegalArgumentException("dc active, can not update upstream:" + dc + "," + clusterId);
+		}
+		ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
+		if(shardMeta == null){
+			throw new IllegalArgumentException("unfound shard:" + clusterId + "," + shardId);
+		}
+		shardMeta.setUpstream(String.format("%s:%d", ip,port));
 	}
 
 }

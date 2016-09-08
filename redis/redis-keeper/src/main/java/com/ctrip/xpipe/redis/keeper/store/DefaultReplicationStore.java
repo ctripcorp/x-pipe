@@ -166,7 +166,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 			long beginOffset = metaStore.beginOffset();
 			long totalLength = cmdStore.totalLength();
 			
-			logger.info("[getEndOffset]B:{}, L:{}", beginOffset, totalLength);
+			logger.debug("[getEndOffset]B:{}, L:{}", beginOffset, totalLength);
 			return beginOffset + totalLength - 1;
 		}
 	}

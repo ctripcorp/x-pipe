@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.cluster;
+package com.ctrip.xpipe.redis.meta.server;
 
 
 import org.springframework.boot.SpringApplication;
@@ -33,7 +33,7 @@ public class TestMetaServer extends AbstractLifecycle{
 	public static final int total_slots = 16;
 	public static final String DEFAULT_CONFIG_FILE = "metaserver--jq.xml";
 	private int serverPort;
-	private int zkPort;
+	private String zkConnectionStr;
 	private int serverId; 
 	private String configFile = DEFAULT_CONFIG_FILE;
 	private ConfigurableApplicationContext context;
@@ -44,16 +44,20 @@ public class TestMetaServer extends AbstractLifecycle{
 	}
 
 	public TestMetaServer(int serverId, int serverPort, int zkPort){
-		this(serverId, serverPort, zkPort, DEFAULT_CONFIG_FILE);
+		this(serverId, serverPort, String.format("localhost:%d", zkPort), DEFAULT_CONFIG_FILE);
 	}
-	
 
-	public TestMetaServer(int serverId, int serverPort, int zkPort, String configFile){
+	public TestMetaServer(int serverId, int serverPort, String zkConnectionStr){
+		this(serverId, serverPort, zkConnectionStr, DEFAULT_CONFIG_FILE);
+	}
+
+	public TestMetaServer(int serverId, int serverPort, String zkConnectionStr, String configFile){
 		this.serverId = serverId;
 		this.serverPort = serverPort;
-		this.zkPort = zkPort;
+		this.zkConnectionStr = zkConnectionStr;
 		
 	}
+	
 	
 	@Override
 	public void doStart() throws Exception{
@@ -69,10 +73,10 @@ public class TestMetaServer extends AbstractLifecycle{
 		DefaultZkConfig zkConfig = new DefaultZkConfig();
 		zkConfig.setZkSessionTimeoutMillis(zkSessionTimeoutMillis);
 		client.setZkConfig(zkConfig);
-		client.setZkAddress(getZkAddress());
+		client.setZkAddress(zkConnectionStr);
 
 		UnitTestServerConfig config = context.getBean(UnitTestServerConfig.class);
-		config.setZkAddress(getZkAddress());
+		config.setZkAddress(zkConnectionStr);
 		config.setMetaServerId(serverId);
 		config.setMetaServerPort(serverPort);
 		
@@ -92,10 +96,6 @@ public class TestMetaServer extends AbstractLifecycle{
 	}
 	
 
-
-	private String getZkAddress() {
-		return String.format("localhost:%d", zkPort);
-	}
 
 	public ConfigurableApplicationContext getContext() {
 		return context;
@@ -144,10 +144,6 @@ public class TestMetaServer extends AbstractLifecycle{
 		return serverId;
 	}
 	
-	public int getZkPort() {
-		return zkPort;
-	}
-	
 	public int getServerPort() {
 		return serverPort;
 	}
@@ -173,4 +169,5 @@ public class TestMetaServer extends AbstractLifecycle{
 //		new TestAppServer(2, 9748, 2182).start();
 		
 	}
+
 }

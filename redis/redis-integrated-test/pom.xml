@@ -37,6 +37,12 @@
 		</dependency>
 		<dependency>
 			<groupId>com.ctrip.xpipe.redis</groupId>
+			<artifactId>redis-meta</artifactId>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.ctrip.xpipe.redis</groupId>
 			<artifactId>redis-console</artifactId>
 			<scope>test</scope>
 		</dependency>

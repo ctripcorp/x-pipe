@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
 
+import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,14 +26,15 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-
 
 /**
  * @author wenchao.meng
@@ -238,7 +240,16 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	public void update(Object args, Observable observable) {
 		
 		if(args instanceof DcMetaComparator){
+			
 			dcMetaChange((DcMetaComparator)args);
+		}else if(args instanceof ShardUpstreamChanged){
+			ShardUpstreamChanged shardUpstreamChanged = (ShardUpstreamChanged) args;
+			logger.info("[update]{}", shardUpstreamChanged);
+			if(currentClusterServer.hasKey(shardUpstreamChanged.getClusterId())){
+				notifyObservers(shardUpstreamChanged);
+			}else{
+				logger.info("[update][upstream change, not interested]{}", shardUpstreamChanged);
+			}
 		}else{
 			throw new IllegalArgumentException(String.format("unknown args(%s):%s", args.getClass(), args));
 		}
@@ -307,6 +318,10 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		return dcMetaCache.getClusterMeta(clusterId);
 	}
 
+	@Override
+	public InetSocketAddress getKeeperMaster(String clusterId, String shardId) {
+		return currentMeta.getKeeperMaster(clusterId, shardId);
+	}
 
 	@Override
 	public List<KeeperMeta> getSurviveKeepers(String clusterId, String shardId) {
@@ -317,6 +332,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	public KeeperMeta getKeeperActive(String clusterId, String shardId) {
 		return currentMeta.getKeeperActive(clusterId, shardId);
 	}
+	
+	@Override
+	public String getCurrentMetaDesc() {
+		return currentMeta.toString();
+	}
+	
 	
 	/*******************update dynamic info*************************/
 	@Override
@@ -331,10 +352,13 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		currentMeta.setSurviveKeepers(clusterId, shardId, surviceKeepers, activeKeeper);
 		notifyKeeperActiveElected(clusterId, shardId, activeKeeper);
 	}
-	
+
 	@Override
-	public String getCurrentMetaDesc() {
-		return currentMeta.toString();
+	public void setKeeperMaster(String clusterId, String shardId, String addr) {
+		
+		InetSocketAddress inetAddr = IpUtils.parseSingle(addr);
+		currentMeta.setKeeperMaster(clusterId, shardId, inetAddr);
+		notifyKeeperMasterChanged(clusterId, shardId, inetAddr);
 	}
 
 	@Override
@@ -348,9 +372,18 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			try {
 				stateHandler.keeperActiveElected(clusterId, shardId, activeKeeper);
 			} catch (Exception e) {
-				logger.error("[setSurviveKeepers]" + clusterId + "," + shardId + "," + activeKeeper, e);
+				logger.error("[notifyKeeperActiveElected]" + clusterId + "," + shardId + "," + activeKeeper, e);
 			}
 		}
 	}
 
+	private void notifyKeeperMasterChanged(String clusterId, String shardId, InetSocketAddress inetAddr) {
+		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
+			try {
+				stateHandler.keeperMasterChanged(clusterId, shardId, inetAddr);
+			} catch (Exception e) {
+				logger.error("[notifyKeeperMasterChanged]" + clusterId + "," + shardId + "," + inetAddr, e);
+			}
+		}
+	}
 }

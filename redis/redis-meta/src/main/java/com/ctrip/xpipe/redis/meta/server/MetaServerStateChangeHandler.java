@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server;
 
+import java.net.InetSocketAddress;
+
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 
 /**
@@ -19,4 +21,5 @@ public interface MetaServerStateChangeHandler {
 	 */
 	void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) throws Exception;
 
+	void keeperMasterChanged(String clusterId, String shardId, InetSocketAddress newMaster);
 }

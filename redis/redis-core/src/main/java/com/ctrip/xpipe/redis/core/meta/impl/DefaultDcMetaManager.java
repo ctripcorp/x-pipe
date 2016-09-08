@@ -198,4 +198,16 @@ public class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 
+	@Override
+	public void updateUpstream(String clusterId, String shardId, String ip, int port) {
+		metaManager.updateUpstream(currentDc, clusterId, shardId, ip, port);
+	}
+
+
+	@Override
+	public String getActiveDc(String clusterId) {
+		return metaManager.getActiveDc(clusterId);
+	}
+
+
 }

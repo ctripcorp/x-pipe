@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.meta;
 
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Set;
 
@@ -32,6 +33,8 @@ public interface CurrentMetaManager extends Observable{
 	
 	KeeperMeta getKeeperActive(String clusterId, String shardId);
 
+	InetSocketAddress  getKeeperMaster(String clusterId, String shardId);
+	
 	RedisMeta getRedisMaster(String clusterId, String shardId);
 
 	String getUpstream(String clusterId, String shardId);
@@ -46,12 +49,11 @@ public interface CurrentMetaManager extends Observable{
 	
 	/*************update support*****************/
 	
-	
-
 	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper);
 	
 	boolean updateKeeperActive(String clusterId, String shardId, KeeperMeta activeKeeper);
 
 	boolean watchIfNotWatched(String clusterId, String shardId);
-
+	
+	void  	setKeeperMaster(String cluserId, String shardId, String addr);
 }

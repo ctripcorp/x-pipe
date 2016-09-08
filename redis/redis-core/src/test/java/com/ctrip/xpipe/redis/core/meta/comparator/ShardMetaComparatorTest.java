@@ -7,6 +7,7 @@ import org.junit.Test;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
 
 
 
@@ -27,6 +28,14 @@ public class ShardMetaComparatorTest extends AbstractComparatorTest{
 		
 	}
 	
+	
+	@Test
+	public void testShardUpstreamChanged(){
+		
+		ShardUpstreamChanged shardUpstreamChanged = new ShardUpstreamChanged("clusterId", "shardId", "curent", "future");
+		logger.info("[ShardUpstreamChanged]{}", shardUpstreamChanged);
+		
+	}
 	
 	@Test
 	public void testRemove(){

@@ -186,6 +186,6 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	public void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo)
 			throws Exception {
 		logger.info("[updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
+		dcMetaCache.updateUpstream(clusterId, shardId, ip, port);
 	}
-
 }

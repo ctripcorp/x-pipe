@@ -86,8 +86,9 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		}catch(Exception e){
 			
 		}
+		
 
-		Assert.assertEquals(null, currentMeta.getKeeperMaster(clusterId, shardId));;
+		Assert.assertEquals(new InetSocketAddress("127.0.0.1", 6379), currentMeta.getKeeperMaster(clusterId, shardId));
 		InetSocketAddress keeperMaster = new InetSocketAddress("localhost", randomPort());
 		currentMeta.setKeeperMaster(clusterId, shardId, keeperMaster);
 		Assert.assertEquals(keeperMaster, currentMeta.getKeeperMaster(clusterId, shardId));;

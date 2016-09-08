@@ -19,9 +19,12 @@ import com.ctrip.xpipe.zk.ZkConfig;
 public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElement {
 
 	private volatile CuratorFramework client;
+	
 	private ZkConfig zkConfig = new DefaultZkConfig();
 	
-	private String address = System.getProperty("zkAddress", "localhost:2181");
+	public static final String ZK_ADDRESS_KEY = "zkAddress";
+	
+	private String address = System.getProperty(ZK_ADDRESS_KEY, "localhost:2181");
 	
 	protected void doInitialize() throws Exception {
 		

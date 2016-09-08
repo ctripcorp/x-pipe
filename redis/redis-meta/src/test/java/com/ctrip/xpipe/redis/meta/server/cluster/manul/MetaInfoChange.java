@@ -5,21 +5,22 @@ import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.web.client.HttpServerErrorException;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
+import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.AbstractMetaServerClusterTest;
-import com.ctrip.xpipe.redis.meta.server.cluster.TestMetaServer;
 
 /**
  * @author wenchao.meng
  *
  * Sep 5, 2016
  */
-public class ClusterChange extends AbstractMetaServerClusterTest{
+public class MetaInfoChange extends AbstractMetaServerClusterTest{
 	
 	private TestMetaServer testMetaServer;
 	private MetaServerConsoleService metaServerConsoleService;
@@ -29,18 +30,26 @@ public class ClusterChange extends AbstractMetaServerClusterTest{
 	public void beforeClusterChange() throws Exception{
 		
 		createMetaServers(2);
+		sleep(2000);
 		testMetaServer = getServers().get(0);
 		
 		MetaServerConsoleServiceManager metaServerConsoleServiceManager = new DefaultMetaServerConsoleServiceManager();
 		metaServerConsoleService = metaServerConsoleServiceManager.getOrCreate(String.format("http://localhost:%d", testMetaServer.getServerPort()));
 	}
 	
+	@Test
+	public void testUpstreamChange() throws IOException{
+		
+		try{
+			metaServerConsoleService.upstreamChange(clusterId, shardId, "127.0.0.1", 6379);
+		}catch(HttpServerErrorException e){
+			//500 expected
+		}
+	}
+	
 	
 	@Test
 	public void testAddCluster() throws IOException{
-		
-		sleep(2000);
-		
 		ClusterMeta clusterMeta = differentCluster(dc);
 		
 		metaServerConsoleService.clusterAdded(clusterId, clusterMeta);
@@ -51,7 +60,6 @@ public class ClusterChange extends AbstractMetaServerClusterTest{
 	@Test
 	public void testRemoveCluster() throws IOException{
 		
-		sleep(2000);
 		try{
 			metaServerConsoleService.clusterDeleted(clusterId);;
 		}catch(Exception e){
@@ -63,7 +71,6 @@ public class ClusterChange extends AbstractMetaServerClusterTest{
 	@Test
 	public void testChangeClusterShard() throws IOException{
 		
-		sleep(2000);
 		//change keeper
 		try{
 			ClusterMeta clusterMeta = getCluster(dc, clusterId);

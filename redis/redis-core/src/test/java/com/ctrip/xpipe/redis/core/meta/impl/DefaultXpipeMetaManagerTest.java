@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
-
-
+import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.junit.Assert;
@@ -14,9 +13,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
-
-
-
+import com.ctrip.xpipe.utils.IpUtils;
 /**
  * @author wenchao.meng
  *
@@ -27,12 +24,34 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest{
 	private DefaultXpipeMetaManager metaManager;
 	
 	private String dc = "jq", clusterId = "cluster1", shardId = "shard1";
+	private String dcBak = "fq";
 
 	@Before
 	public void beforeDefaultFileDaoTest() throws Exception{
 		
 		metaManager = (DefaultXpipeMetaManager) DefaultXpipeMetaManager.buildFromFile("file-dao-test.xml");
 		add(metaManager);
+	}
+	
+	@Test
+	public void testupdateUpstream() throws Exception{
+		
+		String ip = "localhost";
+		int port = randomPort();
+		
+		try{
+			metaManager.updateUpstream(dc, clusterId, shardId, ip, port);
+			Assert.fail();
+		}catch(Exception e){
+			
+		}
+
+		String upstream = metaManager.getUpstream(dcBak, clusterId, shardId);
+		InetSocketAddress address = IpUtils.parseSingle(upstream);
+		metaManager.updateUpstream(dcBak, clusterId, shardId, address.getAddress().getHostName(), address.getPort() + 1);
+		String newUpstream = metaManager.getUpstream(dcBak, clusterId, shardId);
+		logger.info("[testupdateUpstream]{}", newUpstream);
+		Assert.assertNotEquals(upstream, newUpstream);
 	}
 	
 	@Test
