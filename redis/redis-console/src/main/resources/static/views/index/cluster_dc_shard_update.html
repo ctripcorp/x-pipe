@@ -1,13 +1,13 @@
 <div>
     <h3 class="header smaller lighter blue">
-    	&nbsp;&nbsp;&nbsp;&nbsp;
-    	<a href="/#/cluster_list?clusterName={{clusterName}}">{{clusterName}}</a>
-    	<span> > </span>
-    	<a href="/#/cluster_dc_shards?clusterName={{clusterName}}">详情</a>
-    	<span> > </span>
-    	<span> shard </span>
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <a href="/#/cluster_list?clusterName={{clusterName}}">{{clusterName}}</a>
+        <span> > </span>
+        <a href="/#/cluster_dc_shards?clusterName={{clusterName}}">详情</a>
+        <span> > </span>
+        <span> shard </span>
     </h3>
-    
+
     <div>
         <ul class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
             <li ng-repeat="dc in dcs" ng-class="{'active': currentDcName == dc.dcName}"
@@ -25,8 +25,12 @@
                         <div class="row">
                             <div class="col-md-6">{{shard.id}}</div>
                             <div class="col-md-6 text-right">
-                                <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateRedis('redis')">新增Redis</button>
-                                <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateRedis('keeper')">新增Keeper</button>
+                                <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateRedis()">
+                                    新增Redis
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateKeeper()">
+                                    新增Keeper
+                                </button>
                             </div>
                         </div>
                     </header>
@@ -49,28 +53,27 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr ng-repeat="redis in shard.redises">
-                            <td title="{{redis.id}}" ng-if="redis.master">
-                                Redis
+                        <tr ng-repeat="redis in dcShards[currentDcName].redises">
+                            <td title="{{redis.runId}}">
+                                <span class="label label-info" ng-if="redis.redisMaster == 0">
+                                    Master</span>  Redis
                             </td>
-                            <td title="{{redis.id}}" ng-if="!redis.master">
-                                Master
+                            <td ng-bind="redis.redisIp">
                             </td>
-                            <td ng-bind="redis.ip">
-                            </td>
-                            <td ng-bind="redis.port">
+                            <td ng-bind="redis.redisPort">
                             </td>
                             <td>
                                 <a ng-click="preDeleteRedis(redis)">删除</a>
                             </td>
                         </tr>
-                        <tr ng-repeat="keeper in shard.keepers">
-                            <td title="{{keeper.id}}">
-                                Keeper
+                        <tr ng-repeat="keeper in dcShards[currentDcName].keepers">
+                            <td title="{{keeper.runId}}">
+                                <span class="label label-info" ng-if="keeper.keeperActive">
+                                    active</span>  Keeper
                             </td>
-                            <td ng-bind="keeper.ip">
+                            <td ng-bind="keeper.redisIp">
                             </td>
-                            <td ng-bind="keeper.port">
+                            <td ng-bind="keeper.redisPort">
                             </td>
                             <td>
                                 <a ng-click="preDeleteRedis(keeper)">删除</a>
@@ -81,8 +84,8 @@
                 </div>
             </div>
             <div class="col-md-6 text-right">
-            	<button type="button" class="btn btn-primary btn-sm" ng-click="submitUpdates()">提交</button>
-				<a class="btn btn-info btn-sm" href="/#/cluster_dc_shards?clusterName={{clusterName}}">取消</a>
+                <button type="button" class="btn btn-primary btn-sm" ng-click="submitUpdates()">提交</button>
+                <a class="btn btn-info btn-sm" href="/#/cluster_dc_shards?clusterName={{clusterName}}">取消</a>
             </div>
         </div>
 
@@ -108,23 +111,125 @@
                 <div class="form-group" valdr-form-group>
                     <label class="col-sm-4 control-label">
                         <apollorequiredfiled></apollorequiredfiled>
-                        ip</label>
+                        IP</label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="toCreateRedis.ip" ng-required="true">
+                        <input type="text" class="form-control" ng-model="toCreateRedis.redisIp" ng-required="true">
                     </div>
                 </div>
+
                 <div class="form-group" valdr-form-group>
                     <label class="col-sm-4 control-label">
                         port
                     </label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="toCreateRedis.port" ng-required="true">
+                        <input type="text" class="form-control" ng-model="toCreateRedis.redisPort" ng-required="true">
+                    </div>
+                </div>
+
+                <div class="form-group" ng-show="!hasRedisMaster">
+                    <label class="col-sm-4 control-label">
+                        Master
+                    </label>
+                    <div class="col-sm-6">
+                        <label class="radio-inline">
+                            <input type="radio" name="isMaster" value="0" ng-model="toCreateRedis.redisMaster"> 是
+                        </label>
+                        <label class="radio-inline">
+                            <input type="radio" name="isMaster" value="-1" ng-model="toCreateRedis.redisMaster"
+                                   ng-checked="true"> 否
+                        </label>
+
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
                 <button type="submit" class="btn btn-primary">创建</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<form class="modal fade form-horizontal" id="createKeeperModal" tabindex="-1" role="dialog" novalidate
+      ng-submit="createKeeper()">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header panel-primary">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <div class="modal-title">
+                    <span style="">创建 Keeper</span>
+                </div>
+            </div>
+            <div class="modal-body form-horizontal">
+                <div class="alert alert-danger" role="alert" ng-show="createKeeperErrorMsg">
+                    {{createKeeperErrorMsg}}
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            KeeperContainer
+                        </label>
+                        <div class="col-sm-6">
+                            <select class="form-control" ng-model="toCreateFirstKeeper.keepercontainerId">
+                                <option ng-repeat="keeperContainer in keeperContainers"
+                                        value="{{keeperContainer.keepercontainerId}}"
+                                ng-bind="keeperContainer.keepercontainerIp"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            port
+                        </label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" ng-model="toCreateFirstKeeper.redisPort" ng-required="true">
+                        </div>
+                    </div>
+                    <hr/>
+                </div>
+
+                <div ng-repeat="toCreateOtherKeeper in toCreateOtherKeepers">
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            KeeperContainer
+                        </label>
+                        <div class="col-sm-6">
+                            <span style="color: red" ng-show="freeKeeperContainers.length <= 0">no more keeper containers</span>
+                            <select class="form-control" ng-model="toCreateOtherKeeper.keepercontainerId">
+                                <option ng-repeat="keeperContainer in keeperContainers"
+                                        value="{{keeperContainer.keepercontainerId}}"
+                                        ng-bind="keeperContainer.keepercontainerIp"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            port
+                        </label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" ng-model="toCreateOtherKeeper.redisPort"
+                                   ng-required="true">
+                        </div>
+                        <div class="col-md-2" ng-show="$index >= 0">
+                            <button class="btn btn-danger btn-xs" type="button"
+                                    ng-click="removeCreateBackupKeeperForm($index)">remove
+                            </button>
+                        </div>
+                    </div>
+                    <hr/>
+                </div>
+
+                <div class="form-group text-center">
+                    <button class="btn btn-default btn-xs" type="button" ng-click="addCreateBackupKeeperForm()">add
+                        backup keeper
+                    </button>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary" ng-disabled="freeKeeperContainers.length <= 0">创建</button>
             </div>
         </div>
     </div>

@@ -123,7 +123,6 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			shard.setShardName(generateDeletedName(shard.getShardName()));
 		}
 		shardTblDao.deleteShardsBatch(shards.toArray(new ShardTbl[shards.size()]), ShardTblEntity.UPDATESET_FULL);
-		
 	}
 	
 	@DalTransaction

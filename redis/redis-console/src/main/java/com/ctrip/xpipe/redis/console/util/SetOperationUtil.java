@@ -14,16 +14,22 @@ public class SetOperationUtil {
 	public <T> Collection<T> difference(Class<T> clazz,Collection<T> collection1, Collection<T> collection2, Comparator<T> comparator) {
 		List<T> difference = new LinkedList<T>();
 		
-		for(T itemInFirst : collection1) {
-			boolean exist = true;
-			for(T itemInSecond : collection2) {
-				if(0 == comparator.compare(itemInFirst, itemInSecond)) {
-					exist = false;
-					break;
+		if(null != collection1) {
+			for(T itemInFirst : collection1) {
+				if(null != collection2) {
+					boolean exist = false;
+					for(T itemInSecond : collection2) {
+						if(0 == comparator.compare(itemInFirst, itemInSecond)) {
+							exist = true;
+							break;
+						}
+					}
+					if(!exist) {
+						difference.add(itemInFirst);
+					}
+				} else {
+					difference.add(itemInFirst);
 				}
-			}
-			if(exist) {
-				difference.add(itemInFirst);
 			}
 		}
 		
@@ -33,11 +39,15 @@ public class SetOperationUtil {
 	public <T> Collection<T> intersection(Class<T> clazz, Collection<T> collection1, Collection<T> collection2, Comparator<T> comparator) {
 		List<T> interesction = new LinkedList<T>();
 		
-		for(T itemInFirst : collection1) {
-			for(T itemInSecond : collection2) {
-				if(0 == comparator.compare(itemInFirst, itemInSecond)) {
-					interesction.add(itemInFirst);
-					break;
+		if(null != collection1) {
+			for(T itemInFirst : collection1) {
+				if(null != collection2) {
+					for(T itemInSecond : collection2) {
+						if(0 == comparator.compare(itemInFirst, itemInSecond)) {
+							interesction.add(itemInFirst);
+							break;
+						}
+					}
 				}
 			}
 		}

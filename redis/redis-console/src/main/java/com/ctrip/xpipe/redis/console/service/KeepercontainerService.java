@@ -26,4 +26,13 @@ public class KeepercontainerService extends AbstractConsoleService<Keepercontain
 			}
     	});
     }
+    
+    public KeepercontainerTbl load(final Long id) {
+    	return queryHandler.handleQuery(new DalQuery<KeepercontainerTbl>() {
+			@Override
+			public KeepercontainerTbl doQuery() throws DalException {
+				return dao.findByPK(id, KeepercontainerTblEntity.READSET_FULL);
+			}
+    	});
+    }
 }
