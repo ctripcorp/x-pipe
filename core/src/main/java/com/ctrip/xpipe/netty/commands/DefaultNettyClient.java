@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.netty.commands;
 
 
+
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

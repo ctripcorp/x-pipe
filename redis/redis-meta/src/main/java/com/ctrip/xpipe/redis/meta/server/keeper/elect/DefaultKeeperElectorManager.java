@@ -1,6 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.keeper.impl;
-
-
+package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,7 +22,9 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
-import com.ctrip.xpipe.redis.meta.server.keeper.KeeperLeaderElectAlgorithm;
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
+import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -37,6 +37,9 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	
 	@Autowired
 	private ZkClient zkClient;
+	
+	@Autowired
+	private KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager;
 	
 	
 	private void observeLeader(final ClusterMeta cluster) throws Exception {
@@ -126,10 +129,9 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 			surviveKeepers.add(keeper);
 		}
 		
-		KeeperLeaderElectAlgorithm klea = new DefaultLeaderElectAlgorithm();
-		KeeperMeta activeKeeper = klea.select(surviveKeepers);
 		
-
+		KeeperActiveElectAlgorithm klea = keeperActiveElectAlgorithmManager.get(clusterId, shardId);
+		KeeperMeta activeKeeper = klea.select(clusterId, shardId, surviveKeepers);
 		currentMetaManager.setSurviveKeepers(clusterId, shardId, surviveKeepers, activeKeeper);
 	}
 

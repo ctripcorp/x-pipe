@@ -382,4 +382,27 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		}
 		return clusterMeta;
 	}
+	
+	protected KeeperMeta differentKeeper(List<KeeperMeta> keepers) {
+		
+		Set<Integer> ports = new HashSet<>();
+		
+		for(KeeperMeta keeper : keepers){
+			ports.add(keeper.getPort());
+		}
+		
+		int port = randomPort();
+		while(true){
+			if(!ports.contains(port)){
+				break;
+			}
+			port = randomPort();
+		}
+		
+		KeeperMeta keeperMeta = new KeeperMeta();
+		keeperMeta.setId("localhost");
+		keeperMeta.setPort(port);
+		return keeperMeta;
+		
+	}
 }

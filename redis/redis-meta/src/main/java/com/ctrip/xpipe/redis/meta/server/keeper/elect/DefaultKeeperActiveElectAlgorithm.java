@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.keeper.impl;
+package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
 
 import java.util.List;
@@ -10,10 +10,10 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
  *
  * Aug 6, 2016
  */
-public class DefaultLeaderElectAlgorithm extends AbstractLeaderElectAlgorithm{
+public class DefaultKeeperActiveElectAlgorithm extends AbstractActiveElectAlgorithm{
 
 	@Override
-	public KeeperMeta select(List<KeeperMeta> toBeSelected) throws Exception {
+	public KeeperMeta select(String clusterId, String shardId, List<KeeperMeta> toBeSelected){
 		
 		if(toBeSelected.size() > 0){
 			KeeperMeta result = toBeSelected.get(0);

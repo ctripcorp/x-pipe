@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -218,6 +219,16 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@Override
 	public String getCurrentDc() {
 		return currentDc;
+	}
+
+	@Override
+	public boolean isActiveDc(String clusterId, String shardId) {
+		return currentDc.equalsIgnoreCase(dcMetaManager.get().getActiveDc(clusterId));
+	}
+
+	@Override
+	public List<KeeperMeta> getShardKeepers(String clusterId, String shardId) {
+		return dcMetaManager.get().getKeepers(clusterId, shardId);
 	}
 
 }

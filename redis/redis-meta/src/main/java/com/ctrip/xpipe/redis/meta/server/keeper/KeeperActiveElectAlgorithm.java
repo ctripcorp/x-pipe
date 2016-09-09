@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
  *
  * Aug 6, 2016
  */
-public interface KeeperLeaderElectAlgorithm {
+public interface KeeperActiveElectAlgorithm {
 
-	KeeperMeta select(List<KeeperMeta> toBeSelected) throws Exception;
+	KeeperMeta select(String clusterId, String shardId, List<KeeperMeta> toBeSelected);
 }

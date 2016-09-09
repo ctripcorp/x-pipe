@@ -1,10 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server;
 
-
-
-
-
-
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -15,6 +10,8 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTriggerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterArrangerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.UserDefinedPriorityKeeperActiveElectAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.LeaderWatchedShardsTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaManagerTest;
@@ -41,8 +38,10 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 	LeaderWatchedShardsTest.class,
 	DefaultCurrentMetaManagerTest.class,
 	ForwardInfoTest.class,
-	CurrentMetaTest.class
-})
+	CurrentMetaTest.class,
+	UserDefinedPriorityKeeperActiveElectAlgorithmTest.class,
+	DefaultKeeperActiveElectAlgorithmManagerTest.class
+	})
 public class AllTests {
 
 }
