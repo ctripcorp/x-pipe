@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -181,10 +182,22 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		
 		partialState = PARTIAL_STATE.FULL;
 		redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
+		
 		if(redisKeeperServer.getRedisKeeperServerState().sendKinfo()){
-			redisMaster.getCurrentReplicationStore().getMetaStore().updateMeta(ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME, masterRdbOffset);
+			logger.info("[doBeginWriteRdb]{}", masterRdbOffset);
+			updateKinfo(masterRdbOffset);
+			saveKinfo();
 		}
 	}
+
+	protected void saveKinfo(){
+		try{
+			redisMaster.getCurrentReplicationStore().getMetaStore().saveMeta(ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME, getKinfo());
+		} catch (IOException e) {
+			throw new IllegalStateException("[doOnContinue][save kinfo]" + getKinfo());
+		}
+	}
+
 
 	@Override
 	protected void doEndWriteRdb() {
@@ -192,11 +205,15 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	@Override
-	protected void doOnContinue() {
+	protected void doOnContinue(){
 		
 		scheduleReplconf();
 		partialState = PARTIAL_STATE.PARTIAL;
 		redisKeeperServer.getRedisKeeperServerState().initPromotionState();
+		
+		if(redisKeeperServer.getRedisKeeperServerState().sendKinfo()){
+			saveKinfo();
+		}
 	}
 
 	@Override

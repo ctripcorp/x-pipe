@@ -301,6 +301,7 @@ public class DefaultMetaStore implements MetaStore {
 
 	private void saveMetaToFile(File file, ReplicationStoreMeta replicationStoreMeta) throws IOException {
 		// TODO make saveMeta acid
+		logger.info("[saveMetaToFile]{}, {}", file, replicationStoreMeta);
 		IO.INSTANCE.writeTo(file, JSON.toJSONString(replicationStoreMeta));
 	}
 	

@@ -383,6 +383,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void beginWriteRdb(long fileSize, long offset) {
+		try {
+			getReplicationStore().getMetaStore().setKeeperState(redisKeeperServerState.keeperState());
+		} catch (IOException e) {
+			throw new RedisKeeperRuntimeException("[setRedisKeeperServerState]" + redisKeeperServerState, e);
+		}
 	}
 
 	@Override
@@ -404,6 +409,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void onContinue() {
+		try {
+			getReplicationStore().getMetaStore().setKeeperState(redisKeeperServerState.keeperState());
+		} catch (IOException e) {
+			throw new RedisKeeperRuntimeException("[setRedisKeeperServerState]" + redisKeeperServerState, e);
+		}
 	}
 	
 
@@ -421,13 +431,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState){
 		
 		RedisKeeperServerState previous = this.redisKeeperServerState;
-		
-		logger.info("[setRedisKeeperServerState]{}->{}", previous, this.redisKeeperServerState);
-		try {
-			getReplicationStore().getMetaStore().setKeeperState(redisKeeperServerState.keeperState());
-		} catch (IOException e) {
-			throw new RedisKeeperRuntimeException("[setRedisKeeperServerState]" + previous + "->" + this.redisKeeperServerState, e);
-		}
+		logger.info("[setRedisKeeperServerState]{}, {}->{}", this, previous, redisKeeperServerState);
 		this.redisKeeperServerState = redisKeeperServerState;
 		notifyObservers(new KeeperServerStateChanged(previous, redisKeeperServerState));
 	}
