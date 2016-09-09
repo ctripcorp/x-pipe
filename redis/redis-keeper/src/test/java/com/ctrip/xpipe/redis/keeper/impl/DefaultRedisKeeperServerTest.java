@@ -31,6 +31,8 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer));
 		redisKeeperServer.dispose();
 
+		redisKeeperServer.onContinue();
+		
 		redisKeeperServer = createRedisKeeperServer();
 		redisKeeperServer.initialize();
 		Assert.assertEquals(KeeperState.PRE_ACTIVE, redisKeeperServer.getRedisKeeperServerState().keeperState());
@@ -39,6 +41,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer));
 		redisKeeperServer.dispose();
 		
+		redisKeeperServer.onContinue();
 		
 		redisKeeperServer = createRedisKeeperServer();
 		redisKeeperServer.initialize();
