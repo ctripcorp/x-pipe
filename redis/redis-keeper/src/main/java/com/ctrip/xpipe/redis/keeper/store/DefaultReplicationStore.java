@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -322,6 +323,9 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public long getKeeperEndOffset() {
+		if (cmdStore == null) {
+			throw new RedisKeeperRuntimeException("Command store not initialized, please try later");
+		}
 		return metaStore.getKeeperBeginOffset() + cmdStore.totalLength() - 1;
 	}
 
