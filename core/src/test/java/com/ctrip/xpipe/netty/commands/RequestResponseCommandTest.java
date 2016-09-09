@@ -48,18 +48,21 @@ public class RequestResponseCommandTest extends AbstractTest{
 	}
 	
 	@Test
-	public void testReset() throws CommandExecutionException, InterruptedException, ExecutionException{
+	public void testReset() throws CommandExecutionException, InterruptedException, ExecutionException, IOException{
 
-		String request = randomString(10) + "\r\n";
-		TestCommand command = new TestCommand(request, 1000, clientPool, scheduler, null);
-		CommandFuture<String> future = command.execute(); 
-		String result = future.get();
-		Assert.assertEquals(request, result);
-		
-		command.reset();
-		future = command.execute();
-		result = future.get();
-		Assert.assertEquals(request, result);
+		String request = randomString(1 << 5) + "\r\n";
+
+		for(int i=0;i<1000;i++){
+			TestCommand command = new TestCommand(request, 1000, clientPool, scheduler, null);
+			CommandFuture<String> future = command.execute();
+			String result = future.get();
+			Assert.assertEquals(request, result);
+			
+			command.reset();
+			future = command.execute();
+			result = future.get();
+			Assert.assertEquals(request, result);
+		}
 	}
 
 	@Test

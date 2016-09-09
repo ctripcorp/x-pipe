@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server;
 
 
+import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -66,6 +67,7 @@ public class TestMetaServer extends AbstractLifecycle{
 		System.setProperty("TOTAL_SLOTS", String.valueOf(total_slots));
 		
 		SpringApplication application = new SpringApplication(TestMetaServer.class);
+		application.setBannerMode(Mode.OFF);
 		application.setEnvironment(createEnvironment());
 		context = application.run(new String[]{});
 		
