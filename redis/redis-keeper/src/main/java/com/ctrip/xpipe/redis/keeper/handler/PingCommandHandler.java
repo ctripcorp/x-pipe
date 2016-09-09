@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.utils.StringUtil;
 
 /**
  * @author wenchao.meng
@@ -16,8 +17,13 @@ public class PingCommandHandler extends AbstractCommandHandler{
 
 	@Override
 	protected void doHandle(String[] args, RedisClient redisClient) {
-		
+		logger.debug("[doHandle]{},{}", redisClient, StringUtil.join(" ", args));
 		redisClient.sendMessage("+PONG\r\n".getBytes());
 	}
 
+	@Override
+	public boolean isLog(String[] args) {
+		// PING command is called by sentinel very frequently, so we need to hide the log
+		return false;
+	}
 }
