@@ -46,7 +46,6 @@ import com.ctrip.xpipe.utils.OffsetNotifierTest;
 	SequenceCommandChainTest.class,
 	ParallelCommandChainTest.class,
 	FileUtilsTest.class,
-	FileUtilsTest.class
 })
 public class AllTests {
 

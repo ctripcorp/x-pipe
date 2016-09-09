@@ -28,8 +28,6 @@
         <logger name="io.netty" level="INFO"/>
         <logger name="com.ctrip.xpipe.lifecycle.CreatedComponentRedistry" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.SpringComponentRegistry" level="WARN"/>
-		<logger name="com.ctrip.xpipe.netty.commands.DefaultNettyClient" level="DEBUG"/>
-		<logger name="com.ctrip.xpipe.netty.commands.RequestResponseCommandTest$TestCommand" level="DEBUG"/>
 		<!-- 
         <logger name="com.ctrip.xpipe.redis.protocal.cmd.InOutPayloadReplicationStore" level="DEBUG">
         </logger>
