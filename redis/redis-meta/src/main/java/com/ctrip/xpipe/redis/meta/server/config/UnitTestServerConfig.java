@@ -12,7 +12,7 @@ public class UnitTestServerConfig implements MetaServerConfig{
 
 	private String zkAddress = "localhost:2181";
 
-	private String consoleAddress = "http://localhost:8080";
+	private String consoleAddress = "http://localhost:9000";
 
 	private int metaServerId = 1;
 	

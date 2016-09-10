@@ -48,4 +48,5 @@ public class TestProfile extends AbstractProfile implements ApplicationContextAw
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		this.applicationContext = applicationContext;
 	}
+
 }
