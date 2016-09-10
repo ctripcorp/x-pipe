@@ -1,17 +1,5 @@
 package com.ctrip.xpipe.redis.console.rest.metaserver;
 
-import java.util.LinkedList;
-import java.util.List;
-
-import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-
-import org.springframework.web.bind.annotation.RestController;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -20,11 +8,20 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
+import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.ShardMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author zhangle
@@ -47,6 +44,8 @@ public class ConsoleController {
 	private ClusterMetaService clusterMetaService;
 	@Autowired 
 	private ShardMetaService shardMetaService;
+	@Autowired
+	private RedisMetaService redisMetaService;
 
 	@RequestMapping(value = "/dc/{dcId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
 	public String getDcMeta(@PathVariable String dcId, @RequestParam(value="format", required = false) String format) {
@@ -104,6 +103,14 @@ public class ConsoleController {
 		}
 		
 		return result;
+	}
+
+	@RequestMapping(value = "/dc/{dcId}/cluster/{clusterId}/shard/{shardId}/keepers/adjustment", method = RequestMethod.PUT)
+	public void updateKeeperStatus(@PathVariable String dcId, @PathVariable String clusterId,
+								   @PathVariable String shardId, @RequestBody(required = false) KeeperMeta newActiveKeeper){
+		if(null != newActiveKeeper) {
+			redisMetaService.updateKeeperStatus(dcId, clusterId, shardId, newActiveKeeper);
+		}
 	}
 
 }

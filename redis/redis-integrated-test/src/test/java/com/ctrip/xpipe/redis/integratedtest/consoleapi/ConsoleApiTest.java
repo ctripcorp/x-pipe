@@ -5,7 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.integratedtest.consoleapi.util.ApiTestExecitorPool;
 
 /**
@@ -27,7 +27,7 @@ public class ConsoleApiTest {
 	}
 
 	public static void main(String[] args) {
-		new ApiTestExecitorPool("apiName", p.getProperty("apiName"),
-				ClusterMeta.class, 5).doTest();
+		new ApiTestExecitorPool("DcMetaTest", p.getProperty("DcMetaTest"),
+				DcMeta.class, 100000).doTest();
 	}
 }
