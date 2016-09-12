@@ -16,6 +16,7 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class MockTest {
 	
+	@SuppressWarnings("rawtypes")
 	@Mock
 	private List mockList;
 	

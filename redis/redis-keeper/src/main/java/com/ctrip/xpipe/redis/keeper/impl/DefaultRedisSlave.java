@@ -139,6 +139,8 @@ public class DefaultRedisSlave implements RedisSlave {
 	@Override
 	public void beginWriteRdb(long rdbFileSize, long rdbFileOffset) {
 		
+		logger.info("[beginWriteRdb]{}, {}", rdbFileSize, rdbFileOffset);
+		
 		partialState = PARTIAL_STATE.FULL;
 		slaveState = SLAVE_STATE.REDIS_REPL_SEND_BULK;
 		this.rdbFileOffset = rdbFileOffset;
@@ -168,12 +170,14 @@ public class DefaultRedisSlave implements RedisSlave {
 	@Override
 	public void rdbWriteComplete() {
 		
+		logger.info("[rdbWriteComplete]{}", this);
+
 		if(slaveState == SLAVE_STATE.REDIS_REPL_SEND_BULK){
-			
 			if(logger.isInfoEnabled()){
 				logger.info("[writeComplete][rdbWriteComplete]" + this);
 			}
 		}
+		this.slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
 	}
 
 	

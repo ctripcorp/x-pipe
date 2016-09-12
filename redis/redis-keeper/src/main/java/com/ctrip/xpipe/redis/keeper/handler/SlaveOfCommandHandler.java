@@ -80,6 +80,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private void handleSelf(String[] args, RedisClient redisClient) {
 		
 		if(args[0].equalsIgnoreCase(NO)){//
