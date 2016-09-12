@@ -409,7 +409,7 @@ public class AbstractTest {
 			logger.error("[afterAbstractTest]", e);
 		}
 		File file = new File(getTestFileDir());
-		FileUtils.forceDelete(file);
+		FileUtils.deleteQuietly(file);
 		logger.info(remarkableMessage("[end   test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
 	}
 }
