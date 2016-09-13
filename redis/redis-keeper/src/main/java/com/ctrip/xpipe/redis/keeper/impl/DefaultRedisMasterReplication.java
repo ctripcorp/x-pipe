@@ -229,7 +229,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 			RdbDumper rdbDumper  = new RedisMasterReplicationRdbDumper(this, redisKeeperServer);
 			setRdbDumper(rdbDumper);
 			redisKeeperServer.setRdbDumper(rdbDumper, true);
-		} catch (RdbDumperAlreadyExist e) {
+		} catch (SetRdbDumperException e) {
 			//impossible to happen
 			logger.error("[doOnFullSync][impossible to happen]", e);
 		}

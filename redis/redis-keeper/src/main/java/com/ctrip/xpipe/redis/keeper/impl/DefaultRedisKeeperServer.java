@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -99,6 +100,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private MetaServerKeeperService metaService;
 	
 	private volatile AtomicReference<RdbDumper> rdbDumper = new AtomicReference<RdbDumper>(null);
+	private long lastDumpTime = -1;
 	//for test
 	private AtomicInteger  rdbDumpTryCount = new AtomicInteger();
 	
@@ -497,13 +499,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			rdbDumper = keeperRedisMaster.createRdbDumper();
 			setRdbDumper(rdbDumper);
 			rdbDumper.execute();
-		} catch (RdbDumperAlreadyExist e) {
+		} catch (SetRdbDumperException e) {
 			logger.error("[dumpNewRdb]", e);
 		}
 	}
 
 	
-	public void setRdbDumper(RdbDumper rdbDumper) throws RdbDumperAlreadyExist {
+	public void setRdbDumper(RdbDumper rdbDumper) throws SetRdbDumperException {
 		setRdbDumper(rdbDumper, false);
 	}
 	
@@ -528,7 +530,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void setRdbDumper(RdbDumper newDumper, boolean force) throws RdbDumperAlreadyExist {
+	public void setRdbDumper(RdbDumper newDumper, boolean force) throws SetRdbDumperException {
 		
 		if(newDumper == null){
 			throw new IllegalArgumentException("new dumper null");
@@ -536,7 +538,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		logger.info("[setRdbDumper]{},{}", newDumper, force);
 		rdbDumpTryCount.incrementAndGet();
+		
+		if(lastDumpTime > 0 && !force && (System.currentTimeMillis() - lastDumpTime < keeperConfig.getRdbDumpMinIntervalMilli())){
+			logger.info("[setRdbDumper][too quick]{}", new Date(lastDumpTime));
+			throw new SetRdbDumperException(lastDumpTime, keeperConfig.getRdbDumpMinIntervalMilli());
+		}
+		
 		if(rdbDumper.compareAndSet(null, newDumper)){
+			lastDumpTime = System.currentTimeMillis();
 			return;
 		}
 		
@@ -549,8 +558,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				logger.error("[setRdbDumper][error cancel]" + olRdbDumper, e);
 			}
 			rdbDumper.set(newDumper);
+			lastDumpTime = System.currentTimeMillis();
 		}else{
-			throw new RdbDumperAlreadyExist(olRdbDumper);
+			throw new SetRdbDumperException(olRdbDumper);
 		}
 	}
 

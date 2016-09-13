@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
-import com.ctrip.xpipe.redis.keeper.impl.RdbDumperAlreadyExist;
+import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
 
 import io.netty.channel.Channel;
 
@@ -77,8 +77,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 
 	void clearRdbDumper(RdbDumper rdbDumper);
 	
-	void setRdbDumper(RdbDumper rdbDumper) throws RdbDumperAlreadyExist;
+	void setRdbDumper(RdbDumper rdbDumper) throws SetRdbDumperException;
 
-	void setRdbDumper(RdbDumper rdbDumper, boolean force) throws RdbDumperAlreadyExist;
+	void setRdbDumper(RdbDumper rdbDumper, boolean force) throws SetRdbDumperException;
 
 }

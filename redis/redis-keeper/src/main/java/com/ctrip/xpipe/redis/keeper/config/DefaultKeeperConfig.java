@@ -56,7 +56,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public int getRdbDumpMinIntervalMilli() {
-		return getIntProperty(KEY_RDB_DUMP_MIN_INTERVAL, 60000);
+		return getIntProperty(KEY_RDB_DUMP_MIN_INTERVAL, 3600000);
 	}
 
 	@Override

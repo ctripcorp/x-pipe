@@ -95,4 +95,8 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getReplicationStoreMinTimeMilliToGcAfterCreate() {
 		return minTimeMilliToGcAfterCreate;
 	}
+	
+	public void setRdbDumpMinIntervalMilli(int rdbDumpMinIntervalMilli) {
+		this.rdbDumpMinIntervalMilli = rdbDumpMinIntervalMilli;
+	}
 }

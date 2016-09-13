@@ -18,6 +18,7 @@ import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.monitor.DelayMonitor;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
 import com.ctrip.xpipe.netty.NotClosableFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
@@ -44,6 +45,7 @@ import io.netty.channel.ChannelFuture;
 public class DefaultRedisSlave implements RedisSlave {
 	
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRedisSlave.class);
+	public static final String KEY_RDB_DUMP_MAX_WAIT_MILLI = "rdbDumpMaxWaitMilli";
 	
 	private Long replAckOff;
 	
@@ -60,8 +62,9 @@ public class DefaultRedisSlave implements RedisSlave {
 	private boolean debugDelay = Boolean.parseBoolean(System.getProperty("DEBUG_DELAY"));
 	
 	private ScheduledExecutorService scheduled;
-	private ScheduledFuture<?> 		  pingFuture;
+	private ScheduledFuture<?> 		  pingFuture, waitDumpTimeoutFuture;
 	private final int pingIntervalMilli = 1000;
+	private final int rdbDumpMaxWaitMilli = Integer.parseInt(System.getProperty(KEY_RDB_DUMP_MAX_WAIT_MILLI, "1800000"));//half an hour
 
 	private ExecutorService psyncExecutor;
 
@@ -88,6 +91,11 @@ public class DefaultRedisSlave implements RedisSlave {
 	@Override
 	public void waitForRdbDumping() {
 		
+		if(this.slaveState == SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING){
+			logger.info("[waitForRdbDumping][already waiting]{}", this);
+			return;
+		}
+		
 		this.slaveState = SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING;
 		
 		logger.info("[waitForRdbDumping][begin ping]{}", this);
@@ -102,6 +110,15 @@ public class DefaultRedisSlave implements RedisSlave {
 				}
 			}
 		}, pingIntervalMilli, pingIntervalMilli, TimeUnit.MILLISECONDS);
+		
+		waitDumpTimeoutFuture = scheduled.schedule(new AbstractExceptionLogTask() {
+			
+			@Override
+			protected void doRun() throws IOException {
+				logger.info("[waitForRdbDumping][timeout][close slave]{}", DefaultRedisSlave.this);
+				close();
+			}
+		}, rdbDumpMaxWaitMilli, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -145,14 +162,23 @@ public class DefaultRedisSlave implements RedisSlave {
 		slaveState = SLAVE_STATE.REDIS_REPL_SEND_BULK;
 		this.rdbFileOffset = rdbFileOffset;
 		
-		if(pingFuture != null){
-			logger.info("[beginWriteRdb][cancel ping]{}", this);
-			pingFuture.cancel(true);
-		}
+		cancelWaitRdb();
 		
     	RequestStringParser parser = new RequestStringParser(String.valueOf((char)RedisClientProtocol.DOLLAR_BYTE)
     			+String.valueOf(rdbFileSize)); 
     	channel().writeAndFlush(parser.format());
+	}
+
+	private void cancelWaitRdb() {
+		
+		if(pingFuture != null){
+			logger.info("[cancelWaitRdb][cancel ping]{}", this);
+			pingFuture.cancel(true);
+		}
+		if(waitDumpTimeoutFuture != null){
+			logger.info("[cancelWaitRdb][cancel wait dump rdb]{}", this);
+			waitDumpTimeoutFuture.cancel(true);
+		}
 	}
 
 	@Override

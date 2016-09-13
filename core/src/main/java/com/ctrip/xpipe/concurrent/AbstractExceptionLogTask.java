@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.concurrent;
 
+import java.io.IOException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +23,6 @@ public abstract class AbstractExceptionLogTask implements Runnable{
 		}
 	}
 	
-	protected abstract void doRun();
+	protected abstract void doRun() throws Exception;
 
 }
