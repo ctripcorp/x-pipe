@@ -35,18 +35,12 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 		
 	}
 
-	
 	@Override
-	protected void doDispose() throws Exception {
-		super.doDispose();
+	protected void doStop() throws Exception {
 		if(client != null){
 			client.close();
 			client = null;
 		}
-	}
-	
-	@Override
-	protected void doStop() throws Exception {
 	}
 	
 	@Override
@@ -85,6 +79,6 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 	
 	@Override
 	public int getOrder() {
-		return Ordered.HIGHEST_PRECEDENCE;
+		return Ordered.HIGHEST_PRECEDENCE + 1;
 	}
 }

@@ -85,4 +85,7 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 	}
 
 
+	public void setCurrentMetaManager(CurrentMetaManager currentMetaManager) {
+		this.currentMetaManager = currentMetaManager;
+	}
 }

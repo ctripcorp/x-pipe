@@ -37,8 +37,14 @@ public class MockTest {
 		
 		when(mockList.get(0)).thenReturn("nihao");
 		
-		System.out.println(mockList.get(0));
-		System.out.println(mockList.get(1));
+		mockList.get(0);
+		verify(mockList).get(0);
+		
+		verify(mockList).get(0);
+		
+		mockList.get(0);
+
+		verify(mockList, times(2)).get(0);
 		
 	}
 

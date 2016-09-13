@@ -31,9 +31,11 @@ public class TestProfile extends AbstractProfile implements ApplicationContextAw
 	}
 	
 	@Bean
-	public ZkClient getZkClient(){
+	public ZkClient getZkClient() throws Exception{
 		
-		ZkClient zkClient = new TestZkClient();
+		TestZkClient zkClient = new TestZkClient();
+		zkClient.initialize();
+		zkClient.start();
 		return zkClient;
 	}
 

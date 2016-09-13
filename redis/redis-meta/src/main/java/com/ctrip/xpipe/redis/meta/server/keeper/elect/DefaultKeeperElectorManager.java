@@ -74,13 +74,8 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	private List<String> observeLeader(final CuratorFramework client, final String clusterId, final String shardId, final String leaderLatchPath) throws Exception {
 
-		if(!currentMetaManager.hasShard(clusterId, shardId)){
-			logger.info("[observeLeader][clean watch]{}, {}", clusterId, shardId);
-			return Collections.emptyList();
-		}
-		
-		if(getLifecycleState().isDisposing() || getLifecycleState().isDisposed()){
-			logger.info("[disposed clean watch]{}", clusterId);
+		if(!continueProcessing(clusterId, shardId)){
+			logger.info("[observeLeader][escape]{},{}", clusterId, shardId);
 			return Collections.emptyList();
 		}
 		
@@ -90,15 +85,14 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 			@Override
 			public void process(WatchedEvent event) throws Exception {
-				
-				observeLeader(client, clusterId, shardId, leaderLatchPath);
-				
-				if(getLifecycleState().isDisposing() || getLifecycleState().isDisposed()){
-					logger.info("[process][dispose][stop]{},{}", clusterId, shardId);
+
+				if(!continueProcessing(clusterId, shardId)){
+					logger.info("[process][escape]{}, {}", clusterId, shardId);
 					return;
 				}
+				
 				logger.info("[process]{}, {}, {}",  event, this.hashCode(), currentClusterServer.getServerId());
-				List<String> children = client.getChildren().forPath(leaderLatchPath);
+				List<String> children = client.getChildren().usingWatcher(this).forPath(leaderLatchPath);
 				updateShardLeader(children, leaderLatchPath, clusterId, shardId);
 			}
 		}).forPath(leaderLatchPath);
@@ -106,6 +100,20 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	}
 
+	protected boolean continueProcessing(String clusterId, String shardId){
+		
+		if(!currentMetaManager.hasShard(clusterId, shardId)){
+			logger.info("[continueProcessing][do not has shard]{}, {}", clusterId, shardId);
+			return false;
+		}
+		
+		if(getLifecycleState().isDisposing() || getLifecycleState().isDisposed()){
+			logger.info("[continueProcessing][disposed clean watch]{}", clusterId);
+			return false;
+		}
+		
+		return true;
+	}
 	
 	private LockInternalsSorter sorter = new LockInternalsSorter() {
 		@Override
@@ -162,5 +170,10 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	@Override
 	protected void handleClusterDeleted(ClusterMeta clusterMeta) {
 		//nothing to do
+	}
+	
+	public void setKeeperActiveElectAlgorithmManager(
+			KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager) {
+		this.keeperActiveElectAlgorithmManager = keeperActiveElectAlgorithmManager;
 	}
 }
