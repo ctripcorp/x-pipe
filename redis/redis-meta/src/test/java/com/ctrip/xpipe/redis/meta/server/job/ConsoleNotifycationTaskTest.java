@@ -37,7 +37,7 @@ public class ConsoleNotifycationTaskTest extends AbstractMetaServerTest{
 	@Test
 	public void testTask() throws Exception{
 
-		Assert.assertFalse(consoleNotifycationTask.getThread().isAlive());
+		Assert.assertNull(consoleNotifycationTask.getThread());
 
 		consoleNotifycationTask.keeperActiveElected("cluster1", "shard1", new KeeperMeta());
 		
@@ -46,7 +46,16 @@ public class ConsoleNotifycationTaskTest extends AbstractMetaServerTest{
 
 		consoleNotifycationTask.getThread().interrupt();
 		sleep(100);
-		Assert.assertFalse(consoleNotifycationTask.getThread().isAlive());
+		Assert.assertNull(consoleNotifycationTask.getThread());
+		
+
+		//re start again
+		consoleNotifycationTask.keeperActiveElected("cluster1", "shard1", new KeeperMeta());
+		sleep(1000);
+		Assert.assertTrue(consoleNotifycationTask.getThread().isAlive());
+		consoleNotifycationTask.getThread().interrupt();		
+		
 		
 	}
+	
 }

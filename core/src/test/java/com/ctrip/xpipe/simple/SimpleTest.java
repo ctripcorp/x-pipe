@@ -30,7 +30,9 @@ public class SimpleTest extends AbstractTest{
 			public void run() {
 				
 				try {
+					logger.info("[run][begin sleep]");
 					TimeUnit.SECONDS.sleep(5);
+					logger.info("[run][end   sleep]");
 				} catch (InterruptedException e) {
 				}
 			}
@@ -43,9 +45,13 @@ public class SimpleTest extends AbstractTest{
 		sleep(1000);
 		logger.info("[testThread]{}", thread.isAlive());
 
-		sleep(5000);
+		sleep(6000);
 		logger.info("[testThread]{}", thread.isAlive());
 		
+		thread.start();
+		
+		sleep(1000);
+		logger.info("[testThread]{}", thread.isAlive());
 		
 	}
 }
