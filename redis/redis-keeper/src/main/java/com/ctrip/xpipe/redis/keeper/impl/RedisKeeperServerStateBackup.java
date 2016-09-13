@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
-
-import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.slf4j.Logger;
@@ -41,7 +38,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 	}
 
 	@Override
-	public void becomeActive(InetSocketAddress masterAddress) throws IOException {
+	public void becomeActive(InetSocketAddress masterAddress) {
 		
 		logger.info("[becomeActive]{}", masterAddress);
 		backupToActive(masterAddress);

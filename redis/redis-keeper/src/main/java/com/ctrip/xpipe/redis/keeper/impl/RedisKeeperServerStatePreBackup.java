@@ -22,7 +22,7 @@ public class RedisKeeperServerStatePreBackup extends AbstractRedisKeeperServerSt
 	}
 
 	@Override
-	public void becomeActive(InetSocketAddress masterAddress) throws IOException {
+	public void becomeActive(InetSocketAddress masterAddress){
 		backupToActive(masterAddress);
 	}
 
