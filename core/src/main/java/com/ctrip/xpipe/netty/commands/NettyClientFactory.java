@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.netty.commands;
 
-
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
@@ -87,6 +86,11 @@ public class NettyClientFactory implements PooledObjectFactory<NettyClient>{
 	@Override
 	public void passivateObject(PooledObject<NettyClient> p) throws Exception {
 		
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("T:%s", address.toString());
 	}
 
 }

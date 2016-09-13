@@ -51,4 +51,9 @@ public class FixedObjectPool<T> implements SimpleObjectPool<T>{
 		semaphore = new Semaphore(permits);		
 	}
 
+	@Override
+	public String desc() {
+		return objRef.get().toString();
+	}
+
 }
