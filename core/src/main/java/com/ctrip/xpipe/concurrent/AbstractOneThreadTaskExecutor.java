@@ -28,7 +28,7 @@ public abstract class AbstractOneThreadTaskExecutor extends AbstractExceptionLog
 		thread.setName(getClass().getSimpleName());
 	}
 	
-	protected void startThreadIfPossible(){
+	protected synchronized void startThreadIfPossible(){
 		if(!thread.isAlive()){
 			thread.start();
 			logger.info("[startThreadIfPossible][start]");

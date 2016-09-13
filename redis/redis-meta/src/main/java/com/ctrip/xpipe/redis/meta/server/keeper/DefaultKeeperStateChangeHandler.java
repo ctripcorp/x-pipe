@@ -18,7 +18,6 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
-import com.ctrip.xpipe.redis.meta.server.impl.MetaChangeListener;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -39,20 +38,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycleObservable
 	private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("META-SERVICE"));
 	
 	@Autowired
-	private List<MetaChangeListener>  metaChangeListeners;
-
-	@Autowired
 	private CurrentMetaManager  currentMetaServerMetaManager;
-	
-	
-	@Override
-	protected void doStart() throws Exception {
-		
-		for(MetaChangeListener metaChangeListener : metaChangeListeners){
-			logger.info("[doStart][addObserver]{}", metaChangeListener);
-			addObserver(metaChangeListener);
-		}
-	}
 	
 	@Override
 	public void keeperMasterChanged(String clusterId, String shardId, InetSocketAddress newMaster) {
@@ -89,14 +75,4 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycleObservable
 		InetSocketAddress activeKeeperMaster = currentMetaServerMetaManager.getKeeperMaster(clusterId, shardId);
 		new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool).execute(executors);
 	}
-
-	@Override
-	protected void doStop() throws Exception {
-
-		for(MetaChangeListener metaChangeListener : metaChangeListeners){
-			logger.info("[doStop][removeObserver]{}", metaChangeListener);
-			removeObserver(metaChangeListener);
-		}
-	}
-
 }
