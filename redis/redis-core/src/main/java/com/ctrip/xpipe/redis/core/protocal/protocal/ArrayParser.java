@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
+
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 
 import io.netty.buffer.ByteBuf;
-
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 /**
  * @author wenchao.meng
  *
@@ -80,7 +83,7 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 									currentParser = new BulkStringParser(new ByteArrayOutputStreamPayload());
 									break;
 								case COLON_BYTE:
-									currentParser = new IntegerParser();
+									currentParser = new LongParser();
 									break;
 								case ASTERISK_BYTE:
 									currentParser = new ArrayParser();
@@ -119,7 +122,21 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 
 	@Override
 	protected ByteBuf getWriteByteBuf() {
-		return null;
+		
+		int length = payload.length;
+		CompositeByteBuf result = ByteBufAllocator.DEFAULT.compositeBuffer();
+		String prefix = String.format("%c%d\r\n", ASTERISK_BYTE, length);
+		result.addComponent(Unpooled.wrappedBuffer(prefix.getBytes()));
+		for(Object o : payload){
+			ByteBuf buff = ParserManager.parse(o);
+			result.addComponent(buff);
+		}
+		result.setIndex(0, result.capacity());
+		return result;
 	}
 
+	@Override
+	public boolean supportes(Class<?> clazz) {
+		return clazz.isArray();
+	}
 }

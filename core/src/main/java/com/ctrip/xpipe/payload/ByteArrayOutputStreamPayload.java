@@ -15,6 +15,18 @@ import io.netty.buffer.ByteBuf;
 public class ByteArrayOutputStreamPayload extends AbstractInOutPayload{
 	
 	private ByteArrayOutputStream baous;
+	
+	public ByteArrayOutputStreamPayload() {
+		
+	}
+	public ByteArrayOutputStreamPayload(String message) {
+		try {
+			baous = new ByteArrayOutputStream();
+			baous.write(message.getBytes());
+		} catch (IOException e) {
+			throw new IllegalStateException("message write error:" + message, e);
+		}
+	}
 
 	@Override
 	public void doStartInput() {

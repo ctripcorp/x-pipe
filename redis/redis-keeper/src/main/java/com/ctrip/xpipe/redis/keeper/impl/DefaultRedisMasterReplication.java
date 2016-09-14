@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.keeper.MASTER_STATE;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -46,6 +47,8 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	@Override
 	protected void doConnect(Bootstrap b) {
+		
+		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTING);
 
 		tryConnect(b).addListener(new ChannelFutureListener() {
 			
@@ -69,8 +72,8 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 				}
 			}
 		});
-		
 	}
+	
 	
 	@Override
 	public void masterDisconntected(Channel channel) {
@@ -179,6 +182,8 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	@Override
 	protected void doBeginWriteRdb(long fileSize, long masterRdbOffset) throws IOException {
+
+		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_TRANSFER);
 		
 		partialState = PARTIAL_STATE.FULL;
 		redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
@@ -202,11 +207,14 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	protected void doEndWriteRdb() {
 		scheduleReplconf();
+		
+		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
 	}
 
 	@Override
 	protected void doOnContinue(){
 		
+		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
 		scheduleReplconf();
 		partialState = PARTIAL_STATE.PARTIAL;
 		redisKeeperServer.getRedisKeeperServerState().initPromotionState();

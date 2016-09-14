@@ -12,6 +12,7 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.MASTER_STATE;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -32,6 +33,8 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	private DefaultEndPoint endpoint;
 	
 	private ScheduledExecutorService scheduled;
+	
+	private MASTER_STATE masterState = MASTER_STATE.REDIS_REPL_NONE;
 	
 	private RedisMasterReplication redisMasterReplication;
 
@@ -102,5 +105,13 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public RdbDumper createRdbDumper() {
 		return new RedisMasterNewRdbDumper(this, redisKeeperServer);
+	}
+	
+	public MASTER_STATE getMasterState() {
+		return masterState;
+	}
+	
+	public void setMasterState(MASTER_STATE masterState) {
+		this.masterState = masterState;
 	}
 }

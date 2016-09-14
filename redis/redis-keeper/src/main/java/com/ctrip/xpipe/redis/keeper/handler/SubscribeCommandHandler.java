@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.core.protocal.protocal.IntegerParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.LongParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -25,7 +25,7 @@ public class SubscribeCommandHandler extends AbstractCommandHandler {
         redisClient.sendMessage(String.format("$9%ssubscribe%s", RedisProtocol.CRLF, RedisProtocol.CRLF).getBytes());
         redisClient.sendMessage(String.format("$%d%s%s%s", args[0].length(), RedisProtocol.CRLF, args[0],
                 RedisProtocol.CRLF).getBytes());
-        redisClient.sendMessage(new IntegerParser(1).format());
+        redisClient.sendMessage(new LongParser(1L).format());
     }
 
     @Override

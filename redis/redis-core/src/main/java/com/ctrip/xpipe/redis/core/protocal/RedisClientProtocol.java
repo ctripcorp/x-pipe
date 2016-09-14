@@ -29,10 +29,9 @@ public interface RedisClientProtocol<T> extends RedisProtocol{
 	 */
 	RedisClientProtocol<T> read(ByteBuf byteBuf);
 
-	
 	ByteBuf format();
 	
-	
-	
 	T getPayload();
+	
+	boolean supportes(Class<?> clazz);
 }

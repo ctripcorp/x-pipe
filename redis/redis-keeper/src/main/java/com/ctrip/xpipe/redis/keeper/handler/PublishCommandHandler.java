@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import com.ctrip.xpipe.redis.core.protocal.protocal.IntegerParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.LongParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.utils.StringUtil;
 
@@ -18,7 +18,7 @@ public class PublishCommandHandler extends AbstractCommandHandler {
     protected void doHandle(String[] args, RedisClient redisClient) {
         logger.debug("[doHandle]{},{}", redisClient, StringUtil.join(" ", args));
         //0 means no receiver
-        redisClient.sendMessage(new IntegerParser(0).format());
+        redisClient.sendMessage(new LongParser(0L).format());
     }
 
     @Override

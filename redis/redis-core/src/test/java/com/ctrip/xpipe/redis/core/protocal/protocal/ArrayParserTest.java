@@ -25,12 +25,12 @@ public class ArrayParserTest extends AbstractRedisProtocolTest{
 		
 		String str1 = randomString();
 		String str2 = randomString();
-		Integer int3 = 1024;
+		Long   long3 = 1024L;
 		String []data = new String[]{
 				"*3\r\n",
 				"+"+str1+"\r\n",
 				"$" + str2.length() + "\r\n" + str2 + "\r\n",
-				":" + int3 + "\r\n"
+				":" + long3 + "\r\n"
 		};
 		
 		ArrayParser resultParser = (ArrayParser) parse(arrayParser, data);
@@ -46,7 +46,7 @@ public class ArrayParserTest extends AbstractRedisProtocolTest{
 		bap.out(channel);
 		Assert.assertEquals(str2, new String(channel.getResult()));
 		
-		Assert.assertEquals(int3, (Integer)result[2]);
+		Assert.assertEquals(long3, result[2]);
 		
 	}
 

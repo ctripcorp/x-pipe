@@ -78,7 +78,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		if (meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
-				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getKeeperBeginOffset() - 1, meta.getRdbFileSize()));
+				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getRdbLastKeeperOffset(), meta.getRdbFileSize()));
 				cmdStore = new DefaultCommandStore(new File(baseDir, meta.getCmdFilePrefix()), cmdFileSize);
 			}
 		}
@@ -328,7 +328,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		}
 		return metaStore.getKeeperBeginOffset() + cmdStore.totalLength() - 1;
 	}
-
+	
 	@Override
 	public long nextNonOverlappingKeeperBeginOffset() {
 		
@@ -351,4 +351,5 @@ public class DefaultReplicationStore implements ReplicationStore {
 	public int getRdbUpdateCount() {
 		return rdbUpdateCount.get();
 	}
+
 }

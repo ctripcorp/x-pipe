@@ -26,5 +26,8 @@ public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, 
 	ReplicationStore getCurrentReplicationStore();
 
 	RdbDumper createRdbDumper();
+
+	MASTER_STATE getMasterState();
 	
+	void setMasterState(MASTER_STATE masterState);
 }
