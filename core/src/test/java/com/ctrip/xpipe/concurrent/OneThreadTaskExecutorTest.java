@@ -32,7 +32,9 @@ public class OneThreadTaskExecutorTest extends AbstractTest{
 	
 	@Test
 	public void testStart(){
+		
 		oneThreadTaskExecutor.executeCommand(command);
+		sleep(20);
 		verify(command).execute();
 		
 	}
@@ -43,7 +45,7 @@ public class OneThreadTaskExecutorTest extends AbstractTest{
 		int times = 100;
 		for(int i=0;i<times;i++){
 			oneThreadTaskExecutor.executeCommand(command);
-			sleep(10);
+			sleep(20);
 			verify(command, times(i + 1)).execute();
 		}
 	}
