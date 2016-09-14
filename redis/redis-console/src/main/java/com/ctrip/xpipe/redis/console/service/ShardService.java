@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.service;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-
+import com.ctrip.xpipe.redis.console.service.notifier.ClusterMetaModifiedNotifier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -17,7 +17,11 @@ import java.util.List;
 @Service
 public class ShardService extends AbstractConsoleService<ShardTblDao>{
 	@Autowired
+	private DcService dcService;
+	@Autowired
 	private ShardDao shardDao;
+	@Autowired
+    private ClusterMetaModifiedNotifier notifier;
 	
     public ShardTbl load(final long shardId){
     	return queryHandler.handleQuery(new DalQuery<ShardTbl>() {
@@ -79,6 +83,12 @@ public class ShardService extends AbstractConsoleService<ShardTblDao>{
     				return shardDao.deleteShardsBatch(shard);
     			}
         	});
+    	}
+    	
+    	/** Notify meta server **/
+    	List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
+    	if(null != relatedDcs) {
+    		notifier.notifyClusterDelete(clusterName, relatedDcs);
     	}
     }
      

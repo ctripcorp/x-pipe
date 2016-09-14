@@ -34,6 +34,13 @@ public class AppTest extends AbstractRedisKeeperTest {
         System.setProperty("replication.store.dir", "/opt/data/xpipe8081");
         start();
     }
+    
+    @Test
+    public void start8082() throws Exception {
+        System.setProperty("server.port", "8082");
+        System.setProperty("replication.store.dir", "/opt/data/xpipe8082");
+        start();
+    }
 
     @Test
     public void start8180() throws Exception {
@@ -48,6 +55,14 @@ public class AppTest extends AbstractRedisKeeperTest {
         System.setProperty("server.port", "8181");
         System.setProperty(TestZkClient.ZK_ADDRESS_KEY, "127.0.0.1:2182");
         System.setProperty("replication.store.dir", "/opt/data/xpipe8181");
+        start();
+    }
+    
+    @Test
+    public void start8182() throws Exception {
+        System.setProperty("server.port", "8182");
+        System.setProperty(TestZkClient.ZK_ADDRESS_KEY, "127.0.0.1:2182");
+        System.setProperty("replication.store.dir", "/opt/data/xpipe8182");
         start();
     }
 
