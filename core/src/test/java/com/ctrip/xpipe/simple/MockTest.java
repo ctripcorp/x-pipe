@@ -47,5 +47,16 @@ public class MockTest {
 		verify(mockList, times(2)).get(0);
 		
 	}
+	
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testVerify(){
+		
+		mockList.add("1");
+		mockList.add("1");
+		verify(mockList, times(2)).add("1");
+		
+		verifyNoMoreInteractions(mockList);
+	}
 
 }

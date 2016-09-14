@@ -16,4 +16,6 @@ public interface RetryPolicy {
 	int waitTimeoutMilli();
 
 	int getRetryTimes();
+	
+	boolean timeoutCancel();
 }

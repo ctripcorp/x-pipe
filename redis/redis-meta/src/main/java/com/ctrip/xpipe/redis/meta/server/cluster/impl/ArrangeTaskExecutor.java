@@ -12,7 +12,6 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.ReshardingTask;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
@@ -35,9 +34,6 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 	
 	private AtomicLong totalTasks = new AtomicLong(0);
 	
-	@Autowired
-	private SlotManager slotManager;
-	
 	public static final String ARRANGE_TASK_EXECUTOR_START = "ArrangeTaskExecutorStart";
 	
 	private Thread taskThread;
@@ -45,9 +41,6 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
-		taskThread = XpipeThreadFactory.create(
-				String.format("ArrangeTaskExecutor-(%d)", currentClusterServer.getServerId()) 
-				).newThread(this);
 
 	}
 	
@@ -68,8 +61,11 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 			logger.info("[startTaskThread][should exit]");
 			return;
 		}
-		
-		if(!taskThread.isAlive()){
+
+		if(taskThread == null){
+			taskThread = XpipeThreadFactory.create(
+					String.format("ArrangeTaskExecutor-(%d)", currentClusterServer.getServerId()) 
+					).newThread(this);
 			taskThread.start();
 		}
 	}
@@ -125,6 +121,8 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 			}
 		}
 		logger.info("[run][break]");
+		
+		taskThread = null;
 	}
 
 	
@@ -144,13 +142,6 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 			}
 			
 			logger.info("[executeTask][begin]{}", task);
-			
-			try {
-				slotManager.refresh();//get most refresh info
-			} catch (Exception e) {
-				logger.error("[executeTask]", e);
-			}
-
 			currentTask = task.execute();
 			if(!currentTask.await(waitTaskTimeoutMilli, TimeUnit.MILLISECONDS)){
 				logger.info("[executeTask][task timeout]{}", waitTaskTimeoutMilli);

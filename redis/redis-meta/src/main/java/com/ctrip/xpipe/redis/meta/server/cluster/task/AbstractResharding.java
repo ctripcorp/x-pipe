@@ -56,6 +56,8 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 		
 		CatUtils.newFutureTaskTransaction(MONITOR_NAME, getName(), future());
 		
+		slotManager.refresh();
+		
 		doShardingTask();
 		allTaskSubmited();
 	}

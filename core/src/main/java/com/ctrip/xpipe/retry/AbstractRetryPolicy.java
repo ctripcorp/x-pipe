@@ -68,4 +68,10 @@ public abstract class AbstractRetryPolicy implements RetryPolicy{
 	
 	protected abstract int getSleepTime(int currentRetryTime);
 
+	
+	@Override
+	public boolean timeoutCancel() {
+		return false;
+	}
+	
 }
