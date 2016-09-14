@@ -44,11 +44,9 @@
                         </thead>
                         <tbody>
                         <tr ng-repeat="redis in shard.redises">
-                            <td title="{{redis.runId}}" ng-if="redis.redisMaster">
-                                Redis
-                            </td>
-                            <td title="{{redis.runId}}" ng-if="!redis.redisMaster">
-                                Master
+                            <td title="{{redis.runId}}">
+                                <span class="label label-info" ng-if="redis.redisMaster == 0">
+                                    Master</span>  Redis
                             </td>
                             <td ng-bind="redis.redisIp">
                             </td>
@@ -57,7 +55,8 @@
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
                             <td title="{{keeper.runId}}">
-                                Keeper
+                                <span class="label label-info" ng-if="keeper.keeperActive">
+                                    active</span>  Keeper
                             </td>
                             <td ng-bind="keeper.redisIp">
                             </td>
