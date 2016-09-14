@@ -27,7 +27,15 @@ public class ConsoleApiTest {
 	}
 
 	public static void main(String[] args) {
-		new ApiTestExecitorPool("apiName", p.getProperty("apiName"),
-				ClusterMeta.class, 5).doTest();
+		//count 50 test
+		new ApiTestExecitorPool(
+				"apiName1",
+				p.getProperty("apiName1"),
+				ClusterMeta.class).doTest(50);
+		//100qps 1minute
+		new ApiTestExecitorPool(
+				"apiName2",
+				p.getProperty("apiName2"),
+				ClusterMeta.class).doTest(100,60);
 	}
 }
