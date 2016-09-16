@@ -74,6 +74,7 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 		
 		try{
 			addKeeperCommand.execute().get();
+			Assert.fail();
 		}catch(ExecutionException e){
 			Assert.assertTrue(e.getCause() instanceof KeeperMasterStateNotAsExpectedException);
 		}

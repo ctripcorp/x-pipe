@@ -14,6 +14,8 @@ import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainer
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.UserDefinedPriorityKeeperActiveElectAlgorithmTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.manager.AddKeeperCommandTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.manager.DeleteKeeperCommandTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaManagerTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
@@ -41,8 +43,10 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 	CurrentMetaTest.class,
 	UserDefinedPriorityKeeperActiveElectAlgorithmTest.class,
 	DefaultKeeperActiveElectAlgorithmManagerTest.class,
-	DefaultKeeperElectorManagerTest.class
-	})
+	DefaultKeeperElectorManagerTest.class,
+	AddKeeperCommandTest.class,
+	DeleteKeeperCommandTest.class
+})
 public class AllTests {
 
 }
