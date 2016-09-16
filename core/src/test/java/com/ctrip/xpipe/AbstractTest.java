@@ -356,9 +356,7 @@ public class AbstractTest {
 	}
 
 	protected Server startEchoServer() throws Exception {
-		
-		int serverPort = randomPort();
-		Server server = new Server(serverPort, new IoActionFactory() {
+		return startServer(new IoActionFactory() {
 			
 			@Override
 			public IoAction createIoAction() {
@@ -391,12 +389,43 @@ public class AbstractTest {
 				};
 			}
 		});
+	}
+
+	protected Server startServer(IoActionFactory ioActionFactory) throws Exception{
+		
+		int serverPort = randomPort();
+		Server server = new Server(serverPort, ioActionFactory);
 		server.initialize();
 		server.start();
 		add(server);
 		return server;
 	}
 	
+	protected Server startServer(final String result) throws Exception {
+		
+		IoActionFactory ioActionFactory = new IoActionFactory() {
+			
+			@Override
+			public IoAction createIoAction() {
+				return new AbstractIoAction() {
+					
+					@Override
+					protected void doWrite(OutputStream ous) throws IOException {
+						ous.write(result.getBytes());
+					}
+					
+					@Override
+					protected Object doRead(InputStream ins) throws IOException {
+						String line = readLine(ins);
+						logger.info("[doRead]{}", line);
+						return line;
+					}
+				};
+			}
+		};
+		return startServer(ioActionFactory);
+	}
+
 
 	@After
 	public void afterAbstractTest() throws IOException{

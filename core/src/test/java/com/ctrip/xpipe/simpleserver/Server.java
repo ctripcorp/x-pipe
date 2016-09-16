@@ -70,7 +70,7 @@ public class Server extends AbstractLifecycle{
 					}
 					
 				} catch (IOException e) {
-					logger.error("[run]" + port, e);
+					logger.warn("[run]" + port + "," + e.getMessage());
 				}
 			}
 		});

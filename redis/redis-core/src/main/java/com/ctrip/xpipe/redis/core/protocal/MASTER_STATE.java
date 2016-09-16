@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper;
+package com.ctrip.xpipe.redis.core.protocal;
 
 /**
  * @author wenchao.meng
@@ -22,7 +22,7 @@ public enum MASTER_STATE {
 		return desc;
 	}
 	
-	public MASTER_STATE fromDesc(String desc){
+	public static MASTER_STATE fromDesc(String desc){
 		for(MASTER_STATE state : MASTER_STATE.values()){
 			if(state.getDesc().equals(desc)){
 				return state;

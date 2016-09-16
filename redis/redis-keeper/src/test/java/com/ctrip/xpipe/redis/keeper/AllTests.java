@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultRdbStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManagerTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
+import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 
 /**
  * @author wenchao.meng
@@ -34,7 +35,8 @@ import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 	DefaultRedisKeeperServerTest.class,
 	DefaultRdbStoreTest.class,
 	DefaultCommandStoreTest.class,
-	DefaultRedisSlaveTest.class
+	DefaultRedisSlaveTest.class,
+	RoleCommandHandlerTest.class
 })
 public class AllTests {
 
