@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.keeper.impl;
+package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 
 import java.net.InetSocketAddress;

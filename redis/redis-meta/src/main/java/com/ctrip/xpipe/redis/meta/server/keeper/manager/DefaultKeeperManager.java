@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.keeper.impl;
+package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
+import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 

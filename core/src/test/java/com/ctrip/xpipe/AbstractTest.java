@@ -1,5 +1,6 @@
 package com.ctrip.xpipe;
 
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,6 +12,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.Charset;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -391,18 +393,31 @@ public class AbstractTest {
 		});
 	}
 
-	protected Server startServer(IoActionFactory ioActionFactory) throws Exception{
+	protected Server startServer(int serverPort, IoActionFactory ioActionFactory) throws Exception{
 		
-		int serverPort = randomPort();
 		Server server = new Server(serverPort, ioActionFactory);
 		server.initialize();
 		server.start();
 		add(server);
 		return server;
+		
+	}
+
+	protected Server startServer(IoActionFactory ioActionFactory) throws Exception{
+		return startServer(randomPort(), ioActionFactory);
 	}
 	
-	protected Server startServer(final String result) throws Exception {
-		
+	protected Server startServer(int serverPort, final String expected) throws Exception {
+		return startServer(serverPort, new Callable<String>() {
+
+			@Override
+			public String call() throws Exception {
+				return expected;
+			}
+		});
+	}
+
+	protected Server startServer(int serverPort, final Callable<String> function) throws Exception {
 		IoActionFactory ioActionFactory = new IoActionFactory() {
 			
 			@Override
@@ -411,9 +426,12 @@ public class AbstractTest {
 					
 					@Override
 					protected void doWrite(OutputStream ous) throws IOException {
-						ous.write(result.getBytes());
+						try {
+							ous.write(function.call().getBytes());
+						} catch (Exception e) {
+							throw new IllegalStateException("[doWrite]", e);
+						}
 					}
-					
 					@Override
 					protected Object doRead(InputStream ins) throws IOException {
 						String line = readLine(ins);
@@ -423,7 +441,11 @@ public class AbstractTest {
 				};
 			}
 		};
-		return startServer(ioActionFactory);
+		return startServer(serverPort, ioActionFactory);
+	}
+
+	protected Server startServer(final String result) throws Exception {
+		return startServer(randomPort(), result);
 	}
 
 

@@ -27,12 +27,26 @@ public class ExceptionUtils {
 		return false;
 	}
 
-	public static void logException(Logger logger, Exception e, String info){
+	public static void logException(Logger logger, Throwable throwable){
+		logException(logger, throwable, "");
+	}
+
+	public static void logException(Logger logger, Throwable throwable, String info){
 		
-		if(isIoException(e)){
-			logger.error(info + e.getMessage());
+		if(isIoException(throwable) || xpipeExceptionLogMessage(throwable)){
+			logger.error(info + throwable.getMessage());
 		}else{
-			logger.error(info, e);
+			logger.error(info, throwable);
 		}
+	}
+
+	private static boolean xpipeExceptionLogMessage(Throwable throwable) {
+		if(throwable instanceof XpipeException){
+			return ((XpipeException) throwable).isOnlyLogMessage();
+		}
+		if(throwable instanceof XpipeRuntimeException){
+			return ((XpipeRuntimeException) throwable).isOnlyLogMessage();
+		}
+		return false;
 	}
 }

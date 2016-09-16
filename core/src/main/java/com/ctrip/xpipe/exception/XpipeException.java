@@ -9,6 +9,7 @@ public class XpipeException extends Exception implements ErrorMessageAware{
 
 	private static final long serialVersionUID = 1L;
 	private ErrorMessage<?>  errorMessage;
+	private boolean onlyLogMessage = false;
 	
 	public XpipeException(String message){
 		super(message);
@@ -26,5 +27,13 @@ public class XpipeException extends Exception implements ErrorMessageAware{
 	@Override
 	public ErrorMessage<?> getErrorMessage() {
 		return errorMessage;
+	}
+
+	public boolean isOnlyLogMessage() {
+		return onlyLogMessage;
+	}
+
+	public void setOnlyLogMessage(boolean onlyLogMessage) {
+		this.onlyLogMessage = onlyLogMessage;
 	}
 }

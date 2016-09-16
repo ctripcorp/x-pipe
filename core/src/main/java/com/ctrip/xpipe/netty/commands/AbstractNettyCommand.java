@@ -23,11 +23,16 @@ import io.netty.buffer.ByteBuf;
 public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 	
 	private SimpleObjectPool<NettyClient> clientPool;
+	
 	private volatile boolean poolCreated = false;
+	private String host;
+	private int port;
 
 	public AbstractNettyCommand(String host, int port){
 		this(NettyPoolUtil.createNettyPool(new InetSocketAddress(host, port)));
 		poolCreated = true;
+		this.host = host;
+		this.port = port;
 	}
 
 	public AbstractNettyCommand(SimpleObjectPool<NettyClient> clientPool) {
@@ -81,7 +86,9 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 
 	@Override
 	protected void doReset() {
-		
+		if(poolCreated){
+			this.clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(host, port)); 
+		}
 	}
 	
 	protected SimpleObjectPool<NettyClient> getClientPool() {

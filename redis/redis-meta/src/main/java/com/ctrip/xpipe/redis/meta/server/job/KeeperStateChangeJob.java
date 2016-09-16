@@ -97,7 +97,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 		
 		SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(clientPool, new InetSocketAddress(keeper.getIp(), keeper.getPort()));
 		KeeperSetStateCommand command =  new KeeperSetStateCommand(pool, keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP, masterAddress);
-		return new CommandRetryWrapper<String>(retryTimes, new RetryDelay(delayBaseMilli), command);
+		return CommandRetryWrapper.buildCountRetry(retryTimes, new RetryDelay(delayBaseMilli), command);
 	}
 
 	@Override
