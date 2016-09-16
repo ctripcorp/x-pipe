@@ -3,10 +3,11 @@ package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.CommandRetryWrapper;
 import com.ctrip.xpipe.exception.ErrorMessage;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerException;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
@@ -20,13 +21,13 @@ import com.ctrip.xpipe.retry.RetryDelay;
 public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 	
 	protected final KeeperContainerService keeperContainerService;
-	protected final KeeperInstanceMeta keeperInstanceMeta;
+	protected final KeeperTransMeta keeperTransMeta;
 	protected int  timeoutMilli;
 	protected int  checkIntervalMilli = 1000;
 	
-	public AbstractKeeperCommand(KeeperContainerService keeperContainerService, KeeperInstanceMeta keeperInstanceMeta, int timeoutMilli, int checkIntervalMilli) {
+	public AbstractKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta, int timeoutMilli, int checkIntervalMilli) {
 		this.keeperContainerService = keeperContainerService;
-		this.keeperInstanceMeta = keeperInstanceMeta;
+		this.keeperTransMeta = keeperTransMeta;
 		this.timeoutMilli = timeoutMilli;
 		this.checkIntervalMilli = checkIntervalMilli;
 	}
@@ -55,8 +56,9 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 	}
 
 	protected void checkUntilStateOk(){
+		
 		CommandRetryWrapper.buildTimeoutRetry(timeoutMilli, 
-				new RetryDelay(checkIntervalMilli) , 
+				createRetryPolicy(), 
 				createCheckStateCommand()).execute().addListener(new CommandFutureListener<V>() {
 
 			@Override
@@ -69,6 +71,10 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 				}
 			}
 		});
+	}
+
+	protected RetryPolicy createRetryPolicy() {
+		return new RetryDelay(checkIntervalMilli); 
 	}
 
 	protected abstract Command<V> createCheckStateCommand();

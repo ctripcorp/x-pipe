@@ -11,8 +11,10 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
+import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.ByteBufUtils;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
@@ -34,7 +36,7 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 	
 	private int timeoutMilli = 1000;
 	private int checkInterval = 100;
-	private KeeperInstanceMeta keeperInstanceMeta;
+	private KeeperTransMeta keeperTransMeta;
 	private AddKeeperCommand addKeeperCommand;
 	
 	private int keeperPort = randomPort();
@@ -48,8 +50,8 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 		keeperMeta.setPort(keeperPort);
 		keeperMeta.setIp("localhost");
 		
-		keeperInstanceMeta  = new KeeperInstanceMeta("clusterId", "shardId", keeperMeta);
-		addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperInstanceMeta, timeoutMilli, checkInterval);
+		keeperTransMeta  = new KeeperTransMeta("clusterId", "shardId", keeperMeta);
+		addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperTransMeta, timeoutMilli, checkInterval);
 	}
 	
 	@SuppressWarnings("unused")
@@ -86,6 +88,35 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 	}
 
 	@Test
+	public void testIoExceptionNotRetry() throws Exception{
+
+		KeeperRole keeperRole = new KeeperRole(SERVER_ROLE.KEEPER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0);
+		final Server server = startServer(keeperPort, ByteBufUtils.readToString(keeperRole.format()));
+				
+		new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				try {
+					sleep(timeoutMilli/2);
+					LifecycleHelper.stopIfPossible(server);
+					LifecycleHelper.disposeIfPossible(server);
+				} catch (Exception e) {
+					logger.error("[run]" + server, e);
+				}
+			}
+		}).start();
+		
+		try{
+			addKeeperCommand.execute().get();
+			Assert.fail();
+		}catch(ExecutionException e){
+			Assert.assertTrue(ExceptionUtils.isIoException(e));
+		}
+
+	}
+
+	@Test
 	public void testFailThenSuccess() throws Exception{
 
 		
@@ -108,5 +139,6 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 		KeeperRole keeperRole = addKeeperCommand.execute().get();
 		Assert.assertEquals(MASTER_STATE.REDIS_REPL_CONNECTED, keeperRole.getMasterState());
 	}
+	
 
 }

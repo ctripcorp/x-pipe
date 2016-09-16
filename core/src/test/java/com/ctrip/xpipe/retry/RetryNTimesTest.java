@@ -49,7 +49,7 @@ public class RetryNTimesTest extends AbstractTest{
 		}
 
 		@Override
-		public boolean retry(Exception e) {
+		public boolean retry(Throwable th) {
 			return false;
 		}
 	}

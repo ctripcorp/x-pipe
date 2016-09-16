@@ -37,7 +37,7 @@ public class RoleCommandHandler extends AbstractCommandHandler{
 		result[0] = redisKeeperServer.role().toString();
 		result[1] = masterEndPoint == null ? "0.0.0.0": masterEndPoint.getHost();
 		result[2] = masterEndPoint == null ? "0": masterEndPoint.getPort();
-		result[3] = redisMaster == null ? MASTER_STATE.REDIS_REPL_NONE: redisMaster.getMasterState().getDesc();
+		result[3] = redisMaster == null ? MASTER_STATE.REDIS_REPL_NONE.getDesc(): redisMaster.getMasterState().getDesc();
 		result[4] = replicationStore == null ? -1L: replicationStore.getEndOffset();
 		redisClient.sendMessage(ParserManager.parse(result));
 	}

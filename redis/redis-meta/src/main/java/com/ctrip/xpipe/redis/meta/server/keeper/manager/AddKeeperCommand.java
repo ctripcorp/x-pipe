@@ -2,14 +2,17 @@ package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.exception.ErrorMessage;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
+import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
+import com.ctrip.xpipe.retry.RetryDelay;
 
 /**
  * @author wenchao.meng
@@ -18,14 +21,14 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
  */
 public class AddKeeperCommand extends AbstractKeeperCommand<KeeperRole>{
 
-	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperInstanceMeta keeperInstanceMeta,
+	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
 			int timeoutMilli) {
-		super(keeperContainerService, keeperInstanceMeta, timeoutMilli, 1000);
+		super(keeperContainerService, keeperTransMeta, timeoutMilli, 1000);
 	}
 
-	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperInstanceMeta keeperInstanceMeta,
+	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
 			int timeoutMilli, int checkIntervalMilli) {
-		super(keeperContainerService, keeperInstanceMeta, timeoutMilli, checkIntervalMilli);
+		super(keeperContainerService, keeperTransMeta, timeoutMilli, checkIntervalMilli);
 	}
 
 
@@ -37,7 +40,7 @@ public class AddKeeperCommand extends AbstractKeeperCommand<KeeperRole>{
 
 	@Override
 	protected void doKeeperContainerOperation() {
-		keeperContainerService.addOrStartKeeper(keeperInstanceMeta);		
+		keeperContainerService.addOrStartKeeper(keeperTransMeta);		
 	}
 
 	@Override
@@ -67,22 +70,36 @@ public class AddKeeperCommand extends AbstractKeeperCommand<KeeperRole>{
 
 			@Override
 			public String getName() {
-				return "right keeper role command";
+				return "[role check right command]";
 			}
 
 			@Override
 			protected void doExecute() throws Exception {
 				
-				KeeperRole keeperRole = (KeeperRole) new RoleCommand(keeperInstanceMeta.getKeeperMeta().getIp(), keeperInstanceMeta.getKeeperMeta().getPort()).execute().get();
+				KeeperRole keeperRole = (KeeperRole) new RoleCommand(keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort()).execute().get();
 				if(keeperRole.getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED){
+					logger.info("[doExecute][success]{}", keeperRole);
 					future().setSuccess(keeperRole);
 				}else{
-					future().setFailure(new KeeperMasterStateNotAsExpectedException(keeperInstanceMeta.getKeeperMeta(), keeperRole, MASTER_STATE.REDIS_REPL_CONNECTED));
+					future().setFailure(new KeeperMasterStateNotAsExpectedException(keeperTransMeta.getKeeperMeta(), keeperRole, MASTER_STATE.REDIS_REPL_CONNECTED));
 				}
 			}
 			@Override
 			protected void doReset() {
 				
+			}
+		};
+	}
+	
+	@Override
+	protected RetryPolicy createRetryPolicy() {
+		return new RetryDelay(checkIntervalMilli){
+			@Override
+			public boolean retry(Throwable th) {
+				if(ExceptionUtils.isIoException(th)){
+					return false;
+				}
+				return true;
 			}
 		};
 	}

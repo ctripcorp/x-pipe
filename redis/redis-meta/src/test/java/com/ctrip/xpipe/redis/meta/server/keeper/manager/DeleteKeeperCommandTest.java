@@ -12,8 +12,8 @@ import org.mockito.Mock;
 import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -49,7 +49,7 @@ public class DeleteKeeperCommandTest extends AbstractMetaServerTest{
 		keeperMeta.setPort(randomPort());
 		
 		deleteKeeperCommand = new DeleteKeeperCommand(currentMetaManager, keeperContainerService, 
-				new KeeperInstanceMeta(clusterId, shardId, keeperMeta), timeoutMilli, checkIntervalMili);
+				new KeeperTransMeta(clusterId, shardId, keeperMeta), timeoutMilli, checkIntervalMili);
 		
 	}
 

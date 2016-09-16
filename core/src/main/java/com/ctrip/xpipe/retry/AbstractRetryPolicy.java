@@ -33,7 +33,7 @@ public abstract class AbstractRetryPolicy implements RetryPolicy{
 	}
 
 	@Override
-	public boolean retry(Exception e) {
+	public boolean retry(Throwable th) {
 		return true;
 	}
 	

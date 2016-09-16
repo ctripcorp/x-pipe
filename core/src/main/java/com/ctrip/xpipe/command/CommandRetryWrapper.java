@@ -25,7 +25,7 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 	private int retryTimes;
 	private long timeoutTime;
 
-	private RetryPolicy retryWait;
+	private RetryPolicy retryPolicy;
 	private AtomicInteger executeCount = new AtomicInteger();
 	
 	private Command<V> command;
@@ -35,10 +35,10 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 		this(0, 0, new NoWaitRetry(), command);
 	}
 
-	public CommandRetryWrapper(int retryTimes, int retryTimeoutMilli, RetryPolicy retryWait, Command<V> command) {
+	public CommandRetryWrapper(int retryTimes, int retryTimeoutMilli, RetryPolicy retryPolicy, Command<V> command) {
 		
 		this.retryTimes = retryTimes;
-		this.retryWait = retryWait;
+		this.retryPolicy = retryPolicy;
 		this.command = command;
 		if(retryTimeoutMilli >= 0){
 			timeoutTime = retryTimeoutMilli + System.currentTimeMillis();
@@ -47,12 +47,12 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 		}
 	}
 	
-	public static <V> Command<V>  buildCountRetry(int retryTimes, RetryPolicy retryWait, Command<V> command){
-		return new CommandRetryWrapper<>(retryTimes, -1, retryWait, command);
+	public static <V> Command<V>  buildCountRetry(int retryTimes, RetryPolicy retryPolicy, Command<V> command){
+		return new CommandRetryWrapper<>(retryTimes, -1, retryPolicy, command);
 	}
 	
-	public static <V> Command<V>  buildTimeoutRetry(int retryTimeoutMilli, RetryPolicy retryWait, Command<V> command){
-		return new CommandRetryWrapper<>(-1, retryTimeoutMilli, retryWait, command);
+	public static <V> Command<V>  buildTimeoutRetry(int retryTimeoutMilli, RetryPolicy retryPolicy, Command<V> command){
+		return new CommandRetryWrapper<>(-1, retryTimeoutMilli, retryPolicy, command);
 	}
 
 	
@@ -75,7 +75,7 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 					future().setSuccess(commandFuture.get());
 				}else{
 					
-					if(!shouldRetry()){
+					if(!shouldRetry(commandFuture.cause())){
 						logger.info("[opetationComplete][retry fail than max retry]{}", command);
 						future().setFailure(commandFuture.cause());
 						return;
@@ -88,7 +88,7 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 
 					logCause(commandFuture.cause());
 					
-					int waitMilli = retryWait.retryWaitMilli();
+					int waitMilli = retryPolicy.retryWaitMilli();
 					logger.info("[retry]{}, {},{}", executeCount.get(), waitMilli, command);
 					command.reset();
 					execute(waitMilli, TimeUnit.MILLISECONDS);
@@ -97,7 +97,7 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 		});
 	}
 
-	protected boolean shouldRetry() {
+	protected boolean shouldRetry(Throwable throwable) {
 		
 		if(retryTimes >=0 && executeCount.get() > retryTimes){
 			logger.info("[shouldRetry][false][retry count]{} > {}", executeCount.get(), retryTimes);
@@ -109,6 +109,12 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 			logger.info("[shouldRetry][false][retry timeout]{} > {}", current, timeoutTime);
 			return false;
 		}
+		
+		if(!retryPolicy.retry(throwable)){
+			logger.info("[shouldRetry][exception not retry]{}, {}", retryPolicy, throwable.getClass());
+			return false;
+		}
+		
 		return true;
 	}
 
