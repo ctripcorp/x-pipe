@@ -24,4 +24,6 @@ public interface RedisMetaService {
 	RedisMeta getRedisMeta(ShardMeta shardMeta, RedisTbl redisInfo, Map<Long,RedisTbl> redises);
 	
 	KeeperMeta getKeeperMeta(ShardMeta shardMeta, RedisTbl redisInfo, Map<Long,RedisTbl> redises);
+
+	void updateKeeperStatus(String dcId, String clusterId, String shardId, KeeperMeta newActiveKeeper);
 }

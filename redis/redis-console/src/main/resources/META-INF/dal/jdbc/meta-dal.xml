@@ -453,6 +453,7 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-cluster-shard-id' /> = ${dc-cluster-shard-id}
 					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/>
 					]]>
 				</statement>
 			</query>
@@ -504,6 +505,7 @@
 					AND <FIELD name='redis-ip' /> = ${redis-ip}
 					AND <FIELD name='redis-port' /> = ${redis-port}
 					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/>
 					]]>
 				</statement>
 			</query>
@@ -527,12 +529,13 @@
         			]]>
         		</statement>
 			</query>
-			<query name='update-master-batch' type='UPDATE' batch='true'>
+			<query name='update-batch' type='UPDATE' batch='true'>
 				<param name='id'/>
 				<statement>
 					<![CDATA[
 					UPDATE <TABLE/>
-        			SET <FIELD name='redis-master'/> = ${redis-master}
+        			SET <FIELD name='run-id'/> = ${run-id}, <FIELD name='redis-ip'/> = ${redis-ip}, <FIELD name='redis-port'/> = ${redis-port},
+        				<FIELD name='keeper-active'/> = ${keeper-active}, <FIELD name='redis-master'/> = ${redis-master}, <FIELD name='keepercontainer-id'/> = ${keepercontainer-id}
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>

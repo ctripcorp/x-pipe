@@ -90,6 +90,7 @@ public class ConsoleServiceImpl implements ConsoleService {
 	@Override
 	public void keeperActiveChanged(String dc, String clusterId, String shardId, KeeperMeta newActiveKeeper)
 		throws Exception {
+		restTemplate.put(host + "/api/dc/{dcId}/cluster/{clusterId}/shard/{shardId}/keepers/adjustment", newActiveKeeper, dc, clusterId, shardId);
 
 	}
 

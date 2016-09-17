@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.model.RedisTblDao;
 import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGenerator;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Repository;
@@ -32,7 +31,7 @@ import java.util.Map;
  */
 @Repository
 public class RedisDao  extends AbstractXpipeConsoleDAO{
-	private RunidGenerator idGenerator = new DefaultRunIdGenerator();
+	private RunidGenerator idGenerator = RunidGenerator.DEFAULT;
 	private RedisTblDao redisTblDao;
 	private DcClusterShardTblDao dcClusterShardTblDao;
 	
@@ -85,10 +84,10 @@ public class RedisDao  extends AbstractXpipeConsoleDAO{
 		}
 		redisTblDao.deleteBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
 	}
-	
+
 	@DalTransaction
-	public void updateRedisesMasterBatch(List<RedisTbl> redises) throws DalException {
-		redisTblDao.updateMasterBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
+	public void updateBatch(List<RedisTbl> redises) throws DalException {
+		redisTblDao.updateBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
 	}
 	
 	@DalTransaction
@@ -102,7 +101,7 @@ public class RedisDao  extends AbstractXpipeConsoleDAO{
     	}
 		
     	if(null != left && left.size() > 0) {
-    		updateRedisesMasterBatch(left);
+    		updateBatch(left);
     	}
 	}
 
