@@ -68,7 +68,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 			public void run() {
 				try{
 					doExecute();
-				}catch(Exception e){
+				}catch(Throwable e){
 					if(!future().isDone()){
 						future().setFailure(e);
 					}
@@ -83,7 +83,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 		
 	}
 
-	protected abstract void doExecute() throws Exception;
+	protected abstract void doExecute() throws Throwable;
 
 	@Override
 	public CommandFuture<V> execute(final int time, TimeUnit timeUnit) {
