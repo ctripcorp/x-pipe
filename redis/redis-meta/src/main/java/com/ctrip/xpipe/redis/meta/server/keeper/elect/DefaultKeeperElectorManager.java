@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -10,6 +9,7 @@ import org.apache.curator.framework.recipes.locks.LockInternals;
 import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
+import com.ctrip.xpipe.zk.EternalWatcher;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -51,7 +52,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		}
 	}
 
-	private void observerShardLeader(String clusterId, String shardId) {
+	private void observerShardLeader(final String clusterId, final String shardId) {
 		
 		final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterId, shardId);
 		
@@ -59,62 +60,43 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 			logger.warn("[observeLeader][already watched]{}, {}", clusterId, shardId);
 			return;
 		}
-		
+
 		logger.info("[observerShardLeader]{}, {}", clusterId, shardId);
 		final CuratorFramework client = zkClient.get();
 		
 		try {
 			client.createContainers(leaderLatchPath);
-			List<String> children = observeLeader(client, clusterId, shardId, leaderLatchPath);
+
+			EternalWatcher eternalWatcher = new EternalWatcher(client, new CuratorWatcher() {
+				
+				@Override
+				public void process(WatchedEvent event) throws Exception {
+					
+					logger.info("[process]{}, {}, {}",  event, this.hashCode(), currentClusterServer.getServerId());
+					if(event.getType() != EventType.NodeChildrenChanged){
+						logger.info("[process][event type not children changed, exit]");
+						return;
+					}
+					
+					List<String> children = client.getChildren().forPath(leaderLatchPath);
+					updateShardLeader(children, leaderLatchPath, clusterId, shardId);
+				}
+
+				@Override
+				public String toString() {
+					return String.format("leader watcher %s,%s", clusterId, shardId);
+				}
+			}, leaderLatchPath);
+			eternalWatcher.start();
+			
+			currentMetaManager.addResource(clusterId, shardId, eternalWatcher);
+			List<String> children = client.getChildren().forPath(leaderLatchPath);
 			updateShardLeader(children, leaderLatchPath, clusterId, shardId);
 		} catch (Exception e) {
 			logger.error("[observerShardLeader]" + clusterId + "," + shardId, e);
 		}
 	}
 
-	private List<String> observeLeader(final CuratorFramework client, final String clusterId, final String shardId, final String leaderLatchPath) throws Exception {
-
-		if(!continueProcessing(clusterId, shardId)){
-			logger.info("[observeLeader][escape]{},{}", clusterId, shardId);
-			return Collections.emptyList();
-		}
-		
-		logger.info("[observeLeader]({}){}, {}", currentClusterServer.getServerId(), clusterId, shardId);
-
-		List<String> children = client.getChildren().usingWatcher(new CuratorWatcher() {
-
-			@Override
-			public void process(WatchedEvent event) throws Exception {
-
-				if(!continueProcessing(clusterId, shardId)){
-					logger.info("[process][escape]{}, {}", clusterId, shardId);
-					return;
-				}
-				
-				logger.info("[process]{}, {}, {}",  event, this.hashCode(), currentClusterServer.getServerId());
-				List<String> children = client.getChildren().usingWatcher(this).forPath(leaderLatchPath);
-				updateShardLeader(children, leaderLatchPath, clusterId, shardId);
-			}
-		}).forPath(leaderLatchPath);
-		return children;
-
-	}
-
-	protected boolean continueProcessing(String clusterId, String shardId){
-		
-		if(!currentMetaManager.hasShard(clusterId, shardId)){
-			logger.info("[continueProcessing][do not has shard]{}, {}", clusterId, shardId);
-			return false;
-		}
-		
-		if(getLifecycleState().isDisposing() || getLifecycleState().isDisposed()){
-			logger.info("[continueProcessing][disposed clean watch]{}", clusterId);
-			return false;
-		}
-		
-		return true;
-	}
-	
 	private LockInternalsSorter sorter = new LockInternalsSorter() {
 		@Override
 		public String fixForSorting(String str, String lockName) {

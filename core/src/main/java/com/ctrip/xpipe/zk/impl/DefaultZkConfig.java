@@ -18,6 +18,7 @@ import com.ctrip.xpipe.zk.ZkConfig;
 public class DefaultZkConfig implements ZkConfig{
 	
 	private int zkSessionTimeoutMillis = 5000;
+	private int zkRetries = 10;
 	
 
 	@Override
@@ -37,9 +38,13 @@ public class DefaultZkConfig implements ZkConfig{
 
 	@Override
 	public int getZkRetries() {
-		return 10;
+		return zkRetries;
 	}
 
+	public void setZkRetries(int zkRetries) {
+		this.zkRetries = zkRetries;
+	}
+	
 	@Override
 	public int getSleepMsBetweenRetries() {
 		return 1000;

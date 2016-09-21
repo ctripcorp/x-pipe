@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
+import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -142,6 +143,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	protected void doDispose() throws Exception {
 		
 		scheduled.shutdownNow();
+		currentMeta.release();
 		super.doDispose();
 	}
 	
@@ -346,6 +348,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		notifyKeeperActiveElected(clusterId, shardId, activeKeeper);
 		return result;
 	}
+	
+	@Override
+	public void addResource(String clusterId, String shardId, Releasable releasable) {
+		currentMeta.addResource(clusterId, shardId, releasable);
+	}
+
 
 	@Override
 	public void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper) {
@@ -386,4 +394,5 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			}
 		}
 	}
+
 }

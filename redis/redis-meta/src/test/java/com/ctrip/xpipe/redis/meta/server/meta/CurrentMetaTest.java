@@ -2,11 +2,13 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -25,6 +27,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 	private CurrentMeta currentMeta;
 	
 	private String clusterId, shardId;
+	private AtomicInteger releaseCount = new AtomicInteger();
 	
 	@Before
 	public void beforeCurrentMetaTest(){
@@ -36,6 +39,22 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		shardId = clusterMeta.getShards().keySet().iterator().next();
 	}
 	
+	@Test
+	public void testRelease(){
+		
+		currentMeta.addResource(clusterId, shardId, new Releasable() {
+			
+			@Override
+			public void release() throws Exception {
+				releaseCount.incrementAndGet();
+			}
+		});
+		
+		currentMeta.removeCluster(clusterId);
+		Assert.assertEquals(1, releaseCount.get());;
+		
+	}
+	
 	
 	@Test
 	public void testToString(){
@@ -43,6 +62,13 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		List<KeeperMeta> allKeepers = getDcKeepers(getDc(), clusterId, shardId);
 		
 		currentMeta.setSurviveKeepers(clusterId, shardId, allKeepers, allKeepers.get(0));
+		currentMeta.addResource(clusterId, shardId, new Releasable() {
+			
+			@Override
+			public void release() throws Exception {
+				
+			}
+		});
 		
 		String json = currentMeta.toString();
 		logger.info("[testToString]{}", json);

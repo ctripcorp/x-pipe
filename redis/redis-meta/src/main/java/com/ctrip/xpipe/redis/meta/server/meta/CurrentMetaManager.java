@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Set;
 
+import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -48,6 +49,8 @@ public interface CurrentMetaManager extends Observable{
 	String getCurrentMetaDesc();
 	
 	/*************update support*****************/
+	
+	void addResource(String clusterId, String shardId, Releasable releasable);
 	
 	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper);
 	

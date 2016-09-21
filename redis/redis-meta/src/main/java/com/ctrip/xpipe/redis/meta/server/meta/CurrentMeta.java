@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -35,8 +36,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  *
  * Sep 6, 2016
  */
-public class CurrentMeta {
+public class CurrentMeta implements Releasable{
 	
+	@JsonIgnore
+	private Logger logger = LoggerFactory.getLogger(CurrentMeta.class);
 	
 	private Map<String, CurrentClusterMeta> currentMetas = new ConcurrentHashMap<>();
 	
@@ -61,6 +64,12 @@ public class CurrentMeta {
 		
 		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
 		currentShardMeta.setSurviveKeepers(surviveKeepers, activeKeeper);
+		
+	}
+
+	public void addResource(String clusterId, String shardId, Releasable releasable) {
+		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
+		currentShardMeta.addResource(releasable);
 		
 	}
 
@@ -110,6 +119,17 @@ public class CurrentMeta {
 		return currentShardMeta;
 	}
 
+	@Override
+	public void release() throws Exception {
+		
+		for(CurrentClusterMeta currentClusterMeta : currentMetas.values()){
+			try{
+				currentClusterMeta.release();
+			}catch(Exception e){
+				logger.error("[release]" + currentClusterMeta.getClusterId(), e);
+			}
+		}
+	}
 
 	public void addCluster(final ClusterMeta clusterMeta){
 		CurrentClusterMeta currentClusterMeta = MapUtils.getOrCreate(currentMetas, clusterMeta.getId(), new ObjectFactory<CurrentClusterMeta>() {
@@ -126,7 +146,13 @@ public class CurrentMeta {
 	}
 	
 	public CurrentClusterMeta removeCluster(String clusterId){
-		return currentMetas.remove(clusterId);
+		CurrentClusterMeta currentClusterMeta = currentMetas.remove(clusterId);
+		try {
+			currentClusterMeta.release();
+		} catch (Exception e) {
+			logger.error("[remove]" + clusterId, e);
+		}
+		return currentClusterMeta;
 	}
 
 	public void changeCluster(ClusterMetaComparator comparator){
@@ -157,7 +183,7 @@ public class CurrentMeta {
 	}
 
 	
-	public static class CurrentClusterMeta{
+	public static class CurrentClusterMeta implements Releasable{
 		
 		@JsonIgnore
 		private static Logger logger = LoggerFactory.getLogger(CurrentClusterMeta.class);
@@ -174,6 +200,16 @@ public class CurrentMeta {
 
 		public CurrentShardMeta getShard(String shardId) {
 			return clusterMetas.get(shardId);
+		}
+		
+		@Override
+		public void release() throws Exception {
+			
+			logger.info("[release]{}", clusterId);
+			for(CurrentShardMeta currentShardMeta : clusterMetas.values()){
+				currentShardMeta.release();
+			}
+			
 		}
 
 		public void addShard(final ShardMeta shardMeta) {
@@ -223,7 +259,13 @@ public class CurrentMeta {
 		}
 		
 		public void removeShard(ShardMeta shardMeta) {
-			clusterMetas.remove(shardMeta.getId());
+			
+			CurrentShardMeta currentShardMeta = clusterMetas.remove(shardMeta.getId());
+			try {
+				currentShardMeta.release();
+			} catch (Exception e) {
+				logger.error("[removeShard]" + shardMeta.getId(), e);
+			}
 		}
 		
 		public void changeShard(ShardMetaComparator comparator) {
@@ -237,13 +279,17 @@ public class CurrentMeta {
 		public String getClusterId() {
 			return clusterId;
 		}
+
 	}
 	
 	
-	public static class CurrentShardMeta{
+	public static class CurrentShardMeta implements Releasable{
 		
 		@JsonIgnore
 		private Logger logger = LoggerFactory.getLogger(getClass());
+		
+		@JsonIgnore
+		private List<Releasable> resources = new LinkedList<>();
 
 		private AtomicBoolean     watched = new AtomicBoolean(false);
 		private String 			  clusterId, shardId;
@@ -254,6 +300,22 @@ public class CurrentMeta {
 			
 		}
 		
+		public void addResource(Releasable releasable) {
+			resources.add(releasable);
+		}
+
+		@Override
+		public void release() throws Exception {
+			logger.info("[release]{},{}", clusterId, shardId);
+			for(Releasable resource : resources){
+				try{
+					resource.release();
+				}catch(Exception e){
+					logger.error("[release]" + resource, e);
+				}
+			}
+		}
+
 		public boolean watchIfNotWatched(){
 			return watched.compareAndSet(false, true);
 		}
@@ -344,6 +406,7 @@ public class CurrentMeta {
 		public String getShardId() {
 			return shardId;
 		}
+
 	}
 	
 	@Override
@@ -357,4 +420,5 @@ public class CurrentMeta {
 		JsonCodec jsonCodec = new JsonCodec(true, true);
 		return jsonCodec.decode(json, CurrentMeta.class);
 	}
+
 }

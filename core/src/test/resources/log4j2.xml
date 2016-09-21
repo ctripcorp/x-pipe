@@ -26,6 +26,8 @@
         <logger name="org.springframework" level="INFO"/>
         <logger name="org.hibernate" level="INFO"/>
         <logger name="io.netty" level="INFO"/>
+        <logger name="org.apache.zookeeper.server.ZooKeeperServer" level="WARN"/>
+		<logger name="org.apache.zookeeper.ZooKeeper" level="WARN"/>
         <logger name="com.ctrip.xpipe.lifecycle.CreatedComponentRedistry" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.SpringComponentRegistry" level="WARN"/>
 		<!-- 

@@ -4,11 +4,17 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
+
 import static org.mockito.Mockito.*;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
 import com.ctrip.xpipe.api.cluster.LeaderElector;
+import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.cluster.DefaultLeaderElector;
 import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.observer.NodeAdded;
@@ -84,12 +90,22 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		when(currentMetaManager.hasShard(anyString(), anyString())).thenReturn(true);
 		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
 		
+		final AtomicReference<Releasable>  release = new AtomicReference<Releasable>(null);
+		doAnswer(new Answer<Void>() {
+
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				release.set((Releasable) invocation.getArguments()[2]);;
+				return null;
+			}
+		}).when(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
+		
 		keeperElectorManager.update(new NodeAdded<ClusterMeta>(clusterMeta), null);
 		
 		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 
-		when(currentMetaManager.hasShard(anyString(), anyString())).thenReturn(false);
-		
+		release.get().release();
+
 		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
 		
 		sleep(100);
