@@ -38,17 +38,17 @@ public abstract class AbstractMetaComparator<T, C extends Enum<C>> implements Me
 	 * @param future
 	 * @return added, modified, delted
 	 */
-	protected Triple<Set<String>, Set<String>, Set<String>> getDiff(Set<String> current, Set<String> future) {
+	protected <Type> Triple<Set<Type>, Set<Type>, Set<Type>> getDiff(Set<Type> current, Set<Type> future) {
 		
-		Set<String> added = new HashSet<>(future);
-		Set<String> modified = new HashSet<>(future);
-		Set<String> deleted = new HashSet<>(current);
+		Set<Type> added = new HashSet<>(future);
+		Set<Type> modified = new HashSet<>(future);
+		Set<Type> deleted = new HashSet<>(current);
 		
 		added.removeAll(deleted);
 		modified.retainAll(deleted);
 		deleted.removeAll(future);
 		
-		return new Triple<Set<String>, Set<String>, Set<String>>(added, modified, deleted);
+		return new Triple<Set<Type>, Set<Type>, Set<Type>>(added, modified, deleted);
 	}
 
 	@Override
