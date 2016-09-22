@@ -39,7 +39,7 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V>{
 	}
 	
 	@Override
-	public V execute(Command<V> command) throws InterruptedException{
+	public V execute(Command<V> command) throws Exception{
 		
 		for(int i=0;n== -1 || i<=n;i++){
 			
@@ -52,9 +52,12 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V>{
 				return command.execute().get(retryPolicy.waitTimeoutMilli(), TimeUnit.MILLISECONDS);
 			}catch (Exception e) {
 				ExceptionUtils.logException(logger, e, String.format("cmd:%s, message:%s", command, e.getMessage()));
+				if(i == n) {
+					throw ExceptionUtils.getOriginalException(e);
+				}
 				if(!retryPolicy.retry(e)){
 					logger.info("[execute][no retry]", e);
-					break;
+					throw ExceptionUtils.getOriginalException(e);
 				}
 			}
 			command.reset();

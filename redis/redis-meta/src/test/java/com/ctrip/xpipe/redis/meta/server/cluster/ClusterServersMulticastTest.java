@@ -55,7 +55,8 @@ public class ClusterServersMulticastTest extends AbstractMetaServerClusterTest{
 			try{
 				restTemplate.put(path, null, "cluster1", "shard1", "localhost", 7777);
 				Assert.fail();
-			}catch(HttpServerErrorException e){
+			}catch(Exception e){
+				Assert.assertTrue(e instanceof HttpServerErrorException);
 			}
 		}
 	}

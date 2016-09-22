@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.exception;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 
@@ -38,6 +40,19 @@ public class ExceptionUtils {
 		}else{
 			logger.error(info, throwable);
 		}
+	}
+	
+	public static Exception getOriginalException(Exception e) {
+		if(e instanceof ExecutionException) {
+			if(e.getCause() instanceof InvocationTargetException) {
+				return (Exception) ((e.getCause().getCause() instanceof Exception)?e.getCause().getCause() : e.getCause());
+			}
+			return (Exception) ((e.getCause() instanceof Exception)?e.getCause():e);
+		}
+		if(e instanceof InvocationTargetException) {
+			return (Exception) ((e.getCause() instanceof Exception)?e.getCause() : e);
+		}
+		return e;
 	}
 
 	private static boolean xpipeExceptionLogMessage(Throwable throwable) {
