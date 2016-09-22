@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration status="info" shutdownHook="disable" monitorInterval="5">
+<configuration status="info" monitorInterval="5">
 
     <appenders>
-        <console name="console" target="SYSTEM_OUT">
+        <console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
         </console>
 
-        <RollingFile name="rollingFileInfo" fileName="/opt/logs/100004375/metaserver.log"
-                     filePattern="/opt/logs/100004375/metaserver-%d{yyyy-MM-dd}-%i.log">
+        <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe-console.log"
+                     filePattern="target/applogs/xpipe-console-%d{yyyy-MM-dd}-%i.log">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="500 MB"/>
             </Policies>
-        </RollingFile>
+        </RollingFile>	
 
-		<CatAppender4Log4j2 name="catAppender4Log4j2"/>
-
+		<CatAppender4Log4j2 name="catAppender4Log4j2"></CatAppender4Log4j2>
     </appenders>
 
     <loggers>
@@ -28,7 +27,7 @@
         <logger name="io.netty" level="INFO">
         </logger>
         <root level="INFO">
-            <appender-ref ref="rollingFileInfo"/>
+            <appender-ref ref="RollingFileInfo"/>
             <appender-ref ref="catAppender4Log4j2"/>
         </root>
     </loggers>
