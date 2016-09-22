@@ -27,10 +27,15 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 
 	@Override
 	public void notifyClusterUpdate(final String dcName, final String clusterName) {
-		logger.info("[notifyClusterUpdate][construct]{},{}", dcName, clusterName);
-		metaServerConsoleServiceManagerWrapper.get(dcName).clusterModified(clusterName,
-				clusterMetaService.getClusterMeta(dcName, clusterName));
-		logger.info("[notifyClusterUpdate][finish]{},{}", dcName, clusterName);
+		try {
+			logger.info("[notifyClusterUpdate][construct]{},{}", dcName, clusterName);
+			metaServerConsoleServiceManagerWrapper.get(dcName).clusterModified(clusterName,
+					clusterMetaService.getClusterMeta(dcName, clusterName));
+			logger.info("[notifyClusterUpdate][success]{},{}", dcName, clusterName);
+		} catch (Exception e) {
+			logger.error("[notifyClusterUpdate][failed]{},{}", dcName, clusterName);
+			logger.error("[notifyClusterUpdate][failed][rootCause]{}", e);
+		}
 
 	}
 
@@ -38,9 +43,15 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 	public void notifyClusterDelete(final String clusterName, List<DcTbl> dcs) {
 		if (null != dcs) {
 			for (DcTbl dc : dcs) {
-				logger.info("[notifyClusterDelete][construct]{},{}", clusterName, dc.getDcName());
-				metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).clusterDeleted(clusterName);
-				logger.info("[notifyClusterDelete][finish]{},{}", clusterName, dc.getDcName());
+				try {
+					logger.info("[notifyClusterDelete][construct]{},{}", clusterName, dc.getDcName());
+					metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).clusterDeleted(clusterName);
+					logger.info("[notifyClusterDelete][success]{},{}", clusterName, dc.getDcName());
+				} catch (Exception e) {
+					logger.error("[notifyClusterDelete][failed]{},{}", dc.getDcName(), clusterName);
+					logger.error("[notifyClusterDelete][failed][rootCause]{}", e);
+				}
+
 			}
 		}
 	}
@@ -49,12 +60,19 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 	public void notifyUpstreamChanged(String clusterName, String shardName, String ip, int port, List<DcTbl> dcs) {
 		if (null != dcs) {
 			for (DcTbl dc : dcs) {
-				logger.info("[notifyUpstreamChanged][construct]{},{},{},{},{}", clusterName, shardName, ip, port,
-						dc.getDcName());
-				metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).upstreamChange(clusterName, shardName, ip,
-						port);
-				logger.info("[notifyUpstreamChanged][finish]{},{},{},{},{}", clusterName, shardName, ip, port,
-						dc.getDcName());
+				try {
+					logger.info("[notifyUpstreamChanged][construct]{},{},{},{},{}", clusterName, shardName, ip, port,
+							dc.getDcName());
+					metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).upstreamChange(clusterName, shardName,
+							ip, port);
+					logger.info("[notifyUpstreamChanged][finish]{},{},{},{},{}", clusterName, shardName, ip, port,
+							dc.getDcName());
+				} catch (Exception e) {
+					logger.error("[notifyUpstreamChanged][failed]{},{},{},{},{}", clusterName, shardName, ip, port,
+							dc.getDcName());
+					logger.error("[notifyUpstreamChanged][failed][rootCause]{}", e);
+				}
+
 			}
 		}
 

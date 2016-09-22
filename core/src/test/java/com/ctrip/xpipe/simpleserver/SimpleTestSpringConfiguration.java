@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.simpleserver;
 
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -10,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 public class SimpleTestSpringConfiguration {
-	@RequestMapping("/test")
+	@RequestMapping(value = "/test", method=RequestMethod.GET)
 	public String forTest() {
 		return "for test";
 	}

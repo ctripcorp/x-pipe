@@ -32,13 +32,13 @@ public class RestTemplateFactory {
 
 	public static RestOperations createCommonsHttpRestTemplate() {
 		return createCommonsHttpRestTemplate(10, 100, 5000, 5000, 10,
-				RetryPolicyFactories.newRestOperationsRetryPolicyFactory(10));
+				RetryPolicyFactories.newRestOperationsRetryPolicyFactory(2));
 	}
 
 	public static RestOperations createCommonsHttpRestTemplate(int maxConnPerRoute, int maxConnTotal,
 			int connectTimeout, int soTimeout) {
 		return createCommonsHttpRestTemplate(maxConnPerRoute, maxConnTotal, connectTimeout, soTimeout, 10,
-				RetryPolicyFactories.newRestOperationsRetryPolicyFactory(10));
+				RetryPolicyFactories.newRestOperationsRetryPolicyFactory(2));
 	}
 
 	public static RestOperations createCommonsHttpRestTemplate(int maxConnPerRoute, int maxConnTotal,
@@ -72,12 +72,12 @@ public class RestTemplateFactory {
 		}
 
 		@Override
-		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+		public Object invoke(Object proxy, Method method, Object[] args) throws Exception {
 			return retryableInvoke(restTemplate, method, args);
 		}
 
-		public Object retryableInvoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
-			RetryPolicy retryPolicy = retryPolicyFactory.create();
+		public Object retryableInvoke(final Object proxy, final Method method, final Object[] args) throws Exception {
+			final RetryPolicy retryPolicy = retryPolicyFactory.create();
 
 			return new RetryNTimes<Object>(retryTimes, retryPolicy).execute(new AbstractCommand<Object>() {
 
@@ -87,12 +87,8 @@ public class RestTemplateFactory {
 				}
 
 				@Override
-				protected void doExecute() throws Throwable {
-					try {
-						future().setSuccess(method.invoke(proxy, args));
-					} catch (Exception e) {
-						throw e.getCause();
-					}
+				protected void doExecute() throws Exception {
+					future().setSuccess(method.invoke(proxy, args));
 				}
 
 				@Override

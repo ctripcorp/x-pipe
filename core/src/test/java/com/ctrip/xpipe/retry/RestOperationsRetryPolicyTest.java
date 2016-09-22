@@ -33,8 +33,8 @@ public class RestOperationsRetryPolicyTest extends AbstractTest {
 
 	@Test
 	public void testRetryWait() throws InterruptedException {
-		assertEquals(10, policy.retryWaitMilli());
-		assertEquals(10, policy.getSleepTime(0));
+		assertEquals(2, policy.retryWaitMilli());
+		assertEquals(2, policy.getSleepTime(0));
 	}
 
 	@Test

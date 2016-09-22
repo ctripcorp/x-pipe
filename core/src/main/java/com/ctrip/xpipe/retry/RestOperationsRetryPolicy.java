@@ -14,7 +14,7 @@ public class RestOperationsRetryPolicy extends AbstractRetryPolicy implements Re
 	private int retryInterval;
 	
 	public RestOperationsRetryPolicy() {
-		this(10);
+		this(2);
 	}
 
 	public RestOperationsRetryPolicy(int retryInterval) {
@@ -23,7 +23,7 @@ public class RestOperationsRetryPolicy extends AbstractRetryPolicy implements Re
 
 	@Override
 	public boolean retry(Throwable e) {
-		if(e.getCause() instanceof ResourceAccessException) {
+		if(e instanceof ResourceAccessException || e.getCause() instanceof ResourceAccessException) {
 			return true;
 		}
 		return false;

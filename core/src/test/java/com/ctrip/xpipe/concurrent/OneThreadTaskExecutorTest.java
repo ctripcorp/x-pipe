@@ -45,7 +45,7 @@ public class OneThreadTaskExecutorTest extends AbstractTest{
 		int times = 100;
 		for(int i=0;i<times;i++){
 			oneThreadTaskExecutor.executeCommand(command);
-			sleep(20);
+			sleep(50);
 			verify(command, times(i + 1)).execute();
 		}
 	}

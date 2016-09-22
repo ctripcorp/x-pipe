@@ -7,7 +7,7 @@ package com.ctrip.xpipe.retry;
  */
 public class RetryPolicyFactories {
 	public static RetryPolicyFactory newRestOperationsRetryPolicyFactory() {
-		return newRestOperationsRetryPolicyFactory(10);
+		return newRestOperationsRetryPolicyFactory(2);
 	}
 
 	public static RetryPolicyFactory newRestOperationsRetryPolicyFactory(int retryInterval) {
