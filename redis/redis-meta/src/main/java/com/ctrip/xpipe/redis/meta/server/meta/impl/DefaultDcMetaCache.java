@@ -127,6 +127,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 				dcMetaComparator.compare();
 				
 				if(dcMetaComparator.totalChangedCount() == 0){
+					dcMetaManager.set(DefaultDcMetaManager.buildFromDcMeta(future));
 					return;
 				}
 				
