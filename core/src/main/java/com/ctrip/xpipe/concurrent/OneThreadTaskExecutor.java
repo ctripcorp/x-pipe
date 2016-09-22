@@ -50,7 +50,7 @@ public class OneThreadTaskExecutor implements Destroyable{
 
 		@Override
 		@SuppressWarnings({ "unchecked" })
-		protected void doRun() throws Exception {
+		protected void doRun() throws Throwable {
 			retryTemplate.execute(command);
 		}
 		

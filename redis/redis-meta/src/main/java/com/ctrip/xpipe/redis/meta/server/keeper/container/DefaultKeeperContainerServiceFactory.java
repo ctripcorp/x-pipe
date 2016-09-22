@@ -7,8 +7,7 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
 
 import com.google.common.collect.Maps;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
-
+import org.springframework.web.client.RestOperations;
 import java.util.Map;
 
 /**
@@ -18,7 +17,7 @@ import java.util.Map;
 public class DefaultKeeperContainerServiceFactory implements KeeperContainerServiceFactory {
 
     private Map<KeeperContainerMeta, KeeperContainerService> services = Maps.newConcurrentMap();
-    private RestTemplate restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
+    private RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 
     @Override
     public KeeperContainerService getOrCreateKeeperContainerService(KeeperContainerMeta keeperContainerMeta) {
