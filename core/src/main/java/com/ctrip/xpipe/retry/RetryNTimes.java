@@ -39,7 +39,7 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V>{
 	}
 	
 	@Override
-	public V execute(Command<V> command) throws InterruptedException{
+	public V execute(Command<V> command) throws Throwable{
 		
 		for(int i=0;n== -1 || i<=n;i++){
 			

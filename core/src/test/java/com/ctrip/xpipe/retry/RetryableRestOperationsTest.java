@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestOperations;
 
 import com.ctrip.xpipe.api.retry.RetryPolicy;
@@ -33,7 +34,7 @@ public class RetryableRestOperationsTest {
 		ctx.close();
 	}
 
-	@Test
+	@Test(expected = ResourceAccessException.class)
 	public void retryableRestOperationsFailTest() {
 		int retryTimes = 10;
 		RetryPolicyFactory mockedRetryPolicyFactory = Mockito.mock(RetryPolicyFactory.class);

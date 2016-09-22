@@ -9,6 +9,6 @@ import com.ctrip.xpipe.api.command.Command;
  */
 public interface RetryTemplate<V> {
 	
-	V execute(Command<V> command) throws InterruptedException;
+	V execute(Command<V> command) throws Throwable;
 
 }
