@@ -3,8 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.cluster;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestTemplate;
-
+import org.springframework.web.client.RestOperations;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
@@ -19,7 +18,7 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
 public class ClusterServersMulticastTest extends AbstractMetaServerClusterTest{
 	
 	private int metaServerCount = 3;
-	private RestTemplate restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
+	private RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 	
 	@Test
 	public void simpleTest(){
