@@ -24,7 +24,7 @@ public abstract class AbstractExecutorPool {
 	}
 
 	private void init() {
-		fixedThreadPool= Executors.newCachedThreadPool();
+		fixedThreadPool = Executors.newFixedThreadPool(getPoolSize());
 	}
 
 	abstract protected void test();

@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.integratedtest.consoleapi.util.ApiTestExecitorPool;
 public class ConsoleApiTest {
 
 	private static Properties p = new Properties();
+	
 	static {
 		try {
 			p.load(new FileInputStream("/opt/data/100004374/console.properties"));
@@ -27,15 +28,10 @@ public class ConsoleApiTest {
 	}
 
 	public static void main(String[] args) {
-		//count 50 test
-		new ApiTestExecitorPool(
-				"apiName1",
-				p.getProperty("apiName1"),
-				ClusterMeta.class).doTest(50);
-		//100qps 1minute
-		new ApiTestExecitorPool(
-				"apiName2",
-				p.getProperty("apiName2"),
-				ClusterMeta.class).doTest(100,60);
+
+		new ApiTestExecitorPool("apiName1", p.getProperty("apiName1"),
+				ClusterMeta.class).doTest();
+		new ApiTestExecitorPool("apiName2",p.getProperty("apiName2"),
+				ClusterMeta.class).doTest(1, 1000, 10);
 	}
 }
