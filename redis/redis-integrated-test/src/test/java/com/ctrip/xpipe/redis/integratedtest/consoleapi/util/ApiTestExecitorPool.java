@@ -126,6 +126,8 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 						"TOTAL--->{} ，success[count:{} , averageDelay:{}ms]，failed[count:{} , averageDelay:{}ms]",
 						getApiName(), getSuccess(), getSucAverageDelay(),
 						getFail(), getFaiAverageDelay());
+				logger.error("END--->{}>>>>============ BYEBYE ============<<<<",
+						getApiName());
 				try {
 					httpClient.close();
 				} catch (IOException e) {

@@ -28,10 +28,12 @@ public class ConsoleApiTest {
 	}
 
 	public static void main(String[] args) {
-
-		new ApiTestExecitorPool("apiName1", p.getProperty("apiName1"),
-				ClusterMeta.class).doTest();
-		new ApiTestExecitorPool("apiName2",p.getProperty("apiName2"),
-				ClusterMeta.class).doTest(1, 1000, 10);
+		//apiNames=apiName1,apiName2,apiName3
+		String[]apiNames=p.getProperty("apiNames").split(",");
+		for(String apiName:apiNames){
+			//apiName=url
+			new ApiTestExecitorPool(apiName, p.getProperty(apiName),
+					ClusterMeta.class).doTest(1,100,100);
+		}
 	}
 }
