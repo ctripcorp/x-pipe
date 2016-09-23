@@ -79,7 +79,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		//change notify
 		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
 		
-		sleep(100);
+		sleep(500);
 		verify(keeperActiveElectAlgorithm, times(2)).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 	}
 
