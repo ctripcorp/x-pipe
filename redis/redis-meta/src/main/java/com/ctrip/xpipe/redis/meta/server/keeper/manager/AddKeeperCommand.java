@@ -31,13 +31,6 @@ public class AddKeeperCommand extends AbstractKeeperCommand<KeeperRole>{
 		super(keeperContainerService, keeperTransMeta, timeoutMilli, checkIntervalMilli);
 	}
 
-
-	@Override
-	public String getName() {
-		return "add keeper ";
-	}
-
-
 	@Override
 	protected void doKeeperContainerOperation() {
 		keeperContainerService.addOrStartKeeper(keeperTransMeta);		

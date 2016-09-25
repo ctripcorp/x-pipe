@@ -34,7 +34,8 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 
 	@Override
 	protected void doExecute() throws Exception {
-
+		
+		logger.info("[doExecute]{}", this);
 		doOpetation();
 	}
 
@@ -65,8 +66,10 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 			public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
 				
 				if(commandFuture.isSuccess()){
+					logger.info("[checkUntilStateOk][ok]{}",this);
 					future().setSuccess(commandFuture.get());
 				}else{
+					logger.info("[checkUntilStateOk][fail]{}",this);
 					future().setFailure(commandFuture.cause());
 				}
 			}
@@ -82,4 +85,12 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 	protected abstract boolean isSuccess(ErrorMessage<KeeperContainerErrorCode> error);
 
 	protected abstract void doKeeperContainerOperation();
+	
+	
+	@Override
+	public String getName() {
+		return String.format("[%s(%s:$d)]", getClass().getSimpleName(), keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort());
+	}
 }
+
+

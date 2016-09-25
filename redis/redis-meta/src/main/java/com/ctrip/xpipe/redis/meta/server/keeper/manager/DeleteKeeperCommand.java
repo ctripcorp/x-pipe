@@ -71,7 +71,7 @@ public class DeleteKeeperCommand extends AbstractKeeperCommand<Void>{
 
 			@Override
 			public String getName() {
-				return "[check keeper deleted]";
+				return "[check keeper deleted]" + DeleteKeeperCommand.this;
 			}
 
 			@Override

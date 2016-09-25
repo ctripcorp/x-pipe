@@ -152,6 +152,14 @@ public class FakeRedisServer extends AbstractLifecycle{
 		fakeRedisServer.initialize();
 		fakeRedisServer.start();
 	}
+	
+	public Server getServer() {
+		return server;
+	}
+
+	public int getConnected() {
+		return server.getConnected();
+	}
 
 }
 

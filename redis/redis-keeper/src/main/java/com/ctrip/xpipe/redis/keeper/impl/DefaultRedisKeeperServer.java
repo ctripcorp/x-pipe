@@ -71,7 +71,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	/**
 	 * when keeper is active, it's redis master, else it's another keeper
 	 */
-	private RedisMaster keeperRedisMaster;
+	private volatile RedisMaster keeperRedisMaster;
 	
 	private long keeperStartTime;
 	
@@ -191,10 +191,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doDispose() throws Exception {
 
-		if(this.keeperRedisMaster != null){
-			this.keeperRedisMaster.dispose();
-		}
-		
+		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
+
 		this.leaderElector.dispose();
 		bossGroup.shutdownGracefully();
 		workerGroup.shutdownGracefully();
@@ -226,9 +224,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public synchronized void reconnectMaster() {
 		
-
 		Endpoint target = redisKeeperServerState.getMaster();
-		
 		logger.info("[reconnectMaster]{} -> {}", this, target);
 
 		if(keeperRedisMaster != null && target != null){
@@ -250,6 +246,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private void initAndStartMaster(Endpoint target) {
 		try {
 			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, replicationStoreManager, scheduled);
+			
+			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
+				logger.info("[initAndStartMaster][stopped, exit]{}, {}", target, this);
+				return;
+			}
 			LifecycleHelper.initializeIfPossible(this.keeperRedisMaster);
 			LifecycleHelper.startIfPossible(this.keeperRedisMaster);
 		} catch (Exception e) {
