@@ -51,9 +51,10 @@ public class RestTemplateFactory {
 		ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
 		RestTemplate restTemplate = new RestTemplate(factory);
 
-		return (RestOperations) Proxy.newProxyInstance(RestOperations.class.getClassLoader(),
-				new Class[] { RestOperations.class },
-				new RetryableRestOperationsHandler(restTemplate, retryTimes, retryPolicyFactory));
+//		return (RestOperations) Proxy.newProxyInstance(RestOperations.class.getClassLoader(),
+//				new Class[] { RestOperations.class },
+//				new RetryableRestOperationsHandler(restTemplate, retryTimes, retryPolicyFactory));
+		return restTemplate;
 	}
 
 	private static class RetryableRestOperationsHandler implements InvocationHandler {
