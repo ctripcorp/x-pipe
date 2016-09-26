@@ -358,7 +358,11 @@ public class AbstractTest {
 	}
 
 	protected Server startEchoServer() throws Exception {
-		return startServer(new IoActionFactory() {
+		return startEchoServer(randomPort());
+	}
+
+	protected Server startEchoServer(int port) throws Exception {
+		return startServer(port, new IoActionFactory() {
 			
 			@Override
 			public IoAction createIoAction() {

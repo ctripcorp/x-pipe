@@ -1,16 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
-import java.util.List;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
-import com.ctrip.xpipe.redis.core.meta.MetaUtils;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import com.ctrip.xpipe.utils.TcpPortCheck;
 
 /**
  * @author wenchao.meng
@@ -19,23 +16,14 @@ import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
  */
 public class DeleteKeeperCommand extends AbstractKeeperCommand<Void>{
 	
-	private CurrentMetaManager currentMetaManager;
-
-	public DeleteKeeperCommand(CurrentMetaManager currentMetaManager, KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
+	public DeleteKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
 			int timeoutMilli) {
-		this(currentMetaManager, keeperContainerService, keeperTransMeta, timeoutMilli, 1000);
+		this(keeperContainerService, keeperTransMeta, timeoutMilli, 1000);
 	}
 
-	public DeleteKeeperCommand(CurrentMetaManager currentMetaManager, KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
+	public DeleteKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
 			int timeoutMilli, int checkIntervalMilli) {
 		super(keeperContainerService, keeperTransMeta, timeoutMilli, checkIntervalMilli);
-		this.currentMetaManager = currentMetaManager;
-	}
-
-
-	@Override
-	public String getName() {
-		return "delete keeper ";
 	}
 
 
@@ -77,15 +65,12 @@ public class DeleteKeeperCommand extends AbstractKeeperCommand<Void>{
 			@Override
 			protected void doExecute() throws Exception {
 				
-				List<KeeperMeta> surviveKeepers = currentMetaManager.getSurviveKeepers(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
-				for(KeeperMeta keeperSurvive : surviveKeepers){
-					if(MetaUtils.same(keeperSurvive, keeperTransMeta.getKeeperMeta())){
-						logger.info("[doExecute][keeper still alive]", keeperTransMeta.getKeeperMeta());
-						future().setFailure(new DeleteKeeperStillAliveException(surviveKeepers, keeperTransMeta.getKeeperMeta()));
-						return;
-					}
+				boolean result = new TcpPortCheck(keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort()).checkOpen();
+				if(result){
+					future().setFailure(new DeleteKeeperStillAliveException(keeperTransMeta.getKeeperMeta()));
+				}else{
+					future().setSuccess();
 				}
-				future().setSuccess();
 			}
 
 			@Override

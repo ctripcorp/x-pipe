@@ -1,22 +1,25 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import com.ctrip.xpipe.simpleserver.Server;
 
 /**
  * @author wenchao.meng
@@ -28,9 +31,6 @@ public class DeleteKeeperCommandTest extends AbstractMetaServerTest{
 	
 	@Mock
 	private KeeperContainerService keeperContainerService;
-	
-	@Mock
-	private CurrentMetaManager currentMetaManager;
 	
 	private DeleteKeeperCommand deleteKeeperCommand;
 	
@@ -48,7 +48,7 @@ public class DeleteKeeperCommandTest extends AbstractMetaServerTest{
 		keeperMeta.setIp("localhost");
 		keeperMeta.setPort(randomPort());
 		
-		deleteKeeperCommand = new DeleteKeeperCommand(currentMetaManager, keeperContainerService, 
+		deleteKeeperCommand = new DeleteKeeperCommand(keeperContainerService, 
 				new KeeperTransMeta(clusterId, shardId, keeperMeta), timeoutMilli, checkIntervalMili);
 		
 	}
@@ -61,12 +61,13 @@ public class DeleteKeeperCommandTest extends AbstractMetaServerTest{
 	}
 
 	@Test
-	public void testDeleteFail() throws InterruptedException, ExecutionException{
+	public void testDeleteFail() throws Exception{
 		
 		List<KeeperMeta> keepers = new LinkedList<>();
 		keepers.add(keeperMeta);
 		
-		when(currentMetaManager.getSurviveKeepers(clusterId, shardId)).thenReturn(keepers);
+		startEchoServer(keeperMeta.getPort());
+		
 		try{
 			deleteKeeperCommand.execute().get();
 			Assert.fail();
@@ -74,4 +75,26 @@ public class DeleteKeeperCommandTest extends AbstractMetaServerTest{
 			Assert.assertTrue(e.getCause() instanceof DeleteKeeperStillAliveException);
 		}
 	}
+
+	@Test
+	public void testDeleteWaitTimeoutThenSuccess() throws Exception{
+		
+		List<KeeperMeta> keepers = new LinkedList<>();
+		keepers.add(keeperMeta);
+		
+		final Server server = startEchoServer(keeperMeta.getPort());
+		
+		scheduler.schedule(new AbstractExceptionLogTask() {
+			
+			@Override
+			protected void doRun() throws Exception {
+				LifecycleHelper.stopIfPossible(server);
+				LifecycleHelper.disposeIfPossible(server);;
+				
+			}
+		}, checkIntervalMili/2, TimeUnit.MILLISECONDS);
+		
+		deleteKeeperCommand.execute().get();
+	}
+
 }
