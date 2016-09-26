@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
+
 import java.net.InetSocketAddress;
 import java.util.Map;
 
@@ -21,7 +22,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.utils.MapUtils;
 
@@ -40,9 +40,6 @@ public class DefaultKeeperStateController implements KeeperStateController{
 		
 	@Autowired
 	private KeeperContainerServiceFactory keeperContainerServiceFactory;
-	
-	@Autowired
-	private CurrentMetaManager currentMetaManager;
 	
 	@Autowired
 	private DcMetaCache dcMetaCache;
@@ -79,7 +76,7 @@ public class DefaultKeeperStateController implements KeeperStateController{
 		
 		KeeperContainerService keeperContainerService = getKeeperContainerService(keeperTransMeta);
 		OneThreadTaskExecutor oneThreadTaskExecutor = getOrCreate(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
-		oneThreadTaskExecutor.executeCommand(new DeleteKeeperCommand(currentMetaManager, keeperContainerService, keeperTransMeta, removeKeeperSuccessTimeoutMilli));
+		oneThreadTaskExecutor.executeCommand(new DeleteKeeperCommand(keeperContainerService, keeperTransMeta, removeKeeperSuccessTimeoutMilli));
 	}
 
 	private KeeperContainerService getKeeperContainerService(KeeperTransMeta keeperTransMeta) {

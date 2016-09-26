@@ -89,7 +89,7 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 	
 	@Override
 	public String getName() {
-		return String.format("[%s(%s:$d)]", getClass().getSimpleName(), keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort());
+		return String.format("[%s(%s:%d)]", getClass().getSimpleName(), keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort());
 	}
 }
 
