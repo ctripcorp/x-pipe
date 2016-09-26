@@ -107,8 +107,17 @@ public class RedisWithKeeperStressTest {
 	}
 
 	public static void flushAll() {
-		if (masterPool != null)
-			masterPool.getResource().flushAll();
+		try {
+			if (masterPool != null)
+				masterPool.getResource().flushAll();
+		} catch (Exception e) {
+			logger.info("Read timed out for the flushAll,sleep 60000 for the redis's flushAll operation");
+			try {
+				Thread.sleep(60000);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
+		}
 	}
 
 	public RedisWithKeeperStressTest(long testCount, long threadNum,
