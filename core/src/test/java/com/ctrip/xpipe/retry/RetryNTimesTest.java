@@ -15,14 +15,14 @@ import com.ctrip.xpipe.command.AbstractCommand;
 public class RetryNTimesTest extends AbstractTest{
 	
 	@Test
-	public void testSuccess() throws InterruptedException{
+	public void testSuccess() throws Exception{
 		
 		RetryNTimes<Object> retryNTimes = new RetryNTimes<Object>(100, new RetryDelay(100));
 		Assert.assertNotNull(retryNTimes.execute(new TestRetryCommand(new Object())));
 	}
 	
 	@Test
-	public void testFailRetry() throws InterruptedException{
+	public void testFailRetry() throws Exception{
 
 		int retryTimes = 3;
 		RetryDelay retryDelay = new RetryDelay(100);
@@ -34,7 +34,7 @@ public class RetryNTimesTest extends AbstractTest{
 	}
 	
 	@Test
-	public void testFailNoRetry() throws InterruptedException{
+	public void testFailNoRetry() throws Exception{
 
 		RetryPolicy retryPolicy = new RetryExceptionIsSuccess(100);
 		RetryNTimes<Object> retryNTimes = new RetryNTimes<Object>(3, retryPolicy);
