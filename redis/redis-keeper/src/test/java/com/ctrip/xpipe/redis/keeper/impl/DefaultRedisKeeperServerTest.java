@@ -70,14 +70,14 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new InetSocketAddress(server1.getPort())));
 		redisKeeperServer.reconnectMaster();
-		sleep(50);
+		sleep(100);
 		Assert.assertEquals(1, server1.getConnected());
 		
 		redisKeeperServer.stop();
 		
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new InetSocketAddress(server2.getPort())));
 		redisKeeperServer.reconnectMaster();
-		sleep(50);
+		sleep(100);
 		Assert.assertEquals(0, server1.getConnected());
 		Assert.assertEquals(0, server2.getConnected());
 		
@@ -85,7 +85,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new InetSocketAddress(server3.getPort())));
 		redisKeeperServer.reconnectMaster();
-		sleep(50);
+		sleep(100);
 		Assert.assertEquals(0, server1.getConnected());
 		Assert.assertEquals(0, server2.getConnected());
 		Assert.assertEquals(0, server3.getConnected());
