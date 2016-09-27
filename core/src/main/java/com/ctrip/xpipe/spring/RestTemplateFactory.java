@@ -101,17 +101,17 @@ public class RestTemplateFactory {
 					for (int i = 0; retryTimes == -1 || i <= retryTimes; i++) {
 
 						if (i >= 1) {
-							logger.info("[execute][retry]{}, {}", i, command);
+//							logger.info("[execute][retry]{}, {}", i, command);
 							retryPolicy.retryWaitMilli(true);
 						}
 
 						try {
-							return command.execute().get(retryPolicy.waitTimeoutMilli(), TimeUnit.MILLISECONDS);
+							return method.invoke(proxy, args);
 						} catch (Exception e) {
-							ExceptionUtils.logException(logger, e,
-									String.format("cmd:%s, message:%s", command, e.getMessage()));
+//							ExceptionUtils.logException(logger, e,
+//									String.format("cmd:%s, message:%s", command, e.getMessage()));
 							if (!retryPolicy.retry(e.getCause()) || i == retryTimes) {
-								logger.info("[execute][no retry]", e);
+//								logger.info("[execute][no retry]", e);
 								// break;
 								throw (Exception) e.getCause();
 							}
