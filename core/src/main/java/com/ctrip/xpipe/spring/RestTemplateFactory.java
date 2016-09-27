@@ -121,7 +121,23 @@ public class RestTemplateFactory {
 					return null;
 				}
 
-			}.execute(null);
+			}.execute(new AbstractCommand<Object>() {
+
+				@Override
+				public String getName() {
+					return "Retry";
+				}
+
+				@Override
+				protected void doExecute() throws Exception {
+					future().setSuccess(method.invoke(proxy, args));
+				}
+
+				@Override
+				protected void doReset() {
+					
+				}
+			});
 		}
 	}
 
