@@ -9,8 +9,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
-
+import org.springframework.web.client.RestOperations;
 import java.util.List;
 
 /**
@@ -21,9 +20,9 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
             ParameterizedTypeReference<List<KeeperInstanceMeta>>() {
             };
     private KeeperContainerMeta keeperContainerMeta;
-    private RestTemplate restTemplate;
+    private RestOperations restTemplate;
 
-    public DefaultKeeperContainerService(KeeperContainerMeta keeperContainerMeta, RestTemplate restTemplate) {
+    public DefaultKeeperContainerService(KeeperContainerMeta keeperContainerMeta, RestOperations restTemplate) {
         this.keeperContainerMeta = keeperContainerMeta;
         this.restTemplate = restTemplate;
     }
