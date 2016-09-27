@@ -402,6 +402,7 @@ public class AbstractTest {
 		Server server = new Server(serverPort, ioActionFactory);
 		server.initialize();
 		server.start();
+		sleep(10);
 		add(server);
 		return server;
 		
