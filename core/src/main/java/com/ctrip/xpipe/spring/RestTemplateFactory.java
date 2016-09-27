@@ -106,7 +106,7 @@ public class RestTemplateFactory {
 						}
 
 						try {
-							return method.invoke(proxy, args);
+							return command.execute(retryTimes, TimeUnit.MILLISECONDS).get();
 						} catch (Exception e) {
 //							ExceptionUtils.logException(logger, e,
 //									String.format("cmd:%s, message:%s", command, e.getMessage()));
@@ -116,7 +116,7 @@ public class RestTemplateFactory {
 								throw (Exception) e.getCause();
 							}
 						}
-//						command.reset();
+						command.reset();
 					}
 					return null;
 				}
