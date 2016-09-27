@@ -1,10 +1,11 @@
 package com.ctrip.xpipe.spring;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.concurrent.TimeUnit;
-
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.retry.RetryPolicy;
+import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.retry.RetryNTimes;
+import com.ctrip.xpipe.retry.RetryPolicyFactories;
+import com.ctrip.xpipe.retry.RetryPolicyFactory;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
@@ -14,13 +15,9 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 
-import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.api.retry.RetryPolicy;
-import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.exception.ExceptionUtils;
-import com.ctrip.xpipe.retry.RetryPolicyFactory;
-import com.ctrip.xpipe.retry.RetryNTimes;
-import com.ctrip.xpipe.retry.RetryPolicyFactories;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 /**
  * @author wenchao.meng
@@ -95,7 +92,7 @@ public class RestTemplateFactory {
 						}
 
 						try {
-							return command.execute(retryTimes, TimeUnit.MILLISECONDS).get();
+							return method.invoke(proxy, args);
 						} catch (Exception e) {
 //							ExceptionUtils.logException(logger, e, String.format("cmd:%s, message:%s", command, e.getMessage()));
 							Exception originalException = getOriginalException(e);
