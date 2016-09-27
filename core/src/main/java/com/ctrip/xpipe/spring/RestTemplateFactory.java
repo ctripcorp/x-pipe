@@ -116,31 +116,12 @@ public class RestTemplateFactory {
 								throw (Exception) e.getCause();
 							}
 						}
-						command.reset();
+//						command.reset();
 					}
 					return null;
 				}
 
-			}.execute(new AbstractCommand<Object>() {
-				@Override
-				public String getName() {
-					return "RetryableRestInvoke";
-				}
-
-				@Override
-				protected void doExecute() throws Exception {
-					try {
-						future().setSuccess(method.invoke(proxy, args));
-					} catch (Exception e) {
-						throw (Exception) e.getCause();
-					}
-				}
-
-				@Override
-				protected void doReset() {
-
-				}
-			});
+			}.execute(null);
 		}
 	}
 
