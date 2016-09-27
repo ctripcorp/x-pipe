@@ -4,8 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.client.RestTemplate;
-
+import org.springframework.web.client.RestOperations;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 
@@ -22,7 +21,7 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 	private int testNum;
 	private String url;
 	private String apiName;
-	private RestTemplate restTemplate = RestTemplateFactory
+	private RestOperations restTemplate = RestTemplateFactory
 			.createCommonsHttpRestTemplate(10, 100, 5000, 5000);
 
 	@SuppressWarnings("rawtypes")
