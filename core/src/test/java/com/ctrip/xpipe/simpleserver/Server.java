@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,6 +46,8 @@ public class Server extends AbstractLifecycle{
 	
 	@Override
 	protected void doStart() throws Exception {
+		
+		final CountDownLatch latch = new CountDownLatch(1);
 		executors.execute(new Runnable() {
 			
 			@Override
@@ -55,6 +58,7 @@ public class Server extends AbstractLifecycle{
 					if(logger.isInfoEnabled()){
 						logger.info("[run][listening]" + port);
 					}
+					latch.countDown();
 					while(true){
 						
 						Socket socket = ss.accept();
@@ -74,6 +78,7 @@ public class Server extends AbstractLifecycle{
 				}
 			}
 		});
+		latch.await();
 	}
 
 	@Override

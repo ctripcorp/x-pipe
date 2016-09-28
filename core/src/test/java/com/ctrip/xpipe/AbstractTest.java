@@ -373,7 +373,8 @@ public class AbstractTest {
 					@Override
 					protected Object doRead(InputStream ins) throws IOException {
 						line = readLine(ins);
-						logger.info("[doRead]{}", line);
+						logger.info("[doRead]{}", line.length());
+						logger.debug("[doRead]{}", line);
 						return line;
 					}
 
@@ -388,7 +389,8 @@ public class AbstractTest {
 								sleepIgnoreInterrupt(sleep);
 							}
 						}
-						logger.info("[doWrite]{}", line);
+						logger.debug("[doWrite]{}", line.length());
+						logger.debug("[doWrite]{}", line);
 						ous.write(line.getBytes());
 						ous.flush();
 					}
@@ -402,6 +404,7 @@ public class AbstractTest {
 		Server server = new Server(serverPort, ioActionFactory);
 		server.initialize();
 		server.start();
+		
 		add(server);
 		return server;
 		
