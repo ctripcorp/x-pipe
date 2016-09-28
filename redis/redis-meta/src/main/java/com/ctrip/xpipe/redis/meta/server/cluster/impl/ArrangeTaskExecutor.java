@@ -73,6 +73,9 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 
 	@Override
 	protected void doStop() throws Exception {
+		if(taskThread != null){
+			taskThread.interrupt();
+		}
 	}
 	
 	public void offer(ReshardingTask task){
@@ -157,4 +160,11 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 		}
 	}
 
+	public void setCurrentClusterServer(CurrentClusterServer currentClusterServer) {
+		this.currentClusterServer = currentClusterServer;
+	}
+
+	protected Thread getTaskThread() {
+		return taskThread;
+	}
 }

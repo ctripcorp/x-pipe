@@ -7,6 +7,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersMulticastTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutorTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTriggerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterArrangerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServerTest;
@@ -31,6 +32,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 @RunWith(Suite.class)
 @SuiteClasses({
 	ArrangeTaskTriggerTest.class,
+	ArrangeTaskExecutorTest.class,
 	DefaultClusterArrangerTest.class,
 	DefaultClusterServersTest.class,
 	ClusterServerShardingTest.class,

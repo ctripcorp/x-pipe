@@ -21,13 +21,20 @@ import com.dianping.cat.message.Transaction;
 public class CatUtils {
 
 	private static Logger logger = LoggerFactory.getLogger(CatUtils.class);
-
+	
+	public static final String CAT_ENABLED_KEY = "cat.client.enabled";
+	
+	private static final boolean catEnabled = Boolean.parseBoolean(System.getProperty(CAT_ENABLED_KEY, "true"));
+	
 	private static ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("CatUtils"));
 
 	public static void newFutureTaskTransaction(final String type, final String name, final CommandFuture<?> future) {
+		
+		if(!catEnabled){
+			return;
+		}
 
 		logger.debug("[newFutureTaskTransaction]{}, {}", type, name);
-
 		executors.execute(new Runnable() {
 
 			@Override

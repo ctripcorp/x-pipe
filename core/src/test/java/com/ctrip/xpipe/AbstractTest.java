@@ -34,6 +34,7 @@ import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.monitor.CatUtils;
 import com.ctrip.xpipe.simpleserver.AbstractIoAction;
 import com.ctrip.xpipe.simpleserver.IoAction;
 import com.ctrip.xpipe.simpleserver.IoActionFactory;
@@ -70,7 +71,7 @@ public class AbstractTest {
 		logger.info(remarkableMessage("[begin test][{}]{}") , getClass().getSimpleName(), name.getMethodName());
 		
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
-		System.setProperty("cat.client.enabled", "false");
+		System.setProperty(CatUtils.CAT_ENABLED_KEY, "false");
 
 		setProperties();
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
