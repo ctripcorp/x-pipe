@@ -1,7 +1,16 @@
 package com.ctrip.xpipe.retry;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.ExecutionException;
+
 import org.junit.Assert;
 import org.junit.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
@@ -15,32 +24,58 @@ import com.ctrip.xpipe.command.AbstractCommand;
 public class RetryNTimesTest extends AbstractTest{
 	
 	@Test
-	public void testSuccess() throws InterruptedException{
+	public void testSuccess() throws Exception{
 		
 		RetryNTimes<Object> retryNTimes = new RetryNTimes<Object>(100, new RetryDelay(100));
 		Assert.assertNotNull(retryNTimes.execute(new TestRetryCommand(new Object())));
 	}
 	
 	@Test
-	public void testFailRetry() throws InterruptedException{
+	public void testFailRetry() throws Exception{
 
 		int retryTimes = 3;
 		RetryDelay retryDelay = new RetryDelay(100);
 		RetryNTimes<Object> retryNTimes = new RetryNTimes<Object>(retryTimes, retryDelay);
-		Assert.assertNull(retryNTimes.execute(new TestRetryCommand(new Exception("just fail"))));
-		
-		Assert.assertEquals(3, retryDelay.getRetryTimes());;
+		try {
+			retryNTimes.execute(new TestRetryCommand(new Exception("just fail")));
+		} catch (Exception e) {
+			Assert.assertEquals(3, retryDelay.getRetryTimes());
+			Assert.assertEquals("just fail", e.getMessage());
+		}
 
 	}
 	
 	@Test
-	public void testFailNoRetry() throws InterruptedException{
+	public void testFailNoRetry() throws Exception{
 
 		RetryPolicy retryPolicy = new RetryExceptionIsSuccess(100);
 		RetryNTimes<Object> retryNTimes = new RetryNTimes<Object>(3, retryPolicy);
-		Assert.assertNull(retryNTimes.execute(new TestRetryCommand(new Exception("just fail"))));
-		Assert.assertEquals(0, retryPolicy.getRetryTimes());
+		try {
+			retryNTimes.execute(new TestRetryCommand(new Exception("just fail")));
+		} catch (Exception e) {
+			Assert.assertEquals(0, retryPolicy.getRetryTimes());
+			Assert.assertEquals("just fail", e.getMessage());
+		}
 
+	}
+	
+	@Test
+	public void testGetOriginalException() {
+		assertTrue(RetryNTimes.getOriginalException(new IOException("test")) instanceof IOException);
+		assertTrue(RetryNTimes.getOriginalException(
+				new ExecutionException(new IllegalArgumentException("test"))) instanceof IllegalArgumentException);
+		assertTrue(RetryNTimes.getOriginalException(new ExecutionException(null)) instanceof ExecutionException);
+		assertTrue(RetryNTimes.getOriginalException(new ExecutionException(new InvocationTargetException(
+				new HttpClientErrorException(HttpStatus.BAD_REQUEST, "test")))) instanceof HttpClientErrorException);
+		assertTrue(RetryNTimes.getOriginalException(
+				new ExecutionException(new InvocationTargetException(null))) instanceof InvocationTargetException);
+		assertTrue(RetryNTimes.getOriginalException(new InvocationTargetException(new IOException("test"))) instanceof IOException);
+		assertTrue(RetryNTimes.getOriginalException(new InvocationTargetException(null)) instanceof InvocationTargetException);
+
+		assertFalse(RetryNTimes.getOriginalException(
+				new InvocationTargetException(new IOException())) instanceof InvocationTargetException);
+		assertFalse(RetryNTimes.getOriginalException(new ExecutionException(
+				new InvocationTargetException(new IOException("test")))) instanceof ExecutionException);
 	}
 	
 	public class RetryExceptionIsSuccess extends RetryDelay{

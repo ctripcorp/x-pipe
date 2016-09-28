@@ -20,14 +20,11 @@ import com.dianping.cat.message.Trace;
 /**
  * @author shyin
  *
- * Aug 11, 2016
+ *         Aug 11, 2016
  */
-@Plugin(name="CatAppender4Log4j2", category="Core", elementType="appender", printObject=true)
-public final class CatAppender4Log4j2 extends AbstractAppender{
+@Plugin(name = "CatAppender4Log4j2", category = "Core", elementType = "appender", printObject = true)
+public final class CatAppender4Log4j2 extends AbstractAppender {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -39,22 +36,19 @@ public final class CatAppender4Log4j2 extends AbstractAppender{
 		super(name, filter, layout);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.apache.logging.log4j.core.Appender#append(org.apache.logging.log4j.core.LogEvent)
-	 */
 	@Override
 	public void append(LogEvent event) {
 		boolean isTraceMode = Cat.getManager().isTraceMode();
-		Level level = event.getLevel(); 
+		Level level = event.getLevel();
 
 		if (level.isMoreSpecificThan(Level.ERROR)) {
 			logError(event);
 		} else if (isTraceMode) {
 			logTrace(event);
 		}
-		
+
 	}
-	
+
 	private String buildExceptionStack(Throwable exception) {
 		if (exception != null) {
 			StringWriter writer = new StringWriter(2048);
@@ -68,13 +62,11 @@ public final class CatAppender4Log4j2 extends AbstractAppender{
 
 	private void logError(LogEvent event) {
 		Throwable info = event.getThrown();
-
 		if (info != null) {
 			Throwable exception = info;
 			Object message = event.getMessage();
-			System.out.println(message);
 			if (message != null) {
-				
+
 				Cat.logError(String.valueOf(message), exception);
 			} else {
 				Cat.logError(exception);
@@ -101,13 +93,12 @@ public final class CatAppender4Log4j2 extends AbstractAppender{
 		}
 		Cat.logTrace(type, name, Trace.SUCCESS, data);
 	}
-	
+
 	@PluginFactory
-	public static CatAppender4Log4j2 createAppender(
-			@PluginAttribute("name") String name,
+	public static CatAppender4Log4j2 createAppender(@PluginAttribute("name") String name,
 			@PluginElement("Layout") Layout<? extends Serializable> layout,
 			@PluginElement("Filter") final Filter filter) {
-		return new CatAppender4Log4j2(name,filter,layout);
+		return new CatAppender4Log4j2(name, filter, layout);
 	}
 
 }
