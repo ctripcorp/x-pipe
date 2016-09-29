@@ -29,6 +29,7 @@ import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
@@ -118,7 +119,9 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		}
 		
 		Bootstrap b = new Bootstrap();
-		b.group(slaveEventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true).handler(new ChannelInitializer<SocketChannel>() {
+		b.group(slaveEventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
+		.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+		.handler(new ChannelInitializer<SocketChannel>() {
 			@Override
 			public void initChannel(SocketChannel ch) throws Exception {
 				ChannelPipeline p = ch.pipeline();
