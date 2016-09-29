@@ -40,7 +40,7 @@ public class ConsoleServiceImpl implements ConsoleService {
 	@PostConstruct
 	public void init(){
 		host = config.getConsoleAddress();
-		logger.info("[init][console address]{}", host);
+		logger.debug("[init][console address]{}", host);
 	}
 
 	@Override

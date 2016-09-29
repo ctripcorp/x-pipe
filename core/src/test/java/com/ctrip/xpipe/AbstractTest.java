@@ -319,7 +319,7 @@ public class AbstractTest {
 	}
 
 	protected String remarkableMessage(String msg) {
-		return String.format("\r\n--------------------------------------------------%s--------------------------------------------------\r\n", msg);
+		return String.format("--------------------------%s--------------------------\r\n", msg);
 	}
 
 	protected void waitForAnyKeyToExit() throws IOException{
