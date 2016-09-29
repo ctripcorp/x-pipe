@@ -13,8 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
+import org.springframework.web.client.RestOperations;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,7 +33,7 @@ public class ConsoleServiceImpl implements ConsoleService {
 	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	private RestTemplate restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
+	private RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 	private String host;
 
 	@PostConstruct
