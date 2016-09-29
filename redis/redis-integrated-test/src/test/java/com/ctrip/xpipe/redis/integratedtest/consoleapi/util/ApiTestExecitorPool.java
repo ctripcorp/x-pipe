@@ -93,6 +93,7 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 			try {
 				Thread.sleep(threadSleepMsec);
 			} catch (InterruptedException e) {
+				logger.error("InterruptedException", e);
 			}
 		}
 	}
@@ -112,7 +113,7 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 				errorMessage = e.getMessage();
 		} finally {
 			int no = isOk ? addSuccess(loseTime) : addFail(loseTime);
-			logger.error("{}--->{} ，{}[delay:{}ms]", no, getApiName(),
+			logger.info("{}--->{} ，{}[delay:{}ms]", no, getApiName(),
 					isOk ? "success" : "failed", loseTime);
 			if (errorMessage != null) {
 				errorMessages
@@ -122,17 +123,17 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 										errorMessage));
 			}
 			if (no >= this.threadNum * this.threadExecutionNum) {
-				logger.error(
+				logger.info(
 						"TOTAL--->{} ，success[count:{} , averageDelay:{}ms]，failed[count:{} , averageDelay:{}ms]",
 						getApiName(), getSuccess(), getSucAverageDelay(),
 						getFail(), getFaiAverageDelay());
-				logger.error(
+				logger.info(
 						"END--->{}>>>>============ BYEBYE ============<<<<",
 						getApiName());
 				try {
 					httpClient.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					logger.error("[handleHttpReturn]", e);
 				}
 				fixedThreadPool.shutdown();
 				if (getFail() > 0) {
@@ -141,7 +142,6 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 					isPass = true;
 				}
 				isOver = true;
-				// System.exit(0);
 			}
 		}
 	}
@@ -161,7 +161,7 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 				try {
 					content = EntityUtils.toString(arg0.getEntity(), "UTF-8");
 				} catch (Exception e) {
-					logger.error("completed exception",e);
+					logger.error("[completed]",e);
 					errorMessage=e.getMessage();
 				}
 				handleHttpReturn(content, System.currentTimeMillis()

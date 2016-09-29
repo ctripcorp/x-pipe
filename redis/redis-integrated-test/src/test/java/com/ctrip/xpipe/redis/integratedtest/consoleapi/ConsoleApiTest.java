@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.integratedtest.consoleapi.util.ApiTestExecitorPool;
 
@@ -20,7 +21,7 @@ import com.ctrip.xpipe.redis.integratedtest.consoleapi.util.ApiTestExecitorPool;
  * 
  *         Sep 9, 2016
  */
-public class ConsoleApiTest {
+public class ConsoleApiTest extends AbstractTest{
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	private static Properties p = new Properties();
 	
@@ -29,9 +30,9 @@ public class ConsoleApiTest {
 		try {
 			p.load(new FileInputStream("/opt/data/100004374/console.properties"));
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			logger.error("[loadProperties] /opt/data/100004374/console.properties not found",e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("[loadProperties]",e);
 		}
 	}
 	@Test
@@ -55,10 +56,9 @@ public class ConsoleApiTest {
 						successNum++;
 					}else{
 						apiTest.printErrorMessages();
-						logger.error("{} did not pass the test",apiTest.getApiName());
+						logger.info("{} did not pass the test",apiTest.getApiName());
 						throw new RuntimeException(String.format("%s did not pass the test", apiTest.getApiName()));
 					}
-					
 				}
 			}
 			if(apiTests.size()==successNum){
