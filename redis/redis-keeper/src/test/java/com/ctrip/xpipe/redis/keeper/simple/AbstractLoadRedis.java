@@ -13,6 +13,8 @@ public abstract class AbstractLoadRedis extends AbstractRedis{
 
 	protected long total = 1 << 30;
 	
+	protected long maxKeyIndex = Integer.parseInt(System.getProperty("maxKeyIndex", String.valueOf(1 << 20)));
+	
 	protected final AtomicLong current = new AtomicLong();
 
 	public AbstractLoadRedis(InetSocketAddress master) {
@@ -42,8 +44,11 @@ public abstract class AbstractLoadRedis extends AbstractRedis{
 				lastTimeMili = currentTime;
 			}
 		}, 5, 5, TimeUnit.SECONDS);
-		
-		
+	}
+	
+	
+	protected long getKeyIndex(long index) {
+		return index%maxKeyIndex;
 	}
 
 	public long increase(){
@@ -55,7 +60,4 @@ public abstract class AbstractLoadRedis extends AbstractRedis{
 		}
 		return next; 
 	}
-	
-
-
 }
