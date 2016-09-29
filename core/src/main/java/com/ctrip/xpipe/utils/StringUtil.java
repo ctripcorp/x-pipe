@@ -6,6 +6,17 @@ package com.ctrip.xpipe.utils;
  * 2016年3月28日 下午6:46:26
  */
 public class StringUtil {
+
+	public static String join(String split, Object ...args){
+		
+		String []tmp = new String[args.length];
+		int i=0;
+		for(Object arg :args){
+			tmp[i++] = arg.toString();
+		}
+		return join(split, tmp);
+	}
+
 	
 	public static String join(String split, String ...args){
 		

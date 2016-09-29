@@ -111,7 +111,7 @@ public class DefaultRdbStore implements RdbStore {
 				start = end;
 			} else {
 				try {
-					Thread.sleep(100);
+					Thread.sleep(10);
 					long currentTime = System.currentTimeMillis();
 					if(currentTime - lastLogTime > 10000){
 						logger.info("[doReadRdbFile]status:{}, start:{}, channeSize:{}", status.get(), start, channel.size());

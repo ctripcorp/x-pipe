@@ -21,8 +21,14 @@ public interface DcMetaManager{
 	
 	Set<String> getClusters();
 	
+	boolean hasCluster(String clusterId);
+	
+	boolean hasShard(String clusterId, String shardId);
+	
 	ClusterMeta getClusterMeta(String clusterId);
 	
+	String getActiveDc(String clusterId);
+
 	ShardMeta getShardMeta(String clusterId, String shardId);
 
 	List<KeeperMeta> getKeepers(String clusterId, String shardId);
@@ -50,6 +56,8 @@ public interface DcMetaManager{
 	
 	DcMeta getDcMeta();
 	
+	List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId);
+
 	void update(ClusterMeta clusterMeta);
 
 	ClusterMeta removeCluster(String clusterId);
@@ -58,6 +66,11 @@ public interface DcMetaManager{
 	
 	boolean noneKeeperActive(String clusterId, String shardId);
 	
-
 	boolean updateRedisMaster(String clusterId, String shardId, RedisMeta redisMaster);
+
+	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
+
+	void updateUpstream(String clusterId, String shardId, String ip, int port);
+
+	
 }

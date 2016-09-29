@@ -34,7 +34,7 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 		READING_LF,
 		END
 	}
-	
+		
 	public BulkStringParser(String content){
 		this(new StringInOutPayload(content), null);
 		
@@ -183,5 +183,10 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 	public static interface BulkStringParserListener{
 		
 		void onGotLengthFiled(long length);
+	}
+
+	@Override
+	public boolean supportes(Class<?> clazz) {
+		return InOutPayload.class.isAssignableFrom(clazz);
 	}
 }

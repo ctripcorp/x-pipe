@@ -1,5 +1,6 @@
 package com.ctrip.xpipe;
 
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,6 +12,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.Charset;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,6 +34,7 @@ import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.monitor.CatUtils;
 import com.ctrip.xpipe.simpleserver.AbstractIoAction;
 import com.ctrip.xpipe.simpleserver.IoAction;
 import com.ctrip.xpipe.simpleserver.IoActionFactory;
@@ -68,7 +71,7 @@ public class AbstractTest {
 		logger.info(remarkableMessage("[begin test][{}]{}") , getClass().getSimpleName(), name.getMethodName());
 		
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
-		System.setProperty("cat.client.enabled", "false");
+		System.setProperty(CatUtils.CAT_ENABLED_KEY, "false");
 
 		setProperties();
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
@@ -356,9 +359,11 @@ public class AbstractTest {
 	}
 
 	protected Server startEchoServer() throws Exception {
-		
-		int serverPort = randomPort();
-		Server server = new Server(serverPort, new IoActionFactory() {
+		return startEchoServer(randomPort());
+	}
+
+	protected Server startEchoServer(int port) throws Exception {
+		return startServer(port, new IoActionFactory() {
 			
 			@Override
 			public IoAction createIoAction() {
@@ -369,7 +374,8 @@ public class AbstractTest {
 					@Override
 					protected Object doRead(InputStream ins) throws IOException {
 						line = readLine(ins);
-						logger.info("[doRead]{}", line);
+						logger.info("[doRead]{}", line.length());
+						logger.debug("[doRead]{}", line);
 						return line;
 					}
 
@@ -384,19 +390,72 @@ public class AbstractTest {
 								sleepIgnoreInterrupt(sleep);
 							}
 						}
-						logger.info("[doWrite]{}", line);
+						logger.debug("[doWrite]{}", line.length());
+						logger.debug("[doWrite]{}", line);
 						ous.write(line.getBytes());
 						ous.flush();
 					}
 				};
 			}
 		});
+	}
+
+	protected Server startServer(int serverPort, IoActionFactory ioActionFactory) throws Exception{
+		
+		Server server = new Server(serverPort, ioActionFactory);
 		server.initialize();
 		server.start();
+		
 		add(server);
 		return server;
+		
+	}
+
+	protected Server startServer(IoActionFactory ioActionFactory) throws Exception{
+		return startServer(randomPort(), ioActionFactory);
 	}
 	
+	protected Server startServer(int serverPort, final String expected) throws Exception {
+		return startServer(serverPort, new Callable<String>() {
+
+			@Override
+			public String call() throws Exception {
+				return expected;
+			}
+		});
+	}
+
+	protected Server startServer(int serverPort, final Callable<String> function) throws Exception {
+		IoActionFactory ioActionFactory = new IoActionFactory() {
+			
+			@Override
+			public IoAction createIoAction() {
+				return new AbstractIoAction() {
+					
+					@Override
+					protected void doWrite(OutputStream ous) throws IOException {
+						try {
+							ous.write(function.call().getBytes());
+						} catch (Exception e) {
+							throw new IllegalStateException("[doWrite]", e);
+						}
+					}
+					@Override
+					protected Object doRead(InputStream ins) throws IOException {
+						String line = readLine(ins);
+						logger.info("[doRead]{}", line);
+						return line;
+					}
+				};
+			}
+		};
+		return startServer(serverPort, ioActionFactory);
+	}
+
+	protected Server startServer(final String result) throws Exception {
+		return startServer(randomPort(), result);
+	}
+
 
 	@After
 	public void afterAbstractTest() throws IOException{
@@ -409,7 +468,7 @@ public class AbstractTest {
 			logger.error("[afterAbstractTest]", e);
 		}
 		File file = new File(getTestFileDir());
-		FileUtils.forceDelete(file);
+		FileUtils.deleteQuietly(file);
 		logger.info(remarkableMessage("[end   test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
 	}
 }

@@ -109,8 +109,7 @@ public class DefaultCommandStore implements CommandStore {
 			long newStartOffset = curCmdFileCtx.currentStartOffset + curCmdFileCtx.writeFile.length();
 			File newFile = new File(baseDir, fileNamePrefix + newStartOffset);
 			cmdFileCtxRef.set(new CommandFileContext(newStartOffset, newFile));
-			logger.info("Rotate to " + newFile.getName());
-
+			logger.info("Rotate to {}" , newFile.getName());
 			curCmdFileCtx.close();
 		}
 	}
@@ -221,9 +220,9 @@ public class DefaultCommandStore implements CommandStore {
 
 		@Override
 		public int read(ByteBuffer dst) throws IOException {
-			readNextFileIfNecessary();
 			try {
 				offsetNotifier.await(curPosition + 1);
+				readNextFileIfNecessary();
 			} catch (InterruptedException e) {
 				logger.error("[read]", e);
 				Thread.currentThread().interrupt();
@@ -232,6 +231,8 @@ public class DefaultCommandStore implements CommandStore {
 			int read = channel.read(dst);
 			if (read > 0) {
 				curPosition += read;
+			}else{
+				logger.info("[read]{}, {}, size:{}, pos:{}", read, curFile, channel.size(), channel.position());
 			}
 			return read;
 		}
@@ -310,7 +311,7 @@ public class DefaultCommandStore implements CommandStore {
 						if(read < 0){
 							logger.error("[addCommandsListener]read size:" + read);
 						}
-						Thread.sleep(100);
+						Thread.sleep(1);
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
 					}

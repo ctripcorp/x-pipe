@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
+import java.io.IOException;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -57,10 +56,6 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 		
 	}
 
-	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
-		throw new UnsupportedOperationException();
-	}
 	
 	@Override
 	protected void doCancel() {

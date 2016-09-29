@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.pool;
 
-
-
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -9,7 +7,6 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-
 /**
  * @author wenchao.meng
  *
@@ -68,5 +65,10 @@ public class XpipeObjectPool<T> extends AbstractLifecycle implements SimpleObjec
 	@Override
 	public void clear() throws Exception {
 		this.objectPool.clear();
+	}
+
+	@Override
+	public String desc() {
+		return factory.toString();
 	}
 }

@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.command;
 
 
-
-
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -113,7 +110,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	}
 	
 	@Override
-	public void reset() throws InterruptedException, ExecutionException {
+	public void reset(){
 		
 		if(!future().isDone()){
 			logger.info("[reset][not done]{}", this);
@@ -125,7 +122,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 		doReset();
 	}
 	
-	protected abstract void doReset() throws InterruptedException, ExecutionException;
+	protected abstract void doReset();
 
 	@Override
 	public String toString() {

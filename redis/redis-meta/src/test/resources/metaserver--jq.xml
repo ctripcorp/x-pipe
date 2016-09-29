@@ -5,10 +5,12 @@
 		<keeperContainers>
 			<keeperContainer id="1" ip="127.0.0.1" port="8080" />
 			<keeperContainer id="2" ip="127.0.0.1" port="8081" />
+			<keeperContainer id="3" ip="127.0.0.1" port="8180" />
+			<keeperContainer id="4" ip="127.0.0.1" port="8181" />
 		</keeperContainers>
 
-		<cluster id="cluster1">
-			<shard id="shard1" active-dc="jq">
+		<cluster id="cluster1"  active-dc="jq">
+			<shard id="shard1">
 				<redis ip="127.0.0.1" port="6379" master="" />
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000" ip="127.0.0.1" port="6000" active="true" keeperContainerId="1" />
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.1" port="6001" active="false" keeperContainerId="2" />
@@ -22,6 +24,4 @@
 			</shard>
 		</cluster>
 	</dc>
-
-
 </xpipe>

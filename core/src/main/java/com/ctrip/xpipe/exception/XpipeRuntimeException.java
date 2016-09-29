@@ -10,6 +10,7 @@ public class XpipeRuntimeException extends RuntimeException implements ErrorMess
 	private static final long serialVersionUID = 1L;
 
 	private ErrorMessage<?>  errorMessage;
+	private boolean onlyLogMessage = false;
 
 	public XpipeRuntimeException(String message){
 		super(message);
@@ -31,5 +32,13 @@ public class XpipeRuntimeException extends RuntimeException implements ErrorMess
 	
 	public void setErrorMessage(ErrorMessage<?> errorMessage) {
 		this.errorMessage = errorMessage;
+	}
+
+	public boolean isOnlyLogMessage() {
+		return onlyLogMessage;
+	}
+
+	public void setOnlyLogMessage(boolean onlyLogMessage) {
+		this.onlyLogMessage = onlyLogMessage;
 	}
 }

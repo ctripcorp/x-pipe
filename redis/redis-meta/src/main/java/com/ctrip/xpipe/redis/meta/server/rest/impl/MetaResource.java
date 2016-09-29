@@ -76,15 +76,7 @@ public class MetaResource extends AbstractController{
 		logger.info("[promoteRedisMaster]{},{},{}:{}", clusterId , shardId , promoteIp , promotePort);
 	}
 	
-	@RequestMapping( path = "/setupstream/{clusterId}/{shardId}/{ip}/{port}", method = RequestMethod.POST)
-	public void setUpstream(@PathVariable final String clusterId, @PathVariable final String shardId, 
-			@RequestParam("ip") final String upstreamIp, @RequestParam("port") final int upstreamPort) throws Exception {
-
-		logger.info("[setUpstream]{},{},{}:{}", clusterId , shardId , upstreamIp, upstreamPort);
-		metaServer.updateUpstream(clusterId, shardId, String.format("%s:%p", upstreamIp, upstreamPort));
-
-	}
-
+	
 	private KeeperMeta doGetActiveKeeper(String clusterId, String shardId) {
 		KeeperMeta keeper = metaServer.getActiveKeeper(clusterId, shardId);
 		return keeper;

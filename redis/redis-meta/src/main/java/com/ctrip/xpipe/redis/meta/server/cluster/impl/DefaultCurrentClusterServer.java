@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+
 import java.util.HashSet;
 import java.util.Set;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -125,7 +125,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	@Override
 	public CommandFuture<Void> exportSlot(int slotId) {
 
-		return new SlotExportCommand(slotId).execute();
+		return new SlotExportCommand(slotId).execute(executors);
 	}
 
 	@Override
@@ -198,7 +198,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 			future().setSuccess();
 		}
 		@Override
-		protected void doReset() throws InterruptedException, ExecutionException {
+		protected void doReset() {
 			
 		}
 	}
@@ -229,7 +229,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 			future().setSuccess();
 		}
 		@Override
-		protected void doReset() throws InterruptedException, ExecutionException {
+		protected void doReset() {
 			
 		}
 	}
@@ -261,7 +261,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		}
 
 		@Override
-		protected void doReset() throws InterruptedException, ExecutionException {
+		protected void doReset(){
 		}
 	} 
 
@@ -291,7 +291,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 			future().setSuccess();
 		}
 		@Override
-		protected void doReset() throws InterruptedException, ExecutionException {
+		protected void doReset(){
 		}
 	} 
 
@@ -314,7 +314,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 			future().setSuccess();
 		}
 		@Override
-		protected void doReset() throws InterruptedException, ExecutionException {
+		protected void doReset(){
 		}
 	}
 

@@ -25,7 +25,7 @@ public interface MetaServer extends ClusterServer, TopElement{
 
 	KeeperMeta getUpstreamKeeper(String clusterId, String shardId) throws Exception;
 
-	void updateUpstream(String clusterId, String shardId, String upstream) throws Exception;
+	void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo) throws Exception;
 
 	ShardStatus getShardStatus(String clusterId, String shardId, ForwardInfo forwardInfo) throws Exception;
 

@@ -13,6 +13,7 @@ import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
@@ -25,9 +26,6 @@ import com.ctrip.xpipe.redis.console.model.DcClusterTblEntity;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.DcTblDao;
 import com.ctrip.xpipe.redis.console.model.DcTblEntity;
-import com.ctrip.xpipe.redis.console.model.MetaserverTbl;
-import com.ctrip.xpipe.redis.console.model.MetaserverTblDao;
-import com.ctrip.xpipe.redis.console.model.MetaserverTblEntity;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.SetinelTblDao;
 import com.ctrip.xpipe.redis.console.model.SetinelTblEntity;
@@ -49,7 +47,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	private DcClusterTblDao dcClusterTblDao;
 	private ShardTblDao shardTblDao;
 	private DcClusterShardTblDao dcClusterShardTblDao;
-	private MetaserverTblDao metaserverTblDao;
 	private SetinelTblDao setinelTblDao;
 	
 	@Autowired
@@ -65,7 +62,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			dcClusterTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterTblDao.class);
 			shardTblDao = ContainerLoader.getDefaultContainer().lookup(ShardTblDao.class);
 			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
-			metaserverTblDao = ContainerLoader.getDefaultContainer().lookup(MetaserverTblDao.class);
 			setinelTblDao = ContainerLoader.getDefaultContainer().lookup(SetinelTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
@@ -74,21 +70,27 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	
 	
 	@DalTransaction
-	public ClusterTbl createCluster(ClusterTbl cluster) throws DalException {
+	public ClusterTbl createCluster(final ClusterTbl cluster) throws DalException {
+		// check for unique cluster name
+		ClusterTbl clusterWithSameName = queryHandler.tryGet(new DalQuery<ClusterTbl>() {
+			@Override
+			public ClusterTbl doQuery() throws DalException {
+				return clusterTblDao.findClusterByClusterName(cluster.getClusterName(), ClusterTblEntity.READSET_FULL);
+			}
+		});
+		if(null != clusterWithSameName) throw new BadRequestException("Duplicated cluster name");
+		
 		// cluster meta
 		clusterTblDao.insert(cluster);
 	    
 	    // related dc-cluster
 	    ClusterTbl newCluster = clusterTblDao.findClusterByClusterName(cluster.getClusterName(), ClusterTblEntity.READSET_FULL);
 	    DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
-	    MetaserverTbl activeMetaserver = metaserverTblDao.findActiveByDcName(activeDc.getDcName(), MetaserverTblEntity.READSET_FULL);
 	    DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();
 	    protoDcCluster.setDcId(activeDc.getId())
 	    		.setClusterId(newCluster.getId())
-	    		.setMetaserverId(activeMetaserver.getId())
 	    		.setDcClusterPhase(XpipeConsoleConstant.DEFAULT_DC_CLUSTER_PHASE);
 	    dcClusterTblDao.insert(protoDcCluster);
-		
 		return newCluster;
 	}
 	
@@ -129,12 +131,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 
 	@DalTransaction
 	public int bindDc(final ClusterTbl cluster, final DcTbl dc) throws DalException {
-		MetaserverTbl activeMetaserver = queryHandler.tryGet(new DalQuery<MetaserverTbl>() {
-			@Override
-			public MetaserverTbl doQuery() throws DalException {
-				return metaserverTblDao.findActiveByDcId(dc.getId(), MetaserverTblEntity.READSET_FULL); 
-			}
-		});
 		List<SetinelTbl> setinels = queryHandler.tryGet(new DalQuery<List<SetinelTbl>>() {
 			@Override
 			public List<SetinelTbl> doQuery() throws DalException {
@@ -151,13 +147,12 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		DcClusterTbl proto = dcClusterTblDao.createLocal();
 		proto.setDcId(dc.getId())
 			.setClusterId(cluster.getId())
-			.setMetaserverId(null == activeMetaserver? 0 : activeMetaserver.getId())
 			.setDcClusterPhase(XpipeConsoleConstant.DEFAULT_DC_CLUSTER_PHASE);
 		dcClusterTblDao.insert(proto);
 		DcClusterTbl dcCluster = dcClusterTblDao.findDcClusterByName(dc.getDcName(), cluster.getClusterName(), DcClusterTblEntity.READSET_FULL);
 		
 		if(null != shards) {
-			SetinelTbl setinel = (null == setinels? setinelTblDao.createLocal().setSetinelId(0) : setinels.get(0));
+			SetinelTbl setinel = ((null == setinels || 0 == setinels.size())? setinelTblDao.createLocal().setSetinelId(0) : setinels.get(0));
 			List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
 			for(ShardTbl shard : shards) {
 				DcClusterShardTbl dcClusterShard = dcClusterShardTblDao.createLocal();

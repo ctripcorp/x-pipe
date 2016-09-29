@@ -67,7 +67,7 @@ public class DefaultCommandFutureTest extends AbstractTest{
 			}
 		}).start();
 		
-		sleep(10);
+		sleep(100);
 		Assert.assertTrue(jobFuture.isCancelled());
 		jobFuture.get();
 	}

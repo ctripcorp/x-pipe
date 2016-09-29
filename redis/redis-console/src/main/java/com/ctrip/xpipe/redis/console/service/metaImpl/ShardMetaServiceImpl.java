@@ -148,7 +148,7 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 			if(null != activeDcCluster) {
 				DcClusterShardTbl activeDcClusterShard = dcClusterShardService.load(activeDcCluster.getDcClusterId(), shardInfo.getId());
 				if(null != activeDcClusterShard) {
-					RedisTbl activeKeeper = redisService.findActiveKeeper(redisService.findByDcClusterShardId(activeDcClusterShard.getDcClusterShardId()));
+					RedisTbl activeKeeper = RedisService.findActiveKeeper(redisService.findByDcClusterShardId(activeDcClusterShard.getDcClusterShardId()));
 					shardMeta.setUpstream(redisMetaService.encodeRedisAddress(activeKeeper));
 				}
 			}

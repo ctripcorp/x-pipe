@@ -47,7 +47,6 @@ public class DefaultLeaderElector extends AbstractLifecycle implements LeaderEle
 			}
 		});
 
-		logger.info("[elect]{}", ctx);
 		latch.start();
 		logger.info("[elect]{}", ctx);
 	}

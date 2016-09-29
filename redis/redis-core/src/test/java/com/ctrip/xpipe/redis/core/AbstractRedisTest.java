@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
@@ -336,5 +338,71 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		FakeFoundationService.setDataCenter(dc);
 		return dc;
 	}
+	
+	protected KeeperMeta createNonExistKeeper(List<KeeperMeta> allKeepers) {
+		
+		Set<Integer>  ports = new HashSet<>();
+		for(KeeperMeta keeperMeta : allKeepers){
+			ports.add(keeperMeta.getPort());
+		}
+		
+		int port = randomPort();
+		while(true){
+			
+			if(!ports.contains(port)){
+				break;
+			}
+			port = randomPort();
+		}
 
+		KeeperMeta result = new KeeperMeta();
+		result.setPort(port).setIp("localhost");
+		return result;
+	}
+
+	protected void changeClusterKeeper(ClusterMeta clusterMeta) {
+		
+		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+			
+			KeeperMeta keeperMeta = shardMeta.getKeepers().get(0);
+			keeperMeta.setPort(keeperMeta.getPort() + 10000);
+		}
+	}
+
+	protected ClusterMeta differentCluster(String dc) {
+		
+		DcMeta dcMeta = getDcMeta(dc);
+		ClusterMeta clusterMeta = (ClusterMeta) MetaClone.clone((ClusterMeta)dcMeta.getClusters().values().toArray()[0]);
+		clusterMeta.setId(randomString(10));
+		
+		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+			for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
+				keeperMeta.setPort(keeperMeta.getPort() + 10000);
+			}
+		}
+		return clusterMeta;
+	}
+	
+	protected KeeperMeta differentKeeper(List<KeeperMeta> keepers) {
+		
+		Set<Integer> ports = new HashSet<>();
+		
+		for(KeeperMeta keeper : keepers){
+			ports.add(keeper.getPort());
+		}
+		
+		int port = randomPort();
+		while(true){
+			if(!ports.contains(port)){
+				break;
+			}
+			port = randomPort();
+		}
+		
+		KeeperMeta keeperMeta = new KeeperMeta();
+		keeperMeta.setId("localhost");
+		keeperMeta.setPort(port);
+		return keeperMeta;
+		
+	}
 }

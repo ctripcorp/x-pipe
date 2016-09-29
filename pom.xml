@@ -101,6 +101,13 @@
 				<scope>test</scope>
 			</dependency>
 			<dependency>
+				<groupId>com.ctrip.xpipe.redis</groupId>
+				<artifactId>redis-meta</artifactId>
+				<type>test-jar</type>
+				<version>${project.version}</version>
+				<scope>test</scope>
+			</dependency>			
+			<dependency>
 				<groupId>com.ctrip.xpipe</groupId>
 				<artifactId>ctrip-service</artifactId>
 				<version>${project.version}</version>

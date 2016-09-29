@@ -39,7 +39,7 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 		
 		byte[] message = randomString().getBytes();  
 		rdbStore.writeRdb(Unpooled.wrappedBuffer(message));
-		sleep(100);
+		sleep(200);
 		Assert.assertEquals(message.length, readLen.get());		
 	}
 

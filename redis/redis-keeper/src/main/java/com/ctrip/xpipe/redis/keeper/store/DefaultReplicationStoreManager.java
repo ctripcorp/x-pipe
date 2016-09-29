@@ -240,7 +240,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 				}
 			}
 		}
-		logger.info("[recursiveDelete]", file.getAbsolutePath());
+		logger.info("[recursiveDelete]{}", file.getAbsolutePath());
 		file.delete();
 	}
 }

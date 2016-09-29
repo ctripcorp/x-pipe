@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,12 +15,14 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 public class DefaultMetaServerConsoleService extends AbstractMetaService implements MetaServerConsoleService{
 	
 	private String  metaServerAddress;
-	private String  changeClusterPath; 
+	private String  changeClusterPath;
+	private String  upstreamchangePath;
 
 	
 	public DefaultMetaServerConsoleService(String metaServerAddress) {
 		this.metaServerAddress = metaServerAddress;
 		changeClusterPath = String.format("%s/%s/%s", metaServerAddress, MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_CLUSTER_CHANGE);
+		upstreamchangePath = String.format("%s/%s/%s", metaServerAddress, MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_UPSTREAM_CHANGE);
 	}
 
 	@Override
@@ -42,10 +43,6 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		restTemplate.delete(changeClusterPath, clusterId);
 	}
 
-	@Override
-	public void upstreamChange(String clusterId, String shardId, InetSocketAddress upstreamAddress) {
-		
-	}
 
 	@Override
 	public DcMeta getDynamicInfo() {
@@ -59,6 +56,11 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		List<String> result = new ArrayList<>();
 		result.add(metaServerAddress);
 		return result;
+	}
+
+	@Override
+	public void upstreamChange(String clusterId, String shardId, String ip, int port) {
+		restTemplate.put(upstreamchangePath, null, clusterId, shardId, ip, port);
 	}
 
 }

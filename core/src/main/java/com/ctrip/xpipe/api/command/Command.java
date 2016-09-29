@@ -27,6 +27,6 @@ public interface Command<V> {
 	 * @throws ExecutionException 
 	 * @throws InterruptedException 
 	 */
-	void reset() throws InterruptedException, ExecutionException;
+	void reset();
 
 }

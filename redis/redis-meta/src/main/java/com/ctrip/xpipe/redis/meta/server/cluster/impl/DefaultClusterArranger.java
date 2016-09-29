@@ -93,6 +93,14 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		clusterServers.addObserver(this);
 	}
 
+	
+	@Override
+	protected void doDispose() throws Exception {
+		
+		scheduled.shutdownNow();
+		super.doDispose();
+	}
+	
 	private void refresh() throws Exception {
 		slotManager.refresh();
 		clusterServers.refresh();

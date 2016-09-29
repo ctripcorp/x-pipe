@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.unidal.tuple.Pair;
 
 /**
  * @author wenchao.meng
@@ -98,12 +99,18 @@ public class IpUtils {
 		return result;
 	}
 	
-	public static InetSocketAddress parseSingle(String singleAddress) throws Exception{
+	public static InetSocketAddress parseSingle(String singleAddress){
 
+		Pair<String, Integer> pair = parseSingleAsPair(singleAddress);
+		return new InetSocketAddress(pair.getKey(), pair.getValue());
+	}
+	
+	public static Pair<String, Integer> parseSingleAsPair(String singleAddress){
+		
 		String []parts = singleAddress.split("\\s*:\\s*");
 		if(parts.length != 2){
-			throw new Exception("invalid socket address:" + singleAddress);
+			throw new IllegalArgumentException("invalid socket address:" + singleAddress);
 		}
-		return new InetSocketAddress(parts[0], Integer.parseInt(parts[1]));
+		return new Pair<>(parts[0], Integer.parseInt(parts[1]));
 	} 
 }

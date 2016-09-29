@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
-import com.ctrip.xpipe.redis.core.protocal.protocal.IntegerParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.LongParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 
@@ -81,7 +81,7 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 						redisClientProtocol = new BulkStringParser(getBulkStringPayload());
 						break;
 					case RedisClientProtocol.COLON_BYTE:
-						redisClientProtocol = new IntegerParser();
+						redisClientProtocol = new LongParser();
 						break;
 					case RedisClientProtocol.PLUS_BYTE:
 						redisClientProtocol = new SimpleStringParser();

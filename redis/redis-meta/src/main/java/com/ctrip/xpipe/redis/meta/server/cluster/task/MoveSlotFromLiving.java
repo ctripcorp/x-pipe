@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -89,7 +88,7 @@ public class MoveSlotFromLiving extends AbstractSlotMoveTask{
 
 
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		
 	}
 }

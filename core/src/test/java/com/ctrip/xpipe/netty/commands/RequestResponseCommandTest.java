@@ -31,31 +31,33 @@ import io.netty.channel.Channel;
 /**
  * @author wenchao.meng
  *
- * Jul 1, 2016
+ *         Jul 1, 2016
  */
-public class RequestResponseCommandTest extends AbstractTest{
-	
+public class RequestResponseCommandTest extends AbstractTest {
+
 	private Server server;
 	private XpipeObjectPool<NettyClient> clientPool;
-	
+
 	@Before
-	public void beforeRequestResponseCommandTest() throws Exception{
-		
+	public void beforeRequestResponseCommandTest() throws Exception {
+
 		server = startEchoServer();
-		clientPool = new XpipeObjectPool<>(new NettyClientFactory(new InetSocketAddress("localhost", server.getPort())));
+		clientPool = new XpipeObjectPool<>(
+				new NettyClientFactory(new InetSocketAddress("localhost", server.getPort())));
 		clientPool.initialize();
 		clientPool.start();
 	}
-	
-	@Test
-	public void testReset() throws CommandExecutionException, InterruptedException, ExecutionException{
 
-		String request = randomString(10) + "\r\n";
+	@Test
+	public void testReset() throws CommandExecutionException, InterruptedException, ExecutionException, IOException {
+
+		String request = randomString(1 << 5) + "\r\n";
+
 		TestCommand command = new TestCommand(request, 1000, clientPool, scheduler, null);
-		CommandFuture<String> future = command.execute(); 
+		CommandFuture<String> future = command.execute();
 		String result = future.get();
 		Assert.assertEquals(request, result);
-		
+
 		command.reset();
 		future = command.execute();
 		result = future.get();
@@ -63,41 +65,41 @@ public class RequestResponseCommandTest extends AbstractTest{
 	}
 
 	@Test
-	public void testSuccess() throws Exception{
-		
+	public void testSuccess() throws Exception {
+
 		String request = randomString() + "\r\n";
 		TestCommand command = new TestCommand(request, clientPool, scheduler);
-		CommandFuture<String> future = command.execute(); 
+		CommandFuture<String> future = command.execute();
 		String result = future.get();
 		Assert.assertEquals(request, result);
-		
+
 		final AtomicReference<String> listenerResult = new AtomicReference<String>();
-		final CountDownLatch latch  = new CountDownLatch(1);
+		final CountDownLatch latch = new CountDownLatch(1);
 		future.addListener(new CommandFutureListener<String>() {
 
 			@Override
 			public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
-				try{
-					if(commandFuture.isSuccess()){
+				try {
+					if (commandFuture.isSuccess()) {
 						listenerResult.set(commandFuture.get());
-					}else{
+					} else {
 						listenerResult.set(null);
 					}
-				}finally{
+				} finally {
 					latch.countDown();
 				}
-				
+
 			}
 		});
-		
+
 		latch.await(1, TimeUnit.SECONDS);
 		Assert.assertEquals(request, listenerResult.get());
-		
+
 	}
-	
+
 	@Test
-	public void testTimeout() throws CommandExecutionException, InterruptedException{
-		
+	public void testTimeout() throws CommandExecutionException, InterruptedException {
+
 		TestCommand testCommand = new TestCommand("sleep 5000\r\n", 1000, clientPool, scheduler, null);
 		CommandFuture<String> future = testCommand.execute();
 
@@ -107,40 +109,39 @@ public class RequestResponseCommandTest extends AbstractTest{
 
 			@Override
 			public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
-				
-				try{
+
+				try {
 					listenerFuture.set(commandFuture);
-				}finally{
+				} finally {
 					latch.countDown();
 				}
 			}
 		});
-		
+
 		try {
 			future.get();
 			Assert.fail();
-		} catch (InterruptedException e){
+		} catch (InterruptedException e) {
 			Assert.fail();
-		}catch(ExecutionException e) {
-			if(!(e.getCause() instanceof CommandTimeoutException)){
+		} catch (ExecutionException e) {
+			if (!(e.getCause() instanceof CommandTimeoutException)) {
 				Assert.fail();
 			}
 		}
-		
+
 		latch.await();
 		Assert.assertTrue(listenerFuture.get() != null);
-		
+
 	}
-	
-	
+
 	@Test
-	public void testClosed() throws CommandExecutionException, BorrowObjectException{
-		
+	public void testClosed() throws CommandExecutionException, BorrowObjectException {
+
 		TestCommand testCommand = new TestCommand("something", 0, clientPool, scheduler, null);
 		CommandFuture<String> future = testCommand.execute();
 
 		new Thread(new Runnable() {
-			
+
 			@Override
 			public void run() {
 				try {
@@ -151,22 +152,22 @@ public class RequestResponseCommandTest extends AbstractTest{
 				}
 			}
 		}).start();
-		
+
 		try {
 			future.get();
 			Assert.fail();
 		} catch (InterruptedException | ExecutionException e) {
 			e.printStackTrace();
-			if(!(e instanceof ExecutionException && (((ExecutionException)e).getCause() instanceof IOException))){
+			if (!(e instanceof ExecutionException && (((ExecutionException) e).getCause() instanceof IOException))) {
 				Assert.fail();
 			}
 		}
-		
+
 	}
 
 	@Test
-	public void testException() throws CommandExecutionException{
-		
+	public void testException() throws CommandExecutionException {
+
 		Exception exception = new Exception();
 		TestCommand testCommand = new TestCommand("something\r\n", 0, clientPool, scheduler, exception);
 		CommandFuture<String> future = testCommand.execute();
@@ -174,60 +175,60 @@ public class RequestResponseCommandTest extends AbstractTest{
 			future.get();
 			Assert.fail();
 		} catch (InterruptedException e) {
-			
+
 			Assert.fail();
 		} catch (ExecutionException e) {
-			
+
 			Assert.assertEquals(exception, e.getCause());
 		}
 	}
-	
-	
-	@Test
-	public void testSchedule() throws InterruptedException, ExecutionException, TimeoutException{
 
-		String request = randomString() + "\r\n"; 
-				
+	@Test
+	public void testSchedule() throws InterruptedException, ExecutionException, TimeoutException {
+
+		String request = randomString() + "\r\n";
+
 		TestCommand testCommand = new TestCommand(request, 0, clientPool, scheduler, null);
 		CommandFuture<String> future = testCommand.execute(1, TimeUnit.SECONDS);
-		
+
 		sleep(10);
 		String result = future.getNow();
 		Assert.assertNull(result);
-		
+
 		result = future.get(2, TimeUnit.SECONDS);
 		Assert.assertEquals(request, result);
 	}
-	
-	
-	@Test(expected = CancellationException.class)
-	public void testScheduleCancel() throws InterruptedException, ExecutionException, TimeoutException{
 
-		String request = randomString() + "\r\n"; 
-		
+	@Test(expected = CancellationException.class)
+	public void testScheduleCancel() throws InterruptedException, ExecutionException, TimeoutException {
+
+		String request = randomString() + "\r\n";
+
 		TestCommand testCommand = new TestCommand(request, 0, clientPool, scheduler, null);
 		CommandFuture<String> future = testCommand.execute(1, TimeUnit.SECONDS);
-		
+
 		sleep(10);
 		String result = future.getNow();
 		Assert.assertNull(result);
-		
+
 		future.cancel(false);
 		result = future.get(2, TimeUnit.SECONDS);
 	}
 
-	class TestCommand extends AbstractNettyRequestResponseCommand<String>{
+	class TestCommand extends AbstractNettyRequestResponseCommand<String> {
 
 		private String request;
 		private ByteArrayOutputStream result = new ByteArrayOutputStream();
 		private int timeout;
 		private Exception e;
-		
-		public TestCommand(String request, XpipeObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+
+		public TestCommand(String request, XpipeObjectPool<NettyClient> clientPool,
+				ScheduledExecutorService scheduled) {
 			this(request, 1000, clientPool, scheduled, null);
 		}
 
-		public TestCommand(String request, int timeout, XpipeObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, Exception e) {
+		public TestCommand(String request, int timeout, XpipeObjectPool<NettyClient> clientPool,
+				ScheduledExecutorService scheduled, Exception e) {
 			super(clientPool, scheduled);
 			this.request = request;
 			this.timeout = timeout;
@@ -236,26 +237,26 @@ public class RequestResponseCommandTest extends AbstractTest{
 
 		@Override
 		protected String doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
-			
-			if(e != null){
+
+			if (e != null) {
 				throw e;
 			}
 			int readable = byteBuf.readableBytes();
-			byte []buff = new byte[readable];
+			byte[] buff = new byte[readable];
 			byteBuf.readBytes(buff);
 			result.write(buff);
-			logger.info("[doReceiveResponse]{}, {}", readable, new String(buff));
-			if(result.size() >= request.length()){
+			logger.debug("[doReceiveResponse]{}, {}", readable, new String(buff));
+			if (result.size() >= request.length()) {
 				return new String(result.toByteArray());
 			}
 			return null;
 		}
-		
+
 		@Override
 		public int getCommandTimeoutMilli() {
 			return timeout;
 		}
-		
+
 		@Override
 		protected ByteBuf getRequest() {
 			return Unpooled.wrappedBuffer(request.getBytes());
@@ -265,10 +266,11 @@ public class RequestResponseCommandTest extends AbstractTest{
 		protected void doReset() {
 			result.reset();
 		}
+
 		@Override
 		public String getName() {
 			return "unittest comamnd";
 		}
-		
+
 	}
 }

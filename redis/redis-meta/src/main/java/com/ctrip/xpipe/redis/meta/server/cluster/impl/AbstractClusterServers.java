@@ -30,6 +30,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.zk.EternalWatcher;
 import com.ctrip.xpipe.zk.ZkClient;
 
 /**
@@ -50,6 +51,8 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 	@Autowired
 	private T currentServer;
 	
+	private EternalWatcher eternalWatcher;
+	
 	@Autowired
 	private RemoteClusterServerFactory<T> remoteClusterServerFactory;
 	
@@ -69,6 +72,8 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 		client.createContainers(MetaZkConfig.getMetaServerRegisterPath());
 		
 		watchServers();
+		eternalWatcher = new EternalWatcher(client, this, MetaZkConfig.getMetaServerRegisterPath());
+		eternalWatcher.start();
 		
 		future = scheduled.scheduleWithFixedDelay(new Runnable() {
 			
@@ -209,6 +214,8 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 	
 	@Override
 	protected void doStop() throws Exception {
+		
+		eternalWatcher.stop();
 		
 		if(future != null){
 			future.cancel(true);

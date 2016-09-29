@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.command;
 
-
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -12,7 +9,8 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.api.retry.RetryWait;
+import com.ctrip.xpipe.api.retry.RetryPolicy;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.retry.NoWaitRetry;
 
 /**
@@ -25,22 +23,38 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 	protected Logger logger = LoggerFactory.getLogger(CommandRetryWrapper.class);
 	
 	private int retryTimes;
-	private RetryWait retryWait;
+	private long timeoutTime;
+
+	private RetryPolicy retryPolicy;
 	private AtomicInteger executeCount = new AtomicInteger();
 	
 	private Command<V> command;
 	private CommandFuture<V> currentCommandFuture;
 	
 	public CommandRetryWrapper(Command<V> command){
-		this(0, new NoWaitRetry(), command);
+		this(0, 0, new NoWaitRetry(), command);
 	}
-	
-	public CommandRetryWrapper(int retryTimes, RetryWait retryWait, Command<V> command) {
+
+	public CommandRetryWrapper(int retryTimes, int retryTimeoutMilli, RetryPolicy retryPolicy, Command<V> command) {
 		
 		this.retryTimes = retryTimes;
-		this.retryWait = retryWait;
+		this.retryPolicy = retryPolicy;
 		this.command = command;
+		if(retryTimeoutMilli >= 0){
+			timeoutTime = retryTimeoutMilli + System.currentTimeMillis();
+		}else{
+			timeoutTime = retryTimeoutMilli;
+		}
 	}
+	
+	public static <V> Command<V>  buildCountRetry(int retryTimes, RetryPolicy retryPolicy, Command<V> command){
+		return new CommandRetryWrapper<>(retryTimes, -1, retryPolicy, command);
+	}
+	
+	public static <V> Command<V>  buildTimeoutRetry(int retryTimeoutMilli, RetryPolicy retryPolicy, Command<V> command){
+		return new CommandRetryWrapper<>(-1, retryTimeoutMilli, retryPolicy, command);
+	}
+
 	
 	@Override
 	public String getName() {
@@ -61,7 +75,7 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 					future().setSuccess(commandFuture.get());
 				}else{
 					
-					if(executeCount.get() > retryTimes){
+					if(!shouldRetry(commandFuture.cause())){
 						logger.info("[opetationComplete][retry fail than max retry]{}", command);
 						future().setFailure(commandFuture.cause());
 						return;
@@ -74,7 +88,7 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 
 					logCause(commandFuture.cause());
 					
-					int waitMilli = retryWait.retryWaitMilli();
+					int waitMilli = retryPolicy.retryWaitMilli();
 					logger.info("[retry]{}, {},{}", executeCount.get(), waitMilli, command);
 					command.reset();
 					execute(waitMilli, TimeUnit.MILLISECONDS);
@@ -83,20 +97,33 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 		});
 	}
 
-	protected void logCause(Throwable cause) {
+	protected boolean shouldRetry(Throwable throwable) {
 		
-		if(cause instanceof CommandExecutionException){
-			CommandExecutionException cee = (CommandExecutionException) cause;
-			if(cee.getCause() instanceof IOException){
-				logger.info("[logCause]" + cee.getCause().getMessage());
-				return;
-			}
+		if(retryTimes >=0 && executeCount.get() > retryTimes){
+			logger.info("[shouldRetry][false][retry count]{} > {}", executeCount.get(), retryTimes);
+			return false;
 		}
-		logger.error("[logCause]" + command, cause);
+		
+		long current = System.currentTimeMillis();
+		if(timeoutTime > 0 && current > timeoutTime){
+			logger.info("[shouldRetry][false][retry timeout]{} > {}", current, timeoutTime);
+			return false;
+		}
+		
+		if(!retryPolicy.retry(throwable)){
+			logger.info("[shouldRetry][exception not retry]{}, {}", retryPolicy, throwable.getClass());
+			return false;
+		}
+		
+		return true;
+	}
+
+	protected void logCause(Throwable cause) {
+		ExceptionUtils.logException(logger, cause);
 	}
 
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		throw new UnsupportedOperationException();
 	}
 	

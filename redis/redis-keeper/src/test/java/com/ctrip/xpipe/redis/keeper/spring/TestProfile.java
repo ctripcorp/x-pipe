@@ -24,10 +24,12 @@ import com.ctrip.xpipe.zk.impl.TestZkClient;
 public class TestProfile extends AbstractProfile{
 	
 	@Bean
-	public ZkClient getZkClient(ZkTestServer zkTestServer){
+	public ZkClient getZkClient(ZkTestServer zkTestServer) throws Exception{
 		
 		TestZkClient zkClient = new TestZkClient();
 		zkClient.setZkAddress(String.format("%s:%d", "localhost", zkTestServer.getZkPort()));
+		zkClient.initialize();
+		zkClient.start();
 		logger.info("[getZkClient][test]");
 		return zkClient;
 	}

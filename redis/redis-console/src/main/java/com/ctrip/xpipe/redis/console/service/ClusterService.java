@@ -7,12 +7,14 @@ import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.service.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -28,6 +30,8 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
 	private DcService dcService;
     @Autowired
     private ClusterDao clusterDao;
+    @Autowired
+    private ClusterMetaModifiedNotifier notifier;
     
     public ClusterTbl load(final String clusterName) {
     	return queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
@@ -49,6 +53,16 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     	});
     }
 
+    public void update(final ClusterTbl cluster) {
+    	queryHandler.handleQuery(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				dao.updateByPK(cluster, ClusterTblEntity.UPDATESET_FULL);
+				return 0;
+			}
+    	});
+    }
+    
     public List<ClusterTbl> findAllClusters() {
     	return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
 			@Override
@@ -94,10 +108,7 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
 				return clusterDao.createCluster(queryProto);
 			}
     	});
-    	
-    	// TODO
-    	// Notify metaserver
-    	
+
     	return result;
     }
     
@@ -118,9 +129,6 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
 				return clusterDao.updateCluster(queryProto);
 			}
     	});
-
-    	// TODO 
-    	/* Notify meta server */
     	
     }
     
@@ -128,6 +136,7 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     	ClusterTbl proto = load(clusterName);
     	if(null == proto) throw new BadRequestException("Cannot find cluster");
     	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+    	List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
     	
     	final ClusterTbl queryProto = proto;
     	queryHandler.handleQuery(new DalQuery<Integer>() {
@@ -137,9 +146,8 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
 			}
     	});
     	
-    	// TODO
     	/** Notify meta server **/
-    	
+    	notifier.notifyClusterDelete(clusterName, relatedDcs);
     }
     
     public void bindDc(final String clusterName, final String dcName) {
@@ -153,9 +161,7 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
 				return clusterDao.bindDc(cluster, dc);
 			}
     	});
-    	
-    	// TODO 
-    	/** Notify meta server **/
+
     }
     
     public void unbindDc(final String clusterName, final String dcName) {
@@ -170,8 +176,8 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
 			}
     	});
     	
-    	// TODO
     	/** Notify meta server **/
+    	notifier.notifyClusterDelete(clusterName, Arrays.asList(new DcTbl[]{dc}));
     	
     }
     

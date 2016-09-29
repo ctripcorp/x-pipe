@@ -453,39 +453,91 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-cluster-shard-id' /> = ${dc-cluster-shard-id}
 					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/>
 					]]>
 				</statement>
 			</query>
-			<query name='find-by-name' type='SELECT' multiple="false">
-				<param name='redis-name'/>
+			<query name='find-all-with-history-by-dc-cluster-shard-id' type='SELECT' multiple="true">
+				<param name='dc-cluster-shard-id'/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
-					WHERE <FIELD name='redis-name' /> = ${redis-name}
+					WHERE <FIELD name='dc-cluster-shard-id' /> = ${dc-cluster-shard-id}
+					]]>
+				</statement>
+			</query>
+			<query name='find-by-runid' type='SELECT' multiple="true">
+				<param name='run-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='run-id' /> = ${run-id}
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='find-with-ip-port' type='SELECT' multiple="false">
+				<param name='redis-ip'/>
+				<param name='redis-port'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='redis-ip' /> = ${redis-ip}
+					AND <FIELD name='redis-port' /> = ${redis-port}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='find-with-basic-configurations' type='SELECT' multiple='false'>
+				<param name='run-id'/>
+				<param name='dc-cluster-shard-id'/>
+				<param name='redis-ip'/>
+				<param name='redis-port'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='run-id'/> = ${run-id}
+					AND <FIELD name='dc-cluster-shard-id'/> = ${dc-cluster-shard-id} 
+					AND <FIELD name='redis-ip' /> = ${redis-ip}
+					AND <FIELD name='redis-port' /> = ${redis-port}
+					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/>
 					]]>
 				</statement>
 			</query>
 			<query name='delete-batch' type="UPDATE" batch="true">
 				<param name='id'/>
-				<param name='redis-name'/>
+				<param name='run-id'/>
 				<statement>
 					<![CDATA[
 					UPDATE <TABLE/>
-        			SET <FIELD name='deleted'/> = 1, <FIELD name='redis-name'/> = ${redis-name}
+        			SET <FIELD name='deleted'/> = 1, <FIELD name='run-id'/> = ${run-id}
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>
 				</statement>
 			</query>
-			<query name='delete-by-name' type="UPDATE" batch="false">
-				<param name='name'/>
+			<query name='insert-batch' type='INSERT' batch='true'>
+				<statement>
+					<![CDATA[
+					INSERT INTO <TABLE/>(<FIELDS/>)
+        			VALUES(<VALUES/>)
+        			]]>
+        		</statement>
+			</query>
+			<query name='update-batch' type='UPDATE' batch='true'>
+				<param name='id'/>
 				<statement>
 					<![CDATA[
 					UPDATE <TABLE/>
-        			SET <FIELDS/>
-       				WHERE <FIELD name='redis-name'/> = ${name}
+        			SET <FIELD name='run-id'/> = ${run-id}, <FIELD name='redis-ip'/> = ${redis-ip}, <FIELD name='redis-port'/> = ${redis-port},
+        				<FIELD name='keeper-active'/> = ${keeper-active}, <FIELD name='redis-master'/> = ${redis-master}, <FIELD name='keepercontainer-id'/> = ${keepercontainer-id}
+       				WHERE <FIELD name='id'/> = ${id}
+        			AND <FIELD name='deleted'/> = 0
         			]]>
 				</statement>
 			</query>

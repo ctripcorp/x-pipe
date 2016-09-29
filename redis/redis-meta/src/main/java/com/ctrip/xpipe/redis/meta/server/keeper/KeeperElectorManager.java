@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.keeper;
 
-import java.util.List;
-
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 
 /**
  * @author wenchao.meng
@@ -11,11 +8,4 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
  */
 public interface KeeperElectorManager {
 	
-	/**
-	 * @return allkeerps registed to zookeeper
-	 */
-	List<KeeperMeta>  getAllAliveKeepers(String clusterId, String shardId);
-	
-	KeeperMeta  getActive(String clusterId, String shardId);
-
 }

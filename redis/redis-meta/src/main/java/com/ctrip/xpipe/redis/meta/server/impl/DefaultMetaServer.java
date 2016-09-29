@@ -115,10 +115,6 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 
 	@Override
-	public void updateUpstream(String clusterId, String shardId, String upstream) throws Exception {
-	}
-
-	@Override
 	public int getOrder() {
 		return SlotManager.ORDER + 1;
 	}
@@ -164,7 +160,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 	@Override
 	public String getCurrentMeta() {
-		return currentMetaServerMeta.toString();
+		return currentMetaServerMeta.getCurrentMetaDesc();
 	}
 
 	@Override
@@ -184,5 +180,12 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	public void clusterDeleted(String clusterId, ForwardInfo forwardInfo) {
 		logger.info("[clusterDeleted]{}", clusterId);
 		dcMetaCache.clusterDeleted(clusterId);
+	}
+
+	@Override
+	public void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo)
+			throws Exception {
+		logger.info("[updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
+		dcMetaCache.updateUpstream(clusterId, shardId, ip, port);
 	}
 }

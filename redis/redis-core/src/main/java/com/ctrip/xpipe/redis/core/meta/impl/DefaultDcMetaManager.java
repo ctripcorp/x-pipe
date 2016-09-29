@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
-
-
 import java.util.List;
 import java.util.Set;
 
@@ -166,15 +164,50 @@ public class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public DcMeta getDcMeta() {
+		return MetaClone.clone(metaManager.getDcMeta(currentDc));
+	}
+
+
+	@Override
+	public List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId) {
+		return metaManager.getAllSurviceKeepers(currentDc, clusterId, shardId);
+	}
+
+	@Override
+	public void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers) {
+		metaManager.setSurviveKeepers(currentDc, clusterId, shardId, surviceKeepers);
+	}
+
+	@Override
 	public String toString() {
 		
 		DcMeta dcMeta = metaManager.getDcMeta(currentDc);
 		return String.format("dc:%s, meta:%s", currentDc, dcMeta);
 	}
 
+
 	@Override
-	public DcMeta getDcMeta() {
-		return MetaClone.clone(metaManager.getDcMeta(currentDc));
+	public boolean hasCluster(String clusterId) {
+		return metaManager.hasCluster(currentDc, clusterId);
 	}
+
+	@Override
+	public boolean hasShard(String clusterId, String shardId) {
+		return metaManager.hasShard(currentDc, clusterId, shardId);
+	}
+
+
+	@Override
+	public void updateUpstream(String clusterId, String shardId, String ip, int port) {
+		metaManager.updateUpstream(currentDc, clusterId, shardId, ip, port);
+	}
+
+
+	@Override
+	public String getActiveDc(String clusterId) {
+		return metaManager.getActiveDc(clusterId);
+	}
+
 
 }

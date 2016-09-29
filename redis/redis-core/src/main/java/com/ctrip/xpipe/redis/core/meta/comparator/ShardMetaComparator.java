@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.unidal.tuple.Pair;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
@@ -88,14 +89,30 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChan
 	}
 	
 	
-	public class UpstreamChanged implements ConfigChanged<ShardChange>{
+	public ShardMeta getCurrent() {
+		return current;
+	}
+	
+	public ShardMeta getFuture() {
+		return future;
+	}
+	
+	public static class ShardUpstreamChanged implements ConfigChanged<ShardChange>{
 		
 		private String current, future;
-		public UpstreamChanged(String current, String future){
+		private String clusterId, shardId;
+		public ShardUpstreamChanged(String clusterId, String shardId, String current, String future){
 			this.current = current;
 			this.future = future;
+			this.clusterId = clusterId;
+			this.shardId = shardId;
 		}
-
+		public String getClusterId() {
+			return clusterId;
+		}
+		public String getShardId() {
+			return shardId;
+		}
 		public String getCurrent() {
 			return current;
 		}
@@ -108,13 +125,10 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChan
 		public ShardChange getChangedType() {
 			return ShardChange.UPSTREAM_CHANGE;
 		}
-	}
-	
-	public ShardMeta getCurrent() {
-		return current;
-	}
-	
-	public ShardMeta getFuture() {
-		return future;
+		
+		@Override
+		public String toString() {
+			return Codec.DEFAULT.encode(this);
+		}
 	}
 }

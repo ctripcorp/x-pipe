@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
+
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -19,7 +20,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.KinfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -68,6 +68,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected Channel masterChannel;
 	
 	protected RedisKeeperServer redisKeeperServer;
+	
+	private ReplicationStoreMeta kinfo; 
 	
 	protected AtomicReference<Command<?>> currentCommand = new AtomicReference<Command<?>>(null);
 		
@@ -198,9 +200,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			public void operationComplete(CommandFuture<ReplicationStoreMeta> commandFuture) throws Exception {
 
 				try {
-					ReplicationStoreMeta meta = commandFuture.get();
-					logger.info("[operationComplete][meta got, save]{}", meta);
-					redisMaster.getCurrentReplicationStore().getMetaStore().saveMeta(ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME, meta);
+					kinfo = commandFuture.get();
 					executeCommand(psyncCommand());
 				} catch (Exception e) {
 					logger.error("[operationComplete][kinfo fail]" + redisMaster, e);
@@ -342,4 +342,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	public RdbDumper getRdbDumper() {
 		return rdbDumper.get();
 	}
+	
+	protected ReplicationStoreMeta getKinfo() {
+		return kinfo;
+	}
+	
+	protected void updateKinfo(long rdbLastKeeperOffset){
+		kinfo.setRdbLastKeeperOffset(rdbLastKeeperOffset);
+	}
+	
 }

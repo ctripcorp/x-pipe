@@ -3,6 +3,7 @@ package com.ctrip.xpipe.zk;
 import org.apache.curator.test.TestingServer;
 
 import com.ctrip.xpipe.api.lifecycle.Ordered;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 
 /**
@@ -10,7 +11,7 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
  *
  * Jun 25, 2016
  */
-public class ZkTestServer extends AbstractLifecycle{
+public class ZkTestServer extends AbstractLifecycle implements TopElement{
 	
 	private int zkPort;
 	private TestingServer zkServer;

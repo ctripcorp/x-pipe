@@ -26,5 +26,4 @@ public class DefaultKeeperRepl implements KeeperRepl {
 	public long getKeeperEndOffset() {
 		return replicationStore.getKeeperEndOffset();
 	}
-
 }

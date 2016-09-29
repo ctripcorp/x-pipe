@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.meta;
 
+import java.util.List;
+
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -23,5 +25,7 @@ public interface MetaUpdateOperation {
 	void update(String dcId, ClusterMeta clusterMeta);
 	
 	ClusterMeta removeCluster(String currentDc, String clusterId);
+	
+	void setSurviveKeepers(String dcId, String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
 
 }

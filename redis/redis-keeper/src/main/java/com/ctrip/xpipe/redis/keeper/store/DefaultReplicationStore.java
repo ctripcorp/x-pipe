@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +78,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		if (meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
-				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getKeeperBeginOffset() - 1, meta.getRdbFileSize()));
+				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getRdbLastKeeperOffset(), meta.getRdbFileSize()));
 				cmdStore = new DefaultCommandStore(new File(baseDir, meta.getCmdFilePrefix()), cmdFileSize);
 			}
 		}
@@ -166,7 +167,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 			long beginOffset = metaStore.beginOffset();
 			long totalLength = cmdStore.totalLength();
 			
-			logger.info("[getEndOffset]B:{}, L:{}", beginOffset, totalLength);
+			logger.debug("[getEndOffset]B:{}, L:{}", beginOffset, totalLength);
 			return beginOffset + totalLength - 1;
 		}
 	}
@@ -322,9 +323,12 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public long getKeeperEndOffset() {
+		if (cmdStore == null) {
+			throw new RedisKeeperRuntimeException("Command store not initialized, please try later");
+		}
 		return metaStore.getKeeperBeginOffset() + cmdStore.totalLength() - 1;
 	}
-
+	
 	@Override
 	public long nextNonOverlappingKeeperBeginOffset() {
 		
@@ -347,4 +351,5 @@ public class DefaultReplicationStore implements ReplicationStore {
 	public int getRdbUpdateCount() {
 		return rdbUpdateCount.get();
 	}
+
 }

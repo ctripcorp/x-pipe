@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
@@ -59,7 +58,7 @@ public class ContinueResharding extends AbstractResharding{
 	}
 
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		
 	}
 

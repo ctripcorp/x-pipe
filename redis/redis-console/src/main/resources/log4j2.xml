@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="info" monitorInterval="5">
+
+    <appenders>
+        <console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
+        </console>
+
+        <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe-console.log"
+                     filePattern="target/applogs/xpipe-console-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%C{1}]%m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="500 MB"/>
+            </Policies>
+        </RollingFile>	
+
+		<CatAppender4Log4j2 name="catAppender4Log4j2"></CatAppender4Log4j2>
+    </appenders>
+
+    <loggers>
+        <!--过滤掉spring和hibernate的一些无用的debug信息-->
+        <logger name="org.springframework" level="INFO">
+        </logger>
+        <logger name="org.hibernate" level="INFO">
+        </logger>
+        <logger name="io.netty" level="INFO">
+        </logger>
+        <root level="INFO">
+            <appender-ref ref="RollingFileInfo"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </root>
+    </loggers>
+
+</configuration>

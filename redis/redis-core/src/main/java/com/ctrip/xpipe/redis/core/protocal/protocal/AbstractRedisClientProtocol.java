@@ -134,11 +134,11 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 		return readTilCRLFAsString(byteBuf, Codec.defaultCharset);
 	}
 
-	protected byte[] getRequestBytes(Byte sign, Integer integer) {
+	protected byte[] getRequestBytes(Byte sign, Long data) {
 		
 		StringBuilder sb = new StringBuilder();
 		sb.append((char)sign.byteValue());
-		sb.append(integer);
+		sb.append(data);
 		sb.append("\r\n");
 		return sb.toString().getBytes();
 	}

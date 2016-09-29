@@ -54,4 +54,9 @@ public class SimpleStringParser extends AbstractRedisClientProtocol<String>{
 		return Unpooled.wrappedBuffer(getRequestBytes(PLUS_BYTE, payload));
 	}
 
+	@Override
+	public boolean supportes(Class<?> clazz) {
+		return String.class.isAssignableFrom(clazz);
+	}
+
 }

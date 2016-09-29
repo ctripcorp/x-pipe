@@ -27,6 +27,8 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 	public void testSync() throws IOException{
 
 		sendMessageToMasterAndTestSlaveRedis();
+		
+		waitForAnyKeyToExit();
 	}
 	
 	@Test

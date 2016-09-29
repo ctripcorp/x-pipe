@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.meta;
 
-
-
+import java.util.List;
 import java.util.Set;
 
 import com.ctrip.xpipe.api.observer.Observable;
@@ -18,6 +17,8 @@ public interface DcMetaCache extends Observable{
 
 	Set<String> getClusters();
 
+	String getCurrentDc();
+
 	ClusterMeta getClusterMeta(String clusterId);
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
@@ -27,6 +28,10 @@ public interface DcMetaCache extends Observable{
 	void clusterModified(ClusterMeta clusterMeta);
 
 	void clusterDeleted(String clusterId);
-		
 
+	void updateUpstream(String clusterId, String shardId, String ip, int port);
+
+	boolean isActiveDc(String clusterId, String shardId);
+
+	List<KeeperMeta> getShardKeepers(String clusterId, String shardId);
 }

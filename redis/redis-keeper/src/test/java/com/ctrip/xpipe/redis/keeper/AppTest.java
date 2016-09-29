@@ -7,6 +7,7 @@ import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.keeper.spring.TestWithoutZkProfile;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.zk.impl.TestZkClient;
 
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -19,6 +20,7 @@ import org.springframework.context.ConfigurableApplicationContext;
  */
 @SpringBootApplication
 public class AppTest extends AbstractRedisKeeperTest {
+	
     @Test
     public void start8080() throws Exception {
         System.setProperty("server.port", "8080");
@@ -32,6 +34,38 @@ public class AppTest extends AbstractRedisKeeperTest {
         System.setProperty("replication.store.dir", "/opt/data/xpipe8081");
         start();
     }
+    
+    @Test
+    public void start8082() throws Exception {
+        System.setProperty("server.port", "8082");
+        System.setProperty("replication.store.dir", "/opt/data/xpipe8082");
+        start();
+    }
+
+    @Test
+    public void start8180() throws Exception {
+        System.setProperty("server.port", "8180");
+        System.setProperty(TestZkClient.ZK_ADDRESS_KEY, "127.0.0.1:2182");
+        System.setProperty("replication.store.dir", "/opt/data/xpipe8180");
+        start();
+    }
+
+    @Test
+    public void start8181() throws Exception {
+        System.setProperty("server.port", "8181");
+        System.setProperty(TestZkClient.ZK_ADDRESS_KEY, "127.0.0.1:2182");
+        System.setProperty("replication.store.dir", "/opt/data/xpipe8181");
+        start();
+    }
+    
+    @Test
+    public void start8182() throws Exception {
+        System.setProperty("server.port", "8182");
+        System.setProperty(TestZkClient.ZK_ADDRESS_KEY, "127.0.0.1:2182");
+        System.setProperty("replication.store.dir", "/opt/data/xpipe8182");
+        start();
+    }
+
 
     private void start() throws Exception {
     	System.setProperty(AbstractProfile.PROFILE_KEY, TestWithoutZkProfile.PROFILE_NO_ZK);

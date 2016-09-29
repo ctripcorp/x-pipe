@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -28,7 +28,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
@@ -72,7 +71,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	/**
 	 * when keeper is active, it's redis master, else it's another keeper
 	 */
-	private RedisMaster keeperRedisMaster;
+	private volatile RedisMaster keeperRedisMaster;
 	
 	private long keeperStartTime;
 	
@@ -97,9 +96,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private LeaderElectorManager leaderElectorManager;
 	
+	@SuppressWarnings("unused")
 	private MetaServerKeeperService metaService;
 	
 	private volatile AtomicReference<RdbDumper> rdbDumper = new AtomicReference<RdbDumper>(null);
+	private long lastDumpTime = -1;
 	//for test
 	private AtomicInteger  rdbDumpTryCount = new AtomicInteger();
 	
@@ -190,10 +191,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doDispose() throws Exception {
 
-		if(this.keeperRedisMaster != null){
-			this.keeperRedisMaster.dispose();
-		}
-		
+		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
+
 		this.leaderElector.dispose();
 		bossGroup.shutdownGracefully();
 		workerGroup.shutdownGracefully();
@@ -206,26 +205,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		super.doStart();
 		
 		
-		getCurrentShardStatus();
-		
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
 		this.leaderElector.start();
 	}
 	
-	private void getCurrentShardStatus() {
-		try{
-			ShardStatus shardStatus = metaService.getShardStatus(clusterId, shardId);
-			if(shardStatus == null){
-				logger.warn("[getCurrentShardStatus][null]");
-				return;
-			}
-			this.redisKeeperServerState.setShardStatus(shardStatus);
-		}catch(Exception e){
-			logger.error("[getCurrentShardStatus]" + clusterId +"," + shardId, e);
-		}
-	}
-
 	@Override
 	protected void doStop() throws Exception {
 		
@@ -240,9 +224,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public synchronized void reconnectMaster() {
 		
-
 		Endpoint target = redisKeeperServerState.getMaster();
-		
 		logger.info("[reconnectMaster]{} -> {}", this, target);
 
 		if(keeperRedisMaster != null && target != null){
@@ -264,6 +246,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private void initAndStartMaster(Endpoint target) {
 		try {
 			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, replicationStoreManager, scheduled);
+			
+			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
+				logger.info("[initAndStartMaster][stopped, exit]{}, {}", target, this);
+				return;
+			}
 			LifecycleHelper.initializeIfPossible(this.keeperRedisMaster);
 			LifecycleHelper.startIfPossible(this.keeperRedisMaster);
 		} catch (Exception e) {
@@ -399,6 +386,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void beginWriteRdb(long fileSize, long offset) {
+		try {
+			getReplicationStore().getMetaStore().setKeeperState(redisKeeperServerState.keeperState());
+		} catch (IOException e) {
+			throw new RedisKeeperRuntimeException("[setRedisKeeperServerState]" + redisKeeperServerState, e);
+		}
 	}
 
 	@Override
@@ -420,6 +412,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void onContinue() {
+		try {
+			getReplicationStore().getMetaStore().setKeeperState(redisKeeperServerState.keeperState());
+		} catch (IOException e) {
+			throw new RedisKeeperRuntimeException("[setRedisKeeperServerState]" + redisKeeperServerState, e);
+		}
 	}
 	
 
@@ -437,13 +434,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState){
 		
 		RedisKeeperServerState previous = this.redisKeeperServerState;
-		
-		logger.info("[setRedisKeeperServerState]{}->{}", previous, this.redisKeeperServerState);
-		try {
-			getReplicationStore().getMetaStore().setKeeperState(redisKeeperServerState.keeperState());
-		} catch (IOException e) {
-			throw new RedisKeeperRuntimeException("[setRedisKeeperServerState]" + previous + "->" + this.redisKeeperServerState, e);
-		}
+		logger.info("[setRedisKeeperServerState]{}, {}->{}", this, previous, redisKeeperServerState);
 		this.redisKeeperServerState = redisKeeperServerState;
 		notifyObservers(new KeeperServerStateChanged(previous, redisKeeperServerState));
 	}
@@ -509,13 +500,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			rdbDumper = keeperRedisMaster.createRdbDumper();
 			setRdbDumper(rdbDumper);
 			rdbDumper.execute();
-		} catch (RdbDumperAlreadyExist e) {
+		} catch (SetRdbDumperException e) {
 			logger.error("[dumpNewRdb]", e);
 		}
 	}
 
 	
-	public void setRdbDumper(RdbDumper rdbDumper) throws RdbDumperAlreadyExist {
+	public void setRdbDumper(RdbDumper rdbDumper) throws SetRdbDumperException {
 		setRdbDumper(rdbDumper, false);
 	}
 	
@@ -540,7 +531,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void setRdbDumper(RdbDumper newDumper, boolean force) throws RdbDumperAlreadyExist {
+	public void setRdbDumper(RdbDumper newDumper, boolean force) throws SetRdbDumperException {
 		
 		if(newDumper == null){
 			throw new IllegalArgumentException("new dumper null");
@@ -548,7 +539,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		logger.info("[setRdbDumper]{},{}", newDumper, force);
 		rdbDumpTryCount.incrementAndGet();
+		
+		if(lastDumpTime > 0 && !force && (System.currentTimeMillis() - lastDumpTime < keeperConfig.getRdbDumpMinIntervalMilli())){
+			logger.info("[setRdbDumper][too quick]{}", new Date(lastDumpTime));
+			throw new SetRdbDumperException(lastDumpTime, keeperConfig.getRdbDumpMinIntervalMilli());
+		}
+		
 		if(rdbDumper.compareAndSet(null, newDumper)){
+			lastDumpTime = System.currentTimeMillis();
 			return;
 		}
 		
@@ -561,8 +559,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				logger.error("[setRdbDumper][error cancel]" + olRdbDumper, e);
 			}
 			rdbDumper.set(newDumper);
+			lastDumpTime = System.currentTimeMillis();
 		}else{
-			throw new RdbDumperAlreadyExist(olRdbDumper);
+			throw new SetRdbDumperException(olRdbDumper);
 		}
 	}
 

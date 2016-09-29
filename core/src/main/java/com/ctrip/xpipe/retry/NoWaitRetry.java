@@ -6,12 +6,13 @@ package com.ctrip.xpipe.retry;
  *
  * Jul 9, 2016
  */
-public class NoWaitRetry extends AbstractRetryWait{
+public class NoWaitRetry extends AbstractRetryPolicy{
 
 	@Override
-	public int retryWaitMilli() {
+	protected int getSleepTime(int currentRetryTime) {
 		return 0;
 	}
+
 
 
 }

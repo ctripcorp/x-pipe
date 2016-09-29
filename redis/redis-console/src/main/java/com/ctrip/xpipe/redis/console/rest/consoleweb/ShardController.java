@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.console.rest.consoleweb;
 
 
+import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 
 import com.ctrip.xpipe.redis.console.service.ShardService;
-import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
-import com.ctrip.xpipe.redis.console.service.meta.ShardMetaService;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-
+import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,15 +23,13 @@ import java.util.List;
 public class ShardController extends AbstractConsoleController{
 
   @Autowired
-  private ClusterMetaService clusterMetaService;
-  @Autowired
-  private ShardMetaService shardMetaService;
+  private ShardModelService shardModelService;
   @Autowired
   private ShardService shardService;
 
   @RequestMapping("/clusters/{clusterName}/dcs/{dcName}/shards")
-  public List<ShardMeta> findShardMetas(@PathVariable String clusterName, @PathVariable String dcName){
-    return new ArrayList<ShardMeta>(clusterMetaService.getClusterMeta(dcName, clusterName).getShards().values());
+  public List<ShardModel> findShardMetas(@PathVariable String clusterName, @PathVariable String dcName){
+    return new ArrayList<ShardModel>(shardModelService.getAllShardModel(dcName, clusterName));
   }
 
   @RequestMapping("/clusters/{clusterName}/shards")
@@ -42,8 +38,8 @@ public class ShardController extends AbstractConsoleController{
   }
   
   @RequestMapping("/clusters/{clusterName}/dcs/{dcName}/shards/{shardName}")
-  public ShardMeta findShardMeta(@PathVariable String clusterName, @PathVariable String dcName, @PathVariable String shardName) {
-	  return shardMetaService.getShardMeta(dcName, clusterName, shardName);
+  public ShardModel findShardMeta(@PathVariable String clusterName, @PathVariable String dcName, @PathVariable String shardName) {
+	  return shardModelService.getShardModel(dcName, clusterName, shardName);
   }
 
   @RequestMapping(value = "/clusters/{clusterName}/shards", method = RequestMethod.POST)

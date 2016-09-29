@@ -155,9 +155,9 @@ public class MetaServiceTest extends AbstractRedisTest{
 		when(mockedDcClusterShardService.load(1L, 1L)).thenReturn(new DcClusterShardTbl().setDcClusterId(1L)
 				.setSetinelId(1).setDcClusterShardPhase(1));
 		when(mockedRedisService.findByDcClusterShardId(1L)).thenReturn(Arrays.asList(
-				new RedisTbl().setId(1L).setRedisName("40a").setRedisIp("1.1.1.1").setRedisPort(8888).setRedisMaster(2L).setKeeperActive(true)
+				new RedisTbl().setId(1L).setRunId("40a").setRedisIp("1.1.1.1").setRedisPort(8888).setRedisMaster(2L).setKeeperActive(true)
 					.setKeepercontainerId(1L),
-				new RedisTbl().setId(2L).setRedisName("40b").setRedisIp("1.1.1.3").setRedisPort(1234)));
+				new RedisTbl().setId(2L).setRunId("40b").setRedisIp("1.1.1.3").setRedisPort(1234)));
 	}
 	
 	@Override

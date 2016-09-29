@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.LifecycleStateAware;
 import com.ctrip.xpipe.api.server.PartialAware;
+import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 
@@ -26,5 +27,8 @@ public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, 
 	ReplicationStore getCurrentReplicationStore();
 
 	RdbDumper createRdbDumper();
+
+	MASTER_STATE getMasterState();
 	
+	void setMasterState(MASTER_STATE masterState);
 }

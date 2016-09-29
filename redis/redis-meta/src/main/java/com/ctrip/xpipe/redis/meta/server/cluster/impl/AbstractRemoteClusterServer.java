@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
-import java.util.concurrent.ExecutionException;
-
-import org.springframework.web.client.RestTemplate;
-
+import org.springframework.web.client.RestOperations;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
@@ -23,7 +20,7 @@ public class AbstractRemoteClusterServer extends AbstractClusterServer implement
 	private int connectTimeout = Integer.parseInt(System.getProperty("remoteConnectTimeout", "5000"));
 	private int soTimeout = Integer.parseInt(System.getProperty("remoteSoTimeout", "5000"));
 
-	protected RestTemplate restTemplate;
+	protected RestOperations restTemplate;
 	
 	private int currentServerId;
 	
@@ -121,7 +118,7 @@ public class AbstractRemoteClusterServer extends AbstractClusterServer implement
 		}
 
 		@Override
-		protected void doReset() throws InterruptedException, ExecutionException {
+		protected void doReset(){
 			
 		}
 	}

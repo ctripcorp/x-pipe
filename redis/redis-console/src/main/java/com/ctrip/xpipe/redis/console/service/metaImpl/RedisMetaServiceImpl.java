@@ -1,17 +1,26 @@
 package com.ctrip.xpipe.redis.console.service.metaImpl;
 
+import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
+import com.ctrip.xpipe.redis.console.service.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author shyin
@@ -23,12 +32,18 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 	public static long REDIS_MASTER_NULL = 0L;
 	
 	@Autowired
-	RedisService redisService;
-	
+	private RedisService redisService;
+	@Autowired
+	private ClusterService clusterService;
+	@Autowired
+	private DcService dcService;
+	@Autowired
+	private ClusterMetaModifiedNotifier notifier;
+
 	@Override
 	public String encodeRedisAddress(RedisTbl redisTbl) {
 		if(null == redisTbl) {
-			return "";
+			return XpipeConsoleConstant.DEFAULT_ADDRESS;
 		} else {
 			StringBuilder sb = new StringBuilder(30);
 			sb.append(redisTbl.getRedisIp());
@@ -43,7 +58,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 		RedisMeta redisMeta = new RedisMeta();
 		
 		if(null != redisTbl) {
-			redisMeta.setId(redisTbl.getRedisName());
+			redisMeta.setId(redisTbl.getRunId());
 			redisMeta.setIp(redisTbl.getRedisIp());
 			redisMeta.setPort(redisTbl.getRedisPort());
 			if(redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
@@ -71,7 +86,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 		KeeperMeta keeperMeta = new KeeperMeta();
 		
 		if(null != redisTbl) {
-			keeperMeta.setId(redisTbl.getRedisName());
+			keeperMeta.setId(redisTbl.getRunId());
 			keeperMeta.setIp(redisTbl.getRedisIp());
 			keeperMeta.setPort(redisTbl.getRedisPort());
 			if(redisTbl.getRedisMaster() == REDIS_MASTER_NULL) {
@@ -101,7 +116,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 		RedisMeta redisMeta = new RedisMeta();
 		
 		if(null != redisInfo) {
-			redisMeta.setId(redisInfo.getRedisName());
+			redisMeta.setId(redisInfo.getRunId());
 			redisMeta.setIp(redisInfo.getRedisIp());
 			redisMeta.setPort(redisInfo.getRedisPort());
 			if(redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {
@@ -124,7 +139,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 		KeeperMeta keeperMeta = new KeeperMeta();
 		
 		if(null != redisInfo) {
-			keeperMeta.setId(redisInfo.getRedisName());
+			keeperMeta.setId(redisInfo.getRunId());
 			keeperMeta.setIp(redisInfo.getRedisIp());
 			keeperMeta.setPort(redisInfo.getRedisPort());
 			if(redisInfo.getRedisMaster() == REDIS_MASTER_NULL) {
@@ -145,6 +160,90 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 		return keeperMeta;
 	}
 
+	@Override
+	public void updateKeeperStatus(String dcId, String clusterId, String shardId, KeeperMeta newActiveKeeper) {
 
-	
+		List<RedisTbl> keepers = RedisService.findWithRole(redisService.findShardRedises(dcId, clusterId, shardId), XpipeConsoleConstant.ROLE_KEEPER); 
+		if (CollectionUtils.isEmpty(keepers)){
+			return;
+		}
+
+		RedisTbl newActiveKeeperTbl = null;
+
+		for (RedisTbl keeper: keepers){
+			if (keeper.getKeepercontainerId() == newActiveKeeper.getKeeperContainerId()){
+				newActiveKeeperTbl = keeper;
+				break;
+			}
+		}
+
+		if (newActiveKeeperTbl == null){
+			throw new BadRequestException("keeper not exist");
+		}
+
+
+		ClusterTbl clusterTbl = clusterService.load(clusterId);
+		if (clusterTbl == null){
+			throw new BadRequestException("cluster not exist");
+		}
+
+		DcTbl dcTbl = dcService.load(dcId);
+		if (dcTbl == null){
+			throw new BadRequestException("dc not exist");
+		}
+
+		if (clusterTbl.getActivedcId() == dcTbl.getId()){//master dc
+			RedisTbl masterRedis = RedisService.findMaster(redisService.findShardRedises(dcId, clusterId, shardId)); 
+			if (masterRedis == null){
+				throw new IllegalStateException("shard has no master redis.");
+			}
+			updateKeepers(keepers, newActiveKeeper, newActiveKeeperTbl, masterRedis.getId());
+
+			//send message to all other dc meta server
+			List<DcTbl> clusterDcs = dcService.findClusterRelatedDc(clusterTbl.getClusterName());
+			List<DcTbl> slaveDcs = new LinkedList<>();
+			for (DcTbl dc: clusterDcs){
+				if (!dc.getDcName().equals(dcTbl.getDcName())){
+					slaveDcs.add(dc);
+					
+					// Update slave dcs' active keeper's master
+					RedisTbl backupDcActiveKeeper = RedisService.findActiveKeeper(redisService.findShardRedises(dc.getDcName(), clusterId, shardId));
+					if(null != backupDcActiveKeeper) {
+						backupDcActiveKeeper.setRedisMaster(newActiveKeeperTbl.getId());
+						redisService.updateByPK(backupDcActiveKeeper);
+					}
+					
+				}
+			}
+			notifier.notifyUpstreamChanged(clusterId, shardId, newActiveKeeperTbl.getRedisIp(), newActiveKeeperTbl.getRedisPort(), slaveDcs);
+			
+		}else {
+
+			DcTbl masterDc = dcService.load(clusterTbl.getActivedcId());
+			RedisTbl masterDcActiveKeeper = RedisService.findActiveKeeper(redisService.findShardRedises(masterDc.getDcName(), clusterId, shardId)); 
+
+			if(null != masterDcActiveKeeper) {
+				updateKeepers(keepers, newActiveKeeper, newActiveKeeperTbl, masterDcActiveKeeper.getId());
+			} else {
+				updateKeepers(keepers, newActiveKeeper, newActiveKeeperTbl, RedisService.MASTER_REQUIRED_TAG);
+			}
+		}
+
+	}
+
+	private void updateKeepers(List<RedisTbl> keepers, KeeperMeta newActiveKeeper, RedisTbl newActiveKeeperTbl, long newMasterRedisId){
+		for (RedisTbl keeper: keepers){
+			if (keeper.getKeepercontainerId() == newActiveKeeper.getKeeperContainerId()){//new active keeper
+				keeper.setKeeperActive(true);
+				keeper.setRedisMaster(newMasterRedisId);
+			}else {
+				keeper.setKeeperActive(false);
+				keeper.setRedisMaster(newActiveKeeperTbl.getId());
+			}
+		}
+		
+		redisService.batchUpdate(keepers);
+	}
+
+
 }

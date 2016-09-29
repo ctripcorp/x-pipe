@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Profile;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.job.ConsoleNotifycationTask;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
@@ -36,5 +37,10 @@ public class Production extends AbstractProfile{
 		DefaultZkClient zkClient = new DefaultZkClient();
 		zkClient.setZkAddress(metaServerConfig.getZkConnectionString());
 		return zkClient;
+	}
+	
+	@Bean
+	public ConsoleNotifycationTask getConsoleNotifycationTask(){
+		return new ConsoleNotifycationTask();
 	}
 }

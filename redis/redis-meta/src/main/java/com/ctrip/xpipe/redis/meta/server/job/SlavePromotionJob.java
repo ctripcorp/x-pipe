@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
-
 import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
@@ -92,7 +90,7 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 	}
 
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		throw new UnsupportedOperationException();
 	}
 }

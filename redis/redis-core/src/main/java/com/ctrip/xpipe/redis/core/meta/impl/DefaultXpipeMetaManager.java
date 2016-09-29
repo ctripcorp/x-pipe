@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
 
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -22,11 +23,12 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
+import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.FileUtils;
-import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**
  * @author wenchao.meng
@@ -71,7 +73,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 	
 	@Override
-	public String getActiveDc(String clusterId) throws MetaException {
+	public String getActiveDc(String clusterId){
 		
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
 			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
@@ -84,7 +86,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 	
 	@Override
-	public List<String> getBackupDc(String clusterId) throws MetaException {
+	public List<String> getBackupDc(String clusterId) {
 
 		String activeDc = getActiveDc(clusterId);
 		List<String> result = new LinkedList<>();
@@ -248,6 +250,33 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			}
 		}
 		return changed;
+	}
+	
+	@Override
+	public void setSurviveKeepers(String dcId, String clusterId, String shardId, List<KeeperMeta> surviveKeepers) {
+		
+		List<KeeperMeta> keepers = getDirectKeepers(dcId, clusterId, shardId);;
+		
+		List<KeeperMeta> unfoundKeepers = new LinkedList<>();
+		
+		for(KeeperMeta active : surviveKeepers){
+			boolean found = false;
+			for(KeeperMeta current :keepers){
+				if(MetaUtils.same(active, current)){
+					found = true;
+					current.setSurvive(true);
+					break;
+				}
+			}
+			if(!found){
+				unfoundKeepers.add(active);
+			}
+		}
+		
+		if(unfoundKeepers.size() > 0){
+			throw new IllegalArgumentException("unfound keeper set active:" + unfoundKeepers);
+		}
+		
 	}
 
 	@Override
@@ -413,26 +442,6 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
-	public boolean updateUpstreamKeeper(String dc, String clusterId, String shardId, String address) throws MetaException {
-		
-		String activeDc = getActiveDc(clusterId);
-		if(dc.equalsIgnoreCase(activeDc)){
-			throw new MetaException("[updateUpstreamKeeper][dc active, can not update upstream]"+ dc + "," + clusterId);
-		}
-		logger.info("[updateUpstreamKeeper]{},{},{},{}", dc, clusterId, shardId, address);
-		ShardMeta shardMeta = getDirectShardMeta(activeDc, clusterId, shardId);
-		if(shardMeta == null){
-			throw new RedisRuntimeException(String.format("dc:%s, cluster:%s, shard:%s, address:%s", dc, clusterId, shardId, address));
-		}
-		String oldUpstream = shardMeta.getUpstream();
-		if(ObjectUtils.equals(oldUpstream, address)){
-			return false;
-		}
-		shardMeta.setUpstream(address);
-		return true;
-	}
-
-	@Override
 	public String getUpstream(String dc, String clusterId, String shardId) throws MetaException {
 		
 		ShardMeta shardMeta = getShardMeta(dc, clusterId, shardId);
@@ -481,5 +490,52 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return clone(xpipeMeta.getDcs().get(dcId));
 	}
 
-	
+	@Override
+	public List<KeeperMeta> getAllSurviceKeepers(String dcId, String clusterId, String shardId) {
+		List<KeeperMeta> keepers = getDirectKeepers(dcId, clusterId, shardId);
+		List<KeeperMeta> result = new LinkedList<>();
+		
+		for(KeeperMeta keeper : keepers){
+			if(keeper.isSurvive()){
+				result.add(MetaClone.clone(keeper));
+			}
+		}
+		return result;
+	}
+
+	@Override
+	public boolean hasCluster(String dcId, String clusterId) {
+		DcMeta dcMeta = getDirectDcMeta(dcId);
+		if(dcMeta == null){
+			return false;
+		}
+		return dcMeta.getClusters().get(clusterId) != null;
+	}
+
+	@Override
+	public boolean hasShard(String dcId, String clusterId, String shardId) {
+		ShardMeta shardMeta = getDirectShardMeta(dcId, clusterId, shardId);
+		if(shardMeta == null){
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public void updateUpstream(String dc, String clusterId, String shardId, String ip, int port) {
+		ClusterMeta clusterMeta = getDirectClusterMeta(dc, clusterId);
+		if(clusterMeta == null){
+			throw new IllegalArgumentException("unfound clusterId:" + clusterId);
+		}
+		String activedc = clusterMeta.getActiveDc();
+		if(dc.equalsIgnoreCase(activedc)){
+			throw new IllegalArgumentException("dc active, can not update upstream:" + dc + "," + clusterId);
+		}
+		ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
+		if(shardMeta == null){
+			throw new IllegalArgumentException("unfound shard:" + clusterId + "," + shardId);
+		}
+		logger.info("[updateUpstreamKeeper]{},{},{},{}, {}", dc, clusterId, shardId, ip, port);
+		shardMeta.setUpstream(String.format("%s:%d", ip,port));
+	}
 }

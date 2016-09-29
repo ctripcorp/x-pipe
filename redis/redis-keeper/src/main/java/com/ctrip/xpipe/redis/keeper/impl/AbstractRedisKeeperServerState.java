@@ -123,7 +123,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	@Override
 	public String toString() {
 		
-		return String.format("redisKeeperServer:%s, shardInfo:%s", redisKeeperServer, getMaster());
+		return String.format("state:%s, master:%s", keeperState(), getMaster());
 	}
 
 	@Override
@@ -136,19 +136,27 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		return false;
 	}
 	
-	protected void activeToBackup(InetSocketAddress masterAddress) throws IOException {
+	protected void activeToBackup(InetSocketAddress masterAddress){
 		
-		logger.info("[activeToBackup]{} {}", keeperState(), this);
-		redisKeeperServer.getReplicationStore().getMetaStore().activeBecomeBackup();;
+		logger.info("[activeToBackup]{}", this);
+		try{
+			redisKeeperServer.getReplicationStore().getMetaStore().activeBecomeBackup();;
+		}catch(Exception e){
+			logger.error("[activeToBackup]" + this, e);
+		}
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, masterAddress));
 		reconnectMaster();
 	}
 
-	protected void backupToActive(InetSocketAddress masterAddress) throws IOException {
+	protected void backupToActive(InetSocketAddress masterAddress){
 		
-		logger.info("[backupBecomeActive]{}, {}", keeperState(), this);
-		ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-		replicationStore.getMetaStore().backupBecomeActive();
+		logger.info("[backupBecomeActive]{}", this);
+		try{
+			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+			replicationStore.getMetaStore().backupBecomeActive();
+		}catch(Exception e){
+			logger.error("[backupToActive]" + this + "," + masterAddress, e);
+		}
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, masterAddress));
 		reconnectMaster();
 	}

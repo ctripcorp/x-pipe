@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.netty.commands;
 
 
+
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.DefaultChannelPromise;
 
 /**
  * @author wenchao.meng
@@ -42,8 +44,9 @@ public class DefaultNettyClient implements NettyClient{
 	@Override
 	public void sendRequest(ByteBuf byteBuf, final ByteBufReceiver byteBufReceiver) {
 		
-		ChannelFuture writeFuture = channel.writeAndFlush(byteBuf);
-		writeFuture.addListener(new ChannelFutureListener() {
+		DefaultChannelPromise future = new DefaultChannelPromise(channel);
+		
+		future.addListener(new ChannelFutureListener() {
 			
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception {
@@ -55,6 +58,8 @@ public class DefaultNettyClient implements NettyClient{
 				}
 			}
 		});
+		channel.writeAndFlush(byteBuf, future);
+		
 	}
 
 	@Override
@@ -64,10 +69,11 @@ public class DefaultNettyClient implements NettyClient{
 		if(byteBufReceiver != null){
 			boolean result = byteBufReceiver.receive(channel, byteBuf);
 			if(result){
+				logger.debug("[handleResponse][remove receiver]");
 				receivers.poll();
 			}
 		}else{
-			logger.error("[handleResponse][no receiver]");
+			logger.error("[handleResponse][no receiver]{}", byteBuf.readableBytes());
 		}
 	}
 

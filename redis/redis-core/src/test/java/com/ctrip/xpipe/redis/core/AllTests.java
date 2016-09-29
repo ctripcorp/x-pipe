@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
+import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommandTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
@@ -30,7 +31,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	ReplicationStoreMetaTest.class,
 	DcMetaComparatorTest.class,
 	ClusterMetaComparatorTest.class,
-	ShardMetaComparatorTest.class
+	ShardMetaComparatorTest.class,
+	RoleCommandTest.class
 })
 public class AllTests {
 

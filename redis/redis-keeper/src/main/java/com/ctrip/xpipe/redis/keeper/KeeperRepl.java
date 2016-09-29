@@ -9,6 +9,5 @@ public interface KeeperRepl {
 	
 	long getKeeperBeginOffset();
 	
-	long getKeeperEndOffset();
-	
+	long getKeeperEndOffset();	
 }

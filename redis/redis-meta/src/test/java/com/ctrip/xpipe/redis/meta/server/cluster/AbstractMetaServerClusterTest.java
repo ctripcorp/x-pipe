@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.springframework.context.ApplicationContext;
 
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 

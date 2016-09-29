@@ -36,4 +36,9 @@ public class RequestStringParser extends AbstractRedisClientProtocol<String[]>{
 		
 		return Unpooled.wrappedBuffer(getRequestBytes(payload));
 	}
+
+	@Override
+	public boolean supportes(Class<?> clazz) {
+		return String.class.isAssignableFrom(clazz);
+	}
 }

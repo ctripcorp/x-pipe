@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.meta.server.cluster.task;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
@@ -27,7 +26,7 @@ public class ServerDeadResharding extends AbstractDirectMoveSharding{
 
 
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		throw new UnsupportedOperationException();
 	}
 

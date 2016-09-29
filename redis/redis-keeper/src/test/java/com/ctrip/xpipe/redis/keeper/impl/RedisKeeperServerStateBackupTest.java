@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
-
 import java.net.InetSocketAddress;
 
 import org.junit.After;
@@ -11,9 +9,6 @@ import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
-
-
-
 
 /**
  * @author wenchao.meng
@@ -45,13 +40,7 @@ public class RedisKeeperServerStateBackupTest extends AbstractRedisKeeperServerS
 	@Test
 	public void testBackupActive(){
 
-		try{
-			backup.becomeActive(new InetSocketAddress("localhost", randomPort()));
-			Assert.fail();
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-				
+		backup.becomeActive(new InetSocketAddress("localhost", randomPort()));
 	}
 
 	@Test

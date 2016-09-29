@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.command;
 
+
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ctrip.xpipe.api.command.Command;
@@ -62,7 +62,7 @@ public abstract class AbstractCommandChain extends AbstractCommand<List<CommandF
 	}
 	
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		for(Command<?> command : commands){
 			command.reset();
 		}

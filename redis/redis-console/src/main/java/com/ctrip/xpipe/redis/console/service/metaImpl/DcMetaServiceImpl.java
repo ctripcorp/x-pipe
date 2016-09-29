@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.metaImpl;
 
-import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -20,7 +19,6 @@ import com.ctrip.xpipe.redis.console.service.meta.SetinelMetaService;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -130,20 +128,24 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
 		    	}
 	    	}
 	    	
-	    	
-			DcMetaQueryVO dcMetaQueryVO = loadMetaVO(dcInfo, future_allDetails.get());
-			if(null != future_allactivekeepers.get()) {
-				dcMetaQueryVO.setAllActiveKeepers(future_allactivekeepers.get());
-			}
-			if(null != future_alldcs.get()) {
-				dcMetaQueryVO.setAllDcs(future_alldcs.get());
-			}
+	    	List<DcTbl> allDetails = future_allDetails.get();
+	    	if(null != allDetails) {
+	    		DcMetaQueryVO dcMetaQueryVO = loadMetaVO(dcInfo, allDetails);
+	    		
+	    		if(null != future_allactivekeepers.get()) {
+					dcMetaQueryVO.setAllActiveKeepers(future_allactivekeepers.get());
+				}
+				if(null != future_alldcs.get()) {
+					dcMetaQueryVO.setAllDcs(future_alldcs.get());
+				}
+				
+				for(ClusterTbl cluster : dcMetaQueryVO.getClusterInfo().values()){
+					dcMeta.addCluster(clusterMetaService.loadClusterMeta(dcMeta, cluster, dcMetaQueryVO));
+				}
+	    	}
 			
-			for(ClusterTbl cluster : dcMetaQueryVO.getClusterInfo().values()){
-				dcMeta.addCluster(clusterMetaService.loadClusterMeta(dcMeta, cluster, dcMetaQueryVO));
-			}
 		} catch (ExecutionException e) {
-			throw new DataNotFoundException("Cannot construct dc-meta", e);
+			throw new ServerException("Execution failed.", e);
 		} catch (InterruptedException e) {
 			throw new ServerException("Concurrent execution failed.", e);
 		} finally {
@@ -184,29 +186,31 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
     private DcMetaQueryVO loadMetaVO(DcTbl currentDc, List<DcTbl> dcMetaDetails) {
     	DcMetaQueryVO result = new DcMetaQueryVO(currentDc);
     	
-    	for(DcTbl dcMetaDetail : dcMetaDetails) {
-	        /** Cluster Info **/
-	        result.addClusterInfo(dcMetaDetail.getClusterInfo());
-	        
-	        /** Redis Info **/
-	        result.addRedisInfo(dcMetaDetail.getRedisInfo());
-	        
-	        /** Shard Map **/
-	        result.addShardMap(dcMetaDetail.getClusterInfo().getClusterName(), dcMetaDetail.getShardInfo());
-	        	
-	        /** Redis Detail **/
-	        result.addRedisMap(dcMetaDetail.getClusterInfo().getClusterName(),
-	        		dcMetaDetail.getShardInfo().getShardName(),
-	        		dcMetaDetail.getRedisInfo());
-	            
-	        /** DcCluster Detail **/
-	        result.addDcClusterMap(dcMetaDetail.getClusterInfo().getClusterName(), dcMetaDetail.getDcClusterInfo());
-	            
-	        /** DcClusterShard Detail **/
-	        result.addDcClusterShardMap(dcMetaDetail.getClusterInfo().getClusterName(), 
-	        		dcMetaDetail.getShardInfo().getShardName(), 
-	        		dcMetaDetail.getDcClusterShardInfo());
-	    }
+    	if(null != dcMetaDetails) {
+    		for(DcTbl dcMetaDetail : dcMetaDetails) {
+    	        /** Cluster Info **/
+    	        result.addClusterInfo(dcMetaDetail.getClusterInfo());
+    	        
+    	        /** Redis Info **/
+    	        result.addRedisInfo(dcMetaDetail.getRedisInfo());
+    	        
+    	        /** Shard Map **/
+    	        result.addShardMap(dcMetaDetail.getClusterInfo().getClusterName(), dcMetaDetail.getShardInfo());
+    	        	
+    	        /** Redis Detail **/
+    	        result.addRedisMap(dcMetaDetail.getClusterInfo().getClusterName(),
+    	        		dcMetaDetail.getShardInfo().getShardName(),
+    	        		dcMetaDetail.getRedisInfo());
+    	            
+    	        /** DcCluster Detail **/
+    	        result.addDcClusterMap(dcMetaDetail.getClusterInfo().getClusterName(), dcMetaDetail.getDcClusterInfo());
+    	            
+    	        /** DcClusterShard Detail **/
+    	        result.addDcClusterShardMap(dcMetaDetail.getClusterInfo().getClusterName(), 
+    	        		dcMetaDetail.getShardInfo().getShardName(), 
+    	        		dcMetaDetail.getDcClusterShardInfo());
+    	    }
+    	}
     	
     	return result;
     }

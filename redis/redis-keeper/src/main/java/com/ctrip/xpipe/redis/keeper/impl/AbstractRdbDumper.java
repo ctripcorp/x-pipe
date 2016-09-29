@@ -144,4 +144,8 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		dumpFail(th);
 	}
 
+	@Override
+	protected void doReset(){
+		
+	}
 }

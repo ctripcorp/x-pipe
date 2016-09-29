@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.ParseException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
@@ -15,7 +14,6 @@ import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 
 /**
@@ -37,6 +35,7 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 
 	private String url;
 	private String apiName;
+
 	@SuppressWarnings("rawtypes")
 	private Class type;
 	private Object defaultObj;

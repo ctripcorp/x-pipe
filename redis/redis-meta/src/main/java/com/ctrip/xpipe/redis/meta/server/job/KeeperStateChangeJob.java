@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
+
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
@@ -97,11 +97,11 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 		
 		SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(clientPool, new InetSocketAddress(keeper.getIp(), keeper.getPort()));
 		KeeperSetStateCommand command =  new KeeperSetStateCommand(pool, keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP, masterAddress);
-		return new CommandRetryWrapper<String>(retryTimes, new RetryDelay(delayBaseMilli), command);
+		return CommandRetryWrapper.buildCountRetry(retryTimes, new RetryDelay(delayBaseMilli), command);
 	}
 
 	@Override
-	protected void doReset() throws InterruptedException, ExecutionException {
+	protected void doReset(){
 		throw new UnsupportedOperationException();
 		
 	}

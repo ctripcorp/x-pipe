@@ -1,14 +1,14 @@
 package com.ctrip.xpipe.api.retry;
 
-import java.util.concurrent.Callable;
+import com.ctrip.xpipe.api.command.Command;
 
 /**
  * @author wenchao.meng
  *
  * Jul 9, 2016
  */
-public interface RetryTemplate {
+public interface RetryTemplate<V> {
 	
-	boolean execute(Callable<RetryType> action);
+	V execute(Command<V> command) throws Exception;
 
 }

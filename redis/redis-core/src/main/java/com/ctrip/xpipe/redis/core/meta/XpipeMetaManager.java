@@ -55,13 +55,17 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 
 	List<String> getBackupDc(String clusterId) throws MetaException;
 
-	boolean updateUpstreamKeeper(String dc, String clusterId, String shardId, String address) throws MetaException;
-
 	String getUpstream(String dc, String clusterId, String shardId) throws MetaException;
 	
 	KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta);
 
 	DcMeta getDcMeta(String dc);
 
+	List<KeeperMeta> getAllSurviceKeepers(String currentDc, String clusterId, String shardId);
 
+	boolean hasCluster(String currentDc, String clusterId);
+
+	boolean hasShard(String currentDc, String clusterId, String shardId);
+
+	void updateUpstream(String currentDc, String clusterId, String shardId, String ip, int port);
 }
