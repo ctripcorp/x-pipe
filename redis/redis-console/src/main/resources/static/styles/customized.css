@@ -1,0 +1,20 @@
+md-checkbox.border-white div.md-container div.md-icon {
+	border-color : white;'
+}
+
+md-select.color-white md-select-value span {
+	color : white;
+}
+
+md-select-menu
+{
+    transition: none!important;
+    transition-duration: 0ms!important;
+    transition-delay: 0ms!important;
+}
+md-select-menu md-content
+{
+    transition: none!important;
+    transition-duration: 0ms!important;
+    transition-delay: 0ms!important;
+}

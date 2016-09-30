@@ -40,6 +40,29 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/cluster_form.html',
             controller: 'ClusterFromCtl'
 
+        })
+        .state('migration_index', {
+        	url: '/active_dc_migration',
+        	templateUrl: 'views/index/migration_index.html',
+        	controller: 'ActiveDcMigrationIndexCtl'
+        })
+        .state('migration_event_list', {
+        	url: '/migration_event_list',
+        	templateUrl: 'views/index/migration_list.html',
+        	controller: 'ActiveDcMigrationEventListCtl'
+        })
+        .state('migration_event_details', {
+        	url: '/migration_event_details',
+        	templateUrl: 'views/index/migration_details.html',
+        	controller: 'ActiveDcMigrationEventDetailsCtl'
+        })
+        .state('migration_event_details.details', {
+        	url: '/details',
+        	templateUrl: 'views/index/migration_details_content.html',
+        	controller : function($scope) {
+        		$scope.dcs = [{dcName : 'jq'}, {dcName : 'oy'}, {dcName : 'fq'}];
+        		$scope.currentDcName = 'jq';
+        	}
         });
 
 });

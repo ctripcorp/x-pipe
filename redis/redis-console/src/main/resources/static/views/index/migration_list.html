@@ -1,0 +1,28 @@
+<div class="col-md-12">
+	<div class="panel panel-primary">
+		<header class="panel-heading">
+			<div class="row">
+				<div class="col-md-12"><span>主机房迁移事件记录</span></div>
+			</div>
+		</header>
+	
+		<table ng-table="tableParams" class="table table-striped table-hover">
+			<tr ng-repeat="event in $data">
+				<td data-title="'id'">{{event.id}}</td>
+				<td data-title="'开始时间'">{{event.startTime}}</td>
+				<td data-title="'结束时间'">{{event.endTime}}</td>
+				<td data-title="'状态'">{{event.status}}</td>
+				<td data-title="'操作入口'">
+					<a type="button" class="btn btn-primary btn-sm" href="/#/migration_event_details">详情</a>
+					&nbsp&nbsp&nbsp 
+					<a type="button" class="btn btn-danger btn-sm" href="">取消迁移</a>
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<a href="#" id="btn-scroll-up"
+	class="btn-scroll-up btn btn-sm btn-inverse"> <i
+	class="icon-double-angle-up icon-only bigger-110"></i>
+</a>
