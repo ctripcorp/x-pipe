@@ -14,6 +14,7 @@ import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 
 /**
@@ -23,7 +24,7 @@ import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
  */
 public class ApiTestExecitorPool extends AbstractExecutorPool {
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private final static Logger logger = LoggerFactory.getLogger(ApiTestExecitorPool.class);
 	private AtomicInteger successNum = new AtomicInteger(0);
 	private AtomicLong successTotalDelay = new AtomicLong(0);
 	private AtomicInteger failNum = new AtomicInteger(0);
@@ -46,6 +47,7 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 
 	public boolean isOver = false;
 	public boolean isPass = false;
+	public final static Object WAIT_OR_NOTIFY_LOCK=new Object();
 
 	@SuppressWarnings("unused")
 	private ApiTestExecitorPool() {
@@ -92,7 +94,7 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 			try {
 				Thread.sleep(threadSleepMsec);
 			} catch (InterruptedException e) {
-				logger.error("InterruptedException", e);
+				logger.error("[test] sleep exception", e);
 			}
 		}
 	}
@@ -112,7 +114,7 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 				errorMessage = e.getMessage();
 		} finally {
 			int no = isOk ? addSuccess(loseTime) : addFail(loseTime);
-			logger.info("{}--->{} ，{}[delay:{}ms]", no, getApiName(),
+			logger.debug("{}--->{} ，{}[delay:{}ms]", no, getApiName(),
 					isOk ? "success" : "failed", loseTime);
 			if (errorMessage != null) {
 				errorMessages
@@ -141,6 +143,10 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 					isPass = true;
 				}
 				isOver = true;
+				synchronized (ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK) {
+		                ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK.notifyAll();
+				 }
+				
 			}
 		}
 	}
