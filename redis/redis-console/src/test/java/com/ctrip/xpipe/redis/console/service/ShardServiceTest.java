@@ -8,10 +8,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.unidal.dal.jdbc.DalException;
-
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
@@ -29,17 +26,6 @@ public class ShardServiceTest extends AbstractConsoleTest {
 	@InjectMocks
 	private ShardService shardService;
 
-	@Before
-	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
-		try {
-			generateShardMockData();
-		} catch (Exception e) {
-			logger.error("Generate Dc mock data failed.", e);
-		}
-	}
-
 	@Test
 	public void testShardService() {
 		ShardTbl target_result = new ShardTbl().setId(1).setClusterId(1).setShardName("shard1");
@@ -49,7 +35,8 @@ public class ShardServiceTest extends AbstractConsoleTest {
 		assertEquals(shardService.load("cluster1", "shard1").getShardName(), target_result.getShardName());
 	}
 
-	private void generateShardMockData() throws DalException {
+	@Before
+	public void initMockData() throws Exception {
 		when(mockedShardTblDao.findShard("cluster1", "shard1", ShardTblEntity.READSET_FULL))
 				.thenReturn(new ShardTbl().setId(1).setClusterId(1).setShardName("shard1"));
 	}

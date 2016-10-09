@@ -12,7 +12,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.unidal.dal.jdbc.DalRuntimeException;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
@@ -44,7 +43,6 @@ public class DalTransactionManagerTest extends AbstractConsoleTest{
 	
 	@Before
 	public void setUp() {
-		MockitoAnnotations.initMocks(this);
 		TransactionInfo trx = new TransactionInfo();
 		dalTM.getThreadLocalTransactionInfo().set(trx);
 	}

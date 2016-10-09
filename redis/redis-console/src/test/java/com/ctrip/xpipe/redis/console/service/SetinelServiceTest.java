@@ -10,10 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.unidal.dal.jdbc.DalException;
-
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.SetinelTblDao;
@@ -31,17 +28,6 @@ public class SetinelServiceTest extends AbstractConsoleTest {
 	@InjectMocks
 	private SetinelService setinelService;
 
-	@Before
-	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
-		try {
-			generateMetaMockData();
-		} catch (Exception e) {
-			logger.error("Generate Dc mock data failed.", e);
-		}
-	}
-
 	@Test
 	public void testMetasService() {
 		SetinelTbl target_setinel = new SetinelTbl().setSetinelId(1).setSetinelAddress("11111");
@@ -50,7 +36,8 @@ public class SetinelServiceTest extends AbstractConsoleTest {
 				target_setinel.getSetinelAddress());
 	}
 
-	private void generateMetaMockData() throws DalException {
+	@Before
+	public void initMockData() throws Exception {
 		when(mockedSetinelTblDao.findByDcName("NTGXH", SetinelTblEntity.READSET_FULL))
 				.thenReturn(Arrays.asList(new SetinelTbl().setSetinelId(1).setSetinelAddress("11111")));
 	}

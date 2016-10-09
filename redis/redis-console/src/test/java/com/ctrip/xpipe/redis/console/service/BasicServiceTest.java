@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.service;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 
 @RunWith(Suite.class)
 @SuiteClasses({
@@ -14,5 +13,5 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 	SetinelServiceTest.class,
 	MetaserverServiceTest.class
 })
-public class BasicServiceTest extends AbstractRedisTest{	
+public class BasicServiceTest {	
 }

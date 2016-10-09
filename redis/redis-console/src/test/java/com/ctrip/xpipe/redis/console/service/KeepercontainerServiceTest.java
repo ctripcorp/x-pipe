@@ -10,14 +10,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.unidal.dal.jdbc.DalException;
-
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTblDao;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTblEntity;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 
 /**
  * @author shyin
@@ -25,22 +22,11 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
  *         Sep 26, 2016
  */
 @RunWith(MockitoJUnitRunner.class)
-public class KeepercontainerServiceTest extends AbstractRedisTest {
+public class KeepercontainerServiceTest extends AbstractConsoleTest {
 	@Mock
 	private KeepercontainerTblDao mockedKeepercontainerTblDao;
 	@InjectMocks
 	private KeepercontainerService keepercontainerService;
-
-	@Before
-	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
-		try {
-			generateMetaMockData();
-		} catch (Exception e) {
-			logger.error("Generate Dc mock data failed.", e);
-		}
-	}
 
 	@Test
 	public void testMetasService() {
@@ -50,7 +36,8 @@ public class KeepercontainerServiceTest extends AbstractRedisTest {
 				target_keepercontainer.getKeepercontainerId());
 	}
 
-	private void generateMetaMockData() throws DalException {
+	@Before
+	public void initMockData() throws Exception {
 		when(mockedKeepercontainerTblDao.findByDcName("NTGXH", KeepercontainerTblEntity.READSET_FULL))
 				.thenReturn(Arrays.asList(new KeepercontainerTbl().setKeepercontainerId(1)));
 	}
