@@ -120,7 +120,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		
 		Bootstrap b = new Bootstrap();
 		b.group(slaveEventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
-		.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT).handler(new ChannelInitializer<SocketChannel>() {
+		.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+		.handler(new ChannelInitializer<SocketChannel>() {
 			@Override
 			public void initChannel(SocketChannel ch) throws Exception {
 				ChannelPipeline p = ch.pipeline();
