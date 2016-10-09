@@ -1,168 +1,158 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-    <title>XpipeConsole</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>XpipeConsole</title>
 
-    <link rel="stylesheet" href="./vendor/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="./vendor/css/font-awesome.min.css"/>
-    <link rel="stylesheet" href="./vendor/css/ace-fonts.css"/>
-    <link rel="stylesheet" href="./vendor/css/ace.min.css" id="main-ace-style"/>
-    <link rel="stylesheet" href="./vendor/css/ace-part2.min.css"/>
-    <link rel="stylesheet" href="./vendor/css/ace-skins.min.css"/>
-    <link rel="stylesheet" href="./vendor/css/ace-rtl.min.css"/>
-    <link rel="stylesheet" href="./vendor/css/ace-ie.min.css"/>
-    <link rel="stylesheet" href="./vendor/angular/angular-toastr-1.4.1.min.css"/>
-    <link rel="stylesheet" href="./vendor/css/sweet-alert.css"/>
-    <link rel="stylesheet" href="./vendor/css/ng-table.min.css"/>
-    <link rel="stylesheet" href="styles/commons.css"/>
+<link rel="stylesheet" href="./vendor/css/bootstrap.min.css" />
+<link rel="stylesheet" href="./vendor/css/font-awesome.min.css" />
+<link rel="stylesheet" href="./vendor/css/ace-fonts.css" />
+<link rel="stylesheet" href="./vendor/css/ace.min.css" id="main-ace-style" />
+<link rel="stylesheet" href="./vendor/css/ace-part2.min.css" />
+<link rel="stylesheet" href="./vendor/css/ace-skins.min.css" />
+<link rel="stylesheet" href="./vendor/css/ace-rtl.min.css" />
+<link rel="stylesheet" href="./vendor/css/ace-ie.min.css" />
+<link rel="stylesheet" href="./vendor/angular/angular-toastr-1.4.1.min.css" />
+<link rel="stylesheet" href="./vendor/css/ng-table.min.css" />
+<link rel="stylesheet" href="styles/commons.css" />
+<link rel="stylesheet" href="styles/customized.css" />
+<link rel="stylesheet" href="./vendor/angular/angular-material.min.css">
 </head>
 
 <body class="no-skin" ng-app="index">
 
-<div id="navbar" class="navbar navbar-default navbar-fixed-top">
-    <div class="navbar-container" id="navbar-container">
-        <!-- NavBar header -->
-        <div class="navbar-header pull-left">
-					<span class="navbar-brand">
-						<small>
-							<!-- NavBar Icon : Set to be toggle button for sidebar-->
-							<i class="ace-icon fa fa-cogs sidebar-collapse" id="sidebar-collapse"
-                               style="margin-left:-10px"></i>
-							Xpipe Console
-						</small>
-					</span>
-        </div>
+	<div id="navbar" class="navbar navbar-default navbar-fixed-top">
+		<div class="navbar-container" id="navbar-container">
+			<div class="navbar-header pull-left">
+				<span class="navbar-brand"> 
+				<small>
+						<i class="ace-icon fa fa-cogs" style="margin-left: -10px"></i> 
+						Xpipe Console
+				</small>
+				</span>
+			</div>
 
+			<div class="navbar-buttons navbar-header pull-right" role="navigation">
+				<ul class="nav ace-nav">
+					<li class="grey">
+						<a ui-sref="cluster_list({clusterName:''})" title="Cluster列表"> 
+							<i class="ace-icon fa fa-info-circle"></i> <span>Cluster列表</span>
+						</a>
+					</li>
+					
+					<li class="purple">
+						<a data-toggle="dropdown" class="dropdown-toggle" href="" title="主机房迁移"> 
+							<i class="ace-icon fa fa-gavel"></i> <span>主机房迁移</span>
+						</a>
+						<ul class="dropdown-menu-right dropdown-navbar dropdown-menu dropdown-caret dropdown-close">
+							<li>
+								<a ui-sref="migration_index" title="主机房迁移">
+								<i class="btn btn-xs no-hover btn-pink fa fa-bell"></i>
+								<span>主机房迁移</span>
+								<br/>
+								</a>
+							</li>
+							<li>
+								<a ui-sref="migration_event_list" title="迁移事件历史">
+								<i class="btn btn-xs no-hover btn-purple fa fa-inbox"></i>
+								<span>迁移事件历史</span>
+								<br/>
+								</a>
+							</li>
+						</ul>
+					</li>
+				
+					<li class="green">
+						<a data-toggle="dropdown" class="dropdown-toggle" href="" title="发送邮件"> 
+							<i class="ace-icon fa fa-envelope"></i> <span>技术支持</span>
+						</a>
+					</li>
 
-        <!-- NavBar User Infos & Dropdowns -->
-        <div class="navbar-buttons navbar-header pull-right" role="navigation">
-            <ul class="nav ace-nav">
-                <!-- Contact us For technical help -->
-                <li class="green">
-                    <!-- Tab Description -->
-                    <a data-toggle="dropdown" class="dropdown-toggle" href="#" title="发送邮件">
-                        <i class="ace-icon fa fa-envelope"></i>
-                        <span>技术支持</span>
-                    </a>
-                    <!-- End Tab Description -->
-                </li>
-                <!-- End Contact us For technical help -->
+					<li class="dark-blue">
+						<a data-toggle="dropdown" href="#" class="dropdown-toggle"> 
+							<i class="ace-icon fa fa-coffee"></i> 
+							<span class="user-info">
+									<small>欢迎,</small> Admin
+							</span> 
+							<i class="ace-icon fa fa-caret-down"></i>
+						</a>
+						<ul class="user-menu dropdown-menu-right dropdown-menu dropdown-yellow dropdown-caret dropdown-close">
+							<li>
+								<a href="#"> <i class="ace-icon fa fa-cog"></i>
+									设置
+								</a>
+							</li>
+							<li class="divider"></li>
+							<li>
+								<a href="#"><i class="ace-icon fa fa-power-off"></i>
+									注销
+								</a>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
 
-                <!-- Profile Settings & Logout -->
-                <li class="dark-blue">
-                    <a data-toggle="dropdown" href="#" class="dropdown-toggle">
-                        <!-- User Photo -->
-                        <i class="ace-icon fa fa-coffee"></i>
-								<span class="user-info">
-									<small>Welcome,</small>
-                                    <!-- Profile name -->
-									Admin
-								</span>
-                        <i class="ace-icon fa fa-caret-down"></i>
-                    </a>
-                    <!-- Dropdown menu For user profile-->
-                    <ul class="user-menu dropdown-menu-right dropdown-menu dropdown-yellow dropdown-caret dropdown-close">
-                        <li>
-                            <a href="#">
-                                <i class="ace-icon fa fa-cog"></i>
-                                Settings
-                            </a>
-                        </li>
-                        <!-- Seperate Line -->
-                        <li class="divider"></li>
-                        <li>
-                            <a href="#">
-                                <!-- Icon -->
-                                <i class="ace-icon fa fa-power-off"></i>
-                                <!-- Info -->
-                                Logout
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                <!-- End Profile Settings & Logout -->
+	<div class="main-container" ng-controller="IndexCtl">
+		<div class="main-content" style="padding-top: 25px;" ui-view></div>
 
-            </ul>
-        </div>
-    </div>
-</div>
+		<a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse"> 
+			<i class="ace-icon fa fa-angle-double-up icon-only bigger-110"></i>
+		</a>
+	</div>
 
-<div class="main-container" ng-controller="IndexCtl">
+	<script src='./vendor/js/jquery.min.js'></script>
+	<script src="./vendor/js/ace-extra.min.js"></script>
 
-    <!--nav-->
-    <div id="sidebar" class="sidebar responsive sidebar-fixed">
-        <ul class="nav nav-list">
-            <li class="active">
-                <a ui-sref="cluster_list({clusterName:''})">
-                    <i class="menu-icon fa fa-desktop"></i>
-                    <span class="menu-text"> Cluster 列表 </span>
-                </a>
-            </li>
-        </ul>
+	<script src="./vendor/js/bootstrap.min.js"></script>
+	<script src="./vendor/js/ace-elements.min.js"></script>
+	<script src="./vendor/js/ace.min.js"></script>
 
-        <div class="sidebar-toggle sidebar-collapse">
-            <i class="ace-icon fa fa-angle-double-left" data-icon1="ace-icon fa fa-angle-double-left"
-               data-icon2="ace-icon fa fa-angle-double-right"></i>
-        </div>
-    </div>
+	<script src="./vendor/js/lodash.min.js"></script>
 
+	<script src="./vendor/angular/angular.min.js"></script>
+	<script src="./vendor/angular/angular-resource.min.js"></script>
+	<script src="./vendor/angular/angular-ui-router.min.js"></script>
+	<script src="./vendor/angular/angular-toastr-1.4.1.tpls.min.js"></script>
+	<script src="./vendor/angular/ui-bootstrap-tpls-2.0.2.min.js"></script>
+	<script src="./vendor/angular/angular-animate.min.js"></script>
+	<script src="./vendor/angular/angular-aria.min.js"></script>
+	<script src="./vendor/angular/angular-messages.min.js"></script>
+	<script src="./vendor/angular/angular-touch.min.js"></script>
+	<script src="./vendor/angular/ng-table.min.js"></script>
+	<script src="./vendor/angular/angular-material.min.js"></script>
 
-    <div class="main-content" style="padding-top: 25px;" ui-view></div>
+	<script src="./vendor/js/typeahead-bs2.min.js"></script>
+	<script src="./vendor/js/jquery.dataTables.min.js"></script>
+	<script src="./vendor/js/jquery.dataTables.bootstrap.js"></script>
+	<script src="./vendor/js/ace-elements.min.js"></script>
 
+	<script src="./scripts/app.js"></script>
 
-    <a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
-        <i class="ace-icon fa fa-angle-double-up icon-only bigger-110"></i>
-    </a>
-</div>
+	<script src="./scripts/services/DcService.js"></script>
+	<script src="./scripts/services/ClusterService.js"></script>
+	<script src="./scripts/services/ShardService.js"></script>
+	<script src="./scripts/services/RedisService.js"></script>
+	<script src="./scripts/services/KeeperContainerService.js"></script>
 
-<script src='./vendor/js/jquery.min.js'></script>
-<script src="./vendor/js/ace-extra.min.js"></script>
+	<script src="scripts/router.js"></script>
 
-<script src="./vendor/js/bootstrap.min.js"></script>
-<script src="./vendor/js/ace-elements.min.js"></script>
-<script src="./vendor/js/ace.min.js"></script>
+	<script src="scripts/AppUtils.js"></script>
 
-<script src="./vendor/js/lodash.min.js"></script>
+	<script src="scripts/directives/confirm.js"></script>
 
-<script src="./vendor/angular/angular.min.js"></script>
-<script src="./vendor/angular/angular-resource.min.js"></script>
-<script src="./vendor/angular/angular-ui-router.min.js"></script>
-<script src="./vendor/angular/angular-toastr-1.4.1.tpls.min.js"></script>
-<script src="./vendor/angular/ui-bootstrap-tpls-2.0.2.min.js"></script>
-<script src="./vendor/angular/angular-animate.min.js"></script>
-<script src="./vendor/angular/angular-touch.min.js"></script>
-<script src="./vendor/angular/ng-table.min.js"></script>
-
-<script src="./vendor/js/typeahead-bs2.min.js"></script>
-<script src="./vendor/js/jquery.dataTables.min.js"></script>
-<script src="./vendor/js/jquery.dataTables.bootstrap.js"></script>
-<script src="./vendor/js/ace-elements.min.js"></script>
-
-<script src="./vendor/js/SweetAlert.min.js"></script>
-<script src="./vendor/js/sweet-alert.min.js"></script>
-
-<script src="./scripts/app.js"></script>
-
-<script src="./scripts/services/DcService.js"></script>
-<script src="./scripts/services/ClusterService.js"></script>
-<script src="./scripts/services/ShardService.js"></script>
-<script src="./scripts/services/RedisService.js"></script>
-<script src="./scripts/services/KeeperContainerService.js"></script>
-
-<script src="scripts/router.js"></script>
-
-<script src="scripts/AppUtils.js"></script>
-
-<script src="scripts/directives/confirm.js"></script>
-
-<script src="scripts/controllers/IndexCtl.js"></script>
-<script src="scripts/controllers/ClusterDcShardCtl.js"></script>
-<script src="scripts/controllers/ClusterFormCtl.js"></script>
-<script src="scripts/controllers/ClusterListCtl.js"></script>
-<script src="scripts/controllers/ClusterDcCtl.js"></script>
-<script src="scripts/controllers/ClusterShardsCtl.js"></script>
-<script src="scripts/controllers/ClusterDcShardUpdateCtl.js"></script>
+	<script src="scripts/controllers/IndexCtl.js"></script>
+	<script src="scripts/controllers/ClusterDcShardCtl.js"></script>
+	<script src="scripts/controllers/ClusterFormCtl.js"></script>
+	<script src="scripts/controllers/ClusterListCtl.js"></script>
+	<script src="scripts/controllers/ClusterDcCtl.js"></script>
+	<script src="scripts/controllers/ClusterShardsCtl.js"></script>
+	<script src="scripts/controllers/ClusterDcShardUpdateCtl.js"></script>
+	<script src="scripts/controllers/ActiveDcMigrationIndexCtl.js"></script>
+	<script src="scripts/controllers/ActiveDcMigrationEventListCtl.js"></script>
+	<script src="scripts/controllers/ActiveDcMigrationEventDetailsCtl.js"></script>
 </body>
 </html>
