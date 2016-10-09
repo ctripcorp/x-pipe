@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
@@ -28,7 +29,7 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
  * Sep 14, 2016
  */
 @RunWith(MockitoJUnitRunner.class)
-public class ClusterMetaModifiedNotifierTest {
+public class ClusterMetaModifiedNotifierTest extends AbstractConsoleTest{
 	@Mock
 	ClusterMetaService clusterMetaService;
 	@Mock

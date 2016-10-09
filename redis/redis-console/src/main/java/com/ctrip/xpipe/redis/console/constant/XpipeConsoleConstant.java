@@ -10,7 +10,7 @@ public class XpipeConsoleConstant {
 	
 	public static int MAX_NAME_SIZE = 128;
 	
-	public static String DEFAULT_ADDRESS = "0.0.0.0:0000";
+	public static String DEFAULT_ADDRESS = "http://0.0.0.0:0000";
 	
 	public static String ROLE_REDIS = "redis";
 	public static String ROLE_KEEPER = "keeper";
