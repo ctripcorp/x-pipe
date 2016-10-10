@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.when;
  * @author zhanglea 16/9/9
  */
 @RunWith(MockitoJUnitRunner.class)
-public class RedisMetaServiceTest {
+public class RedisMetaServiceTest extends AbstractConsoleTest{
 
 	@Mock
 	private RedisService redisService;

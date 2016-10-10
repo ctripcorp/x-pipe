@@ -6,8 +6,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
@@ -27,7 +28,6 @@ import com.ctrip.xpipe.redis.console.service.metaImpl.MetaserverMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.metaImpl.RedisMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.metaImpl.SetinelMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.metaImpl.ShardMetaServiceImpl;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
@@ -43,7 +43,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 @RunWith(MockitoJUnitRunner.class)
-public class MetaServiceTest extends AbstractRedisTest{
+public class MetaServiceTest extends AbstractConsoleTest{
 	@Mock
 	private DcTblDao dcTblDao;
 	@Mock
@@ -70,13 +70,6 @@ public class MetaServiceTest extends AbstractRedisTest{
 	private ClusterMetaServiceImpl clusterMetaService;
 	@InjectMocks
 	private ShardMetaServiceImpl shardMetaService;
-
-	@Before
-	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-		generateShardMetaMockData();
-		generateClusterMetaMockData();
-	}
 	
 	@Test
 	public void testShardMetaService() {
@@ -163,5 +156,11 @@ public class MetaServiceTest extends AbstractRedisTest{
 	@Override
 	protected String getXpipeMetaConfigFile() {
 		return "metainfo.xml";
+	}
+
+	@Before
+	public void initMockData() throws Exception {
+		generateClusterMetaMockData();
+		generateShardMetaMockData();
 	}
 }
