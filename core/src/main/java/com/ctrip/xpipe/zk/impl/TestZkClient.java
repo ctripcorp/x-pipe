@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.zk.impl;
 
-
-
-
 import org.apache.curator.framework.CuratorFramework;
 
 import com.ctrip.xpipe.api.lifecycle.Ordered;
@@ -46,6 +43,11 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 	@Override
 	public synchronized CuratorFramework get() {
 		
+		if(!getLifecycleState().isStarted()){
+			logger.info("[get][not startted, return null]");
+			return null;
+		}
+				
 		if(client != null){
 			return client;
 		}

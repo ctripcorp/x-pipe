@@ -12,6 +12,7 @@ import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.impl.TestZkClient;
 
 /**
@@ -31,7 +32,7 @@ public class AppTest extends AbstractMetaServerContextTest{
 	
 	@Before
 	public void beforeAppTest(){
-		
+		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_PRODUCTION);
 		System.setProperty(ArrangeTaskExecutor.ARRANGE_TASK_EXECUTOR_START, "true");
 	}
 

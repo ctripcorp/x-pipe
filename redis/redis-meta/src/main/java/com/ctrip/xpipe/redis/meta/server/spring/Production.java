@@ -8,6 +8,8 @@ import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.job.ConsoleNotifycationTask;
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
+import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateController;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
@@ -42,5 +44,10 @@ public class Production extends AbstractProfile{
 	@Bean
 	public ConsoleNotifycationTask getConsoleNotifycationTask(){
 		return new ConsoleNotifycationTask();
+	}
+	
+	@Bean
+	public KeeperStateController getKeeperStateController(){
+		return new DefaultKeeperStateController();
 	}
 }

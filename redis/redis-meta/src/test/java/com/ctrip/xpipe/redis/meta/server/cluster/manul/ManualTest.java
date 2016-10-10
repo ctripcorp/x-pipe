@@ -43,9 +43,9 @@ public class ManualTest extends AbstractMetaServerClusterTest{
 	@Test
 	public void startServers() throws Exception{
 		
-		createMetaServers(3);
+		createMetaServers(1);
 
-		waitForAnyKeyToExit();
+//		waitForAnyKeyToExit();
 	}
 
 	

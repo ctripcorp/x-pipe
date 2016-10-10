@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 
+
 import java.net.InetSocketAddress;
 import java.util.Map;
 
@@ -10,7 +11,6 @@ import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
@@ -30,7 +30,6 @@ import com.ctrip.xpipe.utils.MapUtils;
  *
  * Aug 5, 2016
  */
-@Component
 public class DefaultKeeperStateController implements KeeperStateController{
 	
 	private Logger logger = LoggerFactory.getLogger(getClass());

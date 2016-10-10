@@ -21,11 +21,6 @@ public class MoveSlotFromDeadOrEmpty extends AbstractSlotMoveTask{
 
 
 	@Override
-	public String getName() {
-		return getClass().getSimpleName();
-	}
-
-	@Override
 	protected void doExecute() throws Exception {
 		
 		logger.info("[doExecute]{},{}->{}", slot, from, to);

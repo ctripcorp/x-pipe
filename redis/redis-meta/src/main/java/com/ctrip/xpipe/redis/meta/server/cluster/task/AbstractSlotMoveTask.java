@@ -66,7 +66,12 @@ public abstract class AbstractSlotMoveTask extends AbstractCommand<Void> impleme
 
 	@Override
 	public String toString() {
-		return String.format("(%s)slot:%d, %s->%s", getClass().getSimpleName(), slot, from == null? "null" : from.getServerId(), to.getServerId());
+		return String.format("(%s)slot:%d, %s->%s", getClass().getSimpleName(), slot, from == null? "null" : from.getServerId(), to == null ? null: to.getServerId());
 	}
 
+	
+	@Override
+	public String getName() {
+		return getClass().getSimpleName();
+	}
 }

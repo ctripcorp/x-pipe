@@ -46,14 +46,16 @@ public class ContinueResharding extends AbstractResharding{
 			}
 			
 			ClusterServer from = servers.getClusterServer(slotInfo.getServerId());
-			if(from == null){
-				from = remoteClusterServerFactory.createClusterServer(slotInfo.getServerId(), null);
-			}
 			ClusterServer to = servers.getClusterServer(slotInfo.getToServerId());
-			if(to == null){
-				to = remoteClusterServerFactory.createClusterServer(slotInfo.getToServerId(), null);
+			if(to != null){
+				if(from != null){
+					executeTask(new MoveSlotFromLiving(slot, from, to, zkClient));
+				}else{
+					executeTask(new MoveSlotFromDeadOrEmpty(slot, remoteClusterServerFactory.createClusterServer(slotInfo.getServerId(), null), to, zkClient));
+				}
+			}else{
+				executeTask(new RollbackMovingTask(slot, from, to, zkClient));
 			}
-			executeTask(new MoveSlotFromLiving(slot, from, to, zkClient));
 		}
 	}
 

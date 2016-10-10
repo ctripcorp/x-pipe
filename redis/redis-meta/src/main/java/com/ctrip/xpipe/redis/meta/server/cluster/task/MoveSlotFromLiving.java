@@ -19,13 +19,6 @@ public class MoveSlotFromLiving extends AbstractSlotMoveTask{
 		super(slot, from, to, zkClient);
 	}
 
-
-	@Override
-	public String getName() {
-		return getClass().getSimpleName();
-	}
-
-
 	@Override
 	protected void doExecute() throws Exception {
 

@@ -56,8 +56,7 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V> {
 				ExceptionUtils.logException(logger, e, String.format("cmd:%s, message:%s", command, e.getMessage()));
 				Exception originalException = getOriginalException(e);
 				if (i == n || !retryPolicy.retry(originalException)) {
-					logger.info("[execute][no retry]", originalException);
-					throw getOriginalException(originalException);
+					throw originalException;
 				}
 			}
 			command.reset();
