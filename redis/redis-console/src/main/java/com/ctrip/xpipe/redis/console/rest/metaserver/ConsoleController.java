@@ -16,6 +16,9 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +34,7 @@ import java.util.List;
 @RequestMapping("/api")
 public class ConsoleController {
 	private static Codec coder = new JsonCodec();
+	private Logger logger = LoggerFactory.getLogger(getClass());
 	
 	@Autowired
 	private DcService dcService;
@@ -110,6 +114,8 @@ public class ConsoleController {
 								   @PathVariable String shardId, @RequestBody(required = false) KeeperMeta newActiveKeeper){
 		if(null != newActiveKeeper) {
 			redisMetaService.updateKeeperStatus(dcId, clusterId, shardId, newActiveKeeper);
+		} else {
+			logger.error("[updateKeeperStatus][Null Active Keeper]dc:{} cluster:{} shard:{}",dcId,clusterId,shardId);
 		}
 	}
 

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.configuration;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
@@ -16,6 +17,7 @@ import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServic
  */
 @Configuration
 @EnableAspectJAutoProxy
+@ComponentScan("com.ctrip.xpipe.monitor")
 public class RedisConsoleConfig{
 	@Bean
 	public MetaServerConsoleServiceManager getMetaServerConsoleServiceManager() {
