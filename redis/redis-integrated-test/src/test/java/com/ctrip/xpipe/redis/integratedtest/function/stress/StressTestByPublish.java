@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.function.stress;
 
+import java.util.UUID;
+
 import redis.clients.jedis.Jedis;
 
 /**
@@ -9,25 +11,25 @@ import redis.clients.jedis.Jedis;
  */
 public class StressTestByPublish extends AbstractStress {
 
-	public StressTestByPublish(long testCount, long threadNum,
-			int pageSizeInOneMsSleep) {
-		super(testCount, threadNum, pageSizeInOneMsSleep);
-	}
-
-	public StressTestByPublish() {
-		super();
-	}
-
-	@Override
-	protected String getOnPMessageChannel() {
-		return super.channel;
-	}
-
 	@Override
 	protected void operation(Jedis master, String key, String value) {
-		master.publish(super.channel, key);
+		master.publish(channel, key);
 	}
 
+	@Override
+	protected String getChannel() {
+		return channel;
+	}
+
+	@Override
+	protected void setChannel() {
+		channel=UUID.randomUUID().toString();
+	}
+	
+	/**
+	 * @param args
+	 *  Stress tests
+	 */
 	public static void main(String[] args) {
 		StressTestByPublish test = new StressTestByPublish();
 		test.startTest();

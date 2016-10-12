@@ -9,11 +9,13 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import redis.clients.jedis.Jedis;
@@ -21,39 +23,38 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
 
-
 /**
  * @author liu
- *
- * Oct 9, 2016
+ * 
+ *         Oct 9, 2016
  */
 public abstract class AbstractStress {
-
-	public static final Logger logger = LoggerFactory
+	protected static Logger logger = LoggerFactory
 			.getLogger(AbstractStress.class);
+
 	public static final String BASE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 	public static final int BASE_CHARS_LENGTH = 36;
+
 	public static Properties pro;
 	public static String testParamsList;
 	public static int valueLength = 20;
 	public static int nsInOneMs = 1000000;
-	public static int checkNum = 10000;
 
-	public static JedisPool masterPool;
-	public static JedisPool slavePool;
+	protected JedisPool masterPool;
+	protected JedisPool slavePool;
 
-	public AtomicLong totalDelay;
-	public AtomicLong readCount;
+	protected AtomicLong totalDelay;
+	protected AtomicLong readCount;
 
-	public long threadNum;
-	public long testCount;
-	public int pageSizeInOneMsSleep = 5;
+	protected long threadNum;
+	protected long testCount;
+	protected int pageSizeInOneMsSleep = 5;
 
-	public long start = 0;
-	public long end = 0;
+	protected long startTimeStamp = 0;
+	protected long endTimeStamp = 0;
 
-	public long[] delayArray;
-	public String channel;
+	protected long[] delayArray;
+	protected String channel;
 
 	public final static Object WAIT_OR_NOTIFY_LOCK = new Object();
 	static {
@@ -86,9 +87,9 @@ public abstract class AbstractStress {
 			n++;
 			String[] params = testParams.split(":");
 
-			init(Long.parseLong(params[0]), Long.parseLong(params[1]),
+			resetParams(Long.parseLong(params[0]), Long.parseLong(params[1]),
 					(nsInOneMs / Integer.parseInt(params[2])));
-			this.channel = UUID.randomUUID().toString();
+			setChannel();
 			this.delayArray = new long[(int) (this.testCount)];
 
 			long start = System.currentTimeMillis();
@@ -99,47 +100,34 @@ public abstract class AbstractStress {
 
 			this.startGetThread();
 			// wait JedisPubSub client startup
-			sleep(1000);
+			sleep(1 * 1000);
 			this.startSetThread(1);
 
-			while (true) {
-				synchronized (AbstractStress.WAIT_OR_NOTIFY_LOCK) {
-					try {
-						AbstractStress.WAIT_OR_NOTIFY_LOCK.wait();
-					} catch (InterruptedException e) {
-						logger.error("InterruptedException",e);
-					}
+			synchronized (AbstractStress.WAIT_OR_NOTIFY_LOCK) {
+				try {
+					AbstractStress.WAIT_OR_NOTIFY_LOCK.wait();
+				} catch (InterruptedException e) {
+					logger.error("InterruptedException", e);
 				}
-				if (n == testParamsArr.length) {
-					System.exit(0);
-				}
-				sleep(5000);
-				break;
 			}
+			if (n == testParamsArr.length) {
+				System.exit(0);
+			}
+			sleep(5 * 1000);
 		}
 	}
 
 	@SuppressWarnings("deprecation")
-	public static void flushAll() {
+	private void flushAll() {
 		Jedis master = masterPool.getResource();
 		try {
 			master.flushAll();
 		} catch (Exception e) {
 			logger.warn("[flushAll]acquiring the synchronization results failure,now start waitting 60ms");
-			sleep(10000);
+			sleep(60 * 1000);
 		} finally {
 			masterPool.returnResourceObject(master);
 		}
-	}
-
-	public AbstractStress(long testCount, long threadNum,
-			int pageSizeInOneMsSleep) {
-		this.testCount = testCount;
-		this.threadNum = threadNum;
-		this.pageSizeInOneMsSleep = pageSizeInOneMsSleep;
-	}
-
-	public AbstractStress() {
 	}
 
 	public static JedisPool getPool(String ip, int port, int maxTotal,
@@ -166,29 +154,29 @@ public abstract class AbstractStress {
 					try {
 						long start = 0;
 						for (int i = 0; i < testCountByThread; i++) {
-							if ((i + 1) % checkNum == 1) {
+							if ((i + 1) % 10000 == 1) {
 								start = System.currentTimeMillis();
 							}
 							String key = Long.toHexString(System.nanoTime());
 							String value = getRandomString(100);
-							// master.set(key, getRandomString(100));
+							//master.set(key, getRandomString(100));
 							operation(master, key, value);
 							if (i % pageSizeInOneMsSleep == 0) {
-								sleep(millis);
+								TimeUnit.MILLISECONDS.sleep(1);
 							}
 
-							if ((i + 1) % checkNum == 0) {
+							if ((i + 1) % 10000 == 0) {
 								logger.debug(String.format(
-										"%s>>insert %d lose:%d ms", Thread
+										"%s>>insert 10000 lose:%d ms", Thread
 												.currentThread().getName(),
-										checkNum, System.currentTimeMillis()
-												- start));
+										System.currentTimeMillis() - start));
 							}
 						}
 						initEndTime(System.currentTimeMillis());
 					} catch (Exception e) {
-						logger.error("[startSetThread][run]", e);
-						System.exit(0);
+						logger.error("[startSetThread][run][exception]", e);
+						masterPool.returnResource(master);
+						run();
 					} finally {
 						masterPool.returnResource(master);
 					}
@@ -199,16 +187,16 @@ public abstract class AbstractStress {
 			t.start();
 	}
 
-	protected synchronized void initEndTime(long end) {
-		if (this.end < end)
-			this.end = end;
+	protected synchronized void initEndTime(long endTimeStamp) {
+		if (this.endTimeStamp < endTimeStamp)
+			this.endTimeStamp = endTimeStamp;
 	}
 
-	protected synchronized void initStartTime(long start) {
-		if (this.start == 0) {
-			this.start = start;
-		} else if (this.start > start) {
-			this.start = start;
+	protected synchronized void initStartTime(long startTimeStamp) {
+		if (this.startTimeStamp == 0) {
+			this.startTimeStamp = startTimeStamp;
+		} else if (this.startTimeStamp > startTimeStamp) {
+			this.startTimeStamp = startTimeStamp;
 		}
 	}
 
@@ -229,60 +217,64 @@ public abstract class AbstractStress {
 						totalDelay.addAndGet(delay);
 						long nowReadCount = readCount.incrementAndGet();
 						delayArray[(int) (nowReadCount - 1)] = delay;
-						if (nowReadCount % checkNum == 0) {
-							logger.debug("psubscribe 10000");
+						if (nowReadCount % 10000 == 0) {
+							logger.debug("psubscribe 10000 success");
 						}
 						if (nowReadCount >= (testCount)) {
-							logger.info("===========================");
-							logger.info(String.format("TEST-START:%s",
-									new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-											.format(new Date(t.start))));
-							logger.info(String.format("TEST-END:%s",
-									new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-											.format(new Date(t.end))));
-							logger.info(String.format("END(ms):%d", t.end));
-							logger.info(String.format("START(ms):%d", t.start));
-							logger.info(String.format("totalDelay(ns):%d",
-									t.totalDelay.get()));
-							logger.info(String
-									.format("averageDelay(ns)[totalDelay/testCount]:%d",
-											t.totalDelay.get() / t.testCount));
-							logger.info(String
-									.format("qps(count/ms)[testCount/((end-start)/1000)]:%d",
-											(t.testCount / ((t.end - t.start) / 1000))));
-
-							Arrays.sort(t.delayArray);
-							logger.info(String.format("testCount:%d",
-									t.testCount));
-							logger.info(String.format("minDelay(ns):%d",
-									t.delayArray[0]));
-							logger.info(String.format("maxDelay(ns):%d",
-									t.delayArray[t.delayArray.length - 1]));
-							logger.info("==========95Line===========");
-							int index95 = (int) (t.delayArray.length * 0.95);
-							logger.info("index95:" + index95);
-							logger.info("delay95:" + t.delayArray[index95]);
-							logger.info("==========95Line===========");
-
-							logger.info("==========99Line===========");
-							int index99 = (int) (t.delayArray.length * 0.99);
-							logger.info("index99:" + index99);
-							logger.info("delay99:" + t.delayArray[index99]);
-							logger.info("==========99Line===========");
-
-							logger.info("==========99.9Line=========");
-							int index99_9 = (int) (t.delayArray.length * 0.999);
-							logger.info("index99.9:" + index99_9);
-							logger.info("delay99.9:" + t.delayArray[index99_9]);
-							logger.info("==========99.9Line=========");
-							logger.info("===========end=============");
-							synchronized (AbstractStress.WAIT_OR_NOTIFY_LOCK) {
-								AbstractStress.WAIT_OR_NOTIFY_LOCK.notify();
-							}
-							slavePool.returnResource(slave);
+							resultStatistics();
 						}
 					}
-				}, getOnPMessageChannel());// "__key*__:*"
+
+					private void resultStatistics() {
+						logger.info("===========================");
+						logger.info(String.format("TEST-START:%s",
+								new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+										.format(new Date(t.startTimeStamp))));
+						logger.info(String.format("TEST-END:%s",
+								new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+										.format(new Date(t.endTimeStamp))));
+						logger.info(String.format("END(ms):%d", t.endTimeStamp));
+						logger.info(String.format("START(ms):%d", t.startTimeStamp));
+						logger.info(String.format("totalDelay(ns):%d",
+								t.totalDelay.get()));
+						logger.info(String
+								.format("averageDelay(ns)[totalDelay/testCount]:%d",
+										t.totalDelay.get() / t.testCount));
+						logger.info(String
+								.format("qps(count/ms)[testCount/((end-start)/1000)]:%d",
+										(t.testCount / ((t.endTimeStamp - t.startTimeStamp) / 1000))));
+
+						Arrays.sort(t.delayArray);
+						logger.info(String.format("testCount:%d",
+								t.testCount));
+						logger.info(String.format("minDelay(ns):%d",
+								t.delayArray[0]));
+						logger.info(String.format("maxDelay(ns):%d",
+								t.delayArray[t.delayArray.length - 1]));
+						logger.info("==========95Line===========");
+						int index95 = (int) (t.delayArray.length * 0.95);
+						logger.info("index95:" + index95);
+						logger.info("delay95:" + t.delayArray[index95]);
+						logger.info("==========95Line===========");
+
+						logger.info("==========99Line===========");
+						int index99 = (int) (t.delayArray.length * 0.99);
+						logger.info("index99:" + index99);
+						logger.info("delay99:" + t.delayArray[index99]);
+						logger.info("==========99Line===========");
+
+						logger.info("==========99.9Line=========");
+						int index99_9 = (int) (t.delayArray.length * 0.999);
+						logger.info("index99.9:" + index99_9);
+						logger.info("delay99.9:" + t.delayArray[index99_9]);
+						logger.info("==========99.9Line=========");
+						logger.info("===========end=============");
+						synchronized (AbstractStress.WAIT_OR_NOTIFY_LOCK) {
+							AbstractStress.WAIT_OR_NOTIFY_LOCK.notify();
+						}
+						slavePool.returnResource(slave);
+					}
+				}, getChannel());// "__key*__:*"
 			}
 		}.start();
 	}
@@ -291,7 +283,7 @@ public abstract class AbstractStress {
 		try {
 			Thread.sleep(millis);
 		} catch (InterruptedException e) {
-			logger.warn("[sleep]InterruptedException", e);
+			logger.warn("[sleep][InterruptedException]", e);
 		}
 	}
 
@@ -305,11 +297,14 @@ public abstract class AbstractStress {
 		return sb.toString();
 	}
 
-	abstract protected String getOnPMessageChannel();
+	abstract protected String getChannel();
+
+	abstract protected void setChannel();
 
 	abstract protected void operation(Jedis master, String key, String value);
 
-	protected void init(long testCount, long threadNum, int pageSizeInOneMsSleep) {
+	protected void resetParams(long testCount, long threadNum,
+			int pageSizeInOneMsSleep) {
 		this.testCount = testCount;
 		this.threadNum = threadNum;
 		this.pageSizeInOneMsSleep = pageSizeInOneMsSleep;

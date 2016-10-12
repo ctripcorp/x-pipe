@@ -4,30 +4,32 @@ import redis.clients.jedis.Jedis;
 
 /**
  * @author liu
- *
- * Oct 9, 2016
+ * 
+ *         Oct 9, 2016
  */
-public class StressTestBySet extends AbstractStress{
-
-	public StressTestBySet(long testCount, long threadNum,
-			int pageSizeInOneMsSleep) {
-		super(testCount, threadNum, pageSizeInOneMsSleep);
-	}
-	public StressTestBySet() {
-		super();
-	}
-
-	@Override
-	protected String getOnPMessageChannel() {
-		return "*";
-	}
+public class StressTestBySet extends AbstractStress {
 
 	@Override
 	protected void operation(Jedis master, String key, String value) {
-		master.set(key, value);		
+		master.set(key, value);
 	}
+
+	@Override
+	protected String getChannel() {
+		return channel;
+	}
+
+	@Override
+	protected void setChannel() {
+		channel = "*";
+	}
+	
+	/**
+	 * @param args
+	 *  Stress tests
+	 */
 	public static void main(String[] args) {
-		StressTestBySet test=new StressTestBySet();
+		StressTestBySet test = new StressTestBySet();
 		test.startTest();
 	}
 }
