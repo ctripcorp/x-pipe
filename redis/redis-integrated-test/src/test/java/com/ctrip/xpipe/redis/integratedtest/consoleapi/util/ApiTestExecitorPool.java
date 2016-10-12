@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.integratedtest.consoleapi.util;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import junit.framework.Assert;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -22,16 +21,18 @@ import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
  * 
  *         Sep 9, 2016
  */
+@SuppressWarnings("deprecation")
 public class ApiTestExecitorPool extends AbstractExecutorPool {
 
-	private final static Logger logger = LoggerFactory.getLogger(ApiTestExecitorPool.class);
+	private final static Logger logger = LoggerFactory
+			.getLogger(ApiTestExecitorPool.class);
 	private AtomicInteger successNum = new AtomicInteger(0);
 	private AtomicLong successTotalDelay = new AtomicLong(0);
 	private AtomicInteger failNum = new AtomicInteger(0);
 	private AtomicLong failTotalDelay = new AtomicLong(0);
 
 	private int threadNum = 1;
-	private int threadExecutionNum= 100;
+	private int threadExecutionNum = 100;
 	private long threadSleepMsec = 100;
 
 	private String url;
@@ -40,14 +41,13 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 	@SuppressWarnings("rawtypes")
 	private Class type;
 	private Object defaultObj;
-	private List<String> errorMessages = new Vector<String>();
 
 	private CloseableHttpAsyncClient httpClient = HttpAsyncClients
 			.createDefault();
 
 	public boolean isOver = false;
 	public boolean isPass = false;
-	public final static Object WAIT_OR_NOTIFY_LOCK=new Object();
+	public final static Object WAIT_OR_NOTIFY_LOCK = new Object();
 
 	@SuppressWarnings("unused")
 	private ApiTestExecitorPool() {
@@ -66,7 +66,8 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 		doTest(threadNum, threadExecutionNum, threadSleepMsec);
 	}
 
-	public void doTest(int threadNum, int threadExecutionNum, long threadSleepMsec) {
+	public void doTest(int threadNum, int threadExecutionNum,
+			long threadSleepMsec) {
 		this.threadNum = threadNum;
 		this.threadExecutionNum = threadExecutionNum;
 		this.threadSleepMsec = threadSleepMsec;
@@ -90,17 +91,30 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 	protected void test() {
 		HttpGet request = new HttpGet(url);
 		for (int i = 0; i < threadExecutionNum; i++) {
-			sendHttp(request);
 			try {
-				Thread.sleep(threadSleepMsec);
-			} catch (InterruptedException e) {
+				sendHttp(request);
+			} catch (Exception e) {
+				logger.error("[test][sendHttp]Exception", e);
+				synchronized (ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK) {
+					ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK.notifyAll();
+				}
+			}finally{
+				try {
+					Thread.sleep(threadSleepMsec);
+				}catch (InterruptedException e) {
 				logger.error("[test] sleep exception", e);
+			}
 			}
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void handleHttpReturn(String result, long loseTime,
-			String errorMessage) {
+			Exception httpException) {
+		if (httpException != null) {
+			logger.error("[sendHttp]httpException", httpException);
+		}
+		Assert.assertNotNull("HttpReturn Exception", httpException);
 		boolean isOk = false;
 		try {
 			@SuppressWarnings("unchecked")
@@ -109,44 +123,32 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 			if (obj != null && obj.equals(initDefaultObj(obj))) {
 				isOk = true;
 			}
+			Assert.assertEquals("The two result is not the same!",initDefaultObj(obj), obj);
 		} catch (Exception e) {
-			if (errorMessage == null)
-				errorMessage = e.getMessage();
+			logger.error("[handleHttpReturn][exception]", e);
 		} finally {
 			int no = isOk ? addSuccess(loseTime) : addFail(loseTime);
-			logger.debug("{}--->{} ，{}[delay:{}ms]", no, getApiName(),
+			logger.info("{}--->{} ，{}[delay:{}ms]", no, getApiName(),
 					isOk ? "success" : "failed", loseTime);
-			if (errorMessage != null) {
-				errorMessages
-						.add(String
-								.format("ErrorMessages%d--->%s ，Exception[delay:%dms,message:%s]",
-										no, getApiName(), loseTime,
-										errorMessage));
-			}
+			Assert.assertEquals("The two result is not the same!", 0, getFail());
+
 			if (no >= this.threadNum * this.threadExecutionNum) {
-				logger.info(
-						"TOTAL--->{} ，success[count:{} , averageDelay:{}ms]，failed[count:{} , averageDelay:{}ms]",
+				logger.info("TOTAL--->{} ，success[count:{} , averageDelay:{}ms]，failed[count:{} , averageDelay:{}ms]",
 						getApiName(), getSuccess(), getSucAverageDelay(),
 						getFail(), getFaiAverageDelay());
-				logger.info(
-						"END--->{}>>>>============ BYEBYE ============<<<<",
+				logger.info("END--->{}>>>>============ BYEBYE ============<<<<",
 						getApiName());
 				try {
 					httpClient.close();
 				} catch (IOException e) {
-					logger.error("[handleHttpReturn]", e);
+					logger.error("[handleHttpReturn][IOException]", e);
 				}
 				fixedThreadPool.shutdown();
-				if (getFail() > 0) {
-					isPass = false;
-				}else{
-					isPass = true;
-				}
 				isOver = true;
+				isPass = true;
 				synchronized (ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK) {
-		                ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK.notifyAll();
-				 }
-				
+					ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK.notifyAll();
+				}
 			}
 		}
 	}
@@ -162,20 +164,20 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 
 			public void completed(HttpResponse arg0) {
 				String content = null;
-				String errorMessage=null;
 				try {
 					content = EntityUtils.toString(arg0.getEntity(), "UTF-8");
 				} catch (Exception e) {
-					logger.error("[completed]",e);
-					errorMessage=e.getMessage();
+					logger.error("[completed][Exception]", e);
+					handleHttpReturn(content, System.currentTimeMillis()
+							- startTime, e);
 				}
 				handleHttpReturn(content, System.currentTimeMillis()
-						- startTime, errorMessage);
+						- startTime, null);
 			}
 
 			public void failed(Exception e) {
 				handleHttpReturn(null, System.currentTimeMillis() - startTime,
-						e.getMessage());
+						e);
 			}
 
 			public FutureCallback<HttpResponse> setMystartTime(long startTime) {
@@ -183,18 +185,6 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 				return this;
 			}
 		}.setMystartTime(System.currentTimeMillis()));
-	}
-
-	public void printErrorMessages() {
-		logger.error(
-				"ErrorMessages--->{}，start>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
-				getApiName());
-		for (String errorMessage : errorMessages) {
-			logger.error(errorMessage);
-		}
-		logger.error(
-				"ErrorMessages--->{}，end>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
-				getApiName());
 	}
 
 	@Override

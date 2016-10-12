@@ -1,86 +1,64 @@
 package com.ctrip.xpipe.redis.integratedtest.consoleapi;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import static org.junit.Assert.*;
 
-import org.junit.Before;
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.integratedtest.consoleapi.util.ApiTestExecitorPool;
-import com.ctrip.xpipe.utils.StringUtil;
 
 /**
  * @author liuyi
  * 
  *         Sep 9, 2016
  */
-public class ConsoleApiTest extends AbstractTest {
-	private final static Logger logger = LoggerFactory
-			.getLogger(ConsoleApiTest.class);
-	private static Properties p = new Properties();
 
-	@Before
-	public void loadProperties() {
-		try {
-			p.load(new FileInputStream("/opt/data/100004374/console.properties"));
-		} catch (FileNotFoundException e) {
-			logger.error(
-					"[loadProperties] /opt/data/100004374/console.properties not found",
-					e);
-		} catch (IOException e) {
-			logger.error("[loadProperties]", e);
-		}
+@RunWith(Parameterized.class)
+public class ConsoleApiTest extends AbstractTest {
+	final static private long THREAD_MAX_RUNTIME = 100000;
+	private int threadNum, threadExecutionNum;
+	private long threadSleepMsec;
+	private String apiName;
+	private String apiUrl;
+	private Class type;
+
+	public ConsoleApiTest(int threadNum, int threadExecutionNum,
+			long threadSleepMsec, String apiName, String apiUrl, Class type) {
+		this.threadNum = threadNum;
+		this.threadExecutionNum = threadExecutionNum;
+		this.threadSleepMsec = threadSleepMsec;
+		this.apiName = apiName;
+		this.apiUrl = apiUrl;
+		this.type = type;
 	}
 
-	@Test
+	@Parameters
+	public static Collection prepareData() {
+		Object[][] object = {
+				{ 1, 10, 100, "apiName1", "apiUrl1", ClusterMeta.class },
+				{ 1, 10, 100, "apiName2", "apiUrl2", ClusterMeta.class } };
+		return Arrays.asList(object);
+	}
+
+	@Test(timeout = THREAD_MAX_RUNTIME)
 	public void apiTest() {
-		// apiNames=apiName1,apiName2,apiName3
-		String[] apiNames = StringUtil.isEmpty(p.getProperty("apiNames")) ? new String[] {}
-				: p.getProperty("apiNames").split(",");
-		List<ApiTestExecitorPool> apiTests = new ArrayList<ApiTestExecitorPool>();
-		for (String apiName : apiNames) {
-			// apiName=url
-			apiTests.add(new ApiTestExecitorPool(apiName, p
-					.getProperty(apiName), ClusterMeta.class));
-		}
-		for (ApiTestExecitorPool apiTest : apiTests) {
-			apiTest.doTest(1, 10, 100);
-		}
-		int successNum = 0;
-		while (true) {
-			synchronized (ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK) {
-				try {
-					ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK.wait();
-				} catch (InterruptedException e) {
-					logger.error("InterruptedException",e);
-				}
+		ApiTestExecitorPool api = new ApiTestExecitorPool(apiName, apiUrl,
+				ClusterMeta.class);
+		api.doTest(threadNum, threadExecutionNum, threadSleepMsec);
+		synchronized (ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK) {
+			try {
+				ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK.wait();
+			} catch (InterruptedException e) {
+				logger.error("[apiTest][Exception]", e);
 			}
-			for (ApiTestExecitorPool apiTest : apiTests) {
-				if (apiTest.isOver) {
-					if (apiTest.isPass) {
-						successNum++;
-					} else {
-						apiTest.printErrorMessages();
-						logger.error("{} did not pass the test",
-								apiTest.getApiName());
-						throw new RuntimeException(String.format(
-								"%s did not pass the test",
-								apiTest.getApiName()));
-					}
-				}
-			}
-			if (apiTests.size() == successNum) {
-				break;
-			}
-			successNum = 0;
 		}
+		assertTrue(api.isPass);
 	}
 }
