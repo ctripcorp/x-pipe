@@ -1,33 +1,42 @@
 package com.ctrip.xpipe.redis.integratedtest.consoleapi.util;
 
+import io.netty.util.concurrent.DefaultThreadFactory;
+
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author liuyi
  * 
  *         Sep 9, 2016
  */
-public abstract class AbstractExecutorPool {
+public abstract class AbstractExecutorPool{
 	protected ExecutorService fixedThreadPool;
 
 	public AbstractExecutorPool() {
-		init();
+		fixedThreadPool =new ThreadPoolExecutor(5, 20,5, TimeUnit.MINUTES, 
+		        new ArrayBlockingQueue<Runnable>(200),
+		        new DefaultThreadFactory("defaultAbstractExecutorPool")) {
+				    protected void afterExecute(Runnable r, Throwable t) {
+				        super.afterExecute(r, t);
+				        threadExceptionHandler(r,t);
+				    }
+				};
 	}
 
 	public void addThread(final String apiName) {
-		fixedThreadPool.execute(new Runnable() {
+		fixedThreadPool.execute(new Thread() {
 			public void run() {
 				test();
 			}
 		});
 	}
 
-	private void init() {
-		fixedThreadPool = Executors.newFixedThreadPool(getPoolSize());
-	}
-
 	abstract protected void test();
 
 	abstract protected int getPoolSize();
+	
+	abstract protected void threadExceptionHandler(Runnable r, Throwable t);
 }

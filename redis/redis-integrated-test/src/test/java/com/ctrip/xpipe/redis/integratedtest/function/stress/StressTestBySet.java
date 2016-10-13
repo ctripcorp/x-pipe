@@ -32,4 +32,9 @@ public class StressTestBySet extends AbstractStress {
 		StressTestBySet test = new StressTestBySet();
 		test.startTest();
 	}
+
+	@Override
+	public void uncaughtException(Thread t, Throwable e) {
+		super.uncaughtException(t, e);
+	}
 }

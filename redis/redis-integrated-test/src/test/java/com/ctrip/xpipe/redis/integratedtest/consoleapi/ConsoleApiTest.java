@@ -52,13 +52,6 @@ public class ConsoleApiTest extends AbstractTest {
 		ApiTestExecitorPool api = new ApiTestExecitorPool(apiName, apiUrl,
 				ClusterMeta.class);
 		api.doTest(threadNum, threadExecutionNum, threadSleepMsec);
-		synchronized (ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK) {
-			try {
-				ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK.wait();
-			} catch (InterruptedException e) {
-				logger.error("[apiTest][Exception]", e);
-			}
-		}
 		assertTrue(api.isPass);
 	}
 }

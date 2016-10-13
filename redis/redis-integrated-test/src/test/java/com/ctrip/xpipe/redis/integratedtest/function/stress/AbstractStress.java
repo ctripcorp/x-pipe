@@ -8,14 +8,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import redis.clients.jedis.Jedis;
@@ -28,7 +26,7 @@ import redis.clients.jedis.JedisPubSub;
  * 
  *         Oct 9, 2016
  */
-public abstract class AbstractStress {
+public abstract class AbstractStress implements Thread.UncaughtExceptionHandler{
 	protected static Logger logger = LoggerFactory
 			.getLogger(AbstractStress.class);
 
@@ -56,7 +54,7 @@ public abstract class AbstractStress {
 	protected long[] delayArray;
 	protected String channel;
 
-	public final static Object WAIT_OR_NOTIFY_LOCK = new Object();
+	protected Object WAIT_OR_NOTIFY_LOCK = new Object();
 	static {
 		pro = new Properties();
 		try {
@@ -84,6 +82,7 @@ public abstract class AbstractStress {
 
 		int n = 0;
 		for (String testParams : testParamsArr) {
+			
 			n++;
 			String[] params = testParams.split(":");
 
@@ -100,12 +99,12 @@ public abstract class AbstractStress {
 
 			this.startGetThread();
 			// wait JedisPubSub client startup
-			sleep(1 * 1000);
+			sleep(1000);
 			this.startSetThread(1);
 
-			synchronized (AbstractStress.WAIT_OR_NOTIFY_LOCK) {
+			synchronized (this.WAIT_OR_NOTIFY_LOCK) {
 				try {
-					AbstractStress.WAIT_OR_NOTIFY_LOCK.wait();
+					this.WAIT_OR_NOTIFY_LOCK.wait();
 				} catch (InterruptedException e) {
 					logger.error("InterruptedException", e);
 				}
@@ -145,6 +144,7 @@ public abstract class AbstractStress {
 		final int testCountByThread = (int) (testCount / threadNum);
 		for (int i = 0; i < this.threadNum; i++) {
 			theads.add(new Thread() {
+				private int runCount=0;
 				@SuppressWarnings("deprecation")
 				@Override
 				public void run() {
@@ -153,7 +153,7 @@ public abstract class AbstractStress {
 					logger.info(Thread.currentThread().getName() + ">>start");
 					try {
 						long start = 0;
-						for (int i = 0; i < testCountByThread; i++) {
+						for (int i = runCount; i < testCountByThread; i++) {
 							if ((i + 1) % 10000 == 1) {
 								start = System.currentTimeMillis();
 							}
@@ -161,6 +161,7 @@ public abstract class AbstractStress {
 							String value = getRandomString(100);
 							//master.set(key, getRandomString(100));
 							operation(master, key, value);
+							runCount=i;
 							if (i % pageSizeInOneMsSleep == 0) {
 								TimeUnit.MILLISECONDS.sleep(1);
 							}
@@ -183,8 +184,11 @@ public abstract class AbstractStress {
 				}
 			});
 		}
-		for (Thread t : theads)
+		for (Thread t : theads){
+			t.setUncaughtExceptionHandler(this);
 			t.start();
+		}
+			
 	}
 
 	protected synchronized void initEndTime(long endTimeStamp) {
@@ -202,7 +206,7 @@ public abstract class AbstractStress {
 
 	public void startGetThread() {
 		final AbstractStress t = this;
-		new Thread() {
+		Thread getThread=new Thread() {
 			Jedis slave = slavePool.getResource();
 
 			public void run() {
@@ -269,14 +273,16 @@ public abstract class AbstractStress {
 						logger.info("delay99.9:" + t.delayArray[index99_9]);
 						logger.info("==========99.9Line=========");
 						logger.info("===========end=============");
-						synchronized (AbstractStress.WAIT_OR_NOTIFY_LOCK) {
-							AbstractStress.WAIT_OR_NOTIFY_LOCK.notify();
+						synchronized (t.WAIT_OR_NOTIFY_LOCK) {
+							t.WAIT_OR_NOTIFY_LOCK.notify();
 						}
 						slavePool.returnResource(slave);
 					}
 				}, getChannel());// "__key*__:*"
 			}
-		}.start();
+		};
+		getThread.setUncaughtExceptionHandler(this);
+		getThread.start();
 	}
 
 	protected static void sleep(long millis) {
@@ -311,4 +317,9 @@ public abstract class AbstractStress {
 		this.readCount = new AtomicLong();
 		this.totalDelay = new AtomicLong();
 	};
+	
+	@Override
+	public void uncaughtException(Thread t, Throwable e) {
+		logger.error("[uncaughtException]",e);
+	}
 }

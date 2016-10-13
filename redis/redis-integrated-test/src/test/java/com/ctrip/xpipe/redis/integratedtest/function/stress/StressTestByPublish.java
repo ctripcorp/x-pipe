@@ -35,4 +35,9 @@ public class StressTestByPublish extends AbstractStress {
 		test.startTest();
 	}
 
+	@Override
+	public void uncaughtException(Thread t, Throwable e) {
+		super.uncaughtException(t, e);
+	}
+
 }

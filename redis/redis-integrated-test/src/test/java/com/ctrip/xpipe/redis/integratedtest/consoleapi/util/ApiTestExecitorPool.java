@@ -1,8 +1,9 @@
 package com.ctrip.xpipe.redis.integratedtest.consoleapi.util;
 
-import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import junit.framework.Assert;
 
 import org.apache.http.HttpResponse;
@@ -22,7 +23,7 @@ import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
  *         Sep 9, 2016
  */
 @SuppressWarnings("deprecation")
-public class ApiTestExecitorPool extends AbstractExecutorPool {
+public class ApiTestExecitorPool extends AbstractExecutorPool{
 
 	private final static Logger logger = LoggerFactory
 			.getLogger(ApiTestExecitorPool.class);
@@ -38,16 +39,14 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 	private String url;
 	private String apiName;
 
+	private CountDownLatch latch;
+
 	@SuppressWarnings("rawtypes")
 	private Class type;
 	private Object defaultObj;
 
-	private CloseableHttpAsyncClient httpClient = HttpAsyncClients
-			.createDefault();
-
-	public boolean isOver = false;
+	private CloseableHttpAsyncClient httpClient = HttpAsyncClients.createDefault();
 	public boolean isPass = false;
-	public final static Object WAIT_OR_NOTIFY_LOCK = new Object();
 
 	@SuppressWarnings("unused")
 	private ApiTestExecitorPool() {
@@ -68,12 +67,21 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 
 	public void doTest(int threadNum, int threadExecutionNum,
 			long threadSleepMsec) {
+		latch = new CountDownLatch(threadNum * threadExecutionNum);
 		this.threadNum = threadNum;
 		this.threadExecutionNum = threadExecutionNum;
 		this.threadSleepMsec = threadSleepMsec;
 		httpClient.start();
 		for (long i = 0; i < threadNum; i++) {
 			this.addThread(getApiName());
+		}
+		try {
+			latch.await();
+		} catch (InterruptedException e) {
+			logger.error("[doTest][await]InterruptedException", e);
+		} finally {
+			close();
+			logger.info("test is over");
 		}
 	}
 
@@ -95,15 +103,13 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 				sendHttp(request);
 			} catch (Exception e) {
 				logger.error("[test][sendHttp]Exception", e);
-				synchronized (ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK) {
-					ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK.notifyAll();
-				}
-			}finally{
+				latch.countDown();
+			} finally {
 				try {
 					Thread.sleep(threadSleepMsec);
-				}catch (InterruptedException e) {
-				logger.error("[test] sleep exception", e);
-			}
+				} catch (InterruptedException e) {
+					logger.error("[test] sleep exception", e);
+				}
 			}
 		}
 	}
@@ -114,7 +120,7 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 		if (httpException != null) {
 			logger.error("[sendHttp]httpException", httpException);
 		}
-		Assert.assertNotNull("HttpReturn Exception", httpException);
+		Assert.assertNull("HttpReturn Exception", httpException);
 		boolean isOk = false;
 		try {
 			@SuppressWarnings("unchecked")
@@ -123,32 +129,35 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 			if (obj != null && obj.equals(initDefaultObj(obj))) {
 				isOk = true;
 			}
-			Assert.assertEquals("The two result is not the same!",initDefaultObj(obj), obj);
+			Assert.assertEquals("The two result is not the same!",
+					initDefaultObj(obj), obj);
 		} catch (Exception e) {
 			logger.error("[handleHttpReturn][exception]", e);
 		} finally {
 			int no = isOk ? addSuccess(loseTime) : addFail(loseTime);
-			logger.info("{}--->{} ，{}[delay:{}ms]", no, getApiName(),
-					isOk ? "success" : "failed", loseTime);
-			Assert.assertEquals("The two result is not the same!", 0, getFail());
-
+			logger.info("{}--->{} ，{}[delay:{}ms]", no, getApiName(),isOk ? "success" : "failed", loseTime);
 			if (no >= this.threadNum * this.threadExecutionNum) {
 				logger.info("TOTAL--->{} ，success[count:{} , averageDelay:{}ms]，failed[count:{} , averageDelay:{}ms]",
-						getApiName(), getSuccess(), getSucAverageDelay(),
-						getFail(), getFaiAverageDelay());
-				logger.info("END--->{}>>>>============ BYEBYE ============<<<<",
-						getApiName());
-				try {
-					httpClient.close();
-				} catch (IOException e) {
-					logger.error("[handleHttpReturn][IOException]", e);
-				}
-				fixedThreadPool.shutdown();
-				isOver = true;
+						getApiName(), getSuccess(), getSucAverageDelay(),getFail(), getFaiAverageDelay());
 				isPass = true;
-				synchronized (ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK) {
-					ApiTestExecitorPool.WAIT_OR_NOTIFY_LOCK.notifyAll();
-				}
+			}
+			latch.countDown();
+		}
+	}
+
+	private void close() {
+		if (httpClient != null) {
+			try {
+				httpClient.close();
+			} catch (Exception e) {
+				logger.error("[close]close httpClient Exception", e);
+			}
+		}
+		if (fixedThreadPool != null) {
+			try {
+				fixedThreadPool.shutdown();
+			} catch (Exception e) {
+				logger.error("[close]shutdown threadPool Exception", e);
 			}
 		}
 	}
@@ -167,17 +176,15 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 				try {
 					content = EntityUtils.toString(arg0.getEntity(), "UTF-8");
 				} catch (Exception e) {
-					logger.error("[completed][Exception]", e);
-					handleHttpReturn(content, System.currentTimeMillis()
-							- startTime, e);
+					logger.error("[sendHttp][completed][Exception]", e);
+					handleHttpReturn(content, System.currentTimeMillis()-startTime, e);
 				}
-				handleHttpReturn(content, System.currentTimeMillis()
-						- startTime, null);
+				handleHttpReturn(content, System.currentTimeMillis()-startTime, null);
 			}
 
 			public void failed(Exception e) {
-				handleHttpReturn(null, System.currentTimeMillis() - startTime,
-						e);
+				logger.error("[sendHttp][failed][Exception]", e);
+				handleHttpReturn(null, System.currentTimeMillis() - startTime,e);
 			}
 
 			public FutureCallback<HttpResponse> setMystartTime(long startTime) {
@@ -229,5 +236,12 @@ public class ApiTestExecitorPool extends AbstractExecutorPool {
 	public String getApiName() {
 		return apiName;
 	}
+
+	@Override
+	protected void threadExceptionHandler(Runnable r, Throwable t) {
+		logger.error("[threadExceptionHandler]",t);
+	}
+
+	
 
 }
