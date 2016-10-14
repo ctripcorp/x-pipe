@@ -61,7 +61,11 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 			for(DcTbl dc : dcs) {
 				try {
     				logger.info("[notifyUpstreamChanged][construct]{},{},{},{},{}",clusterName, shardName, ip, port, dc.getDcName());
-    				metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).upstreamChange(clusterName, shardName, ip, port);
+    				if(!ip.equals("0.0.0.0")) {
+    					metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).upstreamChange(clusterName, shardName, ip, port);
+    				} else {
+    					logger.info("[notifyUpstreamChanged][ignored]Ignore with defalut ip : 0.0.0.0");
+    				}
     				logger.info("[notifyUpstreamChanged][success]{},{},{},{},{}",clusterName, shardName, ip, port, dc.getDcName());
     			} catch (Exception e) {
     				logger.error("[notifyUpstreamChanged][failed]{},{},{},{},{}",clusterName, shardName, ip, port, dc.getDcName());

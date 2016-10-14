@@ -8,21 +8,22 @@ import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManager
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
+import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 
 /**
  * @author shyin
  *
- * Jul 28, 2016
+ *         Jul 28, 2016
  */
 @Configuration
 @EnableAspectJAutoProxy
-public class RedisConsoleConfig{
+public class RedisConsoleConfig extends AbstractRedisConfigContext {
 	@Bean
 	public MetaServerConsoleServiceManager getMetaServerConsoleServiceManager() {
 		return new DefaultMetaServerConsoleServiceManager();
 	}
-	
-	@Bean 
+
+	@Bean
 	public MetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
 		return new DefaultMetaServerConsoleServiceManagerWrapper();
 	}
