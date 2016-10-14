@@ -51,7 +51,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public long getReplicationStoreMaxCommandsToTransferBeforeCreateRdb() {
-		return getIntProperty(KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB, 100);
+		return getLongProperty(KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB, 100L);
 	}
 
 	@Override

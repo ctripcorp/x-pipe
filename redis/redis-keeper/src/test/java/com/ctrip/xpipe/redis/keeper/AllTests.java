@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.keeper;
 
-
-
-
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -16,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultRdbStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManagerTest;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 
@@ -36,7 +34,8 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 	DefaultRdbStoreTest.class,
 	DefaultCommandStoreTest.class,
 	DefaultRedisSlaveTest.class,
-	RoleCommandHandlerTest.class
+	RoleCommandHandlerTest.class,
+	DefaultKeeperConfigTest.class
 })
 public class AllTests {
 

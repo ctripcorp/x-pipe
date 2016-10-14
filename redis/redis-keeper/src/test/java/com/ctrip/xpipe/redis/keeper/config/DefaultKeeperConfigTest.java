@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
 
+
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.ctrip.xpipe.api.codec.Codec;
@@ -18,8 +20,18 @@ public class DefaultKeeperConfigTest extends AbstractRedisKeeperTest{
 		
 		KeeperConfig keeperConfig = new DefaultKeeperConfig();
 		logger.info("[keeperConfig]{}, {}", Codec.DEFAULT.encode(keeperConfig), keeperConfig);
+	}
+	
+	@Test
+	public void testReplicationStoreMaxCommandsToTransferBeforeCreateRdb(){
 		
+		KeeperConfig keeperConfig = new DefaultKeeperConfig();
+		long value = 10L * (1<<30);
 		
+		System.setProperty(DefaultKeeperConfig.KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB, String.valueOf(value));
+
+		logger.info("[testReplicationStoreMaxCommandsToTransferBeforeCreateRdb]{}", value);
+		Assert.assertEquals(value, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());;		
 	}
 
 }
