@@ -169,30 +169,23 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 		}
 
 		RedisTbl newActiveKeeperTbl = null;
-
 		for (RedisTbl keeper: keepers){
 			if (keeper.getKeepercontainerId() == newActiveKeeper.getKeeperContainerId()){
 				newActiveKeeperTbl = keeper;
 				break;
 			}
 		}
-
 		if (newActiveKeeperTbl == null){
 			throw new BadRequestException("keeper not exist");
 		}
 
-
-		ClusterTbl clusterTbl = clusterService.load(clusterId);
-		if (clusterTbl == null){
-			throw new BadRequestException("cluster not exist");
-		}
-
 		DcTbl dcTbl = dcService.load(dcId);
-		if (dcTbl == null){
-			throw new BadRequestException("dc not exist");
+		ClusterTbl clusterTbl = clusterService.load(clusterId);
+		if (clusterTbl == null || dcTbl == null){
+			throw new BadRequestException("Dc or Cluster not exist");
 		}
 
-		if (clusterTbl.getActivedcId() == dcTbl.getId()){//master dc
+		if (clusterTbl.getActivedcId() == dcTbl.getId()){ //master dc
 			RedisTbl masterRedis = RedisService.findMaster(redisService.findShardRedises(dcId, clusterId, shardId)); 
 			if (masterRedis == null){
 				throw new IllegalStateException("shard has no master redis.");
@@ -241,9 +234,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 				keeper.setRedisMaster(newActiveKeeperTbl.getId());
 			}
 		}
-		
 		redisService.batchUpdate(keepers);
 	}
-
 
 }
