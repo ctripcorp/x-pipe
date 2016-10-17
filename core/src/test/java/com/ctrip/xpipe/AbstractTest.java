@@ -167,8 +167,12 @@ public class AbstractTest {
 	protected String getTestFileDir(){
 		
 		String userHome = getUserHome();
-		String testDir = properties.getProperty("test.file.dir"); 
-		String result = testDir.replace("~", userHome);
+		String result = userHome + "/test";
+		
+		String testDir = properties.getProperty("test.file.dir");
+		if(testDir != null){
+			result = testDir.replace("~", userHome);
+		}
 		return result + "/" + currentTestName();
 	}
 	

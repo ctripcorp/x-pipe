@@ -35,6 +35,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest{
 		
 		final DefaultReplicationStoreManager mgr = (DefaultReplicationStoreManager) createReplicationStoreManager();
 		
+		
 		for(int i=0;i<10;i++){
 			
 			logger.info("[testGc]{}", i);
