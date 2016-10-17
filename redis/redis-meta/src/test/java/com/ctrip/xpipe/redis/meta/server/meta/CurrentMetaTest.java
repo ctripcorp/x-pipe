@@ -49,14 +49,15 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 				
 		for(String dc : getDcs()){
 			
-			currentMeta.addCluster(getDcMeta(dc).getClusters().get(clusterId));
+			ClusterMeta clusterMeta = getDcMeta(dc).getClusters().get(clusterId); 
+			currentMeta.addCluster(clusterMeta);
 			InetSocketAddress keeperMaster = currentMeta.getKeeperMaster(clusterId, shardId);
 			
 			logger.info("[testDefaultMaster]{},{},{}-{}", dc, clusterId, shardId, keeperMaster);
 			if(dc.equals(activeDc)){
 				Assert.assertEquals(new InetSocketAddress("127.0.0.1", 6379), keeperMaster);
 			}else{
-				Assert.assertNull(keeperMaster);
+				Assert.assertEquals(new InetSocketAddress("127.0.0.1", 6000), keeperMaster);
 			}
 		}
 		

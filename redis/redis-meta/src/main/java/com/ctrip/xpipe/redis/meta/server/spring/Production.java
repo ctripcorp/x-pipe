@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -12,7 +13,6 @@ import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateController;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
-import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
 /**
  * @author wenchao.meng
@@ -35,10 +35,8 @@ public class Production extends AbstractProfile{
 	
 	@Bean
 	public ZkClient getZkClient(MetaServerConfig metaServerConfig){
-		
-		DefaultZkClient zkClient = new DefaultZkClient();
-		zkClient.setZkAddress(metaServerConfig.getZkConnectionString());
-		return zkClient;
+
+		return getZkClient(metaServerConfig.getZkNameSpace(), metaServerConfig.getZkConnectionString());
 	}
 	
 	@Bean
@@ -48,6 +46,7 @@ public class Production extends AbstractProfile{
 	
 	@Bean
 	public KeeperStateController getKeeperStateController(){
+		
 		return new DefaultKeeperStateController();
 	}
 }

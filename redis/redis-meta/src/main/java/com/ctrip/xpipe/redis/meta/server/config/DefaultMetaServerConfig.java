@@ -32,6 +32,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static String KEY_SERVER_PORT = "server.port";
 	
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
+	
 	private int defaultMetaServerId = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "1"));
 	private int defaultServerPort = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "8080"));
 	

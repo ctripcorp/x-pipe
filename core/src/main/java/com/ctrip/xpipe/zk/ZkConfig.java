@@ -8,6 +8,8 @@ import org.apache.curator.framework.CuratorFramework;
  * Jun 23, 2016
  */
 public interface ZkConfig {
+	
+	public static String DEFAULT_ZK_NAMESPACE = "xpipe";
 
 	int getZkConnectionTimeoutMillis();
 

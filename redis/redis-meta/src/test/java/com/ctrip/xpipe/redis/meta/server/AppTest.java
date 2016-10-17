@@ -9,6 +9,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
@@ -36,10 +37,17 @@ public class AppTest extends AbstractMetaServerContextTest{
 		System.setProperty(ArrangeTaskExecutor.ARRANGE_TASK_EXECUTOR_START, "true");
 	}
 
+	
+	@Test
+	public void startZk(){
+		startZk(zkPort);
+	}
+	
 	@Test
 	public void start9747() throws Exception {
 		
 		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
+        System.setProperty(AbstractCoreConfig.KEY_ZK_NAMESPACE, "xpipe_dc1");		
 		start();
 	}
 
@@ -47,9 +55,8 @@ public class AppTest extends AbstractMetaServerContextTest{
 	@Test
 	public void start9748() throws Exception {
 		
-		this.zkPort = IdcUtil.OY_ZK_PORT;
 		this.serverPort = IdcUtil.OY_METASERVER_PORT;
-
+        System.setProperty(AbstractCoreConfig.KEY_ZK_NAMESPACE, "xpipe_dc2");		
 		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, "metaserver--oy.xml");
 		IdcUtil.setToOY();
 		start();
@@ -59,7 +66,6 @@ public class AppTest extends AbstractMetaServerContextTest{
 	public void start() throws Exception{
 		
 		System.setProperty("server.port", String.valueOf(serverPort));
-		startZk(zkPort);
 		
 		SpringComponentRegistry registry = SpringApplication.run(MetaServerApplication.class, new String[]{}).getBean(SpringComponentRegistry.class);
 		TestZkClient testZkClient = registry.getComponent(TestZkClient.class);

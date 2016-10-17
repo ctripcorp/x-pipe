@@ -4,11 +4,12 @@ import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.keeper.spring.TestWithoutZkProfile;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.zk.impl.TestZkClient;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -21,54 +22,67 @@ import org.springframework.context.ConfigurableApplicationContext;
 @SpringBootApplication
 public class AppTest extends AbstractRedisKeeperTest {
 	
+	@Before
+	public void beforeAppTest(){
+    	System.setProperty(AbstractProfile.PROFILE_KEY, TestWithoutZkProfile.PROFILE_NO_ZK);
+	}
+	
+	
     @Test
-    public void start8080() throws Exception {
-        System.setProperty("server.port", "8080");
-        System.setProperty("replication.store.dir", "/opt/data/xpipe8080");
+    public void start7080() throws Exception {
+        System.setProperty("server.port", "7080");
+        System.setProperty(AbstractCoreConfig.KEY_ZK_NAMESPACE, "xpipe_dc1");		
+        setReplicationStoreDir();
         start();
     }
 
     @Test
-    public void start8081() throws Exception {
-        System.setProperty("server.port", "8081");
-        System.setProperty("replication.store.dir", "/opt/data/xpipe8081");
+    public void start7081() throws Exception {
+        System.setProperty("server.port", "7081");
+        System.setProperty(AbstractCoreConfig.KEY_ZK_NAMESPACE, "xpipe_dc1");
+        setReplicationStoreDir();
+        start();
+    }
+    
+	private void setReplicationStoreDir() {
+        System.setProperty("replication.store.dir", String.format("/opt/data/xpipe%s", System.getProperty("server.port")));
+	}
+
+
+	@Test
+    public void start7082() throws Exception {
+        System.setProperty("server.port", "7082");
+        System.setProperty(AbstractCoreConfig.KEY_ZK_NAMESPACE, "xpipe_dc1");		
+        setReplicationStoreDir();
+        start();
+    }
+
+    @Test
+    public void start7180() throws Exception {
+        System.setProperty("server.port", "7180");
+        System.setProperty(AbstractCoreConfig.KEY_ZK_NAMESPACE, "xpipe_dc2");		
+        setReplicationStoreDir();
+        start();
+    }
+
+    @Test
+    public void start7181() throws Exception {
+        System.setProperty("server.port", "7181");
+        System.setProperty(AbstractCoreConfig.KEY_ZK_NAMESPACE, "xpipe_dc2");		
+        setReplicationStoreDir();
         start();
     }
     
     @Test
-    public void start8082() throws Exception {
-        System.setProperty("server.port", "8082");
-        System.setProperty("replication.store.dir", "/opt/data/xpipe8082");
-        start();
-    }
-
-    @Test
-    public void start8180() throws Exception {
-        System.setProperty("server.port", "8180");
-        System.setProperty(TestZkClient.ZK_ADDRESS_KEY, "127.0.0.1:2182");
-        System.setProperty("replication.store.dir", "/opt/data/xpipe8180");
-        start();
-    }
-
-    @Test
-    public void start8181() throws Exception {
-        System.setProperty("server.port", "8181");
-        System.setProperty(TestZkClient.ZK_ADDRESS_KEY, "127.0.0.1:2182");
-        System.setProperty("replication.store.dir", "/opt/data/xpipe8181");
-        start();
-    }
-    
-    @Test
-    public void start8182() throws Exception {
-        System.setProperty("server.port", "8182");
-        System.setProperty(TestZkClient.ZK_ADDRESS_KEY, "127.0.0.1:2182");
-        System.setProperty("replication.store.dir", "/opt/data/xpipe8182");
+    public void start7182() throws Exception {
+        System.setProperty("server.port", "7182");
+        System.setProperty(AbstractCoreConfig.KEY_ZK_NAMESPACE, "xpipe_dc2");		
+        setReplicationStoreDir();
         start();
     }
 
 
     private void start() throws Exception {
-    	System.setProperty(AbstractProfile.PROFILE_KEY, TestWithoutZkProfile.PROFILE_NO_ZK);
         ConfigurableApplicationContext context =
                 new SpringApplicationBuilder(AppTest.class).run();
         initComponentRegistry(context);

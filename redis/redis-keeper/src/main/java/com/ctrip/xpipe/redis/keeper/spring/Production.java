@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
-import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 
 /**
  * @author wenchao.meng
@@ -24,10 +23,7 @@ public class Production extends AbstractProfile{
 
 	@Bean
 	public ZkClient getZkClient(KeeperConfig keeperConfig) {
-		
-		DefaultZkClient zkClient = new DefaultZkClient();
-		zkClient.setZkAddress(keeperConfig.getZkConnectionString());
-		return zkClient;
+		return getZkClient(keeperConfig.getZkNameSpace(), keeperConfig.getZkConnectionString());
 	}
 	
 	@Bean

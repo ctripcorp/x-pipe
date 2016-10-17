@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.config;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.zk.ZkConfig;
 
 /**
  * @author wenchao.meng
@@ -13,6 +14,8 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	private String zkAddress = "localhost:2181";
 
 	private String consoleAddress = "http://localhost:9000";
+	
+	private String zkNameSpace = ZkConfig.DEFAULT_ZK_NAMESPACE;
 
 	private int metaServerId = 1;
 	
@@ -88,5 +91,14 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	@Override
 	public String toString() {
 		return Codec.DEFAULT.encode(this);
+	}
+
+	@Override
+	public String getZkNameSpace() {
+		return zkNameSpace;
+	}
+	
+	public void setZkNameSpace(String zkNameSpace) {
+		this.zkNameSpace = zkNameSpace;
 	}
 }
