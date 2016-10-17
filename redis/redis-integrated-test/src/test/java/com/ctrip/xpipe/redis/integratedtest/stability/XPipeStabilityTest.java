@@ -13,8 +13,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.dianping.cat.Cat;
 
@@ -23,14 +24,17 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
 import redis.clients.jedis.exceptions.JedisConnectionException;
+import redis.clients.jedis.exceptions.JedisException;
 
 /**
  * @author shyin
  *
  *         Oct 9, 2016
  */
-public class XPipeStabilityTest extends AbstractTest {
-	private ExecutorService producerThreadPool;
+public class XPipeStabilityTest {
+	Logger logger = LoggerFactory.getLogger(XPipeStabilityTest.class);
+	
+	private ScheduledExecutorService producerThreadPool;
 	private ExecutorService consumerThreadPool;
 	private ExecutorService valueCheckThreadPool;
 	private ScheduledExecutorService expireCheckThreadPool;
@@ -51,9 +55,10 @@ public class XPipeStabilityTest extends AbstractTest {
 	private Long historyCatIntervalTotalDelay = new Long(0);
 
 	public int TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("timeout", "10"));
-	public int KEY_EXPIRE_SECONDS = Integer.parseInt(System.getProperty("key-expire-seconds", "500"));
+	public int KEY_EXPIRE_SECONDS = Integer.parseInt(System.getProperty("key-expire-seconds", "3600"));
 	public int QPS_COUNT_INTERVAL = Integer.parseInt(System.getProperty("qps-count-interval", "5"));
-	private int producerThreadNum = Integer.parseInt(System.getProperty("thread", "4"));
+	private int producerThreadNum = Integer.parseInt(System.getProperty("thread", "8"));
+	private int valueCheckThreadNum = Integer.parseInt(System.getProperty("valueCheckThread","8"));
 	private int msgSize = Integer.parseInt(System.getProperty("msg-size", "100"));
 	private int catIntervalSize = Integer.parseInt(System.getProperty("cat-interval-size", "100"));
 
@@ -65,12 +70,13 @@ public class XPipeStabilityTest extends AbstractTest {
 	@Before
 	public void setUp() {
 		logger.info("[setUp]");
-		Cat.initializeByDomain("100004376");
+		logger.info("[ProducerThread]{} [ValueCheckThread]{}",producerThreadNum, valueCheckThreadNum);
+		valueCheckThreadNum = (producerThreadNum < valueCheckThreadNum)? valueCheckThreadNum : producerThreadNum;
 
-		producerThreadPool = Executors.newFixedThreadPool(producerThreadNum,
+		producerThreadPool = Executors.newScheduledThreadPool(producerThreadNum,
 				XpipeThreadFactory.create("ProducerThreadPool"));
 		consumerThreadPool = Executors.newFixedThreadPool(1, XpipeThreadFactory.create("ConsumerThreadPool"));
-		valueCheckThreadPool = Executors.newFixedThreadPool(producerThreadNum,
+		valueCheckThreadPool = Executors.newFixedThreadPool(valueCheckThreadNum,
 				XpipeThreadFactory.create("ValueCheckThreadPool"));
 		expireCheckThreadPool = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("ExpireCheckThreadPool"));
 		qpsCheckThreadPool = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("QpsCheckThreadPool"));
@@ -84,8 +90,8 @@ public class XPipeStabilityTest extends AbstractTest {
 			}
 		});
 
-		masterPool = getJedisPool(masterAddress, masterPort, producerThreadNum * 2, 8);
-		slavePool = getJedisPool(slaveAddress, slavePort, producerThreadNum * 3, 24);
+		masterPool = getJedisPool(masterAddress, masterPort, producerThreadNum * 2, producerThreadNum);
+		slavePool = getJedisPool(slaveAddress, slavePort, valueCheckThreadNum * 2, valueCheckThreadNum);
 	}
 
 	@After
@@ -122,43 +128,30 @@ public class XPipeStabilityTest extends AbstractTest {
 
 	private void startProducerJob() {
 		for (int jobCnt = 0; jobCnt != producerThreadNum; ++jobCnt) {
-			producerThreadPool.execute(new ProducerThread());
+			producerThreadPool.scheduleAtFixedRate(new ProducerThread(), 0, 1, TimeUnit.MILLISECONDS);
 		}
 	}
 
 	private class ProducerThread implements Runnable {
-		@SuppressWarnings({ "static-access" })
 		@Override
 		public void run() {
-			Thread.currentThread().setDefaultUncaughtExceptionHandler(new XPipeStabilityTestExceptionHandler() {
-				@Override
-				protected void doRestart() {
-					producerThreadPool.execute(new ProducerThread());
-				}
-			});
-
 			Jedis master = null;
+			String key = null,value = null;
 			try {
 				master = masterPool.getResource();
-				String key = null, value = null;
-				while (true) {
-					try {
-						key = Long.toString(globalCnt.getAndIncrement()) + "-" + Long.toString(System.nanoTime());
-						value = randomString(msgSize);
-						records.put(key, value);
-						master.setex(key, KEY_EXPIRE_SECONDS, value);
-						queryCnt.incrementAndGet();
+				key = Long.toString(globalCnt.getAndIncrement()) + "-" + Long.toString(System.nanoTime());
+				String currentTime = Long.toString(System.currentTimeMillis());
+				value = currentTime + "-" + randomString(msgSize - 1 - currentTime.length());
 
-					} catch (JedisConnectionException e) {
-						logger.error("[startProducerJob][run]JedisConnectionException : {}", e);
-						records.remove(key);
-						throw e;
-					} catch (Exception e) {
-						logger.error("[startProducerJob][run]InsertValue Exception : Key:{} Exception:{}", key, e);
-						records.remove(key);
-						throw e;
-					}
-				}
+				records.put(key, value);
+				master.setex(key, KEY_EXPIRE_SECONDS, value);
+				queryCnt.incrementAndGet();
+			} catch (JedisException e) {
+				logger.error("[startProducerJob][run]JedisException : {}", e);
+				records.remove(key);
+			} catch (Exception e) {
+				logger.error("[startProducerJob][run]InsertValue Exception : Key:{} Value:{} Exception:{}", key, value, e);
+				records.remove(key);
 			} finally {
 				if (null != master) {
 					master.close();
@@ -208,7 +201,7 @@ public class XPipeStabilityTest extends AbstractTest {
 	}
 
 	private void startValueCheckJob() {
-		for (int valueCheckThreadCnt = 0; valueCheckThreadCnt != producerThreadNum; ++valueCheckThreadCnt) {
+		for (int valueCheckThreadCnt = 0; valueCheckThreadCnt != valueCheckThreadNum; ++valueCheckThreadCnt) {
 			valueCheckThreadPool.execute(new ValueCheckThread());
 		}
 	}
@@ -299,6 +292,12 @@ public class XPipeStabilityTest extends AbstractTest {
 							logger.error("[startExpireCheckJob][run][Timeout]Key:{} Timeout:{}", key, timeout);
 						}
 					}
+					if (timeout > 3 * TIMEOUT_SECONDS) {
+						if (null != records.get(key)) {
+							logger.error("[startExpireCheckJob][run][Timeout][NoMoreCheck]Key:{}", key, timeout);
+							records.remove(key);
+						}
+					}
 				}
 			}
 		}, 1, 1, TimeUnit.SECONDS);
@@ -308,8 +307,8 @@ public class XPipeStabilityTest extends AbstractTest {
 		JedisPoolConfig config = new JedisPoolConfig();
 		config.setMaxTotal(maxTotal);
 		config.setMaxIdle(maxIdle);
-		config.setTestOnBorrow(true);
-		config.setTestOnReturn(true);
+		config.setTestOnBorrow(false);
+		config.setTestOnReturn(false);
 		return new JedisPool(config, ip, port, 0);
 	}
 
@@ -328,5 +327,21 @@ public class XPipeStabilityTest extends AbstractTest {
 		}
 
 		protected abstract void doRestart();
+	}
+	
+	public static String randomString() {
+
+		return randomString(1 << 10);
+	}
+
+	public static String randomString(int length) {
+
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < length; i++) {
+			sb.append((char) ('a' + (int) (26 * Math.random())));
+		}
+
+		return sb.toString();
+
 	}
 }
