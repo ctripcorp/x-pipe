@@ -351,5 +351,9 @@ public class DefaultReplicationStore implements ReplicationStore {
 	public int getRdbUpdateCount() {
 		return rdbUpdateCount.get();
 	}
+	
+	protected File getBaseDir() {
+		return baseDir;
+	}
 
 }

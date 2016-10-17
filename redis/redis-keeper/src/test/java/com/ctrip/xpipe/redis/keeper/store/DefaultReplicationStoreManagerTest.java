@@ -1,12 +1,17 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -23,6 +28,58 @@ import io.netty.buffer.Unpooled;
  *         Jun 1, 2016 9:47:12 AM
  */
 public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest{
+	
+	
+	@Test
+	public void testGc() throws IOException, InterruptedException{
+		
+		final DefaultReplicationStoreManager mgr = (DefaultReplicationStoreManager) createReplicationStoreManager();
+		
+		for(int i=0;i<1000;i++){
+			
+			logger.info("[testGc]{}", i);
+			
+			final CountDownLatch latch = new CountDownLatch(2);
+			final AtomicReference<DefaultReplicationStore> store = new AtomicReference<DefaultReplicationStore>(null);
+			
+			executors.execute(new Runnable() {
+				
+				@Override
+				public void run() {
+					try {
+						store.set(mgr.create());
+					} catch (IOException e) {
+						logger.error("[testGc]", e);
+					}finally{
+						latch.countDown();
+					}
+				}
+			});
+
+			executors.execute(new Runnable() {
+				
+				@Override
+				public void run() {
+				
+					try {
+						mgr.gc();
+					} catch (IOException e) {
+						logger.error("[testGc][gc]", e);
+					}finally{
+						latch.countDown();
+					}
+					
+				}
+			});
+			
+			latch.await();
+			Assert.assertNotNull(store.get());
+			Assert.assertTrue(store.get().getBaseDir().exists());
+		}		
+	}
+
+	
+	
 
 	@Test
 	public void test() throws Exception {

@@ -61,7 +61,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 				try {
 					gc();
 				} catch (Exception e) {
-					e.printStackTrace();
+					logger.error("[run][gc]", e);
 				}
 			}
 		}, keeperConfig.getReplicationStoreGcIntervalSeconds(), keeperConfig.getReplicationStoreGcIntervalSeconds(), TimeUnit.SECONDS);
@@ -96,7 +96,6 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 
 	@Override
 	public synchronized DefaultReplicationStore create() throws IOException {
-		// TODO dir naming
 
 		File storeBaseDir = new File(baseDir, UUID.randomUUID().toString());
 		storeBaseDir.mkdirs();
@@ -132,7 +131,9 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 		try (Writer writer = new FileWriter(metaFile)) {
 			meta.store(writer, null);
 		}
+		logger.info("[saveMeta][before]{}", currentMeta.get());
 		currentMeta.set(meta);
+		logger.info("[saveMeta][after]{}", currentMeta.get());
 	}
 
 	/**
@@ -193,12 +194,13 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 		return shardName;
 	}
 
-	private void gc() throws IOException {
+	protected synchronized void gc() throws IOException {
 		// remove directories of previous ReplicationStores
 		Properties meta = currentMeta.get();
+		final String currentDirName;
 		if (meta != null) {
-			final String currentDirName = meta.getProperty(LATEST_STORE_DIR);
-			File[] ReplicationStoreDirs = baseDir.listFiles(new FileFilter() {
+			currentDirName = meta.getProperty(LATEST_STORE_DIR);
+			File[] replicationStoreDirs = baseDir.listFiles(new FileFilter() {
 
 				@Override
 				public boolean accept(File path) {
@@ -206,8 +208,9 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 				}
 			});
 
-			if (ReplicationStoreDirs != null) {
-				for (File dir : ReplicationStoreDirs) {
+			if (replicationStoreDirs != null && replicationStoreDirs.length > 0) {
+				logger.info("[GC][old replicationstore]newest:{}", currentDirName);
+				for (File dir : replicationStoreDirs) {
 					logger.info("[GC] directory {}", dir.getCanonicalPath());
 					FileUtils.deleteDirectory(dir);
 				}
