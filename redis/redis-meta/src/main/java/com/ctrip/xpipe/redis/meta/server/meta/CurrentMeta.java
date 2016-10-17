@@ -228,17 +228,6 @@ public class CurrentMeta implements Releasable{
 		
 		private InetSocketAddress getDefaultKeeperMaster(ShardMeta shardMeta) {
 			
-			RedisMeta redisMaster = null;
-			for(RedisMeta redisMeta : shardMeta.getRedises()){
-				if(redisMeta.isMaster()){
-					redisMaster = redisMeta;
-				}
-			}
-			
-			if(redisMaster != null){
-				return new InetSocketAddress(redisMaster.getIp(), redisMaster.getPort());
-			}
-			
 			String upstream = shardMeta.getUpstream();
 			try{
 				if(!StringUtil.isEmpty(upstream)){
@@ -247,6 +236,17 @@ public class CurrentMeta implements Releasable{
 			}catch(Exception e){
 				logger.error("[getDefaultKeeperMaster]", e);
 			}
+
+			RedisMeta redisMaster = null;
+			for(RedisMeta redisMeta : shardMeta.getRedises()){
+				if(redisMeta.isMaster()){
+					redisMaster = redisMeta;
+				}
+			}			
+			if(redisMaster != null){
+				return new InetSocketAddress(redisMaster.getIp(), redisMaster.getPort());
+			}
+			
 			
 			if(shardMeta.getRedises().size() == 0){
 				logger.warn("[getDefaultKeeperMaster][no redis]{}", shardMeta);

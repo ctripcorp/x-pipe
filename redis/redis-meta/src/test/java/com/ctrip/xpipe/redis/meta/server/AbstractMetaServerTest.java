@@ -35,6 +35,10 @@ public class AbstractMetaServerTest extends AbstractRedisTest{
 		return dc;
 	}
 	
+	public String [] getDcs(){
+		return new String[]{"jq", "fq"};
+	}
+	
 	public String getClusterId() {
 		return clusterId;
 	}

@@ -39,6 +39,29 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		shardId = clusterMeta.getShards().keySet().iterator().next();
 	}
 	
+	
+	@Test
+	public void testDefaultMaster(){
+		
+		CurrentMeta currentMeta = new CurrentMeta();
+		String clusterId = getClusterId(), shardId = getShardId();
+		String activeDc = getDcMeta(getDc()).getClusters().get(clusterId).getActiveDc();
+				
+		for(String dc : getDcs()){
+			
+			currentMeta.addCluster(getDcMeta(dc).getClusters().get(clusterId));
+			InetSocketAddress keeperMaster = currentMeta.getKeeperMaster(clusterId, shardId);
+			
+			logger.info("[testDefaultMaster]{},{},{}-{}", dc, clusterId, shardId, keeperMaster);
+			if(dc.equals(activeDc)){
+				Assert.assertEquals(new InetSocketAddress("127.0.0.1", 6379), keeperMaster);
+			}else{
+				Assert.assertNull(keeperMaster);
+			}
+		}
+		
+	}
+	
 	@Test
 	public void testRelease(){
 		
