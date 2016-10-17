@@ -1,6 +1,13 @@
 package com.ctrip.xpipe.redis.integratedtest.function.stress;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.UUID;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import redis.clients.jedis.Jedis;
 
@@ -9,30 +16,27 @@ import redis.clients.jedis.Jedis;
  * 
  *         Oct 9, 2016
  */
+@RunWith(Parameterized.class)
 public class StressTestByPublish extends AbstractStress {
 
-	@Override
-	protected void operation(Jedis master, String key, String value) {
-		master.publish(channel, key);
+	public StressTestByPublish(long testCount, long threadNum,
+			int numberPerMillisecond, String masterIp, int masterPort,
+			String slaveIp, int slavePort, int valueLength) {
+		super(testCount, threadNum, numberPerMillisecond, masterIp, masterPort,
+				slaveIp, slavePort, valueLength);
 	}
 
-	@Override
-	protected String getChannel() {
-		return channel;
+	@Parameters
+	public static Collection prepareData() {
+		Object[][] object = {
+				{ 100, 2, 5, "0.0.0.127", 6379, "0.0.0.127", 6379, 20 },
+				{ 100, 2, 5, "0.0.0.127", 6379, "0.0.0.127", 6379, 20 } };
+		return Arrays.asList(object);
 	}
 
-	@Override
-	protected void setChannel() {
-		channel=UUID.randomUUID().toString();
-	}
-	
-	/**
-	 * @param args
-	 *  Stress tests
-	 */
-	public static void main(String[] args) {
-		StressTestByPublish test = new StressTestByPublish();
-		test.startTest();
+	@Test
+	public void startStressTest() {
+		this.startTest();
 	}
 
 	@Override
@@ -40,4 +44,33 @@ public class StressTestByPublish extends AbstractStress {
 		super.uncaughtException(t, e);
 	}
 
+	@Override
+	protected int getMasterMaxTotal() {
+		return 40;
+	}
+
+	@Override
+	protected int getMasterMaxIdle() {
+		return 5;
+	}
+
+	@Override
+	protected int getSlaveMaxTotal() {
+		return 40;
+	}
+
+	@Override
+	protected int getSlaveMaxIdle() {
+		return 5;
+	}
+
+	@Override
+	protected String getChannel() {
+		return UUID.randomUUID().toString();
+	}
+
+	@Override
+	protected void operation(Jedis master, String key, String value) {
+		master.publish(channel, key);
+	}
 }

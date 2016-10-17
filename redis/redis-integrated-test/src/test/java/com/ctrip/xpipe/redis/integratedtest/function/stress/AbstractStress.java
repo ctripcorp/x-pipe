@@ -1,20 +1,17 @@
 package com.ctrip.xpipe.redis.integratedtest.function.stress;
 
-import java.io.FileInputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.utils.StringUtil;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -26,26 +23,30 @@ import redis.clients.jedis.JedisPubSub;
  * 
  *         Oct 9, 2016
  */
-public abstract class AbstractStress implements Thread.UncaughtExceptionHandler{
+public abstract class AbstractStress implements Thread.UncaughtExceptionHandler {
 	protected static Logger logger = LoggerFactory
 			.getLogger(AbstractStress.class);
 
 	public static final String BASE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 	public static final int BASE_CHARS_LENGTH = 36;
 
-	public static Properties pro;
-	public static String testParamsList;
-	public static int valueLength = 20;
 	public static int nsInOneMs = 1000000;
 
 	protected JedisPool masterPool;
+	protected String masterIp;
+	protected int masterPort;
 	protected JedisPool slavePool;
+	protected String slaveIp;
+	protected int slavePort;
 
 	protected AtomicLong totalDelay;
 	protected AtomicLong readCount;
 
 	protected long threadNum;
 	protected long testCount;
+	protected int valueLength = 20;
+	protected String value;
+	protected int numberPerMillisecond;
 	protected int pageSizeInOneMsSleep = 5;
 
 	protected long startTimeStamp = 0;
@@ -54,89 +55,57 @@ public abstract class AbstractStress implements Thread.UncaughtExceptionHandler{
 	protected long[] delayArray;
 	protected String channel;
 
-	protected Object WAIT_OR_NOTIFY_LOCK = new Object();
-	static {
-		pro = new Properties();
-		try {
-			pro.load(new FileInputStream(
-					"/opt/data/100004376/stress.properties"));
-			// testParamsList=testCount1:threadNum1:sheepTime1,testCount2:threadNum2:sheepTime2
-			testParamsList = pro.getProperty("testParamsList");
-			// the test value length
-			valueLength = Integer.parseInt(pro.getProperty("valueLength"));
-		} catch (Exception e) {
-			logger.error("[static] init stress.properties exception", e);
-		}
+	CountDownLatch latch = new CountDownLatch(1);
 
+	public AbstractStress(long testCount, long threadNum,
+			int numberPerMillisecond, String masterIp, int masterPort,
+			String slaveIp, int slavePort, int valueLength) {
+		this.testCount = testCount;
+		this.threadNum = threadNum;
+		this.numberPerMillisecond = numberPerMillisecond;
+		this.masterPool = getPool(masterIp, masterPort, getMasterMaxTotal(),
+				getMasterMaxIdle());
+		this.slavePool = getPool(slaveIp, slavePort, getSlaveMaxTotal(),
+				getSlaveMaxIdle());
+		this.channel = getChannel();
+		this.value = getRandomString(valueLength);
+		totalDelay = new AtomicLong(0);
+		readCount = new AtomicLong(0);
 	}
 
 	public void startTest() {
-		String[] testParamsArr = StringUtil.isEmpty(testParamsList) ? new String[] {}
-				: testParamsList.split(",");
-		if (testParamsArr.length <= 0) {
-			logger.warn("testParamsList is null");
-			return;
-		}
-		masterPool = getPool(pro.getProperty("masterIp"), 6379, 40, 5);
-		slavePool = getPool(pro.getProperty("slaveIp"), 6379, 40, 5);
+		this.delayArray = new long[(int) (this.testCount)];
+		long start = System.currentTimeMillis();
 
-		int n = 0;
-		for (String testParams : testParamsArr) {
-			
-			n++;
-			String[] params = testParams.split(":");
+		flushAll();
+		logger.info(String.format("flushAll() %d ms",
+				(System.currentTimeMillis() - start)));
 
-			resetParams(Long.parseLong(params[0]), Long.parseLong(params[1]),
-					(nsInOneMs / Integer.parseInt(params[2])));
-			setChannel();
-			this.delayArray = new long[(int) (this.testCount)];
+		this.startGetThread();
+		// wait JedisPubSub client startup
+		sleep(1000);
+		this.startSetThread(1);
 
-			long start = System.currentTimeMillis();
-
-			flushAll();
-			logger.info(String.format("flushAll() %d ms",
-					(System.currentTimeMillis() - start)));
-
-			this.startGetThread();
-			// wait JedisPubSub client startup
-			sleep(1000);
-			this.startSetThread(1);
-
-			synchronized (this.WAIT_OR_NOTIFY_LOCK) {
-				try {
-					this.WAIT_OR_NOTIFY_LOCK.wait();
-				} catch (InterruptedException e) {
-					logger.error("InterruptedException", e);
-				}
-			}
-			if (n == testParamsArr.length) {
-				System.exit(0);
-			}
-			sleep(5 * 1000);
-		}
-	}
-
-	@SuppressWarnings("deprecation")
-	private void flushAll() {
-		Jedis master = masterPool.getResource();
 		try {
-			master.flushAll();
-		} catch (Exception e) {
-			logger.warn("[flushAll]acquiring the synchronization results failure,now start waitting 60ms");
-			sleep(60 * 1000);
-		} finally {
-			masterPool.returnResourceObject(master);
+			latch.await();
+		} catch (InterruptedException e) {
+			logger.error("[startTest]InterruptedException", e);
 		}
+		sleep(2 * 1000);
+		close();
 	}
 
-	public static JedisPool getPool(String ip, int port, int maxTotal,
-			int maxIdle) {
-		JedisPoolConfig config = new JedisPoolConfig();
-		config.setMaxTotal(maxTotal);
-		config.setMaxIdle(maxIdle);
-		config.setTestOnBorrow(true);
-		config.setTestOnReturn(true);
-		return new JedisPool(config, ip, port);
+	private void close() {
+		try {
+			if (masterPool != null) {
+				masterPool.close();
+			}
+			if (slavePool != null) {
+				slavePool.close();
+			}
+		} catch (Exception e) {
+			logger.error("[close]Exception",e);
+		}
 	}
 
 	public void startSetThread(final long millis) {
@@ -144,7 +113,8 @@ public abstract class AbstractStress implements Thread.UncaughtExceptionHandler{
 		final int testCountByThread = (int) (testCount / threadNum);
 		for (int i = 0; i < this.threadNum; i++) {
 			theads.add(new Thread() {
-				private int runCount=0;
+				private int runCount = 0;
+
 				@SuppressWarnings("deprecation")
 				@Override
 				public void run() {
@@ -158,10 +128,8 @@ public abstract class AbstractStress implements Thread.UncaughtExceptionHandler{
 								start = System.currentTimeMillis();
 							}
 							String key = Long.toHexString(System.nanoTime());
-							String value = getRandomString(100);
-							//master.set(key, getRandomString(100));
 							operation(master, key, value);
-							runCount=i;
+							runCount = i;
 							if (i % pageSizeInOneMsSleep == 0) {
 								TimeUnit.MILLISECONDS.sleep(1);
 							}
@@ -184,49 +152,35 @@ public abstract class AbstractStress implements Thread.UncaughtExceptionHandler{
 				}
 			});
 		}
-		for (Thread t : theads){
+		for (Thread t : theads) {
+			t.setName("SET-THREAD");
 			t.setUncaughtExceptionHandler(this);
 			t.start();
-		}
-			
-	}
-
-	protected synchronized void initEndTime(long endTimeStamp) {
-		if (this.endTimeStamp < endTimeStamp)
-			this.endTimeStamp = endTimeStamp;
-	}
-
-	protected synchronized void initStartTime(long startTimeStamp) {
-		if (this.startTimeStamp == 0) {
-			this.startTimeStamp = startTimeStamp;
-		} else if (this.startTimeStamp > startTimeStamp) {
-			this.startTimeStamp = startTimeStamp;
 		}
 	}
 
 	public void startGetThread() {
 		final AbstractStress t = this;
-		Thread getThread=new Thread() {
+		Thread getThread = new Thread() {
 			Jedis slave = slavePool.getResource();
 
 			public void run() {
-				/* try { */
 				slave.psubscribe(new JedisPubSub() {
 					@SuppressWarnings("deprecation")
 					@Override
 					public void onPMessage(String pattern, String channel,
 							String msg) {
-						long delay = System.nanoTime()
-								- Long.parseLong(msg, 16);
-						totalDelay.addAndGet(delay);
-						long nowReadCount = readCount.incrementAndGet();
-						delayArray[(int) (nowReadCount - 1)] = delay;
-						if (nowReadCount % 10000 == 0) {
-							logger.debug("psubscribe 10000 success");
-						}
-						if (nowReadCount >= (testCount)) {
-							resultStatistics();
-						}
+							long delay = System.nanoTime()
+									- Long.parseLong(msg, 16);
+							totalDelay.addAndGet(delay);
+							long nowReadCount = readCount.incrementAndGet();
+							delayArray[(int) (nowReadCount - 1)] = delay;
+							if (nowReadCount % 10000 == 0) {
+								logger.debug("psubscribe 10000 success");
+							}
+							if (nowReadCount >= (testCount)) {
+								resultStatistics();
+							}
 					}
 
 					private void resultStatistics() {
@@ -238,19 +192,20 @@ public abstract class AbstractStress implements Thread.UncaughtExceptionHandler{
 								new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 										.format(new Date(t.endTimeStamp))));
 						logger.info(String.format("END(ms):%d", t.endTimeStamp));
-						logger.info(String.format("START(ms):%d", t.startTimeStamp));
+						logger.info(String.format("START(ms):%d",
+								t.startTimeStamp));
 						logger.info(String.format("totalDelay(ns):%d",
 								t.totalDelay.get()));
-						logger.info(String
-								.format("averageDelay(ns)[totalDelay/testCount]:%d",
-										t.totalDelay.get() / t.testCount));
+						logger.info(String.format(
+								"averageDelay(ns)[totalDelay/testCount]:%d",
+								t.totalDelay.get() / t.testCount));
 						logger.info(String
 								.format("qps(count/ms)[testCount/((end-start)/1000)]:%d",
-										(t.testCount / ((t.endTimeStamp - t.startTimeStamp) / 1000))));
+										(t.testCount / ((t.endTimeStamp
+												- t.startTimeStamp) / 1000))));
 
 						Arrays.sort(t.delayArray);
-						logger.info(String.format("testCount:%d",
-								t.testCount));
+						logger.info(String.format("testCount:%d", t.testCount));
 						logger.info(String.format("minDelay(ns):%d",
 								t.delayArray[0]));
 						logger.info(String.format("maxDelay(ns):%d",
@@ -273,16 +228,52 @@ public abstract class AbstractStress implements Thread.UncaughtExceptionHandler{
 						logger.info("delay99.9:" + t.delayArray[index99_9]);
 						logger.info("==========99.9Line=========");
 						logger.info("===========end=============");
-						synchronized (t.WAIT_OR_NOTIFY_LOCK) {
-							t.WAIT_OR_NOTIFY_LOCK.notify();
-						}
-						slavePool.returnResource(slave);
+
+						latch.countDown();
+						//slavePool.returnResource(slave);
 					}
-				}, getChannel());// "__key*__:*"
+				}, channel);
 			}
 		};
+		getThread.setName("GET-THREAD");
 		getThread.setUncaughtExceptionHandler(this);
 		getThread.start();
+	}
+
+	protected synchronized void initEndTime(long endTimeStamp) {
+		if (this.endTimeStamp < endTimeStamp)
+			this.endTimeStamp = endTimeStamp;
+	}
+
+	protected synchronized void initStartTime(long startTimeStamp) {
+		if (this.startTimeStamp == 0) {
+			this.startTimeStamp = startTimeStamp;
+		} else if (this.startTimeStamp > startTimeStamp) {
+			this.startTimeStamp = startTimeStamp;
+		}
+	}
+
+	private JedisPool getPool(String ip, int port, int maxTotal, int maxIdle) {
+		JedisPoolConfig config = new JedisPoolConfig();
+		config.setMaxTotal(maxTotal);
+		config.setMaxIdle(maxIdle);
+		config.setTestOnBorrow(true);
+		config.setTestOnReturn(true);
+		return new JedisPool(config, ip, port);
+	}
+
+	@SuppressWarnings("deprecation")
+	private void flushAll() {
+		Jedis master = masterPool.getResource();
+		try {
+			logger.info("flushAll");
+			master.flushAll();
+		} catch (Exception e) {
+			logger.warn("[flushAll]acquiring the synchronization results failure,now start waitting 60ms");
+			sleep(60 * 1000);
+		} finally {
+			masterPool.returnResourceObject(master);
+		}
 	}
 
 	protected static void sleep(long millis) {
@@ -303,23 +294,19 @@ public abstract class AbstractStress implements Thread.UncaughtExceptionHandler{
 		return sb.toString();
 	}
 
-	abstract protected String getChannel();
+	abstract protected int getMasterMaxTotal();
 
-	abstract protected void setChannel();
+	abstract protected int getMasterMaxIdle();
+
+	abstract protected int getSlaveMaxTotal();
+
+	abstract protected int getSlaveMaxIdle();
+
+	abstract protected String getChannel();
 
 	abstract protected void operation(Jedis master, String key, String value);
 
-	protected void resetParams(long testCount, long threadNum,
-			int pageSizeInOneMsSleep) {
-		this.testCount = testCount;
-		this.threadNum = threadNum;
-		this.pageSizeInOneMsSleep = pageSizeInOneMsSleep;
-		this.readCount = new AtomicLong();
-		this.totalDelay = new AtomicLong();
-	};
-	
-	@Override
 	public void uncaughtException(Thread t, Throwable e) {
-		logger.error("[uncaughtException]",e);
+		logger.error("ThreadException"+t.getName()+"-"+t.getId(), e);
 	}
 }
