@@ -23,6 +23,7 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
 import redis.clients.jedis.exceptions.JedisConnectionException;
+import redis.clients.jedis.exceptions.JedisException;
 
 /**
  * @author shyin
@@ -30,7 +31,7 @@ import redis.clients.jedis.exceptions.JedisConnectionException;
  *         Oct 9, 2016
  */
 public class XPipeStabilityTest extends AbstractTest {
-	private ExecutorService producerThreadPool;
+	private ScheduledExecutorService producerThreadPool;
 	private ExecutorService consumerThreadPool;
 	private ExecutorService valueCheckThreadPool;
 	private ScheduledExecutorService expireCheckThreadPool;
@@ -65,9 +66,8 @@ public class XPipeStabilityTest extends AbstractTest {
 	@Before
 	public void setUp() {
 		logger.info("[setUp]");
-		Cat.initializeByDomain("100004376");
 
-		producerThreadPool = Executors.newFixedThreadPool(producerThreadNum,
+		producerThreadPool = Executors.newScheduledThreadPool(producerThreadNum,
 				XpipeThreadFactory.create("ProducerThreadPool"));
 		consumerThreadPool = Executors.newFixedThreadPool(1, XpipeThreadFactory.create("ConsumerThreadPool"));
 		valueCheckThreadPool = Executors.newFixedThreadPool(producerThreadNum,
@@ -122,43 +122,30 @@ public class XPipeStabilityTest extends AbstractTest {
 
 	private void startProducerJob() {
 		for (int jobCnt = 0; jobCnt != producerThreadNum; ++jobCnt) {
-			producerThreadPool.execute(new ProducerThread());
+			producerThreadPool.scheduleAtFixedRate(new ProducerThread(), 0, 1, TimeUnit.MILLISECONDS);
 		}
 	}
 
 	private class ProducerThread implements Runnable {
-		@SuppressWarnings({ "static-access" })
 		@Override
 		public void run() {
-			Thread.currentThread().setDefaultUncaughtExceptionHandler(new XPipeStabilityTestExceptionHandler() {
-				@Override
-				protected void doRestart() {
-					producerThreadPool.execute(new ProducerThread());
-				}
-			});
-
 			Jedis master = null;
+			String key = null,value = null;
 			try {
 				master = masterPool.getResource();
-				String key = null, value = null;
-				while (true) {
-					try {
-						key = Long.toString(globalCnt.getAndIncrement()) + "-" + Long.toString(System.nanoTime());
-						value = randomString(msgSize);
-						records.put(key, value);
-						master.setex(key, KEY_EXPIRE_SECONDS, value);
-						queryCnt.incrementAndGet();
+				key = Long.toString(globalCnt.getAndIncrement()) + "-" + Long.toString(System.nanoTime());
+				String currentTime = Long.toString(System.currentTimeMillis());
+				value = currentTime + "-" + randomString(msgSize - 1 - currentTime.length());
 
-					} catch (JedisConnectionException e) {
-						logger.error("[startProducerJob][run]JedisConnectionException : {}", e);
-						records.remove(key);
-						throw e;
-					} catch (Exception e) {
-						logger.error("[startProducerJob][run]InsertValue Exception : Key:{} Exception:{}", key, e);
-						records.remove(key);
-						throw e;
-					}
-				}
+				records.put(key, value);
+				master.setex(key, KEY_EXPIRE_SECONDS, value);
+				queryCnt.incrementAndGet();
+			} catch (JedisException e) {
+				logger.error("[startProducerJob][run]JedisException : {}", e);
+				records.remove(key);
+			} catch (Exception e) {
+				logger.error("[startProducerJob][run]InsertValue Exception : Key:{} Value:{} Exception:{}", key, value, e);
+				records.remove(key);
 			} finally {
 				if (null != master) {
 					master.close();
@@ -308,8 +295,8 @@ public class XPipeStabilityTest extends AbstractTest {
 		JedisPoolConfig config = new JedisPoolConfig();
 		config.setMaxTotal(maxTotal);
 		config.setMaxIdle(maxIdle);
-		config.setTestOnBorrow(true);
-		config.setTestOnReturn(true);
+		config.setTestOnBorrow(false);
+		config.setTestOnReturn(false);
 		return new JedisPool(config, ip, port, 0);
 	}
 
