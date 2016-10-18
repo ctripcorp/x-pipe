@@ -22,6 +22,7 @@ public class RedisController extends AbstractConsoleController{
 	@RequestMapping(value = "/clusters/{clusterName}/dcs/{dcName}/shards/{shardName}", method = RequestMethod.POST)
 	public void updateRedises(@PathVariable String clusterName, @PathVariable String dcName,
 			@PathVariable String shardName, @RequestBody ShardModel shardModel) {
+		logger.info("[Update Redises]{},{},{},{}",clusterName, dcName, shardName, shardModel);
 		redisService.updateRedises(clusterName,dcName,shardName,shardModel);
 	}
   
