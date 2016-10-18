@@ -38,6 +38,8 @@ public interface ReplicationStore extends Closeable {
 
 	boolean isFresh();
 
+	boolean checkOk();
+
 	long getKeeperEndOffset();
 
 	long nextNonOverlappingKeeperBeginOffset();

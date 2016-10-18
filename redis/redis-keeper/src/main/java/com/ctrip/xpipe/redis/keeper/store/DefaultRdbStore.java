@@ -78,7 +78,7 @@ public class DefaultRdbStore implements RdbStore {
 		if (actualFileLen == rdbFileSize) {
 			status.set(Status.Success);
 		} else {
-			logger.error("[endRdb]actual:{}, expected:{}", actualFileLen, rdbFileSize);
+			logger.error("[endRdb]actual:{}, expected:{}, file:{}", actualFileLen, rdbFileSize, file);
 			status.set(Status.Fail);
 			throw new RdbStoreExeption(rdbFileSize, actualFileLen);
 		}
@@ -93,7 +93,9 @@ public class DefaultRdbStore implements RdbStore {
 		try (FileChannel channel = new RandomAccessFile(file, "r").getChannel()) {
 			doReadRdbFile(rdbFileListener, channel);
 		} catch (Exception e) {
-			logger.error("Error read rdb file", e);
+			logger.error("[readRdbFile]Error read rdb file" + file, e);
+		}finally{
+			refCount.decrementAndGet();
 		}
 	}
 
@@ -111,7 +113,7 @@ public class DefaultRdbStore implements RdbStore {
 				start = end;
 			} else {
 				try {
-					Thread.sleep(10);
+					Thread.sleep(1);
 					long currentTime = System.currentTimeMillis();
 					if(currentTime - lastLogTime > 10000){
 						logger.info("[doReadRdbFile]status:{}, start:{}, channeSize:{}", status.get(), start, channel.size());
@@ -123,7 +125,6 @@ public class DefaultRdbStore implements RdbStore {
 		}
 
 		logger.info("[doReadRdbFile] done with status {}", status.get());
-		refCount.decrementAndGet();
 
 		switch (status.get()) {
 		
@@ -132,7 +133,7 @@ public class DefaultRdbStore implements RdbStore {
 				break;
 	
 			case Fail:
-				rdbFileListener.exception(new Exception("[rdb error]"));
+				rdbFileListener.exception(new Exception("[rdb error]" + file));
 				break;
 	
 			default:
@@ -176,10 +177,15 @@ public class DefaultRdbStore implements RdbStore {
 	public void decrementRefCount() {
 		refCount.decrementAndGet();
 	}
-	
+
+	@Override
+	public boolean checkOk() {
+		return status.get() == Status.Writing || status.get() == Status.Success;
+	}
+
 	@Override
 	public String toString() {
-		return String.format("rdbFileSize:%d, rdbLastKeeperOffset:%d,file:%s", rdbFileSize, rdbLastKeeperOffset, file);
+		return String.format("rdbFileSize:%d, rdbLastKeeperOffset:%d,file:%s, status:%s", rdbFileSize, rdbLastKeeperOffset, file, status.get());
 	}
 
 }

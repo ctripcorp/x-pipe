@@ -114,10 +114,12 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig, MetaServerKeeperService metaService, File baseDir) throws Exception {
 
-		RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper, keeperConfig, 
-				baseDir, metaService, getRegistry().getComponent(LeaderElectorManager.class));
-		return redisKeeperServer;
+		return createRedisKeeperServer(keeper, keeperConfig, metaService, baseDir, getRegistry().getComponent(LeaderElectorManager.class));
+	}
 
+	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig,
+			MetaServerKeeperService metaService, File baseDir, LeaderElectorManager leaderElectorManager) {
+		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, metaService, leaderElectorManager);
 	}
 
 	protected RedisMeta createRedisMeta() {

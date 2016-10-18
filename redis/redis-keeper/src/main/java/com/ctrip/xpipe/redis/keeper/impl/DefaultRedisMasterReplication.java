@@ -147,22 +147,8 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	protected void psyncFail(Throwable cause) {
 		
-		logger.info("[psyncFail][retry]");
-		
-		if(masterChannel.isActive()){
-			
-			scheduled.schedule(new Runnable() {
-				
-				@Override
-				public void run() {
-					try {
-						sendReplicationCommand();
-					} catch (CommandExecutionException e) {
-						logger.error("[run]" + DefaultRedisMasterReplication.this, e);
-					}
-				}
-			}, PSYNC_RETRY_INTERVAL_MILLI, TimeUnit.MILLISECONDS);
-		}
+		logger.info("[psyncFail][close channel, wait for reconnect]" + masterChannel, cause);
+		masterChannel.close();
 	}
 
 	@Override

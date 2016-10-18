@@ -100,7 +100,12 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		logger.info("[handleFullSync]");
 		fakeRedisServer.reGenerateRdb();
 		fakeRedisServer.addCommandsListener(this);
-		
+
+		try {
+			Thread.sleep(fakeRedisServer.getSleepBeforeSendFullSyncInfo());
+		} catch (InterruptedException e) {
+		}
+
 		String info = String.format("+%s %s %d\r\n", AbstractPsync.FULL_SYNC, fakeRedisServer.getRunId(), fakeRedisServer.getRdbOffset());
 		ous.write(info.getBytes());
 		ous.flush();

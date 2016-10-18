@@ -283,7 +283,7 @@ public class DefaultCommandStore implements CommandStore {
 	@Override
 	public void addCommandsListener(long offset, CommandsListener listener) throws IOException {
 		
-		logger.info("[addCommandsListener] from offset {}, {}", offset, listener);
+		logger.info("[addCommandsListener][begin] from offset {}, {}", offset, listener);
 		CommandReader cmdReader = null;
 
 		try {
@@ -296,7 +296,6 @@ public class DefaultCommandStore implements CommandStore {
 		logger.info("[addCommandsListener] from offset {}, {}", offset, cmdReader);
 		
 		try {
-			// TODO stop notifier
 			while (listener.isOpen()) {
 				int read = 0;
 				ByteBuffer dst = ByteBuffer.allocate(4096);
@@ -322,6 +321,7 @@ public class DefaultCommandStore implements CommandStore {
 		} finally {
 			cmdReader.close();
 		}
+		logger.info("[addCommandsListener][begin] from offset {}, {}", offset, listener);
 	}
 
 }

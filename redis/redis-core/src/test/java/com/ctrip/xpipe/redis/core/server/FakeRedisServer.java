@@ -30,6 +30,7 @@ public class FakeRedisServer extends AbstractLifecycle{
 	private Server server; 
 	private String runId = RunidGenerator.DEFAULT.generateRunid();
 	private int sleepBeforeSendRdb = 0;
+	private int sleepBeforeSendFullSyncInfo = 0;
 	private List<FakeRedisServerAction> commandListeners = new LinkedList<>();
 	
 	public FakeRedisServer(int port){
@@ -159,6 +160,14 @@ public class FakeRedisServer extends AbstractLifecycle{
 
 	public int getConnected() {
 		return server.getConnected();
+	}
+
+	public int getSleepBeforeSendFullSyncInfo() {
+		return sleepBeforeSendFullSyncInfo;
+	}
+	
+	public void setSleepBeforeSendFullSyncInfo(int sleepBeforeSendFullSyncInfo) {
+		this.sleepBeforeSendFullSyncInfo = sleepBeforeSendFullSyncInfo;
 	}
 
 }

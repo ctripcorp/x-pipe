@@ -1,18 +1,12 @@
-package com.ctrip.xpipe.redis.keeper.impl;
-
-import java.net.InetSocketAddress;
+package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
-import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 
 /**
@@ -20,49 +14,12 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
  *
  *         2016年4月21日 下午5:42:29
  */
-public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractRedisKeeperContextTest {
+public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFakeRedisTest {
 	
-	private FakeRedisServer fakeRedisServer;
-	private RedisKeeperServer redisKeeperServer;
-	
-	private int commandFileSize;
-	private int allCommandsSize; 
-	
-	@Before
-	public void beforeDefaultRedisKeeperServerTest() throws Exception {
-		fakeRedisServer = startFakeRedisServer();
-		allCommandsSize = fakeRedisServer.getCommandsLength();
-		commandFileSize = fakeRedisServer.getSendBatchSize();
-
-	}
-
-	protected void startRedisKeeperServerAndConnectToFakeRedis( ) throws Exception {
-		startRedisKeeperServerAndConnectToFakeRedis(100, allCommandsSize);
-	}
-
-	protected void startRedisKeeperServerAndConnectToFakeRedis(int replicationStoreCommandFileNumToKeep, 
-			int replicationStoreMaxCommandsToTransferBeforeCreateRdb) throws Exception {
-		startRedisKeeperServerAndConnectToFakeRedis(replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb, 1000);
-	}
-
-	private void startRedisKeeperServerAndConnectToFakeRedis(int replicationStoreCommandFileNumToKeep, 
-			int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) throws Exception {
-		
-		KeeperConfig keeperConfig = new TestKeeperConfig(
-				commandFileSize, 
-				replicationStoreCommandFileNumToKeep, 
-				replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
-		redisKeeperServer = createRedisKeeperServer(keeperConfig);
-		redisKeeperServer.initialize();
-		redisKeeperServer.start();
-		add(redisKeeperServer);
-		redisKeeperServer.getRedisKeeperServerState().becomeActive(new InetSocketAddress("localhost", fakeRedisServer.getPort()));
-	}
-
 	@Test
 	public void testReplicationData() throws Exception{
 		
-		startRedisKeeperServerAndConnectToFakeRedis();
+		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis();
 		sleep(1500);
 		
 		logger.info(remarkableMessage("[testReplicationData][read replication store]"));	
@@ -83,7 +40,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractRedi
 
 	private void startKeeperServerAndTestReFullSync(int fileToKeep, int maxTransferCommnadsSize) throws Exception {
 		
-		startRedisKeeperServerAndConnectToFakeRedis(fileToKeep, maxTransferCommnadsSize, 1000);
+		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis(fileToKeep, maxTransferCommnadsSize, 1000);
 		int keeperPort = redisKeeperServer.getListeningPort();
 		sleep(2000);
 		logger.info(remarkableMessage("send psync to redump rdb"));
@@ -110,7 +67,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractRedi
 		int sleepBeforeSendRdb = 2000;
 		
 		fakeRedisServer.setSleepBeforeSendRdb(sleepBeforeSendRdb);
-		startRedisKeeperServerAndConnectToFakeRedis(100, allCommandsSize);
+		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis(100, allCommandsSize);
 		
 		sleep(sleepBeforeSendRdb/4);
 		int rdbDumpCount1 = ((DefaultRedisKeeperServer)redisKeeperServer).getRdbDumpTryCount();
@@ -129,13 +86,4 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractRedi
 		assertPsyncResultEquals(psync);
 	}
 	
-	private void assertPsyncResultEquals(InMemoryPsync psync) {
-		Assert.assertEquals(fakeRedisServer.getRdbContent(), new String(psync.getRdb()));
-		Assert.assertEquals(fakeRedisServer.currentCommands(), new String(psync.getCommands()));
-	}
-
-	@Override
-	protected String getXpipeMetaConfigFile() {
-		return "keeper-test.xml";
-	}
 }

@@ -73,7 +73,8 @@ public class DefaultNettyClient implements NettyClient{
 				receivers.poll();
 			}
 		}else{
-			logger.error("[handleResponse][no receiver]{}", byteBuf.readableBytes());
+			logger.error("[handleResponse][no receiver][close client]{}, {}", channel, byteBuf.readableBytes());
+			channel.close();
 		}
 	}
 

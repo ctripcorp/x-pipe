@@ -1,14 +1,12 @@
+
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
-import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -17,8 +15,6 @@ import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
-
-
 /**
  * @author wenchao.meng
  *
@@ -81,13 +77,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public ReplicationStore getCurrentReplicationStore() {
 
-		try {
-			ReplicationStore replicationStore = replicationStoreManager.createIfNotExist();
-			return replicationStore;
-		} catch (IOException e) {
-			logger.error("[getCurrentReplicationStore]" + this, e);
-			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
-		}
+		return redisKeeperServer.getReplicationStore();
 	}
 
 
@@ -103,7 +93,12 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	
 	@Override
-	public RdbDumper createRdbDumper() {
+	public RdbDumper createRdbDumper() throws CreateRdbDumperException {
+		
+		if(masterState != MASTER_STATE.REDIS_REPL_CONNECTED){
+			logger.info("[createRdbDumper][master state not connected, dumper not allowed]{}", redisMasterReplication);
+			throw new CreateRdbDumperException(this, "master state not connected, dumper not allowed:" + masterState);
+		}
 		return new RedisMasterNewRdbDumper(this, redisKeeperServer);
 	}
 	

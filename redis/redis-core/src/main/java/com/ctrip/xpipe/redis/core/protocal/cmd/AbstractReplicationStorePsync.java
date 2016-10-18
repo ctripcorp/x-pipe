@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-
-
 import java.io.IOException;
 
 import org.unidal.tuple.Pair;
@@ -22,10 +20,8 @@ import io.netty.buffer.ByteBuf;
  */
 public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 	
-	
 	protected volatile ReplicationStore  	    currentReplicationStore;
-	
-	
+
 	private volatile RdbStore rdbStore;
 	
 	private volatile InOutPayloadReplicationStore inOutPayloadReplicationStore;

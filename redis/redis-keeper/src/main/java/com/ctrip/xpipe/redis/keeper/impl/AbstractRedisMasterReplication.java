@@ -49,6 +49,8 @@ import io.netty.handler.logging.LoggingHandler;
  * Aug 24, 2016
  */
 public abstract class AbstractRedisMasterReplication extends AbstractLifecycle implements RedisMasterReplication{
+
+	public static String KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS = "KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS";
 	
 	private AtomicReference<RdbDumper> rdbDumper = new AtomicReference<RdbDumper>(null);
 	
@@ -60,7 +62,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	public static final int PSYNC_RETRY_INTERVAL_MILLI = 2000;
 
-	protected int masterConnectRetryDelaySeconds = 5;
+	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "5"));
 
 	protected RedisMaster redisMaster;
 	
@@ -167,6 +169,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	public void masterDisconntected(Channel channel) {
 		
+		logger.info("[masterDisconntected]{}", channel);
 		dumpFail(new IOException("master closed:" + channel));
 	}
 	

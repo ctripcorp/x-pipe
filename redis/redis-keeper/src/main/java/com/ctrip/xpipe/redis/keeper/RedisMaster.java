@@ -10,6 +10,7 @@ import com.ctrip.xpipe.api.server.PartialAware;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.impl.CreateRdbDumperException;
 
 
 /**
@@ -19,14 +20,13 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
  */
 public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, PartialAware{
 	
-
 	Endpoint masterEndPoint();
 	
 	ReplicationStoreManager getReplicationStoreManager();
 	
 	ReplicationStore getCurrentReplicationStore();
 
-	RdbDumper createRdbDumper();
+	RdbDumper createRdbDumper() throws CreateRdbDumperException;
 
 	MASTER_STATE getMasterState();
 	

@@ -175,6 +175,11 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 			}
 		}
 
+		ReplicationStore replicationStore = currentStore.get();
+		if(replicationStore != null && !replicationStore.checkOk()){
+			logger.info("[getCurrent][store not ok, return null]{}", replicationStore);
+			return null;
+		}
 		return currentStore.get();
 	}
 

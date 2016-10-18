@@ -63,12 +63,17 @@ public class AbstractTest {
 	
 	private static Properties properties = new Properties();
 	
+	private Properties orginProperties;
+	
+	
 	private ComponentRegistry startedComponentRegistry;
 	
 	@Before
 	public void beforeAbstractTest() throws Exception{
 		
 		logger.info(remarkableMessage("[begin test][{}]{}") , getClass().getSimpleName(), name.getMethodName());
+
+		orginProperties = (Properties) System.getProperties().clone();
 		
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty(CatUtils.CAT_ENABLED_KEY, "false");
@@ -463,7 +468,8 @@ public class AbstractTest {
 
 	@After
 	public void afterAbstractTest() throws IOException{
-		
+
+		System.setProperties(orginProperties);
 		try {
 			LifecycleHelper.stopIfPossible(componentRegistry);
 			LifecycleHelper.disposeIfPossible(componentRegistry);

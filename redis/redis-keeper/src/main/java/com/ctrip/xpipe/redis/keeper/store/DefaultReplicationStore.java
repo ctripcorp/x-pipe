@@ -290,7 +290,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		
 		final FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
 		if (ctx.isFullSyncPossible()) {
-			logger.info("[fullSyncToSlave]reuse current rdb to full sync");
+			logger.info("[fullSyncToSlave][reuse current rdb to full sync]{}", fullSyncListener);
 			RdbStore rdbStore = ctx.getRdbStore();
 
 			try {
@@ -354,6 +354,21 @@ public class DefaultReplicationStore implements ReplicationStore {
 	
 	protected File getBaseDir() {
 		return baseDir;
+	}
+
+	@Override
+	public boolean checkOk() {
+		
+		if(isFresh()){
+			return true;
+		}
+		
+		RdbStore rdbStore = getRdbStore();
+		if(rdbStore != null && !rdbStore.checkOk()){
+			logger.info("[checkOk][rdbStore not ok]{}", rdbStore);
+			return false;
+		}
+		return true;
 	}
 
 }

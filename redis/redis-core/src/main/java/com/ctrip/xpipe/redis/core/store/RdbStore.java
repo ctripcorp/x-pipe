@@ -28,6 +28,7 @@ public interface RdbStore {
 	void incrementRefCount();
 
 	void decrementRefCount();
-	
+
+	boolean checkOk();
 
 }

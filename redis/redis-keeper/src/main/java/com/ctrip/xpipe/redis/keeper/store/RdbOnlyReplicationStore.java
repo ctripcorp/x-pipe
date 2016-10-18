@@ -207,4 +207,9 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public boolean checkOk() {
+		return dumpedRdbStore.checkOk();
+	}
+
 }

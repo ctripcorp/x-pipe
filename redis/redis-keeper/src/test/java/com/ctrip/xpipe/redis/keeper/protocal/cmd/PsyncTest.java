@@ -16,7 +16,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
-import com.ctrip.xpipe.redis.keeper.store.RdbStoreExeption;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -61,12 +60,9 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 				commandContent
 		};
 		//create store
-		replicationStore.beginRdb(masterId, masterOffset, 12345);
-		try{
-			replicationStore.getRdbStore().endRdb();
-			Assert.fail();
-		}catch(RdbStoreExeption e){
-		}
+		replicationStore.beginRdb(masterId, masterOffset, 0);
+		replicationStore.getRdbStore().endRdb();
+		
 		runData(data);
 	}
 

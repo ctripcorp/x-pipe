@@ -485,24 +485,28 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
 			if(!getCurrentReplicationStore().fullSyncIfPossible(fullSyncListener)){
 				//go dump rdb
-				redisSlave.waitForRdbDumping();
-				dumpNewRdb();
+				try{
+					dumpNewRdb();
+					redisSlave.waitForRdbDumping();
+				}catch(AbstractRdbDumperException e){
+					logger.error("[fullSyncToSlave]", e);
+					if(e.isCancelSlave()){
+						logger.info("[fullSyncToSlave][cancel slave]");	
+						redisSlave.close();
+					}
+				}
 			}
 		}else{
 			rdbDumper.get().tryFullSync(redisSlave);
 		}
 	}
 	
-	private void dumpNewRdb() {
+	private RdbDumper dumpNewRdb() throws CreateRdbDumperException, SetRdbDumperException {
 		
-		RdbDumper rdbDumper = null;
-		try {
-			rdbDumper = keeperRedisMaster.createRdbDumper();
-			setRdbDumper(rdbDumper);
-			rdbDumper.execute();
-		} catch (SetRdbDumperException e) {
-			logger.error("[dumpNewRdb]", e);
-		}
+		RdbDumper rdbDumper = keeperRedisMaster.createRdbDumper();
+		setRdbDumper(rdbDumper);
+		rdbDumper.execute();
+		return rdbDumper;
 	}
 
 	
