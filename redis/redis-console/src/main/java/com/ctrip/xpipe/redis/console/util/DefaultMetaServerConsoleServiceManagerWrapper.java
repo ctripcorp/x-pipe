@@ -7,7 +7,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
@@ -19,8 +19,10 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
  * Sep 9, 2016
  */
 public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServerConsoleServiceManagerWrapper{
-	Config config  = Config.DEFAULT;
 	Codec codec = Codec.DEFAULT;
+	
+	@Autowired
+	private ConsoleConfig config;
 	@Autowired
 	private MetaServerConsoleServiceManager metaServerConsoleServiceManager;
 	
@@ -69,7 +71,7 @@ public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServer
 	
 	@SuppressWarnings("unchecked")
 	private Map<String,String> fetchMetaServerConfig() {
-		String metaservers = config.get("metaservers");
+		String metaservers = config.getMetaservers();
 		if(null == metaservers) {
 			throw new ServerException("Cannot fetch metaservers' config");
 		}
