@@ -1,16 +1,18 @@
 package com.ctrip.xpipe.redis.console.service.notifier;
 
-import java.util.List;
-
+import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
+import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
+import com.ctrip.xpipe.retry.RetryNTimes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
-import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
+import java.util.List;
 
 /**
  * @author shyin
@@ -25,12 +27,46 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 	private ClusterMetaService clusterMetaService;
     @Autowired
     private MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper;
-    
-    @Override
+
+	int getRetryTimes() {
+		int defaultRetryTimes = 10;
+		try {
+			return Integer.getInteger(Config.DEFAULT.get("NotifyRetryTimes","10"));
+		} catch (Exception e) {
+			return defaultRetryTimes;
+		}
+	}
+
+	int getRetryInterval() {
+		int defaultRetryInterval = 100;
+		try {
+			return Integer.getInteger(Config.DEFAULT.get("NotifyRetryInterval", "100"));
+		} catch (Exception e) {
+			return defaultRetryInterval;
+		}
+	}
+
+	@Override
     public void notifyClusterUpdate(final String dcName, final String clusterName) {
     	try {
     		logger.info("[notifyClusterUpdate][construct]{},{}",dcName,clusterName);
-    		metaServerConsoleServiceManagerWrapper.get(dcName).clusterModified(clusterName, clusterMetaService.getClusterMeta(dcName, clusterName));
+    		new RetryNTimes<>(getRetryTimes(), new MetaNotifyRetryPolicy(getRetryInterval())).execute(new AbstractCommand<Object>() {
+				@Override
+				public String getName() {
+					return "retryable-cluster-update-notifier";
+				}
+
+				@Override
+				protected void doExecute() throws Exception {
+					metaServerConsoleServiceManagerWrapper.get(dcName).clusterModified(clusterName, clusterMetaService.getClusterMeta(dcName, clusterName));
+				}
+
+				@Override
+				protected void doReset() {
+					
+				}
+				
+			});
     		logger.info("[notifyClusterUpdate][success]{},{}",dcName,clusterName);
     	} catch (Exception e) {
     		logger.error("[notifyClusterUpdate][failed]{},{}",dcName,clusterName);
@@ -42,10 +78,25 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
     @Override
     public void notifyClusterDelete(final String clusterName, List<DcTbl> dcs) {
     	if(null != dcs) {
-    		for(DcTbl dc : dcs) {
+    		for(final DcTbl dc : dcs) {
     			try {
     				logger.info("[notifyClusterDelete][construct]{},{}",clusterName,dc.getDcName());
-    				metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).clusterDeleted(clusterName);
+    				new RetryNTimes<>(getRetryTimes(), new MetaNotifyRetryPolicy(getRetryInterval())).execute(new AbstractCommand<Object>() {
+						@Override
+						public String getName() {
+							return "retryable-cluster-delete-notifier";
+						}
+
+						@Override
+						protected void doExecute() throws Exception {
+							metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).clusterDeleted(clusterName);
+						}
+
+						@Override
+						protected void doReset() {	
+						}
+						
+					});
     				logger.info("[notifyClusterDelete][success]{},{}",clusterName,dc.getDcName());
     			} catch (Exception e) {
     				logger.error("[notifyClusterDelete][failed]{},{}",dc.getDcName(),clusterName);
@@ -57,13 +108,30 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
     }
 
 	@Override
-	public void notifyUpstreamChanged(String clusterName, String shardName, String ip, int port, List<DcTbl> dcs) {
+	public void notifyUpstreamChanged(final String clusterName, final String shardName, final String ip, final int port, List<DcTbl> dcs) {
 		if(null != dcs) {
-			for(DcTbl dc : dcs) {
+			for(final DcTbl dc : dcs) {
 				try {
     				logger.info("[notifyUpstreamChanged][construct]{},{},{},{},{}",clusterName, shardName, ip, port, dc.getDcName());
     				if(!ip.equals(XpipeConsoleConstant.DEFAULT_ADDRESS)) {
-    					metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).upstreamChange(clusterName, shardName, ip, port);
+    					new RetryNTimes<>(getRetryTimes(), new MetaNotifyRetryPolicy(getRetryInterval())).execute(new AbstractCommand<Object>() {
+
+							@Override
+							public String getName() {
+								return "retryable-upstream-changed-notifier";
+							}
+
+							@Override
+							protected void doExecute() throws Exception {
+								metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).upstreamChange(clusterName, shardName, ip, port);
+							}
+
+							@Override
+							protected void doReset() {
+							}
+							
+						});
+    					
     				} else {
     					logger.info("[notifyUpstreamChanged][ignored]Ignore with defalut ip : {}", XpipeConsoleConstant.DEFAULT_ADDRESS);
     				}

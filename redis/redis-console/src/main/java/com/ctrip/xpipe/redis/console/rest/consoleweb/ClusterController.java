@@ -46,26 +46,31 @@ public class ClusterController extends AbstractConsoleController{
 	
 	@RequestMapping(value = "/clusters", method = RequestMethod.POST)
 	public ClusterTbl createCluster(@RequestBody ClusterTbl cluster) {
+		logger.info("[Create Cluster]{}",cluster);
 		return clusterService.createCluster(cluster);
 	}
 
 	@RequestMapping(value = "/clusters/{clusterName}", method = RequestMethod.PUT)
 	public void updateCluster(@PathVariable String clusterName, @RequestBody ClusterTbl cluster) {
+		logger.info("[Update Cluster]{},{}",clusterName, cluster);
 		clusterService.updateCluster(clusterName, cluster);
 	}
 
 	@RequestMapping(value = "/clusters/{clusterName}" , method = RequestMethod.DELETE)
 	public void deleteCluster(@PathVariable String clusterName) {
+		logger.info("[Delete Cluster]{}",clusterName);
 		clusterService.deleteCluster(clusterName);
 	}
 
 	@RequestMapping(value = "/clusters/{clusterName}/dcs/{dcName}", method = RequestMethod.POST)
 	public void bindDc(@PathVariable String clusterName, @PathVariable String dcName) {
+		logger.info("[bindDc]{},{}",clusterName, dcName);
 		clusterService.bindDc(clusterName, dcName);
 	}
 
 	@RequestMapping(value = "/clusters/{clusterName}/dcs/{dcName}", method = RequestMethod.DELETE)
 	public void unbindDc(@PathVariable String clusterName, @PathVariable String dcName) {
+		logger.info("[unbindDc]{}, {}",clusterName, dcName);
 		clusterService.unbindDc(clusterName, dcName);
 	}
 
