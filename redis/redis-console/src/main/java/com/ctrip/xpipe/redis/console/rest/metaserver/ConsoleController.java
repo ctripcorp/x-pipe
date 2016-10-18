@@ -112,10 +112,16 @@ public class ConsoleController {
 	@RequestMapping(value = "/dc/{dcId}/cluster/{clusterId}/shard/{shardId}/keepers/adjustment", method = RequestMethod.PUT)
 	public void updateKeeperStatus(@PathVariable String dcId, @PathVariable String clusterId,
 								   @PathVariable String shardId, @RequestBody(required = false) KeeperMeta newActiveKeeper){
-		if(null != newActiveKeeper) {
-			redisMetaService.updateKeeperStatus(dcId, clusterId, shardId, newActiveKeeper);
-		} else {
-			logger.error("[updateKeeperStatus][Null Active Keeper]dc:{} cluster:{} shard:{}",dcId,clusterId,shardId);
+		try {
+			if(null != newActiveKeeper) {
+				logger.info("[updateKeeperStatus][construct]dc:{} cluster:{} shard:{} newActiveKeeper:{}",dcId, clusterId, shardId, newActiveKeeper);
+				redisMetaService.updateKeeperStatus(dcId, clusterId, shardId, newActiveKeeper);
+				logger.info("[updateKeeperStatus][success]dc:{} cluster:{} shard:{} newActiveKeeper:{}",dcId, clusterId, shardId, newActiveKeeper);
+			} else {
+				logger.error("[updateKeeperStatus][Null Active Keeper]dc:{} cluster:{} shard:{}",dcId,clusterId,shardId);
+			}
+		} catch (Exception e) {
+			logger.error("[updateKeeperStatus][failed]dc:{} cluster:{} shard:{} newActiveKeeper:{} Exception:{}",dcId, clusterId, shardId, newActiveKeeper,e);
 		}
 	}
 

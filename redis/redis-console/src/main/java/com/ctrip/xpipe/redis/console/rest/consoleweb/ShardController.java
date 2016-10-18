@@ -44,11 +44,13 @@ public class ShardController extends AbstractConsoleController{
 
   @RequestMapping(value = "/clusters/{clusterName}/shards", method = RequestMethod.POST)
   public ShardTbl createShard(@PathVariable String clusterName, @RequestBody ShardTbl shard) {
+	logger.info("[Create Shard]{},{}",clusterName, shard);
     return shardService.createShard(clusterName, shard);
   }
 
   @RequestMapping(value = "/clusters/{clusterName}/shards/{shardName}", method = RequestMethod.DELETE)
   public void deleteShard(@PathVariable String clusterName, @PathVariable String shardName) {
+	  logger.info("[Delete Shard]{},{}",clusterName, shardName);
 	  shardService.deleteShards(clusterName, shardName);
   }
 
