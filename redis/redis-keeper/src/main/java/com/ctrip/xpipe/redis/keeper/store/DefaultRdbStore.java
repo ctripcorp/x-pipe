@@ -116,10 +116,12 @@ public class DefaultRdbStore implements RdbStore {
 					Thread.sleep(1);
 					long currentTime = System.currentTimeMillis();
 					if(currentTime - lastLogTime > 10000){
-						logger.info("[doReadRdbFile]status:{}, start:{}, channeSize:{}", status.get(), start, channel.size());
+						logger.info("[doReadRdbFile]status:{}, start:{}, channeSize:{}, rdbFileListener:{}", status.get(), start, channel.size(), rdbFileListener);
 						lastLogTime = currentTime;
 					}
 				} catch (InterruptedException e) {
+					logger.error("[doReadRdbFile]" + rdbFileListener, e);
+					Thread.currentThread().interrupt();
 				}
 			}
 		}

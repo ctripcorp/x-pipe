@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;

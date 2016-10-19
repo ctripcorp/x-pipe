@@ -58,7 +58,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 	@Test
 	public void testNewDumpCommandsTooMush() throws Exception{
 		
-		startKeeperServerAndTestReFullSync(100, commandFileSize);
+		startKeeperServerAndTestReFullSync(100, (int) (allCommandsSize * 0.8));
 	}
 
 	@Test
