@@ -1,13 +1,14 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
 import org.unidal.tuple.Pair;
 
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.ByteBufUtils;
-import com.ctrip.xpipe.netty.NettyPoolUtil;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 
@@ -26,7 +27,14 @@ public class InMemoryPsync extends AbstractPsync{
 	private ByteArrayOutputStreamPayload rdb = new ByteArrayOutputStreamPayload();
 
 	public InMemoryPsync(String masterHost, int masterPort, String requestMasterId, long   requestMasterOffset) throws Exception {
-		super(NettyPoolUtil.createNettyPool(new InetSocketAddress(masterHost, masterPort)), true);
+		super(masterHost, masterPort, true);
+		this.requestMasterId = requestMasterId;
+		this.requestMasterOffset = requestMasterOffset;
+		
+	}
+
+	public InMemoryPsync(SimpleObjectPool<NettyClient> clientPool, String requestMasterId, long   requestMasterOffset) throws Exception {
+		super(clientPool, true);
 		this.requestMasterId = requestMasterId;
 		this.requestMasterOffset = requestMasterOffset;
 	}

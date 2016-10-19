@@ -20,8 +20,6 @@ public class NettyClientHandler extends AbstractNettyHandler{
 	
 	public static final AttributeKey<NettyClient> KEY_CLIENT = AttributeKey.newInstance(NettyClientHandler.class.getSimpleName() + "_REDIS_CLIENTS");
 	
-	
-
 	public static boolean bind(Channel channel, NettyClient nettyClient){
 		
 		Attribute<NettyClient> attribute = channel.attr(KEY_CLIENT);

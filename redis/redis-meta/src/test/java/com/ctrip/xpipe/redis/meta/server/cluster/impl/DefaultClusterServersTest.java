@@ -36,10 +36,13 @@ public class DefaultClusterServersTest extends AbstractMetaServerContextTest{
 		CurrentClusterServer currentClusterServer = getCurrentClusterServer();
 
 		Assert.assertEquals(1, servers.allClusterServers().size());
+		
+		logger.info("[testRestart][stop]");
 		currentClusterServer.stop();
 		sleep(100);
 		Assert.assertEquals(0, servers.allClusterServers().size());
 		
+		logger.info("[testRestart][start again]");
 		currentClusterServer.start();
 		sleep(100);
 		Assert.assertEquals(1, servers.allClusterServers().size());

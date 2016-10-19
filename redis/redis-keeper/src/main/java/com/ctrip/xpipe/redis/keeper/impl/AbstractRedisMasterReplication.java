@@ -159,8 +159,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		clientPool = new FixedObjectPool<NettyClient>(new DefaultNettyClient(channel));
 
 		try {
-			executeCommand(listeningPortCommand());
-			sendReplicationCommand();
+			executeCommand(listeningPortCommand()).addListener(new CommandFutureListener<Object>() {
+
+				@Override
+				public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+					sendReplicationCommand();
+				}
+			});
 		} catch (CommandExecutionException e) {
 			logger.error("[masterConnected]" + channel, e);
 		}
@@ -173,12 +178,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		dumpFail(new IOException("master closed:" + channel));
 	}
 	
-	protected void executeCommand(Command<?> command){
+	protected <V> CommandFuture<V> executeCommand(Command<V> command){
 		
 		if(command != null){
 			currentCommand.set(command);
-			command.execute();
+			return command.execute();
 		}
+		return null;
 	}
 	
 	private Replconf listeningPortCommand() throws CommandExecutionException {
