@@ -53,7 +53,8 @@ public class XPipeStabilityTest {
 	private Long historyCatIntervalCnt = new Long(0);
 	private AtomicLong catIntervalTotalDelay = new AtomicLong(0);
 	private Long historyCatIntervalTotalDelay = new Long(0);
-
+	
+	public int MAX_KEY_COUNT = Integer.parseInt(System.getProperty("max-key-count", "20000000"));
 	public int TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("timeout", "10"));
 	public int KEY_EXPIRE_SECONDS = Integer.parseInt(System.getProperty("key-expire-seconds", "3600"));
 	public int QPS_COUNT_INTERVAL = Integer.parseInt(System.getProperty("qps-count-interval", "5"));
@@ -70,8 +71,9 @@ public class XPipeStabilityTest {
 	@Before
 	public void setUp() {
 		logger.info("[setUp]");
-		logger.info("[ProducerThread]{} [ValueCheckThread]{}",producerThreadNum, valueCheckThreadNum);
 		valueCheckThreadNum = (producerThreadNum < valueCheckThreadNum)? valueCheckThreadNum : producerThreadNum;
+		logger.info("[ProducerThread]{} [ValueCheckThread]{}",producerThreadNum, valueCheckThreadNum);
+		logger.info("[KeyExpireSeconds]{}",KEY_EXPIRE_SECONDS);
 
 		producerThreadPool = Executors.newScheduledThreadPool(producerThreadNum,
 				XpipeThreadFactory.create("ProducerThreadPool"));
@@ -90,8 +92,8 @@ public class XPipeStabilityTest {
 			}
 		});
 
-		masterPool = getJedisPool(masterAddress, masterPort, producerThreadNum * 2, producerThreadNum);
-		slavePool = getJedisPool(slaveAddress, slavePort, valueCheckThreadNum * 2, valueCheckThreadNum);
+		masterPool = getJedisPool(masterAddress, masterPort, producerThreadNum * 2, producerThreadNum, 2000);
+		slavePool = getJedisPool(slaveAddress, slavePort, valueCheckThreadNum * 2, valueCheckThreadNum, 2000);
 	}
 
 	@After
@@ -139,10 +141,11 @@ public class XPipeStabilityTest {
 			String key = null,value = null;
 			try {
 				master = masterPool.getResource();
-				key = Long.toString(globalCnt.getAndIncrement()) + "-" + Long.toString(System.nanoTime());
+				key = Long.toString(globalCnt.getAndIncrement() % MAX_KEY_COUNT);
+				String nanoTime = Long.toString(System.nanoTime());
 				String currentTime = Long.toString(System.currentTimeMillis());
-				value = currentTime + "-" + randomString(msgSize - 1 - currentTime.length());
-
+				value = buildValue(msgSize, nanoTime, "-", currentTime, "-");
+				
 				records.put(key, value);
 				master.setex(key, KEY_EXPIRE_SECONDS, value);
 				queryCnt.incrementAndGet();
@@ -158,6 +161,17 @@ public class XPipeStabilityTest {
 				}
 			}
 		}
+	}
+	
+	private String buildValue(int size, String... strings) {
+		StringBuilder sb = new StringBuilder();
+		for(String str : strings) {
+			sb.append(str);
+		}
+		if(sb.length() < size) {
+			sb.append(randomString(size - sb.length()));
+		}
+		return sb.toString();
 	}
 
 	private void startConsumerJob() {
@@ -195,7 +209,7 @@ public class XPipeStabilityTest {
 			records.remove(key);
 
 			catIntervalCnt.incrementAndGet();
-			long delay = System.nanoTime() - Long.valueOf(key.substring(key.indexOf("-") + 1));
+			long delay = System.nanoTime() - Long.valueOf(value.substring(0,value.indexOf("-")));
 			catIntervalTotalDelay.set(catIntervalTotalDelay.get() + delay);
 		}
 	}
@@ -303,13 +317,13 @@ public class XPipeStabilityTest {
 		}, 1, 1, TimeUnit.SECONDS);
 	}
 
-	private JedisPool getJedisPool(String ip, int port, int maxTotal, int maxIdle) {
+	private JedisPool getJedisPool(String ip, int port, int maxTotal, int maxIdle, int timeout) {
 		JedisPoolConfig config = new JedisPoolConfig();
 		config.setMaxTotal(maxTotal);
 		config.setMaxIdle(maxIdle);
 		config.setTestOnBorrow(false);
 		config.setTestOnReturn(false);
-		return new JedisPool(config, ip, port, 0);
+		return new JedisPool(config, ip, port, timeout);
 	}
 
 	public abstract class XPipeStabilityTestExceptionHandler implements UncaughtExceptionHandler {
