@@ -182,6 +182,7 @@ public class XPipeStabilityTest {
 				Thread.currentThread().setDefaultUncaughtExceptionHandler(new XPipeStabilityTestExceptionHandler() {
 					@Override
 					protected void doRestart() {
+						logger.info("[doRestart]Consumer Job");
 						startConsumerJob();
 					}
 				});
@@ -205,12 +206,16 @@ public class XPipeStabilityTest {
 		public void onPMessage(String pattern, String channel, String msg) {
 			String key = msg;
 			String value = records.get(key);
-			valueCheckQueue.offer(Pair.of(key, value));
-			records.remove(key);
+			if(null != value) {
+				valueCheckQueue.offer(Pair.of(key, value));
+				records.remove(key);
 
-			catIntervalCnt.incrementAndGet();
-			long delay = System.nanoTime() - Long.valueOf(value.substring(0,value.indexOf("-")));
-			catIntervalTotalDelay.set(catIntervalTotalDelay.get() + delay);
+				catIntervalCnt.incrementAndGet();
+				long delay = System.nanoTime() - Long.valueOf(value.substring(0,value.indexOf("-")));
+				catIntervalTotalDelay.set(catIntervalTotalDelay.get() + delay);
+			} else {
+				logger.error("[XPipeStabilityTestJedisPubSub][Get Null From records]Key:{} Value:{}", key, value);
+			}
 		}
 	}
 
