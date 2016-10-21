@@ -1,5 +1,7 @@
 <div class="col-md-8 col-md-offset-2">
 	<h3 class="header smaller lighter blue">
+		<a href="/#/cluster_list">Cluster List</a>
+        <span> > </span>
     	<a href="/#/cluster_list?clusterName={{clusterName}}">{{clusterName}}</a>
     	<span> > </span>
     	<span>shards</span>
@@ -55,7 +57,7 @@
                         <apollorequiredfiled></apollorequiredfiled>
                         shard 名称</label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="shard.shardName" ng-required="true">
+                        <input type="text" class="form-control" ng-model="shard.shardName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9_]+$">
                     </div>
                 </div>
                 <div class="form-group" valdr-form-group>
@@ -63,7 +65,7 @@
                         setinel 监控名称
                     </label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="shard.setinelMonitorName" ng-required="true">
+                        <input type="text" class="form-control" ng-model="shard.setinelMonitorName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9_]+$">
                     </div>
                 </div>
             </div>
