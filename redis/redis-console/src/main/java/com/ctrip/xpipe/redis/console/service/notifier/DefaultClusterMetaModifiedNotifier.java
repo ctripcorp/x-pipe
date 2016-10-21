@@ -100,7 +100,7 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 			for(final DcTbl dc : dcs) {
 				try {
     				logger.info("[notifyUpstreamChanged][construct]{},{},{},{},{}",clusterName, shardName, ip, port, dc.getDcName());
-    				if(!ip.equals(XpipeConsoleConstant.DEFAULT_ADDRESS)) {
+    				if(!ip.equals(XpipeConsoleConstant.DEFAULT_IP)) {
     					new RetryNTimes<>(config.getConsoleNotifyRetryTimes(), new MetaNotifyRetryPolicy(config.getConsoleNotifyRetryInterval()))
     					.execute(new AbstractCommand<Object>() {
 
@@ -121,7 +121,7 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 						});
     					
     				} else {
-    					logger.info("[notifyUpstreamChanged][ignored]Ignore with defalut ip : {}", XpipeConsoleConstant.DEFAULT_ADDRESS);
+    					logger.info("[notifyUpstreamChanged][ignored]Ignore with defalut ip : {}", XpipeConsoleConstant.DEFAULT_IP);
     				}
     				logger.info("[notifyUpstreamChanged][success]{},{},{},{},{}",clusterName, shardName, ip, port, dc.getDcName());
     			} catch (Exception e) {
