@@ -16,11 +16,14 @@ index_module.controller('ClusterFromCtl',
 
                              $scope.operateType = $stateParams.type;
                              $scope.allDcs = [];
+                             $scope.selectedDcs = [];
 
                              $scope.doCluster = doCluster;
                              $scope.getDcName = getDcName;
                              $scope.preDeleteCluster = preDeleteCluster;
                              $scope.deleteCluster = deleteCluster;
+                             $scope.slaveExists = slaveExists;
+                             $scope.toggle = toggle;
 
                              init();
 
@@ -46,7 +49,7 @@ index_module.controller('ClusterFromCtl',
                              function doCluster() {
 
                                  if ($scope.operateType == OPERATE_TYPE.CREATE) {
-                                     ClusterService.createCluster($scope.cluster)
+                                     ClusterService.createCluster($scope.cluster, $scope.selectedDcs)
                                          .then(function (result) {
                                              toastr.success("创建成功");
                                              $window.location.href =
@@ -95,5 +98,19 @@ index_module.controller('ClusterFromCtl',
                                      }, function (result) {
                                          toastr.error(AppUtil.errorMsg(result), '删除失败');
                                      })
+                             }
+                             
+                             function slaveExists(dc) {
+                            	 return $scope.selectedDcs.indexOf(dc) > -1;
+                             }
+                             
+                             function toggle(dc) {
+                            	var idx = $scope.selectedDcs.indexOf(dc);
+                     		    if (idx > -1) {
+                     		    	$scope.selectedDcs.splice(idx, 1);
+                     		    }
+                     		    else {
+                     		    	$scope.selectedDcs.push(dc);
+                     		    }
                              }
                          }]);

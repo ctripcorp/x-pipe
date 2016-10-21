@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
+import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
@@ -90,7 +91,10 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
     	});
     }
     
-    public ClusterTbl createCluster(final ClusterTbl cluster) {
+    public ClusterTbl createCluster(final ClusterModel clusterModel) {
+    	ClusterTbl cluster = clusterModel.getClusterTbl();
+    	List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
+    	
     	// ensure active dc assigned
     	if(NO_ACTIVE_DC == cluster.getActivedcId()) {
     		throw new BadRequestException("No active dc assigned.");
@@ -108,6 +112,10 @@ public class ClusterService extends AbstractConsoleService<ClusterTblDao>{
 				return clusterDao.createCluster(queryProto);
 			}
     	});
+    	
+    	for(DcTbl dc : slaveDcs) {
+    		bindDc(cluster.getClusterName(), dc.getDcName());
+    	}
 
     	return result;
     }
