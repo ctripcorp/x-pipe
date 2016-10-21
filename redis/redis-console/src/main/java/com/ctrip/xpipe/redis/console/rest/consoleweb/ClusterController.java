@@ -46,7 +46,7 @@ public class ClusterController extends AbstractConsoleController{
 	}
 	
 	@RequestMapping(value = "/clusters", method = RequestMethod.POST)
-	public ClusterTbl createCluster(@RequestBody ClusterTbl cluster) {
+	public ClusterTbl createCluster(@RequestBody ClusterModel cluster) {
 		logger.info("[Create Cluster]{}",cluster);
 		return clusterService.createCluster(cluster);
 	}

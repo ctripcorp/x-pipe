@@ -176,7 +176,11 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 			}
 		}
 		if (newActiveKeeperTbl == null){
-			throw new BadRequestException("keeper not exist");
+			RedisTbl defaultRedisTbl = new RedisTbl().setId(RedisService.MASTER_REQUIRED).setRedisIp(newActiveKeeper.getIp()).setRedisPort(newActiveKeeper.getPort())
+					.setKeepercontainerId(newActiveKeeper.getKeeperContainerId()).setRunId(newActiveKeeper.getId());
+			logger.warn("No exist new active keeper for {},replace with default {}",newActiveKeeperTbl, defaultRedisTbl);
+			newActiveKeeperTbl = defaultRedisTbl;
+			
 		}
 
 		DcTbl dcTbl = dcService.load(dcId);
