@@ -4,7 +4,6 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         $rootScope.currentNav = '1-2';
         $scope.dcs = {}
         $scope.clusterName = $stateParams.clusterName;
-        
         $scope.getDcName = getDcName;
         
         var sourceClusters = [], copedClusters = [];
@@ -22,8 +21,8 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                         var filter_text = params.filter().clusterName;
                         if(filter_text) {
                             var filtered_data = new Array();
-                            for(var i = 0 ; i < copedClusters.length ; i++) {
-                                var cluster = copedClusters[i];
+                            for(var i = 0 ; i < sourceClusters.length ; i++) {
+                                var cluster = sourceClusters[i];
                                 if(cluster.clusterName.search(filter_text) != -1) {
                                     filtered_data.push(cluster);
                                 }
@@ -44,16 +43,17 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                 sourceClusters = data;
                 copedClusters = _.clone(sourceClusters);
                 $scope.tableParams = new NgTableParams({
-                    page : 1,
+                    page : $rootScope.historyPage,
                     count : 10
                 }, {
                     filterDelay:100,
                     getData : function(params) {
+                    	$rootScope.historyPage = params.page();
                         var filter_text = params.filter().clusterName;
                         if(filter_text) {
                             var filtered_data = new Array();
-                            for(var i = 0 ; i < copedClusters.length ; i++) {
-                                var cluster = copedClusters[i];
+                            for(var i = 0 ; i < sourceClusters.length ; i++) {
+                                var cluster = sourceClusters[i];
                                 if(cluster.clusterName.search(filter_text) != -1) {
                                     filtered_data.push(cluster);
                                 }

@@ -135,9 +135,12 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         return d.promise;
     }
 
-    function createCluster(cluster) {
+    function createCluster(cluster, selectedDcs) {
         var d = $q.defer();
-        resource.create_cluster({}, cluster,
+        resource.create_cluster({}, {
+        	clusterTbl : cluster,
+        	slaveDcs : selectedDcs
+        	},
                               function (result) {
                                   d.resolve(result);
                               }, function (result) {

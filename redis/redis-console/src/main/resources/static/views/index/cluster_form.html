@@ -1,5 +1,7 @@
 <div class="col-md-8 col-md-offset-2">
 	<h3 class="header smaller lighter blue" ng-if="operateType !== 'create' ">
+		<a href="/#/cluster_list">Cluster List</a>
+        <span> > </span>
     	<a href="/#/cluster_list?clusterName={{cluster.clusterName}}">{{cluster.clusterName}}</a>
     	<span> > </span>
     	<span>Cluster信息</span>
@@ -13,33 +15,45 @@
         </div>
         <div class="panel-body">
 
-            <form class="form-horizontal" ng-submit="doCluster()" ng-show="operateType != 'retrieve'">
+            <form class="form-horizontal" ng-submit="doCluster()" ng-show="operateType !== 'retrieve'">
                 <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right">Cluster 名称</label>
 
                     <div class="col-sm-7">
-                        <input type="text" placeholder="集群名称" class="col-xs-10 col-sm-4"
-                               ng-model="cluster.clusterName" ng-disabled="operateType == 'update'"/>
+                        <input type="text" placeholder="集群名称" class="col-xs-10 col-sm-4" ng-required="true"
+                               ng-model="cluster.clusterName" ng-disabled="operateType == 'update'"
+                               pattern="^[\u4E00-\u9FA5A-Za-z0-9_]+$"/>
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right"> 主数据中心 </label>
 
                     <div class="col-sm-7">
-                        <label ng-repeat="dc in allDcs">
+                        <label ng-repeat="dc in allDcs" ng-show="!slaveExists(dc)">
                             <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
                                    ng-value="dc.id" ng-checked="cluster.activedcId == dc.id"
-                                   ng-disabled="operateType == 'update'"/>
+                                   ng-disabled="operateType == 'update'" ng-required="true"/>
                             <span class="lbl" ng-bind="dc.dcName"></span>
+                            &nbsp&nbsp&nbsp&nbsp
                         </label>
                     </div>
                 </div>
+                <div class="form-group" ng-show="operateType == 'create'">
+                    <label class="col-sm-4 control-label no-padding-right"> 从数据中心 </label>
 
+                    <div class="col-sm-7">
+                        <label ng-repeat="dc in allDcs" ng-show="cluster.activedcId != dc.id">
+                        	<md-checkbox ng-checked="slaveExists(dc)" ng-click="toggle(dc)"></md-checkbox>
+                            <span class="lbl" ng-bind="dc.dcName"></span>
+                            &nbsp&nbsp&nbsp&nbsp
+                        </label>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right">Cluster 描述</label>
 
                     <div class="col-sm-7">
-                        <textarea rows="4" style="width: 330px;" ng-model="cluster.clusterDescription"></textarea>
+                        <textarea rows="4" style="width: 330px;" ng-model="cluster.clusterDescription" ng-required="true"></textarea>
                     </div>
                 </div>
                 <div class="form-group">
@@ -83,17 +97,6 @@
                         <label ng-bind="cluster.clusterDescription"></label>
                     </div>
                 </div>
-
- <!--                <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right">链接</label>
-
-                    <div class="col-sm-7">
-                        <a href="/#/cluster_dc?clusterName={{cluster.clusterName}}">数据中心</a>&nbsp;&nbsp;&nbsp;
-                        <a href="/#/cluster_shards?clusterName={{cluster.clusterName}}">Shards</a>&nbsp;&nbsp;&nbsp;
-                        <a href="/#/cluster_dc_shards?clusterName={{cluster.clusterName}}">详情</a>
-                    </div>
-                </div> -->
-
 
                 <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right"></label>

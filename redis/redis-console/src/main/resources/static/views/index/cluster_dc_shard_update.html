@@ -1,6 +1,8 @@
 <div>
     <h3 class="header smaller lighter blue">
         &nbsp;&nbsp;&nbsp;&nbsp;
+        <a href="/#/cluster_list">Cluster List</a>
+        <span> > </span>
         <a href="/#/cluster_list?clusterName={{clusterName}}">{{clusterName}}</a>
         <span> > </span>
         <a href="/#/cluster_dc_shards?clusterName={{clusterName}}">详情</a>
@@ -126,7 +128,7 @@
                     </div>
                 </div>
 
-                <div class="form-group" ng-show="!hasRedisMaster">
+                <div class="form-group" ng-show="!hasRedisMaster && masterDcName === currentDcName">
                     <label class="col-sm-4 control-label">
                         Master
                     </label>
