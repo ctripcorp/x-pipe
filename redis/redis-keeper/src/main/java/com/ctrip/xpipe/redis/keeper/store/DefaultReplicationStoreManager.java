@@ -1,19 +1,26 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 
+
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+
+
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Date;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -44,6 +51,10 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	private AtomicReference<DefaultReplicationStore> currentStore = new AtomicReference<>();
 
 	private KeeperConfig keeperConfig;
+	
+	private AtomicLong gcCount = new AtomicLong();
+	
+	private ScheduledFuture<?> gcFuture;
 
 	public DefaultReplicationStoreManager(KeeperConfig keeperConfig, String clusterName, String shardName, String keeperRunid, File baseDir) {
 		this.clusterName = clusterName;
@@ -53,16 +64,11 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 		this.baseDir = new File(baseDir, clusterName + "/" + shardName);
 		metaFile = new File(this.baseDir, META_FILE);
 
-		// TODO move to manager of manager and add "close" logic
-		Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("gc", true)).scheduleWithFixedDelay(new Runnable() {
-
+		gcFuture = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("gc", true)).scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+			
 			@Override
-			public void run() {
-				try {
-					gc();
-				} catch (Exception e) {
-					logger.error("[run][gc]", e);
-				}
+			protected void doRun() throws Exception {
+				gc();
 			}
 		}, keeperConfig.getReplicationStoreGcIntervalSeconds(), keeperConfig.getReplicationStoreGcIntervalSeconds(), TimeUnit.SECONDS);
 	}
@@ -87,6 +93,7 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	
 	@Override
 	public synchronized ReplicationStore create(String masterRunid, long keeperBeginOffset) throws IOException {
+		
 		ReplicationStore replicationStore = create();
 		
 		replicationStore.getMetaStore().psyncBegun(masterRunid, keeperBeginOffset);
@@ -153,7 +160,13 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	}
 
 	private Properties currentMeta() throws IOException {
-		if (currentMeta.get() == null) {
+		
+		return currentMeta(false);
+	}
+
+	private Properties currentMeta(boolean forceLoad) throws IOException {
+		
+		if(forceLoad || currentMeta.get() == null){
 			currentMeta.set(loadMeta());
 		}
 		return currentMeta.get();
@@ -200,8 +213,11 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 	}
 
 	protected synchronized void gc() throws IOException {
-		// remove directories of previous ReplicationStores
-		Properties meta = currentMeta.get();
+		
+		logger.debug("[gc]{}", this);
+
+		gcCount.incrementAndGet();
+		Properties meta = currentMeta(true);
 		final String currentDirName;
 		if (meta != null) {
 			currentDirName = meta.getProperty(LATEST_STORE_DIR);
@@ -214,10 +230,15 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 			});
 
 			if (replicationStoreDirs != null && replicationStoreDirs.length > 0) {
+				
 				logger.info("[GC][old replicationstore]newest:{}", currentDirName);
 				for (File dir : replicationStoreDirs) {
-					logger.info("[GC] directory {}", dir.getCanonicalPath());
-					FileUtils.deleteDirectory(dir);
+					if(System.currentTimeMillis() - dir.lastModified() > keeperConfig.getReplicationStoreMinTimeMilliToGcAfterCreate()){
+						logger.info("[GC] directory {}", dir.getCanonicalPath());
+						FileUtils.deleteDirectory(dir);
+					}else{
+						logger.warn("[GC][directory is created too short, do not gc]{}, {}", dir, new Date(dir.lastModified()));
+					}
 				}
 			}
 		}
@@ -231,7 +252,13 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 
 	@Override
 	public void destroy() {
-		logger.info("[destroy]{}", this.baseDir);
+		
+		logger.info("[destroy]{}", this);
+		
+		if(gcFuture != null){
+			logger.info("[destroy][cancel gc future]{}", this);
+			gcFuture.cancel(true);
+		}
 		recursiveDelete(this.baseDir);
 	}
 
@@ -250,5 +277,20 @@ public class DefaultReplicationStoreManager implements ReplicationStoreManager {
 		}
 		logger.info("[recursiveDelete]{}", file.getAbsolutePath());
 		file.delete();
+	}
+	
+	
+	public long getGcCount() {
+		return gcCount.get();
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("cluster:%s, shard:%s, keeperRunId:%s, baseDir:%s, currentMeta:%s", clusterName, shardName, keeperRunid, baseDir, 
+				currentMeta.get() == null?"": currentMeta.get().toString());
+	}
+	
+	public File getBaseDir() {
+		return baseDir;
 	}
 }

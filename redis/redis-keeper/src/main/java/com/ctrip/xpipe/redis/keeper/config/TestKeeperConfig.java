@@ -8,7 +8,8 @@ import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
  * Aug 18, 2016
  */
 public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig{
-	
+
+	private int replicationStoreGcIntervalSeconds = 2;
 	private int replicationStoreCommandFileSize = 1024;
 	private int replicationStoreCommandFileNumToKeep = 2;
 	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
@@ -51,9 +52,13 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	@Override
 	public int getReplicationStoreGcIntervalSeconds() {
-		return 2;
+		return replicationStoreGcIntervalSeconds;
 	}
 
+	public void setReplicationStoreGcIntervalSeconds(int replicationStoreGcIntervalSeconds) {
+		this.replicationStoreGcIntervalSeconds = replicationStoreGcIntervalSeconds;
+	}
+	
 	@Override
 	public int getReplicationStoreCommandFileNumToKeep() {
 		return replicationStoreCommandFileNumToKeep;
@@ -94,6 +99,10 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public int getReplicationStoreMinTimeMilliToGcAfterCreate() {
 		return minTimeMilliToGcAfterCreate;
+	}
+
+	public void setMinTimeMilliToGcAfterCreate(int minTimeMilliToGcAfterCreate) {
+		this.minTimeMilliToGcAfterCreate = minTimeMilliToGcAfterCreate;
 	}
 	
 	public void setRdbDumpMinIntervalMilli(int rdbDumpMinIntervalMilli) {

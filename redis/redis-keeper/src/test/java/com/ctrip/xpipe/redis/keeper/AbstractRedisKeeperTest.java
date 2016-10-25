@@ -40,6 +40,13 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return currentTestName() + "-shardId";
 	}
 
+	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig) {
+		
+		String tmpDir = getTestFileDir();
+
+		return createReplicationStoreManager(getClusterId(), getShardId(), keeperConfig, new File(tmpDir));
+	}
+
 	
 	protected ReplicationStoreManager createReplicationStoreManager() {
 

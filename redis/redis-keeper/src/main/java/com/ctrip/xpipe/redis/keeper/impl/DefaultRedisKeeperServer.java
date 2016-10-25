@@ -431,7 +431,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState){
+	public synchronized void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState){
 		
 		RedisKeeperServerState previous = this.redisKeeperServerState;
 		logger.info("[setRedisKeeperServerState]{}, {}->{}", this, previous, redisKeeperServerState);
