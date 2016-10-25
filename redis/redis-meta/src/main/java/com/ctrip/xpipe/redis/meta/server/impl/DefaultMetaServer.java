@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
-
-
 import java.net.InetSocketAddress;
 
 import javax.annotation.Resource;
@@ -19,7 +17,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -113,11 +110,6 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		this.config = config;
 	}
 
-
-	@Override
-	public int getOrder() {
-		return SlotManager.ORDER + 1;
-	}
 
 	@ClusterMovingMethod
 	@Override

@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
-
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -17,6 +18,7 @@ import org.unidal.tuple.Pair;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
@@ -45,7 +47,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 @Component
 public class DefaultCurrentMetaManager extends AbstractLifecycleObservable implements CurrentMetaManager, Observer{
 	
-	private int slotCheckInterval = 60000;
+	private int slotCheckInterval = 60;
 	
 	@Autowired
 	private SlotManager slotManager;
@@ -70,7 +72,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 
-		logger.info("[doInitialize]{}", stateHandlers);
+		logger.info("[doInitialize]{}, {}", stateHandlers, currentClusterServer.getServerId());
 		dcMetaCache.addObserver(this);
 		scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create(String.format("CURRENT_META_MANAGER(%d)", currentClusterServer.getServerId())));
 	}
@@ -95,7 +97,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	
 	protected void checkAddOrRemoveSlots() {
-		
 		
 		Set<Integer> slots = slotManager.getSlotsByServerId(currentClusterServer.getServerId(), false);
 		
@@ -337,7 +338,16 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	
 	@Override
 	public String getCurrentMetaDesc() {
-		return currentMeta.toString();
+	
+		Map<String, Object> desc = new HashMap<>();
+		desc.put("meta", currentMeta);
+		desc.put("currentSlots", currentSlots);
+		JsonCodec codec = new JsonCodec(true, true);
+		return codec.encode(desc);
+	}
+	
+	protected Set<Integer> getCurrentSlots() {
+		return currentSlots;
 	}
 	
 	
@@ -394,5 +404,13 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			}
 		}
 	}
-
+	
+	
+	public void setSlotManager(SlotManager slotManager) {
+		this.slotManager = slotManager;
+	}
+	
+	public void setDcMetaCache(DcMetaCache dcMetaCache) {
+		this.dcMetaCache = dcMetaCache;
+	}
 }

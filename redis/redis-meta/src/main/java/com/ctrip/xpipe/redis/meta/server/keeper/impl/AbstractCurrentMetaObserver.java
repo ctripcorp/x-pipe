@@ -88,4 +88,9 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 	public void setCurrentMetaManager(CurrentMetaManager currentMetaManager) {
 		this.currentMetaManager = currentMetaManager;
 	}
+	
+	@Override
+	public int getOrder() {
+		return CurrentClusterServer.ORDER + 1;
+	}
 }

@@ -67,12 +67,8 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 		
 		setServerId(currentServerId);
 		setClusterServerInfo(new ClusterServerInfo(config.getMetaServerIp(), config.getMetaServerPort()));
-		
-		
 	}
 	
-
-
 	@Override
 	protected void doStart() throws Exception {
 		
@@ -90,7 +86,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 
 	@Override
 	public int getOrder() {
-		return 0;
+		return ORDER;
 	}
 
 	@Override

@@ -49,7 +49,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		
-		scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create(String.format("CURRENT_META_MANAGER(%d)", currentClusterServer.getServerId())));
+		scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create(String.format("KEEPER_MANAGER(%d)", currentClusterServer.getServerId())));
 	}
 
 	@Override

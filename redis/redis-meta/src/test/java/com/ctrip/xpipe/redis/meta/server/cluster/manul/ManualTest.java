@@ -45,7 +45,7 @@ public class ManualTest extends AbstractMetaServerClusterTest{
 		
 		createMetaServers(1);
 
-//		waitForAnyKeyToExit();
+		waitForAnyKeyToExit();
 	}
 
 	

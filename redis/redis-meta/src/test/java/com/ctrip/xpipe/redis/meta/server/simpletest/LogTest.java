@@ -19,6 +19,13 @@ import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 public class LogTest extends AbstractMetaServerTest{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
+	
+	@Test
+	public void testHash(){
+		
+		System.out.println("cluster_ly".hashCode()%256);
+		
+	}
 		
 	@Test
 	public void test() throws IOException{

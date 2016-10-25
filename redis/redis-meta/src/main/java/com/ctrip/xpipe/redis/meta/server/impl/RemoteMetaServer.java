@@ -113,7 +113,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	public void clusterDeleted(String clusterId, ForwardInfo forwardInfo) {
 
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, ForwardType.MULTICASTING);
-		logger.info("[clusterModified][forward]{},{} --> {}", clusterId, forwardInfo, this);
+		logger.info("[clusterDeleted][forward]{},{} --> {}", clusterId, forwardInfo, this);
 		
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
 		restTemplate.exchange(changeClusterPath, HttpMethod.DELETE, entity, String.class, clusterId);
