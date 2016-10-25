@@ -7,12 +7,13 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.unidal.dal.jdbc.transaction.TransactionManager;
 import org.unidal.lookup.ContainerLoader;
 
-import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 
 
@@ -24,8 +25,10 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 @Aspect
 @Component
 public class DalTransactionAspect {
-	Config config = Config.DEFAULT;
 	private TransactionManager transactionManager;
+	
+	@Autowired
+	private ConsoleConfig config;
 	
 	@PostConstruct
 	private void postConstruct() {
@@ -42,7 +45,7 @@ public class DalTransactionAspect {
 	
 	@Around("dalTransaction()")
 	public Object invokeDalTransactionMethod(ProceedingJoinPoint joinPoint) {
-		String datasource = config.get("datasource");
+		String datasource = config.getDatasource();
 		if(null == datasource) {
 			throw new ServerException("Cannot fetch datasource.");
 		}
