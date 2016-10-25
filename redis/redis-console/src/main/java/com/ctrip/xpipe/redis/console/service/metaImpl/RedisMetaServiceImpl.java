@@ -222,7 +222,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 			if(null != masterDcActiveKeeper) {
 				updateKeepers(keepers, newActiveKeeper, newActiveKeeperTbl, masterDcActiveKeeper.getId());
 			} else {
-				updateKeepers(keepers, newActiveKeeper, newActiveKeeperTbl, RedisService.MASTER_REQUIRED_TAG);
+				updateKeepers(keepers, newActiveKeeper, newActiveKeeperTbl, RedisService.MASTER_REQUIRED);
 			}
 		}
 
