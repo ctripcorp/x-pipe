@@ -88,7 +88,9 @@ public class ShardService extends AbstractConsoleService<ShardTblDao>{
     	/** Notify meta server **/
     	List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
     	if(null != relatedDcs) {
-    		notifier.notifyClusterDelete(clusterName, relatedDcs);
+    		for(DcTbl dc : relatedDcs) {
+    			notifier.notifyClusterUpdate(dc.getDcName(), clusterName);
+    		}
     	}
     }
      
