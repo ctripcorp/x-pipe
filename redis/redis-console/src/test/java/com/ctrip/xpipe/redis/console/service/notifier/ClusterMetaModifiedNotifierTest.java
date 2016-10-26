@@ -106,4 +106,5 @@ public class ClusterMetaModifiedNotifierTest extends AbstractConsoleTest{
 		
 		assertEquals(metaServerConsoleServiceManagerWrapper.get(dcName),mockedMetaServerConsoleService);
 	}
+
 }
