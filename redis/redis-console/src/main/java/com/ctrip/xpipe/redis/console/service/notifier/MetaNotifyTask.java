@@ -12,7 +12,7 @@ import com.ctrip.xpipe.retry.RetryNTimes;
  *
  *         Oct 26, 2016
  */
-public abstract class MetaNotifyTask implements Runnable {
+public abstract class MetaNotifyTask<T> implements Runnable {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	private String taskName;
@@ -37,7 +37,7 @@ public abstract class MetaNotifyTask implements Runnable {
 
 				@Override
 				protected void doExecute() throws Exception {
-					doNotify();
+					future().setSuccess(doNotify());
 				}
 
 				@Override
@@ -51,5 +51,5 @@ public abstract class MetaNotifyTask implements Runnable {
 		}
 	}
 
-	public abstract void doNotify();
+	public abstract T doNotify();
 }
