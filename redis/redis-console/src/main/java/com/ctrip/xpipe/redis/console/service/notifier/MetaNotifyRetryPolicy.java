@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.notifier;
 
-import java.util.concurrent.TimeoutException;
-
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 
@@ -26,13 +24,8 @@ public class MetaNotifyRetryPolicy extends AbstractRetryPolicy implements RetryP
 	}
 	
 	@Override
-	public int waitTimeoutMilli() {
-		return 2000;
-	}
-	
-	@Override
 	public boolean retry(Throwable e) {
-		if(e instanceof ResourceAccessException || e instanceof HttpServerErrorException || e instanceof TimeoutException) {
+		if(e instanceof ResourceAccessException || e instanceof HttpServerErrorException) {
 			return true;
 		}
 		return false;
