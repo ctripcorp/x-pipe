@@ -333,6 +333,10 @@ public class AbstractTest {
 
 	protected void waitForAnyKeyToExit() throws IOException{
 		System.out.println("type any key to exit..................");
+		waitForAnyKey();
+	}
+
+	protected void waitForAnyKey() throws IOException {
 		System.in.read();
 	}
 

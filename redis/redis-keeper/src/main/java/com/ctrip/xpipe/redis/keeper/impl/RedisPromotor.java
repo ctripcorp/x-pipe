@@ -18,6 +18,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Fsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSlaveOfCommand;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -104,7 +105,7 @@ public class RedisPromotor {
 	private void redisModified(RedisSlave redisSlave, SimpleObjectPool<NettyClient> clientPool) throws Exception {
 		
 		try{
-			SlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
+			AbstractSlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
 			slaveOfCmd.execute().sync();
 	
 			InfoCommand infoServerCmd = new InfoCommand(clientPool, "server");
@@ -141,7 +142,7 @@ public class RedisPromotor {
 
 	private void redisNotModified(RedisSlave redisSlave, SimpleObjectPool<NettyClient> clientPool) throws InterruptedException, ExecutionException, IOException {
 		
-		SlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
+		AbstractSlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
 		slaveOfCmd.execute().sync();
 		
 		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.SLAVE_PROMTED, new InetSocketAddress(promoteServerIp, promoteServerPort));

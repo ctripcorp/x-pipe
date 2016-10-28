@@ -17,9 +17,12 @@ import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
+import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
@@ -35,7 +38,10 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycleObservable
 	@Resource( name = "clientPool" )
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 	
-	private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("META-SERVICE"));
+	private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("DefaultKeeperStateChangeHandler"));
+	
+	@Autowired
+	private DcMetaCache dcMetaCache;
 	
 	@Autowired
 	private CurrentMetaManager  currentMetaServerMetaManager;
@@ -69,10 +75,16 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycleObservable
 		
 		List<KeeperMeta> keepers = currentMetaServerMetaManager.getSurviveKeepers(clusterId, shardId);
 		if(keepers == null || keepers.size() == 0){
-			logger.info("[keeperActiveElected][none keeper survice, do nothing]");
+			logger.info("[keeperActiveElected][none keeper survive, do nothing]");
 			return;
 		}
 		InetSocketAddress activeKeeperMaster = currentMetaServerMetaManager.getKeeperMaster(clusterId, shardId);
 		new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool).execute(executors);
+		
+		if(!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)){
+			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterId, shardId);
+			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{}", clusterId, shardId, slaves);
+			new XSlaveofJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool).execute(executors);
+		}
 	}
 }

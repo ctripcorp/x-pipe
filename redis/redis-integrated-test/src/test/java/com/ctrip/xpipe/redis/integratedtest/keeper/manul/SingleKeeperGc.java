@@ -3,9 +3,15 @@ package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
 
 import java.io.IOException;
 
+import org.junit.Assert;
 import org.junit.Test;
 
+import com.ctrip.xpipe.api.server.PARTIAL_STATE;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegratedSingleDc;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 
@@ -23,7 +29,28 @@ public class SingleKeeperGc extends AbstractKeeperIntegratedSingleDc{
 		
 		waitForAnyKeyToExit();
 	}
+
 	
+	@Test
+	public void killActive() throws Exception{
+		
+		RedisMeta redisMaster = getRedisMaster();
+
+		sendMessageToMasterAndTestSlaveRedis();
+
+		System.out.println("press any key to make back keeper active");		
+		waitForAnyKey();
+		
+		KeeperMeta backupKeeper = getKeepersBackup().get(0);
+		RedisKeeperServer redisKeeperServer = getRedisKeeperServer(backupKeeper);
+		Assert.assertEquals(PARTIAL_STATE.FULL, redisKeeperServer.getRedisMaster().partialState());
+		logger.info(remarkableMessage("make keeper active{}"), backupKeeper);
+		setKeeperState(backupKeeper, KeeperState.ACTIVE, redisMaster.getIp(), redisMaster.getPort());
+		
+		
+		waitForAnyKeyToExit();
+}
+
 	@Override
 	protected KeeperConfig getKeeperConfig() {
 		return new TestKeeperConfig(1 << 30, 5, 1 << 30, 300000);

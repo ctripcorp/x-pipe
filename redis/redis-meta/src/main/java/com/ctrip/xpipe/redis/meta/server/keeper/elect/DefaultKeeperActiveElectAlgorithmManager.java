@@ -29,7 +29,7 @@ public class DefaultKeeperActiveElectAlgorithmManager implements KeeperActiveEle
 	@Override
 	public KeeperActiveElectAlgorithm get(String clusterId, String shardId){
 		
-		boolean isActiveDc = dcMetaCache.isActiveDc(clusterId, shardId);
+		boolean isActiveDc = dcMetaCache.isCurrentDcPrimary(clusterId, shardId);
 		if(isActiveDc){
 			logger.debug("[get][active dc, use default]");
 			return new DefaultKeeperActiveElectAlgorithm();

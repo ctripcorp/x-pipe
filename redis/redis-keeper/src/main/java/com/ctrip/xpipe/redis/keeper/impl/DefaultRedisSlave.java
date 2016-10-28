@@ -185,6 +185,9 @@ public class DefaultRedisSlave implements RedisSlave {
 	public void beginWriteCommands(long beginOffset) {
 		
 		try {
+			if(partialState == PARTIAL_STATE.UNKNOWN){
+				partialState = PARTIAL_STATE.PARTIAL;
+			}
 			logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
 			slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
 			getRedisKeeperServer().getReplicationStore().addCommandsListener(beginOffset, this);

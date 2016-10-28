@@ -11,6 +11,20 @@ import org.slf4j.Logger;
  */
 public class ExceptionUtils {
 	
+	public static Throwable getRootCause(Throwable th){
+		
+		if(th == null){
+			return null;
+		}
+		
+		Throwable cause = th.getCause();
+		if(cause == null){
+			return th;
+		}
+		
+		return getRootCause(cause);
+	}
+	
 	public static boolean isIoException(Throwable th){
 		
 		while(true){

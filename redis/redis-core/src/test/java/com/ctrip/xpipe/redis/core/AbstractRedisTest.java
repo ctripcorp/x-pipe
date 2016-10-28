@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
@@ -55,6 +56,8 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	protected ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
 
 	protected static final int runidLength = 40;
+	
+	private AtomicLong totalSendMessageCount = new AtomicLong();
 	
 	private XpipeMeta xpipeMeta;
 
@@ -137,7 +140,9 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		Jedis jedis = createJedis(redisMeta);
 		logger.info("[sendRandomMessage][begin]{}", jedis);
 		for(int i=0; i < count; i++){
-			jedis.set(String.valueOf(i), randomString(messageLength));
+			
+			long currentIndex = totalSendMessageCount.incrementAndGet(); 
+			jedis.set(String.valueOf(currentIndex), randomString(messageLength));
 			jedis.incr("incr");
 		}
 		logger.info("[sendRandomMessage][end  ]{}", jedis);

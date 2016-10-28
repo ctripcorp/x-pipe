@@ -79,10 +79,14 @@ public class ParallelCommandChain extends AbstractCommandChain{
 					break;
 				}
 			}
-			if(!fail){
-				future().setSuccess(getResult());
-			}else{
-				future().setFailure(new CommandChainException("execute failure", getResult()));
+			synchronized (this) {
+				if(!future().isDone()){
+					if(!fail){
+						future().setSuccess(getResult());
+					}else{
+						future().setFailure(new CommandChainException("execute failure", getResult()));
+					}
+				}
 			}
 		}
 	}

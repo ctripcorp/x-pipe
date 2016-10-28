@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
@@ -217,13 +218,18 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
-	public boolean isActiveDc(String clusterId, String shardId) {
+	public boolean isCurrentDcPrimary(String clusterId, String shardId) {
 		return currentDc.equalsIgnoreCase(dcMetaManager.get().getActiveDc(clusterId));
 	}
 
 	@Override
 	public List<KeeperMeta> getShardKeepers(String clusterId, String shardId) {
 		return dcMetaManager.get().getKeepers(clusterId, shardId);
+	}
+
+	@Override
+	public List<RedisMeta> getShardRedises(String clusterId, String shardId) {
+		return dcMetaManager.get().getRedises(clusterId, shardId);
 	}
 
 }

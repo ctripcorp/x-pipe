@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 import java.net.InetSocketAddress;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -40,8 +41,15 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	}
 
 	protected void setKeeperState(KeeperMeta keeperMeta, KeeperState keeperState, String ip, Integer port) throws Exception {
+		setKeeperState(keeperMeta, keeperState, ip, port, true);
+	}
+
+	protected void setKeeperState(KeeperMeta keeperMeta, KeeperState keeperState, String ip, Integer port, boolean sync) throws Exception {
 		KeeperSetStateCommand command = new KeeperSetStateCommand(keeperMeta, keeperState, new InetSocketAddress(ip, port));
-		command.execute().sync();
+		CommandFuture<?> future = command.execute();
+		if(sync){
+			future.sync();
+		}
 	}
 
 	protected KeeperState getKeeperState(KeeperMeta keeperMeta) throws Exception {

@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
 /**
  * @author wenchao.meng
@@ -31,7 +32,9 @@ public interface DcMetaCache extends Observable{
 
 	void updateUpstream(String clusterId, String shardId, String ip, int port);
 
-	boolean isActiveDc(String clusterId, String shardId);
+	boolean isCurrentDcPrimary(String clusterId, String shardId);
 
 	List<KeeperMeta> getShardKeepers(String clusterId, String shardId);
+	
+	List<RedisMeta>  getShardRedises(String clusterId, String shardId);
 }
