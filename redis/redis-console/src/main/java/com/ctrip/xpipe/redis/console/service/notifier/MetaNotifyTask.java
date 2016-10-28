@@ -37,7 +37,8 @@ public abstract class MetaNotifyTask<T> implements Runnable {
 
 				@Override
 				protected void doExecute() throws Exception {
-					future().setSuccess(doNotify());
+					doNotify();
+					future().setSuccess();
 				}
 
 				@Override
@@ -46,12 +47,8 @@ public abstract class MetaNotifyTask<T> implements Runnable {
 
 			});
 			logger.info("[{}][success]",taskName);
-		} catch (RuntimeException e) {
-			logger.error("[{}][failed][rootCause]{}",taskName, e);
-			throw e;
 		} catch (Exception e) {
 			logger.error("[{}][failed][rootCause]{}",taskName, e);
-			throw new RuntimeException(e);
 		}
 	}
 

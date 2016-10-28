@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.notifier;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.doThrow;
@@ -46,22 +45,15 @@ public class MetaNotifyTaskTest {
 	@Test
 	public void testMetaNotifyTaskFail() {
 		doThrow(new ResourceAccessException("test")).when(foo).foo();
-		try {
-			task.run();
-		} catch (Exception e) {
-			assertTrue(e instanceof ResourceAccessException);
-			verify(foo,times(retryTimes + 1)).foo();
-		}
+		task.run();
+		verify(foo,times(retryTimes + 1)).foo();
 	}
 	
 	@Test
 	public void testMetaNotifyTaskRetryFail() {
 		doThrow(new RuntimeException("test")).when(foo).foo();
-		try {
-			task.run();
-		} catch (Exception e) {
-			verify(foo,times(1)).foo();
-		}
+		task.run();
+		verify(foo,times(1)).foo();
 	}
 
 	private class Foo {
