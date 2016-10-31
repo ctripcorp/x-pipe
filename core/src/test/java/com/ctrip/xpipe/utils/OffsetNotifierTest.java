@@ -30,8 +30,8 @@ public class OffsetNotifierTest extends AbstractTest{
 			long current = System.currentTimeMillis();
 			offsetNotifier.await(i, waitMili);
 			long ended = System.currentTimeMillis();
-			
-			Assert.assertTrue(ended - current <= 10);
+
+			Assert.assertTrue(ended - current <= 20);
 		}
 
 		long current = System.currentTimeMillis();

@@ -10,6 +10,8 @@ import com.ctrip.xpipe.redis.console.service.BasicServiceTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.RedisMetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.notifier.ClusterMetaModifiedNotifierTest;
+import com.ctrip.xpipe.redis.console.service.notifier.MetaNotifyTaskTest;
+
 import simpletest.SetOperationUtilTest;
 
 import org.junit.runner.RunWith;
@@ -27,7 +29,9 @@ import org.junit.runner.RunWith;
 	BasicServiceTest.class,
 	MetaServiceTest.class,
 	RedisMetaServiceTest.class,
-	SetOperationUtilTest.class
+	SetOperationUtilTest.class,
+	ClusterMetaModifiedNotifierTest.class,
+	MetaNotifyTaskTest.class
 })
 public class AllTests {
 

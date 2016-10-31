@@ -43,14 +43,15 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 
 	@Override
 	public void notifyClusterUpdate(final String dcName, final String clusterName) {
-		fixedThreadPool.submit(new MetaNotifyTask("notifyClusterUpdate", config.getConsoleNotifyRetryTimes(),
+		submitNotifyTask(new MetaNotifyTask<Void>("notifyClusterUpdate", config.getConsoleNotifyRetryTimes(),
 				new MetaNotifyRetryPolicy(config.getConsoleNotifyRetryInterval())) {
 
 			@Override
-			public void doNotify() {
+			public Void doNotify() {
 				logger.info("[notifyClusterUpdate]{},{}", dcName, clusterName);
 				metaServerConsoleServiceManagerWrapper.get(dcName).clusterModified(clusterName,
 						clusterMetaService.getClusterMeta(dcName, clusterName));
+				return null;
 			}
 		});
 	}
@@ -59,13 +60,14 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 	public void notifyClusterDelete(final String clusterName, List<DcTbl> dcs) {
 		if (null != dcs) {
 			for (final DcTbl dc : dcs) {
-				fixedThreadPool.submit(new MetaNotifyTask("notifyClusterDelete", config.getConsoleNotifyRetryTimes(),
+				submitNotifyTask(new MetaNotifyTask<Void>("notifyClusterDelete", config.getConsoleNotifyRetryTimes(),
 						new MetaNotifyRetryPolicy(config.getConsoleNotifyRetryInterval())) {
 
 					@Override
-					public void doNotify() {
+					public Void doNotify() {
 						logger.info("[notifyClusterDelete]{},{}", clusterName, dc.getDcName());
 						metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).clusterDeleted(clusterName);
+						return null;
 					}
 				});
 			}
@@ -77,19 +79,24 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 			List<DcTbl> dcs) {
 		if (null != dcs) {
 			for (final DcTbl dc : dcs) {
-				fixedThreadPool.submit(new MetaNotifyTask("notifyUpstreamChanged", config.getConsoleNotifyRetryTimes(),
+				submitNotifyTask(new MetaNotifyTask<Void>("notifyUpstreamChanged", config.getConsoleNotifyRetryTimes(),
 						new MetaNotifyRetryPolicy(config.getConsoleNotifyRetryInterval())) {
 
 					@Override
-					public void doNotify() {
+					public Void doNotify() {
 						logger.info("[notifyUpstreamChanged]{},{},{},{},{}", clusterName, shardName, ip, port,
 								dc.getDcName());
 						metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).upstreamChange(clusterName,
 								shardName, ip, port);
+						return null;
 					}
 				});
 			}
 		}
+	}
 
+	@SuppressWarnings("rawtypes")
+	protected void submitNotifyTask(MetaNotifyTask task) {
+		fixedThreadPool.submit(task);
 	}
 }
