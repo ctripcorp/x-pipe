@@ -1,11 +1,17 @@
 package com.ctrip.xpipe.redis.integratedtest.consoleapi;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.Properties;
+import static org.junit.Assert.*;
 
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.integratedtest.consoleapi.util.ApiTestExecitorPool;
 
 /**
@@ -13,21 +19,39 @@ import com.ctrip.xpipe.redis.integratedtest.consoleapi.util.ApiTestExecitorPool;
  * 
  *         Sep 9, 2016
  */
-public class ConsoleApiTest {
 
-	private static Properties p = new Properties();
-	static {
-		try {
-			p.load(new FileInputStream("/opt/data/100004374/console.properties"));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+@RunWith(Parameterized.class)
+public class ConsoleApiTest extends AbstractTest {
+	final static private long THREAD_MAX_RUNTIME = 100000;
+	private int threadNum, threadExecutionNum;
+	private long threadSleepMsec;
+	private String apiName;
+	private String apiUrl;
+	private Class type;
+
+	public ConsoleApiTest(int threadNum, int threadExecutionNum,
+			long threadSleepMsec, String apiName, String apiUrl, Class type) {
+		this.threadNum = threadNum;
+		this.threadExecutionNum = threadExecutionNum;
+		this.threadSleepMsec = threadSleepMsec;
+		this.apiName = apiName;
+		this.apiUrl = apiUrl;
+		this.type = type;
 	}
 
-	public static void main(String[] args) {
-		new ApiTestExecitorPool("DcMetaTest", p.getProperty("DcMetaTest"),
-				DcMeta.class, 100000).doTest();
+	@Parameters
+	public static Collection prepareData() {
+		Object[][] object = {
+				{ 1, 10, 100, "apiName1", "apiUrl1", ClusterMeta.class },
+				{ 1, 10, 100, "apiName2", "apiUrl2", ClusterMeta.class } };
+		return Arrays.asList(object);
+	}
+
+	@Test(timeout = THREAD_MAX_RUNTIME)
+	public void apiTest() {
+		ApiTestExecitorPool api = new ApiTestExecitorPool(apiName, apiUrl,
+				ClusterMeta.class);
+		api.doTest(threadNum, threadExecutionNum, threadSleepMsec);
+		assertTrue(api.isPass);
 	}
 }
