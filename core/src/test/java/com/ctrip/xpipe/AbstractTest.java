@@ -471,7 +471,7 @@ public class AbstractTest {
 
 
 	@After
-	public void afterAbstractTest() throws IOException{
+	public void afterAbstractTest() throws Exception{
 
 		System.setProperties(orginProperties);
 		try {
@@ -484,5 +484,9 @@ public class AbstractTest {
 		File file = new File(getTestFileDir());
 		FileUtils.deleteQuietly(file);
 		logger.info(remarkableMessage("[end   test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
+		
+		doAfterAbstractTest();
 	}
+
+	protected void doAfterAbstractTest() throws Exception{}
 }

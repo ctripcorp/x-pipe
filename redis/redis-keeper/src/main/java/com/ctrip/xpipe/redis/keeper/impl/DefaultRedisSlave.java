@@ -351,8 +351,8 @@ public class DefaultRedisSlave implements RedisSlave {
 	@Override
 	public void release() throws Exception {
 		logger.info("[release]{}", this);
-		psyncExecutor.shutdownNow();
 		closed.set(true);
+		psyncExecutor.shutdownNow();
 	}
 	
 }

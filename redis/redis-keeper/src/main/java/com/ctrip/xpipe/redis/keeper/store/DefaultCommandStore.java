@@ -224,7 +224,7 @@ public class DefaultCommandStore implements CommandStore {
 				offsetNotifier.await(curPosition + 1);
 				readNextFileIfNecessary();
 			} catch (InterruptedException e) {
-				logger.error("[read]", e);
+				logger.debug("[read]", e);
 				Thread.currentThread().interrupt();
 				return 0;
 			}
@@ -321,7 +321,7 @@ public class DefaultCommandStore implements CommandStore {
 		} finally {
 			cmdReader.close();
 		}
-		logger.info("[addCommandsListener][begin] from offset {}, {}", offset, listener);
+		logger.info("[addCommandsListener][end] from offset {}, {}", offset, listener);
 	}
 
 }

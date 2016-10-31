@@ -60,7 +60,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		
 		startKeeperServerAndTestReFullSync(100, (int) (allCommandsSize * 0.8));
 	}
-
+	
 	@Test
 	public void testDumpWhileWaitForRdb() throws Exception{
 		
