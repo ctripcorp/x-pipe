@@ -2,7 +2,6 @@ package com.ctrip.xpipe.exception;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
 import org.springframework.web.client.HttpStatusCodeException;
 
 /**
@@ -42,26 +41,18 @@ public class ExceptionUtils {
 		return false;
 	}
 
-	public static void logException(Logger logger, Throwable throwable){
-		logException(logger, throwable, "");
-	}
+	public static String extractExtraMessage(Throwable throwable){
 
-	public static void logException(Logger logger, Throwable throwable, String info){
-		
-		if(isIoException(throwable) || xpipeExceptionLogMessage(throwable)){
-			logger.error(info + throwable.getMessage());
-			return;
-		}
-		
 		Throwable rootExeption = getRootCause(throwable);
 		
 		if(rootExeption instanceof HttpStatusCodeException){
-			info += " response body:" + ((HttpStatusCodeException) rootExeption).getResponseBodyAsString();
+			return "response body:" + ((HttpStatusCodeException) rootExeption).getResponseBodyAsString();
 		}
-		logger.error(info, throwable);
+		
+		return null;
 	}
 
-	private static boolean xpipeExceptionLogMessage(Throwable throwable) {
+	public static boolean xpipeExceptionLogMessage(Throwable throwable) {
 		
 		if(throwable instanceof XpipeException){
 			return ((XpipeException) throwable).isOnlyLogMessage();

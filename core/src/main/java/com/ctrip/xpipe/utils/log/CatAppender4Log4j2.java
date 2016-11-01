@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.utils;
+package com.ctrip.xpipe.utils.log;
 
 import java.io.PrintWriter;
 import java.io.Serializable;
@@ -14,8 +14,11 @@ import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 
+import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.dianping.cat.Cat;
 import com.dianping.cat.message.Trace;
+import com.dianping.cat.message.spi.MessageManager;
 
 /**
  * @author shyin
@@ -24,8 +27,6 @@ import com.dianping.cat.message.Trace;
  */
 @Plugin(name = "CatAppender4Log4j2", category = "Core", elementType = "appender", printObject = true)
 public final class CatAppender4Log4j2 extends AbstractAppender {
-
-	private static final long serialVersionUID = 1L;
 
 	/**
 	 * @param name
@@ -38,7 +39,13 @@ public final class CatAppender4Log4j2 extends AbstractAppender {
 
 	@Override
 	public void append(LogEvent event) {
-		boolean isTraceMode = Cat.getManager().isTraceMode();
+		
+		MessageManager messageManager = Cat.getManager();
+		
+		boolean isTraceMode = false;
+		if(messageManager != null){
+			isTraceMode = messageManager.isTraceMode();
+		}
 		Level level = event.getLevel();
 
 		if (level.isMoreSpecificThan(Level.ERROR)) {
@@ -61,13 +68,20 @@ public final class CatAppender4Log4j2 extends AbstractAppender {
 	}
 
 	private void logError(LogEvent event) {
+		
 		Throwable info = event.getThrown();
+		
 		if (info != null) {
 			Throwable exception = info;
 			Object message = event.getMessage();
-			if (message != null) {
+			String extra = ExceptionUtils.extractExtraMessage(info);
 
-				Cat.logError(String.valueOf(message), exception);
+			String logMessage = StringUtil.join(",", message, extra);
+			
+			System.out.println("cat message:" + logMessage);
+			
+			if (!StringUtil.isEmpty(logMessage)) {
+				Cat.logError(logMessage, exception);
 			} else {
 				Cat.logError(exception);
 			}
@@ -75,6 +89,7 @@ public final class CatAppender4Log4j2 extends AbstractAppender {
 	}
 
 	private void logTrace(LogEvent event) {
+		
 		String type = "Log4j";
 		String name = event.getLevel().toString();
 		Object message = event.getMessage();
@@ -89,7 +104,11 @@ public final class CatAppender4Log4j2 extends AbstractAppender {
 		Throwable info = event.getThrown();
 
 		if (info != null) {
-			data = data + '\n' + buildExceptionStack(info);
+			String 	  extra = ExceptionUtils.extractExtraMessage(info);
+			if(extra != null){
+				data += "\n" + extra;
+			}
+			data += '\n' + buildExceptionStack(info);
 		}
 		Cat.logTrace(type, name, Trace.SUCCESS, data);
 	}

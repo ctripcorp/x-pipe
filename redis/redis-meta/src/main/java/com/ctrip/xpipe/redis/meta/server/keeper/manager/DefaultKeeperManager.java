@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
-import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
@@ -31,159 +30,158 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 /**
  * @author wenchao.meng
  *
- * Sep 4, 2016
+ *         Sep 4, 2016
  */
 @Component
-public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements KeeperManager, TopElement{
+public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements KeeperManager, TopElement {
 
-	private int deadKeeperCheckIntervalMilli = Integer.parseInt(System.getProperty("deadKeeperCheckIntervalMilli", "30000"));
-	
+	private int deadKeeperCheckIntervalMilli = Integer
+			.parseInt(System.getProperty("deadKeeperCheckIntervalMilli", "30000"));
+
 	@Autowired
 	private KeeperStateController keeperStateController;
 
 	private ScheduledExecutorService scheduled;
-	
+
 	private ScheduledFuture<?> deadCheckFuture;
 
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
-		
-		scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create(String.format("KEEPER_MANAGER(%d)", currentClusterServer.getServerId())));
+
+		scheduled = Executors.newScheduledThreadPool(2,
+				XpipeThreadFactory.create(String.format("KEEPER_MANAGER(%d)", currentClusterServer.getServerId())));
 	}
 
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
-		
-		deadCheckFuture = scheduled.scheduleWithFixedDelay(
-				new DeadKeeperChecker(), 
-				deadKeeperCheckIntervalMilli, 
-				deadKeeperCheckIntervalMilli, 
-				TimeUnit.MILLISECONDS);
+
+		deadCheckFuture = scheduled.scheduleWithFixedDelay(new DeadKeeperChecker(), deadKeeperCheckIntervalMilli,
+				deadKeeperCheckIntervalMilli, TimeUnit.MILLISECONDS);
 
 	}
-	
+
 	@Override
 	protected void doStop() throws Exception {
 		super.doStop();
 		deadCheckFuture.cancel(true);
 
 	}
-	
+
 	@Override
 	protected void doDispose() throws Exception {
-		
+
 		scheduled.shutdownNow();
 		super.doDispose();
 	}
 
 	@Override
 	protected void handleClusterModified(ClusterMetaComparator comparator) {
-		
+
 		String clusterId = comparator.getCurrent().getId();
 		comparator.accept(new ClusterComparatorVisitor(clusterId));
 	}
 
 	@Override
 	protected void handleClusterDeleted(ClusterMeta clusterMeta) {
-		
-		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-			for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
+
+		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+			for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
 				removeKeeper(clusterMeta.getId(), shardMeta.getId(), keeperMeta);
 			}
 		}
 	}
 
 	private void removeKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
-		try{
+		try {
 			keeperStateController.removeKeeper(new KeeperTransMeta(clusterId, shardId, keeperMeta));
-		}catch(Exception e){
-			ExceptionUtils.logException(logger, e, String.format("[removeKeeper]%s:%s,%s", clusterId, shardId, keeperMeta));
+		} catch (Exception e) {
+			logger.error(String.format("[removeKeeper]%s:%s,%s", clusterId, shardId, keeperMeta), e);
 		}
 	}
 
 	private void addKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
-		try{
+		try {
 			keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, keeperMeta));
-		}catch(Exception e){
-			ExceptionUtils.logException(logger, e, String.format("[addKeeper]%s:%s,%s", clusterId, shardId, keeperMeta));
+		} catch (Exception e) {
+			logger.error(String.format("[addKeeper]%s:%s,%s", clusterId, shardId, keeperMeta), e);
 		}
 	}
 
-
 	@Override
 	protected void handleClusterAdd(ClusterMeta clusterMeta) {
-		
-		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-			for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
+
+		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+			for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
 				addKeeper(clusterMeta.getId(), shardMeta.getId(), keeperMeta);
 			}
 		}
 	}
-	
+
 	protected List<KeeperMeta> getDeadKeepers(List<KeeperMeta> allKeepers, List<KeeperMeta> aliveKeepers) {
-		
+
 		List<KeeperMeta> result = new LinkedList<>();
-		for(KeeperMeta allOne : allKeepers){
+		for (KeeperMeta allOne : allKeepers) {
 			boolean alive = false;
-			for(KeeperMeta aliveOne : aliveKeepers){
-				if(ObjectUtils.equals(aliveOne.getIp(), allOne.getIp()) && ObjectUtils.equals(aliveOne.getPort(), allOne.getPort())){
+			for (KeeperMeta aliveOne : aliveKeepers) {
+				if (ObjectUtils.equals(aliveOne.getIp(), allOne.getIp())
+						&& ObjectUtils.equals(aliveOne.getPort(), allOne.getPort())) {
 					alive = true;
 					break;
 				}
 			}
-			if(!alive){
+			if (!alive) {
 				result.add(allOne);
 			}
 		}
 		return result;
 	}
-	
-	public class DeadKeeperChecker implements Runnable{
+
+	public class DeadKeeperChecker implements Runnable {
 
 		@Override
 		public void run() {
-			
-			try{
+
+			try {
 				doCheck();
-			}catch(Throwable th){
+			} catch (Throwable th) {
 				logger.error("[run]", th);
 			}
-			
+
 		}
-		
+
 		private void doCheck() {
-			
-			for(String clusterId : currentMetaManager.allClusters()){
+
+			for (String clusterId : currentMetaManager.allClusters()) {
 				ClusterMeta clusterMeta = currentMetaManager.getClusterMeta(clusterId);
-				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-					
+				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+
 					String shardId = shardMeta.getId();
 					List<KeeperMeta> allKeepers = shardMeta.getKeepers();
 					List<KeeperMeta> aliveKeepers = currentMetaManager.getSurviveKeepers(clusterId, shardId);
 					List<KeeperMeta> deadKeepers = getDeadKeepers(allKeepers, aliveKeepers);
-					
-					if(deadKeepers.size() > 0){
+
+					if (deadKeepers.size() > 0) {
 						logger.info("[doCheck][dead keepers]{}", deadKeepers);
 					}
-					for(KeeperMeta deadKeeper : deadKeepers){
-						try{
+					for (KeeperMeta deadKeeper : deadKeepers) {
+						try {
 							keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, deadKeeper));
-						}catch(ResourceAccessException e){
-							logger.error(String.format("cluster:%s,shard:%s, keeper:%s, error:%s" , clusterId, shardId, deadKeeper, e.getMessage()));
-						}catch(Throwable th){
+						} catch (ResourceAccessException e) {
+							logger.error(String.format("cluster:%s,shard:%s, keeper:%s, error:%s", clusterId, shardId,
+									deadKeeper, e.getMessage()));
+						} catch (Throwable th) {
 							logger.error("[doCheck]", th);
 						}
 					}
 				}
-			}			
+			}
 		}
 	}
-	
-	
-	protected class ClusterComparatorVisitor implements MetaComparatorVisitor<ShardMeta>{
-		
+
+	protected class ClusterComparatorVisitor implements MetaComparatorVisitor<ShardMeta> {
+
 		private String clusterId;
 
 		public ClusterComparatorVisitor(String clusterId) {
@@ -193,44 +191,44 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		@Override
 		public void visitAdded(ShardMeta added) {
 			logger.info("[visitAdded][add shard]{}", added);
-			for(KeeperMeta keeperMeta : added.getKeepers()){
+			for (KeeperMeta keeperMeta : added.getKeepers()) {
 				addKeeper(clusterId, added.getId(), keeperMeta);
 			}
 		}
 
 		@Override
 		public void visitModified(@SuppressWarnings("rawtypes") MetaComparator comparator) {
-			
+
 			ShardMetaComparator shardMetaComparator = (ShardMetaComparator) comparator;
 			shardMetaComparator.accept(new ShardComparatorVisitor(clusterId, shardMetaComparator.getCurrent().getId()));
-			
+
 		}
 
 		@Override
 		public void visitRemoved(ShardMeta removed) {
 			logger.info("[visitRemoved][remove shard]{}", removed);
-			for(KeeperMeta keeperMeta : removed.getKeepers()){
+			for (KeeperMeta keeperMeta : removed.getKeepers()) {
 				removeKeeper(clusterId, removed.getId(), keeperMeta);
 			}
 		}
 	}
-	
-	protected class ShardComparatorVisitor implements MetaComparatorVisitor<Redis>{
-		
-		private String clusterId; 
+
+	protected class ShardComparatorVisitor implements MetaComparatorVisitor<Redis> {
+
+		private String clusterId;
 		private String shardId;
-		
-		protected ShardComparatorVisitor(String clusterId, String shardId){
+
+		protected ShardComparatorVisitor(String clusterId, String shardId) {
 			this.clusterId = clusterId;
 			this.shardId = shardId;
 		}
 
 		@Override
 		public void visitAdded(Redis added) {
-			
-			if(added instanceof KeeperMeta){
+
+			if (added instanceof KeeperMeta) {
 				addKeeper(clusterId, shardId, (KeeperMeta) added);
-			}else{
+			} else {
 				logger.debug("[visitAdded][do nothng]{}", added);
 			}
 		}
@@ -238,15 +236,15 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		@SuppressWarnings("rawtypes")
 		@Override
 		public void visitModified(MetaComparator comparator) {
-			//nothing to do
+			// nothing to do
 		}
 
 		@Override
 		public void visitRemoved(Redis removed) {
 
-			if(removed instanceof KeeperMeta){
+			if (removed instanceof KeeperMeta) {
 				removeKeeper(clusterId, shardId, (KeeperMeta) removed);
-			}else{
+			} else {
 				logger.debug("[visitAdded][do nothng]{}", removed);
 			}
 		}

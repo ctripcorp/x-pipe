@@ -10,7 +10,6 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
-import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.retry.NoWaitRetry;
 
 /**
@@ -86,7 +85,7 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 						return;
 					}
 
-					logCause(commandFuture.cause());
+					logger.error("[operationComplete]" + command, future().cause());
 					
 					int waitMilli = retryPolicy.retryWaitMilli();
 					logger.info("[retry]{}, {},{}", executeCount.get(), waitMilli, command);
@@ -116,10 +115,6 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 		}
 		
 		return true;
-	}
-
-	protected void logCause(Throwable cause) {
-		ExceptionUtils.logException(logger, cause);
 	}
 
 	@Override

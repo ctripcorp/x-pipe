@@ -12,7 +12,11 @@ public class StringUtil {
 		String []tmp = new String[args.length];
 		int i=0;
 		for(Object arg :args){
-			tmp[i++] = arg.toString();
+			if(arg != null){
+				tmp[i++] = arg.toString();
+			}else{
+				tmp[i++] = null;
+			}
 		}
 		return join(split, tmp);
 	}
@@ -23,10 +27,13 @@ public class StringUtil {
 		int i = 0;
 		StringBuilder sb = new StringBuilder();
 		for(String arg : args){
-			sb.append(arg);
-			i++;
-			if( i < args.length){
-				sb.append(split);
+			if(arg != null){
+				
+				if( i > 0 ){
+					sb.append(split);
+				}
+				sb.append(arg);
+				i++;
 			}
 		}
 		return sb.toString();

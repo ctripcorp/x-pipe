@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.concurrent;
 
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.exception.ExceptionUtils;
 
 /**
  * @author wenchao.meng
@@ -19,7 +18,7 @@ public abstract class AbstractExceptionLogTask implements Runnable{
 		try{
 			doRun();
 		}catch(Throwable th){
-			ExceptionUtils.logException(logger, th, "[run]");
+			logger.error("[run]", th);
 		}
 	}
 	

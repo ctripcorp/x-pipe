@@ -23,6 +23,7 @@ import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
 import com.ctrip.xpipe.pool.XpipeObjectPoolTest;
 import com.ctrip.xpipe.utils.FileUtilsTest;
 import com.ctrip.xpipe.utils.OffsetNotifierTest;
+import com.ctrip.xpipe.utils.StringUtilTest;
 import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 
 /**
@@ -49,7 +50,8 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	ParallelCommandChainTest.class,
 	FileUtilsTest.class,
 	OneThreadTaskExecutorTest.class,
-	TestZkClientTest.class
+	TestZkClientTest.class,
+	StringUtilTest.class
 })
 public class AllTests {
 

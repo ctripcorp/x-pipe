@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.api.retry.RetryTemplate;
-import com.ctrip.xpipe.exception.ExceptionUtils;
 
 /**
  * @author wenchao.meng
@@ -53,7 +52,7 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V> {
 			try {
 				return command.execute().get(retryPolicy.waitTimeoutMilli(), TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
-				ExceptionUtils.logException(logger, e, String.format("cmd:%s, message:%s", command, e.getMessage()));
+				logger.error(String.format("cmd:%s, message:%s", command, e.getMessage()), e);
 				Exception originalException = getOriginalException(e);
 				if (i == n || !retryPolicy.retry(originalException)) {
 					throw originalException;
