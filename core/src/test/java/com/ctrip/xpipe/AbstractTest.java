@@ -70,15 +70,14 @@ public class AbstractTest {
 	
 	@Before
 	public void beforeAbstractTest() throws Exception{
-		
-		logger.info(remarkableMessage("[begin test][{}]{}") , getClass().getSimpleName(), name.getMethodName());
 
 		orginProperties = (Properties) System.getProperties().clone();
-		
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty(CatUtils.CAT_ENABLED_KEY, "false");
-
 		setProperties();
+
+		logger.info(remarkableMessage("[begin test][{}]{}") , getClass().getSimpleName(), name.getMethodName());
+
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
 
 		startedComponentRegistry = new CreatedComponentRedistry();
@@ -473,19 +472,30 @@ public class AbstractTest {
 	@After
 	public void afterAbstractTest() throws Exception{
 
-		System.setProperties(orginProperties);
 		try {
+			logger.info(remarkableMessage("[end   test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
+
 			LifecycleHelper.stopIfPossible(componentRegistry);
 			LifecycleHelper.disposeIfPossible(componentRegistry);
 			componentRegistry.destroy();
 		} catch (Exception e) {
 			logger.error("[afterAbstractTest]", e);
 		}
-		File file = new File(getTestFileDir());
-		FileUtils.deleteQuietly(file);
-		logger.info(remarkableMessage("[end   test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
 		
-		doAfterAbstractTest();
+		try{
+			File file = new File(getTestFileDir());
+			FileUtils.deleteQuietly(file);
+		} catch (Exception e) {
+			logger.error("[afterAbstractTest][clean test dir]", e);
+		}
+
+		try{
+			doAfterAbstractTest();
+		} catch (Exception e) {
+			logger.error("[afterAbstractTest]", e);
+		}
+		
+		System.setProperties(orginProperties);
 	}
 
 	protected void doAfterAbstractTest() throws Exception{}

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.simple;
 
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.AbstractTest;
@@ -20,6 +21,20 @@ import io.netty.buffer.Unpooled;
  * Aug 24, 2016
  */
 public class SimpleTest extends AbstractTest{
+	
+
+	@Before
+	public void beforeSimpleTest2(){
+		System.out.println("before2");
+		
+	}
+
+	@Before
+	public void beforeSimpleTest1(){
+		System.out.println("before1");
+	}
+
+
 	
 	@Test
 	public <V> void testCommand(){

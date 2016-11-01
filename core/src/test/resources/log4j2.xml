@@ -19,8 +19,6 @@
                 <SizeBasedTriggeringPolicy size="100 MB"/>
             </Policies>
         </RollingFile>
-		<CatAppender4Log4j2 name="catAppender4Log4j2"/>
-        
     </appenders>
 
     <loggers>
@@ -45,7 +43,6 @@
         <root level="INFO">
             <appender-ref ref="Console"/>
             <appender-ref ref="RollingFileInfo"/>
-            <appender-ref ref="catAppender4Log4j2"/>
         </root>
     </loggers>
 
