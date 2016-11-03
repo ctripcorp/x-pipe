@@ -68,8 +68,8 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 			RedisTbl activeKeeper = dcMetaQueryVO.getAllActiveKeepers().get(Triple.of(clusterTbl.getActivedcId(), clusterTbl.getId(), shardTbl.getId()));
 			shardMeta.setUpstream(redisMetaService.encodeRedisAddress(activeKeeper));
 		}
- 		shardMeta.setSetinelId(dcMetaQueryVO.getDcClusterShardMap().get(Pair.of(clusterTbl.getClusterName(), shardTbl.getShardName())).getSetinelId());
-		shardMeta.setSetinelMonitorName(shardTbl.getSetinelMonitorName());
+ 		shardMeta.setSentinelId(dcMetaQueryVO.getDcClusterShardMap().get(Pair.of(clusterTbl.getClusterName(), shardTbl.getShardName())).getSetinelId());
+		shardMeta.setSentinelMonitorName(shardTbl.getSetinelMonitorName());
 		shardMeta.setPhase(dcMetaQueryVO.getDcClusterShardMap().get(Pair.of(clusterTbl.getClusterName(), shardTbl.getShardName())).getDcClusterShardPhase());
 		for(RedisTbl redis : dcMetaQueryVO.getRedisMap().get(clusterTbl.getClusterName()).get(shardTbl.getShardName())) {
 			if(redis.getRedisRole().equals("keeper")) {
@@ -153,8 +153,8 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 				}
 			}
 		}
-		shardMeta.setSetinelId(dcClusterShardInfo.getSetinelId());
-		shardMeta.setSetinelMonitorName(shardInfo.getSetinelMonitorName());
+		shardMeta.setSentinelId(dcClusterShardInfo.getSetinelId());
+		shardMeta.setSentinelMonitorName(shardInfo.getSetinelMonitorName());
 		shardMeta.setPhase(dcClusterShardInfo.getDcClusterShardPhase());
 		
 		List<RedisTbl> shard_redises = redisService.findByDcClusterShardId(dcClusterShardInfo.getDcClusterShardId());
@@ -185,14 +185,14 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 					activekeepers.get(Triple.of(clusterInfo.getActivedcId(), clusterInfo.getId(), shardInfo.getId()))
 			));
 		}
-		shardMeta.setSetinelMonitorName(shardInfo.getSetinelMonitorName());
+		shardMeta.setSentinelMonitorName(shardInfo.getSetinelMonitorName());
 
 		try {
 			DcClusterTbl dcClusterInfo = dcClusterService.load(dcInfo.getId(), clusterInfo.getId());
 			DcClusterShardTbl dcClusterShardInfo = dcClusterShardService.load(dcClusterInfo.getDcClusterId(), shardInfo.getId());
 			if(null == dcClusterInfo || null == dcClusterShardInfo) return shardMeta;
 			
-			shardMeta.setSetinelId(dcClusterShardInfo.getSetinelId());
+			shardMeta.setSentinelId(dcClusterShardInfo.getSetinelId());
 			shardMeta.setPhase(dcClusterShardInfo.getDcClusterShardPhase());
 
 			List<RedisTbl> shard_redises = redisService.findByDcClusterShardId(dcClusterShardInfo.getDcClusterShardId());

@@ -86,8 +86,8 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 					public Void doNotify() {
 						logger.info("[notifyUpstreamChanged]{},{},{},{},{}", clusterName, shardName, ip, port,
 								dc.getDcName());
-						metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).upstreamChange(clusterName,
-								shardName, ip, port);
+//						metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).upstreamChange(clusterName,
+//								shardName, ip, port);
 						return null;
 					}
 				});

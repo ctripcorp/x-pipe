@@ -26,12 +26,12 @@ import com.ctrip.xpipe.redis.console.service.metaImpl.DcMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.metaImpl.KeepercontainerMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.metaImpl.MetaserverMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.metaImpl.RedisMetaServiceImpl;
-import com.ctrip.xpipe.redis.console.service.metaImpl.SetinelMetaServiceImpl;
+import com.ctrip.xpipe.redis.console.service.metaImpl.SentinelMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.metaImpl.ShardMetaServiceImpl;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
-import com.ctrip.xpipe.redis.core.entity.SetinelMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 
@@ -111,10 +111,10 @@ public class MetaServiceTest extends AbstractConsoleTest{
 	
 	@Test
 	public void testSetinelMetaService() {
-		SetinelMeta expect = new SetinelMeta().setId(1L).setAddress("1").setParent(null);
+		SentinelMeta expect = new SentinelMeta().setId(1L).setAddress("1").setParent(null);
 		
 		SetinelTbl setinelTbl = new SetinelTbl().setSetinelId(1L).setSetinelAddress("1");
-		assertEquals(expect,new SetinelMetaServiceImpl().encodeSetinelMeta(setinelTbl, null));
+		assertEquals(expect,new SentinelMetaServiceImpl().encodeSetinelMeta(setinelTbl, null));
 	}
 	
 	@Test
@@ -139,7 +139,7 @@ public class MetaServiceTest extends AbstractConsoleTest{
 		when(dcMetaService.loadAllActiveKeepers()).thenReturn(new HashMap<Triple<Long, Long, Long>, RedisTbl>());
 		
 		when(mockedShardMetaService.encodeShardMeta(any(DcTbl.class), any(ClusterTbl.class), any(ShardTbl.class), any(HashMap.class))).thenReturn(
-						new ShardMeta().setId("shard1").setPhase(1).setSetinelId(1L).setSetinelMonitorName("cluster1-shard1")
+						new ShardMeta().setId("shard1").setPhase(1).setSentinelId(1L).setSentinelMonitorName("cluster1-shard1")
 						.setUpstream(""));
 	}
 	

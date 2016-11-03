@@ -15,7 +15,7 @@ import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.KeepercontainerMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.MetaserverMetaService;
-import com.ctrip.xpipe.redis.console.service.meta.SetinelMetaService;
+import com.ctrip.xpipe.redis.console.service.meta.SentinelMetaService;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -48,7 +48,7 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
 	@Autowired 
 	private MetaserverMetaService metaserverMetaService;
 	@Autowired 
-	private SetinelMetaService setinelMetaService;
+	private SentinelMetaService setinelMetaService;
 	@Autowired
 	private KeepercontainerMetaService keepercontainerMetaService;
 	@Autowired
@@ -119,7 +119,7 @@ public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaServ
 	    	}
 	    	if(null != future_setinels.get()) {
 	    		for(SetinelTbl setinel : future_setinels.get()) {
-		    		dcMeta.addSetinel(setinelMetaService.encodeSetinelMeta(setinel, dcMeta));
+	    			dcMeta.addSentinel(setinelMetaService.encodeSetinelMeta(setinel, dcMeta));
 		    	}
 	    	}
 	    	if(null != future_keepercontainers.get()) {
