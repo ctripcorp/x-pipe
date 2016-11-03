@@ -31,6 +31,8 @@ public interface DcMetaCache extends Observable{
 	void clusterDeleted(String clusterId);
 
 	boolean isCurrentDcPrimary(String clusterId, String shardId);
+	
+	Set<String> getBakupDcs(String clusterId, String shardId);
 
 	List<KeeperMeta> getShardKeepers(String clusterId, String shardId);
 	

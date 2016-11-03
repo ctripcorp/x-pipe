@@ -72,5 +72,7 @@ public interface DcMetaManager{
 
 	void updateUpstream(String clusterId, String shardId, String ip, int port);
 
+	Set<String> getBackupDcs(String clusterId, String shardId);
+
 	
 }

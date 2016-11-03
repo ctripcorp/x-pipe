@@ -17,6 +17,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
  */
 public class JsonCodec extends AbstractCodec{
 	
+	public static JsonCodec INSTANCE = new JsonCodec(); 
+	
 	private ObjectMapper objectMapper;
 	
 	public JsonCodec() {

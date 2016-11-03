@@ -29,6 +29,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.FileUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 
 /**
  * @author wenchao.meng
@@ -84,6 +85,42 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		}
 		throw new MetaException("clusterId " + clusterId + " not found!");
 	}
+	
+	@Override
+	public Set<String> getBackupDcs(String clusterId, String shardId) {
+
+		boolean found = false;
+		
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+			if(clusterMeta == null){
+				continue;
+			}
+			
+			found = true;
+			
+			if(StringUtil.isEmpty(clusterMeta.getBackupDcs())){
+				logger.info("[getBackupDcs][backup dcs empty]{}, {}", dcMeta.getId(), clusterMeta);
+				continue;
+			}
+			
+			Set<String> backDcs = new HashSet<>();
+			for(String dc : clusterMeta.getBackupDcs().split("\\s*,\\s*")){
+				dc = dc.trim();
+				if(!StringUtil.isEmpty(dc)){
+					backDcs.add(dc);
+				}
+			}
+			backDcs.remove(clusterMeta.getActiveDc().trim());
+			return backDcs;
+		}
+		
+		if(found){
+			return new HashSet<>();
+		}
+		throw new MetaException("clusterId " + clusterId + " not found!");
+	}
+
 	
 	@Override
 	public List<String> getBackupDc(String clusterId) {

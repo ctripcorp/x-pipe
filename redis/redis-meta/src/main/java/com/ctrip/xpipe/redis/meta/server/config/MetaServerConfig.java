@@ -1,9 +1,9 @@
-/**
- * 
- */
 package com.ctrip.xpipe.redis.meta.server.config;
 
+import java.util.Map;
+
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
+import com.ctrip.xpipe.redis.core.meta.DcInfo;
 
 /**
  * @author marsqing
@@ -30,4 +30,5 @@ public interface MetaServerConfig extends CoreConfig{
 	
 	int getLeaderCheckMilli();
 	
+	Map<String, DcInfo> getDcInofs();
 }

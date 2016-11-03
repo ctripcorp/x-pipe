@@ -209,5 +209,11 @@ public class DefaultDcMetaManager implements DcMetaManager{
 		return metaManager.getActiveDc(clusterId);
 	}
 
+	@Override
+	public Set<String> getBackupDcs(String clusterId, String shardId) {
+		
+		return metaManager.getBackupDcs(clusterId, shardId);
+	}
+
 
 }

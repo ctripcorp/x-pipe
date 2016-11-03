@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
 import java.net.InetSocketAddress;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -31,6 +33,26 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest{
 		
 		metaManager = (DefaultXpipeMetaManager) DefaultXpipeMetaManager.buildFromFile("file-dao-test.xml");
 		add(metaManager);
+	}
+	
+	@Test
+	public void testGetBackupDcs(){
+		
+		Set<String> real = metaManager.getBackupDcs(clusterId, shardId);
+		
+		logger.info("[testGetBackupDcs]{}", real);
+		
+		Set<String> expected = new HashSet<>();
+		expected.add("oy");expected.add("fq");
+		Assert.assertEquals(expected, real);;
+
+		try{
+			metaManager.getBackupDcs(randomString(), shardId);
+			Assert.fail();
+		}catch(Exception e){
+			
+		}
+		
 	}
 	
 	@Test

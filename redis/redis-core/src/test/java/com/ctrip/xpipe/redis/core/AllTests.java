@@ -4,6 +4,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import com.ctrip.xpipe.redis.core.meta.DcInfoTest;
 import com.ctrip.xpipe.redis.core.meta.MetaCloneTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparatorTest;
@@ -32,7 +33,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	DcMetaComparatorTest.class,
 	ClusterMetaComparatorTest.class,
 	ShardMetaComparatorTest.class,
-	RoleCommandTest.class
+	RoleCommandTest.class,
+	DcInfoTest.class
 })
 public class AllTests {
 

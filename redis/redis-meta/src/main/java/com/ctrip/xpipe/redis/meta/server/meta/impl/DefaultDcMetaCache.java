@@ -206,4 +206,10 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		return dcMetaManager.get().getRedises(clusterId, shardId);
 	}
 
+	@Override
+	public Set<String> getBakupDcs(String clusterId, String shardId) {
+		
+		return null;
+	}
+
 }

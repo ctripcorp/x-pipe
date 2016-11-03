@@ -32,7 +32,7 @@
   <entity name="cluster">
     <attribute name="id" value-type="String" />
     <attribute name="active-dc" value-type="String" />
-    <attribute name="all-dcs" value-type="String" />
+    <attribute name="backup-dcs" value-type="String" />
     <attribute name="phase" value-type="int" />
     <attribute name="lastModifiedTime" value-type="String" />
     <entity-ref name="shard" type="list" names="shards" />
