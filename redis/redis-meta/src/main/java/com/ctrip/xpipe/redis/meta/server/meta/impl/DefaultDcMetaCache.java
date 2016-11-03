@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
+
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -11,7 +12,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
-import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
@@ -25,12 +25,9 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.utils.IpUtils;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
@@ -187,29 +184,6 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		logger.info("[clusterDeleted]{}", clusterMeta);
 		DcMetaComparator dcMetaComparator = DcMetaComparator.buildClusterRemoved(clusterMeta);
 		notifyObservers(dcMetaComparator);
-	}
-
-	@Override
-	public void updateUpstream(String clusterId, String shardId, String ip, int port) {
-
-		DcMetaManager metaManager = dcMetaManager.get();
-
-		String activeDc = metaManager.getActiveDc(clusterId);
-		if (currentDc.equals(activeDc)) {
-			throw new IllegalStateException(
-					String.format("current dc active, set upstream not supported. %s %s", clusterId, shardId));
-		}
-		String upstream = metaManager.getUpstream(clusterId, shardId);
-
-		if (!StringUtil.isEmpty(upstream)) {
-			Pair<String, Integer> addr = IpUtils.parseSingleAsPair(upstream);
-			if (addr.getKey().equalsIgnoreCase(ip) && addr.getValue().equals(port)) {
-				logger.info("[updateUpstream][upstream not change]{}->{}:{}", upstream, ip, port);
-				return;
-			}
-		}
-		metaManager.updateUpstream(clusterId, shardId, ip, port);
-		notifyObservers(new ShardUpstreamChanged(clusterId, shardId, upstream, String.format("%s:%d", ip, port)));
 	}
 
 	@Override

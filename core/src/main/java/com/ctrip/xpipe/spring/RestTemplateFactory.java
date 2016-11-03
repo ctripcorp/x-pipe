@@ -30,10 +30,17 @@ public class RestTemplateFactory {
 
 		return new RestTemplate();
 	}
+	
+	public static RestOperations createCommonsHttpRestTemplate(int retryTimes, int retryIntervalMilli) {
+		return createCommonsHttpRestTemplate(10, 100, 5000, 5000, retryTimes,
+				RetryPolicyFactories.newRestOperationsRetryPolicyFactory(retryIntervalMilli));
+	}
+
+
 
 	public static RestOperations createCommonsHttpRestTemplate() {
-		return createCommonsHttpRestTemplate(10, 100, 5000, 5000, 0,
-				RetryPolicyFactories.newRestOperationsRetryPolicyFactory(10));
+		
+		return createCommonsHttpRestTemplate(0, 10);
 	}
 
 	public static RestOperations createCommonsHttpRestTemplate(int maxConnPerRoute, int maxConnTotal,

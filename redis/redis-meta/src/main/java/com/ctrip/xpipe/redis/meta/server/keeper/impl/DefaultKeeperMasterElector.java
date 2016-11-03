@@ -11,34 +11,30 @@ import com.ctrip.xpipe.redis.meta.server.keeper.KeeperMasterElector;
 /**
  * @author wenchao.meng
  *
- * Sep 8, 2016
+ *         Sep 8, 2016
  */
 @Component
-public class DefaultKeeperMasterElector extends AbstractCurrentMetaObserver implements KeeperMasterElector, TopElement{
-	
+public class DefaultKeeperMasterElector extends AbstractCurrentMetaObserver implements KeeperMasterElector, TopElement {
 
-	@Override
-	protected void handleShardUpstreamChanged(ShardUpstreamChanged args) {
-		
-		logger.info("[handleShardUpstreamChanged]{}", args);
+	protected void shardUpstreamChanged(ShardUpstreamChanged args) {
+
+		logger.info("[shardUpstreamChanged]{}", args);
 		currentMetaManager.setKeeperMaster(args.getClusterId(), args.getShardId(), args.getFuture());
 	}
-	
 
 	@Override
 	protected void handleClusterModified(ClusterMetaComparator comparator) {
-		
+
 	}
 
 	@Override
 	protected void handleClusterDeleted(ClusterMeta clusterMeta) {
-		
+
 	}
 
 	@Override
 	protected void handleClusterAdd(ClusterMeta clusterMeta) {
-		
-	}
 
+	}
 
 }

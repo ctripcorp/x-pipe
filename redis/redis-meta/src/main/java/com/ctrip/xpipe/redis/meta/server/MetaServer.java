@@ -19,7 +19,7 @@ import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
  */
 public interface MetaServer extends ClusterServer, TopElement{
 
-	KeeperMeta getActiveKeeper(String clusterId, String shardId);
+	KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo);
 
 	RedisMeta getRedisMaster(String clusterId, String shardId);
 

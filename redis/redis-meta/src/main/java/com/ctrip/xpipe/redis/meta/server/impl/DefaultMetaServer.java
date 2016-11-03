@@ -78,11 +78,6 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		super.doDispose();
 	}
 
-	@Override
-	public KeeperMeta getActiveKeeper(String clusterId, String shardId) {
-		
-		return currentMetaServerMeta.getKeeperActive(clusterId, shardId);
-	}
 
 	@Override
 	public RedisMeta getRedisMaster(String clusterId, String shardId) {
@@ -109,13 +104,21 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	public void setConfig(MetaServerConfig config) {
 		this.config = config;
 	}
+	
 
+	//no ClusterMovingMethod
+	@Override
+	public KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo) {
+		
+		logger.info("[getActiveKeeper]{}, {}", clusterId, shardId);
+		return currentMetaServerMeta.getKeeperActive(clusterId, shardId);
+	}
 
-	@ClusterMovingMethod
+	//no ClusterMovingMethod
 	@Override
 	public ShardStatus getShardStatus(String clusterId, String shardId, ForwardInfo forwardInfo) throws Exception {
 		
-		return new ShardStatus(getActiveKeeper(clusterId, shardId), getUpstreamKeeper(clusterId, shardId), getRedisMaster(clusterId, shardId));
+		return new ShardStatus(currentMetaServerMeta.getKeeperActive(clusterId, shardId), getUpstreamKeeper(clusterId, shardId), getRedisMaster(clusterId, shardId));
 	}
 
 	@ClusterMovingMethod
@@ -127,6 +130,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	
 	@Override
 	protected void doSlotAdd(int slotId) {
+		
 		super.doSlotAdd(slotId);
 		currentMetaServerMeta.addSlot(slotId);
 	}
@@ -170,6 +174,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 	@Override
 	public void clusterDeleted(String clusterId, ForwardInfo forwardInfo) {
+		
 		logger.info("[clusterDeleted]{}", clusterId);
 		dcMetaCache.clusterDeleted(clusterId);
 	}
@@ -177,7 +182,13 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Override
 	public void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo)
 			throws Exception {
-		logger.info("[updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
-		dcMetaCache.updateUpstream(clusterId, shardId, ip, port);
+		
+		if(!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)){
+			
+			logger.info("[updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
+			currentMetaServerMeta.setKeeperMaster(clusterId, shardId, ip, port);
+		}else{
+			logger.warn("[updateUpstream][current is primary dc, do not update]{},{},{},{}", clusterId, shardId, ip, port);
+		}
 	}
 }

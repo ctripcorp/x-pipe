@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
-
-
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -15,6 +13,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
@@ -34,6 +33,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	private String getShardStatusPath;
 	private String changeClusterPath;
 	private String upstreamChangePath;
+	private String getActiveKeeperPath;
 
 	public RemoteMetaServer(int currentServerId, int serverId) {
 		super(currentServerId, serverId);
@@ -45,12 +45,19 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		pingPath = String.format("%s/%s/%s", getHttpHost(), MetaServerKeeperService.PATH_PREFIX, MetaServerKeeperService.PATH_PING);
 		getShardStatusPath = String.format("%s/%s/%s", getHttpHost(), MetaServerKeeperService.PATH_PREFIX, MetaServerKeeperService.PATH_SHARD_STATUS);
 		changeClusterPath = String.format("%s/%s/%s", getHttpHost(), MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_CLUSTER_CHANGE);
-		upstreamChangePath = String.format("%s/%s/%s", getHttpHost(), MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_UPSTREAM_CHANGE);
+		upstreamChangePath = String.format("%s/%s/%s", getHttpHost(), MetaServerConsoleService.PATH_PREFIX, MetaServerMultiDcService.PATH_UPSTREAM_CHANGE);
+		getActiveKeeperPath = String.format("%s/%s/%s", getHttpHost(), MetaServerConsoleService.PATH_PREFIX, MetaServerService.GET_ACTIVE_KEEPER);
 	}
 
 	@Override
-	public KeeperMeta getActiveKeeper(String clusterId, String shardId) {
-		throw new UnsupportedOperationException();
+	public KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo){
+	
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
+		logger.info("[getActiveKeeper][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
+
+		HttpEntity<Void> entity = new HttpEntity<>(headers);
+		ResponseEntity<KeeperMeta> response = restTemplate.exchange(getActiveKeeperPath, HttpMethod.GET, entity, KeeperMeta.class, clusterId, shardId);
+		return response.getBody();
 	}
 
 	@Override
@@ -123,7 +130,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	public void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo)
 			throws Exception {
 		
-		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, ForwardType.MULTICASTING);
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
 		logger.info("[updateUpstream][forward]{},{},{}:{}, {}--> {}", clusterId, shardId, ip, port, forwardInfo, this);
 		
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);

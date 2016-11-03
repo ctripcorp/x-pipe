@@ -16,13 +16,11 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	
 	private String  metaServerAddress;
 	private String  changeClusterPath;
-	private String  upstreamchangePath;
 
 	
 	public DefaultMetaServerConsoleService(String metaServerAddress) {
 		this.metaServerAddress = metaServerAddress;
 		changeClusterPath = String.format("%s/%s/%s", metaServerAddress, MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_CLUSTER_CHANGE);
-		upstreamchangePath = String.format("%s/%s/%s", metaServerAddress, MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_UPSTREAM_CHANGE);
 	}
 
 	@Override
@@ -56,11 +54,6 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		List<String> result = new ArrayList<>();
 		result.add(metaServerAddress);
 		return result;
-	}
-
-	@Override
-	public void upstreamChange(String clusterId, String shardId, String ip, int port) {
-		restTemplate.put(upstreamchangePath, null, clusterId, shardId, ip, port);
 	}
 
 }

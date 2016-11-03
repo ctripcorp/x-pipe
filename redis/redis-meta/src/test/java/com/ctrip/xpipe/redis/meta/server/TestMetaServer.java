@@ -150,6 +150,11 @@ public class TestMetaServer extends AbstractLifecycle{
 		return serverPort;
 	}
 	
+	public String getAddress(){
+		
+		return String.format("http://localhost:%d", getServerPort());
+	}
+	
 	public static int getWaitforrestarttimemills() {
 		return waitForRestartTimeMills;
 	}

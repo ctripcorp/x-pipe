@@ -11,19 +11,20 @@ import com.ctrip.xpipe.utils.MapUtils;
 /**
  * @author wenchao.meng
  *
- * Sep 5, 2016
+ *         Sep 5, 2016
  */
-public class DefaultMetaServerConsoleServiceManager implements MetaServerConsoleServiceManager{
-	
-	private Map<String, MetaServerConsoleService>  services = new ConcurrentHashMap<>();
+public class DefaultMetaServerConsoleServiceManager implements MetaServerConsoleServiceManager {
+
+	private Map<String, MetaServerConsoleService> services = new ConcurrentHashMap<>();
 
 	@Override
 	public MetaServerConsoleService getOrCreate(final String metaServerAddress) {
-		
+
 		return MapUtils.getOrCreate(services, metaServerAddress, new ObjectFactory<MetaServerConsoleService>() {
 
 			@Override
 			public MetaServerConsoleService create() {
+
 				return new DefaultMetaServerConsoleService(metaServerAddress);
 			}
 		});

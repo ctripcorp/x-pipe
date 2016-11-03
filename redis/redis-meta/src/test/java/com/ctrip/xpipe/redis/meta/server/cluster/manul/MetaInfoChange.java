@@ -8,10 +8,14 @@ import org.junit.Test;
 import org.springframework.web.client.HttpServerErrorException;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
+import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.AbstractMetaServerClusterTest;
 
@@ -24,6 +28,7 @@ public class MetaInfoChange extends AbstractMetaServerClusterTest{
 	
 	private TestMetaServer testMetaServer;
 	private MetaServerConsoleService metaServerConsoleService;
+	private MetaServerMultiDcService metaServerMultiDcService;
 	private String dc = "jq", clusterId = "cluster1", shardId = "shard1";
 	
 	@Before
@@ -35,16 +40,29 @@ public class MetaInfoChange extends AbstractMetaServerClusterTest{
 		
 		MetaServerConsoleServiceManager metaServerConsoleServiceManager = new DefaultMetaServerConsoleServiceManager();
 		metaServerConsoleService = metaServerConsoleServiceManager.getOrCreate(String.format("http://localhost:%d", testMetaServer.getServerPort()));
+		
+		MetaServerMultiDcServiceManager metaServerMultiDcServiceManager = new DefaultMetaServerMultiDcServiceManager();
+		metaServerMultiDcService = metaServerMultiDcServiceManager.getOrCreate(String.format("http://localhost:%d", testMetaServer.getServerPort()));
+
 	}
 	
 	@Test
 	public void testUpstreamChange() throws IOException{
 		
 		try{
-			metaServerConsoleService.upstreamChange(clusterId, shardId, "127.0.0.1", 6379);
+			metaServerMultiDcService.upstreamChange(clusterId, shardId, "127.0.0.1", 6379);
 		}catch(HttpServerErrorException e){
 			//500 expected
 		}
+		
+		waitForAnyKeyToExit();
+	}
+	
+	@Test
+	public void testGetKeeperActive(){
+		
+		KeeperMeta keeperMeta = metaServerMultiDcService.getActiveKeeper(clusterId, shardId);
+		logger.info("[testGetKeeperActive]{}, {}, {}", clusterId, shardId, keeperMeta);
 	}
 	
 	

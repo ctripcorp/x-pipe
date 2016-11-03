@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
@@ -77,7 +79,7 @@ public class DispatcherMetaServerController extends AbstractController{
 
 	@RequestMapping(path = MetaServerKeeperService.PATH_PING, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public void ping(@PathVariable String clusterId, @PathVariable String shardId, @RequestBody KeeperInstanceMeta keeperInstanceMeta,
-			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute MetaServer metaServer) {
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 		
 		metaServer.ping(clusterId, shardId, keeperInstanceMeta, forwardInfo);
 	}
@@ -145,19 +147,20 @@ public class DispatcherMetaServerController extends AbstractController{
 		}
 	}
 
-	@RequestMapping(path = MetaServerConsoleService.PATH_UPSTREAM_CHANGE, method = RequestMethod.PUT)
+	@RequestMapping(path = MetaServerMultiDcService.PATH_UPSTREAM_CHANGE, method = RequestMethod.PUT)
 	public void upstreamChange(@PathVariable String clusterId, @PathVariable String shardId, 
-			@PathVariable String ip, @PathVariable int port,@ModelAttribute ForwardInfo forwardInfo) throws Exception {
-
-		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MULTICASTING){
-			logger.info("[upstreamChange][multicast message][do now]");
-			currentMetaServer.updateUpstream(clusterId, shardId, ip, port, forwardInfo);
-			return;
-		}
+			@PathVariable String ip, @PathVariable int port,@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) throws Exception {
 		
-		for(MetaServer metaServer : servers.allClusterServers()){
-			metaServer.updateUpstream(clusterId, shardId, ip, port, forwardInfo.clone());
-		}
+		logger.info("[upstreamChange]{},{},{},{}", clusterId, shardId, ip, port);
+		metaServer.updateUpstream(clusterId, shardId, ip, port, forwardInfo);
+	}
+
+	@RequestMapping(path = MetaServerService.GET_ACTIVE_KEEPER, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public KeeperMeta getActiveKeeper(@PathVariable String clusterId, @PathVariable String shardId, 
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) throws Exception {
+		
+		logger.info("[getActiveKeeper]{},{},{},{}", clusterId, shardId);
+		return metaServer.getActiveKeeper(clusterId, shardId, forwardInfo);
 	}
 
 }

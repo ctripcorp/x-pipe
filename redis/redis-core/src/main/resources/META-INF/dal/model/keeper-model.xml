@@ -18,7 +18,7 @@
 	</entity>
 	<entity name="shard" implements="java.io.Serializable">
 		<attribute name="id" key="true" />
-		<attribute name="setinelId" value-type="Long"/>
+		<attribute name="sentinelId" value-type="Long"/>
 	</entity>	
 	<entity name="sentinel" implements="java.io.Serializable">
 		<attribute name="id" value-type="Long" />

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
+
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +30,6 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
@@ -245,15 +245,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		if(args instanceof DcMetaComparator){
 			
 			dcMetaChange((DcMetaComparator)args);
-		}else if(args instanceof ShardUpstreamChanged){
-			ShardUpstreamChanged shardUpstreamChanged = (ShardUpstreamChanged) args;
-			logger.info("[update]{}", shardUpstreamChanged);
-			if(currentClusterServer.hasKey(shardUpstreamChanged.getClusterId())){
-				notifyObservers(shardUpstreamChanged);
-			}else{
-				logger.info("[update][upstream change, not interested]{}", shardUpstreamChanged);
-			}
 		}else{
+			
 			throw new IllegalArgumentException(String.format("unknown args(%s):%s", args.getClass(), args));
 		}
 	}
@@ -372,11 +365,22 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public void setKeeperMaster(String clusterId, String shardId, String addr) {
+	public void setKeeperMaster(String clusterId, String shardId, String ip, int port) {
 		
-		InetSocketAddress inetAddr = IpUtils.parseSingle(addr);
+		logger.info("[setKeeperMaster]{},{},{}:{}", clusterId, shardId, ip, port);
+		
+		InetSocketAddress inetAddr = new InetSocketAddress(ip, port);
 		currentMeta.setKeeperMaster(clusterId, shardId, inetAddr);
 		notifyKeeperMasterChanged(clusterId, shardId, inetAddr);
+		
+	}
+
+	@Override
+	public void setKeeperMaster(String clusterId, String shardId, String addr) {
+		
+		logger.info("[setKeeperMaster]{},{},{}", clusterId, shardId, addr);
+		Pair<String, Integer> inetAddr = IpUtils.parseSingleAsPair(addr);
+		setKeeperMaster(clusterId, shardId, inetAddr.getKey(), inetAddr.getValue());
 	}
 
 	@Override
@@ -413,4 +417,5 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	public void setDcMetaCache(DcMetaCache dcMetaCache) {
 		this.dcMetaCache = dcMetaCache;
 	}
+
 }

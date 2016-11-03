@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 public interface MetaServerConsoleService extends MetaServerService{
 	
 	public static final String PATH_CLUSTER_CHANGE = "/clusterchange/{clusterId}";
-	public static final String PATH_UPSTREAM_CHANGE = "/upstreamchange/{clusterId}/{shardId}/{ip}/{port}";
 
 	void clusterAdded(String clusterId, ClusterMeta clusterMeta);
 
@@ -21,14 +20,6 @@ public interface MetaServerConsoleService extends MetaServerService{
 
 	void clusterDeleted(String clusterId);
 
-	/**
-	 * used by backup dc
-	 * @param clusterId
-	 * @param shardId
-	 * @param upstreamAddress
-	 */
-	void upstreamChange(String clusterId, String shardId, String ip, int port);
-	
 	/**
 	 * @return
 	 */

@@ -9,7 +9,6 @@ import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 
@@ -66,11 +65,6 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 			return;
 		}
 		
-		if(args instanceof ShardUpstreamChanged){
-			handleShardUpstreamChanged((ShardUpstreamChanged)args);
-			return;
-		}
-		
 		throw new IllegalArgumentException("unknown argument:" + args);
 	}
 
@@ -79,11 +73,6 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 	protected abstract void handleClusterDeleted(ClusterMeta clusterMeta);
 
 	protected abstract void handleClusterAdd(ClusterMeta clusterMeta);
-
-	protected void handleShardUpstreamChanged(ShardUpstreamChanged args) {
-		//default nothing todo
-	}
-
 
 	public void setCurrentMetaManager(CurrentMetaManager currentMetaManager) {
 		this.currentMetaManager = currentMetaManager;

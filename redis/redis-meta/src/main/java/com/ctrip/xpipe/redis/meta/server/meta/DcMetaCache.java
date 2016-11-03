@@ -30,8 +30,6 @@ public interface DcMetaCache extends Observable{
 
 	void clusterDeleted(String clusterId);
 
-	void updateUpstream(String clusterId, String shardId, String ip, int port);
-
 	boolean isCurrentDcPrimary(String clusterId, String shardId);
 
 	List<KeeperMeta> getShardKeepers(String clusterId, String shardId);
