@@ -20,7 +20,7 @@
 		<attribute name="id" key="true" />
 		<attribute name="setinelId" value-type="Long"/>
 	</entity>	
-	<entity name="setinel" implements="java.io.Serializable">
+	<entity name="sentinel" implements="java.io.Serializable">
 		<attribute name="id" value-type="Long" />
 	</entity>
 	<entity name="keeperContainer" implements="java.io.Serializable">

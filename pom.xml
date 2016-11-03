@@ -39,7 +39,7 @@
 		<spring-boot-maven-plugin.version>1.3.5.RELEASE</spring-boot-maven-plugin.version>
 		<spring-platfrom-bom.version>2.0.5.RELEASE</spring-platfrom-bom.version>
 		<ctrip-framework-foundation.version>1.1.6</ctrip-framework-foundation.version>
-		<ctrip-apollo.version>0.0.10</ctrip-apollo.version>
+		<ctrip-apollo.version>0.2.0</ctrip-apollo.version>
 		<cat.version>2.0.3</cat.version>
 		<spring-boot-starter-log4j2.version>1.4.1.RELEASE</spring-boot-starter-log4j2.version>
 		<log4j2.version>2.6.2</log4j2.version>
