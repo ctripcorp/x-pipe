@@ -12,9 +12,9 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 /**
  * @author wenchao.meng
  *
- * Aug 7, 2016
+ *         Aug 7, 2016
  */
-public interface DcMetaCache extends Observable{
+public interface DcMetaCache extends Observable {
 
 	Set<String> getClusters();
 
@@ -31,10 +31,12 @@ public interface DcMetaCache extends Observable{
 	void clusterDeleted(String clusterId);
 
 	boolean isCurrentDcPrimary(String clusterId, String shardId);
-	
+
 	Set<String> getBakupDcs(String clusterId, String shardId);
 
+	String getPrimaryDc(String clusterId, String shardId);
+
 	List<KeeperMeta> getShardKeepers(String clusterId, String shardId);
-	
-	List<RedisMeta>  getShardRedises(String clusterId, String shardId);
+
+	List<RedisMeta> getShardRedises(String clusterId, String shardId);
 }

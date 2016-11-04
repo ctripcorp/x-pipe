@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.config.ConfigChangeListener;
@@ -12,6 +15,8 @@ import com.ctrip.xpipe.api.config.ConfigChangeListener;
 public abstract class AbstractConfigBean implements ConfigChangeListener {
 	
 	private Config config;
+	
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 
 	public AbstractConfigBean(){
 		this(Config.DEFAULT);

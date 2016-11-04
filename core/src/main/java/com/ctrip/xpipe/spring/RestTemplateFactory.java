@@ -91,7 +91,7 @@ public class RestTemplateFactory {
 
 				@Override
 				public String getName() {
-					return "retryable-invoke";
+					return String.format("[retryable-invoke]%s(%s)", method.getName(), (args.length >= 1  ? args[0]: ""));
 				}
 
 				@Override

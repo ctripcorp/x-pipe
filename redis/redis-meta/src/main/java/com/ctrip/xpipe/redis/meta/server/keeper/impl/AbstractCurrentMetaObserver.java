@@ -23,8 +23,7 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 	protected CurrentMetaManager currentMetaManager;
 	
 	@Autowired
-	protected CurrentClusterServer currentClusterServer; 
-	
+	protected CurrentClusterServer currentClusterServer;
 	
 	@Override
 	protected void doInitialize() throws Exception {

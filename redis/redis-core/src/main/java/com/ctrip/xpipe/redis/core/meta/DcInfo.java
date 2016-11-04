@@ -46,4 +46,10 @@ public class DcInfo {
 		
 		return ObjectUtils.hashCode(metaServerAddress);
 	}
+	
+	@Override
+	public String toString() {
+		
+		return String.format("metaServerAddress:%s", this.metaServerAddress);
+	}
 }

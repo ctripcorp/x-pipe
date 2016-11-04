@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
-
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -16,30 +15,46 @@ import com.google.common.base.Function;
 /**
  * @author wenchao.meng
  *
- * Sep 5, 2016
+ *         Sep 5, 2016
  */
-public abstract class AbstractMetaService implements MetaServerService{
-	
+public abstract class AbstractMetaService implements MetaServerService {
+
 	protected Logger logger = LoggerFactory.getLogger(getClass());
-	
-	public static int retryTimes = Integer.parseInt(System.getProperty("metaserver.retryTimes", "3"));
 
-	public static int retryIntervalMilli = Integer.parseInt(System.getProperty("metaserver.retryIntervalMilli", "5"));
+	public static int DEFAULT_RETRY_TIMES = Integer.parseInt(System.getProperty("metaserver.retryTimes", "3"));
 
-	protected RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(retryTimes, retryIntervalMilli);
-	
+	public static int DEFAULT_RETRY_INTERVAL_MILLI = Integer
+			.parseInt(System.getProperty("metaserver.retryIntervalMilli", "5"));
+
+	private int retryTimes;
+
+	private int retryIntervalMilli;
+
+	protected RestOperations restTemplate;
+
+	public AbstractMetaService() {
+		this(DEFAULT_RETRY_TIMES, DEFAULT_RETRY_INTERVAL_MILLI);
+	}
+
+	public AbstractMetaService(int retryTimes, int retryIntervalMilli) {
+
+		this.retryTimes = retryTimes;
+		this.retryIntervalMilli = retryIntervalMilli;
+		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(this.retryTimes, this.retryIntervalMilli);
+	}
+
 	protected <T> T pollMetaServer(Function<String, T> fun) {
-		
+
 		List<String> metaServerList = getMetaServerList();
 
 		for (String url : metaServerList) {
-			
-			try{
+
+			try {
 				T result = fun.apply(url);
 				if (result != null) {
 					return result;
 				}
-			}catch(Exception e){
+			} catch (Exception e) {
 				logger.error("[pollMetaServer][error poll server]{}", url);
 			}
 		}
@@ -47,16 +62,15 @@ public abstract class AbstractMetaService implements MetaServerService{
 	}
 
 	protected abstract List<String> getMetaServerList();
-	
-	
+
 	@Override
 	public KeeperMeta getActiveKeeper(final String clusterId, final String shardId) {
-		
+
 		return pollMetaServer(new Function<String, KeeperMeta>() {
 
 			@Override
 			public KeeperMeta apply(String metaServerAddress) {
-				
+
 				String activeKeeperPath = getRealPath(metaServerAddress, GET_ACTIVE_KEEPER);
 				KeeperMeta keeperMeta = restTemplate.getForObject(activeKeeperPath, KeeperMeta.class, clusterId, shardId);
 				return keeperMeta;
@@ -65,8 +79,8 @@ public abstract class AbstractMetaService implements MetaServerService{
 		});
 	}
 
-	public static  String getRealPath(String metaServerAddress, String specificPath) {
-		
+	public static String getRealPath(String metaServerAddress, String specificPath) {
+
 		return String.format("%s/%s/%s", metaServerAddress, MetaServerConsoleService.PATH_PREFIX, specificPath);
 	}
 }

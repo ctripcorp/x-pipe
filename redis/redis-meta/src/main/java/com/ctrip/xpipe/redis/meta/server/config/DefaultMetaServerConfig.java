@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.meta.server.config;
 
 
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.api.config.Config;
@@ -82,8 +84,16 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public Map<String, DcInfo> getDcInofs() {
 		
 		String dcInfoStr = getProperty(KEY_DC_INFOS, "{}");
-		return JsonCodec.INSTANCE.decode(dcInfoStr, new GenericTypeReference<Map<String, DcInfo>>() {
+		Map<String, DcInfo> dcInfos = JsonCodec.INSTANCE.decode(dcInfoStr, new GenericTypeReference<Map<String, DcInfo>>() {
 		});
+		
+		Map<String, DcInfo> result = new HashMap<>();
+		for(Entry<String, DcInfo> entry : dcInfos.entrySet()){
+			result.put(entry.getKey().toLowerCase(), entry.getValue());
+		}
+
+		logger.info("[getDcInofs]{}", result);
+		return result;
 	}
 
 

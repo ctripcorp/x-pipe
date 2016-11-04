@@ -10,25 +10,23 @@ import com.ctrip.xpipe.redis.core.meta.DcInfo;
  *
  *         Jun 16, 2016 11:48:44 AM
  */
-public interface MetaServerConfig extends CoreConfig{
-	
-	
+public interface MetaServerConfig extends CoreConfig {
+
 	String getConsoleAddress();
-	
+
 	int getMetaRefreshMilli();
-	
+
 	int getMetaServerId();
-	
+
 	String getMetaServerIp();
-	
+
 	int getMetaServerPort();
-	
 
 	int getClusterServersRefreshMilli();
 
 	int getSlotRefreshMilli();
-	
+
 	int getLeaderCheckMilli();
-	
+
 	Map<String, DcInfo> getDcInofs();
 }

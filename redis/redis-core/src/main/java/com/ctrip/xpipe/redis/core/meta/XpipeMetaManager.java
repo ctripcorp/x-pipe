@@ -51,11 +51,9 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	
 	ZkServerMeta  getZkServerMeta(String dc);
 
-	String getActiveDc(String clusterId) throws MetaException;
+	String getActiveDc(String clusterId, String shardId) throws MetaException;
 	
 	Set<String> getBackupDcs(String clusterId, String shardId);
-
-	List<String> getBackupDc(String clusterId) throws MetaException;
 
 	String getUpstream(String dc, String clusterId, String shardId) throws MetaException;
 	

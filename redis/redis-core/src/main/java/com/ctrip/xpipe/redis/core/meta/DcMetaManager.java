@@ -27,7 +27,7 @@ public interface DcMetaManager{
 	
 	ClusterMeta getClusterMeta(String clusterId);
 	
-	String getActiveDc(String clusterId);
+	String getActiveDc(String clusterId, String shardId);
 
 	ShardMeta getShardMeta(String clusterId, String shardId);
 

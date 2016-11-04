@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
@@ -8,13 +10,14 @@ import org.junit.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 
-import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
+import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
+import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.zk.impl.TestZkClient;
 
 /**
  * @author shyin
@@ -33,8 +36,14 @@ public class AppTest extends AbstractMetaServerContextTest{
 	
 	@Before
 	public void beforeAppTest(){
+		
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_PRODUCTION);
 		System.setProperty(ArrangeTaskExecutor.ARRANGE_TASK_EXECUTOR_START, "true");
+		
+		Map<String, DcInfo> dcInfos = new HashMap<>();
+		dcInfos.put("jq", new DcInfo("http://localhost:" + IdcUtil.JQ_METASERVER_PORT));
+		dcInfos.put("oy", new DcInfo("http://localhost:" + IdcUtil.OY_METASERVER_PORT));
+		System.setProperty(DefaultMetaServerConfig.KEY_DC_INFOS, JsonCodec.INSTANCE.encode(dcInfos));
 	}
 
 	
@@ -66,14 +75,8 @@ public class AppTest extends AbstractMetaServerContextTest{
 	public void start() throws Exception{
 		
 		System.setProperty("server.port", String.valueOf(serverPort));
-		
-		SpringComponentRegistry registry = SpringApplication.run(MetaServerApplication.class, new String[]{}).getBean(SpringComponentRegistry.class);
-		TestZkClient testZkClient = registry.getComponent(TestZkClient.class);
-		testZkClient.setZkAddress(String.format("localhost:%d", zkPort));
-		registry.initialize();
-		registry.start();
-		add(registry);
-		
+		@SuppressWarnings("unused")
+		ApplicationContext applicationContext = SpringApplication.run(MetaServerApplication.class, new String[]{});
 	}
 
 	

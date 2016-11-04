@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
-
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -74,14 +72,19 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 	
 	@Override
-	public String getActiveDc(String clusterId){
+	public String getActiveDc(String clusterId, String shardId){
 		
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
 			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
 			if(clusterMeta == null){
 				continue;
 			}
-			return clusterMeta.getActiveDc();
+			String activeDc = clusterMeta.getActiveDc();
+			if(activeDc == null){
+				logger.info("[getActiveDc][activeDc null]{}", clusterMeta);
+				throw new MetaException(String.format("cluster exist but active dc == null {}", clusterMeta));
+			}
+			return activeDc.trim().toLowerCase();
 		}
 		throw new MetaException("clusterId " + clusterId + " not found!");
 	}
@@ -108,10 +111,11 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			for(String dc : clusterMeta.getBackupDcs().split("\\s*,\\s*")){
 				dc = dc.trim();
 				if(!StringUtil.isEmpty(dc)){
-					backDcs.add(dc);
+					backDcs.add(dc.toLowerCase());
 				}
 			}
-			backDcs.remove(clusterMeta.getActiveDc().trim());
+			
+			backDcs.remove(clusterMeta.getActiveDc().toLowerCase().trim());
 			return backDcs;
 		}
 		
@@ -122,26 +126,6 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	
-	@Override
-	public List<String> getBackupDc(String clusterId) {
-
-		String activeDc = getActiveDc(clusterId);
-		List<String> result = new LinkedList<>();
-		
-		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
-			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
-			if(clusterMeta == null){
-				continue;
-			}
-			if(!dcMeta.getId().equals(activeDc)){
-				result.add(dcMeta.getId());
-			}
-		}
-		
-		return result;
-	}
-
-
 	@Override
 	public Set<String> getDcClusters(String dc) {
 		return new HashSet<>(xpipeMeta.getDcs().get(dc).getClusters().keySet());
@@ -395,7 +379,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	@Override
 	public boolean updateRedisMaster(String dc, String clusterId, String shardId, RedisMeta redisMaster) throws MetaException {
 		
-		String activeDc = getActiveDc(clusterId);
+		String activeDc = getActiveDc(clusterId, shardId);
 		if(!activeDc.equals(dc)){
 			throw new MetaException("active dc:" + activeDc + ", but given:" + dc + ", clusterID:" + clusterId);
 		}

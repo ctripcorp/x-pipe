@@ -94,6 +94,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			}
 		}, slotCheckInterval, slotCheckInterval, TimeUnit.SECONDS);
 	}
+	
+	@Override
+	public synchronized void addObserver(Observer observer) {
+		logger.info("[addObserver]{}", observer);
+		super.addObserver(observer);
+	}
 
 	
 	protected void checkAddOrRemoveSlots() {
@@ -367,11 +373,14 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	@Override
 	public void setKeeperMaster(String clusterId, String shardId, String ip, int port) {
 		
-		logger.info("[setKeeperMaster]{},{},{}:{}", clusterId, shardId, ip, port);
 		
 		InetSocketAddress inetAddr = new InetSocketAddress(ip, port);
-		currentMeta.setKeeperMaster(clusterId, shardId, inetAddr);
-		notifyKeeperMasterChanged(clusterId, shardId, inetAddr);
+		if(currentMeta.setKeeperMaster(clusterId, shardId, inetAddr)){
+			logger.info("[setKeeperMaster]{},{},{}:{}", clusterId, shardId, ip, port);
+			notifyKeeperMasterChanged(clusterId, shardId, inetAddr);
+		}else{
+			logger.info("[setKeeperMaster][keeper master not changed!]{},{},{}:{}", clusterId, shardId, ip, port);
+		}
 		
 	}
 

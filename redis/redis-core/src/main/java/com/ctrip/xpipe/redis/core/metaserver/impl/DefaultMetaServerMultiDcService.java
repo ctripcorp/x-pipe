@@ -17,12 +17,18 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 	private String  metaServerAddress;
 	
 	public DefaultMetaServerMultiDcService(String metaServerAddress) {
-		
+		this(metaServerAddress, DEFAULT_RETRY_TIMES, DEFAULT_RETRY_INTERVAL_MILLI);
+	}
+	
+	public DefaultMetaServerMultiDcService(String metaServerAddress, int retryTimes, int retryIntervalMilli) {
+		super(retryTimes, retryIntervalMilli);
+		this.metaServerAddress = metaServerAddress;
 		upstreamchangePath = String.format("%s/%s/%s", metaServerAddress, MetaServerConsoleService.PATH_PREFIX, PATH_UPSTREAM_CHANGE);
 	}
 
 	@Override
 	public void upstreamChange(String clusterId, String shardId, String ip, int port) {
+		
 		restTemplate.put(upstreamchangePath, null, clusterId, shardId, ip, port);
 	}
 
@@ -34,4 +40,11 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 		result.add(metaServerAddress);
 		return result;
 	}
+	
+	@Override
+	public String toString() {
+		
+		return String.format("%s[%s]", getClass().getSimpleName(), metaServerAddress);
+	}
+	
 }

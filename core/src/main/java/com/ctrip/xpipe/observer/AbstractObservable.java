@@ -23,7 +23,7 @@ public abstract class AbstractObservable implements Observable{
 	
 	private List<Observer> observers = new LinkedList<>();
 		
-	private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(this.getClass() + "-observable" ));
+	private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(this.getClass().getSimpleName() + "-observable" ));
 	
 	@Override
 	public void addObserver(Observer observer) {

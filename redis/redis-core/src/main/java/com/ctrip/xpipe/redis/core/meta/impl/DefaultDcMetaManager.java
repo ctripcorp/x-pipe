@@ -205,8 +205,8 @@ public class DefaultDcMetaManager implements DcMetaManager{
 
 
 	@Override
-	public String getActiveDc(String clusterId) {
-		return metaManager.getActiveDc(clusterId);
+	public String getActiveDc(String clusterId, String shardId) {
+		return metaManager.getActiveDc(clusterId, shardId);
 	}
 
 	@Override
