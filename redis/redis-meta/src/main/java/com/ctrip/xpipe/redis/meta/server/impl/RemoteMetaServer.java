@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
@@ -30,7 +29,6 @@ import com.ctrip.xpipe.redis.meta.server.rest.exception.CircularForwardException
 public class RemoteMetaServer extends AbstractRemoteClusterServer implements MetaServer{
 	
 	private String pingPath;
-	private String getShardStatusPath;
 	private String changeClusterPath;
 	private String upstreamChangePath;
 	private String getActiveKeeperPath;
@@ -43,7 +41,6 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		super(currentServerId, serverId, clusterServerInfo);
 		
 		pingPath = String.format("%s/%s/%s", getHttpHost(), MetaServerKeeperService.PATH_PREFIX, MetaServerKeeperService.PATH_PING);
-		getShardStatusPath = String.format("%s/%s/%s", getHttpHost(), MetaServerKeeperService.PATH_PREFIX, MetaServerKeeperService.PATH_SHARD_STATUS);
 		changeClusterPath = String.format("%s/%s/%s", getHttpHost(), MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_CLUSTER_CHANGE);
 		upstreamChangePath = String.format("%s/%s/%s", getHttpHost(), MetaServerConsoleService.PATH_PREFIX, MetaServerMultiDcService.PATH_UPSTREAM_CHANGE);
 		getActiveKeeperPath = String.format("%s/%s/%s", getHttpHost(), MetaServerConsoleService.PATH_PREFIX, MetaServerService.GET_ACTIVE_KEEPER);
@@ -66,12 +63,6 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	}
 
 	@Override
-	public KeeperMeta getUpstreamKeeper(String clusterId, String shardId) throws Exception {
-		throw new UnsupportedOperationException();
-	}
-
-
-	@Override
 	public void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo) {
 		
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
@@ -81,19 +72,6 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		restTemplate.postForObject(pingPath, entity, String.class, clusterId, shardId);
 	}
 
-
-	@Override
-	public ShardStatus getShardStatus(String clusterId, String shardId, ForwardInfo forwardInfo) throws Exception {
-		
-		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
-		logger.info("[pgetShardStatusing][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
-
-		HttpEntity<Void> entity = new HttpEntity<>(headers);
-		ResponseEntity<ShardStatus> response = restTemplate.exchange(getShardStatusPath, HttpMethod.GET, entity, ShardStatus.class, clusterId, shardId);
-		return response.getBody();
-	}
-
-	
 	@Override
 	public void clusterAdded(ClusterMeta clusterMeta, ForwardInfo forwardInfo) {
 		

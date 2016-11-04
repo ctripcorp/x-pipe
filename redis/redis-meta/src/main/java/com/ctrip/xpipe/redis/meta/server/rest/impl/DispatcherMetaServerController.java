@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.ui.Model;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
@@ -68,15 +68,6 @@ public class DispatcherMetaServerController extends AbstractController{
 		}
 	}
 	
-	
-	@RequestMapping(path = MetaServerKeeperService.PATH_SHARD_STATUS, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public ShardStatus getShardStatus(@PathVariable final String clusterId, @PathVariable final String shardId,
-			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) throws Exception {
-		
-		return metaServer.getShardStatus(clusterId, shardId, forwardInfo);
-	}
-
-
 	@RequestMapping(path = MetaServerKeeperService.PATH_PING, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public void ping(@PathVariable String clusterId, @PathVariable String shardId, @RequestBody KeeperInstanceMeta keeperInstanceMeta,
 			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {

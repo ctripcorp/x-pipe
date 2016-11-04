@@ -26,10 +26,8 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
-import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
@@ -232,15 +230,6 @@ public class CurrentMeta implements Releasable {
 		}
 
 		private InetSocketAddress getDefaultKeeperMaster(ShardMeta shardMeta) {
-
-			String upstream = shardMeta.getUpstream();
-			try {
-				if (!StringUtil.isEmpty(upstream)) {
-					return IpUtils.parseSingle(upstream);
-				}
-			} catch (Exception e) {
-				logger.error("[getDefaultKeeperMaster]", e);
-			}
 
 			RedisMeta redisMaster = null;
 			for (RedisMeta redisMeta : shardMeta.getRedises()) {

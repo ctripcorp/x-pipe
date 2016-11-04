@@ -303,13 +303,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		return ((DefaultDcMetaCache)dcMetaCache).getDcMeta().getRedisMaster(clusterId, shardId);
 	}
 
-
-	@Override
-	public String getUpstream(String clusterId, String shardId) {
-		return ((DefaultDcMetaCache)dcMetaCache).getDcMeta().getUpstream(clusterId, shardId);
-	}
-
-
 	@Override
 	public List<KeeperMeta> getKeepers(String clusterId, String shardId) {
 		return ((DefaultDcMetaCache)dcMetaCache).getDcMeta().getKeepers(clusterId, shardId);

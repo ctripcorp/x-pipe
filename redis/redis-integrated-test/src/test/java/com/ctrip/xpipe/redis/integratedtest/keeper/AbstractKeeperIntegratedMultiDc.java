@@ -63,7 +63,6 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 			if(!clusterMeta.getActiveDc().equals(dcMeta.getId())){
 				ShardMeta shardMeta = clusterMeta.getShards().get(getShardId());
 				shardMeta.getKeepers().get(0).setActive(true);
-				shardMeta.setUpstream(String.format("%s:%d", activeDcKeeperActive.getIp(), activeDcKeeperActive.getPort()));
 			}
 		}
 	}

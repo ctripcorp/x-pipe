@@ -463,16 +463,6 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
-	public String getUpstream(String dc, String clusterId, String shardId) throws MetaException {
-		
-		ShardMeta shardMeta = getShardMeta(dc, clusterId, shardId);
-		if(shardMeta == null){
-			throw new MetaException("can not find shard:" + dc + "," + clusterId + "," + shardId);
-		}
-		return shardMeta.getUpstream();
-	}
-
-	@Override
 	public KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta) {
 		
 		DcMeta dcMeta = getDirectDcMeta(dc);
@@ -540,23 +530,5 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			return false;
 		}
 		return true;
-	}
-
-	@Override
-	public void updateUpstream(String dc, String clusterId, String shardId, String ip, int port) {
-		ClusterMeta clusterMeta = getDirectClusterMeta(dc, clusterId);
-		if(clusterMeta == null){
-			throw new IllegalArgumentException("unfound clusterId:" + clusterId);
-		}
-		String activedc = clusterMeta.getActiveDc();
-		if(dc.equalsIgnoreCase(activedc)){
-			throw new IllegalArgumentException("dc active, can not update upstream:" + dc + "," + clusterId);
-		}
-		ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
-		if(shardMeta == null){
-			throw new IllegalArgumentException("unfound shard:" + clusterId + "," + shardId);
-		}
-		logger.info("[updateUpstreamKeeper]{},{},{},{}, {}", dc, clusterId, shardId, ip, port);
-		shardMeta.setUpstream(String.format("%s:%d", ip,port));
 	}
 }

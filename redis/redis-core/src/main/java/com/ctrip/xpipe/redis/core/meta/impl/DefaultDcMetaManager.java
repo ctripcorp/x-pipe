@@ -123,11 +123,6 @@ public class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
-	public String getUpstream(String clusterId, String shardId) throws MetaException {
-		return metaManager.getUpstream(currentDc, clusterId, shardId);
-	}
-	
-	@Override
 	public KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta) {
 		return metaManager.getKeeperContainer(currentDc, keeperMeta);
 	}
@@ -196,13 +191,6 @@ public class DefaultDcMetaManager implements DcMetaManager{
 	public boolean hasShard(String clusterId, String shardId) {
 		return metaManager.hasShard(currentDc, clusterId, shardId);
 	}
-
-
-	@Override
-	public void updateUpstream(String clusterId, String shardId, String ip, int port) {
-		metaManager.updateUpstream(currentDc, clusterId, shardId, ip, port);
-	}
-
 
 	@Override
 	public String getActiveDc(String clusterId, String shardId) {

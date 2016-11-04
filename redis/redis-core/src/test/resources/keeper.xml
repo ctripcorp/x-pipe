@@ -26,7 +26,7 @@
 	
 	<dc id="oy">
 		<cluster id="cluster1"  active-dc="jq">
-			<shard id="shard1" upstream="127.0.0.1:1111">
+			<shard id="shard1">
 				<keeper id="40b" ip="2.2.2.1" port="8888" active="true" keeperContainerId="1"/>
 				<keeper id="40b" ip="2.2.2.2" port="9999" active="false" keeperContainerId="1"/>
 				<redis ip="2.2.2.3" port="1234" master="true" />

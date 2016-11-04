@@ -52,8 +52,6 @@ public interface DcMetaManager{
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
-	String getUpstream(String clusterId, String shardId) throws MetaException;
-	
 	DcMeta getDcMeta();
 	
 	List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId);
@@ -69,8 +67,6 @@ public interface DcMetaManager{
 	boolean updateRedisMaster(String clusterId, String shardId, RedisMeta redisMaster);
 
 	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
-
-	void updateUpstream(String clusterId, String shardId, String ip, int port);
 
 	Set<String> getBackupDcs(String clusterId, String shardId);
 

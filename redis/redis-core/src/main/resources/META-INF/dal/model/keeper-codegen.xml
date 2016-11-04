@@ -42,7 +42,6 @@
     <attribute name="sentinelId" value-type="int" />
     <attribute name="sentinelMonitorName" value-type="String" />
     <attribute name="phase" value-type="int" />
-    <attribute name="upstream" value-type="String" />
     <entity-ref name="keeper" type="list" names="keepers" />
     <entity-ref name="redis" type="list" names="redises" />
   </entity>

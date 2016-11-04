@@ -55,8 +55,6 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	
 	Set<String> getBackupDcs(String clusterId, String shardId);
 
-	String getUpstream(String dc, String clusterId, String shardId) throws MetaException;
-	
 	KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta);
 
 	DcMeta getDcMeta(String dc);
@@ -66,7 +64,5 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	boolean hasCluster(String currentDc, String clusterId);
 
 	boolean hasShard(String currentDc, String clusterId, String shardId);
-
-	void updateUpstream(String currentDc, String clusterId, String shardId, String ip, int port);
 
 }

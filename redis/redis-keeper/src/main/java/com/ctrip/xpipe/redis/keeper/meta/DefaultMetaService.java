@@ -33,13 +33,6 @@ public class DefaultMetaService extends AbstractMetaService implements MetaServe
 	private MetaServerLocator metaServerLocator;
 	
 	
-	@Override
-	public ShardStatus getShardStatus(String clusterId, String shardId) {
-		
-		return getRequestToMetaServer(String.format("%s/%s", PATH_PREFIX, PATH_SHARD_STATUS), clusterId, shardId);
-
-	}
-
 	public ShardStatus getRequestToMetaServer(final String path, final Object ...urlVariables) {
 		
 		return pollMetaServer(new Function<String, ShardStatus>() {
