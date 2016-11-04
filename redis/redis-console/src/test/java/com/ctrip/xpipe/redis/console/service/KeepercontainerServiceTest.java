@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTblDao;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTblEntity;
+import com.ctrip.xpipe.redis.console.service.impl.KeepercontainerServiceImpl;
 
 /**
  * @author shyin
@@ -26,13 +27,13 @@ public class KeepercontainerServiceTest extends AbstractConsoleTest {
 	@Mock
 	private KeepercontainerTblDao mockedKeepercontainerTblDao;
 	@InjectMocks
-	private KeepercontainerService keepercontainerService;
+	private KeepercontainerServiceImpl keepercontainerService;
 
 	@Test
 	public void testMetasService() {
 		KeepercontainerTbl target_keepercontainer = new KeepercontainerTbl().setKeepercontainerId(1);
 
-		assertEquals(keepercontainerService.findByDcName("NTGXH").get(0).getKeepercontainerId(),
+		assertEquals(keepercontainerService.findAllByDcName("NTGXH").get(0).getKeepercontainerId(),
 				target_keepercontainer.getKeepercontainerId());
 	}
 

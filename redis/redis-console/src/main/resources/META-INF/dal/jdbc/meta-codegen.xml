@@ -7,11 +7,13 @@
     <member name="cluster-description" field="cluster_description" value-type="String" length="1024" nullable="false" />
     <member name="cluster-last-modified-time" field="cluster_last_modified_time" value-type="String" length="40" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
-    <member name="is-xpipe-interested" field="is_xpipe_interested" value-type="boolean" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
+    <member name="is-xpipe-interested" field="is_xpipe_interested" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="cluster_name" unique="true" members="cluster_name ASC" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="is_xpipe_interested" members="is_xpipe_interested ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -23,9 +25,7 @@
         <param name="key-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='id'/> = ${key-id}
-        AND <FIELD name='deleted'/> = 0
-        ]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -35,9 +35,7 @@
         <param name="key-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='id'/> = ${key-id}
-        AND <FIELD name='deleted'/> = 0
-        ]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-id" />
@@ -56,6 +54,9 @@
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-dc-cluster-shard-id" value-type="long" key-member="dc-cluster-shard-id" />
     <primary-key name="PRIMARY" members="dc_cluster_shard_id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="DcClusterId" members="dc_cluster_id ASC" />
+    <index name="ShardId" members="shard_id ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -67,8 +68,7 @@
         <param name="key-dc-cluster-shard-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='dc-cluster-shard-id'/> = ${key-dc-cluster-shard-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='dc-cluster-shard-id'/> = ${key-dc-cluster-shard-id}]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -78,8 +78,7 @@
         <param name="key-dc-cluster-shard-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='dc-cluster-shard-id'/> = ${key-dc-cluster-shard-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='dc-cluster-shard-id'/> = ${key-dc-cluster-shard-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-dc-cluster-shard-id" />
@@ -98,6 +97,9 @@
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-dc-cluster-id" value-type="long" key-member="dc-cluster-id" />
     <primary-key name="PRIMARY" members="dc_cluster_id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="DcId" members="dc_id ASC" />
+    <index name="ClusterId" members="cluster_id ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -109,8 +111,7 @@
         <param name="key-dc-cluster-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='dc-cluster-id'/> = ${key-dc-cluster-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='dc-cluster-id'/> = ${key-dc-cluster-id}]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -120,8 +121,7 @@
         <param name="key-dc-cluster-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='dc-cluster-id'/> = ${key-dc-cluster-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='dc-cluster-id'/> = ${key-dc-cluster-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-dc-cluster-id" />
@@ -141,6 +141,7 @@
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="dc_name" unique="true" members="dc_name ASC" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -152,8 +153,7 @@
         <param name="key-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='id'/> = ${key-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -163,8 +163,7 @@
         <param name="key-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='id'/> = ${key-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-id" />
@@ -183,6 +182,8 @@
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-keepercontainer-id" value-type="long" key-member="keepercontainer-id" />
     <primary-key name="PRIMARY" members="keepercontainer_id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="keepercontainer_dc" members="keepercontainer_dc ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -194,8 +195,7 @@
         <param name="key-keepercontainer-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='keepercontainer-id'/> = ${key-keepercontainer-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='keepercontainer-id'/> = ${key-keepercontainer-id}]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -205,8 +205,7 @@
         <param name="key-keepercontainer-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='keepercontainer-id'/> = ${key-keepercontainer-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='keepercontainer-id'/> = ${key-keepercontainer-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-keepercontainer-id" />
@@ -228,6 +227,8 @@
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="metaserver_name" unique="true" members="metaserver_name ASC" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="dc_id" members="dc_id ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -239,8 +240,7 @@
         <param name="key-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='id'/> = ${key-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -250,8 +250,7 @@
         <param name="key-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='id'/> = ${key-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-id" />
@@ -268,12 +267,16 @@
     <member name="redis-port" field="redis_port" value-type="int" length="10" nullable="false" />
     <member name="redis-role" field="redis_role" value-type="String" length="12" nullable="false" />
     <member name="keeper-active" field="keeper_active" value-type="boolean" nullable="false" />
+    <member name="master" field="master" value-type="boolean" nullable="false" />
     <member name="redis-master" field="redis_master" value-type="long" length="20" />
     <member name="keepercontainer-id" field="keepercontainer_id" value-type="long" length="20" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="DcClusterShardId" members="dc_cluster_shard_id ASC" />
+    <index name="keeper_active" members="keeper_active ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -285,8 +288,7 @@
         <param name="key-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='id'/> = ${key-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -296,8 +298,7 @@
         <param name="key-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='id'/> = ${key-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-id" />
@@ -315,6 +316,8 @@
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-setinel-id" value-type="long" key-member="setinel-id" />
     <primary-key name="PRIMARY" members="setinel_id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="dc_id" members="dc_id ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -326,8 +329,7 @@
         <param name="key-setinel-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -337,8 +339,7 @@
         <param name="key-setinel-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='setinel-id'/> = ${key-setinel-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-setinel-id" />
@@ -356,6 +357,8 @@
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
+    <index name="DataChangeLastTime" members="DataChange_LastTime ASC" />
+    <index name="cluster_id" members="cluster_id ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -367,8 +370,7 @@
         <param name="key-id" />
         <statement><![CDATA[SELECT <FIELDS/>
         FROM <TABLE/>
-        WHERE <FIELD name='id'/> = ${key-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="insert" type="INSERT">
         <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
@@ -378,8 +380,7 @@
         <param name="key-id" />
         <statement><![CDATA[UPDATE <TABLE/>
         SET <FIELDS/>
-        WHERE <FIELD name='id'/> = ${key-id}
-        AND <FIELD name='deleted'/> = 0]]></statement>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
         <param name="key-id" />
@@ -388,5 +389,4 @@
       </query>
     </query-defs>
   </entity>
-</entities>
-
+ </entities>

@@ -10,8 +10,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	ClusterServiceTest.class,
 	ShardServiceTest.class,
 	KeepercontainerServiceTest.class,
-	SetinelServiceTest.class,
-	MetaserverServiceTest.class
+	SetinelServiceTest.class
 })
 public class BasicServiceTest {	
 }

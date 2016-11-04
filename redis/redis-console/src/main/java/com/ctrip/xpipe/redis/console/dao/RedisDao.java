@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
 import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.RedisService;
+
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Repository;
@@ -21,6 +21,7 @@ import org.unidal.lookup.ContainerLoader;
 import javax.annotation.PostConstruct;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -105,6 +106,18 @@ public class RedisDao  extends AbstractXpipeConsoleDAO{
     	}
 	}
 
+	public static List<RedisTbl> findWithRole(List<RedisTbl> redises, String role) {
+		List<RedisTbl> results = new LinkedList<>();
+		if(null != redises) {
+			for(RedisTbl redis : redises) {
+				if(redis.getRedisRole().equals(role)) {
+					results.add(redis);
+				}
+			}
+		}
+		return results;
+	}
+	
 	private String getToCreateKeeperId(final RedisTbl redis) {
 		if(null == redis) throw new BadRequestException("Cannot obtain keeper-id from null.");
 		List<RedisTbl> dcClusterShardRedises = queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
@@ -117,7 +130,7 @@ public class RedisDao  extends AbstractXpipeConsoleDAO{
 		if(null == dcClusterShardRedises) {
 			return generateUniqueKeeperId(redis);
 		} else {
-			List<RedisTbl> keepers = RedisService.findWithRole(dcClusterShardRedises, XpipeConsoleConstant.ROLE_KEEPER);
+			List<RedisTbl> keepers = findWithRole(dcClusterShardRedises, XpipeConsoleConstant.ROLE_KEEPER);
 			if(null != keepers && keepers.size() > 0) {
 				RedisTbl historyKeeper = keepers.get(0);
 				if(historyKeeper.isDeleted() == true) {

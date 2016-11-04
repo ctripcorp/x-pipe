@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
-import org.apache.commons.lang3.tuple.Triple;
 
 /**
  * @author shyin
@@ -24,8 +23,6 @@ public class DcMetaQueryVO {
 	private DcTbl currentDc;
 	// Key : dc-id
 	private Map<Long, DcTbl> allDcs;
-	// Key : Triple<dcId,clusterId,shardId>
-	private Map<Triple<Long,Long,Long>, RedisTbl> allActiveKeepers;
 	// Key : cluser_name
 	private Map<String, ClusterTbl> clusterInfo;
 	// Key : redis_name
@@ -36,27 +33,29 @@ public class DcMetaQueryVO {
 	private Map<String, Map<String, List<RedisTbl>>> redisMap;
     // Key : cluster_name
 	private Map<String, DcClusterTbl> dcClusterMap;
+	// Key : cluster_id
+	private Map<Long, List<DcClusterTbl>> allDcClusterMap;
     // Key : pair<clsuter_name, shard_name>
 	private Map<Pair<String, String>,DcClusterShardTbl> dcClusterShardMap;
 
 	public DcMetaQueryVO(DcTbl dc) {
 		currentDc = dc;
 		allDcs = new HashMap<>();
-		allActiveKeepers = new HashMap<>();
 		clusterInfo = new HashMap<>();
 		redisInfo = new HashMap<>();
 		shardMap = new HashMap<>();
 		redisMap = new HashMap<>();
 		dcClusterMap = new HashMap<>();
 		dcClusterShardMap = new HashMap<>();
+		allDcClusterMap = new HashMap<>();
 	}
 
 	public void setAllDcs(Map<Long, DcTbl> allDcs) {
 		this.allDcs = allDcs;
 	}
-
-	public void setAllActiveKeepers(Map<Triple<Long,Long,Long>, RedisTbl> allActiveKeepers) {
-		this.allActiveKeepers = allActiveKeepers;
+	
+	public void setAllDcClusterMap(Map<Long, List<DcClusterTbl>> allDcCluster) {
+		this.allDcClusterMap = allDcCluster;
 	}
 
 	public void addClusterInfo(ClusterTbl clusterTbl) {
@@ -108,8 +107,6 @@ public class DcMetaQueryVO {
 
 	public Map<Long, DcTbl> getAllDcs() {return allDcs;}
 
-	public Map<Triple<Long, Long, Long>, RedisTbl> getAllActiveKeepers() {return allActiveKeepers;}
-
 	public Map<String, ClusterTbl> getClusterInfo() {return clusterInfo;}
 
 	public Map<Long, RedisTbl> getRedisInfo() {return redisInfo;}
@@ -119,6 +116,8 @@ public class DcMetaQueryVO {
 	public Map<String, Map<String, List<RedisTbl>>> getRedisMap() {return redisMap;}
 
 	public Map<String, DcClusterTbl> getDcClusterMap() {return dcClusterMap;}
+	
+	public Map<Long, List<DcClusterTbl>> getAllDcClusterMap() {return allDcClusterMap;}
 
 	public Map<Pair<String, String>, DcClusterShardTbl> getDcClusterShardMap() {return dcClusterShardMap;}
 	

@@ -240,6 +240,15 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-all" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="delete-batch" type="UPDATE" batch="true">
 				<param name="dc-cluster-id"/>
 				<statement>
@@ -535,7 +544,8 @@
 					<![CDATA[
 					UPDATE <TABLE/>
         			SET <FIELD name='run-id'/> = ${run-id}, <FIELD name='redis-ip'/> = ${redis-ip}, <FIELD name='redis-port'/> = ${redis-port},
-        				<FIELD name='keeper-active'/> = ${keeper-active}, <FIELD name='redis-master'/> = ${redis-master}, <FIELD name='keepercontainer-id'/> = ${keepercontainer-id}
+        				<FIELD name='keeper-active'/> = ${keeper-active}, <FIELD name='redis-master'/> = ${redis-master}, <FIELD name='keepercontainer-id'/> = ${keepercontainer-id},
+        				<FIELD name='master'/> = ${master}
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>

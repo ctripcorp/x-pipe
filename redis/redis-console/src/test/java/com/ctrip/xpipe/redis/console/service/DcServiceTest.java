@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.DcTblDao;
 import com.ctrip.xpipe.redis.console.model.DcTblEntity;
+import com.ctrip.xpipe.redis.console.service.impl.DcServiceImpl;
 
 /**
  * @author shyin
@@ -26,15 +27,15 @@ public class DcServiceTest extends AbstractConsoleTest {
 	@Mock
 	private DcTblDao mockedDcTblDao;
 	@InjectMocks
-	private DcService dcService;
+	private DcServiceImpl dcService;
 
 	@Test
 	public void testLoad() {
 		DcTbl target_result = new DcTbl().setId(1).setDcName("NTGXH").setDcDescription("Mocked DC")
 				.setDcLastModifiedTime("1234567");
 
-		assertEquals(dcService.load("NTGXH").getId(), target_result.getId());
-		assertEquals(dcService.load("NTGXH").getClusterName(), target_result.getClusterName());
+		assertEquals(dcService.find("NTGXH").getId(), target_result.getId());
+		assertEquals(dcService.find("NTGXH").getClusterName(), target_result.getClusterName());
 
 	}
 

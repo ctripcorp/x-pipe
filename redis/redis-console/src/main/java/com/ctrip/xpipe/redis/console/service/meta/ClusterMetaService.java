@@ -11,8 +11,8 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
  * Aug 17, 2016
  */
 public interface ClusterMetaService {
-
-	ClusterMeta loadClusterMeta(DcMeta dcMeta, ClusterTbl clusterTbl, DcMetaQueryVO dcMetaQueryVO);
 	
 	ClusterMeta getClusterMeta(String dcName, String clusterName);
+
+	ClusterMeta loadClusterMeta(DcMeta dcMeta, ClusterTbl clusterTbl, DcMetaQueryVO dcMetaQueryVO);
 }

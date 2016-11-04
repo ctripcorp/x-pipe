@@ -12,7 +12,6 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -72,7 +71,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	@DalTransaction
 	public ClusterTbl createCluster(final ClusterTbl cluster) throws DalException {
 		// check for unique cluster name
-		ClusterTbl clusterWithSameName = queryHandler.tryGet(new DalQuery<ClusterTbl>() {
+		ClusterTbl clusterWithSameName = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
 			public ClusterTbl doQuery() throws DalException {
 				return clusterTblDao.findClusterByClusterName(cluster.getClusterName(), ClusterTblEntity.READSET_FULL);
@@ -88,8 +87,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	    DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
 	    DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();
 	    protoDcCluster.setDcId(activeDc.getId())
-	    		.setClusterId(newCluster.getId())
-	    		.setDcClusterPhase(XpipeConsoleConstant.DEFAULT_DC_CLUSTER_PHASE);
+	    		.setClusterId(newCluster.getId());
 	    dcClusterTblDao.insert(protoDcCluster);
 		return newCluster;
 	}
@@ -102,13 +100,13 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	@DalTransaction
 	public int deleteCluster(final ClusterTbl cluster) throws DalException {
 		// Related shards & dcClusters
-		List<ShardTbl> shards = queryHandler.tryGet(new DalQuery<List<ShardTbl>>() {
+		List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
 				return shardTblDao.findAllByClusterId(cluster.getId(), ShardTblEntity.READSET_FULL);
 			}
 		});
-		List<DcClusterTbl> dcClusters = queryHandler.tryGet(new DalQuery<List<DcClusterTbl>>() {
+		List<DcClusterTbl> dcClusters = queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
 			@Override
 			public List<DcClusterTbl> doQuery() throws DalException {
 				return dcClusterTblDao.findAllByClusterId(cluster.getId(), DcClusterTblEntity.READSET_FULL);
@@ -131,13 +129,13 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 
 	@DalTransaction
 	public int bindDc(final ClusterTbl cluster, final DcTbl dc) throws DalException {
-		List<SetinelTbl> setinels = queryHandler.tryGet(new DalQuery<List<SetinelTbl>>() {
+		List<SetinelTbl> setinels = queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
 			@Override
 			public List<SetinelTbl> doQuery() throws DalException {
 				return setinelTblDao.findByDcId(dc.getId(), SetinelTblEntity.READSET_FULL);
 			}
 		});
-		List<ShardTbl> shards = queryHandler.tryGet(new DalQuery<List<ShardTbl>>() {
+		List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
 				return shardTblDao.findAllByClusterId(cluster.getId(), ShardTblEntity.READSET_FULL);
@@ -146,8 +144,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		
 		DcClusterTbl proto = dcClusterTblDao.createLocal();
 		proto.setDcId(dc.getId())
-			.setClusterId(cluster.getId())
-			.setDcClusterPhase(XpipeConsoleConstant.DEFAULT_DC_CLUSTER_PHASE);
+			.setClusterId(cluster.getId());
 		dcClusterTblDao.insert(proto);
 		DcClusterTbl dcCluster = dcClusterTblDao.findDcClusterByName(dc.getDcName(), cluster.getClusterName(), DcClusterTblEntity.READSET_FULL);
 		
@@ -158,8 +155,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 				DcClusterShardTbl dcClusterShard = dcClusterShardTblDao.createLocal();
 				dcClusterShard.setDcClusterId(dcCluster.getDcClusterId())
 					.setShardId(shard.getId())
-					.setSetinelId(setinel.getSetinelId())
-					.setDcClusterShardPhase(XpipeConsoleConstant.DEFAULT_DC_CLUSTER_PHASE);
+					.setSetinelId(setinel.getSetinelId());
 				dcClusterShards.add(dcClusterShard);
 			}
 			dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
@@ -170,7 +166,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public int unbindDc(final ClusterTbl cluster, final DcTbl dc) throws DalException {
-		DcClusterTbl dcCluster = queryHandler.tryGet(new DalQuery<DcClusterTbl>() {
+		DcClusterTbl dcCluster = queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
 			@Override
 			public DcClusterTbl doQuery() throws DalException {
 				return dcClusterTblDao.findDcClusterById(dc.getId(), cluster.getId(), DcClusterTblEntity.READSET_FULL); 

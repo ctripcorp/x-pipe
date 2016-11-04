@@ -21,17 +21,5 @@ public class DalQueryHandler {
 			throw new ServerException("Load data failed.", e);
 		}
 	}
-	
-	public <T> T tryGet(DalQuery<T> query) {
-		try {
-			return query.doQuery();
-		} catch(DalException e) {
-			if(e instanceof DalNotFoundException) {
-				return null;
-			}
-			throw new ServerException("Try get data fail.", e);
-		}
-	}
-
 
 }

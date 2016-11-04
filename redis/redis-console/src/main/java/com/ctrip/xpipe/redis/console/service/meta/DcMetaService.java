@@ -1,10 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.meta;
 
-import java.util.HashMap;
-
-import org.apache.commons.lang3.tuple.Triple;
-
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 
 /**
@@ -15,7 +10,5 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 public interface DcMetaService {
 	
 	DcMeta getDcMeta(String dcName);
-	
-	HashMap<Triple<Long, Long, Long>, RedisTbl> loadAllActiveKeepers();
 	
 }

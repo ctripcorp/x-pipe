@@ -14,7 +14,6 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -75,7 +74,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 		
 		// dc-cluster-shards
 		Map<Long,SetinelTbl> mapSetinels = generateSetinelsMap();
-		List<DcClusterTbl> dcClusters = queryHandler.tryGet(new DalQuery<List<DcClusterTbl>>() {
+		List<DcClusterTbl> dcClusters = queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
 			@Override
 			public List<DcClusterTbl> doQuery() throws DalException {
 				return dcClusterTblDao.findAllByClusterId(cluster.getId(), DcClusterTblEntity.READSET_FULL);
@@ -87,8 +86,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			for(DcClusterTbl dcCluster : dcClusters) {
 				DcClusterShardTbl dcClusterShardProto = dcClusterShardTblDao.createLocal();
 				dcClusterShardProto.setDcClusterId(dcCluster.getDcClusterId())
-					.setShardId(result.getId())
-					.setDcClusterShardPhase(XpipeConsoleConstant.DEFAULT_DC_CLUSTER_PHASE);
+					.setShardId(result.getId());
 				if(null != mapSetinels.get(dcCluster.getDcId())) {
 					dcClusterShardProto.setSetinelId(mapSetinels.get(dcCluster.getDcId()).getSetinelId());
 				}
@@ -106,7 +104,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 		
 		List<DcClusterShardTbl> relatedDcClusterShards = new LinkedList<DcClusterShardTbl>();
 		for(final ShardTbl shard : shards) {
-			List<DcClusterShardTbl> dcClusterShards = queryHandler.tryGet(new DalQuery<List<DcClusterShardTbl>>() {
+			List<DcClusterShardTbl> dcClusterShards = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
 				@Override
 				public List<DcClusterShardTbl> doQuery() throws DalException {
 					return dcClusterShardTblDao.findAllByShardId(shard.getId(), DcClusterShardTblEntity.READSET_FULL);
@@ -129,7 +127,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	public int deleteShardsBatch(final ShardTbl shard) throws DalException {
 		if(null == shard) throw new DalException("Null cannot be deleted.");
 		
-		List<DcClusterShardTbl> relatedDcClusterShards = queryHandler.tryGet(new DalQuery<List<DcClusterShardTbl>>() {
+		List<DcClusterShardTbl> relatedDcClusterShards = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
 			@Override
 			public List<DcClusterShardTbl> doQuery() throws DalException {
 				return dcClusterShardTblDao.findAllByShardId(shard.getId(), DcClusterShardTblEntity.READSET_FULL);
@@ -146,7 +144,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	
 	private void validateShard(final String clusterName, ShardTbl shard) throws DalException {
 		// validate shard name
-		List<ShardTbl> shardNames = queryHandler.tryGet(new DalQuery<List<ShardTbl>>(){
+		List<ShardTbl> shardNames = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>(){
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
 				return shardTblDao.findAllByClusterName(clusterName, ShardTblEntity.READSET_NAME);
@@ -162,7 +160,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	}
 	
 	private Map<Long, SetinelTbl> generateSetinelsMap() {
-		List<SetinelTbl> setinels = queryHandler.tryGet(new DalQuery<List<SetinelTbl>>() {
+		List<SetinelTbl> setinels = queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
 			@Override
 			public List<SetinelTbl> doQuery() throws DalException {
 				return setinelTblDao.findAll(SetinelTblEntity.READSET_FULL);

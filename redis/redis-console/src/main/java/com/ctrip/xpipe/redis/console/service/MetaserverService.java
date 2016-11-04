@@ -1,30 +1,9 @@
 package com.ctrip.xpipe.redis.console.service;
 
-
-import com.ctrip.xpipe.redis.console.model.MetaserverTbl;
-import com.ctrip.xpipe.redis.console.model.MetaserverTblDao;
-import com.ctrip.xpipe.redis.console.model.MetaserverTblEntity;
-import com.ctrip.xpipe.redis.console.query.DalQuery;
-
-import org.springframework.stereotype.Service;
-import org.unidal.dal.jdbc.DalException;
 import java.util.List;
 
+import com.ctrip.xpipe.redis.console.model.MetaserverTbl;
 
-/**
- * @author shyin
- *
- * Aug 20, 2016
- */
-@Service("metaserverService")
-public class MetaserverService extends AbstractConsoleService<MetaserverTblDao>{
-	
-    public List<MetaserverTbl> findByDcName(final String dcName) {
-    	return queryHandler.handleQuery(new DalQuery<List<MetaserverTbl>>() {
-			@Override
-			public List<MetaserverTbl> doQuery() throws DalException {
-				return dao.findByDcName(dcName, MetaserverTblEntity.READSET_FULL);
-			}
-    	});
-    }
+public interface MetaserverService {
+	List<MetaserverTbl> findAllByDcName(String dcName);
 }

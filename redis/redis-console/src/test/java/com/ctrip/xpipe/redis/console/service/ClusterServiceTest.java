@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
+import com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl;
 
 /**
  * @author shyin
@@ -24,15 +25,15 @@ public class ClusterServiceTest extends AbstractConsoleTest {
 	@Mock
 	private ClusterTblDao mockedClusterTblDao;
 	@InjectMocks
-	private ClusterService clusterService;
+	private ClusterServiceImpl clusterService;
 
 	@Test
 	public void testLoad() {
 		ClusterTbl target_result = new ClusterTbl().setId(1).setClusterName("cluster1")
 				.setClusterLastModifiedTime("1234567");
 
-		assertEquals(clusterService.load("cluster1").getId(), target_result.getId());
-		assertEquals(clusterService.load("cluster1").getClusterName(), target_result.getClusterName());
+		assertEquals(clusterService.find("cluster1").getId(), target_result.getId());
+		assertEquals(clusterService.find("cluster1").getClusterName(), target_result.getClusterName());
 	}
 
 	@Before

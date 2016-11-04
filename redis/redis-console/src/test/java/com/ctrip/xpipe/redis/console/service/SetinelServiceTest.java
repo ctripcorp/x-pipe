@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.SetinelTblDao;
 import com.ctrip.xpipe.redis.console.model.SetinelTblEntity;
+import com.ctrip.xpipe.redis.console.service.impl.SentinelServiceImpl;
 
 /**
  * @author shyin
@@ -26,13 +27,13 @@ public class SetinelServiceTest extends AbstractConsoleTest {
 	@Mock
 	private SetinelTblDao mockedSetinelTblDao;
 	@InjectMocks
-	private SetinelService setinelService;
+	private SentinelServiceImpl setinelService;
 
 	@Test
 	public void testMetasService() {
 		SetinelTbl target_setinel = new SetinelTbl().setSetinelId(1).setSetinelAddress("11111");
 
-		assertEquals(setinelService.findByDcName("NTGXH").get(0).getSetinelAddress(),
+		assertEquals(setinelService.findAllByDcName("NTGXH").get(0).getSetinelAddress(),
 				target_setinel.getSetinelAddress());
 	}
 

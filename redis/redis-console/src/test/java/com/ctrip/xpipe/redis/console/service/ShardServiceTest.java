@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
+import com.ctrip.xpipe.redis.console.service.impl.ShardServiceImpl;
 
 /**
  * @author shyin
@@ -24,15 +25,15 @@ public class ShardServiceTest extends AbstractConsoleTest {
 	@Mock
 	private ShardTblDao mockedShardTblDao;
 	@InjectMocks
-	private ShardService shardService;
+	private ShardServiceImpl shardService;
 
 	@Test
 	public void testShardService() {
 		ShardTbl target_result = new ShardTbl().setId(1).setClusterId(1).setShardName("shard1");
 
-		assertEquals(shardService.load("cluster1", "shard1").getId(), target_result.getId());
-		assertEquals(shardService.load("cluster1", "shard1").getClusterId(), target_result.getClusterId());
-		assertEquals(shardService.load("cluster1", "shard1").getShardName(), target_result.getShardName());
+		assertEquals(shardService.find("cluster1", "shard1").getId(), target_result.getId());
+		assertEquals(shardService.find("cluster1", "shard1").getClusterId(), target_result.getClusterId());
+		assertEquals(shardService.find("cluster1", "shard1").getShardName(), target_result.getShardName());
 	}
 
 	@Before
