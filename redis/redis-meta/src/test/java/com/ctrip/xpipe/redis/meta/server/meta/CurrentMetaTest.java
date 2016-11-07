@@ -57,7 +57,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 			if(dc.equals(activeDc)){
 				Assert.assertEquals(new InetSocketAddress("127.0.0.1", 6379), keeperMaster);
 			}else{
-				Assert.assertEquals(new InetSocketAddress("127.0.0.1", 6000), keeperMaster);
+				Assert.assertEquals(null, keeperMaster);
 			}
 		}
 		
