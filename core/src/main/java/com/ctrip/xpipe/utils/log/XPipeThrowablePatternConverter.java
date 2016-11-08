@@ -53,8 +53,8 @@ public class XPipeThrowablePatternConverter extends ThrowablePatternConverter{
         
         //xpipe code
         if(throwable != null){
-	    	if(ExceptionUtils.isIoException(event.getThrown()) || ExceptionUtils.xpipeExceptionLogMessage(throwable)){
-	    		toAppendTo.append(throwable.getClass() + ":" +throwable.getMessage());
+	    	if(ExceptionUtils.isSocketIoException(event.getThrown()) || ExceptionUtils.xpipeExceptionLogMessage(throwable)){
+	    		toAppendTo.append("," + throwable.getClass() + ":" + throwable.getMessage());
 	    		return;
 	    	}
 	    	

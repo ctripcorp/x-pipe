@@ -12,8 +12,7 @@ public interface CommandStore {
 
 	boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException;
 
-	void close();
-	
+	void close() throws IOException;
 	
 	long totalLength();
 	

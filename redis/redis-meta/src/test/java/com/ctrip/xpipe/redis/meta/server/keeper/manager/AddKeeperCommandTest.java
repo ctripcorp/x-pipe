@@ -111,7 +111,7 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 			addKeeperCommand.execute().get();
 			Assert.fail();
 		}catch(ExecutionException e){
-			Assert.assertTrue(ExceptionUtils.isIoException(e));
+			Assert.assertTrue(ExceptionUtils.isSocketIoException(e));
 		}
 
 	}

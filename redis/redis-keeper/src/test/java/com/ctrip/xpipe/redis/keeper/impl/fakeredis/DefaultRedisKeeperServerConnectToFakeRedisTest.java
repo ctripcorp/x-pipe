@@ -38,6 +38,12 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		startKeeperServerAndTestReFullSync(2, allCommandsSize);
 	}
 
+	@Test
+	public void testNewDumpCommandsTooMush() throws Exception{
+		
+		startKeeperServerAndTestReFullSync(100, (int) (allCommandsSize * 0.8));
+	}
+
 	private void startKeeperServerAndTestReFullSync(int fileToKeep, int maxTransferCommnadsSize) throws Exception {
 		
 		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis(fileToKeep, maxTransferCommnadsSize, 1000);
@@ -55,11 +61,6 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		assertPsyncResultEquals(psync);
 	}
 
-	@Test
-	public void testNewDumpCommandsTooMush() throws Exception{
-		
-		startKeeperServerAndTestReFullSync(100, (int) (allCommandsSize * 0.8));
-	}
 	
 	@Test
 	public void testDumpWhileWaitForRdb() throws Exception{

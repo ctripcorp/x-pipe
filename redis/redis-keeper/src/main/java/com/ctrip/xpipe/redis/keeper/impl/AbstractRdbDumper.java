@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
@@ -77,6 +78,7 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 					@Override
 					public void run() {
 						try {
+							TimeUnit.MILLISECONDS.sleep(10);
 							redisKeeperServer.fullSyncToSlave(redisSlave);
 						} catch (Exception e) {
 							logger.error(String.format("fullsync to slave:%s", redisSlave), e);

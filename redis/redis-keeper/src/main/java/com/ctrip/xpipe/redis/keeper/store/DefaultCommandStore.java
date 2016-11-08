@@ -40,6 +40,7 @@ public class DefaultCommandStore implements CommandStore {
 	private final OffsetNotifier offsetNotifier;
 
 	private AtomicReference<CommandFileContext> cmdFileCtxRef = new AtomicReference<>();
+	private Object cmdFileCtxRefLock = new Object();
 
 	public DefaultCommandStore(File file, int maxFileSize) throws IOException {
 		this.baseDir = file.getParentFile();
@@ -99,8 +100,10 @@ public class DefaultCommandStore implements CommandStore {
 	}
 
 	@Override
-	public long totalLength() {
-		return cmdFileCtxRef.get().totalLength();
+	public  long totalLength() {
+		synchronized (cmdFileCtxRefLock) {
+			return cmdFileCtxRef.get().totalLength();
+		}
 	}
 
 	private void rotateFileIfNenessary() throws IOException {
@@ -108,9 +111,11 @@ public class DefaultCommandStore implements CommandStore {
 		if (curCmdFileCtx.writeFile.length() >= maxFileSize) {
 			long newStartOffset = curCmdFileCtx.currentStartOffset + curCmdFileCtx.writeFile.length();
 			File newFile = new File(baseDir, fileNamePrefix + newStartOffset);
-			cmdFileCtxRef.set(new CommandFileContext(newStartOffset, newFile));
 			logger.info("Rotate to {}" , newFile.getName());
-			curCmdFileCtx.close();
+			synchronized (cmdFileCtxRefLock) {
+				cmdFileCtxRef.set(new CommandFileContext(newStartOffset, newFile));
+				curCmdFileCtx.close();
+			}
 		}
 	}
 
@@ -159,21 +164,20 @@ public class DefaultCommandStore implements CommandStore {
 		}
 	}
 
-	@Override
-	public void close() {
-		// TODO Auto-generated method stub
-
-	}
-
 	private class CommandFileContext {
+		
 		public final long currentStartOffset;
 
 		public final RandomAccessFile writeFile;
 
 		public final FileChannel channel;
+		
+		private File currentFile;
 
 		public CommandFileContext(long currentStartOffset, File currentFile) throws IOException {
 			this.currentStartOffset = currentStartOffset;
+			this.currentFile = currentFile;
+			
 			writeFile = new RandomAccessFile(currentFile, "rw");
 			channel = writeFile.getChannel();
 			// append to file
@@ -189,7 +193,7 @@ public class DefaultCommandStore implements CommandStore {
 			try {
 				return currentStartOffset + channel.size();
 			} catch (IOException e) {
-				throw new XpipeRuntimeException("[totalLength]getFileLength error" + channel, e);
+				throw new XpipeRuntimeException("[totalLength]getFileLength error:" + currentFile, e);
 			}
 		}
 	}
@@ -323,5 +327,15 @@ public class DefaultCommandStore implements CommandStore {
 		}
 		logger.info("[addCommandsListener][end] from offset {}, {}", offset, listener);
 	}
+
+	@Override
+	public void close() throws IOException {
+		
+		CommandFileContext commandFileContext = cmdFileCtxRef.get();
+		if(commandFileContext != null){
+			commandFileContext.close();
+		}
+	}
+
 
 }

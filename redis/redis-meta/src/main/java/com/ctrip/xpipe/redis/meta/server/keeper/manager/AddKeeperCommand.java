@@ -89,7 +89,7 @@ public class AddKeeperCommand extends AbstractKeeperCommand<KeeperRole>{
 		return new RetryDelay(checkIntervalMilli){
 			@Override
 			public boolean retry(Throwable th) {
-				if(ExceptionUtils.isIoException(th)){
+				if(ExceptionUtils.isSocketIoException(th)){
 					return false;
 				}
 				return true;

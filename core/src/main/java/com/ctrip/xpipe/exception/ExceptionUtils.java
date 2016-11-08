@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.exception;
 
-import java.io.IOException;
+import java.net.SocketException;
 
 import org.springframework.web.client.HttpStatusCodeException;
 
@@ -25,14 +25,14 @@ public class ExceptionUtils {
 		return getRootCause(cause);
 	}
 	
-	public static boolean isIoException(Throwable th){
+	public static boolean isSocketIoException(Throwable th){
 		
 		while(true){
 			
 			if(th == null){
 				break;
 			}
-			if(th instanceof IOException){
+			if(th instanceof SocketException){
 				return true;
 			}
 			th = th.getCause();

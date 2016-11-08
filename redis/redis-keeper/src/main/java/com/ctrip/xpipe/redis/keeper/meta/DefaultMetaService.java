@@ -45,7 +45,7 @@ public class DefaultMetaService extends AbstractMetaService implements MetaServe
 					return restTemplate.getForObject(url, ShardStatus.class, urlVariables);
 				}catch(Exception e){
 					
-					if(ExceptionUtils.isIoException(e)){
+					if(ExceptionUtils.isSocketIoException(e)){
 						logger.error("[apply]{},{}", url, e);
 					}else{
 						logger.error("[apply]"+ url, e);
