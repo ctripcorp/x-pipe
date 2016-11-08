@@ -9,8 +9,7 @@ import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
-import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
+import com.ctrip.xpipe.pool.XpipeNettyClientObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.utils.IpUtils;
@@ -38,7 +37,7 @@ public class SlaveofJobTest extends AbstractMetaServerTest {
 
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> getKeyedObjectPool() throws Exception {
 		
-		XpipeKeyedObjectPool<InetSocketAddress, NettyClient> pool = new XpipeKeyedObjectPool<>(new NettyKeyedPoolClientFactory());
+		XpipeNettyClientObjectPool pool = new XpipeNettyClientObjectPool();
 		
 		pool.initialize();
 		pool.start();

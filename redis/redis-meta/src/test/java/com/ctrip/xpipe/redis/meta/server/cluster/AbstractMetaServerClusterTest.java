@@ -29,6 +29,11 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 		startZk(zkPort);
 	}
 	
+	
+	public int getZkPort() {
+		return zkPort;
+	}
+	
 	protected CuratorFramework getCuratorFramework() throws Exception{
 		return getCuratorFramework(zkPort);
 	}
@@ -49,17 +54,22 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 	
 	protected void createMetaServers(int serverCount) throws Exception{
 		
-		
 		for(int i=0 ; i<serverCount ; i++){
 			
 			int port = portUsable(defaultMetaServerPort());
-			TestMetaServer testMetaServer = new TestMetaServer(i + 1, port, zkPort);
-			testMetaServer.initialize();
-			testMetaServer.start();
+			TestMetaServer testMetaServer = createMetaServer(i+1, port, zkPort);
 			add(testMetaServer);
 		}
 	}
 	
+	protected TestMetaServer createMetaServer(int index, int port, int zkPort) throws Exception {
+		
+		TestMetaServer testMetaServer = new TestMetaServer(index, port, zkPort);
+		testMetaServer.initialize();
+		testMetaServer.start();
+		return testMetaServer;
+	}
+
 	public List<TestMetaServer> getServers() {
 		return new LinkedList<>(getRegistry().getComponents(TestMetaServer.class).values());
 	}

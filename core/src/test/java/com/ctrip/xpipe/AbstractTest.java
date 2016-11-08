@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.Charset;
@@ -77,6 +78,7 @@ public class AbstractTest {
 		setProperties();
 
 		logger.info(remarkableMessage("[begin test][{}]{}") , getClass().getSimpleName(), name.getMethodName());
+		logger.info("[beforeAbstractTest][process]{}", ManagementFactory.getRuntimeMXBean().getName());
 
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
 

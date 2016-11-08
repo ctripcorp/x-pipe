@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -12,8 +11,7 @@ import org.junit.Before;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
-import com.ctrip.xpipe.pool.XpipeKeyedObjectPool;
+import com.ctrip.xpipe.pool.XpipeNettyClientObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -29,7 +27,7 @@ import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
  */
 public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 	
-	protected SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool = new XpipeKeyedObjectPool<>(new NettyKeyedPoolClientFactory());
+	protected SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool = new XpipeNettyClientObjectPool();
 	
 	private KeeperMeta activeDcKeeperActive;
 	
