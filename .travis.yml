@@ -1,6 +1,9 @@
 language: java
 jdk:
   - oraclejdk7
+cache:
+  directories:
+      - $HOME/.m2
 notification:
   email:
     recipients:

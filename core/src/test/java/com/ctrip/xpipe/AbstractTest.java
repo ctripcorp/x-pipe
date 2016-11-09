@@ -1,6 +1,5 @@
 package com.ctrip.xpipe;
 
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,7 +7,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.Charset;
@@ -47,74 +45,72 @@ import com.ctrip.xpipe.zk.ZkTestServer;
 /**
  * @author wenchao.meng
  *
- * 2016年3月28日 下午5:44:47
+ *         2016年3月28日 下午5:44:47
  */
 public class AbstractTest {
-	
+
 	protected Logger logger = LoggerFactory.getLogger(getClass());
-	
+
 	protected ExecutorService executors = Executors.newCachedThreadPool();
 
 	protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(OsUtils.getCpuCount());
-	
+
 	private ComponentRegistry componentRegistry;
 
 	@Rule
 	public TestName name = new TestName();
-	
+
 	private static Properties properties = new Properties();
-	
+
 	private Properties orginProperties;
-	
-	
+
 	private ComponentRegistry startedComponentRegistry;
-	
+
 	@Before
-	public void beforeAbstractTest() throws Exception{
+	public void beforeAbstractTest() throws Exception {
 
 		orginProperties = (Properties) System.getProperties().clone();
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty(CatUtils.CAT_ENABLED_KEY, "false");
 		setProperties();
 
-		logger.info(remarkableMessage("[begin test][{}]{}") , getClass().getSimpleName(), name.getMethodName());
-		logger.info("[beforeAbstractTest][process]{}", ManagementFactory.getRuntimeMXBean().getName());
+		logger.info(remarkableMessage("[begin test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
 
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
 
 		startedComponentRegistry = new CreatedComponentRedistry();
 		startedComponentRegistry.initialize();
 		startedComponentRegistry.start();
-		
+
 		Thread.setDefaultUncaughtExceptionHandler(new DefaultExceptionHandler());
 		InputStream fins = getClass().getClassLoader().getResourceAsStream("xpipe-test.properties");
 		try {
 			properties.load(fins);
-		} finally{
-			if(fins != null){
+		} finally {
+			if (fins != null) {
 				fins.close();
 			}
 		}
-		
+
 		File file = new File(getTestFileDir());
-		if(file.exists() && deleteTestDir()){
+		if (file.exists() && deleteTestDir()) {
 			FileUtils.forceDelete(file);
 		}
-		
-		if(!file.exists()){
+
+		if (!file.exists()) {
 			boolean testSucceed = file.mkdirs();
-			if(!testSucceed){
+			if (!testSucceed) {
 				throw new IllegalStateException("test dir make failed!" + file);
 			}
 		}
 	}
-	
-	protected String getTestName(){
+
+	protected String getTestName() {
 		return name.getMethodName();
 	}
 
 	protected void setProperties() {
-		
+
 	}
 
 	protected boolean deleteTestDir() {
@@ -122,9 +118,9 @@ public class AbstractTest {
 	}
 
 	private ComponentRegistry getSpringRegistry() {
-		
+
 		ApplicationContext applicationContext = createSpringContext();
-		if(applicationContext != null){
+		if (applicationContext != null) {
 			return new SpringComponentRegistry(applicationContext);
 		}
 		return null;
@@ -132,86 +128,85 @@ public class AbstractTest {
 
 	/**
 	 * to be overriden by subclasses
+	 * 
 	 * @return
 	 */
-	protected  ApplicationContext createSpringContext() {
+	protected ApplicationContext createSpringContext() {
 		return null;
 	}
-	
-	protected<T> T getBean(Class<T> clazz){
-		
+
+	protected <T> T getBean(Class<T> clazz) {
+
 		return getRegistry().getComponent(clazz);
 	}
 
-	protected void initRegistry() throws Exception{
-		
+	protected void initRegistry() throws Exception {
+
 		componentRegistry.initialize();
 	}
 
-	protected void startRegistry() throws Exception{
-		
+	protected void startRegistry() throws Exception {
+
 		componentRegistry.start();
 	}
 
-	public static String randomString(){
-		
+	public static String randomString() {
+
 		return randomString(1 << 10);
 	}
-	
-	public static String randomString(int length){
-		
+
+	public static String randomString(int length) {
+
 		StringBuilder sb = new StringBuilder();
-		for(int i=0; i < length ; i++){
-			sb.append((char)('a' + (int)(26*Math.random())));
+		for (int i = 0; i < length; i++) {
+			sb.append((char) ('a' + (int) (26 * Math.random())));
 		}
-		
+
 		return sb.toString();
-		
+
 	}
-	
-	
-	protected String getTestFileDir(){
-		
+
+	protected String getTestFileDir() {
+
 		String userHome = getUserHome();
 		String result = userHome + "/test";
-		
+
 		String testDir = properties.getProperty("test.file.dir");
-		if(testDir != null){
+		if (testDir != null) {
 			result = testDir.replace("~", userHome);
 		}
 		return result + "/" + currentTestName();
 	}
-	
-	public static String getUserHome(){
-		
+
+	public static String getUserHome() {
+
 		return System.getProperty("user.home");
 	}
 
-	
-	protected void sleepSeconds(int seconds){
+	protected void sleepSeconds(int seconds) {
 		sleep(seconds * 1000);
 	}
 
 	protected void sleepIgnoreInterrupt(int time) {
 		long future = System.currentTimeMillis() + time;
 
-		while(true){
+		while (true) {
 			long left = future - System.currentTimeMillis();
-			if(left <= 0){
+			if (left <= 0) {
 				break;
 			}
-			if(left > 0){
+			if (left > 0) {
 				try {
 					TimeUnit.MILLISECONDS.sleep(left);
 				} catch (InterruptedException e) {
 				}
 			}
 		}
-		
+
 	}
 
-	protected void sleep(int miliSeconds){
-		
+	protected void sleep(int miliSeconds) {
+
 		try {
 			TimeUnit.MILLISECONDS.sleep(miliSeconds);
 		} catch (InterruptedException e) {
@@ -219,24 +214,24 @@ public class AbstractTest {
 	}
 
 	protected String readFileAsString(String fileName) {
-		
+
 		return readFileAsString(fileName, Codec.defaultCharset);
 	}
 
 	protected String readFileAsString(String fileName, Charset charset) {
-		
+
 		FileInputStream fins = null;
 		try {
-			byte []data = new byte[2048];
+			byte[] data = new byte[2048];
 			ByteArrayOutputStream baous = new ByteArrayOutputStream();
 			fins = new FileInputStream(new File(fileName));
-			
-			while(true){
+
+			while (true) {
 				int size = fins.read(data);
-				if(size > 0){
+				if (size > 0) {
 					baous.write(data, 0, size);
 				}
-				if(size == -1){
+				if (size == -1) {
 					break;
 				}
 			}
@@ -245,8 +240,8 @@ public class AbstractTest {
 			logger.error("[readFileAsString]" + fileName, e);
 		} catch (IOException e) {
 			logger.error("[readFileAsString]" + fileName, e);
-		}finally{
-			if(fins != null){
+		} finally {
+			if (fins != null) {
 				try {
 					fins.close();
 				} catch (IOException e) {
@@ -256,43 +251,41 @@ public class AbstractTest {
 		}
 		return null;
 	}
-	
-	protected void add(Object lifecycle) throws Exception{
+
+	protected void add(Object lifecycle) throws Exception {
 		this.componentRegistry.add(lifecycle);
 	}
 
-	protected void remove(Object lifecycle) throws Exception{
+	protected void remove(Object lifecycle) throws Exception {
 		this.componentRegistry.remove(lifecycle);
 	}
-	
+
 	public ComponentRegistry getRegistry() {
 		return componentRegistry;
 	}
 
-	
-	protected String currentTestName(){
+	protected String currentTestName() {
 		return name.getMethodName();
-	} 
-	
-	public static int portUsable(int fromPort){
-		
-		for(int i=fromPort;i<fromPort + 100;i++){
-			if(isUsable(i)){
+	}
+
+	public static int portUsable(int fromPort) {
+
+		for (int i = fromPort; i < fromPort + 100; i++) {
+			if (isUsable(i)) {
 				return i;
 			}
 		}
-		
+
 		throw new IllegalStateException("unfonud usable port from %d" + fromPort);
 	}
 
-	
-	public static int randomPort(){
-		return randomPort(10000, 20000); 
+	public static int randomPort() {
+		return randomPort(10000, 20000);
 	}
-	
-	
+
 	/**
 	 * find an available port from min to max
+	 * 
 	 * @param min
 	 * @param max
 	 * @return
@@ -300,18 +293,18 @@ public class AbstractTest {
 	public static int randomPort(int min, int max) {
 
 		int i = min;
-		for(;i<=max;i++){
-			if(isUsable(i)){
+		for (; i <= max; i++) {
+			if (isUsable(i)) {
 				return i;
 			}
 		}
-		
-		throw new IllegalStateException(String.format("random port not found:(%d, %d)", min , max));
+
+		throw new IllegalStateException(String.format("random port not found:(%d, %d)", min, max));
 	}
-	
+
 	private static boolean isUsable(int port) {
-		
-		try(ServerSocket s = new ServerSocket()){
+
+		try (ServerSocket s = new ServerSocket()) {
 			s.bind(new InetSocketAddress(port));
 			return true;
 		} catch (IOException e) {
@@ -319,20 +312,20 @@ public class AbstractTest {
 		return false;
 	}
 
-	protected static int randomInt(int begin, int end){
+	protected static int randomInt(int begin, int end) {
 		return (int) (begin + Math.random() * (end - begin));
 	}
 
 	protected Integer randomInt() {
-		
-		return (int)(Math.random() * Integer.MAX_VALUE);
+
+		return (int) (Math.random() * Integer.MAX_VALUE);
 	}
 
 	protected String remarkableMessage(String msg) {
 		return String.format("--------------------------%s--------------------------\r\n", msg);
 	}
 
-	protected void waitForAnyKeyToExit() throws IOException{
+	protected void waitForAnyKeyToExit() throws IOException {
 		System.out.println("type any key to exit..................");
 		waitForAnyKey();
 	}
@@ -342,7 +335,7 @@ public class AbstractTest {
 	}
 
 	protected ZkTestServer startRandomZk() {
-		
+
 		int zkPort = randomInt(2181, 2281);
 		return startZk(zkPort);
 	}
@@ -360,15 +353,12 @@ public class AbstractTest {
 			throw new IllegalStateException("[startZk]" + zkPort, e);
 		}
 	}
-	
-	
-	
-	
-	public static int defaultZkPort(){
+
+	public static int defaultZkPort() {
 		return 2181;
 	}
 
-	public static int defaultMetaServerPort(){
+	public static int defaultMetaServerPort() {
 		return 9747;
 	}
 
@@ -378,11 +368,11 @@ public class AbstractTest {
 
 	protected Server startEchoServer(int port) throws Exception {
 		return startServer(port, new IoActionFactory() {
-			
+
 			@Override
 			public IoAction createIoAction() {
-				return new AbstractIoAction(){
-					
+				return new AbstractIoAction() {
+
 					private String line;
 
 					@Override
@@ -395,10 +385,10 @@ public class AbstractTest {
 
 					@Override
 					protected void doWrite(OutputStream ous) throws IOException {
-						
-						String []sp = line.split("\\s+");
-						if(sp.length >= 1){
-							if(sp[0].equalsIgnoreCase("sleep")){
+
+						String[] sp = line.split("\\s+");
+						if (sp.length >= 1) {
+							if (sp[0].equalsIgnoreCase("sleep")) {
 								int sleep = Integer.parseInt(sp[1]);
 								logger.info("[sleep]{}", sleep);
 								sleepIgnoreInterrupt(sleep);
@@ -414,21 +404,21 @@ public class AbstractTest {
 		});
 	}
 
-	protected Server startServer(int serverPort, IoActionFactory ioActionFactory) throws Exception{
-		
+	protected Server startServer(int serverPort, IoActionFactory ioActionFactory) throws Exception {
+
 		Server server = new Server(serverPort, ioActionFactory);
 		server.initialize();
 		server.start();
-		
+
 		add(server);
 		return server;
-		
+
 	}
 
-	protected Server startServer(IoActionFactory ioActionFactory) throws Exception{
+	protected Server startServer(IoActionFactory ioActionFactory) throws Exception {
 		return startServer(randomPort(), ioActionFactory);
 	}
-	
+
 	protected Server startServer(int serverPort, final String expected) throws Exception {
 		return startServer(serverPort, new Callable<String>() {
 
@@ -441,11 +431,11 @@ public class AbstractTest {
 
 	protected Server startServer(int serverPort, final Callable<String> function) throws Exception {
 		IoActionFactory ioActionFactory = new IoActionFactory() {
-			
+
 			@Override
 			public IoAction createIoAction() {
 				return new AbstractIoAction() {
-					
+
 					@Override
 					protected void doWrite(OutputStream ous) throws IOException {
 						try {
@@ -454,6 +444,7 @@ public class AbstractTest {
 							throw new IllegalStateException("[doWrite]", e);
 						}
 					}
+
 					@Override
 					protected Object doRead(InputStream ins) throws IOException {
 						String line = readLine(ins);
@@ -470,9 +461,8 @@ public class AbstractTest {
 		return startServer(randomPort(), result);
 	}
 
-
 	@After
-	public void afterAbstractTest() throws Exception{
+	public void afterAbstractTest() throws Exception {
 
 		try {
 			logger.info(remarkableMessage("[end   test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
@@ -483,22 +473,23 @@ public class AbstractTest {
 		} catch (Exception e) {
 			logger.error("[afterAbstractTest]", e);
 		}
-		
-		try{
+
+		try {
 			File file = new File(getTestFileDir());
 			FileUtils.deleteQuietly(file);
 		} catch (Exception e) {
 			logger.error("[afterAbstractTest][clean test dir]", e);
 		}
 
-		try{
+		try {
 			doAfterAbstractTest();
 		} catch (Exception e) {
 			logger.error("[afterAbstractTest]", e);
 		}
-		
+
 		System.setProperties(orginProperties);
 	}
 
-	protected void doAfterAbstractTest() throws Exception{}
+	protected void doAfterAbstractTest() throws Exception {
+	}
 }

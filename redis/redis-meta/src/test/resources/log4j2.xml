@@ -29,6 +29,7 @@
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
         <logger name="com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.BackupDcKeeperMasterChooser" level="DEBUG"/>
         <logger name="com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.PrimaryDcKeeperMasterChooser" level="DEBUG"/>
+        		<logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="WARN"/>
         
         <logger name="com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractClusterServers" level="DEBUG"/>
         <root level="INFO">
