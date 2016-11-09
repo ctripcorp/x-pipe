@@ -2,11 +2,13 @@ package com.ctrip.xpipe.redis.meta.server;
 
 
 
+import org.junit.After;
 import org.junit.Before;
 
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.testutils.MemoryPrinter;
 
 /**
  * @author wenchao.meng
@@ -19,11 +21,20 @@ public class AbstractMetaServerTest extends AbstractRedisTest{
 	private String dc = "jq", clusterId = "cluster1", shardId = "shard1";
 	
 	protected MetaServerConfig  config = new DefaultMetaServerConfig();
+	
+	private MemoryPrinter memoryPrinter = new MemoryPrinter(500);
 
 	@Before
 	public void beforeAbstractMetaServerTest() throws Exception{
+		
+		memoryPrinter.start();
 	}
-	
+
+	@After
+	public void afterAbstractMetaServerTest() throws Exception{
+		memoryPrinter.stop();
+	}
+
 	
 	@Override
 	protected String getXpipeMetaConfigFile() {

@@ -41,7 +41,7 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	private String dc = FoundationService.DEFAULT.getDataCenter();
 
 	@Before
-	public void beforeAbstractMetaServerTest() throws Exception{
+	public void beforeAbstractMetaServerContextTest() throws Exception{
 		arrangeTaskStart(false);
 		
 		int zkPort = randomPort();
