@@ -175,7 +175,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		FileUtils.forceMkdir(logDir);
 
 		File file = createRedisConfigFile(dcMeta, redisMeta, redisDir, dataDir);
-		executeScript("start_redis.sh", file.getAbsolutePath(), new File(logDir, String.format("%d.logger", redisMeta.getPort())).getAbsolutePath());
+		executeScript("start_redis.sh", file.getAbsolutePath(), new File(logDir, String.format("%d.log", redisMeta.getPort())).getAbsolutePath());
 		
 		allRedisStarted.add(redisMeta);
 	}

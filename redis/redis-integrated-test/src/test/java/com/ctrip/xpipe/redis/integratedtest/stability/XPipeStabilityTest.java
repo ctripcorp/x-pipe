@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.stability;
 
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -16,8 +17,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.dianping.cat.Cat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -32,18 +35,30 @@ import redis.clients.jedis.exceptions.JedisException;
  *         Oct 9, 2016
  */
 public class XPipeStabilityTest {
-	Logger logger = LoggerFactory.getLogger(XPipeStabilityTest.class);
-	
+
+	@JsonIgnore
+	private Logger logger = LoggerFactory.getLogger(XPipeStabilityTest.class);
+
+	@JsonIgnore
 	private ScheduledExecutorService producerThreadPool;
+	@JsonIgnore
 	private ExecutorService consumerThreadPool;
+	@JsonIgnore
 	private ExecutorService valueCheckThreadPool;
+	@JsonIgnore
 	private ScheduledExecutorService expireCheckThreadPool;
+	@JsonIgnore
 	private ScheduledExecutorService qpsCheckThreadPool;
+	@JsonIgnore
 	private ScheduledExecutorService catLogMetricThreadPool;
+	@JsonIgnore
 	private JedisPool masterPool;
+	@JsonIgnore
 	private JedisPool slavePool;
 
+	@JsonIgnore
 	private ConcurrentHashMap<String, String> records = new ConcurrentHashMap<>(20000);
+	@JsonIgnore
 	private ConcurrentLinkedQueue<Pair<String, String>> valueCheckQueue = new ConcurrentLinkedQueue<>();
 
 	private AtomicLong globalCnt = new AtomicLong(0);
@@ -53,13 +68,13 @@ public class XPipeStabilityTest {
 	private Long historyCatIntervalCnt = new Long(0);
 	private AtomicLong catIntervalTotalDelay = new AtomicLong(0);
 	private Long historyCatIntervalTotalDelay = new Long(0);
-	
+
 	public int MAX_KEY_COUNT = Integer.parseInt(System.getProperty("max-key-count", "20000000"));
 	public int TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("timeout", "10"));
 	public int KEY_EXPIRE_SECONDS = Integer.parseInt(System.getProperty("key-expire-seconds", "3600"));
 	public int QPS_COUNT_INTERVAL = Integer.parseInt(System.getProperty("qps-count-interval", "5"));
 	private int producerThreadNum = Integer.parseInt(System.getProperty("thread", "8"));
-	private int valueCheckThreadNum = Integer.parseInt(System.getProperty("valueCheckThread","8"));
+	private int valueCheckThreadNum = Integer.parseInt(System.getProperty("valueCheckThread", "8"));
 	private int msgSize = Integer.parseInt(System.getProperty("msg-size", "100"));
 	private int catIntervalSize = Integer.parseInt(System.getProperty("cat-interval-size", "100"));
 
@@ -70,10 +85,10 @@ public class XPipeStabilityTest {
 
 	@Before
 	public void setUp() {
-		logger.info("[setUp]");
-		valueCheckThreadNum = (producerThreadNum < valueCheckThreadNum)? valueCheckThreadNum : producerThreadNum;
-		logger.info("[ProducerThread]{} [ValueCheckThread]{}",producerThreadNum, valueCheckThreadNum);
-		logger.info("[KeyExpireSeconds]{}",KEY_EXPIRE_SECONDS);
+		logger.info("config:{}", new JsonCodec(false, true).encode(this));
+		valueCheckThreadNum = (producerThreadNum < valueCheckThreadNum) ? valueCheckThreadNum : producerThreadNum;
+		logger.info("[ProducerThread]{} [ValueCheckThread]{}", producerThreadNum, valueCheckThreadNum);
+		logger.info("[KeyExpireSeconds]{}", KEY_EXPIRE_SECONDS);
 
 		producerThreadPool = Executors.newScheduledThreadPool(producerThreadNum,
 				XpipeThreadFactory.create("ProducerThreadPool"));
@@ -98,6 +113,7 @@ public class XPipeStabilityTest {
 
 	@After
 	public void tearDown() {
+
 		logger.info("[tearDown]");
 		producerThreadPool.shutdownNow();
 		consumerThreadPool.shutdownNow();
@@ -138,14 +154,14 @@ public class XPipeStabilityTest {
 		@Override
 		public void run() {
 			Jedis master = null;
-			String key = null,value = null;
+			String key = null, value = null;
 			try {
 				master = masterPool.getResource();
 				key = Long.toString(globalCnt.getAndIncrement() % MAX_KEY_COUNT);
 				String nanoTime = Long.toString(System.nanoTime());
 				String currentTime = Long.toString(System.currentTimeMillis());
 				value = buildValue(msgSize, nanoTime, "-", currentTime, "-");
-				
+
 				records.put(key, value);
 				master.setex(key, KEY_EXPIRE_SECONDS, value);
 				queryCnt.incrementAndGet();
@@ -153,7 +169,8 @@ public class XPipeStabilityTest {
 				logger.error("[startProducerJob][run]JedisException : {}", e);
 				records.remove(key);
 			} catch (Exception e) {
-				logger.error("[startProducerJob][run]InsertValue Exception : Key:{} Value:{} Exception:{}", key, value, e);
+				logger.error("[startProducerJob][run]InsertValue Exception : Key:{} Value:{} Exception:{}", key, value,
+						e);
 				records.remove(key);
 			} finally {
 				if (null != master) {
@@ -162,13 +179,13 @@ public class XPipeStabilityTest {
 			}
 		}
 	}
-	
+
 	private String buildValue(int size, String... strings) {
 		StringBuilder sb = new StringBuilder();
-		for(String str : strings) {
+		for (String str : strings) {
 			sb.append(str);
 		}
-		if(sb.length() < size) {
+		if (sb.length() < size) {
 			sb.append(randomString(size - sb.length()));
 		}
 		return sb.toString();
@@ -206,12 +223,12 @@ public class XPipeStabilityTest {
 		public void onPMessage(String pattern, String channel, String msg) {
 			String key = msg;
 			String value = records.get(key);
-			if(null != value) {
+			if (null != value) {
 				valueCheckQueue.offer(Pair.of(key, value));
 				records.remove(key);
 
 				catIntervalCnt.incrementAndGet();
-				long delay = System.nanoTime() - Long.valueOf(value.substring(0,value.indexOf("-")));
+				long delay = System.nanoTime() - Long.valueOf(value.substring(0, value.indexOf("-")));
 				catIntervalTotalDelay.set(catIntervalTotalDelay.get() + delay);
 			} else {
 				logger.error("[XPipeStabilityTestJedisPubSub][Get Null From records]Key:{} Value:{}", key, value);
@@ -266,13 +283,18 @@ public class XPipeStabilityTest {
 	}
 
 	private void startCatLogMetricJob() {
+		
 		catLogMetricThreadPool.scheduleAtFixedRate(new Runnable() {
+			
 			@Override
 			public void run() {
+				
 				long catInterval = catIntervalCnt.get();
 				long catIntervalDelay = catIntervalTotalDelay.get();
 				long count = catInterval - historyCatIntervalCnt;
+				
 				if (count >= catIntervalSize) {
+					
 					long delay = catIntervalDelay - historyCatIntervalTotalDelay;
 					historyCatIntervalCnt = catInterval;
 					historyCatIntervalTotalDelay = catIntervalDelay;
@@ -283,15 +305,35 @@ public class XPipeStabilityTest {
 	}
 
 	private void startQpsCheckJob() {
+		
 		qpsCheckThreadPool.scheduleAtFixedRate(new Runnable() {
+			
+			private long previousReceiveCnt = 0;
+			private long previousReceiveDelay = 0;
+			
 			@Override
 			public void run() {
+				
 				long qps = (queryCnt.get() - historyQueryCnt) / QPS_COUNT_INTERVAL;
 				historyQueryCnt = queryCnt.get();
+				
+				long currentReceiveCount = catIntervalCnt.get();
+				long currentReceiveDelay = catIntervalTotalDelay.get();
+				
+				long averageDelay = 0;
+				if((currentReceiveCount - previousReceiveCnt) > 0){
+					averageDelay = (currentReceiveDelay - previousReceiveDelay)/(currentReceiveCount - previousReceiveCnt);
+					previousReceiveCnt = currentReceiveCount;
+					previousReceiveDelay = currentReceiveDelay;
+				}
+				
+				
 				Cat.logMetricForSum("xpipe.redis.qps", qps);
 				Cat.logMetricForSum("xpipe.redis.map", records.size());
 				Cat.logMetricForSum("xpipe.redis.queue", valueCheckQueue.size());
+				
 				logger.info("[startQpsCheckJob][run]QPS : {}", qps);
+				logger.info("[startQpsCheckJob][run][delay] : {} micro seconds", averageDelay/(1000));
 				logger.info("[startQpsCheckJob][run]MapSize : {}", records.size());
 				logger.info("[startQpsCheckJob][run]QueueSize : {}", valueCheckQueue.size());
 			}
@@ -299,13 +341,19 @@ public class XPipeStabilityTest {
 	}
 
 	private void startExpireCheckJob() {
+		
 		expireCheckThreadPool.scheduleAtFixedRate(new Runnable() {
 			@Override
 			public void run() {
-				for (String key : records.keySet()) {
+				
+				for (Entry<String, String> entry : records.entrySet()) {
+					
+					String key = entry.getKey();
+					String value = entry.getValue();
+					
 					long currentTime = System.nanoTime();
 					long timeout = TimeUnit.NANOSECONDS
-							.toSeconds(currentTime - Long.valueOf(key.substring(key.indexOf("-") + 1)));
+							.toSeconds(currentTime - Long.valueOf(value.substring(value.indexOf("-") + 1)));
 					if (timeout > TIMEOUT_SECONDS) {
 						if (null != records.get(key)) {
 							logger.error("[startExpireCheckJob][run][Timeout]Key:{} Timeout:{}", key, timeout);
@@ -347,7 +395,7 @@ public class XPipeStabilityTest {
 
 		protected abstract void doRestart();
 	}
-	
+
 	public static String randomString() {
 
 		return randomString(1 << 10);
