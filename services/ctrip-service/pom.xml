@@ -17,6 +17,10 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>com.ctrip.xpipe</groupId>
 			<artifactId>core</artifactId>
 		</dependency>
@@ -33,6 +37,10 @@
 			<artifactId>core</artifactId>
 			<type>test-jar</type>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.ctrip.framework.apollo-sso</groupId>
+			<artifactId>apollo-sso-ctrip</artifactId>
 		</dependency>
 	</dependencies>
 

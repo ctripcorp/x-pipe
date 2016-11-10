@@ -41,6 +41,7 @@
 		<ctrip-framework-foundation.version>1.1.6</ctrip-framework-foundation.version>
 		<ctrip-apollo.version>0.2.0</ctrip-apollo.version>
 		<cat.version>2.0.3</cat.version>
+		<apollo.sso.ctrip.version>1.1.0</apollo.sso.ctrip.version>
 		<spring-boot-starter-log4j2.version>1.4.1.RELEASE</spring-boot-starter-log4j2.version>
 		<log4j2.version>2.6.2</log4j2.version>
 	</properties>
@@ -61,6 +62,11 @@
 				<groupId>com.ctrip.framework.apollo</groupId>
 				<artifactId>apollo-client</artifactId>
 				<version>${ctrip-apollo.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.ctrip.framework.apollo-sso</groupId>
+				<artifactId>apollo-sso-ctrip</artifactId>
+				<version>${apollo.sso.ctrip.version}</version>
 			</dependency>
 			<!-- xpipe related -->
 			<dependency>

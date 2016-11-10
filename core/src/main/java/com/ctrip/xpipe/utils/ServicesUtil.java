@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
+import com.ctrip.xpipe.api.sso.LogoutHandler;
+import com.ctrip.xpipe.api.sso.UserInfo;
+import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.lifecycle.OrderedComparator;
 
 /**
@@ -35,7 +38,19 @@ public class ServicesUtil {
 		
 		return load(FoundationService.class);
 	}
-	
+
+	public static LogoutHandler getLogoutHandler(){
+		return load(LogoutHandler.class);
+	}
+
+	public static UserInfoHolder getUserInfoHolder(){
+		return load(UserInfoHolder.class);
+	}
+
+	public static UserInfo getUserInfo(){
+		return load(UserInfo.class);
+	}
+
 	@SuppressWarnings("unchecked")
 	private static <T extends Ordered> T load(Class<T> clazz) {
 		
