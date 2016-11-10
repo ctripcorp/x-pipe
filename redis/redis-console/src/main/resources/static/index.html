@@ -73,13 +73,13 @@
 						<a data-toggle="dropdown" href="#" class="dropdown-toggle"> 
 							<i class="ace-icon fa fa-coffee"></i> 
 							<span class="user-info">
-									<small>欢迎,</small> Admin
+									<small>欢迎,</small>{{currentUser.userId}}
 							</span> 
 							<i class="ace-icon fa fa-caret-down"></i>
 						</a>
 						<ul class="user-menu dropdown-menu-right dropdown-menu dropdown-yellow dropdown-caret dropdown-close">
 							<li>
-								<a href="#"><i class="ace-icon fa fa-power-off"></i>
+								<a href="/console/user/logout"><i class="ace-icon fa fa-power-off"></i>
 									注销
 								</a>
 							</li>
@@ -130,6 +130,7 @@
 	<script src="./scripts/services/ShardService.js"></script>
 	<script src="./scripts/services/RedisService.js"></script>
 	<script src="./scripts/services/KeeperContainerService.js"></script>
+	<script src="./scripts/services/UserService.js"></script>
 
 	<script src="scripts/router.js"></script>
 

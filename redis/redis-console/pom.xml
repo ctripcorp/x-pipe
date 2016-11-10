@@ -50,7 +50,6 @@
 		<dependency>
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
-			<scope>test</scope>
 			<type>jar</type>
 		</dependency>
 

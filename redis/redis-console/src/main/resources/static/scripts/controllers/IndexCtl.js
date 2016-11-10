@@ -1,5 +1,5 @@
-index_module.controller('IndexCtl', ['$rootScope', '$scope',
-    function ($rootScope, $scope) {
+index_module.controller('IndexCtl', ['$rootScope', '$scope', 'UserService',
+    function ($rootScope, $scope, UserService) {
 
         $rootScope.currentNav = '1-2';
         $rootScope.switchNav = switchNav;
@@ -8,5 +8,10 @@ index_module.controller('IndexCtl', ['$rootScope', '$scope',
         function switchNav(nav) {
             $rootScope.currentNav = nav;
         }
+        
+        UserService.getCurrentUser()
+            .then(function (result) {
+                $rootScope.currentUser = result; 
+            })
 
     }]);

@@ -20,4 +20,6 @@ public class XpipeConsoleConstant {
 	
 	public static String ROLE_REDIS = "redis";
 	public static String ROLE_KEEPER = "keeper";
+
+	public static final String DEFAULT_XPIPE_USER = "xpipe";
 }
