@@ -2,12 +2,12 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 
@@ -39,8 +39,9 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 		
 		byte[] message = randomString().getBytes();  
 		rdbStore.writeRdb(Unpooled.wrappedBuffer(message));
+		rdbStore.endRdb();
 		sleep(200);
-		Assert.assertEquals(message.length, readLen.get());		
+		Assert.assertEquals(message.length, readLen.get());
 	}
 
 	private void readRdbInNewThread(final DefaultRdbStore rdbStore) {
@@ -59,10 +60,14 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 						}
 						
 						@Override
-						public void onFileData(FileChannel fileChannel, long pos, long len) throws IOException {
-							logger.info("[onFileData]{}, {}", pos, len);
-							if(len > 0){
-								readLen.addAndGet(len);
+						public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
+							
+							if(referenceFileRegion != null){
+								logger.info("[onFileData]{}", referenceFileRegion);
+								if(referenceFileRegion.count() > 0){
+									readLen.addAndGet(referenceFileRegion.count());
+									referenceFileRegion.release();
+								}
 							}
 						}
 						

@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import io.netty.buffer.ByteBuf;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 
 /**
  * @author wenchao.meng
@@ -11,7 +11,7 @@ public interface CommandsListener {
 
 	boolean isOpen();
 	
-	void onCommand(ByteBuf byteBuf);
+	void onCommand(ReferenceFileRegion referenceFileRegion);
 	
 	void beforeCommand();
 }

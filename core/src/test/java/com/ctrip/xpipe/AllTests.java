@@ -1,7 +1,5 @@
 package com.ctrip.xpipe;
 
-
-
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -18,6 +16,7 @@ import com.ctrip.xpipe.lifecycle.DefaultLifecycleControllerTest;
 import com.ctrip.xpipe.lifecycle.DefaultLifecycleStateTest;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistryTest;
 import com.ctrip.xpipe.netty.commands.RequestResponseCommandTest;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannelTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
 import com.ctrip.xpipe.pool.XpipeObjectPoolTest;
@@ -51,7 +50,8 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	FileUtilsTest.class,
 	OneThreadTaskExecutorTest.class,
 	TestZkClientTest.class,
-	StringUtilTest.class
+	StringUtilTest.class,
+	ReferenceFileChannelTest.class
 })
 public class AllTests {
 

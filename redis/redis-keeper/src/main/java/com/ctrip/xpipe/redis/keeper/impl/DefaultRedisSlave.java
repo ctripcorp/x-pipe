@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -20,7 +18,7 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
-import com.ctrip.xpipe.netty.NotClosableFileRegion;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -30,7 +28,6 @@ import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.netty.ChannelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
-import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import io.netty.buffer.ByteBuf;
@@ -59,7 +56,6 @@ public class DefaultRedisSlave implements RedisSlave {
 	private Long rdbFileOffset;
 	
 	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_NETTY", 5000);
-	private boolean debugDelay = Boolean.parseBoolean(System.getProperty("DEBUG_DELAY"));
 	
 	private ScheduledExecutorService scheduled;
 	private ScheduledFuture<?> 		  pingFuture, waitDumpTimeoutFuture;
@@ -138,9 +134,14 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public ChannelFuture writeFile(FileChannel fileChannel, long pos, long len) {
+	public ChannelFuture writeFile(ReferenceFileRegion referenceFileRegion) {
 		
-		return channel().writeAndFlush(new NotClosableFileRegion(fileChannel, pos, len));
+		return doWriteFile(referenceFileRegion);
+	}
+
+	private ChannelFuture doWriteFile(ReferenceFileRegion referenceFileRegion) {
+		
+		return channel().writeAndFlush(referenceFileRegion);
 	}
 
 	@Override
@@ -209,37 +210,11 @@ public class DefaultRedisSlave implements RedisSlave {
 		this.slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
 	}
 
-	
 	@Override
-	public void onCommand(ByteBuf byteBuf) {
+	public void onCommand(ReferenceFileRegion referenceFileRegion) {
 		
-		ByteBuf b2 = byteBuf.duplicate();
-		logger.debug("[onCommand]{}", this);
-		if(debugDelay){
-			long createTime = getTime(b2);
-			delayMonitor.addData(createTime);
-		}
-		channel().writeAndFlush(byteBuf);
-	}
-
-	/**
-	 * can only support key or value with currentTimeMillis
-	 * @param b2
-	 * @return
-	 */
-	public static long getTime(ByteBuf byteBuf) {
-		
-		String data = new String(byteBuf.array(), byteBuf.arrayOffset() + byteBuf.readerIndex(), byteBuf.readableBytes());
-		
-		long time = -1;
-		String []parts = data.split("\r\n");
-		for(String part : parts){
-				time = OsUtils.getCorrentTime(part);
-				if(time > 0){
-					break;
-				}
-		}
-		return time;
+		logger.debug("[onCommand]{}, {}", this, referenceFileRegion);
+		doWriteFile(referenceFileRegion);
 	}
 
 	@Override

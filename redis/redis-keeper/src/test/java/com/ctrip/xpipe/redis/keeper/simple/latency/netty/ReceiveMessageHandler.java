@@ -7,10 +7,6 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.api.monitor.DelayMonitor;
-import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
-import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisSlave;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
@@ -27,7 +23,6 @@ public class ReceiveMessageHandler extends ChannelDuplexHandler{
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	private String runId;
 	private long startOffset;
-	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_PSYNC", 50000);
 	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(4);
 	
 	public ReceiveMessageHandler(String runId, long startOffset) {
@@ -62,10 +57,6 @@ public class ReceiveMessageHandler extends ChannelDuplexHandler{
 		ByteBuf dst = ByteBufAllocator.DEFAULT.heapBuffer(source.readableBytes());
 		source.readBytes(dst);
 		
-		long time = DefaultRedisSlave.getTime(dst);
-		if(time > 0){
-			delayMonitor.addData(time);
-		}
 		super.channelRead(ctx, msg);
 	}
 

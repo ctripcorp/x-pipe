@@ -12,6 +12,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 
@@ -87,10 +89,11 @@ public class DefaultRdbStore implements RdbStore {
 
 	@Override
 	public void readRdbFile(final RdbFileListener rdbFileListener) throws IOException {
+		
 		rdbFileListener.beforeFileData();
 		refCount.incrementAndGet();
 
-		try (FileChannel channel = new RandomAccessFile(file, "r").getChannel()) {
+		try (ReferenceFileChannel channel = new ReferenceFileChannel(file)) {
 			doReadRdbFile(rdbFileListener, channel);
 		} catch (Exception e) {
 			logger.error("[readRdbFile]Error read rdb file" + file, e);
@@ -99,30 +102,27 @@ public class DefaultRdbStore implements RdbStore {
 		}
 	}
 
-	private void doReadRdbFile(RdbFileListener rdbFileListener, FileChannel channel) throws IOException {
+	private void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
 		
 		rdbFileListener.setRdbFileInfo(rdbFileSize, rdbLastKeeperOffset);
 
-		long start = 0;
 		long lastLogTime = System.currentTimeMillis();
-		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && start < channel.size()))) {
+		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
 			
-			if (channel.size() > start) {
-				long end = channel.size();
-				rdbFileListener.onFileData(channel, start, end - start);
-				start = end;
-			} else {
-				try {
-					Thread.sleep(1);
-					long currentTime = System.currentTimeMillis();
-					if(currentTime - lastLogTime > 10000){
-						logger.info("[doReadRdbFile]status:{}, start:{}, channeSize:{}, rdbFileListener:{}", status.get(), start, channel.size(), rdbFileListener);
-						lastLogTime = currentTime;
-					}
-				} catch (InterruptedException e) {
-					logger.error("[doReadRdbFile]" + rdbFileListener, e);
-					Thread.currentThread().interrupt();
+		ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
+		
+		rdbFileListener.onFileData(referenceFileRegion);
+		if(referenceFileRegion.count() <= 0)
+			try {
+				Thread.sleep(1);
+				long currentTime = System.currentTimeMillis();
+				if(currentTime - lastLogTime > 10000){
+					logger.info("[doReadRdbFile]status:{}, referenceFileChannel:{}, rdbFileListener:{}", status.get(), referenceFileChannel, rdbFileListener);
+					lastLogTime = currentTime;
 				}
+			} catch (InterruptedException e) {
+				logger.error("[doReadRdbFile]" + rdbFileListener, e);
+				Thread.currentThread().interrupt();
 			}
 		}
 
@@ -131,7 +131,7 @@ public class DefaultRdbStore implements RdbStore {
 		switch (status.get()) {
 		
 			case Success:
-				rdbFileListener.onFileData(channel, start, -1L);
+				rdbFileListener.onFileData(null);
 				break;
 	
 			case Fail:

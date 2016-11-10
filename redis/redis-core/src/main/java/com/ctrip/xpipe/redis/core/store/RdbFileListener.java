@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel;
+
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 
 /**
  * @author wenchao.meng
@@ -24,7 +25,7 @@ public interface RdbFileListener {
 	 * @param len  when len == -1, that means file has ended
 	 * @throws IOException 
 	 */
-	void onFileData(FileChannel fileChannel, long pos, long len) throws IOException;
+	void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException;
 	
 	/**
 	 * @return

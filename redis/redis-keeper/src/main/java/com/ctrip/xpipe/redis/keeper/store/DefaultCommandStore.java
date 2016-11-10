@@ -15,14 +15,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandReader;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
+/**
+ * @author qing.gu
+ *
+ *         Aug 9, 2016
+ */
 public class DefaultCommandStore implements CommandStore {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
@@ -94,24 +100,25 @@ public class DefaultCommandStore implements CommandStore {
 
 		byteBuf.readerIndex(byteBuf.writerIndex());
 
-		offsetNotifier.offsetIncreased(cmdFileCtx.currentStartOffset + cmdFileCtx.channel.size());
+		offsetNotifier.offsetIncreased(cmdFileCtx.currentStartOffset + cmdFileCtx.channel.size() - 1);
 
 		return wrote;
 	}
 
 	@Override
-	public  long totalLength() {
+	public long totalLength() {
 		synchronized (cmdFileCtxRefLock) {
 			return cmdFileCtxRef.get().totalLength();
 		}
 	}
 
 	private void rotateFileIfNenessary() throws IOException {
+
 		CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
 		if (curCmdFileCtx.writeFile.length() >= maxFileSize) {
 			long newStartOffset = curCmdFileCtx.currentStartOffset + curCmdFileCtx.writeFile.length();
 			File newFile = new File(baseDir, fileNamePrefix + newStartOffset);
-			logger.info("Rotate to {}" , newFile.getName());
+			logger.info("Rotate to {}", newFile.getName());
 			synchronized (cmdFileCtxRefLock) {
 				cmdFileCtxRef.set(new CommandFileContext(newStartOffset, newFile));
 				curCmdFileCtx.close();
@@ -121,6 +128,7 @@ public class DefaultCommandStore implements CommandStore {
 
 	@Override
 	public CommandReader beginRead(long startOffset) throws IOException {
+
 		File targetFile = findFileForOffset(startOffset);
 		if (targetFile == null) {
 			throw new IOException("File for offset " + startOffset + " in dir " + baseDir + " does not exist");
@@ -140,14 +148,15 @@ public class DefaultCommandStore implements CommandStore {
 		if (files != null) {
 			for (File file : files) {
 				long startOffset = extractStartOffset(file);
-				if (targetStartOffset >= startOffset && (targetStartOffset < startOffset + file.length() || targetStartOffset < startOffset + maxFileSize)) {
+				if (targetStartOffset >= startOffset && (targetStartOffset < startOffset + file.length()
+						|| targetStartOffset < startOffset + maxFileSize)) {
 					return file;
 				}
 			}
 		}
-		
-		if(files != null){
-			for(File file : files){
+
+		if (files != null) {
+			for (File file : files) {
 				logger.info("[findFileForOffset]{}, {}", file.getName(), file.length());
 			}
 		}
@@ -165,19 +174,19 @@ public class DefaultCommandStore implements CommandStore {
 	}
 
 	private class CommandFileContext {
-		
+
 		public final long currentStartOffset;
 
 		public final RandomAccessFile writeFile;
 
 		public final FileChannel channel;
-		
+
 		private File currentFile;
 
 		public CommandFileContext(long currentStartOffset, File currentFile) throws IOException {
 			this.currentStartOffset = currentStartOffset;
 			this.currentFile = currentFile;
-			
+
 			writeFile = new RandomAccessFile(currentFile, "rw");
 			channel = writeFile.getChannel();
 			// append to file
@@ -200,56 +209,57 @@ public class DefaultCommandStore implements CommandStore {
 
 	private class DefaultCommandReader implements CommandReader {
 
-		private RandomAccessFile readFile;
-
-		private FileChannel channel;
-
 		private File curFile;
 
 		private long curPosition;
 
-		public DefaultCommandReader(File curFile, long initChannelPosition, OffsetNotifier notifier) throws IOException {
+		private ReferenceFileChannel referenceFileChannel;
+
+		public DefaultCommandReader(File curFile, long initChannelPosition, OffsetNotifier notifier)
+				throws IOException {
 			this.curFile = curFile;
-			readFile = new RandomAccessFile(curFile, "r");
-			channel = readFile.getChannel();
-			channel.position(initChannelPosition);
+
 			curPosition = extractStartOffset(curFile) + initChannelPosition;
+			referenceFileChannel = new ReferenceFileChannel(this.curFile, initChannelPosition);
 		}
 
 		@Override
 		public void close() throws IOException {
+
 			readers.remove(this);
-			readFile.close();
+			referenceFileChannel.close();
 		}
 
 		@Override
-		public int read(ByteBuffer dst) throws IOException {
+		public ReferenceFileRegion read() throws IOException {
 			try {
-				offsetNotifier.await(curPosition + 1);
+				offsetNotifier.await(curPosition);
 				readNextFileIfNecessary();
 			} catch (InterruptedException e) {
-				logger.debug("[read]", e);
+				logger.info("[read]", e);
 				Thread.currentThread().interrupt();
-				return 0;
 			}
-			int read = channel.read(dst);
-			if (read > 0) {
-				curPosition += read;
-			}else{
-				logger.info("[read]{}, {}, size:{}, pos:{}", read, curFile, channel.size(), channel.position());
+
+			ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
+
+			curPosition += referenceFileRegion.count();
+			if (referenceFileRegion.count() <= 0) {
+				logger.info("[read]{}", referenceFileRegion);
 			}
-			return read;
+
+			return referenceFileRegion;
 		}
 
 		private void readNextFileIfNecessary() throws IOException {
-			if (channel.size() > 0 && channel.position() == channel.size()) {
+
+			if (!referenceFileChannel.hasAnythingToRead()) {
 				// TODO notify when next file ready
 				File nextFile = findNextFile(curFile);
 				if (nextFile != null) {
 					curFile = nextFile;
-					readFile.close();
-					readFile = new RandomAccessFile(curFile, "r");
-					channel = readFile.getChannel();
+					referenceFileChannel.close();
+
+					referenceFileChannel = new ReferenceFileChannel(curFile);
 				}
 			}
 		}
@@ -257,7 +267,7 @@ public class DefaultCommandStore implements CommandStore {
 		public File getCurFile() {
 			return curFile;
 		}
-		
+
 		@Override
 		public String toString() {
 			return "curFile:" + curFile;
@@ -286,8 +296,9 @@ public class DefaultCommandStore implements CommandStore {
 
 	@Override
 	public void addCommandsListener(long offset, CommandsListener listener) throws IOException {
-		
+
 		logger.info("[addCommandsListener][begin] from offset {}, {}", offset, listener);
+
 		CommandReader cmdReader = null;
 
 		try {
@@ -298,22 +309,18 @@ public class DefaultCommandStore implements CommandStore {
 		}
 
 		logger.info("[addCommandsListener] from offset {}, {}", offset, cmdReader);
-		
+
 		try {
-			while (listener.isOpen()) {
-				int read = 0;
-				ByteBuffer dst = ByteBuffer.allocate(4096);
-				read = cmdReader.read(dst);
-				logger.debug("[addCommandsListener] {}", read);
-				if (read > 0) {
-					dst.flip();
-					listener.onCommand(Unpooled.wrappedBuffer(dst));
-				} else {
-					
+			while (listener.isOpen() && !Thread.currentThread().isInterrupted()) {
+
+				ReferenceFileRegion referenceFileRegion = cmdReader.read();
+
+				logger.debug("[addCommandsListener] {}", referenceFileRegion);
+
+				listener.onCommand(referenceFileRegion);
+
+				if (referenceFileRegion.count() <= 0) {
 					try {
-						if(read < 0){
-							logger.error("[addCommandsListener]read size:" + read);
-						}
 						Thread.sleep(1);
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
@@ -330,12 +337,11 @@ public class DefaultCommandStore implements CommandStore {
 
 	@Override
 	public void close() throws IOException {
-		
+
 		CommandFileContext commandFileContext = cmdFileCtxRef.get();
-		if(commandFileContext != null){
+		if (commandFileContext != null) {
 			commandFileContext.close();
 		}
 	}
-
 
 }

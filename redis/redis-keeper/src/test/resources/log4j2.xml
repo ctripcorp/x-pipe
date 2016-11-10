@@ -8,10 +8,6 @@
 
         <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe/xpipe-test-${sys:server.port:-start}.log"
                      filePattern="target/applogs/xpipe/xpipe-test-%d{yyyy-MM-dd}-%i.log">
-            <Filters>
-                <ThresholdFilter level="INFO"/>
-                <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>
-            </Filters>	
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
@@ -27,16 +23,8 @@
         <logger name="org.apache.zookeeper.server.ZooKeeperServer" level="WARN"/>
         <logger name="org.apache.zookeeper.ZooKeeper" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
-        
         <!--  
-        <logger name="io.netty.handler.logging.LoggingHandler" level="DEBUG">
-        </logger>
-        <logger name="com.ctrip.xpipe.redis.protocal.cmd.InOutPayloadReplicationStore" level="DEBUG">
-        </logger>
-        <logger name="com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler" level="DEBUG">
-        </logger>
-        <logger name="com.ctrip.xpipe.redis.keeper.handler.LFHandler" level="DEBUG">
-        </logger>
+        <logger name="io.netty.handler.logging.LoggingHandler" level="DEBUG"/>
         -->
         <root level="INFO">
             <appender-ref ref="Console"/>

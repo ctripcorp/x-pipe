@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
-import java.nio.channels.FileChannel;
-
 import com.ctrip.xpipe.api.server.PartialAware;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 
 import io.netty.channel.ChannelFuture;
@@ -29,7 +28,7 @@ public interface RedisSlave extends RedisClient, PartialAware, CommandsListener{
 	
 	void beginWriteRdb(long rdbFileSize, long rdbFileOffset);
 	
-	ChannelFuture writeFile(FileChannel fileChannel, long pos, long len);
+	ChannelFuture writeFile(ReferenceFileRegion referenceFileRegion);
 
 	void rdbWriteComplete();
 

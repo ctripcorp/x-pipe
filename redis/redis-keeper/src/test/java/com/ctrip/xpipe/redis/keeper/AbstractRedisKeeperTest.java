@@ -1,15 +1,12 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
-
+import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
@@ -21,8 +18,6 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
-
-import io.netty.buffer.ByteBuf;
 
 /**
  * @author wenchao.meng
@@ -100,12 +95,12 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 
 			@Override
-			public void onFileData(FileChannel fileChannel, long pos, long len) throws IOException {
-				if (len == -1) {
+			public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
+				if (referenceFileRegion == null) {
 					latch.countDown();
 					return;
 				}
-				fileChannel.transferTo(pos, len, bachannel);
+				referenceFileRegion.transferTo(bachannel, 0L);
 			}
 
 			@Override
@@ -128,10 +123,14 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	}
 
 	public String readCommandFileTilEnd(final ReplicationStore replicationStore) throws IOException {
+		
+		return readCommandFileTilEnd(0, replicationStore);
+	}
 
-		final List<ByteBuf> buffs = new LinkedList<>();
-		final AtomicInteger size = new AtomicInteger();
+	
+	public String readCommandFileTilEnd(final long beginOffset, final ReplicationStore replicationStore) throws IOException {
 
+		final ByteArrayOutputStream baous = new ByteArrayOutputStream();
 		new Thread() {
 			
 			public void run() {
@@ -143,14 +142,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 			
 			private void doRun() throws IOException {
-				replicationStore.addCommandsListener(replicationStore.getMetaStore().getKeeperBeginOffset(), new CommandsListener() {
-					
-					@Override
-					public void onCommand(ByteBuf byteBuf) {
-						
-						buffs.add(byteBuf);
-						size.addAndGet(byteBuf.readableBytes());
-					}
+				replicationStore.addCommandsListener(replicationStore.getMetaStore().getKeeperBeginOffset() + beginOffset, new CommandsListener() {
 					
 					@Override
 					public boolean isOpen() {
@@ -160,15 +152,26 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					@Override
 					public void beforeCommand() {
 					}
+
+					@Override
+					public void onCommand(ReferenceFileRegion referenceFileRegion) {
+						
+						try {
+							byte [] message = readFileChannelInfoMessageAsBytes(referenceFileRegion);
+							baous.write(message);
+						} catch (IOException e) {
+							logger.error("[onCommand]" + referenceFileRegion, e);
+						}
+					}
+
 				});
 			}
 		}.start();
 
-		int lastSize = buffs.size();
+		int lastSize = baous.size();
 		long equalCount = 0;
 		while (true) {
-
-			int currentSize = buffs.size();
+			int currentSize = baous.size();
 			if (currentSize != lastSize) {
 				lastSize = currentSize;
 				equalCount = 0;
@@ -180,17 +183,23 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 			sleep(10);
 		}
+		return new String(baous.toByteArray());
+	}
 
-		byte[] result = new byte[size.get()];
-		int destIndex = 0;
-		for (ByteBuf byteBuf : buffs) {
-			int readable = byteBuf.readableBytes();
-			byteBuf.readBytes(result, destIndex, readable);
-			Assert.assertEquals(0, byteBuf.readableBytes());
-			destIndex += readable;
+	protected byte[] readFileChannelInfoMessageAsBytes(ReferenceFileRegion referenceFileRegion) {
+
+		try {
+			ByteArrayWritableByteChannel bach = new ByteArrayWritableByteChannel(); 
+			referenceFileRegion.transferTo(bach, 0L);
+			return bach.getResult();
+		} catch (IOException e) {
+			throw new IllegalStateException(String.format("[read]%s", referenceFileRegion), e);
 		}
+	}
 
-		return new String(result);
+	protected String readFileChannelInfoMessageAsString(ReferenceFileRegion referenceFileRegion) {
+
+		return new String(readFileChannelInfoMessageAsBytes(referenceFileRegion), Codec.defaultCharset);
 	}
 
 	@Override
