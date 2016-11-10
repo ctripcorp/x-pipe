@@ -25,7 +25,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 public class ReferenceFileChannelTest extends AbstractTest {
 
 	private ReferenceFileChannel referenceFileChannel;
-	private int totalFileLen = 1 << 20;
+	private int totalFileLen = 1 << 15;
 
 	@Before
 	public void beforeReferenceFileChannelTest() throws FileNotFoundException, IOException {
@@ -76,17 +76,26 @@ public class ReferenceFileChannelTest extends AbstractTest {
 
 			executors.execute(new AbstractExceptionLogTask() {
 
+				private int count =0;
 				@Override
 				protected void doRun() throws Exception {
 					
 					try{
 						while (true) {
 							
+							count++;
 							ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd(1);
 							fileRegions.offer(referenceFileRegion);
+							if(count > totalFileLen){
+								logger.info("{}", referenceFileRegion);
+							}
 							if (referenceFileRegion.count() == 0) {
 								break;
 							}
+							if (referenceFileRegion.count() < 0) {
+								logger.error("{}", referenceFileRegion);
+							}
+
 						}
 					}finally{
 						latch.countDown();

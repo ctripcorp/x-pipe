@@ -15,8 +15,12 @@ public abstract class AbstractExceptionLogTask implements Runnable{
 
 	@Override
 	public void run() {
+		
 		try{
 			doRun();
+		}catch(OutOfMemoryError e){
+			e.printStackTrace();
+			logger.error("[run]", e);
 		}catch(Throwable th){
 			logger.error("[run]", th);
 		}
