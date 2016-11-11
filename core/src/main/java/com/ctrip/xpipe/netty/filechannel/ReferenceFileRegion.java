@@ -14,7 +14,7 @@ import io.netty.channel.DefaultFileRegion;
  */
 public class ReferenceFileRegion extends DefaultFileRegion{
 	
-	protected Logger logger = LoggerFactory.getLogger(getClass());
+	protected static Logger logger = LoggerFactory.getLogger(ReferenceFileRegion.class);
 	
 	private ReferenceFileChannel referenceFileChannel;
 	
