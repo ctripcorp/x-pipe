@@ -61,6 +61,7 @@ public class SSOConfigurations {
         filterInitParam.put("casServerLoginUrl", config.get(KEY_CAS_SERVER_LOGIN_URL));
         //we don't want to use session to store login information, since we will be deployed to a cluster, not a single instance
         filterInitParam.put("useSession", "false");
+        filterInitParam.put("/api.*", "exclude");
 
         casFilter.setInitParameters(filterInitParam);
         casFilter.setFilter(filter("com.ctrip.framework.apollo.sso.filter.ApolloAuthenticationFilter"));
@@ -80,7 +81,6 @@ public class SSOConfigurations {
         filterInitParam.put("useSession", "false");
         filterInitParam.put("useRedis", "true");
         filterInitParam.put("redisClusterName", "casClientPrincipal");
-        filterInitParam.put("/api.*", "exclude");
 
         casValidationFilter
             .setFilter(filter("org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter"));
@@ -97,6 +97,7 @@ public class SSOConfigurations {
         FilterRegistrationBean assertionHolderFilter = new FilterRegistrationBean();
 
         Map<String, String> filterInitParam = Maps.newHashMap();
+        filterInitParam.put("/api.*", "exclude");
 
         assertionHolderFilter.setInitParameters(filterInitParam);
 
