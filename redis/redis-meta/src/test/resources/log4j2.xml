@@ -3,12 +3,12 @@
 
     <appenders>
         <console name="console" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito)}%n"/>
         </console>
 
         <RollingFile name="rollingFileInfo" fileName="target/metaserver.log"
                      filePattern="target/metaserver-%d{yyyy-MM-dd}-%i.log">
-            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito)}%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
@@ -27,7 +27,7 @@
         <logger name="com.ctrip.xpipe.monitor.CatUtils" level="INFO"/>
         <logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="INFO"/>
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
-        		<logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="WARN"/>
+        		<logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="INFO"/>
         
         <root level="INFO">
             <appender-ref ref="console"/>

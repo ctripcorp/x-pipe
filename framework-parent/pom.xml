@@ -141,7 +141,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<verbose>true</verbose>
+					<verbose>false</verbose>
 					<dateFormat>yyyy-MM-dd'T'HH:mm:ssZ</dateFormat>
 					<generateGitPropertiesFile>true</generateGitPropertiesFile>
 					<failOnNoGitDirectory>false</failOnNoGitDirectory>

@@ -190,7 +190,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 						@Override
 						public void onCommand(ReferenceFileRegion referenceFileRegion) {
 
-							logger.info("[onCommand]{}", referenceFileRegion);
+							logger.debug("[onCommand]{}", referenceFileRegion);
 							result.append(readFileChannelInfoMessageAsString(referenceFileRegion));
 							semaphore.release((int) referenceFileRegion.count());
 						}

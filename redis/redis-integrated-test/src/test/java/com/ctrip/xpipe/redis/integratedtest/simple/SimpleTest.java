@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.simple;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
 
 /**
@@ -16,8 +18,13 @@ public class SimpleTest extends AbstractSimpleTest{
 	}
 	
 	@Test
-	public void testLog(){
+	public void testAlloc() throws InterruptedException{
 		
+		while(true){
+			
+			TimeUnit.MILLISECONDS.sleep(1);
+			byte [] data = new byte[ 1 << 10 ];
+		}
 		
 	}
 	

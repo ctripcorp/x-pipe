@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.spring.AbstractProfile;
+
 /**
  * @author Leo Liang(jhliang@ctrip.com)
  *
@@ -18,6 +20,8 @@ public class XpipeThreadFactory implements ThreadFactory {
 	private static Logger logger = LoggerFactory.getLogger(XpipeThreadFactory.class);
 
 	private final AtomicLong m_threadNumber = new AtomicLong(1);
+	
+	public static final int RANDOM_STRING_LEN = 5;
 
 	private final String m_namePrefix;
 
@@ -26,15 +30,24 @@ public class XpipeThreadFactory implements ThreadFactory {
 	private final static ThreadGroup m_threadGroup = new ThreadGroup("Xpipe");
 
 	public static ThreadGroup getThreadGroup() {
+		
 		return m_threadGroup;
 	}
 
 	public static ThreadFactory create(String namePrefix) {
-		return new XpipeThreadFactory(namePrefix, false);
+		return create(namePrefix, false);
 	}
 
 	public static ThreadFactory create(String namePrefix, boolean daemon) {
-		return new XpipeThreadFactory(namePrefix, daemon);
+		return new XpipeThreadFactory(getThreadName(namePrefix), daemon);
+	}
+
+	private static String getThreadName(String namePrefix) {
+		
+		if(AbstractProfile.PROFILE_NAME_TEST.equals(System.getProperty(AbstractProfile.PROFILE_KEY))){
+			return namePrefix + "-" + StringUtil.randomString(RANDOM_STRING_LEN); 
+		}
+		return namePrefix;
 	}
 
 	public static boolean waitAllShutdown(int timeoutInMillis) {

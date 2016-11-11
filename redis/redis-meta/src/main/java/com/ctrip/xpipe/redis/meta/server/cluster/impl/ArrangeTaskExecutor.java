@@ -64,8 +64,7 @@ public class ArrangeTaskExecutor extends AbstractLifecycle implements TopElement
 
 		if(taskThread == null){
 			taskThread = XpipeThreadFactory.create(
-					String.format("ArrangeTaskExecutor-(%d)", currentClusterServer.getServerId()) 
-					).newThread(this);
+					String.format("ArrangeTaskExecutor-(%d)", currentClusterServer.getServerId()) ).newThread(this);
 			taskThread.start();
 		}
 	}

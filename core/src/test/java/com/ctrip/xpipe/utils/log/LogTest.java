@@ -54,5 +54,11 @@ public class LogTest extends AbstractTest {
 			logger.error("[testLog]", e);
 		}
 	}
+	
+	@Test
+	public void testLogJunit(){
+		
+		logger.error("[testLogJunit]", new Exception());
+	}
 
 }

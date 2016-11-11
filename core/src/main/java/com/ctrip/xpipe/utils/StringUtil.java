@@ -6,7 +6,19 @@ package com.ctrip.xpipe.utils;
  * 2016年3月28日 下午6:46:26
  */
 public class StringUtil {
+	
+	
+	public static String randomString(int length) {
 
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < length; i++) {
+			sb.append((char) ('a' + (int) (26 * Math.random())));
+		}
+
+		return sb.toString();
+	}
+	
+	
 	public static String join(String split, Object ...args){
 		
 		String []tmp = new String[args.length];
