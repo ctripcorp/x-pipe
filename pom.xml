@@ -275,13 +275,6 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
-					<groupId>pl.project13.maven</groupId>
-					<artifactId>git-commit-id-plugin</artifactId>
-					<configuration>
-						<verbose>false</verbose>
-					</configuration>
-				</plugin>
-				<plugin>
 					<groupId>org.springframework.boot</groupId>
 					<artifactId>spring-boot-maven-plugin</artifactId>
 					<version>${spring-boot-maven-plugin.version}</version>
@@ -357,6 +350,15 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
+		<plugins>
+			<plugin>
+				<groupId>pl.project13.maven</groupId>
+				<artifactId>git-commit-id-plugin</artifactId>
+				<configuration>
+					<verbose>false</verbose>
+				</configuration>
+			</plugin>
+		</plugins>
 	</build>
 
 	<dependencies>
