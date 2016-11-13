@@ -69,6 +69,8 @@ public class XPipeStabilityTest {
 	private AtomicLong catIntervalTotalDelay = new AtomicLong(0);
 	private Long historyCatIntervalTotalDelay = new Long(0);
 
+	public int runDays = Integer.parseInt(System.getProperty("run-days", "365"));
+
 	public int MAX_KEY_COUNT = Integer.parseInt(System.getProperty("max-key-count", "20000000"));
 	public int TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("timeout", "10"));
 	public int KEY_EXPIRE_SECONDS = Integer.parseInt(System.getProperty("key-expire-seconds", "3600"));
@@ -128,7 +130,8 @@ public class XPipeStabilityTest {
 	}
 
 	@Test
-	public void statbilityTest() {
+	public void statbilityTest() throws InterruptedException {
+		
 		startConsumerJob();
 		startProducerJob();
 		startValueCheckJob();
@@ -137,11 +140,7 @@ public class XPipeStabilityTest {
 		startCatLogMetricJob();
 		startExpireCheckJob();
 
-		try {
-			TimeUnit.DAYS.sleep(7);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		TimeUnit.DAYS.sleep(runDays);
 	}
 
 	private void startProducerJob() {

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.meta;
 
 import java.io.Serializable;
-import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -12,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
@@ -89,13 +89,13 @@ public class CurrentMeta implements Releasable {
 		return currentShardMeta.getActiveKeeper();
 	}
 
-	public boolean setKeeperMaster(String clusterId, String shardId, InetSocketAddress keeperMaster) {
+	public boolean setKeeperMaster(String clusterId, String shardId, Pair<String, Integer> keeperMaster) {
 
 		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
 		return currentShardMeta.setKeeperMaster(keeperMaster);
 	}
 
-	public InetSocketAddress getKeeperMaster(String clusterId, String shardId) {
+	public Pair<String, Integer> getKeeperMaster(String clusterId, String shardId) {
 
 		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
 		return currentShardMeta.getKeeperMaster();
@@ -224,12 +224,12 @@ public class CurrentMeta implements Releasable {
 						}
 					});
 
-			InetSocketAddress inetSocketAddress = getDefaultKeeperMaster(shardMeta);
+			Pair<String, Integer> inetSocketAddress = getDefaultKeeperMaster(shardMeta);
 			logger.info("[addShard][default keeper master]{}", inetSocketAddress);
 			currentShardMeta.setKeeperMaster(inetSocketAddress);
 		}
 
-		private InetSocketAddress getDefaultKeeperMaster(ShardMeta shardMeta) {
+		private Pair<String, Integer> getDefaultKeeperMaster(ShardMeta shardMeta) {
 
 			RedisMeta redisMaster = null;
 			for (RedisMeta redisMeta : shardMeta.getRedises()) {
@@ -238,7 +238,7 @@ public class CurrentMeta implements Releasable {
 				}
 			}
 			if (redisMaster != null) {
-				return new InetSocketAddress(redisMaster.getIp(), redisMaster.getPort());
+				return new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort());
 			}
 
 			logger.warn("[getDefaultKeeperMaster][no redis master, no upstream, default null]{}", shardMeta);
@@ -280,7 +280,7 @@ public class CurrentMeta implements Releasable {
 		private AtomicBoolean watched = new AtomicBoolean(false);
 		private String clusterId, shardId;
 		private List<KeeperMeta> surviveKeepers = new LinkedList<>();
-		private InetSocketAddress keeperMaster;
+		private Pair<String, Integer> keeperMaster;
 
 		public CurrentShardMeta() {
 
@@ -383,11 +383,11 @@ public class CurrentMeta implements Releasable {
 			return false;
 		}
 
-		public InetSocketAddress getKeeperMaster() {
+		public Pair<String, Integer> getKeeperMaster() {
 			return keeperMaster;
 		}
 
-		public synchronized boolean setKeeperMaster(InetSocketAddress keeperMaster) {
+		public synchronized boolean setKeeperMaster(Pair<String, Integer> keeperMaster) {
 
 			logger.info("[setKeeperMaster]{},{},{}", clusterId, shardId, keeperMaster);
 			if (ObjectUtils.equals(this.keeperMaster, keeperMaster)) {

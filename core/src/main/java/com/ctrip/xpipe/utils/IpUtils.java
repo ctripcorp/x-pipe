@@ -112,5 +112,5 @@ public class IpUtils {
 			throw new IllegalArgumentException("invalid socket address:" + singleAddress);
 		}
 		return new Pair<>(parts[0], Integer.parseInt(parts[1]));
-	} 
+	}
 }

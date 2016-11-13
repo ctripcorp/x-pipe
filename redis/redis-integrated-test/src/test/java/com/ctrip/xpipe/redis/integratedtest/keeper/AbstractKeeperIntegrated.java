@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-import java.net.InetSocketAddress;
+import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -45,7 +45,7 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	}
 
 	protected void setKeeperState(KeeperMeta keeperMeta, KeeperState keeperState, String ip, Integer port, boolean sync) throws Exception {
-		KeeperSetStateCommand command = new KeeperSetStateCommand(keeperMeta, keeperState, new InetSocketAddress(ip, port));
+		KeeperSetStateCommand command = new KeeperSetStateCommand(keeperMeta, keeperState, new Pair<String, Integer>(ip, port));
 		CommandFuture<?> future = command.execute();
 		if(sync){
 			future.sync();

@@ -84,7 +84,7 @@ public class DeleteKeeperCommandTest extends AbstractMetaServerTest{
 		
 		final Server server = startEchoServer(keeperMeta.getPort());
 		
-		scheduler.schedule(new AbstractExceptionLogTask() {
+		scheduled.schedule(new AbstractExceptionLogTask() {
 			
 			@Override
 			protected void doRun() throws Exception {

@@ -48,7 +48,7 @@ public class EternalManual extends AbstractTest{
 		
 		eternalWatcher.start();
 		
-		scheduler.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+		scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 			
 			@Override
 			protected void doRun() throws Exception {

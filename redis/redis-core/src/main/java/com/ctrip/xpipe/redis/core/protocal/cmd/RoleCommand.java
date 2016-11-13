@@ -3,8 +3,9 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
-import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBuf;
@@ -36,6 +37,8 @@ public class RoleCommand extends AbstractRedisCommand<Role>{
 			Object []arrayPayload = (Object[]) payload;
 			if(arrayPayload.length == 5){
 				return new KeeperRole(arrayPayload);
+			}else if(arrayPayload.length == 3){
+				return new MasterRole(arrayPayload);
 			}
 			throw new IllegalStateException("unknown supported payload:" + StringUtil.join(",", arrayPayload));
 		}
@@ -44,6 +47,6 @@ public class RoleCommand extends AbstractRedisCommand<Role>{
 
 	@Override
 	protected ByteBuf getRequest() {
-		return new SimpleStringParser("role").format();
+		return new RequestStringParser("role").format();
 	}
 }

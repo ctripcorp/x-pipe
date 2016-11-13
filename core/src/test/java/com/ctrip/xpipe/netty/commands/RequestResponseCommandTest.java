@@ -21,7 +21,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.pool.BorrowObjectException;
-import com.ctrip.xpipe.pool.XpipeObjectPool;
+import com.ctrip.xpipe.pool.XpipeNettyClientPool;
 import com.ctrip.xpipe.simpleserver.Server;
 
 import io.netty.buffer.ByteBuf;
@@ -36,14 +36,13 @@ import io.netty.channel.Channel;
 public class RequestResponseCommandTest extends AbstractTest {
 
 	private Server server;
-	private XpipeObjectPool<NettyClient> clientPool;
+	private XpipeNettyClientPool clientPool;
 
 	@Before
 	public void beforeRequestResponseCommandTest() throws Exception {
 
 		server = startEchoServer();
-		clientPool = new XpipeObjectPool<>(
-				new NettyClientFactory(new InetSocketAddress("localhost", server.getPort())));
+		clientPool = new XpipeNettyClientPool(new InetSocketAddress("localhost", server.getPort()));
 		clientPool.initialize();
 		clientPool.start();
 	}
@@ -53,7 +52,7 @@ public class RequestResponseCommandTest extends AbstractTest {
 
 		String request = randomString(1 << 5) + "\r\n";
 
-		TestCommand command = new TestCommand(request, 1000, clientPool, scheduler, null);
+		TestCommand command = new TestCommand(request, 1000, clientPool, scheduled, null);
 		CommandFuture<String> future = command.execute();
 		String result = future.get();
 		Assert.assertEquals(request, result);
@@ -68,7 +67,7 @@ public class RequestResponseCommandTest extends AbstractTest {
 	public void testSuccess() throws Exception {
 
 		String request = randomString() + "\r\n";
-		TestCommand command = new TestCommand(request, clientPool, scheduler);
+		TestCommand command = new TestCommand(request, clientPool, scheduled);
 		CommandFuture<String> future = command.execute();
 		String result = future.get();
 		Assert.assertEquals(request, result);
@@ -100,7 +99,7 @@ public class RequestResponseCommandTest extends AbstractTest {
 	@Test
 	public void testTimeout() throws CommandExecutionException, InterruptedException {
 
-		TestCommand testCommand = new TestCommand("sleep 5000\r\n", 1000, clientPool, scheduler, null);
+		TestCommand testCommand = new TestCommand("sleep 5000\r\n", 1000, clientPool, scheduled, null);
 		CommandFuture<String> future = testCommand.execute();
 
 		final AtomicReference<CommandFuture<String>> listenerFuture = new AtomicReference<CommandFuture<String>>(null);
@@ -137,7 +136,7 @@ public class RequestResponseCommandTest extends AbstractTest {
 	@Test
 	public void testClosed() throws CommandExecutionException, BorrowObjectException {
 
-		TestCommand testCommand = new TestCommand("something", 0, clientPool, scheduler, null);
+		TestCommand testCommand = new TestCommand("something", 0, clientPool, scheduled, null);
 		CommandFuture<String> future = testCommand.execute();
 
 		new Thread(new Runnable() {
@@ -169,7 +168,7 @@ public class RequestResponseCommandTest extends AbstractTest {
 	public void testException() throws CommandExecutionException {
 
 		Exception exception = new Exception();
-		TestCommand testCommand = new TestCommand("something\r\n", 0, clientPool, scheduler, exception);
+		TestCommand testCommand = new TestCommand("something\r\n", 0, clientPool, scheduled, exception);
 		CommandFuture<String> future = testCommand.execute();
 		try {
 			future.get();
@@ -188,7 +187,7 @@ public class RequestResponseCommandTest extends AbstractTest {
 
 		String request = randomString() + "\r\n";
 
-		TestCommand testCommand = new TestCommand(request, 0, clientPool, scheduler, null);
+		TestCommand testCommand = new TestCommand(request, 0, clientPool, scheduled, null);
 		CommandFuture<String> future = testCommand.execute(1, TimeUnit.SECONDS);
 
 		sleep(10);
@@ -204,7 +203,7 @@ public class RequestResponseCommandTest extends AbstractTest {
 
 		String request = randomString() + "\r\n";
 
-		TestCommand testCommand = new TestCommand(request, 0, clientPool, scheduler, null);
+		TestCommand testCommand = new TestCommand(request, 0, clientPool, scheduled, null);
 		CommandFuture<String> future = testCommand.execute(1, TimeUnit.SECONDS);
 
 		sleep(10);
@@ -222,12 +221,12 @@ public class RequestResponseCommandTest extends AbstractTest {
 		private int timeout;
 		private Exception e;
 
-		public TestCommand(String request, XpipeObjectPool<NettyClient> clientPool,
+		public TestCommand(String request, XpipeNettyClientPool clientPool,
 				ScheduledExecutorService scheduled) {
 			this(request, 1000, clientPool, scheduled, null);
 		}
 
-		public TestCommand(String request, int timeout, XpipeObjectPool<NettyClient> clientPool,
+		public TestCommand(String request, int timeout, XpipeNettyClientPool clientPool,
 				ScheduledExecutorService scheduled, Exception e) {
 			super(clientPool, scheduled);
 			this.request = request;

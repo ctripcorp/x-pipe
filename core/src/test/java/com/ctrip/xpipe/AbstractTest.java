@@ -10,7 +10,12 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.Charset;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,7 +58,7 @@ public class AbstractTest {
 
 	protected ExecutorService executors = Executors.newCachedThreadPool();
 
-	protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(OsUtils.getCpuCount());
+	protected ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount());
 
 	private ComponentRegistry componentRegistry;
 
@@ -275,12 +280,15 @@ public class AbstractTest {
 				return i;
 			}
 		}
-
 		throw new IllegalStateException("unfonud usable port from %d" + fromPort);
 	}
 
 	public static int randomPort() {
-		return randomPort(10000, 20000);
+		return randomPort(10000, 20000, null);
+	}
+
+	public static int randomPort(List<Integer> different) {
+		return randomPort(10000, 20000, different);
 	}
 
 	/**
@@ -292,10 +300,18 @@ public class AbstractTest {
 	 */
 	public static int randomPort(int min, int max) {
 
-		int i = min;
-		for (; i <= max; i++) {
-			if (isUsable(i)) {
-				return i;
+		return randomPort(min, max, null);
+	}
+
+	public static int randomPort(int min, int max, List<Integer> different) {
+
+		Random random = new Random();
+		Set<Integer> differentSet = different == null ? Collections.<Integer>emptySet() : new HashSet<>(different);
+		for (int i = min; i <= max; i++) {
+
+			int port = min + random.nextInt(max - min + 1);
+			if (!differentSet.contains(new Integer(port)) && isUsable(port)) {
+				return port;
 			}
 		}
 
@@ -311,14 +327,25 @@ public class AbstractTest {
 		}
 		return false;
 	}
-
-	protected static int randomInt(int begin, int end) {
-		return (int) (begin + Math.random() * (end - begin));
+	
+	protected static int incrementalPort(int begin) {
+		return incrementalPort(begin, Integer.MAX_VALUE);
 	}
 
-	protected Integer randomInt() {
+	protected static int incrementalPort(int begin, int end) {
 
-		return (int) (Math.random() * Integer.MAX_VALUE);
+		for (int i = begin; i <= end; i++) {
+			if(isUsable(i)){
+				return i;
+			}
+		}
+		throw new IllegalArgumentException(String.format("can not find usable port [%d, %d]", begin, end));
+	}
+
+	protected int randomInt(int start, int end) {
+		
+		Random random = new Random();
+		return start + random.nextInt(end - start + 1);
 	}
 
 	protected String remarkableMessage(String msg) {
@@ -335,8 +362,8 @@ public class AbstractTest {
 	}
 
 	protected ZkTestServer startRandomZk() {
-
-		int zkPort = randomInt(2181, 2281);
+		
+		int zkPort = incrementalPort(2181, 2281);
 		return startZk(zkPort);
 	}
 

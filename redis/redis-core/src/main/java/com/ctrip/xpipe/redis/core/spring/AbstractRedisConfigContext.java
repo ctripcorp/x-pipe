@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.core.spring;
 
 import org.springframework.context.annotation.Bean;
 
-import com.ctrip.xpipe.pool.XpipeNettyClientObjectPool;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 
 /**
@@ -13,9 +13,9 @@ import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 public class AbstractRedisConfigContext extends AbstractSpringConfigContext {
 
 	@Bean(name = "clientPool")
-	public XpipeNettyClientObjectPool getClientPool() {
+	public XpipeNettyClientKeyedObjectPool getClientPool() {
 
-		return new XpipeNettyClientObjectPool();
+		return new XpipeNettyClientKeyedObjectPool();
 	}
 
 }

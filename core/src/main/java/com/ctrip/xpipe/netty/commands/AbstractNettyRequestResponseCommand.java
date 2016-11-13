@@ -13,7 +13,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.CommandTimeoutException;
-import com.ctrip.xpipe.pool.XpipeObjectPool;
+import com.ctrip.xpipe.pool.XpipeNettyClientPool;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -33,7 +33,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 		super(clientPool);
 	}
 
-	public AbstractNettyRequestResponseCommand(XpipeObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+	public AbstractNettyRequestResponseCommand(XpipeNettyClientPool clientPool, ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);
 	}
 	

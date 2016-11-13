@@ -19,7 +19,7 @@ import com.ctrip.xpipe.netty.commands.RequestResponseCommandTest;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannelTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
-import com.ctrip.xpipe.pool.XpipeObjectPoolTest;
+import com.ctrip.xpipe.pool.XpipeNettyClientPoolTest;
 import com.ctrip.xpipe.utils.FileUtilsTest;
 import com.ctrip.xpipe.utils.OffsetNotifierTest;
 import com.ctrip.xpipe.utils.StringUtilTest;
@@ -32,7 +32,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
-	XpipeObjectPoolTest.class,
+	XpipeNettyClientPoolTest.class,
 	DefaultCommandFutureTest.class,
 	DefaultEndPointTest.class,
 	ByteArrayOutputStreamPayloadTest.class,

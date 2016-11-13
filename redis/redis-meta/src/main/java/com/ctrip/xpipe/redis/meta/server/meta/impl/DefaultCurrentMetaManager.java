@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
 
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -314,7 +313,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public InetSocketAddress getKeeperMaster(String clusterId, String shardId) {
+	public Pair<String, Integer> getKeeperMaster(String clusterId, String shardId) {
 		return currentMeta.getKeeperMaster(clusterId, shardId);
 	}
 
@@ -367,10 +366,10 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	public void setKeeperMaster(String clusterId, String shardId, String ip, int port) {
 		
 		
-		InetSocketAddress inetAddr = new InetSocketAddress(ip, port);
-		if(currentMeta.setKeeperMaster(clusterId, shardId, inetAddr)){
+		Pair<String, Integer> keeperMaster = new Pair<String, Integer>(ip, port);
+		if(currentMeta.setKeeperMaster(clusterId, shardId, keeperMaster)){
 			logger.info("[setKeeperMaster]{},{},{}:{}", clusterId, shardId, ip, port);
-			notifyKeeperMasterChanged(clusterId, shardId, inetAddr);
+			notifyKeeperMasterChanged(clusterId, shardId, keeperMaster);
 		}else{
 			logger.info("[setKeeperMaster][keeper master not changed!]{},{},{}:{}", clusterId, shardId, ip, port);
 		}
@@ -401,12 +400,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 	}
 
-	private void notifyKeeperMasterChanged(String clusterId, String shardId, InetSocketAddress inetAddr) {
+	private void notifyKeeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> keeperMaster) {
 		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
 			try {
-				stateHandler.keeperMasterChanged(clusterId, shardId, inetAddr);
+				stateHandler.keeperMasterChanged(clusterId, shardId, keeperMaster);
 			} catch (Exception e) {
-				logger.error("[notifyKeeperMasterChanged]" + clusterId + "," + shardId + "," + inetAddr, e);
+				logger.error("[notifyKeeperMasterChanged]" + clusterId + "," + shardId + "," + keeperMaster, e);
 			}
 		}
 	}

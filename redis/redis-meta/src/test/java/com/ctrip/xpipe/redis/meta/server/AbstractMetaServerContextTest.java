@@ -44,7 +44,7 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	public void beforeAbstractMetaServerContextTest() throws Exception{
 		arrangeTaskStart(false);
 		
-		int zkPort = randomPort();
+		int zkPort = incrementalPort(defaultZkPort());
 		if(isStartZk()){
 			startZk(zkPort);
 		}

@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
-
-
 import java.util.LinkedList;
 import java.util.List;
 
@@ -21,7 +19,7 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
  */
 public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 	
-	private int zkPort = portUsable(defaultZkPort());
+	private int zkPort = incrementalPort(defaultZkPort());
 	
 	@Before
 	public void beforeAbstractMetaServerClusterTest(){

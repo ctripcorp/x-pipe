@@ -7,11 +7,12 @@ import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.exec.ExecuteException;
 import org.junit.Before;
+import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.XpipeNettyClientObjectPool;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -27,7 +28,7 @@ import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
  */
 public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 	
-	protected SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool = new XpipeNettyClientObjectPool();
+	protected SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool = new XpipeNettyClientKeyedObjectPool();
 	
 	private KeeperMeta activeDcKeeperActive;
 	
@@ -73,13 +74,13 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		List<KeeperMeta> keepers = getDcKeepers(dcMeta.getId(), getClusterId(), getShardId());
 		RedisMeta redisMaster = getRedisMaster();
 		
-		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new InetSocketAddress(redisMaster.getIp(), redisMaster.getPort()), clientPool);
+		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort()), clientPool);
 		job.execute().sync();
 		
 		for(DcMeta backupDc : backupDcs()){
 			
 			List<KeeperMeta> backupKeepers = getDcKeepers(backupDc.getId(), getClusterId(), getShardId());
-			job = new KeeperStateChangeJob(backupKeepers, new InetSocketAddress(activeDcKeeperActive.getIp(), activeDcKeeperActive.getPort()), clientPool);
+			job = new KeeperStateChangeJob(backupKeepers, new Pair<String, Integer>(activeDcKeeperActive.getIp(), activeDcKeeperActive.getPort()), clientPool);
 			job.execute().sync();
 		}
 	}

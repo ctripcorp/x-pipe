@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-
-import java.net.InetSocketAddress;
+import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -60,15 +59,15 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 	public static class KeeperSetStateCommand extends AbstractKeeperCommand<String>{
 
 		private KeeperState state;
-		private InetSocketAddress masterAddress;
+		private Pair<String, Integer> masterAddress;
 		
-		public KeeperSetStateCommand(SimpleObjectPool<NettyClient> clientPool, KeeperState state, InetSocketAddress masterAddress) {
+		public KeeperSetStateCommand(SimpleObjectPool<NettyClient> clientPool, KeeperState state, Pair<String, Integer> masterAddress) {
 			super(clientPool);
 			this.state = state;
 			this.masterAddress = masterAddress;
 		}
 
-		public KeeperSetStateCommand(KeeperMeta keeperMeta, KeeperState state, InetSocketAddress masterAddress) {
+		public KeeperSetStateCommand(KeeperMeta keeperMeta, KeeperState state, Pair<String, Integer> masterAddress) {
 			super(keeperMeta);
 			this.state = state;
 			this.masterAddress = masterAddress;
@@ -84,13 +83,13 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 
 		@Override
 		protected ByteBuf getRequest() {
-			return new RequestStringParser(getName(), SET_STATE, state.toString(), masterAddress.getHostName(), String.valueOf(masterAddress.getPort())).format();
+			return new RequestStringParser(getName(), SET_STATE, state.toString(), masterAddress.getKey(), String.valueOf(masterAddress.getValue())).format();
 		}
 		
 		
 		@Override
 		public String toString() {
-			return String.format("(to:%s) %s %s %s %s %s", getClientPool().desc(), getName(), SET_STATE, state.toString(), masterAddress.getHostName(), masterAddress.getPort());
+			return String.format("(to:%s) %s %s %s %s %s", getClientPool().desc(), getName(), SET_STATE, state.toString(), masterAddress.getKey(), masterAddress.getValue());
 		}
 	}
 }

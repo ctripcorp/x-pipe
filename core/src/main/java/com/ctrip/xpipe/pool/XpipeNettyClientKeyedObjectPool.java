@@ -20,14 +20,14 @@ import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
  *
  *         Jun 28, 2016
  */
-public class XpipeNettyClientObjectPool extends AbstractLifecycle
+public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 		implements TopElement, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> {
 
 	private KeyedObjectPool<InetSocketAddress, NettyClient> objectPool;
 	private NettyKeyedPoolClientFactory pooledObjectFactory;
 	private GenericKeyedObjectPoolConfig config;
 
-	public XpipeNettyClientObjectPool() {
+	public XpipeNettyClientKeyedObjectPool() {
 		this(createDefaultConfig());
 	}
 
@@ -37,7 +37,7 @@ public class XpipeNettyClientObjectPool extends AbstractLifecycle
 		return config;
 	}
 
-	public XpipeNettyClientObjectPool(GenericKeyedObjectPoolConfig config) {
+	public XpipeNettyClientKeyedObjectPool(GenericKeyedObjectPoolConfig config) {
 		this.config = config;
 
 	}

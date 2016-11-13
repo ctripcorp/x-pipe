@@ -88,7 +88,7 @@ public class RedisFakeSlaveTest extends AbstractRedisKeeperTest{
 			readLine(ins);
 			
 			
-			scheduler.scheduleAtFixedRate(new Runnable(){
+			scheduled.scheduleAtFixedRate(new Runnable(){
 	
 				@Override
 				public void run() {
