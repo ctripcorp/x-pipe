@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +27,7 @@ public abstract class AbstractKeeperMasterChooser extends AbstractStartStoppable
 
 	protected DcMetaCache dcMetaCache;
 
-	private CurrentMetaManager currentMetaManager;
+	protected CurrentMetaManager currentMetaManager;
 
 	private ScheduledExecutorService scheduled;
 
@@ -36,7 +35,7 @@ public abstract class AbstractKeeperMasterChooser extends AbstractStartStoppable
 
 	protected String clusterId, shardId;
 
-	private int checkIntervalSeconds;
+	protected int checkIntervalSeconds;
 
 	public AbstractKeeperMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache,
 			CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled) {
@@ -65,12 +64,12 @@ public abstract class AbstractKeeperMasterChooser extends AbstractStartStoppable
 
 				Pair<String, Integer> keeperMaster = chooseKeeperMaster();
 				logger.debug("[doRun]{}, {}, {}", clusterId, shardId, keeperMaster);
-				InetSocketAddress currentMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
-				if (keeperMaster == null || new InetSocketAddress(keeperMaster.getKey(), keeperMaster.getValue())
-						.equals(currentMaster)) {
+				Pair<String, Integer> currentMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
+				if (keeperMaster == null || keeperMaster.equals(currentMaster)) {
 					logger.debug("[doRun][new master null or equals old master]{}", keeperMaster);
 					return;
 				}
+				logger.debug("[doRun][set]{}, {}, {}", clusterId, shardId, keeperMaster);
 				currentMetaManager.setKeeperMaster(clusterId, shardId, keeperMaster.getKey(), keeperMaster.getValue());
 			}
 

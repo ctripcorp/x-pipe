@@ -5,6 +5,8 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.unidal.tuple.Pair;
+
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
@@ -30,12 +32,12 @@ import com.ctrip.xpipe.retry.RetryDelay;
 public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	
 	private List<KeeperMeta> keepers;
-	private InetSocketAddress activeKeeperMaster;
+	private Pair<String, Integer> activeKeeperMaster;
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 	private int delayBaseMilli = 1000;
 	private int retryTimes = 5;
 	
-	public KeeperStateChangeJob(List<KeeperMeta> keepers, InetSocketAddress activeKeeperMaster, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool){
+	public KeeperStateChangeJob(List<KeeperMeta> keepers, Pair<String, Integer> activeKeeperMaster, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool){
 		
 		this.keepers = new LinkedList<>(keepers);
 		this.activeKeeperMaster = activeKeeperMaster;
@@ -72,7 +74,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 		
 		for(KeeperMeta keeperMeta : keepers){
 			if(!keeperMeta.isActive()){
-				Command<?> backupCommand = createKeeperSetStateCommand(keeperMeta, new InetSocketAddress(activeKeeper.getIp(), activeKeeper.getPort()));
+				Command<?> backupCommand = createKeeperSetStateCommand(keeperMeta, new Pair<String, Integer>(activeKeeper.getIp(), activeKeeper.getPort()));
 				backupChain.add(backupCommand);
 			}
 		}
@@ -93,7 +95,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 		});;
 	}
 
-	private Command<?> createKeeperSetStateCommand(KeeperMeta keeper, InetSocketAddress masterAddress) {
+	private Command<?> createKeeperSetStateCommand(KeeperMeta keeper, Pair<String, Integer> masterAddress) {
 		
 		SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(clientPool, new InetSocketAddress(keeper.getIp(), keeper.getPort()));
 		KeeperSetStateCommand command =  new KeeperSetStateCommand(pool, keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP, masterAddress);

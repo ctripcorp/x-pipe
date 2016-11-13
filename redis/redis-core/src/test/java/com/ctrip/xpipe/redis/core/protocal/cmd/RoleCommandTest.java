@@ -32,5 +32,6 @@ public class RoleCommandTest extends AbstractRedisTest{
 		logger.info("[test]{}", real);
 		Assert.assertEquals(role, real);
 	}
-
+	
+	
 }

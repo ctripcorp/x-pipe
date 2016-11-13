@@ -4,8 +4,7 @@ import java.net.InetSocketAddress;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.netty.commands.NettyClientFactory;
-import com.ctrip.xpipe.pool.XpipeObjectPool;
+import com.ctrip.xpipe.pool.XpipeNettyClientPool;
 
 /**
  * @author wenchao.meng
@@ -17,7 +16,7 @@ public class NettyPoolUtil {
 	public static SimpleObjectPool<NettyClient>  createNettyPool(InetSocketAddress target){
 		
 		try {
-			XpipeObjectPool<NettyClient> xpipeObjectPool = new XpipeObjectPool<>(new NettyClientFactory(target));
+			XpipeNettyClientPool xpipeObjectPool = new XpipeNettyClientPool(target);
 			xpipeObjectPool.initialize();
 			xpipeObjectPool.start();
 			return xpipeObjectPool;

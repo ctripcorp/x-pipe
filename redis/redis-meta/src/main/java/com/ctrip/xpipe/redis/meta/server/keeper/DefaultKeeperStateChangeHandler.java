@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -47,7 +48,7 @@ public class DefaultKeeperStateChangeHandler implements MetaServerStateChangeHan
 	private CurrentMetaManager currentMetaServerMetaManager;
 
 	@Override
-	public void keeperMasterChanged(String clusterId, String shardId, InetSocketAddress newMaster) {
+	public void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {
 
 		logger.info("[keeperMasterChanged]{},{},{}", clusterId, shardId, newMaster);
 		KeeperMeta activeKeeper = currentMetaServerMetaManager.getKeeperActive(clusterId, shardId);
@@ -77,7 +78,7 @@ public class DefaultKeeperStateChangeHandler implements MetaServerStateChangeHan
 			logger.info("[keeperActiveElected][none keeper survive, do nothing]");
 			return;
 		}
-		InetSocketAddress activeKeeperMaster = currentMetaServerMetaManager.getKeeperMaster(clusterId, shardId);
+		Pair<String, Integer> activeKeeperMaster = currentMetaServerMetaManager.getKeeperMaster(clusterId, shardId);
 		new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool).execute(executors);
 
 		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {

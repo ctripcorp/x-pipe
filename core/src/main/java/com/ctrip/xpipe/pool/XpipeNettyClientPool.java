@@ -1,43 +1,49 @@
 package com.ctrip.xpipe.pool;
 
+import java.net.InetSocketAddress;
+
 import org.apache.commons.pool2.ObjectPool;
-import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.netty.commands.NettyClientFactory;
 /**
  * @author wenchao.meng
  *
  * Jul 1, 2016
  */
-public class XpipeObjectPool<T> extends AbstractLifecycle implements SimpleObjectPool<T>{
+public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObjectPool<NettyClient>{
 	
-	private ObjectPool<T> objectPool;
-	private PooledObjectFactory<T> factory; 
+	private ObjectPool<NettyClient> objectPool;
+	private NettyClientFactory factory; 
 	private GenericObjectPoolConfig  config;
+	private InetSocketAddress target;
 
-	public XpipeObjectPool(PooledObjectFactory<T> factory) {
-		this(factory, new GenericObjectPoolConfig());
+	public XpipeNettyClientPool(InetSocketAddress target) {
+		this(target, new GenericObjectPoolConfig());
 	}
 
-	public XpipeObjectPool(PooledObjectFactory<T> factory, GenericObjectPoolConfig  config) {
-		
-		this.factory = factory;
+	public XpipeNettyClientPool(InetSocketAddress target, GenericObjectPoolConfig  config) {
+		this.target = target;
 		this.config = config;
 	}
 	
 	@Override
 	protected void doInitialize() throws Exception {
 		
-		GenericObjectPool<T> genericObjectPool = new GenericObjectPool<>(factory, config);
+		this.factory = new NettyClientFactory(target);
+		this.factory.start();
+		
+		GenericObjectPool<NettyClient> genericObjectPool = new GenericObjectPool<>(factory, config);
 		genericObjectPool.setTestOnBorrow(true);
 		genericObjectPool.setTestOnCreate(true);
 		this.objectPool = genericObjectPool;
 	}
 	
-	public T borrowObject() throws BorrowObjectException {
+	public NettyClient borrowObject() throws BorrowObjectException {
 		
 		try {
 			return objectPool.borrowObject();
@@ -47,7 +53,7 @@ public class XpipeObjectPool<T> extends AbstractLifecycle implements SimpleObjec
 		}
 	}
 	
-	public void returnObject(T obj) throws ReturnObjectException{
+	public void returnObject(NettyClient obj) throws ReturnObjectException{
 		
 		try{
 			objectPool.returnObject(obj);
@@ -59,7 +65,9 @@ public class XpipeObjectPool<T> extends AbstractLifecycle implements SimpleObjec
 	
 	@Override
 	protected void doDispose() throws Exception {
-		objectPool.clear();
+		
+		this.factory.stop();
+		objectPool.close();
 	}
 
 	@Override

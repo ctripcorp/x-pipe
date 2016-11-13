@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
-import java.net.InetSocketAddress;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.foundation.FoundationService;
@@ -89,7 +88,7 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	}
 
 	@Override
-	public void keeperMasterChanged(String clusterId, String shardId, InetSocketAddress newMaster) {
+	public void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {
 		//nothing to do
 	}
 }

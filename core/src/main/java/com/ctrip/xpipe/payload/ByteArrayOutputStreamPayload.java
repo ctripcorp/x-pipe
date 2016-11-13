@@ -52,4 +52,13 @@ public class ByteArrayOutputStreamPayload extends AbstractInOutPayload{
 	public byte[] getBytes(){
 		return baous.toByteArray();
 	}
+	
+	@Override
+	public String toString() {
+		
+		if(baous != null){
+			return new String(baous.toByteArray());
+		}
+		return super.toString();
+	}
 }

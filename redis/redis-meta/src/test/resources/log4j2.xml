@@ -27,7 +27,8 @@
         <logger name="com.ctrip.xpipe.monitor.CatUtils" level="INFO"/>
         <logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="INFO"/>
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
-        		<logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="INFO"/>
+		<logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="WARN"/>
+        		
         
         <root level="INFO">
             <appender-ref ref="console"/>

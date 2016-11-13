@@ -10,7 +10,7 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
  *
  *         Nov 8, 2016
  */
-public class XpipeNettyClientObjectPoolTest extends AbstractTest {
+public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 
 	@Test
 	//try xmx32m and run
@@ -18,7 +18,7 @@ public class XpipeNettyClientObjectPoolTest extends AbstractTest {
 
 		while (true) {
 
-			XpipeNettyClientObjectPool pool = new XpipeNettyClientObjectPool();
+			XpipeNettyClientKeyedObjectPool pool = new XpipeNettyClientKeyedObjectPool();
 			LifecycleHelper.initializeIfPossible(pool);
 			LifecycleHelper.startIfPossible(pool);
 			LifecycleHelper.stopIfPossible(pool);
