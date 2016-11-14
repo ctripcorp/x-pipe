@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.service.sso;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
 import com.ctrip.xpipe.api.config.Config;
-import com.ctrip.xpipe.api.sso.LogoutHandler;
-import com.ctrip.xpipe.api.sso.UserInfoHolder;
 
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
+import org.springframework.boot.context.embedded.ServletContextInitializer;
 import org.springframework.boot.context.embedded.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +15,8 @@ import java.util.EventListener;
 import java.util.Map;
 
 import javax.servlet.Filter;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 
 
 /**
@@ -25,6 +27,9 @@ public class SSOConfigurations {
     public static final String KEY_CAS_REGISTER_SERVER_NAME = "cas.register.server.name";
     public static final String KEY_CAS_SERVER_LOGIN_URL = "cas.server.login.url";
     public static final String KEY_CAS_SERVER_URL_PREFIX = "cas.server.url.prefix";
+    public static final String KEY_CLOGGING_SERVER_URL = "clogging.server.url";
+    public static final String KEY_CLOGGING_SERVER_PORT = "clogging.server.port";
+    public static final String KEY_CREDIS_SERVER_URL = "credis.server.url";
 
     private Config config = Config.DEFAULT;
 
@@ -132,5 +137,25 @@ public class SSOConfigurations {
         }
     }
 
+
+    @Bean
+    public ServletContextInitializer servletContextInitializer() {
+
+        return new ServletContextInitializer() {
+
+            @Override
+            public void onStartup(ServletContext servletContext) throws ServletException {
+                String loggingServerIP = config.get(KEY_CLOGGING_SERVER_URL);
+                String loggingServerPort = config.get(KEY_CLOGGING_SERVER_PORT);
+                String credisServiceUrl = config.get(KEY_CREDIS_SERVER_URL);
+                servletContext.setInitParameter("loggingServerIP",
+                                                Strings.isNullOrEmpty(loggingServerIP) ? "" : loggingServerIP);
+                servletContext.setInitParameter("loggingServerPort",
+                                                Strings.isNullOrEmpty(loggingServerPort) ? "" : loggingServerPort);
+                servletContext.setInitParameter("credisServiceUrl",
+                                                Strings.isNullOrEmpty(credisServiceUrl) ? "" : credisServiceUrl);
+            }
+        };
+    }
 
 }
