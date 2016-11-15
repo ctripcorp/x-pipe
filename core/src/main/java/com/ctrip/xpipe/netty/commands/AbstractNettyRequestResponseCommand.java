@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.netty.commands;
 
-
-
-import java.io.IOException;
+import java.net.SocketException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -130,7 +128,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	@Override
 	public void clientClosed(NettyClient nettyClient) {
 		if(!future().isDone()){
-			future().setFailure(new IOException("remote closed:" + nettyClient));
+			future().setFailure(new SocketException("remote closed:" + nettyClient));
 		}
 	}
 

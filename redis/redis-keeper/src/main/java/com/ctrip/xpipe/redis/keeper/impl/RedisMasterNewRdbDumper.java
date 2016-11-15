@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -21,16 +23,19 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 	private RedisMaster redisMaster;
 	
 	private RdbonlyRedisMasterReplication rdbonlyRedisMasterReplication;
+	
+	private ScheduledExecutorService scheduled;
 
-	public RedisMasterNewRdbDumper(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer) {
+	public RedisMasterNewRdbDumper(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled) {
 		super(redisKeeperServer);
 		this.redisMaster = redisMaster;
+		this.scheduled = scheduled;
 	}
 
 	@Override
 	protected void doExecute() throws Exception {
 		
-		rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, this);
+		rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, scheduled, this);
 		
 		rdbonlyRedisMasterReplication.initialize();
 		rdbonlyRedisMasterReplication.start();

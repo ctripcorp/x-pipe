@@ -31,10 +31,6 @@ public class NettySlaveHandler extends AbstractNettyHandler{
 		
 		Channel channel = ctx.channel();
 
-		if(logger.isInfoEnabled()){
-			logger.info("[channelActive]" + channel);
-		}
-		
 		redisMasterReplication.masterConnected(channel);
 		super.channelActive(ctx);
 	}

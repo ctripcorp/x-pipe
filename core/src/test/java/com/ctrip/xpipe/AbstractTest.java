@@ -389,6 +389,37 @@ public class AbstractTest {
 		return 9747;
 	}
 
+	protected Server startEmptyServer() throws Exception {
+		return startServer(new IoActionFactory() {
+			
+			@Override
+			public IoAction createIoAction() {
+				
+				return new AbstractIoAction() {
+					
+					@Override
+					protected void doWrite(OutputStream ous) throws IOException {
+					}
+					
+					@Override
+					protected Object doRead(InputStream ins) throws IOException {
+						
+						while(true){
+							
+							int data = ins.read();
+							if(data == -1){
+								break;
+							}
+							System.out.print((char)data);
+						}
+						return null;
+					}
+				};
+			}
+		});
+	}
+
+	
 	protected Server startEchoServer() throws Exception {
 		return startEchoServer(randomPort());
 	}

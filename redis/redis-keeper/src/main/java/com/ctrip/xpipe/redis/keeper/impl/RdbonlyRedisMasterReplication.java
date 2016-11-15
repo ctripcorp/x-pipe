@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
@@ -25,8 +26,8 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	private RdbOnlyReplicationStore rdbOnlyReplicationStore;
 	private DumpedRdbStore dumpedRdbStore;
 	
-	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, RdbDumper rdbDumper) {
-		super(redisKeeperServer, redisMaster);
+	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, ScheduledExecutorService scheduled, RdbDumper rdbDumper) {
+		super(redisKeeperServer, redisMaster, scheduled);
 		setRdbDumper(rdbDumper);
 	}
 	

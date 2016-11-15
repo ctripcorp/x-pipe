@@ -37,13 +37,15 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	private ScheduledFuture<?> replConfFuture;
 	
-	private ScheduledExecutorService scheduled;
-	
-	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled) {
-		super(redisKeeperServer, redisMaster);
-		this.scheduled = scheduled;
+	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "5"));
+
+	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled, int replTimeoutSeconds) {
+		super(redisKeeperServer, redisMaster, scheduled, replTimeoutSeconds);
 	}
 
+	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled) {
+		this(redisMaster, redisKeeperServer, scheduled, DEFAULT_REPLICATION_TIMEOUT);
+	}
 
 	@Override
 	protected void doConnect(Bootstrap b) {
@@ -92,8 +94,11 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 			}
 		}, scheduleTime, TimeUnit.MILLISECONDS);
 	}
-
 	
+	public void setMasterConnectRetryDelaySeconds(int masterConnectRetryDelaySeconds) {
+		this.masterConnectRetryDelaySeconds = masterConnectRetryDelaySeconds;
+	}
+
 	@Override
 	public void stopReplication() {
 		super.stopReplication();

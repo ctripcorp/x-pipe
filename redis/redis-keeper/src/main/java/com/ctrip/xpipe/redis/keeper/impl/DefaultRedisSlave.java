@@ -33,6 +33,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 /**
  * @author wenchao.meng
@@ -42,6 +43,7 @@ import io.netty.channel.ChannelFuture;
 public class DefaultRedisSlave implements RedisSlave {
 	
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRedisSlave.class);
+	
 	public static final String KEY_RDB_DUMP_MAX_WAIT_MILLI = "rdbDumpMaxWaitMilli";
 	
 	private Long replAckOff;
@@ -65,6 +67,17 @@ public class DefaultRedisSlave implements RedisSlave {
 	private ExecutorService psyncExecutor;
 
 	private RedisClient redisClient;
+	
+	private ChannelFutureListener writeExceptionListener = new ChannelFutureListener() {
+		
+		@Override
+		public void operationComplete(ChannelFuture future) throws Exception {
+			
+			if(!future.isSuccess()){
+				logger.error("[operationComplete][write fail]" + this, future.cause());
+			}
+		}
+	};
 	
 	private AtomicBoolean closed = new AtomicBoolean(false);
 	
@@ -141,7 +154,9 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	private ChannelFuture doWriteFile(ReferenceFileRegion referenceFileRegion) {
 		
-		return channel().writeAndFlush(referenceFileRegion);
+		ChannelFuture future = channel().writeAndFlush(referenceFileRegion);
+		future.addListener(writeExceptionListener);
+		return future;
 	}
 
 	@Override
