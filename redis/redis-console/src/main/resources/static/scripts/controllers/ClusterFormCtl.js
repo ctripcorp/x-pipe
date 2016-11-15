@@ -17,6 +17,8 @@ index_module.controller('ClusterFromCtl',
                              $scope.operateType = $stateParams.type;
                              $scope.allDcs = [];
                              $scope.selectedDcs = [];
+                             $scope.shards = [];
+                             $scope.currentShard = {};
 
                              $scope.doCluster = doCluster;
                              $scope.getDcName = getDcName;
@@ -24,6 +26,9 @@ index_module.controller('ClusterFromCtl',
                              $scope.deleteCluster = deleteCluster;
                              $scope.slaveExists = slaveExists;
                              $scope.toggle = toggle;
+                             $scope.preCreateShard = preCreateShard;
+                             $scope.createShard = createShard;
+                             $scope.deleteShard = deleteShard;
 
                              init();
 
@@ -47,9 +52,8 @@ index_module.controller('ClusterFromCtl',
                              }
 
                              function doCluster() {
-
                                  if ($scope.operateType == OPERATE_TYPE.CREATE) {
-                                     ClusterService.createCluster($scope.cluster, $scope.selectedDcs)
+                                     ClusterService.createCluster($scope.cluster, $scope.selectedDcs, $scope.shards)
                                          .then(function (result) {
                                              toastr.success("创建成功");
                                              $window.location.href =
@@ -112,5 +116,26 @@ index_module.controller('ClusterFromCtl',
                      		    else {
                      		    	$scope.selectedDcs.push(dc);
                      		    }
+                             }
+                             
+                             function preCreateShard() {
+                                 $('#createShardModal').modal('show');
+                             }
+                             
+                             function createShard() {
+                             	$scope.shards.push({
+                             		shardName: $scope.currentShard.shardName,
+                             		setinelMonitorName: $scope.currentShard.setinelMonitorName
+                             	});
+                             	$('#createShardModal').modal('hide');
+                             }
+                             
+                             function deleteShard(shardName) {
+                             	for(var i in $scope.shards) {
+                             		if($scope.shards[i].shardName == shardName) {
+                             			$scope.shards.splice(i, 1);
+                             			break;
+                             		}
+                             	} 
                              }
                          }]);

@@ -1,0 +1,62 @@
+<div>
+  <a class="btn btn-warning" type="button" ng-click="preCreateShard()">
+    增加Shard
+  </a>
+  <table class="table table-bordered table-hover">
+    <thead>
+    <tr>
+        <td>shard 名称</td>
+        <td>setinel 监控名称</td>
+        <td>操作</td>
+    </tr>
+    </thead>
+    <tbody>
+    	<tr ng-repeat="shard in shards">
+			<td>{{shard.shardName}}</td>
+			<td>{{shard.setinelMonitorName}}</td>
+            <td>
+	        	<a ng-click="deleteShard(shard.shardName)">删除</a>
+			</td>
+		</tr>
+    </tbody>
+  </table>
+  
+  <form class="modal fade form-horizontal" id="createShardModal" tabindex="-1" role="dialog"
+      ng-submit="createShard()">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header panel-primary">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <div class="modal-title">
+                    <span style="">创建Shard</span>
+
+                </div>
+            </div>
+            <div class="modal-body form-horizontal">
+                <div class="form-group" valdr-form-group>
+                    <label class="col-sm-4 control-label">
+                        <apollorequiredfiled></apollorequiredfiled>
+                        shard 名称</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" ng-model="currentShard.shardName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9_]+$">
+                    </div>
+                </div>
+                <div class="form-group" valdr-form-group>
+                    <label class="col-sm-4 control-label">
+                        setinel 监控名称
+                    </label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" ng-model="currentShard.setinelMonitorName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9_]+$">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary">创建
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+</div>

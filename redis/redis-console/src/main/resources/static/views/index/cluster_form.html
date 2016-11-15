@@ -56,6 +56,10 @@
                         <textarea rows="4" style="width: 330px;" ng-model="cluster.clusterDescription" ng-required="true"></textarea>
                     </div>
                 </div>
+                
+                <addshard xpipe-pre-create-shard="preCreateShard" xpipe-create-shard="createShard"
+                	ng-show="operateType == 'create'" />
+                
                 <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right"></label>
                     <div class="col-sm-7">
@@ -115,7 +119,6 @@
         </div>
     </div>
 </div>
-
 
 <xpipeconfirmdialog xpipe-dialog-id="'deleteClusterConfirm'" xpipe-title="'删除 cluster'"
                     xpipe-detail="'您确定要删除该cluster下的所有内容吗（所有的shards以及相应的redis实例都将被删除）?'"
