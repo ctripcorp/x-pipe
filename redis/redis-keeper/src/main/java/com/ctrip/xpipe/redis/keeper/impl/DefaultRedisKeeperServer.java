@@ -438,6 +438,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.redisKeeperServerState = redisKeeperServerState;
 		notifyObservers(new KeeperServerStateChanged(previous, redisKeeperServerState));
 	}
+	
+	@Override
+	public synchronized boolean compareAndDo(RedisKeeperServerState expected, Runnable action) {
+		if(this.redisKeeperServerState == expected){
+			action.run();
+			return true;
+		}
+		return false;
+	}
+
 
 	@Override
 	public KeeperMeta getCurrentKeeperMeta() {
@@ -581,4 +591,5 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public int getRdbDumpTryCount() {
 		return rdbDumpTryCount.get();
 	}
+
 }

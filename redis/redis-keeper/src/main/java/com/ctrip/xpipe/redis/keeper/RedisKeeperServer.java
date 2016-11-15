@@ -46,6 +46,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	
 	String getShardId();
 	
+	boolean compareAndDo(RedisKeeperServerState expected, Runnable action);
+	
 	void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState);
 	
 	RedisKeeperServerState getRedisKeeperServerState();

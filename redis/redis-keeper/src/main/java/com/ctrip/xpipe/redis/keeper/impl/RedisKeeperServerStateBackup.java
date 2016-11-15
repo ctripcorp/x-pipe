@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -62,13 +63,23 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 	}
 
 	@Override
-	public boolean psync(RedisClient redisClient, String []args) {
+	public boolean psync(final RedisClient redisClient, final String []args) {
 		
 		logger.info("[psync][server state backup, ask slave to wait]{}, {}", redisClient, this);
 		
-		redisClient.sendMessage(RedisProtocol.CRLF.getBytes());
-		redisKeeperServer.addObserver(new PsyncKeeperServerStateObserver(args, redisClient));
-		return false;
+		if(redisKeeperServer.compareAndDo(this, new AbstractExceptionLogTask() {
+			@Override
+			protected void doRun() throws Exception {
+				
+				redisClient.sendMessage(RedisProtocol.CRLF.getBytes());
+				redisKeeperServer.addObserver(new PsyncKeeperServerStateObserver(args, redisClient));
+			}})){
+			//state backup
+			return false;
+		}
+		
+		logger.info("[psync][state change, use new state to psync]{}, {}", redisClient, redisKeeperServer);
+		return redisKeeperServer.getRedisKeeperServerState().psync(redisClient, args);
 	}
 	
 	public static class PsyncKeeperServerStateObserver implements Observer, Releasable{

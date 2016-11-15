@@ -4,6 +4,8 @@ import org.junit.Assert;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
+
 import static org.mockito.Mockito.*;
 
 import java.net.InetSocketAddress;
@@ -12,6 +14,7 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
+import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 
@@ -26,6 +29,23 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 	public void beforeDefaultRedisKeeperServerTest() throws Exception {
 		
 	}
+	
+	@Test
+	public void testCompareAndDo() throws Exception{
+		
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
+		RedisClient redisClient = Mockito.mock(RedisClient.class);
+		
+		RedisKeeperServerStateBackup backup = new RedisKeeperServerStateBackup(redisKeeperServer);
+		redisKeeperServer.setRedisKeeperServerState(backup);
+
+		Assert.assertFalse(backup.psync(redisClient, new String[]{}));;
+
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer));
+		
+		Assert.assertTrue(backup.psync(redisClient, new String[]{}));;
+	}
+	
 	
 	@Test
 	public void testRdbDumperTooQuick() throws Exception{
