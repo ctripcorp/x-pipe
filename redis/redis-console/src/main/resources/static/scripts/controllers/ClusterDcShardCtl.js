@@ -7,8 +7,7 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         $scope.switchDc = switchDc;
         $scope.loadCluster = loadCluster;
         $scope.loadShards = loadShards;
-
-
+        
         if ($scope.clusterName) {
             loadCluster();
         }
@@ -27,7 +26,20 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                         return;
                     }
                     $scope.dcs = result;
-                    $scope.currentDcName = $scope.dcs[0].dcName;
+                    
+                    // TODO [marsqing] do not re-get dc data when switch dc
+                    if($scope.dcs && $scope.dcs.length > 0) {
+	                    $scope.dcs.forEach(function(dc){
+	                    	if(dc.dcName === $stateParams.currentDcName) {
+			                    $scope.currentDcName = dc.dcName;
+	                    	}
+	                    });
+	                    
+	                    if(!$scope.currentDcName) {
+	                    	$scope.currentDcName = $scope.dcs[0].dcName; 
+	                    }
+                    }
+                    
 
                     loadShards($scope.clusterName, $scope.dcs[0].dcName);
 
