@@ -5,6 +5,8 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         $scope.dcs = {}
         $scope.clusterName = $stateParams.clusterName;
         $scope.getDcName = getDcName;
+        $scope.preDeleteCluster = preDeleteCluster;
+        $scope.deleteCluster = deleteCluster;
         
         var sourceClusters = [], copedClusters = [];
         if($scope.clusterName) {
@@ -81,4 +83,22 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         function getDcName(dcId) {
         	return $scope.dcs[dcId] || "Unbind";
         }
+        
+        function preDeleteCluster(clusterName) {
+        	$scope.clusterName = clusterName;
+			$('#deleteClusterConfirm').modal('show');
+		}
+		function deleteCluster() {
+			ClusterService.deleteCluster($scope.clusterName)
+				.then(function (result) {
+					$('#deleteClusterConfirm').modal('hide');
+					toastr.success('删除成功');
+					setTimeout(function () {
+						// TODO [marsqing] reload ng-table instead of reload window
+						$window.location.reload();
+					},1000);
+		         }, function (result) {
+					toastr.error(AppUtil.errorMsg(result), '删除失败');
+				})
+			}
     }]);
