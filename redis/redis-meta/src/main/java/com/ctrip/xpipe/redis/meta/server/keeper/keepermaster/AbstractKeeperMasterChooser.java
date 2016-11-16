@@ -93,6 +93,11 @@ public abstract class AbstractKeeperMasterChooser extends AbstractStartStoppable
 	public void release() throws Exception {
 		stop();
 	}
+
+	//for test
+	protected ScheduledFuture<?> getFuture() {
+		return future;
+	}
 	
 	@Override
 	public String toString() {

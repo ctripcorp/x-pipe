@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 
 /**
@@ -28,8 +29,21 @@ public class MockTest {
 	}
 	
 	
+	@Test
+	public void testVerify(){
+		
+		person.getName();
+		person.getName();
+		
+		verify(person, atLeast(1)).getName();
+		
+		verifyNoMoreInteractions(person);
+	}
+	
 	
 	public static interface Person{
+		
+		String getName();
 		
 	}
 	

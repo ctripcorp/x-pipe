@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster;
 
+
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -80,9 +82,10 @@ public class BackupDcKeeperMasterChooserTest extends AbstractDcKeeperMasterChoos
 		sleep(checkIntervalSeconds * 1000);
 
 		verify(metaServerMultiDcService, atLeast(1)).getActiveKeeper(clusterId, shardId);
-		
+
+		Assert.assertFalse(backupDcKeeperMasterChooser.getFuture().isDone());
 		backupDcKeeperMasterChooser.release();
-		verifyNoMoreInteractions(metaServerMultiDcService);
+		Assert.assertTrue(backupDcKeeperMasterChooser.getFuture().isCancelled());
 	}
 
 	@Test
