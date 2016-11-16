@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.netty;
 
-
-
-
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.netty.AbstractNettyHandler;
 import com.ctrip.xpipe.netty.ByteBufReadAction;
