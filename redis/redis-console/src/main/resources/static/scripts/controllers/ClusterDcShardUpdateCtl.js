@@ -231,7 +231,7 @@ index_module.controller('ClusterDcShardUpdateCtl',
                                      .then(function (result) {
                                          toastr.success("operation success");
                                          $window.location.href =
-                                             "/#/cluster_dc_shards?clusterName=" + $scope.clusterName;
+                                             "#/cluster_dc_shards/" + $scope.clusterName + "/" + $scope.currentDcName;
                                      }, function (result) {
                                          toastr.error(AppUtil.errorMsg(result), "operation fail");
                                      });
