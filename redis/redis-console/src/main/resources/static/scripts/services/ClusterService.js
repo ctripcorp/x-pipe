@@ -14,6 +14,11 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
             url: '/console/clusters/all',
             isArray: true
         },
+        find_clusters_by_active_dc_name: {
+            method: 'GET',
+            url: '/console/clusters/all?activeDcName=:activeDcName',
+            isArray: true
+        },
         create_cluster: {
             method: 'POST',
             url: '/console/clusters'
@@ -134,6 +139,18 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
             });
         return d.promise;
     }
+    
+    function findClustersByActiveDcName(activeDcName) {
+        var d = $q.defer();
+        resource.find_clusters_by_active_dc_name(
+        							  {activeDcName: activeDcName},
+                                   function (result) {
+                                       d.resolve(result);
+                                   }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
 
     function createCluster(cluster, selectedDcs, shards) {
         var d = $q.defer();
@@ -180,6 +197,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         load_cluster: loadCluster,
         findClusterDCs: findClusterDCs,
         findAllClusters: findAllClusters,
+        findClustersByActiveDcName: findClustersByActiveDcName,
         createCluster: createCluster,
         updateCluster: updateCluster,
         deleteCluster: deleteCluster,

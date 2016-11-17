@@ -13,5 +13,6 @@ public interface DcService {
 	List<DcTbl> findClusterRelatedDc(String clusterName);
 	List<DcTbl> findAllDetails(String dcName);
 	List<DcTbl> findAllActiveKeepers();
+	DcTbl findByDcName(String activeDcName);
 	
 }

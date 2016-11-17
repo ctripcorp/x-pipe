@@ -9,4 +9,5 @@ public interface DcClusterService {
 	DcClusterTbl find(String dcName, String clusterName);
 	List<DcClusterTbl> findAllDcClusters();
 	DcClusterTbl addDcCluster(String dcName, String clusterName);
+	List<DcClusterTbl> findByClusterIds(List<Long> clusterIds);
 }

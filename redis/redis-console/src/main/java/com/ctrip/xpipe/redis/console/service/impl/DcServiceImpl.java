@@ -94,5 +94,15 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 			}
     	});
 	}
+
+	@Override
+	public DcTbl findByDcName(final String dcName) {
+		return queryHandler.handleQuery(new DalQuery<DcTbl>() {
+			@Override
+			public DcTbl doQuery() throws DalException {
+				return dao.findDcByDcName(dcName, DcTblEntity.READSET_FULL);
+			}
+		});
+	}
 	
 }

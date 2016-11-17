@@ -1,45 +1,76 @@
-index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'NgTableParams',
-    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, NgTableParams, $filters) {
-		$scope.dcs=['jq','oy','fq'];
+index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'NgTableParams', 'ClusterService', 'DcService',
+    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, NgTableParams, ClusterService, DcService, $filters) {
+		
+		$scope.sourceDcSelected = sourceDcSelected;
+		$scope.targetDcSelected = targetDcSelected;
+		$scope.availableTargetDcs = availableTargetDcs;
+		$scope.preMigrate = preMigrate;
+		
+		init();
+		
+		function init() {
+			DcService.loadAllDcs().then(function(data){
+				$scope.dcs = data;
+			});
+		}
+		
+		function sourceDcSelected() {
+			var dcName = $scope.sourceDc;
+			if(dcName) {
+				ClusterService.findClustersByActiveDcName(dcName).then(function(data) {
+					$scope.clusters = data;
+					$scope.tableParams.reload();
+				});
+			}
+		}
+		
+		function targetDcSelected(cluster) {
+			if(cluster.targetDc == "-") {
+				cluster.selected = false;
+			} else {
+				cluster.selected = true;
+			}
+		}
+		
+		function availableTargetDcs(cluster) {
+			var dcs = [];
+			
+			cluster.dcClusterInfo.forEach(function(dcCluster) {
+				if(dcCluster.dcInfo.dcName != $scope.sourceDc) {
+					dcs.push(dcCluster.dcInfo);
+				}
+			});
+			
+			return dcs;
+		}
+		
+		function preMigrate() {
+			var selectedClusters = $scope.clusters.filter(function(cluster){
+				return cluster.selected;
+			});
+			console.log(selectedClusters);
+		}
+		
 		$scope.sourceDc = '';
 		
-		$scope.selected = [];
-		$scope.clusters = [{
-			clusterName : 'cluster1',
-			dcs : ['jq','oy','fq']
-			},
-			{
-			clusterName : 'cluster2',
-			dcs : ['jq','oy']
-		}];
+		$scope.clusters = [];
 		
-		$scope.toggle = function (item, list) {
-		    var idx = list.indexOf(item);
-		    if (idx > -1) {
-		      list.splice(idx, 1);
-		    }
-		    else {
-		      list.push(item);
-		    }
+		$scope.toggle = function (cluster) {
+			cluster.selected = !cluster.selected;
 		};
-		$scope.exists = function (item, list) {
-		    return list.indexOf(item) > -1;
-		};
+		
 		$scope.isIndeterminate = function() {
-		    return ($scope.selected.length !== 0 &&
-		        $scope.selected.length !== $scope.clusters.length);
+			// TODO [marsqing]
+			return false;
 		};
 
 		$scope.isChecked = function() {
-		    return $scope.selected.length === $scope.clusters.length;
+			// TODO [marsqing]
+			return false;
 		};
 
 		$scope.toggleAll = function() {
-		    if ($scope.selected.length === $scope.clusters.length) {
-		      $scope.selected = [];
-		    } else if ($scope.selected.length === 0 || $scope.selected.length > 0) {
-		      $scope.selected = $scope.clusters.slice(0);
-		    }
+			// TODO [marsqing]
 		};
 		
 		
@@ -49,7 +80,8 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
         }, {
             filterDelay:100,
             getData : function(params) {
-                params.total(2);
+            	// TODO [marsqing] paging control
+                // params.total(1);
                 return $scope.clusters;
             }
         });

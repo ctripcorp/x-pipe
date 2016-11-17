@@ -67,6 +67,17 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
     	});
 	}
+	
+	@Override
+	public List<ClusterTbl> findClustersByActiveDcId(final long activeDcId) {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return dao.findClustersByActiveDcId(activeDcId, ClusterTblEntity.READSET_FULL);
+			}
+		});
+	}
+
 
 	@Override
 	public List<ClusterTbl> findAllClusterNames() {
