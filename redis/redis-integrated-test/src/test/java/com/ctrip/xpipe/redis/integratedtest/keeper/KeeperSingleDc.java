@@ -32,8 +32,6 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 	@Test
 	public void testMakeBackupActive() throws Exception{
 		
-		RedisMeta redisMaster = getRedisMaster();
-		KeeperMeta backupKeeper = getKeepersBackup().get(0);
 		RedisKeeperServer redisKeeperServer = getRedisKeeperServer(backupKeeper);
 		Assert.assertEquals(PARTIAL_STATE.FULL, redisKeeperServer.getRedisMaster().partialState());
 		
@@ -55,14 +53,10 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 	@Test
 	public void testMakeActiveBackup() throws Exception{
 
-		RedisMeta redisMaster = getRedisMaster();
-		
-		KeeperMeta backupKeeper = getKeepersBackup().get(0);
 		logger.info(remarkableMessage("make keeper active{}"), backupKeeper);
 		setKeeperState(backupKeeper, KeeperState.ACTIVE, redisMaster.getIp(), redisMaster.getPort());
 
 		
-		KeeperMeta activeKeeper = getKeeperActive();
 		RedisKeeperServer redisKeeperServer = getRedisKeeperServer(activeKeeper);
 		
 		Assert.assertEquals(PARTIAL_STATE.FULL, redisKeeperServer.getRedisMaster().partialState());
@@ -75,11 +69,7 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 
 	@Test
 	public void testBackupActiveChangeManyTimes() throws Exception{
-		RedisMeta redisMaster = getRedisMaster();
-		
-		KeeperMeta activeKeeper = getKeeperActive();
-		KeeperMeta backupKeeper = getKeepersBackup().get(0);
-		
+				
 		for(int i=0;i<3;i++){
 			
 			logger.info(remarkableMessage("------{}-------"), i);
@@ -95,7 +85,6 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 			Assert.assertEquals(KeeperState.ACTIVE, getKeeperState(backupKeeper));
 			Assert.assertEquals(KeeperState.BACKUP, getKeeperState(activeKeeper));
 
-			
 			KeeperMeta tmp = backupKeeper;
 			backupKeeper = activeKeeper;
 			activeKeeper = tmp;
@@ -108,13 +97,10 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 	@Test
 	public void testReFullSync() throws ExecuteException, IOException{
 		
-		RedisMeta redisMaster = getRedisMaster();
 		RedisKeeperServer redisKeeperServer = getRedisKeeperServerActive(dc);
 		DefaultReplicationStore replicationStore = (DefaultReplicationStore) redisKeeperServer.getReplicationStore();
-		
 
 		DcMeta dcMeta = getDcMeta();
-		KeeperMeta activeKeeper = getKeeperActive();
 
 		RedisMeta slave1 = createSlave(activeKeeper.getIp(), activeKeeper.getPort());
 

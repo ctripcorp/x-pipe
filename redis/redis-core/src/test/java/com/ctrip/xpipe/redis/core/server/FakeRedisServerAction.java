@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.ctrip.xpipe.netty.ByteBufUtils;
@@ -95,7 +96,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		return result;
 	}
 
-	private void handleFullSync(OutputStream ous) throws IOException, InterruptedException {
+	private void handleFullSync(final OutputStream ous) throws IOException, InterruptedException {
 		
 		logger.info("[handleFullSync]");
 		fakeRedisServer.reGenerateRdb();
@@ -110,9 +111,18 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		ous.write(info.getBytes());
 		ous.flush();
 		
+		ScheduledFuture<?> future = null;
+		if(fakeRedisServer.isSendLFBeforeSendRdb()){
+			future = sendLfToSlave(ous);
+		}
+		
 		try {
 			Thread.sleep(fakeRedisServer.getSleepBeforeSendRdb());
 		} catch (InterruptedException e) {
+		}
+		
+		if(future != null){
+			future.cancel(true);
 		}
 		
 		BulkStringParser bulkStringParser = new BulkStringParser(fakeRedisServer.getRdbContent());
@@ -120,6 +130,21 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		ous.write(ByteBufUtils.readToBytes(byteBuf));
 		writeCommands(ous);
 		
+	}
+
+	private ScheduledFuture<?> sendLfToSlave(final OutputStream ous) {
+
+		return scheduled.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				
+				try {
+					ous.write("\n".getBytes());
+				} catch (IOException e) {
+					logger.error("[run]" + this, e);
+				}
+			}
+		}, 0, 1, TimeUnit.SECONDS);
 	}
 
 	public void addCommands(String commands){

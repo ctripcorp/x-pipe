@@ -27,8 +27,10 @@ public class FakeRedisRdbDumperTest extends AbstractFakeRedisTest {
 		CommandFuture<?> future = inMemoryPsync.execute();
 
 		sleep(sleepBeforeSendFullSyncInfo + 1000);
+
 		Assert.assertEquals(1, ((DefaultRedisKeeperServer)redisKeeperServer).getRdbDumpTryCount());
 		Assert.assertFalse(future.isSuccess());
+		
 	}
 	
 }

@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackupTest;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateUnknownTest;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.DefaultRedisKeeperServerConnectToFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.FakeRedisExceptionTest;
+import com.ctrip.xpipe.redis.keeper.impl.fakeredis.FakeRedisRdbDumpLong;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.FakeRedisRdbDumperTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStoreTest;
@@ -39,9 +40,11 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 	DefaultRedisSlaveTest.class,
 	RoleCommandHandlerTest.class,
 	DefaultKeeperConfigTest.class,
+	
 	DefaultRedisKeeperServerConnectToFakeRedisTest.class,
 	FakeRedisExceptionTest.class, 
-	FakeRedisRdbDumperTest.class
+	FakeRedisRdbDumperTest.class,
+	FakeRedisRdbDumpLong.class
 })
 public class AllTests {
 

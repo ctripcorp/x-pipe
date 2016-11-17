@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.server;
 
-
 import java.util.LinkedList;
 import java.util.List;
 
@@ -29,8 +28,11 @@ public class FakeRedisServer extends AbstractLifecycle{
 	private int    rdbOffset = 1;
 	private Server server; 
 	private String runId = RunidGenerator.DEFAULT.generateRunid();
-	private int sleepBeforeSendRdb = 0;
+	
 	private int sleepBeforeSendFullSyncInfo = 0;
+	private int sleepBeforeSendRdb = 0;
+	private boolean sendLFBeforeSendRdb = true;
+	
 	private List<FakeRedisServerAction> commandListeners = new LinkedList<>();
 	
 	public FakeRedisServer(int port){
@@ -168,6 +170,14 @@ public class FakeRedisServer extends AbstractLifecycle{
 	
 	public void setSleepBeforeSendFullSyncInfo(int sleepBeforeSendFullSyncInfo) {
 		this.sleepBeforeSendFullSyncInfo = sleepBeforeSendFullSyncInfo;
+	}
+
+	public boolean isSendLFBeforeSendRdb() {
+		return sendLFBeforeSendRdb;
+	}
+
+	public void setSendLFBeforeSendRdb(boolean sendLFBeforeSendRdb) {
+		this.sendLFBeforeSendRdb = sendLFBeforeSendRdb;
 	}
 
 }

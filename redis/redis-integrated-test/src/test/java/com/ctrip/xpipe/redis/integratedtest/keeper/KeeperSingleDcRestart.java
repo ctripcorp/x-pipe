@@ -1,69 +1,46 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-
-
-
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-
-
 
 /**
  * @author wenchao.meng
  *
- * Aug 17, 2016
+ *         Aug 17, 2016
  */
-public class KeeperSingleDcRestart extends AbstractKeeperIntegratedSingleDc{
+public class KeeperSingleDcRestart extends AbstractKeeperIntegratedSingleDc {
 
-	private RedisMeta redisMaster;
-	private KeeperMeta activeKeeper;
-	private KeeperMeta backupKeeper;
-	
-	@Before
-	public void beforeKeeperSingleDcRestart(){
-		
-		redisMaster = getRedisMaster();
-		activeKeeper = getKeeperActive();
-		backupKeeper = getKeepersBackup().get(0);
-	}
-
-	
 	@Test
-	public void testBackupRestart() throws Exception{
-		
+	public void testBackupRestart() throws Exception {
+
 		RedisKeeperServer redisKeeperServer = getRedisKeeperServer(backupKeeper);
-		
+
 		remove(redisKeeperServer);
-		
+
 		startKeeper(backupKeeper);
 		RedisKeeperServer newRedisKeeperServer = getRedisKeeperServer(backupKeeper);
 		Assert.assertNotEquals(newRedisKeeperServer, redisKeeperServer);
-		
+
 		Assert.assertEquals(KeeperState.PRE_BACKUP, newRedisKeeperServer.getRedisKeeperServerState().keeperState());
-		
+
 		setKeeperState(backupKeeper, KeeperState.BACKUP, activeKeeper.getIp(), activeKeeper.getPort());
 		sleep(2000);
-		
+
 		Assert.assertEquals(KeeperState.BACKUP, newRedisKeeperServer.getRedisKeeperServerState().keeperState());
 		Assert.assertEquals(PARTIAL_STATE.PARTIAL, newRedisKeeperServer.getRedisMaster().partialState());
 	}
 
-
 	@Test
-	public void testActiveRestart() throws Exception{
+	public void testActiveRestart() throws Exception {
 
-		
 		RedisKeeperServer redisKeeperServer = getRedisKeeperServer(activeKeeper);
 		remove(redisKeeperServer);
-		
-		//make backup active
+
+		// make backup active
 		logger.info(remarkableMessage("[make backup active]{}"), backupKeeper);
 		RedisKeeperServer rawBackupServer = getRedisKeeperServer(backupKeeper);
 		Assert.assertEquals(KeeperState.BACKUP, rawBackupServer.getRedisKeeperServerState().keeperState());
@@ -71,24 +48,22 @@ public class KeeperSingleDcRestart extends AbstractKeeperIntegratedSingleDc{
 		sleep(2000);
 		Assert.assertEquals(KeeperState.ACTIVE, rawBackupServer.getRedisKeeperServerState().keeperState());
 		Assert.assertEquals(PARTIAL_STATE.PARTIAL, rawBackupServer.getRedisMaster().partialState());
-		
-		
-		//start active again
+
+		// start active again
 		startKeeper(activeKeeper);
 		RedisKeeperServer newRedisKeeperServer = getRedisKeeperServer(activeKeeper);
 		Assert.assertNotEquals(newRedisKeeperServer, redisKeeperServer);
-		
+
 		Assert.assertEquals(KeeperState.PRE_ACTIVE, newRedisKeeperServer.getRedisKeeperServerState().keeperState());
-		
-		//make new keeper backup
+
+		// make new keeper backup
 		logger.info(remarkableMessage("[make old active backup]{}"), activeKeeper);
 		setKeeperState(activeKeeper, KeeperState.BACKUP, backupKeeper.getIp(), backupKeeper.getPort());
 		sleep(2000);
-		
+
 		Assert.assertEquals(KeeperState.BACKUP, newRedisKeeperServer.getRedisKeeperServerState().keeperState());
 		Assert.assertEquals(PARTIAL_STATE.PARTIAL, newRedisKeeperServer.getRedisMaster().partialState());
 
 	}
-
 
 }
