@@ -62,14 +62,14 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 		return true;
 	}
 
+	
 	@Override
-	protected void setProperties() {
-		super.setProperties();
+	protected void doBeforeAbstractTest() {
+		super.doBeforeAbstractTest();
 		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, xpipeConfig);
 		System.setProperty("TOTAL_SLOTS", "16");
 	}
-	
-	
+
 	protected void arrangeTaskStart(boolean isStart) {
 		System.setProperty(ArrangeTaskExecutor.ARRANGE_TASK_EXECUTOR_START, String.valueOf(isStart));
 	}

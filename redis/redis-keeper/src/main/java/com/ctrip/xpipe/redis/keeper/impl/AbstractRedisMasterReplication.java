@@ -197,6 +197,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private void checkTimeout(final Channel channel) {
 
+		logger.info("[checkTimeout]{}s, {}", replTimeoutSeconds, channel);
 		final ScheduledFuture<?> repliTimeoutCheckFuture = scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 
 					@Override
@@ -214,6 +215,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception {
+				
+				logger.info("[cancelTimeout]{}s, {}", replTimeoutSeconds, channel);
 				repliTimeoutCheckFuture.cancel(true);
 			}
 		});

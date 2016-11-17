@@ -30,8 +30,13 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	
 	private MetaServerKeeperService metaService;
 	private LeaderElectorManager leaderElectorManager;
-	
 	protected SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool = new XpipeNettyClientKeyedObjectPool();
+	
+	
+	protected RedisMeta redisMaster;
+	protected KeeperMeta activeKeeper;
+	protected KeeperMeta backupKeeper;
+	protected List<RedisMeta> slaves;
 	
 	@Before
 	public void beforeAbstractKeeperIntegratedSingleDc() throws Exception{
@@ -45,6 +50,12 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		startRedises();
 		startKeepers();
 		makeKeeperRight();
+
+		redisMaster = getRedisMaster();
+		activeKeeper = getKeeperActive();
+		backupKeeper = getKeepersBackup().get(0);
+		slaves = getRedisSlaves();
+
 		sleep(3000);//wait for structure to build
 	}
 

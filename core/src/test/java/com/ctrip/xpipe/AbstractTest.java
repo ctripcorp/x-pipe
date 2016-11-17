@@ -71,13 +71,15 @@ public class AbstractTest {
 
 	private ComponentRegistry startedComponentRegistry;
 
+	protected void doBeforeAbstractTest() {}
+	
 	@Before
 	public void beforeAbstractTest() throws Exception {
-
 		orginProperties = (Properties) System.getProperties().clone();
+		doBeforeAbstractTest();
+
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty(CatUtils.CAT_ENABLED_KEY, "false");
-		setProperties();
 
 		logger.info(remarkableMessage("[begin test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
 
@@ -112,10 +114,6 @@ public class AbstractTest {
 
 	protected String getTestName() {
 		return name.getMethodName();
-	}
-
-	protected void setProperties() {
-
 	}
 
 	protected boolean deleteTestDir() {

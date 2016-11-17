@@ -4,12 +4,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -23,19 +20,6 @@ import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
  */
 public class KeeperSingleDcSlaveof extends AbstractKeeperIntegratedSingleDc {
 
-	private RedisMeta redisMaster;
-	private KeeperMeta activeKeeper;
-	private KeeperMeta backupKeeper;
-	private List<RedisMeta> slaves;
-
-	@Before
-	public void beforeKeeperSingleDcRestart() {
-
-		redisMaster = getRedisMaster();
-		activeKeeper = getKeeperActive();
-		backupKeeper = getKeepersBackup().get(0);
-		slaves = getRedisSlaves();
-	}
 
 	@Test
 	public void testXSlaveof() throws Exception {
@@ -48,8 +32,36 @@ public class KeeperSingleDcSlaveof extends AbstractKeeperIntegratedSingleDc {
 	public void testSlaveof() throws Exception {
 		testMakeRedisSlave(false);
 	}
+	
+	@Test
+	public void testSlaveofBackup() throws Exception{
+		
+		sendMessageToMasterAndTestSlaveRedis();
+
+		//test backupKeeper partial sync
+		RedisKeeperServer backupKeeperServer = getRedisKeeperServer(backupKeeper);
+		Set<RedisSlave> currentSlaves = backupKeeperServer.slaves();
+		Assert.assertEquals(0, currentSlaves.size());
+
+		logger.info(remarkableMessage("make slave slaves slaveof backup keeper"));
+		new XSlaveofJob(slaves, backupKeeper.getIp(), backupKeeper.getPort(), clientPool).execute();
+		
+		logger.info(remarkableMessage("make backup keeper active"));
+		//make backup active
+		setKeeperState(backupKeeper, KeeperState.ACTIVE, redisMaster.getIp(), redisMaster.getPort());
+		
+		sleep(1000);
+		
+		currentSlaves = backupKeeperServer.slaves();
+		Assert.assertEquals(slaves.size(), currentSlaves.size());
+		for(RedisSlave redisSlave : currentSlaves){
+			Assert.assertEquals(PARTIAL_STATE.PARTIAL, redisSlave.partialState());
+		}
+
+	}
 
 	private void testMakeRedisSlave(boolean xslaveof) throws Exception {
+		
 		sendMessageToMasterAndTestSlaveRedis();
 
 		RedisKeeperServer backupKeeperServer = getRedisKeeperServer(backupKeeper);

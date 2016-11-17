@@ -40,13 +40,13 @@ public class ArrangeTaskExecutorTest extends AbstractMetaServerTest{
 		arrangeTaskExecutor.initialize();
 		arrangeTaskExecutor.start();
 		
-		sleep(20);
+		sleep(50);
 		
 		Assert.assertTrue(arrangeTaskExecutor.getTaskThread().isAlive());
 		
 		arrangeTaskExecutor.stop();
 		
-		sleep(20);
+		sleep(50);
 		Assert.assertNull(arrangeTaskExecutor.getTaskThread());
 
 	}
