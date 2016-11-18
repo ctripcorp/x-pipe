@@ -77,4 +77,14 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 		});
 	}
 
+	@Override
+	public List<DcClusterTbl> findByClusterIds(final List<Long> clusterIds) {
+		return queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
+			@Override
+			public List<DcClusterTbl> doQuery() throws DalException {
+				return dao.findByClusterIds(clusterIds, DcClusterTblEntity.READSET_FULL_WITH_DC);
+			}
+		});
+	}
+
 }

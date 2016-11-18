@@ -3,18 +3,26 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author zhangle
@@ -26,6 +34,8 @@ public class ClusterController extends AbstractConsoleController{
 	private DcService dcService;
 	@Autowired
 	private ClusterService clusterService;
+	@Autowired
+	private DcClusterService dcClusterService;
 	
 	@RequestMapping(value = "/clusters/{clusterName}/dcs", method = RequestMethod.GET)
 	public List<DcTbl> findClusterDcs(@PathVariable String clusterName) {
@@ -38,10 +48,45 @@ public class ClusterController extends AbstractConsoleController{
 	}
 
 	@RequestMapping(value = "/clusters/all", method = RequestMethod.GET)
-	public List<ClusterTbl> findAllClusters() {
-		return valueOrEmptySet(ClusterTbl.class, clusterService.findAllClusters());
+	public List<ClusterTbl> findAllClusters(@RequestParam(required = false) String activeDcName) {
+		if(StringUtil.isEmpty(activeDcName)) {
+			return valueOrEmptySet(ClusterTbl.class, clusterService.findAllClusters());
+		} else {
+			DcTbl dc = dcService.findByDcName(activeDcName);
+			if(dc != null) {
+				List<ClusterTbl> clusters = clusterService.findClustersByActiveDcId(dc.getId());
+				
+				if(!clusters.isEmpty()) {
+					List<Long> clusterIds = new ArrayList<Long>(clusters.size());
+					for (ClusterTbl c : clusters) {
+						clusterIds.add(c.getId());
+					}
+					
+					List<DcClusterTbl> dcClusters = dcClusterService.findByClusterIds(clusterIds);
+					
+					return joinClusterAndDcCluster(clusters, dcClusters);
+				}
+			}
+			return Collections.emptyList();
+		}
 	}
 	
+	private List<ClusterTbl> joinClusterAndDcCluster(List<ClusterTbl> clusters, List<DcClusterTbl> dcClusters) {
+		Map<Long, ClusterTbl> id2Cluster = new HashMap<>();
+		for (ClusterTbl c : clusters) {
+			id2Cluster.put(c.getId(), c);
+		}
+		
+		for (DcClusterTbl dcc : dcClusters) {
+			ClusterTbl c = id2Cluster.get(dcc.getClusterId());
+			if(c != null) {
+				c.getDcClusterInfo().add(dcc);
+			}
+		}
+		
+		return clusters;
+	}
+
 	@RequestMapping(value = "/count/clusters", method= RequestMethod.GET)
 	public Long getClustersCount() {
 		return valueOrDefault(Long.class, clusterService.getAllCount());

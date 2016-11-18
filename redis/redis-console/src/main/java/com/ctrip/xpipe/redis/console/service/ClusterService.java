@@ -9,6 +9,7 @@ public interface ClusterService {
 	ClusterTbl find(String clusterName);
 	ClusterTbl find(long clusterId);
 	List<ClusterTbl> findAllClusters();
+	List<ClusterTbl> findClustersByActiveDcId(long activeDc);
 	List<ClusterTbl> findAllClusterNames();
 	Long getAllCount();
 	ClusterTbl createCluster(ClusterModel clusterModel);
@@ -17,5 +18,4 @@ public interface ClusterService {
 	void bindDc(String clusterName, String dcName);
 	void unbindDc(String clusterName, String dcName);
 	void update(ClusterTbl cluster);
-	
 }

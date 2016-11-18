@@ -41,7 +41,7 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                     }
                     
 
-                    loadShards($scope.clusterName, $scope.dcs[0].dcName);
+                    loadShards($scope.clusterName, $scope.currentDcName);
 
                 }, function (result) {
                     toastr.error(AppUtil.errorMsg(result));

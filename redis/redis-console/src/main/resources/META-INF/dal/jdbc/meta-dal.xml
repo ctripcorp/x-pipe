@@ -119,9 +119,9 @@
 	<entity name="cluster-tbl" table="CLUSTER_TBL" alias="ct">
 		<member name="count" value-type="long" select-expr="COUNT(*)" all="false" />
 	
-		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
-		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct"/>
-		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2"/>
+		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt" multiple="true"/>
+		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct" multiple="true"/>
+		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2" multiple="true"/>
 
 		<readsets>
 			<readset name="COUNT">
@@ -132,6 +132,7 @@
 			</readset>
 			<readset name="FULL_RELATED_DC">
 				<readset-ref name="FULL"/>
+				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
 				<readset-ref name="FULL" relation-name="dc-info"/>
 			</readset>
 			<readset name="FULL_WITH_SHARDS">
@@ -165,6 +166,18 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-clusters-by-active-dc-id" type="SELECT" multiple="true">
+				<param name='activedc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='activedc-id'/> = ${activedc-id}
+					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/> DESC
+					]]>
+				</statement>
+			</query>
 			<query name="find-cluster-by-cluster-name" type="SELECT" multiple="false">
 				<param name='cluster-name'/>
 				<statement>
@@ -194,9 +207,18 @@
 	<entity name="dc-cluster-tbl" table="DC_CLUSTER_TBL" alias="dct">
 		<var name="dc-name" value-type="String"/>
 		<var name="cluster-name" value-type="String"/>
+		<var name="cluster-ids" value-type="java.util.List&lt;Long&gt;" />
+		
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
+
+		<readsets>
+			<readset name="FULL_WITH_DC">
+				<readset-ref name="FULL"/>
+				<readset-ref name="FULL" relation-name="dc-info"/>
+			</readset>
+		</readsets>
 
 		<query-defs>
 			<query name="find-dc-cluster-by-id" type="SELECT" multiple="false">
@@ -237,6 +259,19 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='cluster-id' /> = ${cluster-id} 
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-by-cluster-ids" type="SELECT" multiple="true">
+				<param name="cluster-ids"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='dc-info'/>
+					WHERE <FIELD name='dc-id'/> = dt.id
+					AND <FIELD name='cluster-id'/> IN <IN>${cluster-ids}</IN> 
+					AND <FIELD name='deleted'/> = 0
+					AND dt.deleted = 0
 					]]>
 				</statement>
 			</query>
