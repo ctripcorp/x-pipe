@@ -328,7 +328,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	}
 
 	protected FakeRedisServer startFakeRedisServer(int sleepBeforeSendRdb) throws Exception {
-		int port = randomPort(6379, 6479); 
+		int port = incrementalPort(6379, 6479); 
 		FakeRedisServer fakeRedisServer = new FakeRedisServer(port, sleepBeforeSendRdb);
 		fakeRedisServer.initialize();
 		fakeRedisServer.start();

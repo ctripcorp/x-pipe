@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -12,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
@@ -53,15 +52,9 @@ public class DefaultRdbStore implements RdbStore {
 	
 	@Override
 	public int writeRdb(ByteBuf byteBuf) throws IOException {
-		// TODO ByteBuf to ByteBuffer correct?
-		int wrote = 0;
-		ByteBuffer[] bufs = byteBuf.nioBuffers();
-		if (bufs != null) {
-			for (ByteBuffer buf : bufs) {
-				wrote += channel.write(buf);
-			}
-		}
-
+		
+		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, channel);
+		
 		return wrote;
 	}
 

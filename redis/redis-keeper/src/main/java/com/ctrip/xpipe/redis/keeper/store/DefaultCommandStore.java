@@ -15,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.netty.ByteBufUtils;
+import com.ctrip.xpipe.netty.ByteBufferUtils;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandReader;
@@ -89,24 +91,11 @@ public class DefaultCommandStore implements CommandStore {
 		rotateFileIfNenessary();
 
 		CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
-		int wrote = 0;
 		
-		try{
-			ByteBuffer buf = byteBuf.internalNioBuffer(0, byteBuf.readableBytes());
-			wrote += cmdFileCtx.channel.write(buf);
-		}catch(Exception e){
-			logger.info("[appendCommands]", e);
-			ByteBuffer[] buffers = byteBuf.nioBuffers();
-			// TODO ensure all read
-			if (buffers != null) {
-				for (ByteBuffer buf : buffers) {
-					wrote += cmdFileCtx.channel.write(buf);
-				}
-			}
-		}
+		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.channel);
 
-		byteBuf.readerIndex(byteBuf.writerIndex());
 		offsetNotifier.offsetIncreased(cmdFileCtx.currentStartOffset + cmdFileCtx.channel.size() - 1);
+		
 		return wrote;
 	}
 

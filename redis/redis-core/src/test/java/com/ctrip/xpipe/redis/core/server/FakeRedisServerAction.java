@@ -71,9 +71,9 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 			String command = writeCommands.take();
 			String []sps = split(command);
 			for(String sp : sps){
+				logger.debug("[writeCommands]{}, {}", socket, sp);
 				ous.write(sp.getBytes());
 				ous.flush();
-				logger.debug("[writeCommands]{},{}",getSocket(), sp);
 				TimeUnit.MILLISECONDS.sleep(fakeRedisServer.getSendBatchIntervalMilli());
 			}
 		}
@@ -98,7 +98,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 
 	private void handleFullSync(final OutputStream ous) throws IOException, InterruptedException {
 		
-		logger.info("[handleFullSync]");
+		logger.info("[handleFullSync]{}", getSocket());
 		fakeRedisServer.reGenerateRdb();
 		fakeRedisServer.addCommandsListener(this);
 
@@ -127,7 +127,11 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		
 		BulkStringParser bulkStringParser = new BulkStringParser(fakeRedisServer.getRdbContent());
 		ByteBuf byteBuf = bulkStringParser.format();
-		ous.write(ByteBufUtils.readToBytes(byteBuf));
+		byte []rdb = ByteBufUtils.readToBytes(byteBuf);
+		if(logger.isDebugEnabled()){
+			logger.debug("[handleFullSync]{}, {}", getSocket(), new String(rdb));
+		}
+		ous.write(rdb);
 		writeCommands(ous);
 		
 	}

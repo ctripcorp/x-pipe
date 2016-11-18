@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-import java.util.List;
 import java.util.Set;
 
 import org.junit.Assert;

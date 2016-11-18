@@ -72,6 +72,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		
 		sleep(sleepBeforeSendRdb/4);
 		int rdbDumpCount1 = ((DefaultRedisKeeperServer)redisKeeperServer).getRdbDumpTryCount();
+
 		Assert.assertEquals(1, rdbDumpCount1);
 		
 		int keeperPort = redisKeeperServer.getListeningPort();
