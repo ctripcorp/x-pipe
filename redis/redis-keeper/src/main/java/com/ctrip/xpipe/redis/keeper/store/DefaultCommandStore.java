@@ -90,18 +90,23 @@ public class DefaultCommandStore implements CommandStore {
 
 		CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
 		int wrote = 0;
-		ByteBuffer[] buffers = byteBuf.nioBuffers();
-		// TODO ensure all read
-		if (buffers != null) {
-			for (ByteBuffer buf : buffers) {
-				wrote += cmdFileCtx.channel.write(buf);
+		
+		try{
+			ByteBuffer buf = byteBuf.internalNioBuffer(0, byteBuf.readableBytes());
+			wrote += cmdFileCtx.channel.write(buf);
+		}catch(Exception e){
+			logger.info("[appendCommands]", e);
+			ByteBuffer[] buffers = byteBuf.nioBuffers();
+			// TODO ensure all read
+			if (buffers != null) {
+				for (ByteBuffer buf : buffers) {
+					wrote += cmdFileCtx.channel.write(buf);
+				}
 			}
 		}
 
 		byteBuf.readerIndex(byteBuf.writerIndex());
-
 		offsetNotifier.offsetIncreased(cmdFileCtx.currentStartOffset + cmdFileCtx.channel.size() - 1);
-
 		return wrote;
 	}
 

@@ -93,8 +93,7 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 
 	protected void appendCommands(ByteBuf byteBuf) throws IOException {
 		
-		int n = currentReplicationStore.appendCommands(byteBuf);
-		logger.debug("[appendCommands]{}", n);
+		currentReplicationStore.appendCommands(byteBuf);
 	}
 
 	protected abstract void doWhenFullSyncToNonFreshReplicationStore(String masterRunid) throws IOException;
