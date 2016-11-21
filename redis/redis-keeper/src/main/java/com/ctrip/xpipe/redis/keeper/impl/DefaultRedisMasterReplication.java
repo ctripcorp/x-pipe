@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;

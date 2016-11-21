@@ -109,7 +109,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
-		slaveEventLoopGroup = new NioEventLoopGroup();
+		slaveEventLoopGroup = new NioEventLoopGroup(1);
 
 	}
 

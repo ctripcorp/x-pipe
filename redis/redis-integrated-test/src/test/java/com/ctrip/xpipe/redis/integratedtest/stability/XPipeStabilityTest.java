@@ -25,7 +25,6 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
-import redis.clients.jedis.exceptions.JedisException;
 
 /**
  * @author shyin
@@ -67,6 +66,7 @@ public class XPipeStabilityTest {
 
 	public int MAX_KEY_COUNT = Integer.parseInt(System.getProperty("max-key-count", "20000000"));
 	public int TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("timeout", "10"));
+	public int TIME_TOO_LONG_TO_LOG_MILLI = Integer.parseInt(System.getProperty("time-long-log", "10"));
 	public int KEY_EXPIRE_SECONDS = Integer.parseInt(System.getProperty("key-expire-seconds", "3600"));
 	public int QPS_COUNT_INTERVAL = Integer.parseInt(System.getProperty("qps-count-interval", "5"));
 	private int producerThreadNum = Integer.parseInt(System.getProperty("thread", "8"));
@@ -82,12 +82,12 @@ public class XPipeStabilityTest {
 	private int masterPort = Integer.parseInt(System.getProperty("master-port", "6379"));
 	private String slaveAddress = System.getProperty("slave", "127.0.0.1");
 	private int slavePort = Integer.parseInt(System.getProperty("slave-port", "6379"));
-	
+
 	private ValueCheck valueCheck;
 
 	@Before
 	public void setUp() {
-		
+
 		logger.info("config:{}", new JsonCodec(false, true).encode(this));
 		valueCheckThreadNum = (producerThreadNum < valueCheckThreadNum) ? valueCheckThreadNum : producerThreadNum;
 		logger.info("[ProducerThread]{} [ValueCheckThread]{}", producerThreadNum, valueCheckThreadNum);
@@ -112,13 +112,13 @@ public class XPipeStabilityTest {
 
 		masterPool = getJedisPool(masterAddress, masterPort, producerThreadNum * 2, producerThreadNum, 2000);
 		slavePool = getJedisPool(slaveAddress, slavePort, valueCheckThreadNum * 2, valueCheckThreadNum, 2000);
-		
-		if(startValueCheck){
-			
+
+		if (startValueCheck) {
+
 			logger.info("[setUp][addValueCheck]");
 			valueCheck = new DefaultValueCheck(valueCheckThreadNum, slavePool);
-		}else{
-			
+		} else {
+
 			logger.info("[setUp][NullValueCheck]");
 			valueCheck = new NullValueCheck();
 		}
@@ -176,9 +176,6 @@ public class XPipeStabilityTest {
 				records.put(key, value);
 				master.setex(key, KEY_EXPIRE_SECONDS, value);
 				queryCnt.incrementAndGet();
-			} catch (JedisException e) {
-				logger.error("[startProducerJob][run]JedisException : {}", e);
-				records.remove(key);
 			} catch (Exception e) {
 				logger.error("[startProducerJob][run]InsertValue Exception : Key:{} Value:{} Exception:{}", key, value,
 						e);
@@ -202,7 +199,7 @@ public class XPipeStabilityTest {
 	}
 
 	private void startConsumerJob() {
-		
+
 		consumerThreadPool.execute(new Runnable() {
 			@SuppressWarnings("static-access")
 			@Override
@@ -239,8 +236,14 @@ public class XPipeStabilityTest {
 				records.remove(key);
 
 				catIntervalCnt.incrementAndGet();
-				long delay = System.nanoTime() - Long.valueOf(value.substring(0, value.indexOf("-")));
-				catIntervalTotalDelay.set(catIntervalTotalDelay.get() + delay);
+				long current = System.nanoTime();
+				long produceTime = Long.valueOf(value.substring(0, value.indexOf("-")));
+				long delay = current - produceTime;
+				catIntervalTotalDelay.addAndGet(delay);
+				
+				if(delay > TIME_TOO_LONG_TO_LOG_MILLI * 1000 * 1000){
+					logger.warn("[onPMessage][too long]key:{}, {}mili, value:{}", key, (current - produceTime)/1000, value.substring(0, Math.min(35, value.length())));
+				}
 			} else {
 				logger.error("[XPipeStabilityTestJedisPubSub][Get Null From records]Key:{} Value:{}", key, value);
 			}
@@ -345,12 +348,12 @@ public class XPipeStabilityTest {
 	}
 
 	public static abstract class XPipeStabilityTestExceptionHandler implements UncaughtExceptionHandler {
-		
+
 		private Logger logger = LoggerFactory.getLogger(getClass());
-		
+
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
-			
+
 			if (e instanceof InterruptedException) {
 				logger.error("[XPipeStabilityTestExceptionHandler][InterruptedException][{}]", Thread.currentThread(),
 						e);

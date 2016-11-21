@@ -81,8 +81,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
     private EventLoopGroup bossGroup ;
     private EventLoopGroup workerGroup;
+    
+    public static String KEY_DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT = "DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT";
+    public static int DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT = Integer.parseInt(System.getProperty(KEY_DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, "5"));   
 
-	private Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>(); 
+	private Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>();
 	
 	private ScheduledExecutorService scheduled;
 	
@@ -141,7 +144,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
 		bossGroup = new NioEventLoopGroup(1);
-		workerGroup = new NioEventLoopGroup();
+		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT);
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = initKeeperServerState();
