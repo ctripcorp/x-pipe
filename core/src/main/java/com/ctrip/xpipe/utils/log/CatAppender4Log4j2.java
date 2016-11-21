@@ -78,8 +78,6 @@ public final class CatAppender4Log4j2 extends AbstractAppender {
 
 			String logMessage = StringUtil.join(",", message, extra);
 			
-			System.out.println("cat message:" + logMessage);
-			
 			if (!StringUtil.isEmpty(logMessage)) {
 				Cat.logError(logMessage, exception);
 			} else {
