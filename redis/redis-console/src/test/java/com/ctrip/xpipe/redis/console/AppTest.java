@@ -2,9 +2,12 @@ package com.ctrip.xpipe.redis.console;
 
 import java.io.IOException;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import com.ctrip.xpipe.spring.AbstractProfile;
 
 /**
  * @author lepdou 2016-11-09
@@ -12,13 +15,21 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class AppTest extends AbstractConsoleTest{
 	
+	@Before
+	public void startUp() {
+		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
+		System.setProperty("FXXPIPE_HOME", "src/test/resources");
+	}
+	
 	@Test
-	public void startConsole() throws IOException{
-		
-		System.setProperty("FXXPIPE_HOME", "/opt/data");
-		
+	public void startConsole8080() throws IOException {
+		System.setProperty("server.port", "8080");
+		start();
+	}
+	
+	private void start() throws IOException {
 		SpringApplication.run(AppTest.class);
-		
+
 		waitForAnyKeyToExit();
 	}
 
