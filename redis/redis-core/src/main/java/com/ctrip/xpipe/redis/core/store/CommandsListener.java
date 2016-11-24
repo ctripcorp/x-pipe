@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 
+import io.netty.channel.ChannelFuture;
+
 /**
  * @author wenchao.meng
  *
@@ -11,7 +13,7 @@ public interface CommandsListener {
 
 	boolean isOpen();
 	
-	void onCommand(ReferenceFileRegion referenceFileRegion);
+	ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion);
 	
 	void beforeCommand();
 }

@@ -18,6 +18,11 @@ public class ReferenceFileRegion extends DefaultFileRegion{
 	
 	private ReferenceFileChannel referenceFileChannel;
 	
+	/**
+	 * for debug purpose, ignore
+	 */
+	private long totalPos;
+	
 	public ReferenceFileRegion(FileChannel fileChannel, long position, long count, ReferenceFileChannel referenceFileChannel) {
 		
 		super(fileChannel, position, count);
@@ -39,6 +44,16 @@ public class ReferenceFileRegion extends DefaultFileRegion{
 	public String toString() {
 		
 		return String.format("(%s), pos:%d, len:%d", referenceFileChannel, position(), count());
+	}
+
+
+	public long getTotalPos() {
+		return totalPos;
+	}
+
+
+	public void setTotalPos(long totalPos) {
+		this.totalPos = totalPos;
 	}
 
 }

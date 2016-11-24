@@ -13,6 +13,8 @@ import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.utils.StringUtil;
 
+import io.netty.channel.ChannelFuture;
+
 /**
  * @author wenchao.meng
  *
@@ -83,9 +85,9 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
-	public void onCommand(ReferenceFileRegion referenceFileRegion) {
+	public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
 		
-		redisSlave.onCommand(referenceFileRegion);
+		return redisSlave.onCommand(referenceFileRegion);
 	}
 
 	@Override

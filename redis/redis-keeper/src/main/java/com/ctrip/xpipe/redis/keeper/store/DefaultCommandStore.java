@@ -20,9 +20,12 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandReader;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 /**
  * @author qing.gu
@@ -32,6 +35,8 @@ import io.netty.buffer.ByteBuf;
 public class DefaultCommandStore implements CommandStore {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
+	
+	private final static Logger delayTraceLogger = KeeperLogger.getDelayTraceLog();
 
 	private final File baseDir;
 
@@ -89,10 +94,15 @@ public class DefaultCommandStore implements CommandStore {
 		rotateFileIfNenessary();
 
 		CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
-		
-		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.channel);
 
-		offsetNotifier.offsetIncreased(cmdFileCtx.currentStartOffset + cmdFileCtx.channel.size() - 1);
+		delayTraceLogger.debug("[appendCommands][begin]");
+		
+		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.channel, delayTraceLogger);
+
+		long offset = cmdFileCtx.currentStartOffset + cmdFileCtx.channel.size() - 1;
+		delayTraceLogger.debug("[appendCommands][ end ]{}", offset + 1);
+
+		offsetNotifier.offsetIncreased(offset);
 		
 		return wrote;
 	}
@@ -235,6 +245,9 @@ public class DefaultCommandStore implements CommandStore {
 			ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
 
 			curPosition += referenceFileRegion.count();
+			
+			referenceFileRegion.setTotalPos(curPosition);
+			
 			if (referenceFileRegion.count() <= 0) {
 				logger.info("[read]{}", referenceFileRegion);
 			}
@@ -287,7 +300,7 @@ public class DefaultCommandStore implements CommandStore {
 	}
 
 	@Override
-	public void addCommandsListener(long offset, CommandsListener listener) throws IOException {
+	public void addCommandsListener(long offset, final CommandsListener listener) throws IOException {
 
 		logger.info("[addCommandsListener][begin] from offset {}, {}", offset, listener);
 
@@ -305,11 +318,23 @@ public class DefaultCommandStore implements CommandStore {
 		try {
 			while (listener.isOpen() && !Thread.currentThread().isInterrupted()) {
 
-				ReferenceFileRegion referenceFileRegion = cmdReader.read();
+				final ReferenceFileRegion referenceFileRegion = cmdReader.read();
 
 				logger.debug("[addCommandsListener] {}", referenceFileRegion);
 
-				listener.onCommand(referenceFileRegion);
+				delayTraceLogger.debug("[write][begin]{}, {}", listener, referenceFileRegion.getTotalPos());
+				
+				ChannelFuture future = listener.onCommand(referenceFileRegion);
+						
+				if(future != null && delayTraceLogger.isDebugEnabled()){
+					
+						future.addListener(new ChannelFutureListener() {
+						@Override
+						public void operationComplete(ChannelFuture future) throws Exception {
+							delayTraceLogger.debug("[write][ end ]{}, {}", listener, referenceFileRegion.getTotalPos());
+						}
+					});
+				}
 
 				if (referenceFileRegion.count() <= 0) {
 					try {

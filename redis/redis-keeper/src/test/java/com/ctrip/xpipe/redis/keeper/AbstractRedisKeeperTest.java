@@ -19,6 +19,8 @@ import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 
+import io.netty.channel.ChannelFuture;
+
 /**
  * @author wenchao.meng
  *
@@ -154,7 +156,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					}
 
 					@Override
-					public void onCommand(ReferenceFileRegion referenceFileRegion) {
+					public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
 						
 						try {
 							byte [] message = readFileChannelInfoMessageAsBytes(referenceFileRegion);
@@ -162,6 +164,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 						} catch (IOException e) {
 							logger.error("[onCommand]" + referenceFileRegion, e);
 						}
+						return null;
 					}
 
 				});

@@ -48,15 +48,23 @@ public class ByteBufUtils {
 		byte []result = readToBytes(byteBuf);
 		return new String(result,Codec.defaultCharset);
 	}
-	
-	
+
 	public static int writeByteBufToFileChannel(ByteBuf byteBuf, FileChannel fileChannel) throws IOException{
+		return writeByteBufToFileChannel(byteBuf, fileChannel, null);
+	}
+
+	
+	public static int writeByteBufToFileChannel(ByteBuf byteBuf, FileChannel fileChannel, Logger tracelogger) throws IOException{
 
 		int wrote = 0;
 		try{
 			ByteBuffer buf = byteBuf.internalNioBuffer(byteBuf.readerIndex(), byteBuf.readableBytes());
 			if(logger.isDebugEnabled()){
 				logger.debug("[appendCommands]{}", ByteBufferUtils.readToString(buf.slice()));
+			}
+			
+			if(tracelogger != null){
+				tracelogger.debug("[writeByteBufToFileChannel][begin real write]");
 			}
 			wrote += fileChannel.write(buf);
 		}catch(Exception e){

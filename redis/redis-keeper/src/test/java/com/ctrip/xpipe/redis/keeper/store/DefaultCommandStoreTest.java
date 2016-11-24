@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.google.common.util.concurrent.SettableFuture;
 
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 
 /**
  * @author wenchao.meng
@@ -56,10 +57,11 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 				commandStore.addCommandsListener(0, new CommandsListener() {
 
 					@Override
-					public void onCommand(ReferenceFileRegion referenceFileRegion) {
+					public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
 
 						sb.append(readFileChannelInfoMessageAsString(referenceFileRegion));
 						semaphore.release();
+						return null;
 					}
 
 					@Override
@@ -188,11 +190,12 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 					commandStore.addCommandsListener(offset, new CommandsListener() {
 
 						@Override
-						public void onCommand(ReferenceFileRegion referenceFileRegion) {
+						public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
 
 							logger.debug("[onCommand]{}", referenceFileRegion);
 							result.append(readFileChannelInfoMessageAsString(referenceFileRegion));
 							semaphore.release((int) referenceFileRegion.count());
+							return null;
 						}
 
 						@Override

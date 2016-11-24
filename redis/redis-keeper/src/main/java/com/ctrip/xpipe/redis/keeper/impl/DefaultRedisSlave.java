@@ -226,10 +226,10 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public void onCommand(ReferenceFileRegion referenceFileRegion) {
+	public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
 		
 		logger.debug("[onCommand]{}, {}", this, referenceFileRegion);
-		doWriteFile(referenceFileRegion);
+		return doWriteFile(referenceFileRegion);
 	}
 
 	@Override

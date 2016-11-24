@@ -232,7 +232,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		if(keeperRedisMaster != null && target != null){
 			Endpoint current = keeperRedisMaster.masterEndPoint();
-			if(current.getHost().equals(target.getHost()) && current.getPort() == target.getPort()){
+			if(current != null && current.getHost().equals(target.getHost()) && current.getPort() == target.getPort()){
 				logger.info("[reconnectMaster][master the same]{},{}", current, target);
 				return;
 			}

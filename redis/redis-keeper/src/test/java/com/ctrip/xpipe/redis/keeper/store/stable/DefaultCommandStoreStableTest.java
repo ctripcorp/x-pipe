@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 
 /**
  * @author wenchao.meng
@@ -69,12 +70,13 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 				commandStore.addCommandsListener(0, new CommandsListener() {
 
 					@Override
-					public void onCommand(ReferenceFileRegion referenceFileRegion) {
+					public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
 
 						String result = readFileChannelInfoMessageAsString(referenceFileRegion);
 						if (!comparator.compare(readIndex, result)) {
 							future.setFailure(new Exception("not equals:" + result));
 						}
+						return null;
 					}
 
 					@Override
