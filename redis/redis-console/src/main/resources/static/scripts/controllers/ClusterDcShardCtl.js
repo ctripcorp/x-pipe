@@ -1,7 +1,7 @@
 index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '$window', '$location', 'toastr', 'AppUtil', 'ClusterService', 'ShardService',
     function ($rootScope, $scope, $stateParams, $window, $location, toastr, AppUtil, ClusterService, ShardService) {
 
-        $scope.dcs, $scope.dcActiveTab, $scope.shards;
+        $scope.dcs, $scope.shards;
         $scope.clusterName = $stateParams.clusterName;
         
         $scope.switchDc = switchDc;
@@ -40,7 +40,6 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
 	                    }
                     }
                     
-
                     loadShards($scope.clusterName, $scope.currentDcName);
 
                 }, function (result) {

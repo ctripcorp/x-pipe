@@ -4,9 +4,7 @@ index_module.controller('ClusterDcShardUpdateCtl',
                          function ($rootScope, $scope, $stateParams, $window, $location, toastr, AppUtil,
                                    ClusterService, ShardService, RedisService, KeeperContainerService) {
 
-                             $scope.dcs, $scope.dcActiveTab,
-                                 $scope.hasMasterRedis = false, 
-                                 $scope.createKeeperErrorMsg = '';
+                             $scope.dcs,$scope.hasMasterRedis = false, $scope.createKeeperErrorMsg = '';
                              $scope.dcShards = {};
                              $scope.clusterName = $stateParams.clusterName;
                              $scope.shardName = $stateParams.shardName;
@@ -62,11 +60,6 @@ index_module.controller('ClusterDcShardUpdateCtl',
                                              return;
                                          }
                                          $scope.dcs = result;
-                                         for(var i = 0 ; i != $scope.dcs.length; ++i) {
-                                        	 if($scope.dcs[i].dcName === $scope.currentDcName) {
-                                        		 break;
-                                        	 }
-                                         }
                                          
                                          ClusterService.load_cluster($scope.clusterName)
                                  	 		.then(function(result) {
@@ -104,7 +97,8 @@ index_module.controller('ClusterDcShardUpdateCtl',
 
                              function preCreateRedis() {
                                  $scope.toCreateRedis = {
-                                		 redisPort : 6379
+                                		 redisPort : 6379,
+                                		 master : false
                                  };
                                  
                                  $('#createRedisModal').modal('show');
@@ -112,7 +106,6 @@ index_module.controller('ClusterDcShardUpdateCtl',
 
                              function createRedis() {
                                  $scope.toCreateRedis.id = 0;
-                                 if($scope.hasRedisMaster == true) $scope.toCreateRedis.redisMaster = -1;
                                  var shard = $scope.dcShards[$scope.currentDcName];
                                  shard.redises.push($scope.toCreateRedis);
                                  $scope.toCreateRedis = {};
@@ -235,26 +228,23 @@ index_module.controller('ClusterDcShardUpdateCtl',
                                      }, function (result) {
                                          toastr.error(AppUtil.errorMsg(result), "operation fail");
                                      });
-
                              }
 
                              function refreshShardStatus() {
-                                 $scope.hasRedisMaster = false;
-
+                                 if(! $scope.currentDcName === $scope.masterDcName) {
+                                	 $scope.hasRedisMaster = false;
+                                	 return;
+                                 }
+                                 
                                  var shard = $scope.dcShards[$scope.currentDcName];
-
+                                 $scope.hasRedisMaster = false;
                                  if (shard.redises && shard.redises.length) {
                                      shard.redises.forEach(function (redis) {
-                                         if (redis.redisMaster == 0) {
+                                         if (redis.master === true) {
                                              $scope.hasRedisMaster = true;
                                          }
                                      })
                                  }
-                                 
-                                 if(shard.upstream === "0.0.0.0:0000") {
-                                	 $scope.hasRedisMaster = true;
-                                 }
-
                              }
 
                          }]);

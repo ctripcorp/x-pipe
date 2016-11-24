@@ -16,7 +16,6 @@
             </li>
         </ul>
 
-
         <div ng-if="dcs && dcs.length">
             <div class="col-xs-12">
                 <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="shard in shards">
@@ -46,7 +45,7 @@
                         <tbody>
                         <tr ng-repeat="redis in shard.redises">
                             <td title="{{redis.runId}}">
-                                <span class="label label-info" ng-if="redis.redisMaster == 0">
+                                <span class="label label-info" ng-if="redis.master === true">
                                     Master</span>  Redis
                             </td>
                             <td ng-bind="redis.redisIp">
@@ -67,14 +66,12 @@
                         </tbody>
                     </table>
                 </div>
-
             </div>
         </div>
 
         <div ng-if="(!dcs || !dcs.length) && clusterName">
             无shards
         </div>
-
     </div>
 </div>
 
