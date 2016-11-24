@@ -14,5 +14,4 @@ public interface ClusterMetaModifiedNotifier {
 	
 	public void notifyClusterDelete(final String clusterName, List<DcTbl> dcs);
 	
-	public void notifyUpstreamChanged(final String clusterName, final String shardName, final String ip, final int port, List<DcTbl> dcs);
 }

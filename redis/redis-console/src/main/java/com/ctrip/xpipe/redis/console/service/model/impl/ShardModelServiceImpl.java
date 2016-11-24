@@ -120,10 +120,6 @@ public class ShardModelServiceImpl implements ShardModelService{
 		List<RedisTbl> shard_redises = redisService.findAllByDcClusterShard(dcClusterShardInfo.getDcClusterShardId());
 		if(null != shard_redises) {
 			for(RedisTbl redis : shard_redises) {
-				if(!redis.isMaster()) {
-					redis.setRedisMaster(XpipeConsoleConstant.MASTER_REQUIRED_TAG);
-				}
-				
 				if(redis.getRedisRole().equals(XpipeConsoleConstant.ROLE_REDIS)) {
 					shardModel.addRedis(redis);
 				} else {

@@ -25,9 +25,6 @@ import com.ctrip.xpipe.redis.console.model.DcClusterTblEntity;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.DcTblDao;
 import com.ctrip.xpipe.redis.console.model.DcTblEntity;
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
-import com.ctrip.xpipe.redis.console.model.SetinelTblDao;
-import com.ctrip.xpipe.redis.console.model.SetinelTblEntity;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
@@ -46,7 +43,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	private DcClusterTblDao dcClusterTblDao;
 	private ShardTblDao shardTblDao;
 	private DcClusterShardTblDao dcClusterShardTblDao;
-	private SetinelTblDao setinelTblDao;
 	
 	@Autowired
 	private ShardDao shardDao;
@@ -61,7 +57,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			dcClusterTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterTblDao.class);
 			shardTblDao = ContainerLoader.getDefaultContainer().lookup(ShardTblDao.class);
 			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
-			setinelTblDao = ContainerLoader.getDefaultContainer().lookup(SetinelTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}
@@ -129,12 +124,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 
 	@DalTransaction
 	public int bindDc(final ClusterTbl cluster, final DcTbl dc) throws DalException {
-		List<SetinelTbl> setinels = queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
-			@Override
-			public List<SetinelTbl> doQuery() throws DalException {
-				return setinelTblDao.findByDcId(dc.getId(), SetinelTblEntity.READSET_FULL);
-			}
-		});
 		List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
@@ -142,23 +131,30 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			}
 		});
 		
-		DcClusterTbl proto = dcClusterTblDao.createLocal();
-		proto.setDcId(dc.getId())
-			.setClusterId(cluster.getId());
-		dcClusterTblDao.insert(proto);
-		DcClusterTbl dcCluster = dcClusterTblDao.findDcClusterByName(dc.getDcName(), cluster.getClusterName(), DcClusterTblEntity.READSET_FULL);
-		
-		if(null != shards) {
-			SetinelTbl setinel = ((null == setinels || 0 == setinels.size())? setinelTblDao.createLocal().setSetinelId(0) : setinels.get(0));
-			List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
-			for(ShardTbl shard : shards) {
-				DcClusterShardTbl dcClusterShard = dcClusterShardTblDao.createLocal();
-				dcClusterShard.setDcClusterId(dcCluster.getDcClusterId())
-					.setShardId(shard.getId())
-					.setSetinelId(setinel.getSetinelId());
-				dcClusterShards.add(dcClusterShard);
+		DcClusterTbl existingDcCluster = queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
+			@Override
+			public DcClusterTbl doQuery() throws DalException {
+				return dcClusterTblDao.findDcClusterById(dc.getId(), cluster.getId(), DcClusterTblEntity.READSET_FULL);
 			}
-			dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
+		});
+		// not binded
+		if(null == existingDcCluster) {
+			DcClusterTbl proto = dcClusterTblDao.createLocal();
+			proto.setDcId(dc.getId())
+				.setClusterId(cluster.getId());
+			dcClusterTblDao.insert(proto);
+			DcClusterTbl dcCluster = dcClusterTblDao.findDcClusterByName(dc.getDcName(), cluster.getClusterName(), DcClusterTblEntity.READSET_FULL);
+			
+			if(null != shards) {
+				List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
+				for(ShardTbl shard : shards) {
+					DcClusterShardTbl dcClusterShard = dcClusterShardTblDao.createLocal();
+					dcClusterShard.setDcClusterId(dcCluster.getDcClusterId())
+						.setShardId(shard.getId());
+					dcClusterShards.add(dcClusterShard);
+				}
+				dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
+			}
 		}
 		
 		return 0;

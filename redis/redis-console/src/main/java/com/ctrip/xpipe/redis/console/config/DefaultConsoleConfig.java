@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.config;
 
-import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 
 import java.util.Arrays;
