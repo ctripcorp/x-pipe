@@ -1,0 +1,31 @@
+{
+	"clusterStats": {
+		"cluster": {
+			"clusterId": "cluster_meng",
+			"shardStats": {
+				"shard": {
+					"shardId": "shard1",
+					"redisStats": {
+						"1": {
+							"id": 1,
+							"ip": "127.0.0.1",
+							"port": 6379,
+							"role": "redis",
+							"master": true
+						},
+						"2": {
+							"id": 2,
+							"ip": "127.0.0.1",
+							"port": 6389,
+							"role": "redis",
+							"master": false
+						}
+					},
+					"keeperStats": {
+						
+					}
+				}
+			}
+		}
+	}
+}
