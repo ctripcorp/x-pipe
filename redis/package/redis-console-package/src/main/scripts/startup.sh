@@ -18,7 +18,7 @@ echo "current env:"$ENV
 if [ $ENV = "PRO" ]
 then
     #GB
-    USED_MEM=10
+    USED_MEM=5
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g -XX:+AlwaysPreTouch"
 else
     #MB
