@@ -25,8 +25,11 @@ public class SingleKeeperGc extends AbstractKeeperIntegratedSingleDc{
 	@Test
 	public void startTest() throws IOException{
 		
-		sendMessageToMasterAndTestSlaveRedis();
-		
+		try{
+			sendMessageToMasterAndTestSlaveRedis();
+		}catch(Throwable e){
+			logger.error("[startTest]", e);
+		}
 		waitForAnyKeyToExit();
 	}
 

@@ -25,6 +25,7 @@
         </logger>
         <logger name="io.netty" level="INFO">
         </logger>
+		<logger name="com.ctrip.xpipe.redis.keeper.monitor.DefaultCommandStoreDelay" level="INFO"/>
         <root level="INFO">
             <appender-ref ref="Console"/>
             <appender-ref ref="RollingFileInfo"/>

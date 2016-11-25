@@ -89,11 +89,13 @@ public class DefaultValueCheck extends AbstractStartStoppable implements ValueCh
 					if (null != pair) {
 						try {
 							String key = pair.getKey();
-							String value = pair.getValue();
+							String pre = pair.getValue();
+							
 							String actualValue = slave.get(key);
-							if (!value.equals(actualValue)) {
+							String actualCompare = actualValue.substring(0, pre.length()); 
+							if (!pre.equals(actualCompare)) {
 								logger.error("[startValueCheckJob][run][ValueCheck]Key:{}, Expect:{}, Get:{}", key,
-										value, actualValue);
+										pre, actualCompare);
 							}
 						} catch (JedisConnectionException e) {
 							logger.error("[startValueCheckJob][run]JedisConnectionException:{}", e);

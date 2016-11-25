@@ -20,6 +20,8 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandReader;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
+import com.ctrip.xpipe.redis.keeper.monitor.DefaultCommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 
@@ -52,6 +54,8 @@ public class DefaultCommandStore implements CommandStore {
 
 	private AtomicReference<CommandFileContext> cmdFileCtxRef = new AtomicReference<>();
 	private Object cmdFileCtxRefLock = new Object();
+	
+	private CommandStoreDelay commandStoreDelay = new DefaultCommandStoreDelay(this);
 
 	public DefaultCommandStore(File file, int maxFileSize) throws IOException {
 		this.baseDir = file.getParentFile();
@@ -95,12 +99,17 @@ public class DefaultCommandStore implements CommandStore {
 
 		CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
 
+		//delay monitor
 		delayTraceLogger.debug("[appendCommands][begin]");
+		commandStoreDelay.beginWrite();
 		
 		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.channel, delayTraceLogger);
 
 		long offset = cmdFileCtx.currentStartOffset + cmdFileCtx.channel.size() - 1;
+		
+		//delay monitor
 		delayTraceLogger.debug("[appendCommands][ end ]{}", offset + 1);
+		commandStoreDelay.endWrite(offset + 1);
 
 		offsetNotifier.offsetIncreased(offset);
 		
@@ -323,14 +332,16 @@ public class DefaultCommandStore implements CommandStore {
 				logger.debug("[addCommandsListener] {}", referenceFileRegion);
 
 				delayTraceLogger.debug("[write][begin]{}, {}", listener, referenceFileRegion.getTotalPos());
+				commandStoreDelay.beginSend(listener, referenceFileRegion.getTotalPos());
 				
 				ChannelFuture future = listener.onCommand(referenceFileRegion);
 						
-				if(future != null && delayTraceLogger.isDebugEnabled()){
-					
+				if(future != null){
 						future.addListener(new ChannelFutureListener() {
 						@Override
 						public void operationComplete(ChannelFuture future) throws Exception {
+							
+							commandStoreDelay.flushSucceed(listener, referenceFileRegion.getTotalPos());;
 							delayTraceLogger.debug("[write][ end ]{}, {}", listener, referenceFileRegion.getTotalPos());
 						}
 					});
