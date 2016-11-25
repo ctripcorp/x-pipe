@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.codec.JsonCodec;
 
 /**
  * @author shyin
@@ -16,7 +15,7 @@ import com.ctrip.xpipe.codec.JsonCodec;
  */
 public abstract class AbstractConsoleController {
 	protected Logger logger = LoggerFactory.getLogger(getClass());
-	protected Codec coder = new JsonCodec();
+	protected Codec coder = Codec.DEFAULT;
 	
 	@SuppressWarnings("unchecked")
 	protected <T> T valueOrDefault(Class<T> clazz, T result) {

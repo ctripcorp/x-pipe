@@ -57,7 +57,7 @@
                         <tbody>
                         <tr ng-repeat="redis in dcShards[currentDcName].redises">
                             <td title="{{redis.runId}}">
-                                <span class="label label-info" ng-if="redis.redisMaster == 0">
+                                <span class="label label-info" ng-if="redis.master === true">
                                     Master</span>  Redis
                             </td>
                             <td ng-bind="redis.redisIp">
@@ -134,13 +134,12 @@
                     </label>
                     <div class="col-sm-6">
                         <label class="radio-inline">
-                            <input type="radio" name="isMaster" value="0" ng-model="toCreateRedis.redisMaster"> 是
+                            <input type="radio" name="isMaster" data-ng-value="true" ng-model="toCreateRedis.master"> 是
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="isMaster" value="-1" ng-model="toCreateRedis.redisMaster"
+                            <input type="radio" name="isMaster" data-ng-value="false" ng-model="toCreateRedis.master"
                                    ng-checked="true"> 否
                         </label>
-
                     </div>
                 </div>
             </div>

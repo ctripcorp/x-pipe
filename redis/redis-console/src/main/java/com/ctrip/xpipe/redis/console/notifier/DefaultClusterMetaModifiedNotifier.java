@@ -34,17 +34,19 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 	private MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper;
 
 	private ExecutorService fixedThreadPool;
+	private MetaNotifyRetryPolicy retryPolicy;
 
 	@PostConstruct
 	public void postConstruct() {
 		fixedThreadPool = Executors.newFixedThreadPool(config.getConsoleNotifyThreads(),
 				XpipeThreadFactory.create("ConsoleNotifierThreadPool"));
+		retryPolicy = new MetaNotifyRetryPolicy(config.getConsoleNotifyRetryInterval());
 	}
 
 	@Override
 	public void notifyClusterUpdate(final String dcName, final String clusterName) {
 		submitNotifyTask(new MetaNotifyTask<Void>("notifyClusterUpdate", config.getConsoleNotifyRetryTimes(),
-				new MetaNotifyRetryPolicy(config.getConsoleNotifyRetryInterval())) {
+				retryPolicy) {
 
 			@Override
 			public Void doNotify() {
@@ -61,33 +63,12 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 		if (null != dcs) {
 			for (final DcTbl dc : dcs) {
 				submitNotifyTask(new MetaNotifyTask<Void>("notifyClusterDelete", config.getConsoleNotifyRetryTimes(),
-						new MetaNotifyRetryPolicy(config.getConsoleNotifyRetryInterval())) {
+						retryPolicy) {
 
 					@Override
 					public Void doNotify() {
 						logger.info("[notifyClusterDelete]{},{}", clusterName, dc.getDcName());
 						metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).clusterDeleted(clusterName);
-						return null;
-					}
-				});
-			}
-		}
-	}
-
-	@Override
-	public void notifyUpstreamChanged(final String clusterName, final String shardName, final String ip, final int port,
-			List<DcTbl> dcs) {
-		if (null != dcs) {
-			for (final DcTbl dc : dcs) {
-				submitNotifyTask(new MetaNotifyTask<Void>("notifyUpstreamChanged", config.getConsoleNotifyRetryTimes(),
-						new MetaNotifyRetryPolicy(config.getConsoleNotifyRetryInterval())) {
-
-					@Override
-					public Void doNotify() {
-						logger.info("[notifyUpstreamChanged]{},{},{},{},{}", clusterName, shardName, ip, port,
-								dc.getDcName());
-//						metaServerConsoleServiceManagerWrapper.get(dc.getDcName()).upstreamChange(clusterName,
-//								shardName, ip, port);
 						return null;
 					}
 				});

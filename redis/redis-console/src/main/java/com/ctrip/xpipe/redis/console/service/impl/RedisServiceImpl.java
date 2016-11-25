@@ -40,6 +40,16 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 	@Autowired
 	private ClusterMetaModifiedNotifier notifier;
 	
+	private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
+		@Override
+		public int compare(RedisTbl o1, RedisTbl o2) {
+			if (o1.getId() == o2.getId()) {
+				return 0;
+			}
+			return -1;
+		}
+	};
+	
 	@Override
 	public RedisTbl find(final long id) {
 		return queryHandler.handleQuery(new DalQuery<RedisTbl>() {
@@ -129,16 +139,6 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
 	private void updateRedises(List<RedisTbl> origin, List<RedisTbl> target) {
 		validateKeeperContainers(RedisDao.findWithRole(target, XpipeConsoleConstant.ROLE_KEEPER));
-		
-		Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
-			@Override
-			public int compare(RedisTbl o1, RedisTbl o2) {
-				if (o1.getId() == o2.getId()) {
-					return 0;
-				}
-				return -1;
-			}
-		};
 
 		List<RedisTbl> toCreate = (List<RedisTbl>) setOperator.difference(RedisTbl.class, target, origin,
 				redisComparator);
@@ -176,9 +176,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 				}
 				proto.setId(redis.getId()).setRedisIp(redis.getRedisIp()).setRedisPort(redis.getRedisPort())
 						.setRedisRole(XpipeConsoleConstant.ROLE_REDIS);
-				if(redis.getRedisMaster() == XpipeConsoleConstant.NO_EXIST_ID) {
-					proto.setMaster(true);
-				}
+				proto.setMaster(redis.isMaster()? true : false);
 				
 				if (null != dcClusterShard) {
 					proto.setDcClusterShardId(dcClusterShard.getDcClusterShardId());
@@ -211,6 +209,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
 	private void validateKeeperContainers(List<RedisTbl> keepers) {
 		if (2 != keepers.size()) {
+			if(0 == keepers.size()) {
+				return;
+			}
 			throw new BadRequestException("Keepers' size must be 0 or 2");
 		}
 
