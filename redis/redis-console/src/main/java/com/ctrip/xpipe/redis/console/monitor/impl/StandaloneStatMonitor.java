@@ -92,12 +92,13 @@ public class StandaloneStatMonitor extends AbstractStatMonitor implements StatMo
 						}
 					}
 				} catch (Exception ex) {
-					logger.error("[Unexpected error]",ex);
+					logger.error("[Unexpected error]cluster:{}, shard:{}",cluster.getClusterId(), shard.getShardId(), ex);
 				} finally {
 					if(null != master) master.close();
 					for(Jedis slave : jedisSlaves) {
 						if(null != slave) slave.close();
 					}
+					jedisSlaves.clear();
 				}
 			}
 		}
@@ -121,7 +122,7 @@ public class StandaloneStatMonitor extends AbstractStatMonitor implements StatMo
 			Thread.currentThread().setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
 				@Override
 				public void uncaughtException(Thread arg0, Throwable arg1) {
-					logger.error("[error]", arg1);
+					logger.error("[error]{}:{}",slaveRedis.getIp(), slaveRedis.getPort(), arg1);
 					Cat.logError(arg1);
 					redisStatCheckResult.put(slaveRedis, Boolean.FALSE);
 					if (null != slave) {
