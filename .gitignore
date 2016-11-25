@@ -15,6 +15,7 @@ reports
 # local files
 .DS_Store
 datasources.xml
+!redis/redis-console/src/test/resources/datasources.xml
 
 # Idea files
 .idea

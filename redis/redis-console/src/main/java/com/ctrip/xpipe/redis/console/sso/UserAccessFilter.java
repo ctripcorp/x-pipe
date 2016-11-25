@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.sso;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 
-
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -44,14 +44,13 @@ public class UserAccessFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
         throws IOException, ServletException {
 
-        //ignore api request
-        if (!((HttpServletRequest) request).getRequestURI().startsWith("/api")) {
+        //ignore api request and static resources
+        if (! isRequestIgnorable(((HttpServletRequest) request).getRequestURI())) {
             String currentAccessUser = userInfoHolder.getUser().getUserId();
 
             if (!isCurrentAccessUserHitWhiteList(currentAccessUser)) {
                 HttpServletResponse resp = (HttpServletResponse) response;
-                resp.getWriter().append("sorry you has not permission to access the system.");
-                resp.flushBuffer();
+                resp.sendError(HttpStatus.SC_UNAUTHORIZED);
                 return;
             }
         }
@@ -78,5 +77,11 @@ public class UserAccessFilter implements Filter {
             return userWhiteList.contains(user);
         }
 
+    }
+    
+    private boolean isRequestIgnorable(String uri) {
+    	return uri.startsWith("/api") || uri.endsWith(".html")
+    			|| uri.endsWith(".css") || uri.endsWith(".js")
+    			|| uri.endsWith(".woff") || uri.endsWith(".ttf");
     }
 }

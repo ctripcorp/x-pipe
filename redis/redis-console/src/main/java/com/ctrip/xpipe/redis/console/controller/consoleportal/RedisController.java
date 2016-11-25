@@ -22,9 +22,19 @@ public class RedisController extends AbstractConsoleController{
 	
 	@RequestMapping(value = "/clusters/{clusterName}/dcs/{dcName}/shards/{shardName}", method = RequestMethod.POST)
 	public void updateRedises(@PathVariable String clusterName, @PathVariable String dcName,
-			@PathVariable String shardName, @RequestBody ShardModel shardModel) {
-		logger.info("[Update Redises]{},{},{},{}",clusterName, dcName, shardName, shardModel);
-		redisService.updateRedises(clusterName,dcName,shardName,shardModel);
+			@PathVariable String shardName, @RequestBody(required = false) ShardModel shardModel) {
+		try {
+			if(null != shardModel) {
+				logger.info("[Update Redises][construct]{},{},{},{}",clusterName, dcName, shardName, shardModel);
+				redisService.updateRedises(clusterName,dcName,shardName,shardModel);
+				logger.info("[Update Redises][success]{},{},{},{}",clusterName, dcName, shardName, shardModel);
+			} else {
+				logger.error("[Update Redises][Null ShardModel]{},{},{},{}",clusterName, dcName, shardName, shardModel);
+			}
+		} catch (Exception e) {
+			logger.error("[Update Redises][failed]{},{},{},{}",clusterName, dcName, shardName, shardModel);
+		}
+		
 	}
   
 }
