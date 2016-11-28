@@ -3,6 +3,9 @@ package com.ctrip.xpipe.redis.core.metaserver.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.concurrent.ListenableFuture;
+
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
@@ -54,6 +57,16 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		List<String> result = new ArrayList<>();
 		result.add(metaServerAddress);
 		return result;
+	}
+
+	@Override
+	public ChangePrimaryDcResult changePrimaryDc(String clusterId, String shardId, String primaryDc, long eventId) {
+		return null;
+	}
+
+	@Override
+	public ListenableFuture<ResponseEntity<String>> getChangePrimaryDcStatus(long eventId, long offset) {
+		return null;
 	}
 
 }
