@@ -33,6 +33,20 @@ public interface MetaServerConsoleService extends MetaServerService{
 	 */
 	ChangePrimaryDcResult changePrimaryDc(String clusterId, String shardId, String primaryDc, long eventId);
 
+	/**
+	 * response string example:
+	 * total:3
+	 * step1:
+	 * ....
+	 * step2:
+	 * ...
+	 * step3:
+	 * ...
+	 * >>>>>>>>>>(at least 10 >)
+	 * @param eventId
+	 * @param offset
+	 * @return
+	 */
 	ListenableFuture<ResponseEntity<String>> getChangePrimaryDcStatus(long eventId, long offset);
 	
 	DcMeta getDynamicInfo();
