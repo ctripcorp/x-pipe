@@ -73,9 +73,11 @@ public class StandaloneStatMonitor extends AbstractStatMonitor implements StatMo
 						fixedThreadPool.submit(new SlaveListenJob(shard.getRedisMaster(), redis, slave));
 						jedisSlaves.add(slave);
 					}
+					TimeUnit.MILLISECONDS.sleep(500);
 					
 					master.publish(generateURL(shard.getRedisMaster().getIp(), shard.getRedisMaster().getPort()),
 							TEST_KEY);
+					logger.debug("[Master][publish]{}-{},{}:{}",cluster.getClusterId(), shard.getShardId(), shard.getRedisMaster().getIp(), shard.getRedisMaster().getPort());
 					
 					TimeUnit.MILLISECONDS.sleep(ALERT_INTERVAL_MILLS);
 					for(StandaloneRedisStat redis : shard.getRedisSlaves()) {
@@ -92,12 +94,15 @@ public class StandaloneStatMonitor extends AbstractStatMonitor implements StatMo
 						}
 					}
 				} catch (Exception ex) {
-					logger.error("[Unexpected error]",ex);
+					logger.error("[Unexpected error]cluster:{}, shard:{}",cluster.getClusterId(), shard.getShardId(), ex);
+					Cat.logError(new LinkRouteBrokenException(String.format("[Unknown redis]LinkRouteBroken:%s-%s", 
+							cluster.getClusterId(), shard.getShardId())));
 				} finally {
 					if(null != master) master.close();
 					for(Jedis slave : jedisSlaves) {
 						if(null != slave) slave.close();
 					}
+					jedisSlaves.clear();
 				}
 			}
 		}
@@ -121,7 +126,7 @@ public class StandaloneStatMonitor extends AbstractStatMonitor implements StatMo
 			Thread.currentThread().setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
 				@Override
 				public void uncaughtException(Thread arg0, Throwable arg1) {
-					logger.error("[error]", arg1);
+					logger.error("[error]{}:{}",slaveRedis.getIp(), slaveRedis.getPort(), arg1);
 					Cat.logError(arg1);
 					redisStatCheckResult.put(slaveRedis, Boolean.FALSE);
 					if (null != slave) {

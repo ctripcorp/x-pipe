@@ -25,6 +25,7 @@
         </logger>
         <logger name="io.netty" level="INFO">
         </logger>
+        <logger name="com.ctrip.xpipe.redis.console.monitor.impl.StandaloneStatMonitor" level="DEBUG"></logger>
         <root level="INFO">
         	<appender-ref ref="Console"/>
             <appender-ref ref="RollingFileInfo"/>
