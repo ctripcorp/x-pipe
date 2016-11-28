@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.stability;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,7 +27,11 @@ public class DelayManager{
 	private int tooLongBaseMilli;
 	
 	private AtomicLong tooLongCount = new AtomicLong();
+	
 	private long maxDelayNanos = 0;
+	private long maxDelayTime = 0;
+	
+    private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 	
 	private AtomicLong totalCount = new AtomicLong();
 	private AtomicLong totalDelay = new AtomicLong();
@@ -47,6 +53,8 @@ public class DelayManager{
 		
 		if(delayNanos > maxDelayNanos){
 			maxDelayNanos = delayNanos;
+			maxDelayTime = System.currentTimeMillis();
+			
 		}
 	}
 
@@ -70,7 +78,8 @@ public class DelayManager{
 			long average = countDelta == 0 ? 0 : (currentTotalDelay - previousTotalDelay)/countDelta;
 			long countLong = currentTooLongCount - previousTooLongCount;
 			
-			logger.info("average:{} micro, time > {}ms: {}, max: {} micro", average/1000, tooLongBaseMilli, countLong,maxDelayNanos/1000);
+			logger.info("average:{} micro, time > {}ms: {}", average/1000, tooLongBaseMilli, countLong,maxDelayNanos/1000);
+			logger.info("max: {} micro, happen time:{}", maxDelayNanos/1000, sdf.format(new Date(maxDelayTime)));
 			
 			maxDelayNanos = 0;
 			previousTotalCount = currentTotalCount;
