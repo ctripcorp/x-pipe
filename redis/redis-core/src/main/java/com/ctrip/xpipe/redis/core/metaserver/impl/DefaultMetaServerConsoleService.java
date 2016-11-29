@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.concurrent.ListenableFuture;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -60,12 +58,17 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	}
 
 	@Override
-	public ChangePrimaryDcResult changePrimaryDc(String clusterId, String shardId, String primaryDc, long eventId) {
+	public PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc) {
 		return null;
 	}
 
 	@Override
-	public ListenableFuture<ResponseEntity<String>> getChangePrimaryDcStatus(long eventId, long offset) {
+	public void makeMasterReadOnly(String clusterId, String shardId) {
+		
+	}
+
+	@Override
+	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
 		return null;
 	}
 

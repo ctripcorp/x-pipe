@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.concurrent.ListenableFuture;
-
+import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 
@@ -24,57 +21,64 @@ public interface MetaServerConsoleService extends MetaServerService{
 	void clusterDeleted(String clusterId);
 	
 	/**
-	 * change primary dc to newdc
 	 * @param clusterId
 	 * @param shardId
 	 * @param primaryDc
-	 * @param eventId
-	 * @return
+	 * @return 
+	 * 0 : success
+	 * 1 : already 
+	 * other : fail
 	 */
-	ChangePrimaryDcResult changePrimaryDc(String clusterId, String shardId, String primaryDc, long eventId);
+	PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc);
+	
+	/**
+	 * just try it
+	 * @param clusterId
+	 * @param shardId
+	 */
+	void makeMasterReadOnly(String clusterId, String shardId);
 
 	/**
-	 * response string example:
-	 * total:3
-	 * step1:
-	 * ....
-	 * step2:
-	 * ...
-	 * step3:
-	 * ...
-	 * >>>>>>>>>>(at least 10 >)
-	 * @param eventId
-	 * @param offset
+	 * for new primary: promote redis, sync to redis<br/>
+	 * for others: sync to new primary dc's active keeper
+	 * @param clusterId
+	 * @param shardId
+	 * @param newPrimaryDc
 	 * @return
 	 */
-	ListenableFuture<ResponseEntity<String>> getChangePrimaryDcStatus(long eventId, long offset);
-	
-	DcMeta getDynamicInfo();
+	PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc);
 
+	DcMeta getDynamicInfo();
 	
-	public static class ChangePrimaryDcResult{
+	public static enum PRIMARY_DC_CHECK_RESULT{
 		
-		private CHANGE_PRIMARY_DC_STATUS  changePrimaryDcStatus;
-		private String desc;
-		
-		public ChangePrimaryDcResult(CHANGE_PRIMARY_DC_STATUS  changePrimaryDcStatus, String desc){
-			this.changePrimaryDcStatus = changePrimaryDcStatus;
-			this.desc = desc;
-		}
-		
-		public CHANGE_PRIMARY_DC_STATUS getChangePrimaryDcStatus() {
-			return changePrimaryDcStatus;
-		}
-		public String getDesc() {
-			return desc;
-		}
-	}
-	
-	public static enum CHANGE_PRIMARY_DC_STATUS{
 		SUCCESS,
-		ALREADY_DOING,
-		CLUSTER_ID_NOT_FOUND,
-		SHARTD_ID_NOT_FOUND
+		PRIMARY_DC_ALREADY_IS_NEW,
+		FAIL
 	}
 	
+	public static class PrimaryDcCheckMessage extends ErrorMessage<PRIMARY_DC_CHECK_RESULT>{
+		
+		public PrimaryDcCheckMessage(){}
+
+		public PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT errorType, String errorMessage) {
+			super(errorType, errorMessage);
+		}
+		
+	}
+	
+	public static enum PRIMARY_DC_CHANGE_RESULT{
+		
+		SUCCESS,
+		FAIL
+	}
+	
+	public static class PrimaryDcChangeMessage extends ErrorMessage<PRIMARY_DC_CHANGE_RESULT>{
+		
+		public PrimaryDcChangeMessage(){}
+
+		public PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT errorType, String errorMessage) {
+			super(errorType, errorMessage);
+		}
+	}
 }
