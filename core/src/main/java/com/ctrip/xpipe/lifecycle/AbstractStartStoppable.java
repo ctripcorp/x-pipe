@@ -44,7 +44,7 @@ public abstract class AbstractStartStoppable implements Startable, Stoppable{
 		}
 	}
 
-	protected abstract void doStop();
+	protected abstract void doStop() throws Exception;
 	
 	
 	public boolean isStarted() {

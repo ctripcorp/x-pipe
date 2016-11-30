@@ -30,18 +30,26 @@ import io.netty.handler.logging.LoggingHandler;
  */
 public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implements KeyedPooledObjectFactory<InetSocketAddress, NettyClient> {
 
-	private NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup();
+	public static final int DEFAULT_KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD = Integer.parseInt(System.getProperty("KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD", "4"));
+	private int eventLoopThreads;
+	private NioEventLoopGroup eventLoopGroup;
 	private Bootstrap b = new Bootstrap();
 	private int connectTimeoutMilli = 5000;
 	private static Logger logger = LoggerFactory.getLogger(NettyKeyedPoolClientFactory.class);
 
 	public NettyKeyedPoolClientFactory() {
+		this(DEFAULT_KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD);
+	}
+
+	public NettyKeyedPoolClientFactory(int eventLoopThreads) {
+		this.eventLoopThreads = eventLoopThreads;
 
 	}
 	
 	@Override
 	protected void doStart() throws Exception {
-
+		
+		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads);
 		b.group(eventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
 				.handler(new ChannelInitializer<SocketChannel>() {
 					@Override
@@ -94,5 +102,4 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	protected void doStop() {
 		eventLoopGroup.shutdownGracefully();
 	}
-
 }

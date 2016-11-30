@@ -1,18 +1,14 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
+
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.exec.ExecuteException;
 import org.junit.Before;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
-import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
-import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -30,7 +26,6 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	
 	private MetaServerKeeperService metaService;
 	private LeaderElectorManager leaderElectorManager;
-	protected SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool = new XpipeNettyClientKeyedObjectPool();
 	
 	
 	protected RedisMeta redisMaster;
@@ -41,8 +36,6 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	@Before
 	public void beforeAbstractKeeperIntegratedSingleDc() throws Exception{
 
-		add(clientPool);
-		
 		startZkServer(getDcMeta().getZkServer());
 		
 		setFistKeeperActive();
@@ -71,13 +64,13 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		
 	}
 
-	private void makeKeeperRight() throws InterruptedException, ExecutionException {
+	private void makeKeeperRight() throws Exception {
 
 		List<KeeperMeta> keepers = getDcKeepers(dc, getClusterId(), getShardId());
 		
 		RedisMeta redisMaster = getRedisMaster();
 		
-		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort()), clientPool);
+		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort()), getXpipeNettyClientKeyedObjectPool());
 		job.execute().sync();
 	}
 

@@ -39,6 +39,7 @@ import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.monitor.CatUtils;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.simpleserver.AbstractIoAction;
 import com.ctrip.xpipe.simpleserver.IoAction;
 import com.ctrip.xpipe.simpleserver.IoActionFactory;
@@ -128,6 +129,23 @@ public class AbstractTest {
 		}
 		return null;
 	}
+	
+	protected XpipeNettyClientKeyedObjectPool getXpipeNettyClientKeyedObjectPool() throws Exception{
+		
+		XpipeNettyClientKeyedObjectPool result;
+		
+		try{
+			result = getBean(XpipeNettyClientKeyedObjectPool.class);
+		}catch(Exception e){
+			result = new XpipeNettyClientKeyedObjectPool();
+		}
+		
+		LifecycleHelper.initializeIfPossible(result);
+		LifecycleHelper.startIfPossible(result);
+		return result;
+	}  
+	
+
 
 	/**
 	 * to be overriden by subclasses

@@ -43,7 +43,7 @@ public class KeeperSingleDcSlaveof extends AbstractKeeperIntegratedSingleDc {
 		Assert.assertEquals(0, currentSlaves.size());
 
 		logger.info(remarkableMessage("make slave slaves slaveof backup keeper"));
-		new XSlaveofJob(slaves, backupKeeper.getIp(), backupKeeper.getPort(), clientPool).execute();
+		new XSlaveofJob(slaves, backupKeeper.getIp(), backupKeeper.getPort(), getXpipeNettyClientKeyedObjectPool()).execute();
 		
 		logger.info(remarkableMessage("make backup keeper active"));
 		//make backup active
@@ -70,9 +70,9 @@ public class KeeperSingleDcSlaveof extends AbstractKeeperIntegratedSingleDc {
 		setKeeperState(activeKeeper, KeeperState.BACKUP, backupKeeper.getIp(), backupKeeper.getPort(), false);
 
 		if (xslaveof) {
-			new XSlaveofJob(slaves, backupKeeper.getIp(), backupKeeper.getPort(), clientPool).execute().sync();
+			new XSlaveofJob(slaves, backupKeeper.getIp(), backupKeeper.getPort(), getXpipeNettyClientKeyedObjectPool()).execute().sync();
 		} else {
-			new SlaveofJob(slaves, backupKeeper.getIp(), backupKeeper.getPort(), clientPool).execute().sync();
+			new SlaveofJob(slaves, backupKeeper.getIp(), backupKeeper.getPort(), getXpipeNettyClientKeyedObjectPool()).execute().sync();
 		}
 
 		sleep(2000);

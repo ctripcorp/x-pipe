@@ -9,6 +9,7 @@ import org.springframework.core.Ordered;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
@@ -28,11 +29,16 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 	private GenericKeyedObjectPoolConfig config;
 
 	public XpipeNettyClientKeyedObjectPool() {
-		this(createDefaultConfig());
+		this(createDefaultConfig(GenericKeyedObjectPoolConfig.DEFAULT_MAX_TOTAL_PER_KEY));
 	}
 
-	private static GenericKeyedObjectPoolConfig createDefaultConfig() {
+	public XpipeNettyClientKeyedObjectPool(int maxPerKey) {
+		this(createDefaultConfig(maxPerKey));
+	}
+
+	private static GenericKeyedObjectPoolConfig createDefaultConfig(int maxPerKey) {
 		GenericKeyedObjectPoolConfig config = new GenericKeyedObjectPoolConfig();
+		config.setMaxTotalPerKey(maxPerKey);
 		config.setBlockWhenExhausted(false);
 		return config;
 	}
@@ -53,6 +59,11 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 		genericKeyedObjectPool.setTestOnBorrow(true);
 		genericKeyedObjectPool.setTestOnCreate(true);
 		this.objectPool = genericKeyedObjectPool;
+	}
+	
+	@Override
+	public SimpleObjectPool<NettyClient> getKeyPool(InetSocketAddress key){
+		return new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(this, key);
 	}
 
 	@Override

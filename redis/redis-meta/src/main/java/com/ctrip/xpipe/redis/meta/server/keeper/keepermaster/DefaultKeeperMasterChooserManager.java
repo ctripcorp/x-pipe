@@ -3,10 +3,13 @@ package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import javax.annotation.Resource;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -27,6 +30,10 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 @Component
 public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserver implements KeeperMasterElector, TopElement {
 	
+
+	@Resource(name = "clientPool")
+	private XpipeNettyClientKeyedObjectPool clientPool;
+
 	@Autowired
 	protected DcMetaCache dcMetaCache;
 	
@@ -80,7 +87,7 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 		KeeperMasterChooser keeperMasterChooser;
 		
 		if(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)){
-			keeperMasterChooser = new PrimaryDcKeeperMasterChooser(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
+			keeperMasterChooser = new PrimaryDcKeeperMasterChooser(clusterId, shardId, dcMetaCache, currentMetaManager, clientPool, scheduled);
 		}else{
 			keeperMasterChooser = new BackupDcKeeperMasterChooser(clusterId, shardId, metaServerConfig, metaServerMultiDcServiceManager, dcMetaCache, currentMetaManager, scheduled);
 		}

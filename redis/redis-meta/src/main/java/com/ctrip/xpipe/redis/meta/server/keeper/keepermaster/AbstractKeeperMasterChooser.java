@@ -78,7 +78,7 @@ public abstract class AbstractKeeperMasterChooser extends AbstractStartStoppable
 	}
 
 	@Override
-	protected void doStop() {
+	protected void doStop() throws Exception {
 
 		if (future != null) {
 			logger.info("[doStop]");

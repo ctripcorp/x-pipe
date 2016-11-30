@@ -1,18 +1,13 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.exec.ExecuteException;
 import org.junit.Before;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
-import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
-import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -28,14 +23,11 @@ import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
  */
 public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 	
-	protected SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool = new XpipeNettyClientKeyedObjectPool();
 	
 	private KeeperMeta activeDcKeeperActive;
 	
 	@Before
 	public void beforeAbstractKeeperIntegratedSingleDc() throws Exception{
-
-		add(clientPool);
 		
 		for(DcMeta dcMeta : getDcMetas()){
 			startZkServer(dcMeta.getZkServer());
@@ -66,7 +58,7 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		}
 	}
 
-	private void makeKeeperRight() throws InterruptedException, ExecutionException {
+	private void makeKeeperRight() throws Exception {
 
 		logger.info(remarkableMessage("makeKeeperRight"));
 		
@@ -74,13 +66,13 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		List<KeeperMeta> keepers = getDcKeepers(dcMeta.getId(), getClusterId(), getShardId());
 		RedisMeta redisMaster = getRedisMaster();
 		
-		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort()), clientPool);
+		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort()), getXpipeNettyClientKeyedObjectPool());
 		job.execute().sync();
 		
 		for(DcMeta backupDc : backupDcs()){
 			
 			List<KeeperMeta> backupKeepers = getDcKeepers(backupDc.getId(), getClusterId(), getShardId());
-			job = new KeeperStateChangeJob(backupKeepers, new Pair<String, Integer>(activeDcKeeperActive.getIp(), activeDcKeeperActive.getPort()), clientPool);
+			job = new KeeperStateChangeJob(backupKeepers, new Pair<String, Integer>(activeDcKeeperActive.getIp(), activeDcKeeperActive.getPort()), getXpipeNettyClientKeyedObjectPool());
 			job.execute().sync();
 		}
 	}
