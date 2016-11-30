@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster;
 
+import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -9,7 +10,10 @@ import java.util.concurrent.TimeoutException;
 
 import org.unidal.tuple.Pair;
 
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
@@ -23,11 +27,14 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
  */
 public class PrimaryDcKeeperMasterChooser extends AbstractKeeperMasterChooser{
 
+	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
+	
 	public PrimaryDcKeeperMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache,
-			CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled) {
+			CurrentMetaManager currentMetaManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled) {
 		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
+		this.keyedObjectPool = keyedObjectPool;
 	}
-
+	
 	@Override
 	protected Pair<String, Integer> chooseKeeperMaster() {
 		
@@ -76,7 +83,8 @@ public class PrimaryDcKeeperMasterChooser extends AbstractKeeperMasterChooser{
 	protected boolean isMaster(RedisMeta redisMeta) {
 		
 		try {
-			Role role = new RoleCommand(redisMeta.getIp(), redisMeta.getPort()).execute().get(checkIntervalSeconds/2, TimeUnit.SECONDS);
+			SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort()));
+			Role role = new RoleCommand(clientPool).execute().get(checkIntervalSeconds/2, TimeUnit.SECONDS);
 			return SERVER_ROLE.MASTER == role.getServerRole();
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			logger.error("[isMaster]" + redisMeta, e);

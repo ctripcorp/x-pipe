@@ -34,7 +34,6 @@ public class XpipeObjectPoolFromKeyed<K, V> implements SimpleObjectPool<V>{
 
 	@Override
 	public void clear() throws Exception {
-		keyedObjectPool.clear(key);
 	}
 
 	@Override

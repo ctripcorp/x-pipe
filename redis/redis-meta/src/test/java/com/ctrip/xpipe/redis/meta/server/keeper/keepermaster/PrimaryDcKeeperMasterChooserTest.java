@@ -10,6 +10,7 @@ import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
+import com.ctrip.xpipe.simpleserver.Server;
 
 import static org.mockito.Mockito.*;
 
@@ -28,9 +29,9 @@ public class PrimaryDcKeeperMasterChooserTest extends AbstractDcKeeperMasterChoo
 	private List<RedisMeta> redises;
 	
 	@Before
-	public void befoePrimaryDcKeeperMasterChooserTest(){
+	public void befoePrimaryDcKeeperMasterChooserTest() throws Exception{
 		
-		primaryDcKeeperMasterChooser = new PrimaryDcKeeperMasterChooser(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
+		primaryDcKeeperMasterChooser = new PrimaryDcKeeperMasterChooser(clusterId, shardId, dcMetaCache, currentMetaManager, getXpipeNettyClientKeyedObjectPool(), scheduled);
 		
 		redises = new LinkedList<>();
 		int port1 = randomPort();
@@ -62,6 +63,22 @@ public class PrimaryDcKeeperMasterChooserTest extends AbstractDcKeeperMasterChoo
 			
 			when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(new Pair<String, Integer>(redisMeta.getIp(), redisMeta.getPort()));
 			Assert.assertEquals(new Pair<String, Integer>(chosen.getIp(), chosen.getPort()), primaryDcKeeperMasterChooser.chooseKeeperMaster());
+		}
+	}
+	
+	@Test
+	public void testLongConnection() throws Exception{
+
+		KeeperRole role = new KeeperRole(SERVER_ROLE.MASTER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0L);
+		RedisMeta chosen = redises.get(0);
+		Server server = startServer(chosen.getPort(), ByteBufUtils.readToString(role.format()));
+		
+		Assert.assertEquals(0, server.getConnected());
+		
+		for(int i=0;i<10;i++){
+			
+			primaryDcKeeperMasterChooser.chooseKeeperMaster();
+			Assert.assertEquals(1, server.getConnected());
 		}
 
 	}
