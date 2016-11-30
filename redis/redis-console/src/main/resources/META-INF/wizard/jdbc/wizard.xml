@@ -18,6 +18,9 @@
          <table name="REDIS_TBL"/>
          <table name="SETINEL_TBL"/>
          <table name="SHARD_TBL"/>
+         <table name="migration_cluster_tbl"/>
+         <table name="migration_event_tbl"/>
+         <table name="migration_shard_tbl"/>
       </group>
    </jdbc>
 </wizard>
