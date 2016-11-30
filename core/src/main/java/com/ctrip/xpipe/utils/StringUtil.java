@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.utils;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author wenchao.meng
  *
@@ -54,5 +57,19 @@ public class StringUtil {
 	public static boolean isEmpty(String str){
 		return str == null || str.trim().length() == 0;
 	}
-
+	
+	public static String []splitRemoveEmpty(String regex, String str){
+		
+		String []temp = str.split(regex);
+		List<String> result = new ArrayList<>(temp.length);
+		
+		for(String each : temp){
+			if(isEmpty(each)){
+				continue;
+			}
+			result.add(each);
+		}
+		return result.toArray(new String[0]);		
+	}
+	
 }

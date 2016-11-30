@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.core.metaserver.impl;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
 
 /**
@@ -23,7 +23,7 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 	public DefaultMetaServerMultiDcService(String metaServerAddress, int retryTimes, int retryIntervalMilli) {
 		super(retryTimes, retryIntervalMilli);
 		this.metaServerAddress = metaServerAddress;
-		upstreamchangePath = String.format("%s/%s/%s", metaServerAddress, MetaServerConsoleService.PATH_PREFIX, PATH_UPSTREAM_CHANGE);
+		upstreamchangePath = META_SERVER_SERVICE.UPSTREAM_CHANGE.getRealPath(metaServerAddress);
 	}
 
 	@Override
@@ -31,7 +31,6 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 		
 		restTemplate.put(upstreamchangePath, null, clusterId, shardId, ip, port);
 	}
-
 
 	@Override
 	protected List<String> getMetaServerList() {

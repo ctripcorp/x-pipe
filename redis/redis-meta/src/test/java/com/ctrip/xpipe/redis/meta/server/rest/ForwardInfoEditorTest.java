@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.rest.ForwardType;
 
 
 

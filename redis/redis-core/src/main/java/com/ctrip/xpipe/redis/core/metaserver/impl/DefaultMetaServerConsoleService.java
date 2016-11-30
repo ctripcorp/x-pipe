@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 
 /**
@@ -21,7 +22,7 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	
 	public DefaultMetaServerConsoleService(String metaServerAddress) {
 		this.metaServerAddress = metaServerAddress;
-		changeClusterPath = String.format("%s/%s/%s", metaServerAddress, MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_CLUSTER_CHANGE);
+		changeClusterPath = String.format("%s/%s/%s", metaServerAddress, META_SERVER_SERVICE.PATH.PATH_PREFIX, META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE);
 	}
 
 	@Override

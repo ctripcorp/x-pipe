@@ -12,8 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
  */
 public interface MetaServerConsoleService extends MetaServerService{
 	
-	public static final String PATH_CLUSTER_CHANGE = "/clusterchange/{clusterId}";
-
+	
 	void clusterAdded(String clusterId, ClusterMeta clusterMeta);
 
 	void clusterModified(String clusterId, ClusterMeta clusterMeta);

@@ -10,9 +10,7 @@ import org.springframework.stereotype.Component;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.redis.core.cluster.ClusterMovingMethod;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
@@ -87,13 +85,6 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 		logger.info("[getActiveKeeper]{}, {}", clusterId, shardId);
 		return currentMetaServerMeta.getKeeperActive(clusterId, shardId);
-	}
-
-	@ClusterMovingMethod
-	@Override
-	public void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta, ForwardInfo forwardInfo) {
-		logger.info("[ping]{},{},{},{}", clusterId, shardId, keeperInstanceMeta, forwardInfo);
-
 	}
 
 	@Override

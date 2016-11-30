@@ -1,16 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
+
 import org.junit.Test;
 import org.springframework.web.client.RestOperations;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
+import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.impl.AbstractMetaService;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
-
 
 /**
  * @author wenchao.meng
@@ -84,16 +82,17 @@ public class ClusterServersMulticastTest extends AbstractMetaServerClusterTest{
 
 	private String getChangeClusterPath(TestMetaServer server) {
 
-		return AbstractMetaService.getRealPath(server.getAddress(), MetaServerConsoleService.PATH_CLUSTER_CHANGE);
+		return AbstractMetaService.getRealPath(server.getAddress(), META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE);
 	}
 
 	private String getUpstreamChangePath(TestMetaServer server) {
 
-		return AbstractMetaService.getRealPath(server.getAddress(), MetaServerMultiDcService.PATH_UPSTREAM_CHANGE);
+		return AbstractMetaService.getRealPath(server.getAddress(), META_SERVER_SERVICE.PATH.PATH_UPSTREAM_CHANGE);
 	}
 	
 	private String getActiveKeeperPath(TestMetaServer server) {
-		return AbstractMetaService.getRealPath(server.getAddress(), MetaServerService.GET_ACTIVE_KEEPER);
+		
+		return AbstractMetaService.getRealPath(server.getAddress(), META_SERVER_SERVICE.PATH.GET_ACTIVE_KEEPER);
 	}
 
 }

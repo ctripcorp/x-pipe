@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.rest;
+package com.ctrip.xpipe.rest;
 
 /**
  * @author wenchao.meng
@@ -6,7 +6,9 @@ package com.ctrip.xpipe.redis.meta.server.rest;
  * Aug 3, 2016
  */
 public enum ForwardType {
+	
 	FORWARD,
-	MOVING,
-	MULTICASTING
+	MULTICASTING,
+	//when slot is moving
+	MOVING
 }
