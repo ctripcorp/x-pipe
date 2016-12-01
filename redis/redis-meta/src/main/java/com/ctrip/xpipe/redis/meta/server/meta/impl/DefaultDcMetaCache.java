@@ -84,6 +84,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 		if (dcMetaManager == null) {
 			String fileName = System.getProperty(MEMORY_META_SERVER_DAO_KEY, "memory_meta_server_dao_file.xml");
+			logger.info("[loadMetaManager][load from file]{}", fileName);
 			dcMetaManager = DefaultDcMetaManager.buildFromFile(currentDc, fileName);
 		}
 

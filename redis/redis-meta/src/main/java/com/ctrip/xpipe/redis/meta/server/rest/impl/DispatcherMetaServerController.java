@@ -65,10 +65,10 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC_CHECK, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc, 
+	public PrimaryDcCheckMessage changePrimaryDcCheck(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc, 
 			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
 		
-		return null;
+		return metaServer.changePrimaryDcCheck(clusterId, shardId, newPrimaryDc, forwardInfo);
 	}
 
 }

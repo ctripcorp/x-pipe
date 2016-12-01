@@ -18,11 +18,14 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	
 	private String  metaServerAddress;
 	private String  changeClusterPath;
+	private String  changePrimaryDcCheckPath; 
 
 	
 	public DefaultMetaServerConsoleService(String metaServerAddress) {
 		this.metaServerAddress = metaServerAddress;
-		changeClusterPath = String.format("%s/%s/%s", metaServerAddress, META_SERVER_SERVICE.PATH.PATH_PREFIX, META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE);
+		changeClusterPath = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(metaServerAddress);
+		changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(metaServerAddress);
+		
 	}
 
 	@Override
@@ -51,26 +54,27 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	}
 
 	@Override
-	protected List<String> getMetaServerList() {
-		
-		List<String> result = new ArrayList<>();
-		result.add(metaServerAddress);
-		return result;
-	}
-
-	@Override
 	public PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc) {
-		return null;
+		
+		return restTemplate.getForObject(changePrimaryDcCheckPath, PrimaryDcCheckMessage.class, clusterId, shardId, newPrimaryDc);
 	}
 
 	@Override
-	public void makeMasterReadOnly(String clusterId, String shardId) {
+	public void makeMasterReadOnly(String clusterId, String shardId, boolean readOnly) {
 		
 	}
 
 	@Override
 	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
 		return null;
+	}
+
+	@Override
+	protected List<String> getMetaServerList() {
+		
+		List<String> result = new ArrayList<>();
+		result.add(metaServerAddress);
+		return result;
 	}
 
 }

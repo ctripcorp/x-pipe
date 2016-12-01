@@ -7,7 +7,7 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersMulticastTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersApiTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutorTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTriggerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterArrangerTest;
@@ -38,7 +38,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 	DefaultClusterArrangerTest.class,
 	DefaultClusterServersTest.class,
 	ClusterServerShardingTest.class,
-	ClusterServersMulticastTest.class,
+	ClusterServersApiTest.class,
 	DefaultCurrentClusterServerTest.class,
 	DefaultKeeperContainerServiceFactoryTest.class,
 	ForwardInfoEditorTest.class,

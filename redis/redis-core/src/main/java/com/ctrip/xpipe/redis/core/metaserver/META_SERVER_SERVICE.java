@@ -109,7 +109,7 @@ public enum META_SERVER_SERVICE {
 		public static final String PATH_CLUSTER_CHANGE = "/clusterchange/{clusterId}";
 		public static final String PATH_CHANGE_PRIMARY_DC_CHECK = "/changeprimarydc/check/{clusterId}/{shardId}/{newPrimaryDc}";
 		public static final String PATH_CHANGE_PRIMARY_DC = "/changeprimarydc/{clusterId}/{shardId}/{newPrimaryDc}";
-		public static final String PATH_MARK_MASTER_READONLY = "/masterreadonly/{clusterId}/{shardId}";
+		public static final String PATH_MARK_MASTER_READONLY = "/masterreadonly/{clusterId}/{shardId}/{readOnly}";
 		
 		//multi dc
 		public static final String PATH_UPSTREAM_CHANGE = "/upstreamchange/{clusterId}/{shardId}/{ip}/{port}";

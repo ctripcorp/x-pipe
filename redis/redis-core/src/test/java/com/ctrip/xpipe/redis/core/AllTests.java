@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
+import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICETest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsyncTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommandTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
@@ -36,7 +37,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	ShardMetaComparatorTest.class,
 	RoleCommandTest.class,
 	DcInfoTest.class,
-	DefaultPsyncTest.class
+	DefaultPsyncTest.class,
+	META_SERVER_SERVICETest.class
 })
 public class AllTests {
 

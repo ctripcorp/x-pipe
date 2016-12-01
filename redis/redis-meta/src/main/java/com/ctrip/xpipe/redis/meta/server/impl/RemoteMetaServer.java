@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
@@ -28,6 +29,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	private String changeClusterPath;
 	private String upstreamChangePath;
 	private String getActiveKeeperPath;
+	private String changePrimaryDcCheckPath;
 
 	public RemoteMetaServer(int currentServerId, int serverId) {
 		super(currentServerId, serverId);
@@ -39,6 +41,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		changeClusterPath = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(getHttpHost());
 		upstreamChangePath = META_SERVER_SERVICE.UPSTREAM_CHANGE.getRealPath(getHttpHost());
 		getActiveKeeperPath = META_SERVER_SERVICE.GET_ACTIVE_KEEPER.getRealPath(getHttpHost());
+		changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(getHttpHost());
 	}
 
 	@Override
@@ -100,6 +103,18 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		restTemplate.exchange(upstreamChangePath, HttpMethod.PUT, entity, String.class, clusterId, shardId, ip, port);
 		
 	}
+	
+	@Override
+	public PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc,
+			ForwardInfo forwardInfo) {
+		
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
+		logger.info("[changePrimaryDcCheck][forward]{},{},{}, {}--> {}", clusterId, shardId, newPrimaryDc, forwardInfo, this);
+		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
+		ResponseEntity<PrimaryDcCheckMessage> result = restTemplate.exchange(changePrimaryDcCheckPath, HttpMethod.GET, entity, PrimaryDcCheckMessage.class, clusterId, shardId, newPrimaryDc);
+		return result.getBody();
+	}
+
 
 	private HttpHeaders checkCircularAndGetHttpHeaders(ForwardInfo forwardInfo, ForwardType forwardType) {
 		
@@ -132,4 +147,5 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	public String getCurrentMeta() {
 		return null;
 	}
+
 }

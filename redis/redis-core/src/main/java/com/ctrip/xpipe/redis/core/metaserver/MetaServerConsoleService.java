@@ -31,11 +31,12 @@ public interface MetaServerConsoleService extends MetaServerService{
 	PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc);
 	
 	/**
-	 * just try it
+	 * just try
 	 * @param clusterId
 	 * @param shardId
+	 * @param readOnly  true mark as read only, false rollback
 	 */
-	void makeMasterReadOnly(String clusterId, String shardId);
+	void makeMasterReadOnly(String clusterId, String shardId, boolean readOnly);
 
 	/**
 	 * for new primary: promote redis, sync to redis<br/>
@@ -63,7 +64,11 @@ public interface MetaServerConsoleService extends MetaServerService{
 		public PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT errorType, String errorMessage) {
 			super(errorType, errorMessage);
 		}
-		
+
+		public PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT errorType) {
+			super(errorType, null);
+		}
+
 	}
 	
 	public static enum PRIMARY_DC_CHANGE_RESULT{
@@ -79,5 +84,10 @@ public interface MetaServerConsoleService extends MetaServerService{
 		public PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT errorType, String errorMessage) {
 			super(errorType, errorMessage);
 		}
+		
+		public PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT errorType) {
+			super(errorType, null);
+		}
+
 	}
 }

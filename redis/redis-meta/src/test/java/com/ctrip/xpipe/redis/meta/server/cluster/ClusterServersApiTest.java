@@ -6,7 +6,10 @@ import org.springframework.web.client.RestOperations;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.redis.core.metaserver.impl.AbstractMetaService;
+import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleService;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 
@@ -15,7 +18,7 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
  *
  * Sep 1, 2016
  */
-public class ClusterServersMulticastTest extends AbstractMetaServerClusterTest{
+public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 	
 	private int metaServerCount = 3;
 	private RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
@@ -71,6 +74,22 @@ public class ClusterServersMulticastTest extends AbstractMetaServerClusterTest{
 		}
 	}
 
+	@Test
+	public void testChangePrimaryDcCheck() throws Exception{
+
+		
+		createMetaServers(metaServerCount);
+		sleep(1000);
+		logger.info(remarkableMessage("[testChangePrimaryDcCheck][begin send primary dc check message]"));
+		
+		for(TestMetaServer server : getServers()){
+			
+			logger.info("[testChangePrimaryDcCheck]{}", server.getAddress());
+			MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(server.getAddress());
+			PrimaryDcCheckMessage message = consoleService.changePrimaryDcCheck(getClusterId(), getShardId(), "newPrimaryDc");
+			logger.info("[testChangePrimaryDcCheck]{}, {}", server.getAddress(), message);
+		}
+	}
 
 
 	private ClusterMeta randomCluster() {

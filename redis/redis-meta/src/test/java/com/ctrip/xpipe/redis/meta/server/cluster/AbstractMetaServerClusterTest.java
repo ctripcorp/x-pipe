@@ -62,7 +62,13 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 	
 	protected TestMetaServer createMetaServer(int index, int port, int zkPort) throws Exception {
 		
-		TestMetaServer testMetaServer = new TestMetaServer(index, port, zkPort);
+		return createMetaServer(index, port, zkPort, TestMetaServer.DEFAULT_CONFIG_FILE);
+	}
+
+	protected TestMetaServer createMetaServer(int index, int port, int zkPort, String configFile) throws Exception {
+		
+		TestMetaServer testMetaServer = new TestMetaServer(index, port, zkPort, configFile);
+		
 		testMetaServer.initialize();
 		testMetaServer.start();
 		return testMetaServer;
