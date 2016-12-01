@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.payload;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -11,6 +12,7 @@ import com.ctrip.xpipe.AbstractTest;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
 
 /**
  * @author wenchao.meng
@@ -63,6 +65,24 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		byte []resultArray = new byte[(int) wroteLength];
 		result.readBytes(resultArray);
 		Assert.assertEquals(randomStr, new String(resultArray));
+	}
+	
+	
+	@Test
+	public void testNewHeap() throws IOException{
+		
+		int length = 1 << 10;
+		
+		ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer(length);
+		byteBuf.writeBytes(randomString(length).getBytes());
+
+		byte []dst = new byte[length];
+		byteBuf.readBytes(dst);
+
+		byteBuf.readerIndex(0);
+		ByteArrayOutputStream baous = new ByteArrayOutputStream();
+		byteBuf.readBytes(baous, length);
+		
 	}
 
 }

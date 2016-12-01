@@ -20,6 +20,7 @@
 		<junit.version>4.12</junit.version>
 		<commons-io.version>2.4</commons-io.version>
 		<curator.version>2.11.0</curator.version>
+		<zookeeper.version>3.4.9</zookeeper.version>
 		<maven-jar-plugin.version>2.6</maven-jar-plugin.version>
 		<maven-assembly-plugin.version>2.6</maven-assembly-plugin.version>
 		<maven-source-plugin.version>3.0.0</maven-source-plugin.version>
@@ -141,6 +142,11 @@
 				<groupId>org.apache.curator</groupId>
 				<artifactId>curator-recipes</artifactId>
 				<version>${curator.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.zookeeper</groupId>
+				<artifactId>zookeeper</artifactId>
+				<version>${zookeeper.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.alibaba</groupId>

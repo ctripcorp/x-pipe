@@ -268,9 +268,13 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		sendMesssageToMasterAndTest(defaultTestMessageCount, slaves);
 	}
 
+	protected void sendMessageToMasterAndTestSlaveRedis(int messageCount) {
+		sendMesssageToMasterAndTest(messageCount, getRedisSlaves().toArray(new RedisMeta[0]));
+	}
+
 	
 	protected void sendMessageToMasterAndTestSlaveRedis() {
-		sendMesssageToMasterAndTest(getRedisSlaves().toArray(new RedisMeta[0]));
+		sendMesssageToMasterAndTest(defaultTestMessageCount, getRedisSlaves().toArray(new RedisMeta[0]));
 	}
 
 	protected abstract List<RedisMeta> getRedisSlaves();
