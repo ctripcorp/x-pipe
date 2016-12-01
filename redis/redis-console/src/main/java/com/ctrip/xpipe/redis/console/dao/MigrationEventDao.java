@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigraionStatus;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
@@ -98,7 +98,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				
 				MigrationClusterTbl proto = migrationClusterDao.createLocal();
 				proto.setMigrationEventId(eventId).setClusterId(migrationCluster.getClusterId())
-						.setDestinationDcId(migrationCluster.getDestinationDcId()).setStatus(MigraionStatus.Initiated.toString());
+						.setDestinationDcId(migrationCluster.getDestinationDcId()).setStatus(MigrationStatus.Initiated.toString());
 				toCreateMigrationCluster.add(proto);
 			}
 		}

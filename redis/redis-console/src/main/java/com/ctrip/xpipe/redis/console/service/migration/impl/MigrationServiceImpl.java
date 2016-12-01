@@ -74,6 +74,16 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 			}
 		});
 	}
+	
+	@Override
+	public List<MigrationClusterTbl> findAllMigrationCluster(final long clusterId) {
+		return queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
+			@Override
+			public List<MigrationClusterTbl> doQuery() throws DalException {
+				return migrationClusterDao.findAllByClusterId(clusterId, MigrationClusterTblEntity.READSET_FULL);
+			}
+		});
+	}
 
 	@Override
 	public List<MigrationShardTbl> findMigrationShards(final long migrationClusterId) {

@@ -788,6 +788,18 @@
 				</statement>
 			</query>
 			
+			<query name="find-all-by-cluster-id" type="SELECT" multiple="true">
+				<param name="cluster-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name="cluster-id"/> = ${cluster-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			
 			<query name='insert-batch' type='INSERT' batch='true'>
 				<statement>
 					<![CDATA[

@@ -11,6 +11,7 @@ public interface MigrationService {
 	MigrationEventTbl find(long id);
 	List<MigrationEventTbl> findAll();
 	MigrationClusterTbl findMigrationCluster(long eventId, long clusterId);
+	List<MigrationClusterTbl> findAllMigrationCluster(long clusterId);
 	List<MigrationShardTbl> findMigrationShards(long migrationClusterId);
 	
 	long createMigrationEvent(MigrationEventModel events);
