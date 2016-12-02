@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server;
 
-
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
@@ -18,6 +18,10 @@ public interface MetaServer extends ClusterServer, TopElement{
 
 	PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc, ForwardInfo forwardInfo);
 	
+	void makeMasterReadOnly(String clusterId, String shardId, boolean readOnly, ForwardInfo forwardInfo);
+	
+	PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, ForwardInfo forwardInfo);
+
 	KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo);
 
 	RedisMeta getRedisMaster(String clusterId, String shardId);

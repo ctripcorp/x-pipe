@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.dcchange;
+package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -11,6 +11,7 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
+import com.ctrip.xpipe.redis.meta.server.dcchange.HealthChecker;
 
 /**
  * @author wenchao.meng

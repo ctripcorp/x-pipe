@@ -139,5 +139,17 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		
 		throw new IllegalStateException("unknown payload:" + payload);
 	}
+	
+	
+	protected Integer payloadToInteger(Object payload) {
+		
+		if(payload instanceof Integer){
+			return (Integer) payload;
+		}
+		
+		String result = payloadToString(payload);
+		return Integer.parseInt(result);
+	}
+
 
 }

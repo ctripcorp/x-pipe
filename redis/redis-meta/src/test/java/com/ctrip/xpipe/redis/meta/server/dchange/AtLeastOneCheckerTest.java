@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.dcchange.AtLeastOneChecker;
+import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
 
 /**
  * @author wenchao.meng

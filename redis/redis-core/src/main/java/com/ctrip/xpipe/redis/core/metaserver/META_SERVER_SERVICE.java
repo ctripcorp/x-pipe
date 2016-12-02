@@ -13,21 +13,21 @@ import com.ctrip.xpipe.utils.StringUtil;
  */
 public enum META_SERVER_SERVICE {
 	
-
 	//common
 	GET_ACTIVE_KEEPER(PATH.GET_ACTIVE_KEEPER, ForwardType.FORWARD),
 	
 	//console
 	CLUSTER_CHANGE(PATH.PATH_CLUSTER_CHANGE, ForwardType.MULTICASTING),
 	CHANGE_PRIMARY_DC_CHECK(PATH.PATH_CHANGE_PRIMARY_DC_CHECK, ForwardType.FORWARD),
-	CHANGE_PRIMARY_DC(PATH.PATH_CHANGE_PRIMARY_DC, ForwardType.FORWARD),
-	MARK_MASTER_READONLY(PATH.PATH_MARK_MASTER_READONLY, ForwardType.FORWARD),
+	CHANGE_PRIMARY_DC(PATH.PATH_CHANGE_PRIMARY_DC, ForwardType.MULTICASTING),
+	MAKE_MASTER_READONLY(PATH.PATH_MAKE_MASTER_READONLY, ForwardType.FORWARD),
 	
 	//keeper
 	
 	//multi dc
 	UPSTREAM_CHANGE(PATH.PATH_UPSTREAM_CHANGE, ForwardType.FORWARD)
 	;	
+	
 	private String path;
 	private ForwardType forwardType;
 
@@ -100,7 +100,6 @@ public enum META_SERVER_SERVICE {
 		public static final String PATH_PREFIX = "/api/meta";
 		
 		//common
-		
 		public static final String GET_ACTIVE_KEEPER = "/getactivekeeper/{clusterId}/{shardId}";
 		
 		//keeper
@@ -109,7 +108,7 @@ public enum META_SERVER_SERVICE {
 		public static final String PATH_CLUSTER_CHANGE = "/clusterchange/{clusterId}";
 		public static final String PATH_CHANGE_PRIMARY_DC_CHECK = "/changeprimarydc/check/{clusterId}/{shardId}/{newPrimaryDc}";
 		public static final String PATH_CHANGE_PRIMARY_DC = "/changeprimarydc/{clusterId}/{shardId}/{newPrimaryDc}";
-		public static final String PATH_MARK_MASTER_READONLY = "/masterreadonly/{clusterId}/{shardId}/{readOnly}";
+		public static final String PATH_MAKE_MASTER_READONLY = "/masterreadonly/{clusterId}/{shardId}/{readOnly}";
 		
 		//multi dc
 		public static final String PATH_UPSTREAM_CHANGE = "/upstreamchange/{clusterId}/{shardId}/{ip}/{port}";

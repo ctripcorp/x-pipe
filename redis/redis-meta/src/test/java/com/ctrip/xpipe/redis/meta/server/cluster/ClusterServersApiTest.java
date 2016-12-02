@@ -77,7 +77,6 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 	@Test
 	public void testChangePrimaryDcCheck() throws Exception{
 
-		
 		createMetaServers(metaServerCount);
 		sleep(1000);
 		logger.info(remarkableMessage("[testChangePrimaryDcCheck][begin send primary dc check message]"));
@@ -89,6 +88,23 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 			PrimaryDcCheckMessage message = consoleService.changePrimaryDcCheck(getClusterId(), getShardId(), "newPrimaryDc");
 			logger.info("[testChangePrimaryDcCheck]{}, {}", server.getAddress(), message);
 		}
+	}
+	
+	@Test
+	public void testMakeMasterReadOnly() throws Exception{
+		
+		createMetaServers(metaServerCount);
+		sleep(1000);
+		logger.info(remarkableMessage("[testMakeMasterReadOnly][begin send make master read only message]"));
+		
+		for(TestMetaServer server : getServers()){
+			
+			logger.info("[testChangePrimaryDcCheck]{}", server.getAddress());
+			MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(server.getAddress());
+			consoleService.makeMasterReadOnly(getClusterId(), getShardId(), true);
+			consoleService.makeMasterReadOnly(getClusterId(), getShardId(), false);
+		}
+		
 	}
 
 

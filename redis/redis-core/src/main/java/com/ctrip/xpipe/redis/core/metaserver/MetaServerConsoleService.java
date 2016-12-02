@@ -34,7 +34,7 @@ public interface MetaServerConsoleService extends MetaServerService{
 	 * just try
 	 * @param clusterId
 	 * @param shardId
-	 * @param readOnly  true mark as read only, false rollback
+	 * @param readOnly  true mark as read only, false writable
 	 */
 	void makeMasterReadOnly(String clusterId, String shardId, boolean readOnly);
 

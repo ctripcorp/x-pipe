@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
@@ -68,7 +69,24 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 	public PrimaryDcCheckMessage changePrimaryDcCheck(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc, 
 			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
 		
+		logger.info("[changePrimaryDcCheck]{}, {}, {}", clusterId, shardId, newPrimaryDc);
 		return metaServer.changePrimaryDcCheck(clusterId, shardId, newPrimaryDc, forwardInfo);
+	}
+
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_MAKE_MASTER_READONLY, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public void makeMasterReadOnly(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable boolean readOnly, 
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+		
+		logger.info("[makeMasterReadOnly]{}, {}, {}", clusterId, shardId, readOnly);
+		metaServer.makeMasterReadOnly(clusterId, shardId, readOnly, forwardInfo);
+	}
+	
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public PrimaryDcChangeMessage doChangePrimaryDc(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc, 
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+		
+		logger.info("[doChangePrimaryDc]{}, {}, {}", clusterId, shardId, newPrimaryDc);
+		return metaServer.doChangePrimaryDc(clusterId, shardId, newPrimaryDc, forwardInfo);
 	}
 
 }

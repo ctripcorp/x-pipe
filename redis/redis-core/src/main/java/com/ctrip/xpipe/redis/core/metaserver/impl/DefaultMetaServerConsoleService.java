@@ -4,6 +4,9 @@ package com.ctrip.xpipe.redis.core.metaserver.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
@@ -19,13 +22,16 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	private String  metaServerAddress;
 	private String  changeClusterPath;
 	private String  changePrimaryDcCheckPath; 
+	private String  makeMasterReadonlyPath;
+	private String  changePrimaryDcPath;
 
 	
 	public DefaultMetaServerConsoleService(String metaServerAddress) {
 		this.metaServerAddress = metaServerAddress;
 		changeClusterPath = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(metaServerAddress);
 		changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(metaServerAddress);
-		
+		makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(metaServerAddress);
+		changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(metaServerAddress);
 	}
 
 	@Override
@@ -61,12 +67,15 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 
 	@Override
 	public void makeMasterReadOnly(String clusterId, String shardId, boolean readOnly) {
+		restTemplate.put(makeMasterReadonlyPath, null, clusterId, shardId, readOnly);
 		
 	}
 
 	@Override
 	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
-		return null;
+		
+		HttpEntity<Object> entity = new HttpEntity<Object>(null);
+		return restTemplate.exchange(changePrimaryDcPath, HttpMethod.PUT, entity, PrimaryDcChangeMessage.class, clusterId, shardId, newPrimaryDc).getBody();
 	}
 
 	@Override
