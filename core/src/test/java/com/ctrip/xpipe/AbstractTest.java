@@ -358,6 +358,12 @@ public class AbstractTest {
 		throw new IllegalArgumentException(String.format("can not find usable port [%d, %d]", begin, end));
 	}
 
+	protected int randomInt() {
+		
+		Random random = new Random();
+		return random.nextInt();
+	}
+
 	protected int randomInt(int start, int end) {
 		
 		Random random = new Random();

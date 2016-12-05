@@ -37,7 +37,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException {
+			public void saveKinfo(ReplicationStoreMeta replicationStoreMeta) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
@@ -78,7 +78,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public void activeBecomeBackup() throws IOException {
+			public void becomeBackup() throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
@@ -99,7 +99,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public void backupBecomeActive() throws IOException {
+			public void becomeActive() throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
@@ -114,13 +114,13 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public void updateMeta(String name, long rdbLastKeeperOffset) throws IOException {
+			public void setKeeperState(String keeperRunid, KeeperState keeperState) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
 			@Override
-			public void setKeeperState(KeeperState keeperState) throws IOException {
-				throw new UnsupportedOperationException();
+			public boolean isFresh() {
+				return true;
 			}
 		};
 	}

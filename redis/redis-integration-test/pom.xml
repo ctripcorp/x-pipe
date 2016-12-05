@@ -6,7 +6,7 @@
 		<artifactId>redis-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>redis-integrated-test</artifactId>
+	<artifactId>redis-integration-test</artifactId>
 
 	<dependencies>
 		<dependency>

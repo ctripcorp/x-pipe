@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-
 import java.io.IOException;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
@@ -10,7 +9,6 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
-
 
 /**
  * @author wenchao.meng

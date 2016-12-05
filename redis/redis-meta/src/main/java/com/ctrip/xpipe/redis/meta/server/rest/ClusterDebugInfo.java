@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 public class ClusterDebugInfo {
 	
 	private int currentServerId;
+	private String currentDc;
 	private String zkAddress;
 	private boolean isLeader;
 	private ClusterServerInfo currentClusterServerInfo;
@@ -21,13 +22,16 @@ public class ClusterDebugInfo {
 	private Set<String> inchargeClusters;
 	private Map<Integer, ClusterServerInfo> clusterServerInfos;
 	private Map<Integer, SlotInfo> allSlotInfo;
+	private String zkNameSpace;
 
-	public ClusterDebugInfo(int currentServerId, String zkAddress, boolean isLeader, 
+	public ClusterDebugInfo(int currentServerId, String currentDc, String zkAddress, String zkNameSpace, boolean isLeader, 
 			ClusterServerInfo currentClusterServerInfo, Set<Integer> inchargeSlots, Set<String> inchargeClusters, 
 			Map<Integer, ClusterServerInfo> clusterServerInfos, 
 			Map<Integer, SlotInfo> allSlotInfo){
 		this.currentServerId = currentServerId;
+		this.currentDc = currentDc;
 		this.zkAddress = zkAddress;
+		this.zkNameSpace = zkNameSpace;
 		this.isLeader = isLeader;
 		this.currentClusterServerInfo = currentClusterServerInfo;
 		this.inchargeSlots = inchargeSlots;
@@ -40,12 +44,20 @@ public class ClusterDebugInfo {
 		return currentServerId;
 	}
 	
+	public String getCurrentDc() {
+		return currentDc;
+	}
+	
 	public boolean isLeader() {
 		return isLeader;
 	}
 
 	public String getZkAddress() {
 		return zkAddress;
+	}
+
+	public String getZkNameSpace() {
+		return zkNameSpace;
 	}
 	
 	public ClusterServerInfo getCurrentClusterServerInfo() {

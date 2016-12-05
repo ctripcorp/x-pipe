@@ -29,6 +29,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -109,7 +110,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
-		slaveEventLoopGroup = new NioEventLoopGroup(1);
+		slaveEventLoopGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create(getClass().getSimpleName() + "-" + redisMaster.masterEndPoint()));
 
 	}
 
@@ -205,7 +206,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 						long current = System.currentTimeMillis();
 						if ((current - repl_transfer_lastio) >= replTimeoutSeconds * 1000) {
-							logger.info("[doRun][no action with master for a long time, close connection]" + this);
+							logger.info("[doRun][no action with master for a long time, close connection]{}, {}", channel, AbstractRedisMasterReplication.this);
 							channel.close();
 						}
 					}
@@ -291,7 +292,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
 
 				if (!commandFuture.isSuccess()) {
-					logger.error("[operationComplete][psyncCommand][fail]", commandFuture.cause());
+					logger.error("[operationComplete][psyncCommand][fail]" + AbstractRedisMasterReplication.this, commandFuture.cause());
 
 					dumpFail(commandFuture.cause());
 					psyncFail(commandFuture.cause());
@@ -411,8 +412,4 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		return kinfo;
 	}
 
-	protected void updateKinfo(long rdbLastKeeperOffset) {
-		kinfo.setRdbLastKeeperOffset(rdbLastKeeperOffset);
-	}
-	
 }

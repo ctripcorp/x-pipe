@@ -148,7 +148,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 					logger.error("[run]" + this, e);
 				}
 			}
-		}, 0, 1, TimeUnit.SECONDS);
+		}, 0, 100, TimeUnit.MILLISECONDS);
 	}
 
 	public void addCommands(String commands){

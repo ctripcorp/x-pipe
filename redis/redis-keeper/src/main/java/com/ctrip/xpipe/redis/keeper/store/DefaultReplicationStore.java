@@ -69,13 +69,11 @@ public class DefaultReplicationStore implements ReplicationStore {
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.config = config;
 
-		metaStore = new DefaultMetaStore(baseDir);
-		metaStore.loadMeta();
-		metaStore.updateKeeperRunid(keeperRunid);
+		metaStore = DefaultMetaStore.createMetaStore(baseDir, keeperRunid);
 
 		ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
 
-		if (meta.getRdbFile() != null) {
+		if (meta != null && meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
 				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getRdbLastKeeperOffset(), meta.getRdbFileSize()));
@@ -160,7 +158,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public long getEndOffset() {
-		if (metaStore == null || metaStore.beginOffset() == null) {
+		if (metaStore == null || metaStore.beginOffset() == null || cmdStore == null) {
 			// TODO
 			return -2L;
 		} else {
@@ -318,7 +316,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public boolean isFresh() {
-		return metaStore == null || metaStore.getMasterRunid() == null;
+		return metaStore == null || metaStore.isFresh();
 	}
 
 	@Override
@@ -369,6 +367,11 @@ public class DefaultReplicationStore implements ReplicationStore {
 			return false;
 		}
 		return true;
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("baseDir:", baseDir);
 	}
 
 }

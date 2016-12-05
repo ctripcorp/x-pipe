@@ -6,8 +6,8 @@
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito)}%n"/>
         </console>
 
-        <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe/xpipe-test.logger"
-                     filePattern="target/applogs/xpipe/xpipe-test-%d{yyyy-MM-dd}-%i.logger">
+        <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe/xpipe-test.log"
+                     filePattern="target/applogs/xpipe/xpipe-test-%d{yyyy-MM-dd}-%i.log">
             <Filters>
                 <ThresholdFilter level="INFO"/>
                 <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>

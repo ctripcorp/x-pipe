@@ -15,7 +15,6 @@ import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -180,16 +179,15 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		
 		if(redisKeeperServer.getRedisKeeperServerState().sendKinfo()){
 			logger.info("[doBeginWriteRdb]{}", masterRdbOffset);
-			updateKinfo(masterRdbOffset);
 			saveKinfo();
 		}
 	}
 
 	protected void saveKinfo(){
 		try{
-			redisMaster.getCurrentReplicationStore().getMetaStore().saveMeta(ReplicationStore.BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME, getKinfo());
+			redisMaster.getCurrentReplicationStore().getMetaStore().saveKinfo(getKinfo());
 		} catch (IOException e) {
-			throw new IllegalStateException("[doOnContinue][save kinfo]" + getKinfo());
+			throw new IllegalStateException("[saveKinfo][save kinfo]" + getKinfo());
 		}
 	}
 
@@ -205,6 +203,12 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected void doOnContinue(){
 		
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
+		try {
+			redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
+		} catch (IOException e) {
+			logger.error("[doOnContinue]" + this, e);
+		}
+		
 		scheduleReplconf();
 		partialState = PARTIAL_STATE.PARTIAL;
 		redisKeeperServer.getRedisKeeperServerState().initPromotionState();

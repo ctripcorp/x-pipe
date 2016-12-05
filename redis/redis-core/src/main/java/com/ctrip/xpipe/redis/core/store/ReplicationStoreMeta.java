@@ -31,6 +31,9 @@ public class ReplicationStoreMeta implements Serializable{
 
 	private long keeperBeginOffset = DEFAULT_KEEPER_BEGIN_OFFSET;
 	private String keeperRunid;
+	
+	private DefaultEndPoint activeKeeperAddress;
+
 
 	public ReplicationStoreMeta() {
 
@@ -48,7 +51,10 @@ public class ReplicationStoreMeta implements Serializable{
 
 		this.keeperBeginOffset = proto.keeperBeginOffset;
 		this.keeperRunid = proto.keeperRunid;
+		
+		proto.activeKeeperAddress = activeKeeperAddress;
 	}
+	
 
 	/**
 	 * @return the rdbFileSize
@@ -107,9 +113,10 @@ public class ReplicationStoreMeta implements Serializable{
 
 	@Override
 	public String toString() {
+		
 		return "ReplicationStoreMeta [masterRunid=" + masterRunid + ", masterAddress=" + masterAddress + ", beginOffset=" + beginOffset + ", rdbFile=" + rdbFile
 				+ ", rdbFileSize=" + rdbFileSize + ", rdbLastKeeperOffset=" + rdbLastKeeperOffset + ", cmdFilePrefix=" + cmdFilePrefix + ", keeperState=" + keeperState
-				+ ", keeperBeginOffset=" + keeperBeginOffset + ", keeperRunid=" + keeperRunid + "]";
+				+ ", keeperBeginOffset=" + keeperBeginOffset + ", keeperRunid=" + keeperRunid + ", activeKeeperAddress:" + activeKeeperAddress + "]";
 	}
 
 	public String getKeeperRunid() {
@@ -152,5 +159,13 @@ public class ReplicationStoreMeta implements Serializable{
 	@Override
 	public int hashCode() {
 		return HashCodeBuilder.reflectionHashCode(this);
+	}
+	
+	public DefaultEndPoint getActiveKeeperAddress() {
+		return activeKeeperAddress;
+	}
+
+	public void setActiveKeeperAddress(DefaultEndPoint activeKeeperAddress) {
+		this.activeKeeperAddress = activeKeeperAddress;
 	}
 }
