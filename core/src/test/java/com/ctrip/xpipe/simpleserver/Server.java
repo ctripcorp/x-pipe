@@ -60,21 +60,26 @@ public class Server extends AbstractLifecycle{
 					}
 					latch.countDown();
 					while(true){
-						
+						if(logger.isInfoEnabled()){
+							logger.info("[run][new socket listening]");
+						}
 						Socket socket = ss.accept();
+						connected.incrementAndGet();
 						if(logger.isInfoEnabled()){
 							logger.info("[run][new socket]" + socket);
 						}
-						connected.incrementAndGet();
 						IoAction ioAction = ioActionFactory.createIoAction();
 						if(ioAction instanceof SocketAware){
 							((SocketAware) ioAction).setSocket(socket);
 						}
 						executors.execute(new Task(socket, ioAction));
+						if(logger.isInfoEnabled()){
+							logger.info("[run][new socket done]" + socket);
+						}
 					}
 					
 				} catch (IOException e) {
-					logger.warn("[run]" + port + "," + e.getMessage());
+					logger.error("[run]" + port + "," + e.getMessage());
 				}
 			}
 		});

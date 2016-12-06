@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -48,7 +47,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	
 	@Override
 	protected void doStart() throws Exception {
-		
+		logger.info("Thread:{}", DEFAULT_KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD);
 		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads);
 		b.group(eventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
 				.handler(new ChannelInitializer<SocketChannel>() {
@@ -64,7 +63,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 
 	@Override
 	public PooledObject<NettyClient> makeObject(InetSocketAddress key) throws Exception {
-
+		logger.info("[before makeObject]{}", key);
 		ChannelFuture f = b.connect(key);
 		f.get(connectTimeoutMilli, TimeUnit.MILLISECONDS);
 		Channel channel = f.channel();

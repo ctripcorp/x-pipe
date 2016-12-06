@@ -93,7 +93,7 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 
 	@Override
 	protected void doDispose() throws Exception {
-
+		logger.info("[XpipeNettyClientKeyedObjectPool][doDispose]");
 		this.objectPool.close();
 		this.pooledObjectFactory.stop();
 

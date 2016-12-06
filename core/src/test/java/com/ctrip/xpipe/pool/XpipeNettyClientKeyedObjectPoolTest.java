@@ -19,7 +19,7 @@ import com.ctrip.xpipe.simpleserver.Server;
 public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 
 	private int testCount = 1000;
-	private int maxPerKey = 4;
+	private int maxPerKey = 12;
 
 	private XpipeNettyClientKeyedObjectPool pool;
 	
@@ -72,7 +72,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 	
 	@Test
 	public void testDispose() throws Exception{
-
+		logger.info("[testDispose][test start]");
 		Server echoServer = startEchoServer();
 		InetSocketAddress key = new InetSocketAddress("localhost", echoServer.getPort());
 		
@@ -80,13 +80,14 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		for(int i=0; i < maxPerKey; i++){
 			
 			pool.borrowObject(key);
+			sleep(100);
 			Assert.assertEquals(i + 1, echoServer.getConnected());
 		}
 		
 		LifecycleHelper.stopIfPossible(pool);
 		LifecycleHelper.disposeIfPossible(pool);
 		
-		sleep(50);
+		sleep(2000);
 		Assert.assertEquals(0, echoServer.getConnected());
 	}
 	
@@ -100,6 +101,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		for(int i=0; i < maxPerKey; i++){
 			
 			pool.borrowObject(key);
+			sleep(100);
 			Assert.assertEquals(i + 1, echoServer.getConnected());
 		}
 
@@ -109,6 +111,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		}catch(BorrowObjectException e){
 			
 		}
+		
 	}
 	
 	@Override
