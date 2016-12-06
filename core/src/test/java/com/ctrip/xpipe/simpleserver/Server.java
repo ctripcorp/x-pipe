@@ -62,10 +62,10 @@ public class Server extends AbstractLifecycle{
 					while(true){
 						
 						Socket socket = ss.accept();
+						connected.incrementAndGet();
 						if(logger.isInfoEnabled()){
 							logger.info("[run][new socket]" + socket);
 						}
-						connected.incrementAndGet();
 						IoAction ioAction = ioActionFactory.createIoAction();
 						if(ioAction instanceof SocketAware){
 							((SocketAware) ioAction).setSocket(socket);
