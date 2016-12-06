@@ -150,12 +150,6 @@ public class DefaultRdbStore implements RdbStore {
 	}
 
 	@Override
-	public boolean delete() {
-		logger.info("Delete rdb file {}", file);
-		return file.delete();
-	}
-
-	@Override
 	public File getRdbFile() {
 		return file;
 	}
@@ -181,6 +175,22 @@ public class DefaultRdbStore implements RdbStore {
 	@Override
 	public String toString() {
 		return String.format("rdbFileSize:%d, rdbLastKeeperOffset:%d,file:%s, status:%s", rdbFileSize, rdbLastKeeperOffset, file, status.get());
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		
+		logger.info("[destroy][delete file]{}", file);
+		file.delete();
+	}
+
+	@Override
+	public void close() throws IOException {
+		
+		logger.info("[close]{}", file);
+		if(writeFile != null){
+			writeFile.close();
+		}
 	}
 
 }

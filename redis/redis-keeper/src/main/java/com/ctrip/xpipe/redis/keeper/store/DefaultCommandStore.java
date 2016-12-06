@@ -76,8 +76,9 @@ public class DefaultCommandStore implements CommandStore {
 	}
 
 	private long findMaxStartOffset() {
+		
 		long maxStartOffset = 0;
-		File[] files = baseDir.listFiles((FilenameFilter) fileFilter);
+		File[] files = allFiles();
 		if (files != null) {
 			for (File file : files) {
 				long startOffset = extractStartOffset(file);
@@ -87,6 +88,10 @@ public class DefaultCommandStore implements CommandStore {
 			}
 		}
 		return maxStartOffset;
+	}
+
+	private File[] allFiles() {
+		return baseDir.listFiles((FilenameFilter) fileFilter);
 	}
 
 	public long extractStartOffset(File file) {
@@ -365,6 +370,8 @@ public class DefaultCommandStore implements CommandStore {
 
 	@Override
 	public void close() throws IOException {
+		
+		logger.info("[close]{}", this);
 
 		CommandFileContext commandFileContext = cmdFileCtxRef.get();
 		if (commandFileContext != null) {
@@ -372,4 +379,22 @@ public class DefaultCommandStore implements CommandStore {
 		}
 	}
 
+	@Override
+	public void destroy() throws Exception {
+		
+		logger.info("[destroy]{}", this);
+		File [] files = allFiles();
+		if(files != null){
+			for(File file : files){
+				boolean result = file.delete();
+				logger.info("[destroy][delete file]{}, {}", file, result);
+			}
+		}
+		
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("CommandStore:%s:", baseDir);
+	}
 }

@@ -13,11 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
-import com.ctrip.xpipe.api.monitor.DelayMonitor;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
@@ -56,9 +54,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	
 	@SuppressWarnings("unused")
 	private Long rdbFileOffset;
-	
-	private DelayMonitor delayMonitor = new DefaultDelayMonitor("CREATE_NETTY", 5000);
-	
+		
 	private ScheduledExecutorService scheduled;
 	private ScheduledFuture<?> 		  pingFuture, waitDumpTimeoutFuture;
 	private final int pingIntervalMilli = 1000;
@@ -84,7 +80,6 @@ public class DefaultRedisSlave implements RedisSlave {
 	public DefaultRedisSlave(RedisClient redisClient){
 		this.redisClient = redisClient;
 		this.setSlaveListeningPort(redisClient.getSlaveListeningPort());
-		delayMonitor.setDelayInfo(redisClient.channel().remoteAddress().toString());
 		this.redisClient.addChannelCloseReleaseResources(this);
 		initExecutor(((DefaultRedisClient)redisClient).channel);
 	}

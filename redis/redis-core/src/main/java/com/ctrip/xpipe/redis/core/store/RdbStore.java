@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.core.store;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
+import com.ctrip.xpipe.api.lifecycle.Destroyable;
+
 import io.netty.buffer.ByteBuf;
 
-public interface RdbStore {
+public interface RdbStore extends Destroyable, Closeable{
 	
 	public enum Status {
 		Writing, Success, Fail
@@ -19,8 +22,6 @@ public interface RdbStore {
 	
 	int refCount();
 
-	boolean delete();
-	
 	long lastKeeperOffset();
 
 	File getRdbFile();

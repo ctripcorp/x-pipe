@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -49,7 +50,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	@Override
 	protected void doStart() throws Exception {
 		
-		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads);
+		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads, XpipeThreadFactory.create("KeyedPoolClientFactory"));
 		b.group(eventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
 				.handler(new ChannelInitializer<SocketChannel>() {
 					@Override

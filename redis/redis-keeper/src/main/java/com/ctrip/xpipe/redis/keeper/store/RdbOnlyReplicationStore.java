@@ -22,7 +22,6 @@ import io.netty.buffer.ByteBuf;
 public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	private DumpedRdbStore dumpedRdbStore;
-	private DefaultRdbStore rdbStore;
 	private String masterRunid;
 	private long masterOffset;
 	private MetaStore metaStore;
@@ -148,7 +147,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void delete() {
+	public void destroy() {
 		throw new UnsupportedOperationException();
 	}
 
@@ -159,7 +158,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public boolean gc() {
-		return rdbStore.delete();
+		return true;
 	}
 
 	@Override

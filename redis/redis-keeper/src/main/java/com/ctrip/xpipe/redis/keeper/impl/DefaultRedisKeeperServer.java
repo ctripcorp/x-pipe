@@ -20,7 +20,6 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ElectContext;
-import com.ctrip.xpipe.concurrent.NamedThreadFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -127,7 +126,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
 		if(scheduled == null){
-			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(clusterId + "-" + shardId));
+			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(String.format("keeper:%s-%s", clusterId, shardId)));
 		}
 		this.scheduled = scheduled;
 		
@@ -144,11 +143,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
+		replicationStoreManager.initialize();
 		
-		
+		String threadPoolName = String.format("keeper:%s-%s", clusterId, shardId); 
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
-		bossGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create(String.format("keeper:%s-%s", clusterId, shardId)));
-		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT);
+		bossGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create("boss:" + threadPoolName));
+		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, XpipeThreadFactory.create(threadPoolName));
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = initKeeperServerState();
@@ -196,22 +196,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	protected void doDispose() throws Exception {
-
-		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
-
-		this.leaderElector.dispose();
-		bossGroup.shutdownGracefully();
-		workerGroup.shutdownGracefully();
-		super.doDispose();
-	}
-
-	
-	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
-		
-		
+		replicationStoreManager.start();;		
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
 		this.leaderElector.start();
@@ -221,12 +208,24 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doStop() throws Exception {
 		
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
-		
 		this.leaderElector.stop();
-		
 		stopServer();
+		replicationStoreManager.stop();		
 		super.doStop();
 	}
+
+	@Override
+	protected void doDispose() throws Exception {
+
+		this.scheduled.shutdownNow();
+		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
+		this.leaderElector.dispose();
+		bossGroup.shutdownGracefully();
+		workerGroup.shutdownGracefully();
+		replicationStoreManager.dispose();
+		super.doDispose();
+	}
+
 	
 	@Override
 	public synchronized void reconnectMaster() {

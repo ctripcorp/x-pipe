@@ -138,6 +138,7 @@ public class AbstractTest {
 			result = getBean(XpipeNettyClientKeyedObjectPool.class);
 		}catch(Exception e){
 			result = new XpipeNettyClientKeyedObjectPool();
+			add(result);
 		}
 		
 		LifecycleHelper.initializeIfPossible(result);

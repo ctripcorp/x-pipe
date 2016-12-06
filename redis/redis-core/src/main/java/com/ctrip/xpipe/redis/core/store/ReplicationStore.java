@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.core.store;
 import java.io.Closeable;
 import java.io.IOException;
 
+import com.ctrip.xpipe.api.lifecycle.Destroyable;
+
 import io.netty.buffer.ByteBuf;
 
 /**
@@ -10,7 +12,7 @@ import io.netty.buffer.ByteBuf;
  *
  *         2016年4月19日 下午3:43:56
  */
-public interface ReplicationStore extends Closeable {
+public interface ReplicationStore extends Closeable, Destroyable {
 
 	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER";
 
@@ -43,9 +45,6 @@ public interface ReplicationStore extends Closeable {
 	long getKeeperEndOffset();
 
 	long nextNonOverlappingKeeperBeginOffset();
-
-	// gc related
-	void delete();
 
 	boolean gc();
 }

@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -103,22 +104,49 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 	}
 	
 	
-
 	@Test
-	public void testDestroy() {
-
+	public void testCancelGc() throws Exception {
 
 		DefaultReplicationStoreManager replicationStoreManager = (DefaultReplicationStoreManager) createReplicationStoreManager(
 				keeperConfig);
-
-		replicationStoreManager.destroy();
+		
+		LifecycleHelper.initializeIfPossible(replicationStoreManager);
+		LifecycleHelper.startIfPossible(replicationStoreManager);
+		
+		sleep(replicationStoreGcIntervalSeconds * 2000);
 		long gcCount = replicationStoreManager.getGcCount();
+
+		Assert.assertTrue(gcCount > 0);
+
+		LifecycleHelper.stopIfPossible(replicationStoreManager);
+		LifecycleHelper.disposeIfPossible(replicationStoreManager);
 
 		sleep(replicationStoreGcIntervalSeconds * 2000);
 
 		Assert.assertEquals(gcCount, replicationStoreManager.getGcCount());
 	}
 
+	
+	@Test
+	public void testDestroy() throws Exception{
+		
+		DefaultReplicationStoreManager replicationStoreManager = (DefaultReplicationStoreManager) createReplicationStoreManager(
+				keeperConfig);
+		
+		LifecycleHelper.initializeIfPossible(replicationStoreManager);
+		LifecycleHelper.startIfPossible(replicationStoreManager);
+		
+		DefaultReplicationStore store = (DefaultReplicationStore) replicationStoreManager.create();
+		
+		Assert.assertTrue(store.getBaseDir().exists());
+		
+		replicationStoreManager.destroy();
+		
+		Assert.assertTrue(!store.getBaseDir().exists());
+		
+	}
+	
+	
 	@Test
 	public void testConcurrentGc() throws IOException, InterruptedException {
 

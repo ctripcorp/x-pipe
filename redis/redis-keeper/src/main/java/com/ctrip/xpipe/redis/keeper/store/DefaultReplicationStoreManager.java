@@ -1,15 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.observer.AbstractObservable;
+import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  *         May 31, 2016 5:33:46 PM
  */
-public class DefaultReplicationStoreManager extends AbstractObservable implements ReplicationStoreManager {
+public class DefaultReplicationStoreManager extends AbstractLifecycleObservable implements ReplicationStoreManager {
 
 	private final static String META_FILE = "store_manager_meta.properties";
 
@@ -55,6 +56,8 @@ public class DefaultReplicationStoreManager extends AbstractObservable implement
 	private AtomicLong gcCount = new AtomicLong();
 	
 	private ScheduledFuture<?> gcFuture;
+	
+	private ScheduledExecutorService scheduled;
 
 	public DefaultReplicationStoreManager(KeeperConfig keeperConfig, String clusterName, String shardName, String keeperRunid, File baseDir) {
 		super(MoreExecutors.sameThreadExecutor());
@@ -64,14 +67,44 @@ public class DefaultReplicationStoreManager extends AbstractObservable implement
 		this.keeperConfig = keeperConfig;
 		this.baseDir = new File(baseDir, clusterName + "/" + shardName);
 		metaFile = new File(this.baseDir, META_FILE);
-
-		gcFuture = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("gc", true)).scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+	}
+	
+	@Override
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+		
+		scheduled =  Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("gc", true));
+		gcFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 			
 			@Override
 			protected void doRun() throws Exception {
 				gc();
 			}
 		}, keeperConfig.getReplicationStoreGcIntervalSeconds(), keeperConfig.getReplicationStoreGcIntervalSeconds(), TimeUnit.SECONDS);
+
+	}
+	
+	@Override
+	protected void doDispose() throws Exception {
+
+		closeCurrentStore();
+		gcFuture.cancel(true);
+		scheduled.shutdownNow();
+		super.doDispose();
+	}
+
+	private void closeCurrentStore() {
+		
+		logger.info("[closeCurrentStore]{}", this);
+		ReplicationStore replicationStore = currentStore.get();
+		if(replicationStore != null){
+			try {
+				replicationStore.close();
+				currentStore.set(null);
+			} catch (IOException e) {
+				logger.info("[close]" + replicationStore, e);
+			}
+		}
 	}
 
 	@Override
@@ -112,7 +145,10 @@ public class DefaultReplicationStoreManager extends AbstractObservable implement
 
 		recrodLatestStore(storeBaseDir.getName());
 
-		ReplicationStore replicationStore = new DefaultReplicationStore(storeBaseDir, keeperConfig, keeperRunid); 
+		ReplicationStore replicationStore = new DefaultReplicationStore(storeBaseDir, keeperConfig, keeperRunid);
+
+		closeCurrentStore();
+		
 		currentStore.set(replicationStore);
 		
 		notifyObservers(new NodeAdded<ReplicationStore>(replicationStore));
@@ -152,6 +188,7 @@ public class DefaultReplicationStoreManager extends AbstractObservable implement
 	 * @throws IOException
 	 */
 	private Properties loadMeta() throws IOException {
+		
 		if (metaFile.isFile()) {
 			Properties meta = new Properties();
 			try (Reader reader = new FileReader(metaFile)) {
@@ -178,7 +215,7 @@ public class DefaultReplicationStoreManager extends AbstractObservable implement
 
 	@Override
 	public synchronized ReplicationStore getCurrent() throws IOException {
-		// TODO read-write lock
+		
 		if (currentStore.get() == null) {
 			Properties meta = currentMeta();
 			if (meta != null) {
@@ -233,7 +270,7 @@ public class DefaultReplicationStoreManager extends AbstractObservable implement
 				for (File dir : replicationStoreDirs) {
 					if(System.currentTimeMillis() - dir.lastModified() > keeperConfig.getReplicationStoreMinTimeMilliToGcAfterCreate()){
 						logger.info("[GC] directory {}", dir.getCanonicalPath());
-						FileUtils.deleteDirectory(dir);
+						FileUtils.recursiveDelete(dir);
 					}else{
 						logger.warn("[GC][directory is created too short, do not gc]{}, {}", dir, new Date(dir.lastModified()));
 					}
@@ -249,35 +286,21 @@ public class DefaultReplicationStoreManager extends AbstractObservable implement
 	}
 
 	@Override
-	public void destroy() {
+	public void destroy() throws Exception {
 		
 		logger.info("[destroy]{}", this);
 		
-		if(gcFuture != null){
-			logger.info("[destroy][cancel gc future]{}", this);
-			gcFuture.cancel(true);
-		}
-		recursiveDelete(this.baseDir);
-	}
-
-	//helper method to clean created files
-	private void recursiveDelete(File file) {
-		if (!file.exists() || !file.canWrite()) {
-			return;
-		}
-		if (file.isDirectory()) {
-			File[] children = file.listFiles();
-			if (children != null && children.length > 0) {
-				for (File f : children) {
-					recursiveDelete(f);
-				}
+		ReplicationStore currentReplicationStore = getCurrent();
+		if(currentReplicationStore != null){
+			try{
+				currentReplicationStore.destroy();
+			}catch(Throwable th){
+				logger.error("[destroy]", th);
 			}
 		}
-		logger.info("[recursiveDelete]{}", file.getAbsolutePath());
-		file.delete();
+		FileUtils.recursiveDelete(this.baseDir);
 	}
-	
-	
+
 	public long getGcCount() {
 		return gcCount.get();
 	}

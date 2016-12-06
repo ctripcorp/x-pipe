@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.observer;
 
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -12,7 +12,7 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.util.concurrent.MoreExecutors;
 
 /**
  * @author wenchao.meng
@@ -25,7 +25,14 @@ public abstract class AbstractLifecycleObservable extends AbstractLifecycle impl
 	
 	private List<Observer> observers = new LinkedList<>();
 	
-	private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(this.getClass().getSimpleName() + "-observable" ));
+	private ExecutorService executors = MoreExecutors.sameThreadExecutor();
+	
+	public AbstractLifecycleObservable() {
+	}
+
+	public AbstractLifecycleObservable(ExecutorService executors) {
+		this.executors = executors;
+	}
 	
 	@Override
 	public synchronized void addObserver(Observer observer) {

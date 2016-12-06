@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.utils.FileUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +100,23 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 	@Override
 	public void close() throws IOException {
-		// TODO
+		
+		logger.info("[close]{}", this);
+		RdbStore rdbStore = rdbStoreRef.get();
+		if(rdbStore != null){
+			rdbStore.close();
+		}
+		
+		if(cmdStore != null){
+			cmdStore.close();
+		}
+	}
+	
+	@Override
+	public void destroy() throws Exception {
+		
+		logger.info("[destroy]{}", this);
+		FileUtils.recursiveDelete(baseDir);
 	}
 
 	@Override
@@ -115,12 +133,6 @@ public class DefaultReplicationStore implements ReplicationStore {
 		cmdStore = new DefaultCommandStore(new File(baseDir, newMeta.getCmdFilePrefix()), cmdFileSize);
 
 		return rdbStoreRef.get();
-	}
-
-	@Override
-	public void delete() {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -371,7 +383,6 @@ public class DefaultReplicationStore implements ReplicationStore {
 	
 	@Override
 	public String toString() {
-		return String.format("baseDir:", baseDir);
+		return String.format("ReplicationStore:%s", baseDir);
 	}
-
 }

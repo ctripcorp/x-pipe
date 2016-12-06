@@ -17,7 +17,27 @@ import org.slf4j.LoggerFactory;
  */
 public class FileUtils {
 	
-	private static Logger logger = LoggerFactory.getLogger(FileUtils.class); 
+	private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
+	
+	
+	public static void recursiveDelete(File file) {
+		
+		if (!file.exists() || !file.canWrite()) {
+			return;
+		}
+		if (file.isDirectory()) {
+			File[] children = file.listFiles();
+			if (children != null && children.length > 0) {
+				for (File f : children) {
+					recursiveDelete(f);
+				}
+			}
+		}
+		logger.info("[recursiveDelete]{}", file.getAbsolutePath());
+		file.delete();
+	}
+	
+
 	
 	public static InputStream getFileInputStream(String fileName) throws FileNotFoundException{
 		

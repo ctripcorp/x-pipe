@@ -45,6 +45,11 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	}
 
 	@Test
+	public void testInterruptClose(){
+		
+	}
+	
+	@Test
 	public void testGetAsSoonAsMessageWritten() throws IOException, InterruptedException {
 
 		final StringBuilder sb = new StringBuilder();
