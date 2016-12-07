@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,7 +12,6 @@ import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
@@ -68,7 +66,7 @@ public class DefaultCommandStore implements CommandStore {
 		logger.info("Write to " + currentFile.getName());
 		CommandFileContext cmdFileCtx = new CommandFileContext(currentStartOffset, currentFile);
 		cmdFileCtxRef.set(cmdFileCtx);
-		offsetNotifier = new OffsetNotifier(currentStartOffset + cmdFileCtx.channel.size() - 1);
+		offsetNotifier = new OffsetNotifier(cmdFileCtx.totalLength() - 1);
 	}
 
 	private File fileForStartOffset(long startOffset) {
@@ -108,9 +106,9 @@ public class DefaultCommandStore implements CommandStore {
 		delayTraceLogger.debug("[appendCommands][begin]");
 		commandStoreDelay.beginWrite();
 		
-		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.channel, delayTraceLogger);
+		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.getChannel(), delayTraceLogger);
 
-		long offset = cmdFileCtx.currentStartOffset + cmdFileCtx.channel.size() - 1;
+		long offset = cmdFileCtx.totalLength() - 1;
 		
 		//delay monitor
 		delayTraceLogger.debug("[appendCommands][ end ]{}", offset + 1);
@@ -131,8 +129,8 @@ public class DefaultCommandStore implements CommandStore {
 	private void rotateFileIfNenessary() throws IOException {
 
 		CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
-		if (curCmdFileCtx.writeFile.length() >= maxFileSize) {
-			long newStartOffset = curCmdFileCtx.currentStartOffset + curCmdFileCtx.writeFile.length();
+		if (curCmdFileCtx.fileLength() >= maxFileSize) {
+			long newStartOffset = curCmdFileCtx.totalLength();
 			File newFile = new File(baseDir, fileNamePrefix + newStartOffset);
 			logger.info("Rotate to {}", newFile.getName());
 			synchronized (cmdFileCtxRefLock) {
@@ -186,40 +184,6 @@ public class DefaultCommandStore implements CommandStore {
 			return nextFile;
 		} else {
 			return null;
-		}
-	}
-
-	private class CommandFileContext {
-
-		public final long currentStartOffset;
-
-		public final RandomAccessFile writeFile;
-
-		public final FileChannel channel;
-
-		private File currentFile;
-
-		public CommandFileContext(long currentStartOffset, File currentFile) throws IOException {
-			this.currentStartOffset = currentStartOffset;
-			this.currentFile = currentFile;
-
-			writeFile = new RandomAccessFile(currentFile, "rw");
-			channel = writeFile.getChannel();
-			// append to file
-			channel.position(channel.size());
-		}
-
-		public void close() throws IOException {
-			channel.close();
-			writeFile.close();
-		}
-
-		public long totalLength() {
-			try {
-				return currentStartOffset + channel.size();
-			} catch (IOException e) {
-				throw new XpipeRuntimeException("[totalLength]getFileLength error:" + currentFile, e);
-			}
 		}
 	}
 
@@ -395,6 +359,6 @@ public class DefaultCommandStore implements CommandStore {
 	
 	@Override
 	public String toString() {
-		return String.format("CommandStore:%s:", baseDir);
+		return String.format("CommandStore:%s", baseDir);
 	}
 }

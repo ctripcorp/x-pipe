@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.util.UUID;
 
 import org.junit.Test;
 
@@ -45,4 +46,16 @@ public class FileChannelTest extends AbstractTest{
 		waitForAnyKey();
 	}
 
+	@Test
+	public void testNoFile() throws FileNotFoundException{
+		
+		String file = getTestFileDir() + "/" + UUID.randomUUID().toString();
+		File f = new File(file);
+		logger.info("[testNoFile]{}", f.exists());
+		logger.info("[testNoFile]{}", f.length());
+		
+		RandomAccessFile randomFile = new RandomAccessFile(file, "r");
+		logger.info("[testNoFile]{}", f.exists());
+		logger.info("[testNoFile]{}", f.length());
+	}
 }

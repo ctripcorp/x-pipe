@@ -114,12 +114,13 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		LifecycleHelper.startIfPossible(replicationStoreManager);
 		
 		sleep(replicationStoreGcIntervalSeconds * 2000);
-		long gcCount = replicationStoreManager.getGcCount();
-
-		Assert.assertTrue(gcCount > 0);
+		
 
 		LifecycleHelper.stopIfPossible(replicationStoreManager);
 		LifecycleHelper.disposeIfPossible(replicationStoreManager);
+		
+		long gcCount = replicationStoreManager.getGcCount();
+		Assert.assertTrue(gcCount > 0);
 
 		sleep(replicationStoreGcIntervalSeconds * 2000);
 
