@@ -11,6 +11,8 @@ reports
 .project
 .classpath
 *.class
+.apt_generated
+.factorypath
 
 # local files
 .DS_Store

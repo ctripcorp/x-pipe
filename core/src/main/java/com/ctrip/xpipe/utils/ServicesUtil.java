@@ -52,7 +52,7 @@ public class ServicesUtil {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <T extends Ordered> T load(Class<T> clazz) {
+	public static <T extends Ordered> T load(Class<T> clazz) {
 		
 		T result = (T) allServices.get(clazz);
 		
