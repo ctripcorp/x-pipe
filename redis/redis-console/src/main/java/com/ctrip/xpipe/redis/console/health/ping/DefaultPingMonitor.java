@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.health.BaseSampleMonitor;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
-import com.ctrip.xpipe.redis.console.health.HostPort;
 import com.ctrip.xpipe.redis.console.health.PingCallback;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.Sample;

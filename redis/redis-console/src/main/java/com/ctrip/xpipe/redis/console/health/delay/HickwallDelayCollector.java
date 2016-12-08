@@ -4,19 +4,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.thrift.TException;
-import org.apache.thrift.TSerializer;
-import org.apache.thrift.protocol.TCompactProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.ctrip.hickwall.protocol.BinDataPoint;
-import com.ctrip.hickwall.protocol.BinMultiDataPoint;
-import com.ctrip.hickwall.protocol.DataPoint;
-import com.ctrip.xpipe.redis.console.health.HostPort;
-import com.ctrip.xpipe.redis.console.health.hickwall.HickwallProxy;
+import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.metric.MetricBinMultiDataPoint;
+import com.ctrip.xpipe.metric.MetricDataPoint;
+import com.ctrip.xpipe.metric.MetricProxy;
+import com.ctrip.xpipe.utils.ServicesUtil;
 
 /**
  * @author marsqing
@@ -28,15 +24,14 @@ public class HickwallDelayCollector implements DelayCollector {
 
 	private static Logger log = LoggerFactory.getLogger(HickwallDelayCollector.class);
 
-	@Autowired
-	private HickwallProxy proxy;
+	private MetricProxy proxy = ServicesUtil.getMetricProxy();
 
 	@Override
 	public void collect(DelaySampleResult result) {
 		String metricNamePrefix = toMetricNamePrefix(result);
 
 		try {
-			BinMultiDataPoint bmp = new BinMultiDataPoint();
+			MetricBinMultiDataPoint bmp = new MetricBinMultiDataPoint();
 
 			for (Entry<HostPort, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
 				String metricName = metricNamePrefix + "." + entry.getKey().getHost() + "." + entry.getKey().getPort();
@@ -47,13 +42,13 @@ public class HickwallDelayCollector implements DelayCollector {
 			addPoint(bmp, metricNamePrefix + "." + masterHostPort.getHost() + "." + masterHostPort.getPort(), result.getMasterDelayNanos(), result);
 
 			proxy.writeBinMultiDataPoint(bmp);
-		} catch (TException e) {
+		} catch (Exception e) {
 			log.error("Error send metrics to hickwall", e);
 		}
 	}
 
-	private void addPoint(BinMultiDataPoint bmp, String metricName, long value, DelaySampleResult result) throws TException {
-		DataPoint dataPoint = new DataPoint();
+	private void addPoint(MetricBinMultiDataPoint bmp, String metricName, long value, DelaySampleResult result) throws Exception {
+		MetricDataPoint dataPoint = new MetricDataPoint();
 		dataPoint.setMetric(metricName);
 		dataPoint.setValue(value / 1000);
 		dataPoint.setTimestamp(System.currentTimeMillis() * 1000000);
@@ -69,13 +64,7 @@ public class HickwallDelayCollector implements DelayCollector {
 		meta.put("interval", "15s"); // one dot every 15 seconds
 		dataPoint.setMeta(meta);
 
-		BinDataPoint bdp = new BinDataPoint();
-		TSerializer serializer = new TSerializer(new TCompactProtocol.Factory());
-		byte[] data = serializer.serialize(dataPoint);
-		bdp.setEncoded(data);
-		bdp.setEndpoint("fx");
-
-		bmp.addToPoints(bdp);
+		bmp.addToPoints(dataPoint);
 	}
 
 	private String toMetricNamePrefix(DelaySampleResult result) {

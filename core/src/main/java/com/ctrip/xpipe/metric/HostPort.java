@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health;
+package com.ctrip.xpipe.metric;
 import java.util.Objects;
 
 public class HostPort {

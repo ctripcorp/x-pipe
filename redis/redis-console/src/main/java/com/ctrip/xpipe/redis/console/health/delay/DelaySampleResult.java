@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.health.delay;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.ctrip.xpipe.redis.console.health.HostPort;
+import com.ctrip.xpipe.metric.HostPort;
 
 /**
  * @author marsqing

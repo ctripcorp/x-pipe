@@ -18,8 +18,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	public static final String KEY_CONSOLE_NOTIFY_RETRY_INTERVAL = "console.notify.retry.interval";
 	public static final String KEY_METASERVERS = "metaservers";
 	public static final String KEY_USER_ACCESS_WHITE_LIST = "user.access.white.list";
-	public static final String KEY_HICKWALL_HOST_PORT = "hickwall.host.port";
-	public static final String KEY_HICKWALL_QUEUE_SIZE = "hickwall.queue.size";
 	public static final String KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL = "redis.replication.health.check.interval";
 
 	@Override
@@ -52,17 +50,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 		String whiteList = getProperty(KEY_USER_ACCESS_WHITE_LIST, "*");
 		return new HashSet<>(Arrays.asList(whiteList.split(",")));
 	}
-
-	@Override
-	public String getHickwallHostPort() {
-		return getProperty(KEY_HICKWALL_HOST_PORT, "");
-	}
-
-	@Override
-	public int getHickwallQueueSize() {
-		return getIntProperty(KEY_HICKWALL_QUEUE_SIZE, 100 * 1000);
-	}
-
+	
 	@Override
 	public int getRedisReplicationHealthCheckInterval() {
 		return getIntProperty(KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL, 10000);

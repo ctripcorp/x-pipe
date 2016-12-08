@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.metric.HostPort;
 import com.lambdaworks.redis.ClientOptions;
 import com.lambdaworks.redis.ClientOptions.DisconnectedBehavior;
 import com.lambdaworks.redis.RedisClient;

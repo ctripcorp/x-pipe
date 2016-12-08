@@ -7,8 +7,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.health.HostPort;
 
 /**
  * @author marsqing

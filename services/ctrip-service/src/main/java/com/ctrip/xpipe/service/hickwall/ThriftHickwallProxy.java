@@ -1,12 +1,11 @@
-package com.ctrip.xpipe.redis.console.health.hickwall;
+package com.ctrip.xpipe.service.hickwall;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.thrift.TException;
+import org.apache.thrift.TSerializer;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TFramedTransport;
@@ -14,14 +13,16 @@ import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
 
 import com.ctrip.hickwall.protocol.API;
+import com.ctrip.hickwall.protocol.BinDataPoint;
 import com.ctrip.hickwall.protocol.BinMultiDataPoint;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.health.HostPort;
+import com.ctrip.hickwall.protocol.DataPoint;
+import com.ctrip.xpipe.api.lifecycle.Ordered;
+import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.metric.MetricBinMultiDataPoint;
+import com.ctrip.xpipe.metric.MetricDataPoint;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
@@ -30,21 +31,23 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  *
  *         Dec 5, 2016 1:34:27 PM
  */
-@Component
-@Lazy
-public class ThriftHickwallProxy implements HickwallProxy {
+public class ThriftHickwallProxy implements MetricProxy {
 
 	private static Logger log = LoggerFactory.getLogger(ThriftHickwallProxy.class);
 
-	@Autowired
-	private ConsoleConfig config;
+	private HickwallConfig config = new HickwallConfig();
 
 	private API.Iface client;
 
 	private BlockingQueue<BinMultiDataPoint> datas;
 
-	@PostConstruct
-	private void postConstruct() throws Exception {
+	public ThriftHickwallProxy() {
+		start();
+	}
+
+	private void start() {
+		log.info("Hickwall proxy started");
+
 		datas = new ArrayBlockingQueue<>(config.getHickwallQueueSize());
 
 		XpipeThreadFactory.create("HickwallSender", true).newThread(new Runnable() {
@@ -117,10 +120,37 @@ public class ThriftHickwallProxy implements HickwallProxy {
 	}
 
 	@Override
-	public void writeBinMultiDataPoint(BinMultiDataPoint bmp) throws TException {
+	public void writeBinMultiDataPoint(MetricBinMultiDataPoint mbmp) throws TException {
+		BinMultiDataPoint bmp = convertToThriftFormat(mbmp);
+
 		if (!datas.offer(bmp)) {
 			log.error("Hickwall queue overflow, will drop data");
 		}
+	}
+
+	private BinMultiDataPoint convertToThriftFormat(MetricBinMultiDataPoint mbmp) throws TException {
+		BinMultiDataPoint bmp = new BinMultiDataPoint();
+
+		for (MetricDataPoint mp : mbmp.getPoints()) {
+
+			DataPoint dataPoint = new DataPoint();
+			dataPoint.setMetric(mp.getMetric());
+			dataPoint.setValue(mp.getValue());
+			dataPoint.setTimestamp(mp.getTimestamp());
+
+			dataPoint.setTags(mp.getTags());
+			dataPoint.setMeta(mp.getMeta());
+
+			BinDataPoint bdp = new BinDataPoint();
+			TSerializer serializer = new TSerializer(new TCompactProtocol.Factory());
+			byte[] data = serializer.serialize(dataPoint);
+			bdp.setEncoded(data);
+			bdp.setEndpoint("fx");
+
+			bmp.addToPoints(bdp);
+		}
+
+		return bmp;
 	}
 
 	private HostPort parseHostPortFromConfig(String hickwallHostPort) {
@@ -130,6 +160,11 @@ public class ThriftHickwallProxy implements HickwallProxy {
 
 		String[] parts = hickwallHostPort.split(":");
 		return new HostPort(parts[0].trim(), Integer.parseInt(parts[1].trim()));
+	}
+
+	@Override
+	public int getOrder() {
+		return Ordered.HIGHEST_PRECEDENCE;
 	}
 
 }

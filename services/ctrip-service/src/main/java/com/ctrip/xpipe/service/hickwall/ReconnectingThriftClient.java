@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health.hickwall;
+package com.ctrip.xpipe.service.hickwall;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -74,7 +74,7 @@ public final class ReconnectingThriftClient {
 	 * @param clientInterface
 	 *            the interface that the client implements (can be inferred by
 	 *            using
-	 *            {@link #wrap(org.apache.thrift.TServiceClient, com.rapleaf.spruce_lib.singletons.ReconnectingThriftClient.Options)}
+	 *            {@link #wrap(org.apache.thrift.TServiceClient, com.ctrip.xpipe.service.hickwall.rapleaf.spruce_lib.singletons.ReconnectingThriftClient.Options)}
 	 * @param options
 	 *            options that control behavior of the reconnecting client
 	 * @param <T>
@@ -123,7 +123,7 @@ public final class ReconnectingThriftClient {
 	 * @param clientInterface
 	 *            the interface that the client implements (can be inferred by
 	 *            using
-	 *            {@link #wrap(org.apache.thrift.TServiceClient, com.rapleaf.spruce_lib.singletons.ReconnectingThriftClient.Options)}
+	 *            {@link #wrap(org.apache.thrift.TServiceClient, com.ctrip.xpipe.service.hickwall.rapleaf.spruce_lib.singletons.ReconnectingThriftClient.Options)}
 	 * @param <T>
 	 * @param <C>
 	 * @return

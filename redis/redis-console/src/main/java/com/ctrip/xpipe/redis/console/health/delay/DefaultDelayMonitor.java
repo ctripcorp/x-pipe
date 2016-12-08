@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.health.BaseSampleMonitor;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
-import com.ctrip.xpipe.redis.console.health.HostPort;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.health.ping.PingService;
@@ -26,16 +26,16 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 
 	public static final String CHECK_CHANNEL = "xpipe-health-check";
 
-	public static final long SAMPLE_LOST_AND_NO_PONG = -1000;
+	public static final long SAMPLE_LOST_AND_NO_PONG = -99L * 1000 * 1000;
 
-	private static final long SAMPLE_LOST_BUT_PONG = 99999999;
+	private static final long SAMPLE_LOST_BUT_PONG = 99999L * 1000 * 1000;
 
 	@Autowired
 	private List<DelayCollector> delayCollectors;
 
 	@Autowired
 	private PingService pingSvc;
-	
+
 	@Override
 	public void startSample(BaseSamplePlan<InstanceDelayResult> plan) throws Exception {
 		sampleDelay((DelaySamplePlan) plan);
