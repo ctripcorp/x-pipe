@@ -1,10 +1,9 @@
-package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster;
+package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -23,33 +22,24 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 /**
  * @author wenchao.meng
  *
- * Nov 4, 2016
+ * Dec 8, 2016
  */
-public class PrimaryDcKeeperMasterChooser extends AbstractKeeperMasterChooser{
-
+public class PrimaryDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterChooserAlgorithm{
+	
 	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 	
-	public PrimaryDcKeeperMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache,
-			CurrentMetaManager currentMetaManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled) {
-		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
+	private int checkRedisTimeoutSeconds;
+
+	public PrimaryDcKeeperMasterChooserAlgorithm(String clusterId, String shardId, DcMetaCache dcMetaCache,
+			CurrentMetaManager currentMetaManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, int checkRedisTimeoutSeconds) {
+		super(clusterId, shardId, dcMetaCache, currentMetaManager);
 		this.keyedObjectPool = keyedObjectPool;
+		this.checkRedisTimeoutSeconds = checkRedisTimeoutSeconds;
 	}
-	
+
 	@Override
-	protected Pair<String, Integer> chooseKeeperMaster() {
-		
-		if(!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)){
-			
-			logger.warn("[chooseKeeperMaster][current dc not primary]{}, {}", clusterId, shardId);
-			try {
-				stop();
-			} catch (Exception e) {
-				logger.error("[chooseKeeperMaster]", e);
-			}
-			return null;
-		}
-		
-		
+	protected Pair<String, Integer> doChoose() {
+
 		Pair<String, Integer> currentMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
 		
 		
@@ -79,17 +69,15 @@ public class PrimaryDcKeeperMasterChooser extends AbstractKeeperMasterChooser{
 			return redisMasters.get(0);
 		}
 	}
-
+	
 	protected boolean isMaster(RedisMeta redisMeta) {
-		
 		try {
 			SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort()));
-			Role role = new RoleCommand(clientPool).execute().get(checkIntervalSeconds/2, TimeUnit.SECONDS);
+			Role role = new RoleCommand(clientPool).execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);
 			return SERVER_ROLE.MASTER == role.getServerRole();
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			logger.error("[isMaster]" + redisMeta, e);
 		}
 		return false;
 	}
-
 }

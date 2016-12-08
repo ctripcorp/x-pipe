@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster;
+package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -10,6 +10,7 @@ import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
+import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.KeeperMasterChooser;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 
