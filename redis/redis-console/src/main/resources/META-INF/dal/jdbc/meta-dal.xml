@@ -704,10 +704,14 @@
 	<entity name="migration-event-tbl" table="migration_event_tbl" alias="met">
 		<relation name="migration-clusters" entity-name="migration-cluster-tbl" entity-alias="mct" multiple="true"/>
 		
+		<relation name="redundant-clusters" entity-name="migration-cluster-tbl" entity-alias="mct"/>
+		<relation name="redundant-shards" entity-name="migration-shard-tbl" entity-alias="mst"/>
+		
 		<readsets>
-			<readset name="DETAILS">
+			<readset name="FULL_ALL">
 				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="migration-clusters"/>
+				<readset-ref name="FULL" relation-name="redundant-clusters"/>
+				<readset-ref name="FULL" relation-name="redundant-shards"/>
 			</readset>
 		</readsets>
 		
@@ -732,6 +736,21 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-with-all-details" type="SELECT" multiple="true">
+				<param name='id'/>
+				<statement>
+				<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='redundant-clusters'/>, <TABLE name='redundant-shards'/>
+					WHERE <FIELD name='id'/> = ${id}
+					AND mct.migration_event_id = ${id}
+					AND mst.migration_cluster_id = mct.id
+					AND mct.deleted = 0
+					AND mst.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			
 			<query name='insert-batch' type='INSERT' batch='true'>
 				<statement>
@@ -749,13 +768,6 @@
 	
 		<relation name="migration-event" entity-name="migration-event-tbl" entity-alias="met"/>
 		<relation name="migration-shards" entity-name="migration-shard-tbl" entity-alias="mst" multiple="true"/>
-		
-		<readsets>
-			<readset name="DETAILS">
-				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="migration-shards"/>
-			</readset>
-		</readsets>
 		
 		<query-defs>
 			<query name="find-by-event-id" type="SELECT" multiple="true">

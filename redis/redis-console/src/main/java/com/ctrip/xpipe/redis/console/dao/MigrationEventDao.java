@@ -2,12 +2,15 @@ package com.ctrip.xpipe.redis.console.dao;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.annotation.PostConstruct;
 
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.CollectionUtils;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.helper.Lists;
 import org.unidal.lookup.ContainerLoader;
@@ -16,6 +19,11 @@ import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
+import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -35,17 +43,22 @@ import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 @Repository
 public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	@Autowired
 	private UserInfoHolder userInfo;
+	@Autowired
+	private MigrationEventManager eventManager;
 
 	private MigrationEventTblDao migrationEventDao;
 	private MigrationClusterTblDao migrationClusterDao;
 	private MigrationShardTblDao migrationShardDao;
 	private ClusterTblDao clusterTblDao;
 	private ShardTblDao shardTblDao;
+	
+	private ExecutorService cachedThreadPool = Executors.newCachedThreadPool(XpipeThreadFactory.create("MigrationEventDao"));
 
 	@PostConstruct
 	private void postConstruct() {
@@ -58,6 +71,16 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}
+	}
+	
+	public MigrationEvent buildMigrationEvent(final long eventId) {
+		List<MigrationEventTbl> eventDetails = queryHandler.handleQuery(new DalQuery<List<MigrationEventTbl>>() {
+			@Override
+			public List<MigrationEventTbl> doQuery() throws DalException {
+				return migrationEventDao.findWithAllDetails(eventId, MigrationEventTblEntity.READSET_FULL_ALL);
+			}
+		});
+		return loadMigrationEvent(eventDetails);
 	}
 
 	@DalTransaction
@@ -83,10 +106,39 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 			/** Create migration shards task **/
 			createMigrationShards(migrationClusters);
 
+			/** Notify event manager **/
+			cachedThreadPool.submit(new Runnable() {
+				@Override
+				public void run() {
+					eventManager.addEvent(buildMigrationEvent(result.getId()));
+				}
+			});
+			
 			return result.getId();
 		} else {
 			throw new BadRequestException("Cannot create migration event from nothing!");
 		}
+	}
+	
+	private MigrationEvent loadMigrationEvent(List<MigrationEventTbl> details) {
+		if(! CollectionUtils.isEmpty(details)) {
+			MigrationEvent event = new DefaultMigrationEvent(details.get(0));
+			for(MigrationEventTbl detail : details) {
+				MigrationClusterTbl cluster = detail.getRedundantClusters();
+				MigrationShardTbl shard = detail.getRedundantShards();
+				
+				if(MigrationStatus.isTerminated(cluster.getStatus())) {
+					continue;
+				}
+				if(null == event.getMigrationCluster(cluster.getClusterId())) {
+					event.addMigrationCluster(new DefaultMigrationCluster(detail.getRedundantClusters()));
+				}
+				event.getMigrationCluster(cluster.getClusterId()).addNewMigrationShard(new DefaultMigrationShard(shard));
+			}
+			
+			return event;
+		}
+		throw new BadRequestException("Cannot load migration event from null.");
 	}
 
 	private List<MigrationClusterTbl> createMigrationClusters(final long eventId, List<MigrationClusterTbl> migrationClusters) {

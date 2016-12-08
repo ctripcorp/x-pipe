@@ -18,6 +18,11 @@ public enum MigrationStatus {
 				formatStatus(currentStatus).equals(formatStatus(MigrationStatus.ForceFail));
 	}
 	
+	public static boolean isTerminated(MigrationStatus status) {
+		return status == MigrationStatus.Cancelled || status == MigrationStatus.Success 
+				|| status == MigrationStatus.ForceFail;
+	}
+	
 	private static String formatStatus(String status) {
 		return status.trim().toLowerCase();
 	}

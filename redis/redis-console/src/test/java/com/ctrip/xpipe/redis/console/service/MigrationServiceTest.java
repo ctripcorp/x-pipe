@@ -24,6 +24,16 @@ public class MigrationServiceTest extends AbstractConsoleIntegrationTest {
 	@Autowired
 	private ClusterService clusterService;
 
+	@Override
+	public String prepareDatas() {
+		try {
+			return prepareDatasFromFile("src/test/resources/migration-test.sql");
+		} catch (Exception ex) {
+			logger.error("Prepare data from file failed",ex);
+		}
+		return "";
+	}
+	
 	private MigrationEventModel createEventDemo(long clusterId, long destDcId) {
 		MigrationEventModel model = new MigrationEventModel();
 		MigrationEventTbl event = new MigrationEventTbl();
