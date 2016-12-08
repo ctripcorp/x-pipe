@@ -44,7 +44,8 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 	public void beforeAbstractMetaServerContextTest() throws Exception{
 		arrangeTaskStart(false);
 		
-		int zkPort = incrementalPort(defaultZkPort());
+		int zkPort = getTestZkPort();
+				
 		if(isStartZk()){
 			startZk(zkPort);
 		}
@@ -103,7 +104,8 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 		try{
 			TestZkClient zkClient = new TestZkClient();
 			zkClient.setZkAddress(zkAddress);
-			zkClient.initialize();zkClient.start();
+			zkClient.initialize();
+			zkClient.start();
 			add(zkClient);
 			return zkClient;
 		}catch(Exception e){
