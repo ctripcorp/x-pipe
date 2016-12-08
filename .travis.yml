@@ -21,6 +21,7 @@ after_success:
 branches:
   only:
     - master
+    - dev
     - coverity_scan
     
 env:
