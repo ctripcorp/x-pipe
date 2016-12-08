@@ -15,7 +15,7 @@
 		<module>redis-keeper</module>
 		<module>redis-meta</module>
 		<module>redis-console</module>
-		<module>redis-integrated-test</module>
+		<module>redis-integration-test</module>
 	</modules>
 
 	<profiles>

@@ -33,7 +33,7 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 	public void becomeBackup(InetSocketAddress masterAddress){
 		
 		logger.info("[becomeBackup]{}", masterAddress);
-		activeToBackup(masterAddress);
+		doBecomeBackup(masterAddress);
 	}
 
 	@Override

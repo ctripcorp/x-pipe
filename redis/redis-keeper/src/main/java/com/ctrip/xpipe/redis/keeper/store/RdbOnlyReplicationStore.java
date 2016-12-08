@@ -22,7 +22,6 @@ import io.netty.buffer.ByteBuf;
 public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	private DumpedRdbStore dumpedRdbStore;
-	private DefaultRdbStore rdbStore;
 	private String masterRunid;
 	private long masterOffset;
 	private MetaStore metaStore;
@@ -37,7 +36,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException {
+			public void saveKinfo(ReplicationStoreMeta replicationStoreMeta) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
@@ -78,7 +77,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public void activeBecomeBackup() throws IOException {
+			public void becomeBackup() throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
@@ -99,7 +98,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public void backupBecomeActive() throws IOException {
+			public void becomeActive() throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
@@ -114,13 +113,13 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public void updateMeta(String name, long rdbLastKeeperOffset) throws IOException {
+			public void setKeeperState(String keeperRunid, KeeperState keeperState) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
 			@Override
-			public void setKeeperState(KeeperState keeperState) throws IOException {
-				throw new UnsupportedOperationException();
+			public boolean isFresh() {
+				return true;
 			}
 		};
 	}
@@ -148,7 +147,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void delete() {
+	public void destroy() {
 		throw new UnsupportedOperationException();
 	}
 
@@ -159,7 +158,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public boolean gc() {
-		return rdbStore.delete();
+		return true;
 	}
 
 	@Override

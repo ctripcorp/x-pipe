@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
 
-
 import java.io.IOException;
 
 import org.junit.Assert;
@@ -30,9 +29,14 @@ public class SingleKeeperGc extends AbstractKeeperIntegratedSingleDc{
 		}catch(Throwable e){
 			logger.error("[startTest]", e);
 		}
-		waitForAnyKeyToExit();
 	}
 
+	
+	@Override
+	protected void doAfterAbstractTest() throws Exception {
+		super.doAfterAbstractTest();
+		waitForAnyKeyToExit();
+	}
 	
 	@Test
 	public void killActive() throws Exception{

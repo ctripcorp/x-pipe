@@ -67,6 +67,10 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	@Autowired
 	private List<MetaServerStateChangeHandler> stateHandlers;
 	
+	public DefaultCurrentMetaManager() {
+		super(Executors.newCachedThreadPool(XpipeThreadFactory.create("DefaultCurrentMetaManager-observable" )));
+	}
+	
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();

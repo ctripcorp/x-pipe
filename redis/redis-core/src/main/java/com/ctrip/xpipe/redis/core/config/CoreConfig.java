@@ -10,7 +10,5 @@ public interface CoreConfig {
 	String getZkConnectionString();
 
 	String getZkNameSpace();
-	
-	
 
 }

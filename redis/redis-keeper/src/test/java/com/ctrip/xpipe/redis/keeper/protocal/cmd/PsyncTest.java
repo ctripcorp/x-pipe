@@ -7,6 +7,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeException;
@@ -49,6 +51,15 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		
 		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress("127.0.0.1", 1234));
 		psync = new DefaultPsync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager);
+		psync.future().addListener(new CommandFutureListener<Object>() {
+			
+			@Override
+			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+				if(!commandFuture.isSuccess()){
+					logger.error("[operationComplete]", commandFuture.cause());
+				}
+			}
+		});
 	}
 
 	@Test

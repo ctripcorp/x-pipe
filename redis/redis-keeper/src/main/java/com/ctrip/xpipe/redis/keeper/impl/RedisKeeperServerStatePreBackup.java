@@ -23,15 +23,13 @@ public class RedisKeeperServerStatePreBackup extends AbstractRedisKeeperServerSt
 
 	@Override
 	public void becomeActive(InetSocketAddress masterAddress){
-		backupToActive(masterAddress);
+		doBecomeActive(masterAddress);
 	}
 
 	@Override
 	public void becomeBackup(InetSocketAddress masterAddress) {
 		logger.info("[becomeBackup]{}",  masterAddress);
-		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, masterAddress));
-		reconnectMaster();
-		
+		doBecomeBackup(masterAddress);
 	}
 
 	@Override

@@ -30,11 +30,28 @@ public class MemoryPrinter extends AbstractStartStoppable {
 
 			@Override
 			public void run() {
-				logger.info("max:{}, total:{}, free:{}", getMb(Runtime.getRuntime().maxMemory()), getMb(Runtime.getRuntime().totalMemory()), getMb(Runtime.getRuntime().freeMemory()));
+				printMemory();
 
 			}
+
 		}, 0, printIntervalMilli, TimeUnit.MILLISECONDS);
 
+	}
+
+	public void printMemory() {
+		logger.info("max:{}, total:{}, free:{}", getMb(getMaxMemory()), getMb(getTotalMemory()), getMb(getFreeMemory()));
+	}
+
+	protected long getFreeMemory() {
+		return Runtime.getRuntime().freeMemory();
+	}
+
+	protected long getTotalMemory() {
+		return Runtime.getRuntime().totalMemory();
+	}
+
+	protected long getMaxMemory() {
+		return Runtime.getRuntime().maxMemory();
 	}
 
 	@Override

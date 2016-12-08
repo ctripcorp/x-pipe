@@ -108,7 +108,7 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 		logger.info(remarkableMessage("[testReFullSync][sendRandomMessage]"));
 		sendRandomMessage(redisMaster, 1, replicationStoreCommandFileSize);
 		
-		for(int i=0;i<3;i++){
+		for(int i=0; i < 3 ; i++){
 			
 			logger.info(remarkableMessage("[testReFullSync]{}"), i);
 			startRedis(dcMeta, slave1);

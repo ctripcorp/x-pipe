@@ -57,7 +57,7 @@ public class DefaultPsync extends AbstractReplicationStorePsync{
 				logger.info("[doWhenFullSyncToNonFreshReplicationStore][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
 				newKeeperBeginOffset = oldStore.nextNonOverlappingKeeperBeginOffset();
 				oldStore.close();
-				oldStore.delete();
+				oldStore.destroy();
 			} catch (Exception e) {
 				logger.error("[handleRedisReponse]" + oldStore, e);
 			}

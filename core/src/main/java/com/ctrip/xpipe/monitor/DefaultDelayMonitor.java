@@ -9,13 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.monitor.DelayMonitor;
+import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 
 /**
  * @author wenchao.meng
  *
  * May 21, 2016 10:14:33 PM
  */
-public class DefaultDelayMonitor implements DelayMonitor, Runnable{
+public class DefaultDelayMonitor extends AbstractStartStoppable implements DelayMonitor, Runnable{
 
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -35,10 +36,20 @@ public class DefaultDelayMonitor implements DelayMonitor, Runnable{
 	public DefaultDelayMonitor(String delayType, long infoDelta) {
 		this.delayType = delayType;
 		this.infoDelta = infoDelta;
+	}
+	
+	@Override
+	protected void doStart() throws Exception {
+		
 		scheduled = Executors.newScheduledThreadPool(4);
 		scheduled.scheduleAtFixedRate(this, 0, 5, TimeUnit.SECONDS);
 	}
 	
+	
+	@Override
+	protected void doStop() throws Exception {
+		scheduled.shutdown();
+	}
 
 	@Override
 	public void addData(long lastTime) {
@@ -61,19 +72,23 @@ public class DefaultDelayMonitor implements DelayMonitor, Runnable{
 	@Override
 	public void run() {
 		
-		long currentDelay = totalDelay.get();
-		long currentNum = totalNum.get();
-		
-		long deltaNum = currentNum - previousNum;
-		
-		if(deltaNum  > 0 ){
-			double avgDelay =  (double)(currentDelay - previousDelay)/deltaNum;
-			logger.info(String.format("%d - %d = %d, %d - %d = %d", currentDelay,previousDelay, currentDelay - previousDelay, currentNum, previousNum, currentNum - previousNum));
-			logger.info("[delay]{}-{} {}", getDelayType(), delayInfo == null ? "" :delayInfo, String.format("%.2f", avgDelay));
+		try{
+			long currentDelay = totalDelay.get();
+			long currentNum = totalNum.get();
+			
+			long deltaNum = currentNum - previousNum;
+			
+			if(deltaNum  > 0 ){
+				double avgDelay =  (double)(currentDelay - previousDelay)/deltaNum;
+				logger.info(String.format("%d - %d = %d, %d - %d = %d", currentDelay,previousDelay, currentDelay - previousDelay, currentNum, previousNum, currentNum - previousNum));
+				logger.info("[delay]{}-{} {}", getDelayType(), delayInfo == null ? "" :delayInfo, String.format("%.2f", avgDelay));
+			}
+			
+			previousDelay = currentDelay;
+			previousNum = currentNum;
+		}catch(Throwable th){
+			logger.error("[run]", th);
 		}
-		
-		previousDelay = currentDelay;
-		previousNum = currentNum;
 	}
 
 

@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.payload;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.netty.buffer.ByteBuf;
 
@@ -14,50 +14,67 @@ import io.netty.buffer.ByteBuf;
  */
 public class ByteArrayOutputStreamPayload extends AbstractInOutPayload{
 	
-	private ByteArrayOutputStream baous;
+	private int INIT_SIZE = 2 << 10;
+	private byte []data;
+	private AtomicInteger pos  = new AtomicInteger(0);
 	
 	public ByteArrayOutputStreamPayload() {
 		
 	}
 	public ByteArrayOutputStreamPayload(String message) {
-		try {
-			baous = new ByteArrayOutputStream();
-			baous.write(message.getBytes());
-		} catch (IOException e) {
-			throw new IllegalStateException("message write error:" + message, e);
-		}
+		data = message.getBytes();
+		pos.set(data.length);
 	}
 
 	@Override
 	public void doStartInput() {
-		 baous = new ByteArrayOutputStream();
+		 data = new byte[INIT_SIZE];
+		 pos.set(0);;
 	}
 
 	@Override
 	public int doIn(ByteBuf byteBuf) throws IOException {
-		int size = byteBuf.readableBytes();
-		byteBuf.readBytes(baous, size);
 		
-		return size - byteBuf.readableBytes();
+		int size = byteBuf.readableBytes();
+		
+		makeSureSize(size);
+		
+		byteBuf.readBytes(data, pos.get(), size);
+		
+		int read = size - byteBuf.readableBytes(); 
+		pos.addAndGet(read);
+		
+		return read;
 	}
 
+	private void makeSureSize(int size) {
+		
+		if(pos.get() + size > data.length){
+			byte []newData = new byte[data.length * 2];
+			System.arraycopy(data, 0, newData, 0, data.length);
+			data = newData;
+		}
+	}
 	@Override
 	public long doOut(WritableByteChannel writableByteChannel) throws IOException {
 		
-		byte[]result = baous.toByteArray();
-		return writableByteChannel.write(ByteBuffer.wrap(result));
+		return writableByteChannel.write(ByteBuffer.wrap(data, 0, pos.get()));
 	}
 
 	
 	public byte[] getBytes(){
-		return baous.toByteArray();
+		int currentPos = pos.get();
+		
+		byte []dst = new byte[currentPos];
+		System.arraycopy(data, 0, dst, 0, currentPos);
+		return dst;
 	}
 	
 	@Override
 	public String toString() {
 		
-		if(baous != null){
-			return new String(baous.toByteArray());
+		if(data != null){
+			return new String(data, 0 , pos.get());
 		}
 		return super.toString();
 	}

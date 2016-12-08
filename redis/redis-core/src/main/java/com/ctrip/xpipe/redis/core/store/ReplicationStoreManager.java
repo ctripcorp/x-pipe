@@ -3,13 +3,15 @@ package com.ctrip.xpipe.redis.core.store;
 import java.io.IOException;
 
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.observer.Observable;
 
 /**
  * @author wenchao.meng
  *
  * May 31, 2016
  */
-public interface ReplicationStoreManager  extends Destroyable{
+public interface ReplicationStoreManager  extends Destroyable, Observable, Lifecycle{
 	
 	ReplicationStore createIfNotExist() throws IOException;
 
@@ -28,12 +30,10 @@ public interface ReplicationStoreManager  extends Destroyable{
 	ReplicationStore getCurrent() throws IOException;
 	
 	
-	void destroy(ReplicationStore replicationStore);
-	
-
 	String getClusterName();
 	
 	String getShardName();
 
 	ReplicationStore create(String masterRunid, long keeperBeginOffset) throws IOException;
+	
 }

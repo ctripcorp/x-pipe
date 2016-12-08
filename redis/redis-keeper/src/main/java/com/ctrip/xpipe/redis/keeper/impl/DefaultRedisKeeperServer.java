@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
@@ -19,11 +20,11 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ElectContext;
-import com.ctrip.xpipe.concurrent.NamedThreadFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -41,13 +42,13 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -121,10 +122,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.keeperConfig = keeperConfig;
 		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir);
+		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
 		if(scheduled == null){
-			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), new NamedThreadFactory(clusterId + "-" + shardId));
+			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(String.format("keeper:%s-%s", clusterId, shardId)));
 		}
 		this.scheduled = scheduled;
 		
@@ -141,10 +143,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
+		replicationStoreManager.initialize();
 		
+		String threadPoolName = String.format("keeper:%s-%s", clusterId, shardId); 
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
-		bossGroup = new NioEventLoopGroup(1);
-		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT);
+		bossGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create("boss:" + threadPoolName));
+		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, XpipeThreadFactory.create(threadPoolName));
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = initKeeperServerState();
@@ -192,22 +196,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	protected void doDispose() throws Exception {
-
-		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
-
-		this.leaderElector.dispose();
-		bossGroup.shutdownGracefully();
-		workerGroup.shutdownGracefully();
-		super.doDispose();
-	}
-
-	
-	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
-		
-		
+		replicationStoreManager.start();;		
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
 		this.leaderElector.start();
@@ -217,12 +208,24 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doStop() throws Exception {
 		
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
-		
 		this.leaderElector.stop();
-		
 		stopServer();
+		replicationStoreManager.stop();		
 		super.doStop();
 	}
+
+	@Override
+	protected void doDispose() throws Exception {
+
+		this.scheduled.shutdownNow();
+		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
+		this.leaderElector.dispose();
+		bossGroup.shutdownGracefully();
+		workerGroup.shutdownGracefully();
+		replicationStoreManager.dispose();
+		super.doDispose();
+	}
+
 	
 	@Override
 	public synchronized void reconnectMaster() {
@@ -389,11 +392,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void beginWriteRdb(long fileSize, long offset) {
-		try {
-			getReplicationStore().getMetaStore().setKeeperState(redisKeeperServerState.keeperState());
-		} catch (IOException e) {
-			throw new RedisKeeperRuntimeException("[setRedisKeeperServerState]" + redisKeeperServerState, e);
-		}
 	}
 
 	@Override
@@ -415,14 +413,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void onContinue() {
-		try {
-			getReplicationStore().getMetaStore().setKeeperState(redisKeeperServerState.keeperState());
-		} catch (IOException e) {
-			throw new RedisKeeperRuntimeException("[setRedisKeeperServerState]" + redisKeeperServerState, e);
-		}
 	}
 	
-
 	@Override
 	public String getClusterId() {
 		return this.clusterId;
@@ -595,4 +587,38 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return rdbDumpTryCount.get();
 	}
 
+	public class ReplicationStoreManagerListener implements Observer{
+
+		@Override
+		public void update(Object args, Observable observable) {
+			
+			if(args instanceof NodeAdded){
+				@SuppressWarnings("unchecked")
+				ReplicationStore replicationStore = ((NodeAdded<ReplicationStore>) args).getNode();
+				initReplicationStore(replicationStore);
+			}
+		}
+		
+	}
+
+	public synchronized void initReplicationStore(ReplicationStore replicationStore) {
+		
+		logger.info("[initReplicationStore]{}", replicationStore);
+		RedisKeeperServerState redisKeeperServerState = getRedisKeeperServerState();
+		if(redisKeeperServerState != null){
+			KeeperState keeperState = redisKeeperServerState.keeperState();
+			
+			try {
+				if(keeperState.isActive()){
+						replicationStore.getMetaStore().becomeActive();
+				}else if(keeperState.isBackup()){
+					replicationStore.getMetaStore().becomeBackup();
+				}else{
+					logger.warn("[initReplicationStore][not active and not backup]{}, {}", keeperState, replicationStore);
+				}
+			} catch (IOException e) {
+				logger.error("[initReplicationStore]" + replicationStore, e);
+			}
+		}
+	}
 }

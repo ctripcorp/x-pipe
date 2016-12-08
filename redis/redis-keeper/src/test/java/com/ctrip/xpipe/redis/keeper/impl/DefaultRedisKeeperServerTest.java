@@ -10,6 +10,7 @@ import static org.mockito.Mockito.*;
 
 import java.net.InetSocketAddress;
 
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
@@ -116,7 +117,9 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 	@Test
 	public void testKeeperServerInitState() throws Exception{
 		
-		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
+		KeeperMeta keeperMeta = createKeeperMeta();
+		
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta);
 		redisKeeperServer.initialize();
 		
 		Assert.assertEquals(KeeperState.UNKNOWN, redisKeeperServer.getRedisKeeperServerState().keeperState());
@@ -124,9 +127,9 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer));
 		redisKeeperServer.dispose();
 
-		redisKeeperServer.onContinue();
+		redisKeeperServer.getReplicationStore().getMetaStore().becomeActive();
 		
-		redisKeeperServer = createRedisKeeperServer();
+		redisKeeperServer = createRedisKeeperServer(keeperMeta);
 		redisKeeperServer.initialize();
 		Assert.assertEquals(KeeperState.PRE_ACTIVE, redisKeeperServer.getRedisKeeperServerState().keeperState());
 		
@@ -134,9 +137,9 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer));
 		redisKeeperServer.dispose();
 		
-		redisKeeperServer.onContinue();
+		redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
 		
-		redisKeeperServer = createRedisKeeperServer();
+		redisKeeperServer = createRedisKeeperServer(keeperMeta);
 		redisKeeperServer.initialize();
 		Assert.assertEquals(KeeperState.PRE_BACKUP, redisKeeperServer.getRedisKeeperServerState().keeperState());
 	}

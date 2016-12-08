@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
-
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
@@ -136,11 +133,11 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		return false;
 	}
 	
-	protected void activeToBackup(InetSocketAddress masterAddress){
+	protected void doBecomeBackup(InetSocketAddress masterAddress){
 		
 		logger.info("[activeToBackup]{}", this);
 		try{
-			redisKeeperServer.getReplicationStore().getMetaStore().activeBecomeBackup();;
+			redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
 		}catch(Exception e){
 			logger.error("[activeToBackup]" + this, e);
 		}
@@ -148,12 +145,12 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		reconnectMaster();
 	}
 
-	protected void backupToActive(InetSocketAddress masterAddress){
+	protected void doBecomeActive(InetSocketAddress masterAddress){
 		
 		logger.info("[backupBecomeActive]{}", this);
 		try{
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-			replicationStore.getMetaStore().backupBecomeActive();
+			replicationStore.getMetaStore().becomeActive();
 		}catch(Exception e){
 			logger.error("[backupToActive]" + this + "," + masterAddress, e);
 		}

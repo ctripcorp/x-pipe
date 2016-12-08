@@ -12,6 +12,12 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
  */
 public interface MetaStore {
 
+	public static final String META_FILE = "meta.json";
+	
+	public static final String METHOD_BECOME_ACTIVE = "becomeActive";
+	
+	public static final String METHOD_BECOME_BACKUP = "becomeBackup";
+
 	String getMasterRunid();
 	
 	/**
@@ -31,26 +37,24 @@ public interface MetaStore {
 	
 	void loadMeta() throws IOException;
 	
-	void saveMeta(String name, ReplicationStoreMeta replicationStoreMeta) throws IOException;
+	void saveKinfo(ReplicationStoreMeta replicationStoreMeta) throws IOException;
 	
-	void updateMeta(String name, long rdbLastKeeperOffset) throws IOException;
-
-	void psyncBegun(String masterRunid, long offset) throws IOException;
+	void psyncBegun(String masterRunid, long keeperBeginOffset) throws IOException;
 	
 	/**
 	 * keeper backup -> active
 	 * @param name
 	 * @throws IOException
 	 */
-	void backupBecomeActive() throws IOException;
+	void becomeActive() throws IOException;
 	
 	/**
 	 * keeper active -> backup
 	 * @throws IOException 
 	 */
-	void activeBecomeBackup() throws IOException;
+	void becomeBackup() throws IOException;
 	
-	void setKeeperState(KeeperState keeperState) throws IOException;
+	void setKeeperState(String keeperRunid, KeeperState keeperState) throws IOException;
 
 	ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, long rdbFileSize, String cmdFilePrefix) throws IOException;
 
@@ -68,4 +72,6 @@ public interface MetaStore {
 	long redisOffsetToKeeperOffset(long redisOffset);
 	
 	void updateKeeperRunid(String keeperRunid) throws IOException;
+
+	boolean isFresh();
 }

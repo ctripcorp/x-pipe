@@ -25,16 +25,14 @@ public class RedisKeeperServerStateUnknown extends AbstractRedisKeeperServerStat
 	public void becomeBackup(InetSocketAddress masterAddress) {
 		logger.info("[becomeBackup][unknown->backup] {}", this);
 		
-		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, masterAddress));
-		reconnectMaster();
+		doBecomeBackup(masterAddress);
 	}
 
 	@Override
 	public void becomeActive(InetSocketAddress masterAddress) {
-		logger.info("[becomeActive][unknown->active] {}", this);
 		
-		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, masterAddress));
-		reconnectMaster();
+		logger.info("[becomeActive][unknown->active] {}", this);
+		doBecomeActive(masterAddress);
 	}
 
 	@Override

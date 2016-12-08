@@ -46,6 +46,7 @@ import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkTestServer;
 
 /**
@@ -57,9 +58,9 @@ public class AbstractTest {
 
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 
-	protected ExecutorService executors = Executors.newCachedThreadPool();
+	protected ExecutorService executors;
 
-	protected ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount());
+	protected ScheduledExecutorService scheduled;
 
 	private ComponentRegistry componentRegistry;
 
@@ -76,6 +77,10 @@ public class AbstractTest {
 	
 	@Before
 	public void beforeAbstractTest() throws Exception {
+		
+		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(getTestName()));
+		scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(getTestName()));
+		
 		orginProperties = (Properties) System.getProperties().clone();
 		doBeforeAbstractTest();
 
@@ -359,6 +364,12 @@ public class AbstractTest {
 		throw new IllegalArgumentException(String.format("can not find usable port [%d, %d]", begin, end));
 	}
 
+	protected int randomInt() {
+		
+		Random random = new Random();
+		return random.nextInt();
+	}
+
 	protected int randomInt(int start, int end) {
 		
 		Random random = new Random();
@@ -563,6 +574,9 @@ public class AbstractTest {
 		}
 
 		System.setProperties(orginProperties);
+		
+		executors.shutdownNow();
+		scheduled.shutdownNow();
 	}
 
 	protected void doAfterAbstractTest() throws Exception {

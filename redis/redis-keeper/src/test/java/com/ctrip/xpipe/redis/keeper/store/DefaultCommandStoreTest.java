@@ -2,11 +2,13 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
@@ -44,6 +46,91 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize);
 	}
 
+	@Test
+	public void testInterruptClose() throws InterruptedException{
+		
+		Thread thread = new Thread(new AbstractExceptionLogTask() {
+			
+			@Override
+			protected void doRun() throws Exception {
+				
+				while(true){
+					commandStore.totalLength();
+					sleep(10);
+				}
+			}
+		});
+		
+		thread.start();
+		
+		thread.interrupt();
+		
+		thread.join(100);
+		//should not fail
+		commandStore.totalLength();
+	}
+	
+	@Test
+	public void testLengthEqual() throws InterruptedException{
+		
+		final int runTimes = 1000; 
+		final AtomicLong realLength = new AtomicLong();
+		final AtomicReference<Boolean> result = new AtomicReference<Boolean>(true);
+		
+		final Semaphore read = new Semaphore(0);
+		final Semaphore write = new Semaphore(1);
+		final AtomicBoolean finished = new AtomicBoolean(false);
+		final CountDownLatch latch = new CountDownLatch(2);
+		
+		executors.execute(new AbstractExceptionLogTask() {
+			
+			@Override
+			protected void doRun() throws Exception {
+				
+				try{
+					for(int i=0;i<runTimes;i++){
+						write.acquire();;
+						int randomLength = randomInt(0, 1 << 8);
+						commandStore.appendCommands(Unpooled.wrappedBuffer(randomString(randomLength).getBytes()));
+						realLength.addAndGet(randomLength);
+						read.release();;
+					}
+				}finally{
+					finished.set(true);
+					read.release();
+					latch.countDown();
+				}
+				
+			}
+		});
+
+		executors.execute(new AbstractExceptionLogTask() {
+			
+			@Override
+			protected void doRun() throws Exception {
+				
+				try{
+					while(!finished.get()){
+						
+						read.acquire();
+						long len = commandStore.totalLength();
+						if(len != realLength.get()){
+							result.set(false);
+						}
+						write.release();;
+					}
+				}finally{
+					latch.countDown();
+				}
+			}
+		});
+
+		latch.await();
+		Assert.assertTrue(result.get());
+	}
+	
+	
+	
 	@Test
 	public void testGetAsSoonAsMessageWritten() throws IOException, InterruptedException {
 

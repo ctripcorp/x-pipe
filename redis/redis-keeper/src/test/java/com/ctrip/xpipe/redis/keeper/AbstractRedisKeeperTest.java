@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
@@ -52,6 +55,11 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return createReplicationStoreManager(getClusterId(), getShardId(), new File(tmpDir));
 	}
 
+	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, String keeperRunid, File storeDir) {
+
+		return createReplicationStoreManager(clusterId, shardId, keeperRunid, getKeeperConfig(), storeDir);
+	}
+
 	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, File storeDir) {
 
 		return createReplicationStoreManager(clusterId, shardId, getKeeperConfig(), storeDir);
@@ -63,12 +71,29 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, KeeperConfig keeperConfig, File storeDir) {
 		
-		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, randomKeeperRunid(), storeDir);
+		return createReplicationStoreManager(clusterId, shardId, randomKeeperRunid(), keeperConfig, storeDir);
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir);
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir); 
+		replicationStoreManager.addObserver(new Observer() {
+			
+			@Override
+			public void update(Object args, Observable observable) {
+				
+				if(args instanceof NodeAdded){
+					@SuppressWarnings("unchecked")
+					ReplicationStore replicationStore = ((NodeAdded<ReplicationStore>) args).getNode();
+					try {
+						replicationStore.getMetaStore().becomeActive();
+					} catch (IOException e) {
+						logger.error("[update]" + replicationStore, e);
+					}
+				}				
+			}
+		});
+		return replicationStoreManager;
 	}
 	
 	protected String randomKeeperRunid(){

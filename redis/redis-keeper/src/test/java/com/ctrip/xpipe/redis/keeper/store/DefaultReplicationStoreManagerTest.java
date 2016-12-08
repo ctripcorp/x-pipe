@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -66,7 +67,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 				public void run() {
 					
 					try {
-						store.set(replicationStoreManager1.create());;
+						store.set((DefaultReplicationStore) replicationStoreManager1.create());;
 					} catch (IOException e) {
 						logger.error("[run]" + replicationStoreManager1, e);
 					}finally{
@@ -103,22 +104,50 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 	}
 	
 	
-
 	@Test
-	public void testDestroy() {
-
+	public void testCancelGc() throws Exception {
 
 		DefaultReplicationStoreManager replicationStoreManager = (DefaultReplicationStoreManager) createReplicationStoreManager(
 				keeperConfig);
+		
+		LifecycleHelper.initializeIfPossible(replicationStoreManager);
+		LifecycleHelper.startIfPossible(replicationStoreManager);
+		
+		sleep(replicationStoreGcIntervalSeconds * 2000);
+		
 
-		replicationStoreManager.destroy();
+		LifecycleHelper.stopIfPossible(replicationStoreManager);
+		LifecycleHelper.disposeIfPossible(replicationStoreManager);
+		
 		long gcCount = replicationStoreManager.getGcCount();
+		Assert.assertTrue(gcCount > 0);
 
 		sleep(replicationStoreGcIntervalSeconds * 2000);
 
 		Assert.assertEquals(gcCount, replicationStoreManager.getGcCount());
 	}
 
+	
+	@Test
+	public void testDestroy() throws Exception{
+		
+		DefaultReplicationStoreManager replicationStoreManager = (DefaultReplicationStoreManager) createReplicationStoreManager(
+				keeperConfig);
+		
+		LifecycleHelper.initializeIfPossible(replicationStoreManager);
+		LifecycleHelper.startIfPossible(replicationStoreManager);
+		
+		DefaultReplicationStore store = (DefaultReplicationStore) replicationStoreManager.create();
+		
+		Assert.assertTrue(store.getBaseDir().exists());
+		
+		replicationStoreManager.destroy();
+		
+		Assert.assertTrue(!store.getBaseDir().exists());
+		
+	}
+	
+	
 	@Test
 	public void testConcurrentGc() throws IOException, InterruptedException {
 
@@ -135,7 +164,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 				@Override
 				public void run() {
 					try {
-						store.set(mgr.create());
+						store.set((DefaultReplicationStore) mgr.create());
 					} catch (IOException e) {
 						logger.error("[testGc]", e);
 					} finally {
@@ -168,11 +197,14 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 	@Test
 	public void test() throws Exception {
+		
+		String keeperRunid = randomKeeperRunid();
+		
 		File baseDir = new File(getTestFileDir());
 		String clusterId = "cluster1";
 		String shardId = "shard1";
 		DefaultReplicationStoreManager mgr = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,
-				shardId, baseDir);
+				shardId, keeperRunid, baseDir);
 
 		ReplicationStore currentStore = mgr.getCurrent();
 		assertNull(currentStore);
@@ -183,7 +215,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		assertEquals(shardId, mgr.getShardName());
 		assertEquals(currentStore, mgr.getCurrent());
 
-		DefaultReplicationStore newCurrentStore = mgr.create();
+		DefaultReplicationStore newCurrentStore = (DefaultReplicationStore) mgr.create();
 		assertEquals(newCurrentStore, mgr.getCurrent());
 		assertNotEquals(currentStore, mgr.getCurrent());
 
@@ -195,9 +227,8 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		cmdBuf.writeByte(9);
 		newCurrentStore.getCommandStore().appendCommands(cmdBuf);
 
-		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,
-				shardId, baseDir);
-		;
+		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,shardId, keeperRunid, baseDir);
+		
 		assertEquals(metaStore.getMasterRunid(), mgr2.getCurrent().getMetaStore().getMasterRunid());
 		assertEquals(metaStore.getKeeperBeginOffset(), mgr2.getCurrent().getMetaStore().getKeeperBeginOffset());
 		assertEquals(metaStore.getMasterAddress(), mgr2.getCurrent().getMetaStore().getMasterAddress());
