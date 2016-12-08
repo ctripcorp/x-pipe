@@ -57,6 +57,8 @@ import com.ctrip.xpipe.zk.ZkTestServer;
 public class AbstractTest {
 
 	protected Logger logger = LoggerFactory.getLogger(getClass());
+	
+	public static String KEY_INCRMENTAL_ZK_PORT = "INCRMENTAL_ZK_PORT";
 
 	protected ExecutorService executors;
 
@@ -407,6 +409,16 @@ public class AbstractTest {
 			logger.error("[startZk]", e);
 			throw new IllegalStateException("[startZk]" + zkPort, e);
 		}
+	}
+	
+	protected int getTestZkPort(){
+		
+		boolean incremental = Boolean.parseBoolean(System.getProperty(KEY_INCRMENTAL_ZK_PORT, "false"));
+		if(incremental){
+			return incrementalPort(defaultZkPort());
+		}
+		return randomPort();
+		
 	}
 
 	public static int defaultZkPort() {

@@ -23,7 +23,7 @@ public class AbstractMetaServerTest extends AbstractRedisTest{
 	protected MetaServerConfig  config = new DefaultMetaServerConfig();
 	
 	private MemoryPrinter memoryPrinter = new MemoryPrinter(500);
-
+	
 	@Before
 	public void beforeAbstractMetaServerTest() throws Exception{
 		

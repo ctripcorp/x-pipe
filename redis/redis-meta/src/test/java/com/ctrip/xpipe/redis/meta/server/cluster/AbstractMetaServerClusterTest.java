@@ -19,7 +19,7 @@ import com.ctrip.xpipe.zk.impl.DefaultZkClient;
  */
 public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 	
-	private int zkPort = incrementalPort(defaultZkPort());
+	protected int zkPort = getTestZkPort();
 	
 	@Before
 	public void beforeAbstractMetaServerClusterTest(){
