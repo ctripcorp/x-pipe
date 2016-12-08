@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<xpipe>
+<dc id="FAT" lastModifiedTime="2016080913560001">
+   <cluster id="cluster_meng">
+      <shard id="shard1">
+         <redis id="slaveOtherDc" ip="10.3.2.23" port="6399" master="10.2.58.242:6399"/>
+      </shard>
+   </cluster>
+</dc>
+<dc id="NTGXH" lastModifiedTime="2016080913560001">
+   <cluster id="cluster_meng">
+      <shard id="shard1">
+         <redis id="master" ip="10.2.58.242" port="6399"/>
+      </shard>
+   </cluster>
+</dc>
+<!--dc id="NTGXH" lastModifiedTime="2016080913560001">
+   <cluster id="cluster_meng">
+      <shard id="shard1">
+         <redis id="master" ip="127.0.0.1" port="6379"/>
+      </shard>
+   </cluster>
+</dc-->
+</xpipe>

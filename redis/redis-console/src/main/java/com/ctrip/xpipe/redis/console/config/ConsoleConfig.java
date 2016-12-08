@@ -22,4 +22,10 @@ public interface ConsoleConfig extends CoreConfig {
 	int getConsoleNotifyThreads();
 
 	Set<String> getConsoleUserAccessWhiteList();
+
+	String getHickwallHostPort();
+
+	int getHickwallQueueSize();
+
+	int getRedisReplicationHealthCheckInterval();
 }

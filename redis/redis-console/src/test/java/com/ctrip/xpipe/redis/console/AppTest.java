@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.spring.AbstractProfile;
 
 /**
@@ -19,6 +20,7 @@ public class AppTest extends AbstractConsoleTest{
 	public void startUp() {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty("FXXPIPE_HOME", "src/test/resources");
+		System.setProperty(HealthChecker.ENABLED, "false");
 	}
 	
 	@Test
