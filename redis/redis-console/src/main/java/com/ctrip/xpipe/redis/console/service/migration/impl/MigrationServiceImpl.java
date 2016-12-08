@@ -99,6 +99,17 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 	public long createMigrationEvent(MigrationEventModel events) {
 		return migrationEventDao.createMigrationEvnet(events);
 	}
+	
+	@Override
+	public void updateMigrationShard(final MigrationShardTbl shard) {
+		queryHandler.handleQuery(new DalQuery<Void>() {
+			@Override
+			public Void doQuery() throws DalException {
+				migrationShardTblDao.updateByPK(shard, MigrationShardTblEntity.UPDATESET_FULL);
+				return null;
+			}
+		});
+	}
 
 	@Override
 	public void continueMigrationEvent(long id) {

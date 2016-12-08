@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
@@ -42,6 +43,10 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
@@ -51,6 +56,14 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private UserInfoHolder userInfo;
 	@Autowired
 	private MigrationEventManager eventManager;
+	@Autowired
+	private DcService dcService;
+	@Autowired
+	private ClusterService clusterService;
+	@Autowired
+	private ShardService shardService;
+	@Autowired
+	private MigrationService migrationService;
 
 	private MigrationEventTblDao migrationEventDao;
 	private MigrationClusterTblDao migrationClusterDao;
@@ -131,9 +144,14 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 					continue;
 				}
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {
-					event.addMigrationCluster(new DefaultMigrationCluster(detail.getRedundantClusters()));
+					event.addMigrationCluster(new DefaultMigrationCluster(detail.getRedundantClusters(),
+							dcService, clusterService, shardService));
 				}
-				event.getMigrationCluster(cluster.getClusterId()).addNewMigrationShard(new DefaultMigrationShard(shard));
+				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId()); 
+				migrationCluster.addNewMigrationShard(new DefaultMigrationShard(migrationCluster, shard,
+						migrationCluster.getClusterShards().get(shard.getShardId()),
+						migrationCluster.getClusterDcs(),
+						migrationService));
 			}
 			
 			return event;
