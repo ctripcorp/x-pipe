@@ -9,7 +9,7 @@
          <driver>org.h2.Driver</driver>
          <url><![CDATA[jdbc:h2:mem:fxxpipedb]]></url>
          <user>sa</user>
-         <password>sa</password>
+         <password></password>
          <connectionProperties>
          <![CDATA[DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/h2/startup.sql']]>
          </connectionProperties>
