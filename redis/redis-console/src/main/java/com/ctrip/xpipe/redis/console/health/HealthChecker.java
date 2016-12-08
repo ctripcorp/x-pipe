@@ -37,7 +37,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  *         Nov 30, 2016 10:11:51 PM
  */
 @Component
-@ConditionalOnProperty(name = { HealthChecker.ENABLED })
+@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class HealthChecker {
 
 	public final static String ENABLED = "redis.health.check.enabled";
