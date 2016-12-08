@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.config;
 
-import com.ctrip.xpipe.redis.core.config.CoreConfig;
-
 import java.util.Set;
+
+import com.ctrip.xpipe.redis.core.config.CoreConfig;
 
 /**
  * @author shyin
@@ -22,4 +22,6 @@ public interface ConsoleConfig extends CoreConfig {
 	int getConsoleNotifyThreads();
 
 	Set<String> getConsoleUserAccessWhiteList();
+	
+	int getRedisReplicationHealthCheckInterval();
 }

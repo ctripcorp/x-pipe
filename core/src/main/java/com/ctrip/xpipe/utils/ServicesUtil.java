@@ -17,6 +17,7 @@ import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.lifecycle.OrderedComparator;
+import com.ctrip.xpipe.metric.MetricProxy;
 
 /**
  * @author wenchao.meng
@@ -49,6 +50,10 @@ public class ServicesUtil {
 
 	public static UserInfo getUserInfo(){
 		return load(UserInfo.class);
+	}
+	
+	public static MetricProxy getMetricProxy(){
+		return load(MetricProxy.class);
 	}
 
 	@SuppressWarnings("unchecked")
