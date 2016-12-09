@@ -3,11 +3,13 @@ package com.ctrip.xpipe.redis.console.migration.status.migration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 public class MigrationMigratingStat extends AbstractMigrationStat implements MigrationStat {
@@ -26,10 +28,7 @@ public class MigrationMigratingStat extends AbstractMigrationStat implements Mig
 
 	@Override
 	public void action() {
-		// Update cluster status
-		ClusterTbl cluster = getHolder().getCurrentCluster();
-		cluster.setStatus(ClusterStatus.Migrating.toString());
-		getHolder().updateCurrentCluster(cluster);
+		updateDB();
 		
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
 			fixedThreadPool.submit(new Runnable() {
@@ -40,6 +39,19 @@ public class MigrationMigratingStat extends AbstractMigrationStat implements Mig
 				}
 			});
 		}
+	}
+	
+	@DalTransaction
+	private void updateDB() {
+		// Update cluster status
+		ClusterTbl cluster = getHolder().getCurrentCluster();
+		cluster.setStatus(ClusterStatus.Migrating.toString());
+		getHolder().updateCurrentCluster(cluster);
+		
+		// Update migration cluster status
+		MigrationClusterTbl migrationCluster = getHolder().getMigrationCluster();
+		migrationCluster.setStatus(MigrationStatus.Migrating.toString());
+		getHolder().updateMigrationCluster(migrationCluster);
 	}
 	
 	@Override

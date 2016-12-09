@@ -3,12 +3,14 @@ package com.ctrip.xpipe.redis.console.migration.status.migration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationResultStatus;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 public class MigrationPartialSuccessStat extends AbstractMigrationStat implements MigrationStat {
@@ -25,10 +27,7 @@ public class MigrationPartialSuccessStat extends AbstractMigrationStat implement
 
 	@Override
 	public void action() {
-		// Update cluster status
-		ClusterTbl cluster = getHolder().getCurrentCluster();
-		cluster.setStatus(ClusterStatus.Migrating.toString());
-		getHolder().updateCurrentCluster(cluster);
+		updateDB();
 		
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
 			if(!shard.getShardMigrationResult().getResult().equals(ShardMigrationResultStatus.SUCCESS)) {
@@ -41,6 +40,17 @@ public class MigrationPartialSuccessStat extends AbstractMigrationStat implement
 				});
 			}
 		}
+	}
+	
+	@DalTransaction
+	private void updateDB() {
+		ClusterTbl cluster = getHolder().getCurrentCluster();
+		cluster.setStatus(ClusterStatus.Migrating.toString());
+		getHolder().updateCurrentCluster(cluster);
+		
+		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
+		migrationClusterTbl.setStatus(MigrationStatus.PartialSuccess.toString());
+		getHolder().updateMigrationCluster(migrationClusterTbl);
 	}
 	
 	@Override

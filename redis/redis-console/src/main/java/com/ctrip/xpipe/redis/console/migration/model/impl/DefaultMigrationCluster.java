@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -8,8 +9,10 @@ import java.util.Map;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
+import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStat;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStat;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
@@ -20,6 +23,7 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 
 public class DefaultMigrationCluster extends AbstractObservable implements MigrationCluster, Observer, Observable {
 	
@@ -28,25 +32,30 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	private List<MigrationShard> migrationShards = new LinkedList<>();
 	
 	private ClusterService clusterService;
+	private MigrationService migrationService;
 	
 	private ClusterTbl currentCluster;
 	private Map<Long, ShardTbl> shards;
 	private Map<Long, DcTbl> dcs;
 
-	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService) {
+	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
+			MigrationService migrationService) {
 		this.migrationCluster = migrationCluster;
 		this.currentStat = new MigrationInitiatedStat(this);
 		
 		this.clusterService = clusterService;
+		this.migrationService = migrationService;
 		
 		loadMetaInfo(dcService, clusterService, shardService);
 	}
 
-	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, MigrationStat stat, DcService dcService, ClusterService clusterService, ShardService shardService) {
+	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, MigrationStat stat, DcService dcService, ClusterService clusterService, ShardService shardService,
+			MigrationService migrationService) {
 		this.migrationCluster = migrationCluster;
 		this.currentStat = stat;
 		
 		this.clusterService = clusterService;
+		this.migrationService = migrationService;
 		
 		loadMetaInfo(dcService, clusterService, shardService);
 	}
@@ -59,6 +68,11 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	@Override
 	public MigrationClusterTbl getMigrationCluster() {
 		return migrationCluster;
+	}
+	
+	@Override
+	public void updateMigrationCluster(MigrationClusterTbl migrationCluster) {
+		migrationService.updateMigrationCluster(migrationCluster);
 	}
 	
 	@Override
@@ -108,6 +122,32 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	@Override
 	public void updateStat(MigrationStat stat) {
 		this.currentStat = stat;
+	}
+	
+	@Override
+	@DalTransaction
+	public void publishStatus(ClusterStatus status, MigrationStatus migrationStatus) {
+		ClusterTbl cluster = currentCluster;
+		cluster.setStatus(status.toString());
+		cluster.setActivedcId(migrationCluster.getDestinationDcId());
+		clusterService.update(cluster);
+		
+		MigrationClusterTbl migrationClusterTbl = migrationCluster;
+		migrationClusterTbl.setStatus(migrationStatus.toString());
+		migrationService.updateMigrationCluster(migrationClusterTbl);
+	}
+	
+	@Override
+	@DalTransaction
+	public void cancel() {
+		ClusterTbl cluster = currentCluster;
+		cluster.setStatus(ClusterStatus.Normal.toString());
+		clusterService.update(cluster);
+		
+		MigrationClusterTbl migrationClusterTbl = migrationCluster;
+		migrationClusterTbl.setStatus(MigrationStatus.Cancelled.toString());
+		migrationClusterTbl.setEndTime(new Date());
+		migrationService.updateMigrationCluster(migrationClusterTbl);
 	}
 	
 	private void loadMetaInfo(DcService dcService, ClusterService clusterService, ShardService shardService) {

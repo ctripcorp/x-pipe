@@ -110,6 +110,17 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 			}
 		});
 	}
+	
+	@Override
+	public void updateMigrationCluster(final MigrationClusterTbl cluster) {
+		queryHandler.handleQuery(new DalQuery<Void>() {
+			@Override
+			public Void doQuery() throws DalException {
+				migrationClusterDao.updateByPK(cluster, MigrationClusterTblEntity.UPDATESET_FULL);
+				return null;
+			}
+		});
+	}
 
 	@Override
 	public void continueMigrationEvent(long id) {

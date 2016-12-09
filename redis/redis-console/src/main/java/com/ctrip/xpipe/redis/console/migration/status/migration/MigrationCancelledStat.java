@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 
 public class MigrationCancelledStat extends AbstractMigrationStat implements MigrationStat {
 
@@ -14,11 +12,7 @@ public class MigrationCancelledStat extends AbstractMigrationStat implements Mig
 
 	@Override
 	public void action() {
-		ClusterTbl cluster = getHolder().getCurrentCluster();
-		cluster.setStatus(ClusterStatus.Normal.toString());
-		getHolder().updateCurrentCluster(cluster);
-		
-		// Nothing to do
+		getHolder().cancel();
 	}
 
 	@Override

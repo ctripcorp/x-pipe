@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.model;
 import java.util.List;
 import java.util.Map;
 
+import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStat;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -13,6 +14,7 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
 public interface MigrationCluster {
 	MigrationStatus getStatus();
 	MigrationClusterTbl getMigrationCluster();
+	void updateMigrationCluster(MigrationClusterTbl migrationCluster);
 	List<MigrationShard> getMigrationShards();
 	
 	ClusterTbl getCurrentCluster();
@@ -24,4 +26,7 @@ public interface MigrationCluster {
 	
 	void process();
 	void updateStat(MigrationStat stat);
+	
+	void publishStatus(ClusterStatus status, MigrationStatus migrationStatus);
+	void cancel();
 }

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
@@ -10,6 +11,7 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
+import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationResultStatus;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
@@ -17,7 +19,9 @@ import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 
 public class DefaultMigrationShard extends AbstractObservable implements MigrationShard, Observable, Observer {
@@ -64,6 +68,16 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	}
 
 	@Override
+	public void update(Object args, Observable observable) {
+		if(args instanceof MigrationShard) {
+			MigrationShard migrationShard = (MigrationShard)args;
+			MigrationShardTbl toUpdate = migrationShard.getMigrationShard();
+			toUpdate.setLog(coder.encode(migrationShard.getShardMigrationResult()));
+			migrationService.updateMigrationShard(toUpdate);
+		}
+	}
+	
+	@Override
 	public void doCheck() {
 		String cluster = parent.getCurrentCluster().getClusterName();
 		String shard = currentShard.getShardName();
@@ -85,22 +99,93 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			}
 		});
 	}
-
+	
 	@Override
 	public void doMigrate() {
-		// TODO
+		String cluster = parent.getCurrentCluster().getClusterName();
+		String shard = currentShard.getShardName();
+		String newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
+		String prevPrimaryDc = dcs.get(parent.getCurrentCluster().getActivedcId()).getDcName();
+		
+		try {
+			doPrevPrimaryDcMigrate(cluster, shard, prevPrimaryDc, newPrimaryDc).get();
+		} catch (InterruptedException | ExecutionException e) {
+			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, "Ignore with fail.");
+		}
+		
+		try {
+			doNewPrimaryDcMigrate(cluster, shard, newPrimaryDc).get();
+		} catch (InterruptedException | ExecutionException e) {
+			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, "Cannot fetch migrate result");
+		}
+		
+		for(DcTbl dc : dcs.values()) {
+			if(!(dc.getDcName().equals(newPrimaryDc)) && !(dc.getDcName().equals(prevPrimaryDc))) {
+				doOtherDcMigrate(cluster, shard, dc.getDcName(), newPrimaryDc);
+			}
+		}
+		
+		if(shardMigrationResult.stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
+			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE, true, "Success");
+			shardMigrationResult.setStatus(ShardMigrationResultStatus.SUCCESS);
+		} else {
+			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE, false, "Failed");
+		}
 		
 		notifyObservers(this);
 	}
-
-	@Override
-	public void update(Object args, Observable observable) {
-		if(args instanceof MigrationShard) {
-			MigrationShard migrationShard = (MigrationShard)args;
-			MigrationShardTbl toUpdate = migrationShard.getMigrationShard();
-			toUpdate.setLog(coder.encode(migrationShard.getShardMigrationResult()));
-			migrationService.updateMigrationShard(toUpdate);
-		}
+	
+	private CommandFuture<PrimaryDcChangeMessage> doPrevPrimaryDcMigrate(String cluster, String shard, String dc, String newPrimaryDc) {
+		CommandFuture<PrimaryDcChangeMessage> migrateResult = MigrationCommandBuilder.INSTANCE.buildPrevPrimaryDcCommand(cluster, shard, dc).execute();
+		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
+			@Override
+			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
+				PrimaryDcChangeMessage res = commandFuture.get();
+				if(res.getErrorType().equals(PRIMARY_DC_CHANGE_RESULT.SUCCESS)) {
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, res.getErrorMessage());
+				} else {
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, res.getErrorMessage());
+				}
+				
+				notifyObservers(this);
+			}
+		});
+		return migrateResult;
 	}
 
+	private CommandFuture<PrimaryDcChangeMessage> doNewPrimaryDcMigrate(String cluster, String shard, String newPrimaryDc) {
+		CommandFuture<PrimaryDcChangeMessage> migrateResult = MigrationCommandBuilder.INSTANCE.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc).execute();
+		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
+			@Override
+			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
+				PrimaryDcChangeMessage res = commandFuture.get();
+				if(res.getErrorType().equals(PRIMARY_DC_CHANGE_RESULT.SUCCESS)) {
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, true, res.getErrorMessage());
+				} else {
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, res.getErrorMessage());
+				}
+				
+				notifyObservers(this);
+			}
+		});
+		return migrateResult;
+	}
+	
+	private CommandFuture<PrimaryDcChangeMessage> doOtherDcMigrate(String cluster, String shard, String dc, String newPrimaryDc) {
+		CommandFuture<PrimaryDcChangeMessage> migrateResult = MigrationCommandBuilder.INSTANCE.buildOtherDcCommand(cluster, shard, newPrimaryDc, dc).execute();
+		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
+			@Override
+			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
+				PrimaryDcChangeMessage res = commandFuture.get();
+				if(res.getErrorType().equals(PRIMARY_DC_CHANGE_RESULT.SUCCESS)) {
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_OTHER_DC, true, res.getErrorMessage());
+				} else {
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_OTHER_DC, true, res.getErrorMessage());
+				}
+				
+				notifyObservers(this);
+			}
+		});
+		return migrateResult;
+	}
 }
