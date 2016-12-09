@@ -56,7 +56,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 
 		Pair<String, Long> requestInfo = getRequestMasterInfo();
 

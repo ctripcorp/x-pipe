@@ -32,7 +32,7 @@ public class PingCommand extends AbstractRedisCommand<String>{
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 		
 		return new RequestStringParser(PING).format();
 	}

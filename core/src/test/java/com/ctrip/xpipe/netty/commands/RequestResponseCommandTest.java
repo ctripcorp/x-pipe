@@ -257,7 +257,7 @@ public class RequestResponseCommandTest extends AbstractTest {
 		}
 
 		@Override
-		protected ByteBuf getRequest() {
+		public ByteBuf getRequest() {
 			return Unpooled.wrappedBuffer(request.getBytes());
 		}
 

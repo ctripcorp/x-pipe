@@ -46,7 +46,7 @@ public class RoleCommand extends AbstractRedisCommand<Role>{
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 		return new RequestStringParser("role").format();
 	}
 }

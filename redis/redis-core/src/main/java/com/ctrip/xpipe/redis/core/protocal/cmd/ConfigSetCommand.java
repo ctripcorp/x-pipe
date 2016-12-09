@@ -25,7 +25,7 @@ public abstract class ConfigSetCommand<T> extends AbstractConfigCommand<T>{
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 		return new RequestStringParser("config set " + getConfigName() + " " + getValue()).format();
 	}
 	

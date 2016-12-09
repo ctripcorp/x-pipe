@@ -34,7 +34,7 @@ public abstract class AbstractSlaveOfCommand extends AbstractRedisCommand<String
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 		
 		RequestStringParser requestString = null;
 		if(ip == null){

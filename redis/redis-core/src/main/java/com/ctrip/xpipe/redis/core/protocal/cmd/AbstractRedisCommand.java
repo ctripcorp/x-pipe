@@ -9,6 +9,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.core.protocal.RedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LongParser;
@@ -23,7 +24,7 @@ import io.netty.channel.Channel;
  *
  * 2016年3月24日 下午12:04:13
  */
-public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestResponseCommand<T> {
+public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestResponseCommand<T> implements RedisCommand<T>{
 
 	public AbstractRedisCommand(String host, int port){
 		super(host, port);
@@ -151,5 +152,9 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		return Integer.parseInt(result);
 	}
 
+	@Override
+	public String getName() {
+		return getClass().getSimpleName();
+	}
 
 }

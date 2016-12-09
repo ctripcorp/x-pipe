@@ -51,7 +51,7 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 		}
 
 		@Override
-		protected ByteBuf getRequest() {
+		public ByteBuf getRequest() {
 			return new RequestStringParser(getName(), GET_STATE).format();
 		}
 	}
@@ -82,7 +82,7 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 		}
 
 		@Override
-		protected ByteBuf getRequest() {
+		public ByteBuf getRequest() {
 			return new RequestStringParser(getName(), SET_STATE, state.toString(), masterAddress.getKey(), String.valueOf(masterAddress.getValue())).format();
 		}
 		
