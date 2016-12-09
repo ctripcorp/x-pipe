@@ -52,6 +52,14 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<dependency>
+			<groupId>net.razorvine</groupId>
+			<artifactId>pyrolite</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.ctrip.hickwall</groupId>
+			<artifactId>hickwall-protocol</artifactId>
+		</dependency> 
 	</dependencies>
 
 

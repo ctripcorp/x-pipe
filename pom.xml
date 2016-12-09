@@ -45,6 +45,9 @@
 		<apollo.sso.ctrip.version>1.1.0</apollo.sso.ctrip.version>
 		<spring-boot-starter-log4j2.version>1.4.1.RELEASE</spring-boot-starter-log4j2.version>
 		<log4j2.version>2.6.2</log4j2.version>
+		<lettuce.version>4.3.0.Final</lettuce.version>
+		<pyrolite.version>4.9</pyrolite.version>
+		<hickwall.version>1.0</hickwall.version>
 	</properties>
 
 	<modules>
@@ -123,6 +126,21 @@
 			</dependency>
 
 			<!-- xpipe related -->
+			<dependency>
+				<groupId>biz.paluch.redis</groupId>
+				<artifactId>lettuce</artifactId>
+				<version>${lettuce.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.razorvine</groupId>
+				<artifactId>pyrolite</artifactId>
+				<version>${pyrolite.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.ctrip.hickwall</groupId>
+				<artifactId>hickwall-protocol</artifactId>
+				<version>${hickwall.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>commons-io</groupId>
 				<artifactId>commons-io</artifactId>
@@ -364,6 +382,14 @@
 					<verbose>false</verbose>
 				</configuration>
 			</plugin>
+  			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>			
 		</plugins>
 	</build>
 
