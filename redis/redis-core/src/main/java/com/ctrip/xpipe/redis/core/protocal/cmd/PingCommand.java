@@ -13,6 +13,8 @@ import io.netty.buffer.ByteBuf;
  */
 public class PingCommand extends AbstractRedisCommand<String>{
 	
+	public static int DEFAULT_PINT_TIME_OUT_MILLI = 500;
+	
 	public static final String PING = "PING";
 
 	public static final String PONG = "PONG";
@@ -35,6 +37,11 @@ public class PingCommand extends AbstractRedisCommand<String>{
 	public ByteBuf getRequest() {
 		
 		return new RequestStringParser(PING).format();
+	}
+	
+	@Override
+	public int getCommandTimeoutMilli() {
+		return DEFAULT_PINT_TIME_OUT_MILLI;
 	}
 
 }

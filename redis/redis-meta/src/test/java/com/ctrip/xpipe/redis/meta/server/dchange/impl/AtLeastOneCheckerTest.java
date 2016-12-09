@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.dchange;
+package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 
 import java.util.LinkedList;
 import java.util.List;

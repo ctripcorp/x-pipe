@@ -43,34 +43,45 @@ public class PrimaryDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterC
 		Pair<String, Integer> currentMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
 		
 		
-		List<RedisMeta>  allRedises = dcMetaCache.getShardRedises(clusterId, shardId); 
-		List<Pair<String, Integer>>  redisMasters = new LinkedList<>();
-		//TODO setinel change event listen...
-		for(RedisMeta redisMeta : allRedises){
-			if(isMaster(redisMeta)){
-				redisMasters.add(new Pair<String, Integer>(redisMeta.getIp(), redisMeta.getPort()));
-			}
-		}
+		List<RedisMeta>  allRedises = dcMetaCache.getShardRedises(clusterId, shardId);
+		
+		List<RedisMeta>  redisMasters = getMasters(allRedises);
 		
 		if(redisMasters.size() == 0){
 			logger.info("[chooseKeeperMaster][none redis is master]{}", allRedises);
 			return null;
 		}else if(redisMasters.size() == 1){
-			return redisMasters.get(0);
+			return new Pair<>(redisMasters.get(0).getIp(), redisMasters.get(0).getPort());
 		}else{
 			logger.error("[chooseKeeperMaster][multi master]{}, {}", redisMasters.size(), redisMasters);
-			for(Pair<String, Integer> redisMaster : redisMasters){
-				if(currentMaster != null && currentMaster.equals(redisMaster)){
+			for(RedisMeta redisMaster : redisMasters){
+				
+				Pair<String, Integer> masterPair = new Pair<>(redisMaster.getIp(), redisMaster.getPort());
+				if(currentMaster != null && currentMaster.equals(masterPair)){
 					logger.info("[chooseKeeperMaster][choose previous master]{}", redisMaster);
-					return redisMaster;
+					return masterPair;
 				}
 			}
 			logger.info("[chooseKeeperMaster][choose first]{}", redisMasters.get(0));
-			return redisMasters.get(0);
+			return new Pair<>(redisMasters.get(0).getIp(), redisMasters.get(0).getPort());
 		}
 	}
 	
+	protected List<RedisMeta> getMasters(List<RedisMeta> allRedises) {
+		
+		List<RedisMeta> result = new LinkedList<>();
+		
+		for(RedisMeta redisMeta : allRedises){
+			if(isMaster(redisMeta)){
+				result.add(redisMeta);
+			}
+		}
+		
+		return result;
+	}
+
 	protected boolean isMaster(RedisMeta redisMeta) {
+		
 		try {
 			SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort()));
 			Role role = new RoleCommand(clientPool).execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);

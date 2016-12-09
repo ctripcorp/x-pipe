@@ -324,18 +324,20 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	}
 
 	protected FakeRedisServer startFakeRedisServer() throws Exception {
-		return startFakeRedisServer(0);
+		
+		int port = incrementalPort(6379, 6479); 
+		return startFakeRedisServer(port);
 	}
 
-	protected FakeRedisServer startFakeRedisServer(int sleepBeforeSendRdb) throws Exception {
-		int port = incrementalPort(6379, 6479); 
-		FakeRedisServer fakeRedisServer = new FakeRedisServer(port, sleepBeforeSendRdb);
+	protected FakeRedisServer startFakeRedisServer(int serverPort) throws Exception {
+		
+		FakeRedisServer fakeRedisServer = new FakeRedisServer(serverPort);
 		fakeRedisServer.initialize();
 		fakeRedisServer.start();
 		add(fakeRedisServer);
 		return fakeRedisServer;
 	}
-
+	
 	
 	protected String getAndSetDc(int index) {
 		
