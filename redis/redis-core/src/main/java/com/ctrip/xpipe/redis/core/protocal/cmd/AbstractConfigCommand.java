@@ -9,6 +9,8 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
  * Dec 2, 2016
  */
 public abstract class AbstractConfigCommand<T> extends AbstractRedisCommand<T>{
+	
+	public static String CONFIG = "config";
 
 	public AbstractConfigCommand(SimpleObjectPool<NettyClient> clientPool) {
 		super(clientPool);
@@ -16,7 +18,8 @@ public abstract class AbstractConfigCommand<T> extends AbstractRedisCommand<T>{
 	
 	public static enum REDIS_CONFIG_TYPE{
 		
-		MIN_SLAVES_TO_WRITE("min-slaves-to-write")
+		MIN_SLAVES_TO_WRITE("min-slaves-to-write"),
+		REWRITE("rewrite")
 		;
 		
 		private String configName;

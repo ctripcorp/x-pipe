@@ -17,8 +17,8 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigSetCommand.ConfigSetMinSlav
 public class ConfigCommandTest extends AbstractRedisTest{
 	
 	private String ip = "localhost";
-	private int port = 6379;
 	
+	private int port = 6379;
 	
 	@Test
 	public void testConfigMinSlaves() throws InterruptedException, ExecutionException, Exception{

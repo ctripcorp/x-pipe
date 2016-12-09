@@ -53,7 +53,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 		
 		if(getCommandTimeoutMilli() > 0){
 			
-			logger.info("[doSendRequest][schedule timeout]{}, {}", this, getCommandTimeoutMilli());
+			logger.debug("[doSendRequest][schedule timeout]{}, {}", this, getCommandTimeoutMilli());
 			final ScheduledFuture<?> timeoutFuture = scheduled.schedule(new Runnable() {
 				
 				@Override
@@ -78,7 +78,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 						}
 					}
 					if(cancel){
-						logger.info("[operationComplete][cancel timeout future]");
+						logger.debug("[operationComplete][cancel timeout future]");
 						timeoutFuture.cancel(false);
 					}
 				}

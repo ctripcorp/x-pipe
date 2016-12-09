@@ -4,7 +4,9 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.CommandExecutionException;
+import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.BorrowObjectException;
 import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.protocal.RedisCommand;
@@ -38,46 +40,89 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 	@Override
 	protected void doExecute() throws CommandExecutionException {
 		
-		NettyClient nettyClient = null;
 		try{
-			nettyClient = parentClientPool.borrowObject();
-			SimpleObjectPool<NettyClient> clientPool = new FixedObjectPool<NettyClient>(nettyClient); 
-			new MultiCommand(clientPool).execute().get();
-
-			try{
-				for(RedisCommand currentCommand : commands){
-					OneTranscationCommand oneTranscationCommand = new OneTranscationCommand(clientPool, currentCommand);
-					oneTranscationCommand.execute().get();
-				}
-			}catch(Exception e){
-				logger.error("[doExecute]", e);
-			}
-			//submit even some command may fail
-			new ExecCommand(clientPool).execute().addListener(new CommandFutureListener<Object[]>() {
-				
+			final NettyClient nettyClient = parentClientPool.borrowObject();
+			SimpleObjectPool<NettyClient> clientPool = new FixedObjectPool<NettyClient>(nettyClient);
+			
+			startTransaction(clientPool);
+			
+			future().addListener(new CommandFutureListener<Object[]>() {
+	
 				@Override
 				public void operationComplete(CommandFuture<Object[]> commandFuture) throws Exception {
-					if(commandFuture.isSuccess()){
-						future().setSuccess(commandFuture.get());
-					}else{
-						future().setFailure(commandFuture.cause());
+					
+					if(nettyClient != null){
+						try {
+							parentClientPool.returnObject(nettyClient);
+						} catch (ReturnObjectException e) {
+							logger.error("[doExecute]" + this, e);
+						}
 					}
 				}
 			});
-		} catch (Exception e) {
-			future().setFailure(e);
-		} finally{
-			if(nettyClient != null){
-				try {
-					parentClientPool.returnObject(nettyClient);
-				} catch (ReturnObjectException e) {
-					logger.error("[doExecute]" + this, e);
-				}
-			}
+		}catch(BorrowObjectException e){
+			throw new CommandExecutionException("execute " + this, e);
 		}
 	}
 
-	
+	private void startTransaction(final SimpleObjectPool<NettyClient> clientPool) {
+
+		logger.info("[startTransaction]{}", this);
+		
+		new MultiCommand(clientPool).execute().addListener(new CommandFutureListener<String>() {
+
+			@Override
+			public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+				if(!commandFuture.isSuccess()){
+					fail(commandFuture.cause());
+				}else{
+					doWork(clientPool);
+				}
+			}
+		});;
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void doWork(final SimpleObjectPool<NettyClient> clientPool) {
+		
+		SequenceCommandChain chain = new SequenceCommandChain(false);
+		for(RedisCommand currentCommand : commands){
+			OneTranscationCommand oneTranscationCommand = new OneTranscationCommand(clientPool, currentCommand);
+			chain.add(oneTranscationCommand);
+		}
+		
+		chain.execute().addListener(new CommandFutureListener() {
+
+			@Override
+			public void operationComplete(CommandFuture commandFuture) throws Exception {
+				
+				if(!commandFuture.isSuccess()){
+					logger.error("[doWork][fail]", commandFuture.cause());
+				}
+				
+				endTranscation(clientPool);
+			}
+		});
+	}
+
+	protected void endTranscation(SimpleObjectPool<NettyClient> clientPool) {
+		
+		logger.info("[endTranscation]{}", this);
+		
+		new ExecCommand(clientPool).execute().addListener(new CommandFutureListener<Object[]>() {
+			
+			@Override
+			public void operationComplete(CommandFuture<Object[]> commandFuture) throws Exception {
+				
+				if(commandFuture.isSuccess()){
+					future().setSuccess(commandFuture.get());
+				}else{
+					fail(commandFuture.cause());
+				}
+			}
+		});
+	}
+
 	public static class MultiCommand extends AbstractRedisCommand<String>{
 
 		public MultiCommand(SimpleObjectPool<NettyClient> clientPool) {

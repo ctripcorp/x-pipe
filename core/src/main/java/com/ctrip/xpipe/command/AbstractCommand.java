@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -108,6 +109,12 @@ public abstract class AbstractCommand<V> implements Command<V>{
 		});
 		return future.get();
 	}
+
+	protected void fail(Throwable ex) {
+		
+		future().setFailure(ExceptionUtils.getRootCause(ex));
+	}
+	
 	
 	@Override
 	public void reset(){

@@ -113,5 +113,10 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 	public int getOrder() {
 		return Ordered.HIGHEST_PRECEDENCE;
 	}
+	
+	//for test
+	public KeyedObjectPool<InetSocketAddress, NettyClient> getObjectPool() {
+		return objectPool;
+	}
 
 }

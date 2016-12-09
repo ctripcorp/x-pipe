@@ -25,6 +25,10 @@ import io.netty.channel.Channel;
  * 2016年3月24日 下午12:04:13
  */
 public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestResponseCommand<T> implements RedisCommand<T>{
+	
+	public static int DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = Integer.parseInt(System.getProperty("DEFAULT_REDIS_COMMAND_TIME_OUT_SECONDS", "30000"));
+	
+	private int commandTimeoutMilli = DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
 	public AbstractRedisCommand(String host, int port){
 		super(host, port);
@@ -155,6 +159,15 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 	@Override
 	public String getName() {
 		return getClass().getSimpleName();
+	}
+	
+	@Override
+	public int getCommandTimeoutMilli() {
+		return commandTimeoutMilli;
+	}
+	
+	public void setCommandTimeoutMilli(int commandTimeoutMilli) {
+		this.commandTimeoutMilli = commandTimeoutMilli;
 	}
 
 }

@@ -33,7 +33,7 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 
 	@Override
 	public ByteBuf getRequest() {
-		return new RequestStringParser("config get " + getConfigName()).format();
+		return new RequestStringParser(CONFIG, " get " + getConfigName()).format();
 	}
 	
 	protected abstract String getConfigName();

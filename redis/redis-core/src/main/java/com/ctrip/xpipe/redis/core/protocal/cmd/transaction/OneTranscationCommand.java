@@ -27,7 +27,7 @@ public class OneTranscationCommand extends AbstractRedisCommand<String>{
 
 	@Override
 	public String getName() {
-		return "OneTranscationCommand:" + redisCommand;
+		return String.format("transaction(%s)", redisCommand);
 	}
 
 	@Override
