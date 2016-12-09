@@ -25,6 +25,15 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	private ConcurrentMap<HostPort, RedisSession> sessions = new ConcurrentHashMap<>();
 
+	private ClientResources clientResources;
+
+	public DefaultRedisSessionManager() {
+		// ClientResources better be shared among RedisClients
+		clientResources = DefaultClientResources.builder()//
+				.reconnectDelay(Delay.constant(10, TimeUnit.SECONDS))//
+				.build();
+	}
+
 	@Override
 	public RedisSession findOrCreateSession(String host, int port) {
 		HostPort hostPort = new HostPort(host, port);
@@ -44,10 +53,6 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	}
 
 	private RedisClient findRedisConnection(String host, int port) {
-		ClientResources clientResources = DefaultClientResources.builder()//
-				.reconnectDelay(Delay.constant(10, TimeUnit.SECONDS))//
-				.build();
-
 		RedisURI redisUri = new RedisURI(host, port, 2, TimeUnit.SECONDS);
 
 		ClientOptions clientOptions = ClientOptions.builder() //
