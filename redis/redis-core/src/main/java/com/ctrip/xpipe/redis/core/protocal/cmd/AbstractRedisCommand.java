@@ -109,7 +109,7 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 				if(result != null){
 					Object payload = result.getPayload();
 					if(payload instanceof Exception){
-						throw (Exception)payload;
+						handleRedisException((Exception)payload);
 					}
 					return format(payload);
 				}
@@ -120,6 +120,10 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		return null;
 	}
 	
+	protected void handleRedisException(Exception redisException) throws Exception {
+		throw redisException;
+	}
+
 	protected abstract T format(Object payload);
 	
 	
