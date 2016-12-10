@@ -25,7 +25,7 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 
-public class DefaultMigrationCluster extends AbstractObservable implements MigrationCluster, Observer, Observable {
+public class DefaultMigrationCluster extends AbstractObservable implements MigrationCluster {
 	
 	private MigrationStat currentStat;
 	private MigrationClusterTbl migrationCluster;

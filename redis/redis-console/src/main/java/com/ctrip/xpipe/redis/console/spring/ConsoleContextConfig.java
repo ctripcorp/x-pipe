@@ -30,11 +30,6 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 public class ConsoleContextConfig extends AbstractRedisConfigContext {
 
 	@Bean
-	public MetaServerConsoleServiceManager getMetaServerConsoleServiceManager() {
-		return new DefaultMetaServerConsoleServiceManager();
-	}
-
-	@Bean
 	public MetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
 		return new DefaultMetaServerConsoleServiceManagerWrapper();
 	}

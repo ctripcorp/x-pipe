@@ -1,15 +1,12 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.observer.Observable;
-import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
+import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilderImpl;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationResultStatus;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
@@ -24,7 +21,10 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 
-public class DefaultMigrationShard extends AbstractObservable implements MigrationShard, Observable, Observer {
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
+public class DefaultMigrationShard extends AbstractObservable implements MigrationShard {
 	private static Codec coder = Codec.DEFAULT;
 	
 	private MigrationCluster parent;
@@ -36,22 +36,31 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	private ShardTbl currentShard;
 	private Map<Long, DcTbl> dcs;
 
+	private MigrationCommandBuilder commandBuilder;
+
 	public DefaultMigrationShard(MigrationCluster parent, MigrationShardTbl migrationShard, ShardTbl currentShard,Map<Long, DcTbl> dcs,
 			MigrationService migrationService) {
+		this(parent, migrationShard, currentShard, dcs, migrationService, MigrationCommandBuilderImpl.INSTANCE);
+	}
+
+	public DefaultMigrationShard(MigrationCluster parent, MigrationShardTbl migrationShard, ShardTbl currentShard,Map<Long, DcTbl> dcs,
+								 MigrationService migrationService, MigrationCommandBuilder commandBuilder) {
 		this.parent = parent;
 		this.migrationShard = migrationShard;
-		
+
 		this.currentShard = currentShard;
 		this.dcs = dcs;
-		
+
 		this.migrationService = migrationService;
-		
+
 		shardMigrationResult = new ShardMigrationResult();
-		
-		addObserver((Observer) parent);
-		addObserver((Observer) this);
+
+		this.commandBuilder = commandBuilder;
+
+		addObserver(parent);
+		addObserver(this);
 	}
-	
+
 	@Override
 	public MigrationShardTbl getMigrationShard() {
 		return migrationShard;
@@ -69,12 +78,9 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 
 	@Override
 	public void update(Object args, Observable observable) {
-		if(args instanceof MigrationShard) {
-			MigrationShard migrationShard = (MigrationShard)args;
-			MigrationShardTbl toUpdate = migrationShard.getMigrationShard();
-			toUpdate.setLog(coder.encode(migrationShard.getShardMigrationResult()));
-			migrationService.updateMigrationShard(toUpdate);
-		}
+		MigrationShardTbl toUpdate = getMigrationShard();
+		toUpdate.setLog(coder.encode(getShardMigrationResult()));
+		migrationService.updateMigrationShard(toUpdate);
 	}
 	
 	@Override
@@ -83,7 +89,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		String shard = currentShard.getShardName();
 		String newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
 		
-		CommandFuture<PrimaryDcCheckMessage> checkResult = MigrationCommandBuilder.INSTANCE.buildDcCheckCommand(cluster, shard, newPrimaryDc, newPrimaryDc).execute();
+		CommandFuture<PrimaryDcCheckMessage> checkResult = commandBuilder.buildDcCheckCommand(cluster, shard, newPrimaryDc, newPrimaryDc).execute();
 		checkResult.addListener(new CommandFutureListener<PrimaryDcCheckMessage>() {
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcCheckMessage> commandFuture)
@@ -136,7 +142,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	}
 	
 	private CommandFuture<PrimaryDcChangeMessage> doPrevPrimaryDcMigrate(String cluster, String shard, String dc, String newPrimaryDc) {
-		CommandFuture<PrimaryDcChangeMessage> migrateResult = MigrationCommandBuilder.INSTANCE.buildPrevPrimaryDcCommand(cluster, shard, dc).execute();
+		CommandFuture<PrimaryDcChangeMessage> migrateResult = commandBuilder.buildPrevPrimaryDcCommand(cluster, shard, dc).execute();
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
@@ -154,7 +160,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	}
 
 	private CommandFuture<PrimaryDcChangeMessage> doNewPrimaryDcMigrate(String cluster, String shard, String newPrimaryDc) {
-		CommandFuture<PrimaryDcChangeMessage> migrateResult = MigrationCommandBuilder.INSTANCE.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc).execute();
+		CommandFuture<PrimaryDcChangeMessage> migrateResult = commandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc).execute();
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
@@ -172,7 +178,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	}
 	
 	private CommandFuture<PrimaryDcChangeMessage> doOtherDcMigrate(String cluster, String shard, String dc, String newPrimaryDc) {
-		CommandFuture<PrimaryDcChangeMessage> migrateResult = MigrationCommandBuilder.INSTANCE.buildOtherDcCommand(cluster, shard, newPrimaryDc, dc).execute();
+		CommandFuture<PrimaryDcChangeMessage> migrateResult = commandBuilder.buildOtherDcCommand(cluster, shard, newPrimaryDc, dc).execute();
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
