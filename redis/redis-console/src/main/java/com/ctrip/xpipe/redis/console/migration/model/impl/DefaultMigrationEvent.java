@@ -38,6 +38,15 @@ public class DefaultMigrationEvent implements MigrationEvent, Observer {
 		if(args instanceof MigrationCluster) {
 			if(MigrationStatus.isTerminated(((MigrationCluster) args).getStatus())) {
 				// Submit next task according to policy
+				processNext();
+			}
+		}
+	}
+
+	private void processNext() {
+		for(MigrationCluster migrationCluster : migrationClusters.values()) {
+			if(! MigrationStatus.isTerminated(migrationCluster.getStatus())) {
+				migrationCluster.process();
 			}
 		}
 	}

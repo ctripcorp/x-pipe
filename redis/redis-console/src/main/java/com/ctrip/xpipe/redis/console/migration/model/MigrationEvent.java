@@ -6,6 +6,6 @@ public interface MigrationEvent {
 	MigrationEventTbl getEvent();
 	MigrationCluster getMigrationCluster(long clusterId);
 	
-	void addMigrationCluster(MigrationCluster migrationClsuter);
+	void addMigrationCluster(MigrationCluster migrationCluster);
 	
 }
