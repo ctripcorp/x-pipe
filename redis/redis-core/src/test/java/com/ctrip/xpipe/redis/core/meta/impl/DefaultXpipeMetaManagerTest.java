@@ -12,6 +12,7 @@ import org.unidal.tuple.Pair;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 
@@ -33,6 +34,13 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 		metaManager = (DefaultXpipeMetaManager) DefaultXpipeMetaManager.buildFromFile("file-dao-test.xml");
 		add(metaManager);
+	}
+	
+	@Test
+	public void testGetSentinel(){
+		
+		SentinelMeta sentinelMeta = metaManager.getSentinel(dc, clusterId, shardId);
+		Assert.assertEquals("127.0.0.1:17171,127.0.0.1:17171", sentinelMeta.getAddress());
 	}
 
 	@Test

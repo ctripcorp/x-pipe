@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
@@ -530,5 +531,24 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			return false;
 		}
 		return true;
+	}
+
+	@Override
+	public SentinelMeta getSentinel(String dc, String clusterId, String shardId) {
+		
+		DcMeta dcMeta = getDirectDcMeta(dc);
+		if((dcMeta == null)){
+			throw new RedisRuntimeException("dcmeta not found:" + dc); 
+		}
+		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
+		if(shardMeta == null){
+			throw new RedisRuntimeException(String.format("shardMeta not found:%s %s %s", dc, clusterId, shardId));
+		}
+		Long sentinelId = shardMeta.getSentinelId();
+		SentinelMeta sentinelMeta = dcMeta.getSentinels().get(sentinelId);
+		if(sentinelMeta == null){
+			throw new RedisRuntimeException(String.format("sentinelMeta not found:%s %s %s %d", dc, clusterId, shardId, sentinelId));
+		}
+		return MetaClone.clone(sentinelMeta);
 	}
 }

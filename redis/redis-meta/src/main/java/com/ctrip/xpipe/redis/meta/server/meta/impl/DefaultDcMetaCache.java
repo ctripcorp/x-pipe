@@ -23,6 +23,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
@@ -216,6 +217,16 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@Override
 	public String getPrimaryDc(String clusterId, String shardId) {
 		return dcMetaManager.get().getActiveDc(clusterId, shardId);
+	}
+
+	@Override
+	public SentinelMeta getSentinel(String clusterId, String shardId) {
+		return dcMetaManager.get().getSentinel(clusterId, shardId);
+	}
+
+	@Override
+	public String getSentinelMonitorName(String clusterId, String shardId) {
+		return dcMetaManager.get().getSentinelMonitorName(clusterId, shardId);
 	}
 
 }

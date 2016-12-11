@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange;
 
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+
 /**
  * @author wenchao.meng
  *
@@ -7,8 +9,8 @@ package com.ctrip.xpipe.redis.meta.server.dcchange;
  */
 public interface SentinelManager {
 	
-	void addSentinel(String clusterId, String shardId);
+	void addSentinel(String clusterId, String shardId, RedisMeta redisMaster, ExecutionLog executionLog);
 	
-	void removeSentinel(String clusterId, String shardId);
+	void removeSentinel(String clusterId, String shardId, ExecutionLog executionLog);
 
 }

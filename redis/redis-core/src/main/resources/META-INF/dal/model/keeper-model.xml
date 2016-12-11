@@ -11,6 +11,7 @@
 	<entity name="dc" implements="java.io.Serializable">
 		<attribute name="id" key="true" />
 		<entity-ref name="cluster" type="map" />
+		<entity-ref name="sentinel" type="map" />
 	</entity>
 	<entity name="cluster" implements="java.io.Serializable">
 		<attribute name="id" key="true" />
@@ -21,7 +22,7 @@
 		<attribute name="sentinelId" value-type="Long"/>
 	</entity>	
 	<entity name="sentinel" implements="java.io.Serializable">
-		<attribute name="id" value-type="Long" />
+		<attribute name="id" key="true" value-type="Long" />
 	</entity>
 	<entity name="keeperContainer" implements="java.io.Serializable">
 		<attribute name="id" value-type="Long" />
