@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
-public class MigrationMigratingStat extends AbstractMigrationStat implements MigrationStat {
+public class MigrationMigratingStat extends AbstractMigrationStat {
 
 	private ExecutorService fixedThreadPool;
 	
@@ -46,12 +46,12 @@ public class MigrationMigratingStat extends AbstractMigrationStat implements Mig
 		// Update cluster status
 		ClusterTbl cluster = getHolder().getCurrentCluster();
 		cluster.setStatus(ClusterStatus.Migrating.toString());
-		getHolder().updateCurrentCluster(cluster);
+		getHolder().getClusterService().update(cluster);
 		
 		// Update migration cluster status
 		MigrationClusterTbl migrationCluster = getHolder().getMigrationCluster();
 		migrationCluster.setStatus(MigrationStatus.Migrating.toString());
-		getHolder().updateMigrationCluster(migrationCluster);
+		getHolder().getMigrationService().updateMigrationCluster(migrationCluster);
 	}
 	
 	@Override

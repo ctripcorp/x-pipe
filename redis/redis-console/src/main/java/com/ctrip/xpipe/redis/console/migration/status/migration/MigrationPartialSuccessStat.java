@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
-public class MigrationPartialSuccessStat extends AbstractMigrationStat implements MigrationStat {
+public class MigrationPartialSuccessStat extends AbstractMigrationStat {
 	
 	private ExecutorService cachedThreadPool;
 	
@@ -30,7 +30,7 @@ public class MigrationPartialSuccessStat extends AbstractMigrationStat implement
 		updateDB();
 		
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
-			if(!shard.getShardMigrationResult().getResult().equals(ShardMigrationResultStatus.SUCCESS)) {
+			if(!shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE)) {
 				cachedThreadPool.submit(new Runnable() {
 
 					@Override
@@ -46,11 +46,11 @@ public class MigrationPartialSuccessStat extends AbstractMigrationStat implement
 	private void updateDB() {
 		ClusterTbl cluster = getHolder().getCurrentCluster();
 		cluster.setStatus(ClusterStatus.Migrating.toString());
-		getHolder().updateCurrentCluster(cluster);
+		getHolder().getClusterService().update(cluster);
 		
 		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
 		migrationClusterTbl.setStatus(MigrationStatus.PartialSuccess.toString());
-		getHolder().updateMigrationCluster(migrationClusterTbl);
+		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
 	}
 	
 	@Override

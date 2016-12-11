@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 
-public class MigrationTmpEndStat extends AbstractMigrationStat implements MigrationStat {
+public class MigrationTmpEndStat extends AbstractMigrationStat {
 	
 	public MigrationTmpEndStat(MigrationCluster holder) {
 		super(holder, MigrationStatus.TmpEnd);
@@ -13,7 +16,19 @@ public class MigrationTmpEndStat extends AbstractMigrationStat implements Migrat
 
 	@Override
 	public void action() {
-		getHolder().publishStatus(ClusterStatus.TmpMigrated, MigrationStatus.TmpEnd);
+		updateDB();
+
+	}
+
+	@DalTransaction
+	private void updateDB() {
+		ClusterTbl cluster = getHolder().getCurrentCluster();
+		cluster.setStatus(ClusterStatus.TmpMigrated.toString());
+		getHolder().getClusterService().update(cluster);
+
+		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
+		migrationClusterTbl.setStatus(MigrationStatus.TmpEnd.toString());
+		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
 	}
 
 	@Override

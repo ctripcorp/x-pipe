@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 
 public class MigrationForceFailStat extends AbstractMigrationStat implements MigrationStat {
 
@@ -13,7 +16,20 @@ public class MigrationForceFailStat extends AbstractMigrationStat implements Mig
 
 	@Override
 	public void action() {
-		getHolder().publishStatus(ClusterStatus.Normal, MigrationStatus.ForceFail);
+		updateDB();
+
+	}
+
+	@DalTransaction
+	private void updateDB() {
+		ClusterTbl cluster = getHolder().getCurrentCluster();
+		cluster.setStatus(ClusterStatus.Normal.toString());
+		getHolder().getClusterService().update(cluster);
+
+		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
+		migrationClusterTbl.setStatus(MigrationStatus.ForceFail.toString());
+		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
+
 	}
 
 	@Override

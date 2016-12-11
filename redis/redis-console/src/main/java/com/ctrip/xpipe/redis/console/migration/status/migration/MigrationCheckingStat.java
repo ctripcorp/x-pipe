@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
-public class MigrationCheckingStat extends AbstractMigrationStat implements MigrationStat {
+public class MigrationCheckingStat extends AbstractMigrationStat {
 	
 	private ExecutorService fixedThreadPool;
 
@@ -31,7 +31,7 @@ public class MigrationCheckingStat extends AbstractMigrationStat implements Migr
 		// Update db
 		MigrationClusterTbl migrationClusterTbl = migrationCluster.getMigrationCluster();
 		migrationClusterTbl.setStatus(MigrationStatus.Checking.toString());
-		getHolder().updateMigrationCluster(migrationClusterTbl);
+		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
 		
 		for (final MigrationShard migrationShard : migrationShards) {
 			fixedThreadPool.submit(new Runnable() {

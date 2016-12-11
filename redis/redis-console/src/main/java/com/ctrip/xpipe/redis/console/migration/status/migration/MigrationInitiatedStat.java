@@ -5,7 +5,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 
-public class MigrationInitiatedStat extends AbstractMigrationStat implements MigrationStat {
+public class MigrationInitiatedStat extends AbstractMigrationStat {
 	
 	public MigrationInitiatedStat(MigrationCluster holder) {
 		super(holder, MigrationStatus.Initiated);
@@ -21,7 +21,7 @@ public class MigrationInitiatedStat extends AbstractMigrationStat implements Mig
 			if(ClusterStatus.isSameClusterStatus(cluster.getStatus(), ClusterStatus.Normal)) {
 				logger.info("Cluster:{} Initiated but Unlocked.Lock it now !!!", cluster.getClusterName());
 				cluster.setStatus(ClusterStatus.Lock.toString());
-				getHolder().updateCurrentCluster(cluster);
+				getHolder().getClusterService().update(cluster);
 				
 			} else {
 				throw new BadRequestException(String.format("Invalid: cluster %s with status %s", cluster.getClusterName(), cluster.getStatus()));

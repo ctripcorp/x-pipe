@@ -30,13 +30,15 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	private MigrationStat currentStat;
 	private MigrationClusterTbl migrationCluster;
 	private List<MigrationShard> migrationShards = new LinkedList<>();
-	
-	private ClusterService clusterService;
-	private MigrationService migrationService;
-	
+
 	private ClusterTbl currentCluster;
 	private Map<Long, ShardTbl> shards;
 	private Map<Long, DcTbl> dcs;
+	
+	private ClusterService clusterService;
+	private ShardService shardService;
+	private DcService dcService;
+	private MigrationService migrationService;
 
 	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
 			MigrationService migrationService) {
@@ -44,20 +46,11 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 		this.currentStat = new MigrationInitiatedStat(this);
 		
 		this.clusterService = clusterService;
+		this.shardService = shardService;
+		this.dcService = dcService;
 		this.migrationService = migrationService;
 		
-		loadMetaInfo(dcService, clusterService, shardService);
-	}
-
-	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, MigrationStat stat, DcService dcService, ClusterService clusterService, ShardService shardService,
-			MigrationService migrationService) {
-		this.migrationCluster = migrationCluster;
-		this.currentStat = stat;
-		
-		this.clusterService = clusterService;
-		this.migrationService = migrationService;
-		
-		loadMetaInfo(dcService, clusterService, shardService);
+		loadMetaInfo();
 	}
 
 	@Override
@@ -69,22 +62,15 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	public MigrationClusterTbl getMigrationCluster() {
 		return migrationCluster;
 	}
-	
+
 	@Override
-	public void updateMigrationCluster(MigrationClusterTbl migrationCluster) {
-		migrationService.updateMigrationCluster(migrationCluster);
+	public List<MigrationShard> getMigrationShards() {
+		return migrationShards;
 	}
-	
+
 	@Override
 	public ClusterTbl getCurrentCluster() {
 		return currentCluster;
-	}
-	
-	@Override
-	public void updateCurrentCluster(ClusterTbl cluster) {
-		if( cluster.getId() == currentCluster.getId()) {
-			clusterService.update(cluster);
-		}
 	}
 	
 	@Override
@@ -96,22 +82,10 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	public Map<Long, DcTbl> getClusterDcs() {
 		return dcs;
 	}
-	
-	@Override
-	public List<MigrationShard> getMigrationShards() {
-		return migrationShards;
-	}
-	
+
 	@Override
 	public void addNewMigrationShard(MigrationShard migrationShard) {
 		migrationShards.add(migrationShard);
-	}
-
-	@Override
-	public void update(Object args, Observable observable) {
-		if(args instanceof MigrationShard) {
-			this.currentStat.refresh();
-		}
 	}
 
 	@Override
@@ -123,37 +97,49 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	public void updateStat(MigrationStat stat) {
 		this.currentStat = stat;
 	}
-	
-	@Override
-	@DalTransaction
-	public void publishStatus(ClusterStatus status, MigrationStatus migrationStatus) {
-		ClusterTbl cluster = currentCluster;
-		cluster.setStatus(status.toString());
-		cluster.setActivedcId(migrationCluster.getDestinationDcId());
-		clusterService.update(cluster);
-		
-		MigrationClusterTbl migrationClusterTbl = migrationCluster;
-		migrationClusterTbl.setStatus(migrationStatus.toString());
-		migrationService.updateMigrationCluster(migrationClusterTbl);
-	}
-	
+
 	@Override
 	@DalTransaction
 	public void cancel() {
 		ClusterTbl cluster = currentCluster;
 		cluster.setStatus(ClusterStatus.Normal.toString());
-		clusterService.update(cluster);
+		getClusterService().update(cluster);
 		
 		MigrationClusterTbl migrationClusterTbl = migrationCluster;
 		migrationClusterTbl.setStatus(MigrationStatus.Cancelled.toString());
 		migrationClusterTbl.setEndTime(new Date());
-		migrationService.updateMigrationCluster(migrationClusterTbl);
+		getMigrationService().updateMigrationCluster(migrationClusterTbl);
 	}
-	
-	private void loadMetaInfo(DcService dcService, ClusterService clusterService, ShardService shardService) {
-		this.currentCluster = clusterService.find(migrationCluster.getClusterId());
-		this.shards = generateShardMap(shardService.findAllByClusterName(currentCluster.getClusterName()));
-		this.dcs = generateDcMap(dcService.findClusterRelatedDc(currentCluster.getClusterName()));
+
+	@Override
+	public void update(Object args, Observable observable) {
+		this.currentStat.refresh();
+	}
+
+	@Override
+	public ClusterService getClusterService() {
+		return clusterService;
+	}
+
+	@Override
+	public ShardService getShardService() {
+		return shardService;
+	}
+
+	@Override
+	public DcService getDcService() {
+		return dcService;
+	}
+
+	@Override
+	public MigrationService getMigrationService() {
+		return migrationService;
+	}
+
+	private void loadMetaInfo() {
+		this.currentCluster = getClusterService().find(migrationCluster.getClusterId());
+		this.shards = generateShardMap(getShardService().findAllByClusterName(currentCluster.getClusterName()));
+		this.dcs = generateDcMap(getDcService().findClusterRelatedDc(currentCluster.getClusterName()));
 	}
 	
 	private Map<Long, ShardTbl> generateShardMap(List<ShardTbl> shards) {
