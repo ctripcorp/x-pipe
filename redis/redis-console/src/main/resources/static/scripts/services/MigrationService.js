@@ -3,8 +3,13 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		create_event: {
 			method : 'POST',
 			url : '/console/migration/events'
+		},
+		find_all: {
+			method : 'GET',
+			url : '/console/migration/events/all',
+			isArray : true
 		}
-	})
+	});
 
 	function createEvent(migrationClusters) {
 		var d = $q.defer();
@@ -23,7 +28,20 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		return d.promise;
 	}
 
+	function findAll() {
+		var d = $q.defer();
+		resource.find_all({},
+			function(result) {
+				d.resolve(result);
+			},
+			function(result) {
+				d.reject(result);
+			});
+		return d.promise;
+	}
+
 	return {
-		createEvent : createEvent
+		createEvent : createEvent,
+		findAll : findAll
 	}
 }]);
