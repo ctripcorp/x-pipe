@@ -4,7 +4,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationResultStatus;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
@@ -13,6 +12,11 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
+/**
+ * @author shyin
+ *
+ * Dec 8, 2016
+ */
 public class MigrationPartialSuccessStat extends AbstractMigrationStat {
 	
 	private ExecutorService cachedThreadPool;

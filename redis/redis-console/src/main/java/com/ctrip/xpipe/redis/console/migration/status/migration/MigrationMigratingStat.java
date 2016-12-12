@@ -12,6 +12,11 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
+/**
+ * @author shyin
+ *
+ * Dec 8, 2016
+ */
 public class MigrationMigratingStat extends AbstractMigrationStat {
 
 	private ExecutorService fixedThreadPool;

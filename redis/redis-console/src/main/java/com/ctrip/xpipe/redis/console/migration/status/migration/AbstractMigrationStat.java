@@ -6,6 +6,11 @@ import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 
+/**
+ * @author shyin
+ *
+ * Dec 8, 2016
+ */
 public abstract class AbstractMigrationStat implements MigrationStat {
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	

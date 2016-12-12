@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.command;
 
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;

@@ -2,6 +2,11 @@ package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 
+/**
+ * @author shyin
+ *
+ * Dec 8, 2016
+ */
 public class MigrationCancelledStat extends AbstractMigrationStat implements MigrationStat {
 
 	public MigrationCancelledStat(MigrationCluster holder) {

@@ -4,7 +4,9 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 
 /**
- * Created by Chris on 11/12/2016.
+ * @author shyin
+ *
+ * Dec 8, 2016
  */
 public interface MigrationCommandBuilder {
     Command<MetaServerConsoleService.PrimaryDcCheckMessage> buildDcCheckCommand(final String cluster, final String shard, final String dc, final String newPrimaryDc);

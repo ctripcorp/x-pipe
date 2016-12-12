@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.ctrip.xpipe.api.observer.Observable;
-import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
@@ -25,6 +24,11 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 
+/**
+ * @author shyin
+ *
+ * Dec 8, 2016
+ */
 public class DefaultMigrationCluster extends AbstractObservable implements MigrationCluster {
 	
 	private MigrationStat currentStat;

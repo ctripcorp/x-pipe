@@ -24,6 +24,11 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcC
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * @author shyin
+ *
+ * Dec 8, 2016
+ */
 public class DefaultMigrationShard extends AbstractObservable implements MigrationShard {
 	private static Codec coder = Codec.DEFAULT;
 	

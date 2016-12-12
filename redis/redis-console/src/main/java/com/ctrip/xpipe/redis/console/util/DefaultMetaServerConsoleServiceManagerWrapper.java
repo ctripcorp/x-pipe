@@ -6,8 +6,6 @@ import java.util.Map;
 
 import com.ctrip.xpipe.redis.console.config.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;

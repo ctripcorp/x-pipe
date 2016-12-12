@@ -9,6 +9,11 @@ import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 
+/**
+ * @author shyin
+ *
+ * Dec 8, 2016
+ */
 @Component
 public class DefaultMigrationEventManager implements MigrationEventManager {
 	

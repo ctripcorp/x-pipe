@@ -9,6 +9,11 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 
+/**
+ * @author shyin
+ *
+ * Dec 8, 2016
+ */
 public class DefaultMigrationEvent implements MigrationEvent, Observer {
 	
 	private MigrationEventTbl event;

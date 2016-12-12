@@ -6,6 +6,11 @@ import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 
+/**
+ * @author shyin
+ *
+ * Dec 8, 2016
+ */
 public class MigrationTmpEndStat extends AbstractMigrationStat {
 	
 	public MigrationTmpEndStat(MigrationCluster holder) {
