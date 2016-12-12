@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console;
 
 
-import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import org.junit.runners.Suite;
