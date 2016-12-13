@@ -14,9 +14,9 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 			url : '/console/migration/events/:eventId',
 			isArray : true
 		},
-		find_migration_shard: {
-			method : 'GET',
-			url : '/console/migration/events/:eventId/clusters/:clusterId/shards/:shardId'
+		continue_migration_cluster: {
+			method : 'POST',
+			url : '/console/migration/events/:eventId/clusters/:clusterId'
 		}
 	});
 
@@ -64,9 +64,27 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		return d.promise;
 	}
 
+	function continueMigrationCluster(eventId, clusterId) {
+		var d = $q.defer();
+		resource.continue_migration_cluster(
+			{
+				eventId : eventId,
+				clusterId : clusterId
+			},
+			{},
+			function(result) {
+				d.resolve(result);
+			},
+			function(result) {
+				d.reject(result);
+			});
+		return d.promise;
+	}
+
 	return {
 		createEvent : createEvent,
 		findAll : findAll,
-		findEventDetails : findEventDetails
+		findEventDetails : findEventDetails,
+		continueMigrationCluster : continueMigrationCluster
 	}
 }]);

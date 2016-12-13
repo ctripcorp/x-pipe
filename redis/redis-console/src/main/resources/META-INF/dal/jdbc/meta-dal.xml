@@ -751,6 +751,21 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-unfinished-events" type="SELECT" multiple="true">
+				<statement>
+				<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='redundant-clusters'/>, <TABLE name='redundant-shards'/>
+					WHERE <FIELD name='id'/> = mct.migration_event_id
+					AND mst.migration_cluster_id = mct.id
+					AND mct.status != 'Success'
+					AND mct.status != 'ForceFail'
+					AND mct.deleted = 0
+					AND mst.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			
 			<query name='insert-batch' type='INSERT' batch='true'>
 				<statement>

@@ -5,9 +5,7 @@
                 <div class="col-md-6">{{migrationCluster.migrationCluster.cluster.clusterName}}</div>
                 <div class="col-md-3"></div>
                 <div class="col-md-3">
-					<a type="button" class="btn btn-primary radius-border-fat" href=""><strong>继续</strong></a>
-					&nbsp&nbsp 
-					<a type="button" class="btn btn-warnning radius-border-fat" href=""><strong>重试</strong></a>
+					<a type="button" class="btn btn-primary radius-border-fat" ng-click="continueMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)"><strong>继续</strong></a>
 					&nbsp&nbsp 
 					<a type="button" class="btn btn-danger radius-border-fat" href="/#/migration_event_list"><strong>取消</strong></a>
 				</div>

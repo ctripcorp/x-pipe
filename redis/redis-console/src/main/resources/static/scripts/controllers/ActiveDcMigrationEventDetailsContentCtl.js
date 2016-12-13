@@ -1,8 +1,6 @@
-index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'NgTableParams', 'MigrationService',
-    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, NgTableParams, MigrationService, $filters) {
-
+index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope', '$scope', '$window', '$stateParams','$interval', 'AppUtil', 'toastr', 'NgTableParams', 'MigrationService',
+    function ($rootScope, $scope, $window, $stateParams,$interval, AppUtil, toastr, NgTableParams, MigrationService, $filters) {
         $scope.migrationCluster = $stateParams.migrationCluster;
-        $scope.steps;
 
         if($scope.migrationCluster) {
             if($scope.migrationCluster.migrationShards) {
@@ -20,4 +18,18 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
             });
         }
         
+        $scope.continueMigrationCluster = function(eventId, clusterId) {
+            MigrationService.continueMigrationCluster(eventId, clusterId).then(
+                function(result) {
+                toastr.success("操作成功");
+                },
+                function(result) {
+                toastr.error(AppUtil.errorMsg(result));
+            });
+        }
+
+        $interval(function() {
+            // TODO : refresh contents
+        }, 1000);
+
     }]);

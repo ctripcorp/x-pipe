@@ -12,6 +12,7 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblDao;
@@ -32,6 +33,8 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
 	@Autowired
 	private MigrationEventDao migrationEventDao;
+	@Autowired
+	private MigrationEventManager migrationEventManager;
 	
 	private MigrationClusterTblDao migrationClusterDao;
 	private MigrationShardTblDao migrationShardTblDao;
@@ -128,6 +131,13 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 		});
 	}
 
+	@Override
+	public void continueMigrationCluster(final long eventId, final long clusterId) {
+		if( null != migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId)) {
+			migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).process();
+		}
+	}
+	
 	@Override
 	public void continueMigrationEvent(long id) {
 		// TODO Auto-generated method stub

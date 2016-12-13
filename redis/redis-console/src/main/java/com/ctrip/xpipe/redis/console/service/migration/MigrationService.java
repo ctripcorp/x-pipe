@@ -21,6 +21,7 @@ public interface MigrationService {
 	void updateMigrationCluster(MigrationClusterTbl cluster);
 	
 	long createMigrationEvent(MigrationEventModel events);
+	void continueMigrationCluster(long eventId, long clusterId);
 	void continueMigrationEvent(long id);
 	void cancelMigrationEvent(long id);
 }

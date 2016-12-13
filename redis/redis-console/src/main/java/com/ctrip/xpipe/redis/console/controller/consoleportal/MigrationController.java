@@ -51,4 +51,9 @@ public class MigrationController extends AbstractConsoleController {
 		return res;
 	}
 	
+	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}", method = RequestMethod.POST)
+	public void continueMigratiionCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		migrationService.continueMigrationCluster(eventId, clusterId);
+	}
+	
 }
