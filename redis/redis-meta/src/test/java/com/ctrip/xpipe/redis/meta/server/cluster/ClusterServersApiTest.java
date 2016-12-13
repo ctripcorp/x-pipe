@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
-import java.io.IOException;
-
-import org.junit.After;
 import org.junit.Test;
 import org.springframework.web.client.RestOperations;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -45,11 +42,6 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 			message = consoleService.doChangePrimaryDc(getClusterId(), getShardId(), "oy");
 			logger.info("{}", message);
 		}
-	}
-	
-	@After
-	public void afterClusterServersApiTest() throws IOException{
-		waitForAnyKeyToExit();
 	}
 	
 	@Test
@@ -134,7 +126,6 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 		}
 		
 	}
-
 
 	private ClusterMeta randomCluster() {
 		

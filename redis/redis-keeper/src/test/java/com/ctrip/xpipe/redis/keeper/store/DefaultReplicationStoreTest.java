@@ -25,7 +25,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		int cmdCount = 4;
 		int cmdLen = 10;
 
-		DefaultReplicationStore store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid());
+		DefaultReplicationStore store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitorManager());
 		store.beginRdb("master", -1, -1);
 
 		for (int j = 0; j < cmdCount; j++) {

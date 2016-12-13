@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -19,7 +18,7 @@ import com.ctrip.xpipe.redis.core.store.CommandReader;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
-import com.ctrip.xpipe.redis.keeper.monitor.DefaultCommandStoreDelay;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 
@@ -53,12 +52,15 @@ public class DefaultCommandStore implements CommandStore {
 	private AtomicReference<CommandFileContext> cmdFileCtxRef = new AtomicReference<>();
 	private Object cmdFileCtxRefLock = new Object();
 	
-	private CommandStoreDelay commandStoreDelay = new DefaultCommandStoreDelay(this);
+	private CommandStoreDelay commandStoreDelay;
 
-	public DefaultCommandStore(File file, int maxFileSize) throws IOException {
+	public DefaultCommandStore(File file, int maxFileSize, KeeperMonitorManager keeperMonitorManager) throws IOException {
+		
 		this.baseDir = file.getParentFile();
 		this.fileNamePrefix = file.getName();
 		this.maxFileSize = maxFileSize;
+		this.commandStoreDelay = keeperMonitorManager.createCommandStoreDelay(this);
+		
 		fileFilter = new PrefixFileFilter(fileNamePrefix);
 
 		long currentStartOffset = findMaxStartOffset();

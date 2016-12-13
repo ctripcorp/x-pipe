@@ -51,7 +51,7 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig,
 			MetaServerKeeperService metaService, File baseDir, LeaderElectorManager leaderElectorManager) {
 		
-		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, metaService, leaderElectorManager){
+		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, metaService, leaderElectorManager, createkeeperMonitorManager()){
 		
 			@Override
 			public void beginWriteRdb(long fileSize, long offset) {

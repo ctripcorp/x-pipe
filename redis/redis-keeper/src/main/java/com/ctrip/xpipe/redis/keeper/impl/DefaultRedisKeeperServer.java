@@ -44,6 +44,7 @@ import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
@@ -108,20 +109,25 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	//for test
 	private AtomicInteger  rdbDumpTryCount = new AtomicInteger();
 	
+	@SuppressWarnings("unused")
+	private KeeperMonitorManager keeperMonitorManager;
+	
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
-			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager){
-		this(currentKeeperMeta, keeperConfig, baseDir, metaService, null, leaderElectorManager);
+			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeeperMonitorManager keeperMonitorManager){
+		this(currentKeeperMeta, keeperConfig, baseDir, metaService, null, leaderElectorManager, keeperMonitorManager);
 	}
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
 			MetaServerKeeperService metaService, 
 			ScheduledExecutorService scheduled, 
-			LeaderElectorManager leaderElectorManager){
+			LeaderElectorManager leaderElectorManager,
+			KeeperMonitorManager keeperMonitorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
 		this.shardId = currentKeeperMeta.parent().getId();
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.keeperConfig = keeperConfig;
-		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir);
+		this.keeperMonitorManager = keeperMonitorManager;
+		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitorManager);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
@@ -129,7 +135,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(String.format("keeper:%s-%s", clusterId, shardId)));
 		}
 		this.scheduled = scheduled;
-		
 	}
 	
 	private LeaderElector createLeaderElector(){

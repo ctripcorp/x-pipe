@@ -31,4 +31,6 @@ public interface KeeperConfig extends CoreConfig{
 
 	int getRdbDumpMinIntervalMilli();
 	
+	int getDelayLogLimitMicro();
+	
 }

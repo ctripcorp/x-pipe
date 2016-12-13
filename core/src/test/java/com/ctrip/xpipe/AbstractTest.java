@@ -89,7 +89,7 @@ public class AbstractTest {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty(CatUtils.CAT_ENABLED_KEY, "false");
 
-		logger.info(remarkableMessage("[begin test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
+		logger.info(remarkableMessage("[begin test][{}]{}"), name.getMethodName());
 
 		componentRegistry = new DefaultRegistry(new CreatedComponentRedistry(), getSpringRegistry());
 
@@ -563,7 +563,7 @@ public class AbstractTest {
 	public void afterAbstractTest() throws Exception {
 
 		try {
-			logger.info(remarkableMessage("[end   test][{}]{}"), getClass().getSimpleName(), name.getMethodName());
+			logger.info(remarkableMessage("[end   test][{}]{}"), name.getMethodName());
 
 			LifecycleHelper.stopIfPossible(componentRegistry);
 			LifecycleHelper.disposeIfPossible(componentRegistry);
