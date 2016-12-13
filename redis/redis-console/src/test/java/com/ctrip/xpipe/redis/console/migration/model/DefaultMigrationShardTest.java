@@ -135,7 +135,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                     }
                 });
 
-        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getResult());
+        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE));
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
@@ -144,7 +144,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
         migrationShard.doMigrate();
         verify(mockedMigrationService, times(3)).updateMigrationShard((MigrationShardTbl) anyObject());
         Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE));
-        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.SUCCESS, migrationShard.getShardMigrationResult().getResult());
+        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.SUCCESS, migrationShard.getShardMigrationResult().getStatus());
     }
 
     @Test
@@ -184,7 +184,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                     }
                 });
 
-        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getResult());
+        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE));
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
@@ -195,7 +195,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
         Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE));
-        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getResult());
+        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
     }
 
 

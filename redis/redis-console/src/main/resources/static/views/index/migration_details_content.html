@@ -1,37 +1,72 @@
-<div>
-	<h3 class="header smaller lighter blue">
-		<div class="row">
-			<div class="col-md-1"></div>
-			<div class="col-md-2">
-				<span>Migration Event:1</span>
-			</div>
-			<div class="col-md-2 text-center">
-				<span>Cluster : Cluster1</span>
-			</div>
-			<div class="col-md-2 text-center">
-				<span>Target : OY</span>
-			</div>
-			<div class="col-md-2 text-center">
-				<span>Status : Initiated</span>
-			</div>
-		</div>
-	</h3>
-	
-	<div>
-		<div class="form-group" style="padding:15px 15px 0 15px">
-  			<textarea class="form-control" readonly rows="15" style="background-color:black;color:yellow;resize:none;">this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;
-  			</textarea>
-		</div>
-		
-		<div class="row">
-			<div class="col-md-5"></div>
-			<div class="col-md-7">
-				<a type="button" class="btn btn-primary radius-border-fat" href=""><strong>继续</strong></a>
-				&nbsp&nbsp 
-				<a type="button" class="btn btn-warnning radius-border-fat" href=""><strong>重试</strong></a>
-				&nbsp&nbsp 
-				<a type="button" class="btn btn-danger radius-border-fat" href="/#/migration_event_list"><strong>取消</strong></a>
-			</div>
-		</div>
-	</div>
+<div class="col-xs-12">
+    <div class="panel panel-primary" style="margin-top: 15px;">
+        <header class="panel-heading">
+            <div class="row">
+                <div class="col-md-6">{{migrationCluster.migrationCluster.cluster.clusterName}}</div>
+                <div class="col-md-3"></div>
+                <div class="col-md-3">
+					<a type="button" class="btn btn-primary radius-border-fat" href=""><strong>继续</strong></a>
+					&nbsp&nbsp 
+					<a type="button" class="btn btn-warnning radius-border-fat" href=""><strong>重试</strong></a>
+					&nbsp&nbsp 
+					<a type="button" class="btn btn-danger radius-border-fat" href="/#/migration_event_list"><strong>取消</strong></a>
+				</div>
+            </div>
+        </header>
+
+        <table class="table table-bordered table-hover">
+            <thead>
+            <tr>
+            	<th>
+                    Shard
+                </th>
+                <th>
+                    迁移检测
+                </th>
+                <th>
+                    原主机房迁移
+                </th>
+                <th>
+                    目标主机房迁移
+                </th>
+                <th>
+                	其他机房迁移
+                </th>
+                <th>
+                	结果
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="migrationShard in migrationCluster.migrationShards">
+                <td>{{migrationShard.migrationShard.shard.shardName}}</td>
+                <td>
+                <span class="label label-sm label-success" ng-if="migrationShard.status.steps.CHECK.true">Success</span>
+                <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.CHECK.false">Failed</span>
+                <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.CHECK">Waiting</span>
+                </td>
+                <td>
+                <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC.true">Success</span>
+                <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC.false">Failed</span>
+                <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC">Waiting</span>
+                </td>
+                <td>
+                <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC.true">Success</span>
+                <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC.false">Failed</span>
+                <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC">Waiting</span>
+                </td>
+                <td>
+                <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_OTHER_DC.true">Success</span>
+                <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_OTHER_DC.false">Failed</span>
+                <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_OTHER_DC">Waiting</span>
+                </td>
+                <td>
+                <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE.true">Success</span>
+                <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE.false">Failed</span>
+                <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE">Waiting</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
