@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore;
 import com.ctrip.xpipe.redis.keeper.store.meta.ActiveMetaStore;
 import com.ctrip.xpipe.redis.keeper.store.meta.BackupMetaStore;
 import com.ctrip.xpipe.redis.keeper.store.meta.InitMetaStore;
+import com.ctrip.xpipe.utils.FileUtils;
 
 /**
  * @author marsqing
@@ -103,11 +104,11 @@ public class DefaultMetaStore implements InvocationHandler{
 	public synchronized void becomeBackup() throws IOException {
 
 		if(metaStoreRef.get() instanceof BackupMetaStore){
-			logger.info("[becomeBackup][already backup]{}", baseDir);
+			logger.info("[becomeBackup][already backup]{}", this);
 			return ;
 		}
 		
-		logger.info("[becomeBackup]{}", baseDir);
+		logger.info("[becomeBackup]{}", this);
 		MetaStore metaStore = backupStore();
 		metaStore.setKeeperState(keeperRunid, KeeperState.BACKUP);
 	}
@@ -115,12 +116,17 @@ public class DefaultMetaStore implements InvocationHandler{
 	public synchronized void becomeActive() throws IOException {
 		
 		if(metaStoreRef.get() instanceof ActiveMetaStore){
-			logger.info("[becomeActive][already active]{}", baseDir);
+			logger.info("[becomeActive][already active]{}", this);
 			return ;
 		}
 		
 		logger.info("[becomeActive]{}", baseDir);
 		MetaStore metaStore = activeStore();
 		metaStore.setKeeperState(keeperRunid, KeeperState.ACTIVE);
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("DefaultMetaStore(%s)", FileUtils.shortPath(baseDir.getAbsolutePath()));
 	}
 }

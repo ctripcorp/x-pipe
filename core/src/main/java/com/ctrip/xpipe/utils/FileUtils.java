@@ -19,6 +19,7 @@ public class FileUtils {
 	
 	private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
 	
+	public static int DEFAULT_SHORT_PATH_LEVEL = 4;
 	
 	public static void recursiveDelete(File file) {
 		
@@ -33,12 +34,31 @@ public class FileUtils {
 				}
 			}
 		}
-		logger.info("[recursiveDelete]{}", file.getAbsolutePath());
+		logger.info("[recursiveDelete]{}", shortPath(file.getAbsolutePath(), DEFAULT_SHORT_PATH_LEVEL));
 		file.delete();
 	}
-	
 
-	
+	public static String shortPath(String absolutePath) {
+		return shortPath(absolutePath, DEFAULT_SHORT_PATH_LEVEL);
+	}
+
+	public static String shortPath(String absolutePath, int level) {
+		
+		int index = absolutePath.length();
+		for(int i=0;i<level;i++){
+			int currentIndex = absolutePath.lastIndexOf(File.separator, index - 1);
+			if(currentIndex < 0){
+				break;
+			}
+			index = currentIndex;
+		}
+		
+		if(index == absolutePath.length()){
+			return absolutePath;
+		}
+		return absolutePath.substring(index);
+	}
+
 	public static InputStream getFileInputStream(String fileName) throws FileNotFoundException{
 		
 		return getFileInputStream("./", fileName, FileUtils.class);

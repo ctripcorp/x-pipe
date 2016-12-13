@@ -104,4 +104,9 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected void doOnFullSync() {
 		
 	}
+
+	@Override
+	protected String getSimpleName() {
+		return "RdbRep";
+	}
 }

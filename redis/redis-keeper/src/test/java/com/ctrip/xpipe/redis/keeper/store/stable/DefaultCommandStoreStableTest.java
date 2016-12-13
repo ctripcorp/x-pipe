@@ -40,7 +40,7 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 
 		String testDir = getTestFileDir();
 		File commandTemplate = new File(testDir, getTestName());
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize);
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, createkeeperMonitorManager());
 	}
 
 	@Test

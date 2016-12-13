@@ -110,10 +110,12 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
-		String threadPoolName = String.format("%s:(%s:%d)", getClass().getSimpleName(), redisMaster.masterEndPoint().getHost(), redisMaster.masterEndPoint().getPort()); 
+		String threadPoolName = String.format("%s:(%s:%d)", getSimpleName(), redisMaster.masterEndPoint().getHost(), redisMaster.masterEndPoint().getPort()); 
 		slaveEventLoopGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create(threadPoolName));
 
 	}
+
+	protected abstract String getSimpleName();
 
 	@Override
 	protected void doStart() throws Exception {

@@ -103,7 +103,7 @@ public class XpipeThreadFactory implements ThreadFactory {
 
 	public Thread newThread(Runnable r) {
 		Thread t = new Thread(m_threadGroup, r,//
-		      m_threadGroup.getName() + "-" + m_namePrefix + "-" + m_threadNumber.getAndIncrement());
+		      m_namePrefix + "-" + m_threadNumber.getAndIncrement());
 		t.setDaemon(m_daemon);
 		if (t.getPriority() != Thread.NORM_PRIORITY)
 			t.setPriority(Thread.NORM_PRIORITY);

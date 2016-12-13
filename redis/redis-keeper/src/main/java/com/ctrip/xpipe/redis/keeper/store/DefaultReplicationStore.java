@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
 import com.ctrip.xpipe.utils.FileUtils;
 
 import org.slf4j.Logger;
@@ -65,11 +66,14 @@ public class DefaultReplicationStore implements ReplicationStore {
 	private Object lock = new Object();
 	
 	private AtomicInteger rdbUpdateCount = new AtomicInteger();
+	
+	private KeeperMonitorManager keeperMonitorManager;
 
-	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid) throws IOException {
+	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid, KeeperMonitorManager keeperMonitorManager) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.config = config;
+		this.keeperMonitorManager = keeperMonitorManager;
 
 		metaStore = DefaultMetaStore.createMetaStore(baseDir, keeperRunid);
 
@@ -79,7 +83,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
 				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getRdbLastKeeperOffset(), meta.getRdbFileSize()));
-				cmdStore = new DefaultCommandStore(new File(baseDir, meta.getCmdFilePrefix()), cmdFileSize);
+				cmdStore = new DefaultCommandStore(new File(baseDir, meta.getCmdFilePrefix()), cmdFileSize, keeperMonitorManager);
 			}
 		}
 
@@ -130,7 +134,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 
 		// beginOffset - 1 == masteroffset
 		rdbStoreRef.set(new DefaultRdbStore(new File(baseDir, newMeta.getRdbFile()), newMeta.getKeeperBeginOffset() - 1, rdbFileSize));
-		cmdStore = new DefaultCommandStore(new File(baseDir, newMeta.getCmdFilePrefix()), cmdFileSize);
+		cmdStore = new DefaultCommandStore(new File(baseDir, newMeta.getCmdFilePrefix()), cmdFileSize, keeperMonitorManager);
 
 		return rdbStoreRef.get();
 	}

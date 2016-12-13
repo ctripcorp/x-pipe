@@ -108,4 +108,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public void setRdbDumpMinIntervalMilli(int rdbDumpMinIntervalMilli) {
 		this.rdbDumpMinIntervalMilli = rdbDumpMinIntervalMilli;
 	}
+
+	@Override
+	public int getDelayLogLimitMicro() {
+		return 20*1000;
+	}
 }

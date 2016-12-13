@@ -236,4 +236,9 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 			logger.error("[doOnFullSync][impossible to happen]", e);
 		}
 	}
+
+	@Override
+	protected String getSimpleName() {
+		return "DefRep";
+	}
 }

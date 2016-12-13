@@ -21,8 +21,7 @@
         <!--过滤掉spring和hibernate的一些无用的debug信息-->
         <logger name="org.springframework" level="WARN"/>
         <logger name="io.netty" level="INFO"/>
-        <logger name="org.apache.zookeeper.server.ZooKeeperServer" level="WARN"/>
-		<logger name="org.apache.zookeeper.ZooKeeper" level="WARN"/>
+		<logger name="org.apache.zookeeper" level="WARN"/>
 
         <logger name="com.ctrip.xpipe.monitor.CatUtils" level="INFO"/>
         <logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="INFO"/>

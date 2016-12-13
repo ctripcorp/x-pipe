@@ -20,8 +20,7 @@
     <loggers>
         <logger name="org.springframework" level="WARN"/>
         <logger name="io.netty" level="INFO"/>
-        <logger name="org.apache.zookeeper.server.ZooKeeperServer" level="WARN"/>
-        <logger name="org.apache.zookeeper.ZooKeeper" level="WARN"/>
+        <logger name="org.apache.zookeeper" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
 		<logger name="com.ctrip.xpipe.redis.keeper.monitor.CommandDelay" level="INFO"/>
 		
