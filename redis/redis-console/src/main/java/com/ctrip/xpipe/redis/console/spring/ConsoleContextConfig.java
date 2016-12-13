@@ -14,8 +14,6 @@ import com.ctrip.xpipe.redis.console.config.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
-import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.spring.AbstractProfile;
 
@@ -28,11 +26,6 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 @EnableAspectJAutoProxy
 @ComponentScan(basePackages = {"com.ctrip.xpipe.service.sso"})
 public class ConsoleContextConfig extends AbstractRedisConfigContext {
-
-	@Bean
-	public MetaServerConsoleServiceManager getMetaServerConsoleServiceManager() {
-		return new DefaultMetaServerConsoleServiceManager();
-	}
 
 	@Bean
 	public MetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {

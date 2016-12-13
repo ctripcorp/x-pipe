@@ -26,11 +26,11 @@ import redis.clients.jedis.JedisPubSub;
 public class LuttuceJedisCompareTest {
 
 	public static void main(String[] args) throws Exception {
-		String host = "127.0.0.1";
-		int port = 6379;
-		String channel = "xxx";
+		final String host = "127.0.0.1";
+		final int port = 6379;
+		final String channel = "xxx";
 
-		RedisClient c = findRedisConnection(host, port);
+		final RedisClient c = findRedisConnection(host, port);
 
 		boolean subViaJedis = false;
 		boolean pubViaJedis = false;

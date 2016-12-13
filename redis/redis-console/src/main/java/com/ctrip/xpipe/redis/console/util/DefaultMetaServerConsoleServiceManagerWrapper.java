@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
+import com.ctrip.xpipe.redis.console.config.DefaultConsoleConfig;
+import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
@@ -20,11 +20,9 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
  */
 public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServerConsoleServiceManagerWrapper{
 	private Codec codec = Codec.DEFAULT;
-	
-	@Autowired
-	private ConsoleConfig config;
-	@Autowired
-	private MetaServerConsoleServiceManager metaServerConsoleServiceManager;
+
+	private ConsoleConfig config = new DefaultConsoleConfig();
+	private MetaServerConsoleServiceManager metaServerConsoleServiceManager = new DefaultMetaServerConsoleServiceManager();
 	
 	
 	@Override
