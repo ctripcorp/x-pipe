@@ -22,7 +22,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
 	@Override
 	public String getDatasource() {
-		return getProperty(KEY_DATASOURCE);
+		return getProperty(KEY_DATASOURCE, "fxxpipe");
 	}
 
 	@Override

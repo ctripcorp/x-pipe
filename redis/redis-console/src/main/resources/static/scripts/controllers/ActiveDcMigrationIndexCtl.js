@@ -1,10 +1,11 @@
-index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'NgTableParams', 'ClusterService', 'DcService',
-    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, NgTableParams, ClusterService, DcService, $filters) {
+index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'NgTableParams', 'ClusterService', 'DcService', 'MigrationService',
+    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, NgTableParams, ClusterService, DcService, MigrationService, $filters) {
 		
 		$scope.sourceDcSelected = sourceDcSelected;
 		$scope.targetDcSelected = targetDcSelected;
 		$scope.availableTargetDcs = availableTargetDcs;
 		$scope.preMigrate = preMigrate;
+		$scope.doMigrate = doMigrate;
 		
 		init();
 		
@@ -48,7 +49,47 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 			var selectedClusters = $scope.clusters.filter(function(cluster){
 				return cluster.selected;
 			});
-			console.log(selectedClusters);
+			var targetedClusters = $scope.clusters.filter(function(cluster){
+				return cluster.selected && (cluster.targetDc != "-");
+			});
+			if(! (selectedClusters.length == targetedClusters.length)) {
+				$('#createEventWithLostConfirm').modal('show');
+			} else {
+				doMigrate();
+			}
+			
+		}
+
+		function doMigrate() {
+			var selectedClusters = $scope.clusters.filter(function(cluster){
+				return cluster.selected && (cluster.targetDc != "-");
+			});
+
+			var migrationClusters = [];
+			selectedClusters.forEach(function(cluster) {
+				migrationClusters.push({
+					clusterId : cluster.id,
+					destinationDcId : getDcId(cluster.targetDc)
+				});
+			});
+			MigrationService.createEvent(migrationClusters)
+				.then(function(result) {
+					$('#createEventWithLostConfirm').modal('hide');
+					toastr.success('创建成功');
+					$window.location.href = '/#/migration_event_list';
+				}, function(result) {
+					toastr.error(AppUtil.errorMsg(result), '创建失败');
+				});
+		}
+
+		function getDcId(destinationDc) {
+			var res;
+			$scope.dcs.forEach(function(dc) {
+				if(dc.dcName == destinationDc) {
+					res = dc.id;
+				}
+			});
+			return res;
 		}
 		
 		$scope.sourceDc = '';
@@ -60,17 +101,31 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 		};
 		
 		$scope.isIndeterminate = function() {
-			// TODO [marsqing]
-			return false;
+			var selectedClusters = $scope.clusters.filter(function(cluster){
+				return cluster.selected;
+			});
+			return (selectedClusters.length !== $scope.clusters.length) &&
+					(selectedClusters.length > 0);
 		};
 
 		$scope.isChecked = function() {
-			// TODO [marsqing]
-			return false;
+			var selectedClusters = $scope.clusters.filter(function(cluster){
+				return cluster.selected;
+			});
+			return (selectedClusters.length == $scope.clusters.length) &&
+					(selectedClusters.length !== 0);
 		};
 
 		$scope.toggleAll = function() {
-			// TODO [marsqing]
+			if($scope.isIndeterminate()) {
+				$scope.clusters.forEach(function(cluster){
+				cluster.selected = true;
+				});
+			} else {
+				$scope.clusters.forEach(function(cluster){
+				cluster.selected = !cluster.selected;
+				});
+			}
 		};
 		
 		

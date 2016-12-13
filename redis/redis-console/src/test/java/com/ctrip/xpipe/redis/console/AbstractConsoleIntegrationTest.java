@@ -1,26 +1,73 @@
 package com.ctrip.xpipe.redis.console;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.util.Strings;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.unidal.dal.jdbc.datasource.DataSourceManager;
 import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.FileUtils;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = App.class)
-public class AbstractConsoleIntegrationTest extends AbstractConsoleTest {
+public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest {
+	public static String DATA_SOURCE = "fxxpipe";
 	
 	@Before
-	public void setUp() {
+	public void setUp() throws ComponentLookupException, SQLException {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty("FXXPIPE_HOME", "src/test/resources");
+		
+		setUpTestDataSource();
 	}
 	
 	@After
 	public void tearDown() {
-		ContainerLoader.getDefaultContainer().dispose();
+		ContainerLoader.destroyDefaultContainer();
+	}
+
+	
+	private void setUpTestDataSource() throws ComponentLookupException, SQLException {
+		DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
+		
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		try {
+			conn = dsManager.getDataSource(DATA_SOURCE).getConnection();
+			if(!Strings.isEmpty(prepareDatas())) {
+				stmt = conn.prepareStatement(prepareDatas());
+				stmt.executeUpdate();
+			}
+			
+		} finally {
+			if(null != stmt) {
+				stmt.close();
+			}
+			if (null != conn) {
+				conn.close();
+			}
+		}
+		
+	}
+
+	protected String prepareDatas() {
+		return "";
+	}
+	
+	public String prepareDatasFromFile(String path) throws IOException {
+		InputStream ins = FileUtils.getFileInputStream(path);
+		return IOUtils.toString(ins);
 	}
 }
