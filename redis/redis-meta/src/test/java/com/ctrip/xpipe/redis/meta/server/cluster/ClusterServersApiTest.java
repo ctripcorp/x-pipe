@@ -1,14 +1,16 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
+import java.io.IOException;
 
+import org.junit.After;
 import org.junit.Test;
 import org.springframework.web.client.RestOperations;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
-import com.ctrip.xpipe.redis.core.metaserver.impl.AbstractMetaService;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleService;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
@@ -21,10 +23,33 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
 public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 	
 	private int metaServerCount = 3;
+	
 	private RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 	
 	@Test
-	public void simpleTest(){
+	public void testDoChangePrimaryDc() throws Exception{
+
+		createMetaServers(metaServerCount);
+		
+		sleep(1000);
+		
+		logger.info(remarkableMessage("[testDoChangePrimaryDc][begin send change primary dc message]"));
+		
+		for(TestMetaServer server : getServers()){
+			logger.info(remarkableMessage("[testDoChangePrimaryDc][jq]"));
+			MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(server.getAddress());
+			PrimaryDcChangeMessage message = consoleService.doChangePrimaryDc(getClusterId(), getShardId(), "jq");
+			logger.info("{}", message);
+			
+			logger.info(remarkableMessage("[testDoChangePrimaryDc][oy]"));
+			message = consoleService.doChangePrimaryDc(getClusterId(), getShardId(), "oy");
+			logger.info("{}", message);
+		}
+	}
+	
+	@After
+	public void afterClusterServersApiTest() throws IOException{
+		waitForAnyKeyToExit();
 	}
 	
 	@Test
@@ -36,7 +61,8 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 		ClusterMeta clusterMeta = randomCluster();
 		
 		for(TestMetaServer server : getServers()){
-			String path = getChangeClusterPath(server);
+			
+			String path = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(server.getAddress());;
 			logger.info("[testClusterChanged]{}", path);
 			restTemplate.postForEntity(path, clusterMeta, String.class, clusterMeta.getId());
 			restTemplate.put(path, clusterMeta, String.class, clusterMeta.getId());
@@ -53,7 +79,8 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 		logger.info(remarkableMessage("[testUpdateUpstream][begin send upstream update message]"));
 		
 		for(TestMetaServer server : getServers()){
-			String path = getUpstreamChangePath(server);
+			
+			String path = META_SERVER_SERVICE.UPSTREAM_CHANGE.getRealPath(server.getAddress());
 			logger.info("[testClusterChanged]{}", path);
 			restTemplate.put(path, null, "cluster1", "shard1", "localhost", 7777);
 		}
@@ -67,7 +94,8 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 		logger.info(remarkableMessage("[testUpdateUpstream][begin send upstream update message]"));
 		
 		for(TestMetaServer server : getServers()){
-			String path = getActiveKeeperPath(server);
+			
+			String path = META_SERVER_SERVICE.GET_ACTIVE_KEEPER.getRealPath(server.getAddress());
 			logger.info("[testGetActiveKeeper]{}", path);
 			KeeperMeta keeperMeta = restTemplate.getForObject(path, KeeperMeta.class, "cluster1", "shard1");
 			logger.info("[testGetActiveKeeper]{}", keeperMeta);
@@ -115,19 +143,5 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 		return clusterMeta;
 	}
 
-	private String getChangeClusterPath(TestMetaServer server) {
-
-		return AbstractMetaService.getRealPath(server.getAddress(), META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE);
-	}
-
-	private String getUpstreamChangePath(TestMetaServer server) {
-
-		return AbstractMetaService.getRealPath(server.getAddress(), META_SERVER_SERVICE.PATH.PATH_UPSTREAM_CHANGE);
-	}
-	
-	private String getActiveKeeperPath(TestMetaServer server) {
-		
-		return AbstractMetaService.getRealPath(server.getAddress(), META_SERVER_SERVICE.PATH.GET_ACTIVE_KEEPER);
-	}
 
 }

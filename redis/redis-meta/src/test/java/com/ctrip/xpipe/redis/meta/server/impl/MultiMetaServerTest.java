@@ -26,12 +26,11 @@ public class MultiMetaServerTest extends AbstractMetaServerTest{
 		int serversCount = 10;
 		List<MetaServer> servers = new LinkedList<>();
 		
-		for(int i=0; i < serversCount ; i++){
-			
+		for(int i=0; i < serversCount - 1 ; i++){
 			servers.add(mock(MetaServer.class));
 		}
 		
-		MetaServer metaServer = MultiMetaServer.newProxy(servers);
+		MetaServer metaServer = MultiMetaServer.newProxy(mock(MetaServer.class), servers);
 		
 		final ForwardInfo forwardInfo = new ForwardInfo();
 		

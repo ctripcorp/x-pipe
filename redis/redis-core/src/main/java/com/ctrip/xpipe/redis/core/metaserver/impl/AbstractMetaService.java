@@ -71,16 +71,12 @@ public abstract class AbstractMetaService implements MetaServerService {
 			@Override
 			public KeeperMeta apply(String metaServerAddress) {
 
-				String activeKeeperPath = getRealPath(metaServerAddress, META_SERVER_SERVICE.PATH.GET_ACTIVE_KEEPER);
+				
+				String activeKeeperPath = META_SERVER_SERVICE.GET_ACTIVE_KEEPER.getRealPath(metaServerAddress);
 				KeeperMeta keeperMeta = restTemplate.getForObject(activeKeeperPath, KeeperMeta.class, clusterId, shardId);
 				return keeperMeta;
 			}
 
 		});
-	}
-
-	public static String getRealPath(String metaServerAddress, String specificPath) {
-
-		return String.format("%s/%s/%s", metaServerAddress, META_SERVER_SERVICE.PATH.PATH_PREFIX, specificPath);
 	}
 }

@@ -15,65 +15,60 @@ import com.google.common.util.concurrent.MoreExecutors;
 /**
  * @author wenchao.meng
  *
- * Nov 30, 2016
+ *         Nov 30, 2016
  */
-public class MultiMetaServer implements InvocationHandler{
-	
-	public static MetaServer newProxy(List<MetaServer> metaServers){
-		
-		return (MetaServer) Proxy.newProxyInstance(MultiMetaServer.class.getClassLoader(), new Class[]{MetaServer.class}, new MultiMetaServer(metaServers));
-		
-	}
-	
-	private List<MetaServer> metaServers;
-	private ExecutorService executors;
-	
-	public MultiMetaServer(List<MetaServer> metaServers) {
-		this(metaServers, MoreExecutors.sameThreadExecutor());
+public class MultiMetaServer implements InvocationHandler {
+
+	public static MetaServer newProxy(MetaServer dstServer, List<MetaServer> otherServers) {
+
+		return (MetaServer) Proxy.newProxyInstance(MultiMetaServer.class.getClassLoader(),
+				new Class[] { MetaServer.class }, new MultiMetaServer(dstServer, otherServers));
+
 	}
 
-	public MultiMetaServer(List<MetaServer> metaServers, ExecutorService executors) {
-		this.metaServers = metaServers;
+	private MetaServer dstServer;
+	private List<MetaServer> otherServers;
+	private ExecutorService executors;
+
+	public MultiMetaServer(MetaServer dstServer, List<MetaServer> otherServers) {
+		this(dstServer, otherServers, MoreExecutors.sameThreadExecutor());
+	}
+
+	public MultiMetaServer(MetaServer dstServer, List<MetaServer> otherServers, ExecutorService executors) {
+		this.dstServer = dstServer;
+		this.otherServers = otherServers;
 		this.executors = executors;
 	}
 
 	@Override
 	public Object invoke(Object proxy, final Method method, final Object[] rawArgs) throws Throwable {
-		
-		ForwardInfo rawForwardInfo = null;
-		int forwradIndex = -1;
-		
-		for(int i=0;i<rawArgs.length;i++){
-			if(rawArgs[i] instanceof ForwardInfo){
-				forwradIndex = i;
-				rawForwardInfo = (ForwardInfo) rawArgs[i];
-			}
-			
-		}
-		for(final MetaServer currentMetaServer : metaServers){
+
+		for (final MetaServer metaServer : otherServers) {
 
 			final Object[] args = copy(rawArgs);
-			if(rawForwardInfo != null){
-				args[forwradIndex] = rawForwardInfo.clone();
-			}
-			
+
 			executors.execute(new AbstractExceptionLogTask() {
-				
-				
+
 				@Override
 				protected void doRun() throws Exception {
-					
-					method.invoke(currentMetaServer, args);
+					method.invoke(metaServer, args);
 				}
-
 			});
 		}
-		//if multi return null
-		return null;
+		final Object[] args = copy(rawArgs);
+		return method.invoke(dstServer, args);
 	}
 
 	private Object[] copy(Object[] rawArgs) {
-		
-		return Arrays.copyOf(rawArgs, rawArgs.length);
+
+		Object[] array = Arrays.copyOf(rawArgs, rawArgs.length);
+		for (int i = 0; i < array.length; i++) {
+
+			if (array[i] instanceof ForwardInfo) {
+				ForwardInfo rawForwardInfo = (ForwardInfo) array[i];
+				array[i] = rawForwardInfo.clone();
+			}
+		}
+		return array;
 	}
 }

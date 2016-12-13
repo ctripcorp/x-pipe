@@ -125,6 +125,9 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	private Set<String> backupDcs(String backupDcsDesc) {
 		
 		Set<String> backDcs = new HashSet<>();
+		if(StringUtil.isEmpty(backupDcsDesc)){
+			return backDcs;
+		}
 		for(String dc : backupDcsDesc.split("\\s*,\\s*")){
 			dc = dc.trim();
 			if(!StringUtil.isEmpty(dc)){
@@ -584,7 +587,9 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		newPrimaryDc = newPrimaryDc.trim().toLowerCase();
 		
 		Set<String> allDcs = new HashSet<>();
-		allDcs.add(currentPrimaryDc.trim().toLowerCase());
+		if(currentPrimaryDc != null){
+			allDcs.add(currentPrimaryDc.trim().toLowerCase());
+		}
 		allDcs.addAll(backupDcs(clusterMeta.getBackupDcs()));
 		
 		clusterMeta.setActiveDc(newPrimaryDc);

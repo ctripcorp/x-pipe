@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcC
 import com.ctrip.xpipe.redis.core.protocal.cmd.transaction.TransactionalSlaveOfCommand;
 import com.ctrip.xpipe.redis.meta.server.dcchange.NewMasterChooser;
 import com.ctrip.xpipe.redis.meta.server.dcchange.SentinelManager;
+import com.ctrip.xpipe.redis.meta.server.dcchange.exception.ChooseNewMasterFailException;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisMasterFailException;
 import com.ctrip.xpipe.redis.meta.server.job.TransactionalSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -45,6 +46,7 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 		
 		doChangeMetaCache(clusterId, shardId, newPrimaryDc);
 		
+		executionLog.info(String.format("[chooseNewMaster][begin]"));
 		Pair<String, Integer> newMaster = chooseNewMaster(clusterId, shardId);
 		executionLog.info(String.format("[chooseNewMaster]%s:%d", newMaster.getKey(), newMaster.getValue()));
 		
@@ -110,6 +112,9 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 
 		List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterId, shardId);
 		RedisMeta newMaster = newMasterChooser.choose(redises);
+		if(newMaster == null){
+			throw new ChooseNewMasterFailException(redises);
+		}
 		return new Pair<>(newMaster.getIp(), newMaster.getPort());
 	}
 

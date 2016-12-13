@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
 import java.util.LinkedList;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -75,21 +76,26 @@ public class AbstractDispatcherMetaServerController extends AbstractController{
 		}
 
 		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MULTICASTING){
-			logger.info("[clusterAdded][multicast message][do now]");
+			logger.info("[multicast message][do now]");
 			return currentMetaServer;
 		}
 		
 		META_SERVER_SERVICE service = META_SERVER_SERVICE.fromPath(uri);
+		Integer serverId = slotManager.getServerIdByKey(clusterId);
+		if(serverId == null){
+			throw new IllegalStateException("clusterId:" + clusterId + ", unfound server");
+		}
 		
 		if(service.getForwardType() == ForwardType.MULTICASTING){
+			
 			logger.info("[getMetaServer][multi casting]{}, {}, {}", clusterId, forwardInfo, uri);
-			return MultiMetaServer.newProxy(new LinkedList<>(servers.allClusterServers()));
+			Set<MetaServer> allServers =  servers.allClusterServers();
+			MetaServer current = servers.getClusterServer(serverId);
+			allServers.remove(current);
+			
+			return MultiMetaServer.newProxy(current, new LinkedList<>(allServers));
 		}else if(service.getForwardType() == ForwardType.FORWARD){
 			
-			Integer serverId = slotManager.getServerIdByKey(clusterId);
-			if(serverId == null){
-				throw new IllegalStateException("clusterId:" + clusterId + ", unfound server");
-			}
 			return servers.getClusterServer(serverId);
 		}else{
 			throw new IllegalStateException("service type can not be:" + service.getForwardType());

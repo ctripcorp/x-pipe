@@ -41,6 +41,10 @@ public class BecomeBackupAction extends AbstractChangePrimaryDcAction{
 		changeSentinel(clusterId, shardId, null);
 
 		Pair<String, Integer> newMaster = chooseNewMaster(clusterId, shardId);
+		if(newMaster == null){
+			executionLog.error("[doChangePrimaryDc][new master null]");
+			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
+		}
 		executionLog.info(String.format("[chooseNewMaster]%s:%d", newMaster.getKey(), newMaster.getValue()));
 		
 		makeKeepersOk(clusterId, shardId, newMaster);
@@ -55,6 +59,7 @@ public class BecomeBackupAction extends AbstractChangePrimaryDcAction{
 
 	@Override
 	protected Pair<String, Integer> chooseNewMaster(String clusterId, String shardId) {
+		
 		BackupDcKeeperMasterChooserAlgorithm algorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterId, shardId, dcMetaCache, currentMetaManager, multiDcService);
 		return algorithm.choose();
 	}
