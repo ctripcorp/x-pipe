@@ -37,6 +37,26 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	}
 	
 	@Test
+	public void testChangePrimaryDc(){
+
+		String primaryDc = metaManager.getActiveDc(clusterId, shardId);
+		Set<String> backupDcs = metaManager.getBackupDcs(clusterId, shardId);
+
+		metaManager.primaryDcChanged(dc, clusterId, shardId, primaryDc);
+
+		Assert.assertEquals(primaryDc, metaManager.getActiveDc(clusterId, shardId));
+		
+		String newPrimary = backupDcs.iterator().next();
+
+		metaManager.primaryDcChanged(dc, clusterId, shardId, newPrimary);
+		
+		Assert.assertEquals(newPrimary, metaManager.getActiveDc(clusterId, shardId));
+		
+		Assert.assertTrue(metaManager.getBackupDcs(clusterId, shardId).contains(primaryDc));
+		
+	}
+	
+	@Test
 	public void testGetSentinel(){
 		
 		SentinelMeta sentinelMeta = metaManager.getSentinel(dc, clusterId, shardId);

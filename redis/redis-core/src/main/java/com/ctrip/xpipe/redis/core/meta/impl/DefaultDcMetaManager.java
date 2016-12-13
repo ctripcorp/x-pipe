@@ -218,4 +218,10 @@ public class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 
+	@Override
+	public void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc) {
+		metaManager.primaryDcChanged(currentDc, clusterId, shardId, newPrimaryDc);
+	}
+
+
 }

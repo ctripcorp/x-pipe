@@ -18,8 +18,8 @@ public class DefaultDcKeeperMasterChooserTest extends AbstractDcKeeperMasterChoo
 	@Before
 	public void beforeDefaultDcKeeperMasterChooserTest() throws Exception{
 		
-		defaultDcKeeperMasterChooser = new DefaultDcKeeperMasterChooser(clusterId, shardId, metaServerConfig, 
-				metaServerMultiDcServiceManager, dcMetaCache, currentMetaManager, scheduled, 
+		defaultDcKeeperMasterChooser = new DefaultDcKeeperMasterChooser(clusterId, shardId,
+				multiDcService, dcMetaCache, currentMetaManager, scheduled, 
 				getXpipeNettyClientKeyedObjectPool());
 	}
 	

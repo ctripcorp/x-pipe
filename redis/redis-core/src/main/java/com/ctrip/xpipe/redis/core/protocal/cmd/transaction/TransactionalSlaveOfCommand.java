@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.transaction;
 
+import java.io.IOException;
+
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.CommandExecutionException;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigRewrite;
@@ -57,6 +60,13 @@ public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 
 	private void failXslaveof(Throwable e) {
 		
+		Throwable rootCause = ExceptionUtils.getRootCause(e);
+		if((rootCause instanceof IOException)){
+			logger.info("[failXslaveof][do not try slaveof]");
+			fail(e);
+			return;
+		}
+		
 		logger.error("[doExecute][xlaveof fail, try slaveof]" + ip + ":"+ port, e);
 		
 		TransactionalCommand slaveofTransaction = new TransactionalCommand(getClientPool(), new SlaveOfCommand(null, ip, port), new ConfigRewrite(null));
@@ -91,6 +101,6 @@ public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 	
 	@Override
 	public String toString() {
-		return String.format("TransactionalSlaveOfCommand:%s:%d", ip, port);
+		return String.format("TransactionalSlaveOfCommand: %s:%d", ip, port);
 	}
 }

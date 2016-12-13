@@ -72,4 +72,27 @@ public class StringUtil {
 		return result.toArray(new String[0]);		
 	}
 	
+	public static boolean trimEquals(String str1, String str2, boolean ignoreCase){
+
+		if(str1 == null){
+			return str2 == null;
+		}
+		
+		if(str2 == null){
+			return false;
+		}
+
+		str1 = str1.trim();
+		str2 = str2.trim();
+		
+		if(ignoreCase){
+			return str1.equalsIgnoreCase(str2);
+		}
+		return str1.equalsIgnoreCase(str2);
+	}
+
+	public static boolean trimEquals(String str1, String str2){
+		return trimEquals(str1, str2, false);
+	}
+
 }

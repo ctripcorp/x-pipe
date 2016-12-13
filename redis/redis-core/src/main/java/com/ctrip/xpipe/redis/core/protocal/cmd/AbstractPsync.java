@@ -243,6 +243,11 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	}
 
 	@Override
+	public int getCommandTimeoutMilli() {
+		return 0;
+	}
+
+	@Override
 	protected void doReset() {
 		throw new UnsupportedOperationException("not supported");
 	}

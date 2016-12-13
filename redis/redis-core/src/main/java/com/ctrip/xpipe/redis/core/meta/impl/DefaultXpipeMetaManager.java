@@ -29,6 +29,7 @@ import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.base.Joiner;
 
 /**
  * @author wenchao.meng
@@ -108,14 +109,8 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 				continue;
 			}
 			
-			Set<String> backDcs = new HashSet<>();
-			for(String dc : clusterMeta.getBackupDcs().split("\\s*,\\s*")){
-				dc = dc.trim();
-				if(!StringUtil.isEmpty(dc)){
-					backDcs.add(dc.toLowerCase());
-				}
-			}
 			
+			Set<String> backDcs = backupDcs(clusterMeta.getBackupDcs());
 			backDcs.remove(clusterMeta.getActiveDc().toLowerCase().trim());
 			return backDcs;
 		}
@@ -127,6 +122,18 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	
+	private Set<String> backupDcs(String backupDcsDesc) {
+		
+		Set<String> backDcs = new HashSet<>();
+		for(String dc : backupDcsDesc.split("\\s*,\\s*")){
+			dc = dc.trim();
+			if(!StringUtil.isEmpty(dc)){
+				backDcs.add(dc.toLowerCase());
+			}
+		}
+		return backDcs;
+	}
+
 	@Override
 	public Set<String> getDcClusters(String dc) {
 		return new HashSet<>(xpipeMeta.getDcs().get(dc).getClusters().keySet());
@@ -550,5 +557,44 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			throw new RedisRuntimeException(String.format("sentinelMeta not found:%s %s %s %d", dc, clusterId, shardId, sentinelId));
 		}
 		return MetaClone.clone(sentinelMeta);
+	}
+
+	@Override
+	public void primaryDcChanged(String dc, String clusterId, String shardId, String newPrimaryDc) {
+		
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			changePrimaryDc(dcMeta, clusterId, shardId, newPrimaryDc);
+		}
+	}
+
+	private void changePrimaryDc(DcMeta dcMeta, String clusterId, String shardId, String newPrimaryDc) {
+		
+		ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+		if(clusterMeta == null){
+			throw new RedisRuntimeException(String.format("clusterMeta not found:%s %s %s", dcMeta.getId(), clusterId, shardId));
+		}
+		
+		String currentPrimaryDc = clusterMeta.getActiveDc();
+		
+		if(StringUtil.trimEquals(newPrimaryDc, currentPrimaryDc, true)){
+			logger.info("[changePrimaryDc][equal]{}, {}, {}", clusterId, shardId, newPrimaryDc);
+			return;
+		}
+		
+		newPrimaryDc = newPrimaryDc.trim().toLowerCase();
+		
+		Set<String> allDcs = new HashSet<>();
+		allDcs.add(currentPrimaryDc.trim().toLowerCase());
+		allDcs.addAll(backupDcs(clusterMeta.getBackupDcs()));
+		
+		clusterMeta.setActiveDc(newPrimaryDc);
+		
+		allDcs.remove(newPrimaryDc);
+		clusterMeta.setBackupDcs(Joiner.on(",").join(allDcs));
+	}
+	
+	@Override
+	public String toString() {
+		return xpipeMeta.toString();
 	}
 }

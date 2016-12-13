@@ -35,14 +35,16 @@ public interface DcMetaCache extends Observable {
 
 	List<RedisMeta> getShardRedises(String clusterId, String shardId);
 
-	
 	SentinelMeta getSentinel(String clusterId, String shardId);
 
 	String getSentinelMonitorName(String clusterId, String shardId);
+	
 	
 	void clusterAdded(ClusterMeta clusterMeta);
 
 	void clusterModified(ClusterMeta clusterMeta);
 
 	void clusterDeleted(String clusterId);
+	
+	void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc);
 }

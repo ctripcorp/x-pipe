@@ -1,15 +1,17 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import static org.mockito.Mockito.*;
+import org.mockito.Mock;
+import org.unidal.tuple.Pair;
 
-import java.util.HashMap;
-import java.util.Map;
+import static org.mockito.Mockito.*;
 
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.meta.DcInfo;
+import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
+
 
 /**
  * @author wenchao.meng
@@ -20,21 +22,18 @@ public class BackupDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperMa
 
 	private BackupDcKeeperMasterChooserAlgorithm backupAlgorithm;
 	
+	@Mock
+	protected MultiDcService multiDcService;
 	
 	@Before
 	public void beforeBackupDcKeeperMasterChooserTest() {
 
 		backupAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterId, shardId, 
-				dcMetaCache, currentMetaManager, metaServerConfig, metaServerMultiDcServiceManager); 
+				dcMetaCache, currentMetaManager, multiDcService); 
 		
 		when(dcMetaCache.getPrimaryDc(clusterId, shardId)).thenReturn(primaryDc);
 		when(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)).thenReturn(false);
-		when(metaServerMultiDcServiceManager.getOrCreate(anyString())).thenReturn(metaServerMultiDcService);
-	
 		
-		Map<String, DcInfo> dcInfos = new HashMap<>();
-		dcInfos.put(primaryDc, new DcInfo("http://localhost"));
-		when(metaServerConfig.getDcInofs()).thenReturn(dcInfos);
 	}
 
 	@Test
@@ -42,18 +41,18 @@ public class BackupDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperMa
 
 		backupAlgorithm.choose();
 		
-		verify(metaServerMultiDcService, atLeast(1)).getActiveKeeper(clusterId, shardId);
+		verify(multiDcService, atLeast(1)).getActiveKeeper(primaryDc, clusterId, shardId);
 		
 
 		logger.info("[testGetUpstream][getActiveKeeper give a result]");
 		KeeperMeta keeperMeta = new KeeperMeta();
 		keeperMeta.setIp("localhost");
 		keeperMeta.setPort(randomPort());
-		when(metaServerMultiDcService.getActiveKeeper(clusterId, shardId)).thenReturn(keeperMeta);
+		when(multiDcService.getActiveKeeper(primaryDc, clusterId, shardId)).thenReturn(keeperMeta);
 		
-		backupAlgorithm.choose();
+		Assert.assertEquals(new Pair<>(keeperMeta.getIp(), keeperMeta.getPort()), backupAlgorithm.choose());
 				
-		verify(metaServerMultiDcService, atLeast(1)).getActiveKeeper(clusterId, shardId);
+		verify(multiDcService, atLeast(1)).getActiveKeeper(primaryDc, clusterId, shardId);
 	}
 
 	@Test

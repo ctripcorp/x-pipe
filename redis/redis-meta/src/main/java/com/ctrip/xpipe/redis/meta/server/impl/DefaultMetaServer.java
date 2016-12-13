@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcC
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.RedisReadonly;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.MinSlavesRedisReadOnly;
@@ -42,43 +43,46 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	private MetaServerConfig config;
 
 	@Autowired
-	private CurrentMetaManager currentMetaServerMeta;
+	private CurrentMetaManager currentMetaManager;
 
 	@Autowired
 	private DcMetaCache dcMetaCache;
+	
+	@Autowired
+	private ChangePrimaryDcAction  changePrimaryDcAction; 
 
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 
-		LifecycleHelper.initializeIfPossible(currentMetaServerMeta);
+		LifecycleHelper.initializeIfPossible(currentMetaManager);
 	}
 
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
 
-		LifecycleHelper.startIfPossible(currentMetaServerMeta);
+		LifecycleHelper.startIfPossible(currentMetaManager);
 
 	}
 
 	@Override
 	protected void doStop() throws Exception {
 
-		LifecycleHelper.stopIfPossible(currentMetaServerMeta);
+		LifecycleHelper.stopIfPossible(currentMetaManager);
 		super.doStop();
 	}
 
 	@Override
 	protected void doDispose() throws Exception {
 
-		LifecycleHelper.disposeIfPossible(currentMetaServerMeta);
+		LifecycleHelper.disposeIfPossible(currentMetaManager);
 		super.doDispose();
 	}
 
 	@Override
 	public RedisMeta getRedisMaster(String clusterId, String shardId) {
-		return currentMetaServerMeta.getRedisMaster(clusterId, shardId);
+		return currentMetaManager.getRedisMaster(clusterId, shardId);
 	}
 
 	public void setConfig(MetaServerConfig config) {
@@ -90,39 +94,39 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	public KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo) {
 
 		logger.info("[getActiveKeeper]{}, {}", clusterId, shardId);
-		return currentMetaServerMeta.getKeeperActive(clusterId, shardId);
+		return currentMetaManager.getKeeperActive(clusterId, shardId);
 	}
 
 	@Override
 	protected void doSlotAdd(int slotId) {
 
 		super.doSlotAdd(slotId);
-		currentMetaServerMeta.addSlot(slotId);
+		currentMetaManager.addSlot(slotId);
 	}
 
 	@Override
 	protected void doSlotDelete(int slotId) {
 		super.doSlotDelete(slotId);
 
-		currentMetaServerMeta.deleteSlot(slotId);
+		currentMetaManager.deleteSlot(slotId);
 		;
 	}
 
 	@Override
 	protected void doSlotExport(int slotId) {
 		super.doSlotExport(slotId);
-		currentMetaServerMeta.exportSlot(slotId);
+		currentMetaManager.exportSlot(slotId);
 	}
 
 	@Override
 	protected void doSlotImport(int slotId) {
 		super.doSlotImport(slotId);
-		currentMetaServerMeta.importSlot(slotId);
+		currentMetaManager.importSlot(slotId);
 	}
 
 	@Override
 	public String getCurrentMeta() {
-		return currentMetaServerMeta.getCurrentMetaDesc();
+		return currentMetaManager.getCurrentMetaDesc();
 	}
 
 	@Override
@@ -152,7 +156,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
 
 			logger.info("[updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
-			currentMetaServerMeta.setKeeperMaster(clusterId, shardId, ip, port);
+			currentMetaManager.setKeeperMaster(clusterId, shardId, ip, port);
 		} else {
 			logger.warn("[updateUpstream][current is primary dc, do not update]{},{},{},{}", clusterId, shardId, ip,
 					port);
@@ -193,7 +197,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 			logger.warn("[makeMasterReadOnly]current dc not primary:{}, {}", dcMetaCache.getCurrentDc(), dcMetaCache.getPrimaryDc(clusterId, shardId));
 			return ;
 		}
-		Pair<String, Integer>  keeperMaster = currentMetaServerMeta.getKeeperMaster(clusterId, shardId);
+		Pair<String, Integer>  keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
 		
 		RedisReadonly redisReadOnly = new  MinSlavesRedisReadOnly(keeperMaster.getKey(), keeperMaster.getValue(), keyedObjectPool);
 		try {
@@ -212,7 +216,10 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Override
 	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc,
 			ForwardInfo forwardInfo) {
+
+		logger.info("[doChangePrimaryDc]{}, {}, {}", clusterId, shardId, newPrimaryDc);
+		dcMetaCache.primaryDcChanged(clusterId, shardId, newPrimaryDc);
 		
-		return null;
+		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc);
 	}
 }

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-
 import java.io.IOException;
 
 import org.apache.commons.exec.ExecuteException;
@@ -14,7 +13,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
-
+import com.google.common.collect.Lists;
 
 /**
  * @author wenchao.meng
@@ -117,7 +116,7 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 			logger.info("[testReFullSync]{},{}", lastRdbUpdateCount, currentRdbUpdateCount);
 			Assert.assertEquals(lastRdbUpdateCount + 1, currentRdbUpdateCount);
 			lastRdbUpdateCount = currentRdbUpdateCount;
-			sendMesssageToMasterAndTest(100, slave1);
+			sendMesssageToMasterAndTest(100, getRedisMaster(), Lists.newArrayList(slave1));
 		}
 		
 	}

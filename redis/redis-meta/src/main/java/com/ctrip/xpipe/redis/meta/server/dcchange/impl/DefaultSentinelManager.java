@@ -6,6 +6,8 @@ import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -27,14 +29,22 @@ import com.ctrip.xpipe.utils.StringUtil;
  *
  * Dec 9, 2016
  */
+@Component
 public class DefaultSentinelManager implements SentinelManager{
 	
 	private static int DEFAULT_SENTINEL_QUORUM = Integer.parseInt(System.getProperty("DEFAULT_SENTINEL_QUORUM", "3"));
 	
 	private static Logger logger = LoggerFactory.getLogger(DefaultSentinelManager.class);
 	
+	@Autowired
 	private DcMetaCache dcMetaCache;
+
+	@Autowired
 	private XpipeNettyClientKeyedObjectPool keyedClientPool;
+	
+	public DefaultSentinelManager(){
+		
+	}
 	
 	public DefaultSentinelManager(DcMetaCache dcMetaCache, XpipeNettyClientKeyedObjectPool keyedClientPool) {
 		this.dcMetaCache = dcMetaCache;

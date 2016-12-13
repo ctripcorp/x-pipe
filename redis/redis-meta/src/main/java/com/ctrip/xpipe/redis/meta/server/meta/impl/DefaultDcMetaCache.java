@@ -229,4 +229,9 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		return dcMetaManager.get().getSentinelMonitorName(clusterId, shardId);
 	}
 
+	@Override
+	public void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc) {
+		dcMetaManager.get().primaryDcChanged(clusterId, shardId, newPrimaryDc);
+	}
+
 }

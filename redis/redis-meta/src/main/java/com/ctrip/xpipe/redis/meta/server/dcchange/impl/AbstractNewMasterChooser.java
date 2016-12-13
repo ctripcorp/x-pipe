@@ -31,24 +31,31 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser{
 	public static final int CHECK_NEW_MASTER_TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("CHECK_NEW_MASTER_TIMEOUT_SECONDS", "2")); 
 	
 	protected XpipeNettyClientKeyedObjectPool keyedObjectPool;
+	
+	protected RedisMeta newMaster = null;
 
 	public AbstractNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool) {
 		this.keyedObjectPool = keyedObjectPool;
 	}
 
+	
+	public RedisMeta getLastChoosenMaster(){
+		return newMaster;
+	}
 
 	@Override
 	public RedisMeta choose(List<RedisMeta> redises) {
 		
 		List<RedisMeta> masters = getMasters(redises);
 		if(masters.size() == 0){
-			return doChoose(redises);
+			newMaster = doChoose(redises);
 		}else if(masters.size() == 1){
 			logger.info("[choose][already has master]{}", masters);
-			return masters.get(0);
+			newMaster = masters.get(0);
 		}else{
 			throw new IllegalStateException("multi master there, can not choose a new master " + masters);
 		}
+		return newMaster;
 	}
 
 	protected List<RedisMeta> getMasters(List<RedisMeta> allRedises) {

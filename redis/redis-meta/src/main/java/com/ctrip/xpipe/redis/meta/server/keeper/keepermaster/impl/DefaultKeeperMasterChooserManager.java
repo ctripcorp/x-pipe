@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -14,12 +15,11 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
-import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperMasterElector;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.KeeperMasterChooser;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
@@ -39,10 +39,7 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 	protected DcMetaCache dcMetaCache;
 	
 	@Autowired
-	protected MetaServerConfig metaServerConfig;
-	
-	@Autowired
-	private MetaServerMultiDcServiceManager metaServerMultiDcServiceManager;
+	private MultiDcService multiDcService;
 
 	protected ScheduledExecutorService scheduled;
 
@@ -86,8 +83,7 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 		
 		String shardId = shardMeta.getId();
 		
-		KeeperMasterChooser keeperMasterChooser = new DefaultDcKeeperMasterChooser(clusterId, shardId, 
-				metaServerConfig, metaServerMultiDcServiceManager, 
+		KeeperMasterChooser keeperMasterChooser = new DefaultDcKeeperMasterChooser(clusterId, shardId, multiDcService, 
 				dcMetaCache, currentMetaManager, scheduled, clientPool);
 		
 		

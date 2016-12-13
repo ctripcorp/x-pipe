@@ -101,7 +101,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		return jedis;
 	}
 
-	protected void assertRedisEquals(RedisMeta redisMaster, RedisMeta[] slaves) {
+	protected void assertRedisEquals(RedisMeta redisMaster, List<RedisMeta> slaves) {
 		
 		Map<String, String> values = new HashMap<>(); 
 		Jedis jedis = createJedis(redisMaster);

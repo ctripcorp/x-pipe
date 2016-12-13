@@ -37,6 +37,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaService;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
+import com.google.common.collect.Lists;
 
 /**
  * @author wenchao.meng
@@ -248,33 +249,41 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	}
 
 	protected abstract String getRedisTemplate();
-	
-	protected void sendMesssageToMasterAndTest(int messageCount, RedisMeta ... slaves){
 
-		sendMessageToMaster(messageCount);
+	protected void sendMesssageToMasterAndTest(RedisMeta redisMaster, List<RedisMeta> slaves){
+		sendMesssageToMasterAndTest(defaultTestMessageCount, redisMaster, slaves);
+	}
+
+	protected void sendMesssageToMasterAndTest(int messageCount, RedisMeta redisMaster, List<RedisMeta> slaves){
+
+		sendMessageToMaster(redisMaster, messageCount);
 		sleep(6000);
-		assertRedisEquals(getRedisMaster(), slaves);
+		assertRedisEquals(redisMaster, slaves);
 	}
 
 	protected void sendMessageToMaster(){
-		sendMessageToMaster(defaultTestMessageCount);
+		sendMessageToMaster(getRedisMaster(), defaultTestMessageCount);
 	}
 
-	protected void sendMessageToMaster(int messageCount){
-		sendRandomMessage(getRedisMaster(), messageCount);
+	protected void sendMessageToMaster(RedisMeta redisMaster){
+		sendMessageToMaster(redisMaster, defaultTestMessageCount);
 	}
 
-	protected void sendMesssageToMasterAndTest(RedisMeta ... slaves){
-		sendMesssageToMasterAndTest(defaultTestMessageCount, slaves);
+	protected void sendMessageToMaster(RedisMeta redisMaster, int messageCount){
+		sendRandomMessage(redisMaster, messageCount);
+	}
+
+	protected void sendMesssageToMasterAndTest(List<RedisMeta> slaves){
+		
+		sendMesssageToMasterAndTest(defaultTestMessageCount, getRedisMaster(), Lists.newArrayList(slaves));
 	}
 
 	protected void sendMessageToMasterAndTestSlaveRedis(int messageCount) {
-		sendMesssageToMasterAndTest(messageCount, getRedisSlaves().toArray(new RedisMeta[0]));
+		sendMesssageToMasterAndTest(messageCount, getRedisMaster(), getRedisSlaves());
 	}
-
 	
 	protected void sendMessageToMasterAndTestSlaveRedis() {
-		sendMesssageToMasterAndTest(defaultTestMessageCount, getRedisSlaves().toArray(new RedisMeta[0]));
+		sendMesssageToMasterAndTest(defaultTestMessageCount, getRedisMaster(), getRedisSlaves());
 	}
 
 	protected abstract List<RedisMeta> getRedisSlaves();
@@ -339,7 +348,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	}
 	
 	protected void assertRedisEquals() {
-		assertRedisEquals(getRedisMaster(), getRedisSlaves().toArray(new RedisMeta[0]));
+		assertRedisEquals(getRedisMaster(), getRedisSlaves());
 	}
 
 	@After
