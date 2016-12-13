@@ -56,12 +56,12 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
         	controller: 'ActiveDcMigrationEventListCtl'
         })
         .state('migration_event_details', {
-        	url: '/migration_event_details',
+        	url: '/migration_event_details/:eventId',
         	templateUrl: 'views/index/migration_details.html',
         	controller: 'ActiveDcMigrationEventDetailsCtl'
         })
         .state('migration_event_details.details', {
-        	url: '/details',
+        	url: '/details?clustername&shardName',
         	templateUrl: 'views/index/migration_details_content.html',
         	controller : function($scope) {
         		$scope.dcs = [{dcName : 'jq'}, {dcName : 'oy'}, {dcName : 'fq'}];

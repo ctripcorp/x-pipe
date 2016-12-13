@@ -12,6 +12,7 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblEntity;
@@ -93,6 +94,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 				return migrationShardTblDao.findByMigrationClusterId(migrationClusterId, MigrationShardTblEntity.READSET_FULL);
 			}
 		});
+	}
+	
+	@Override
+	public List<MigrationClusterModel> getMigrationClusterModel(long eventId) {
+		return migrationEventDao.getMigrationCluster(eventId);
 	}
 	
 	@Override

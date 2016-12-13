@@ -30,6 +30,7 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblEntity;
@@ -37,8 +38,10 @@ import com.ctrip.xpipe.redis.console.model.MigrationEventModel;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTblDao;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTblEntity;
+import com.ctrip.xpipe.redis.console.model.MigrationShardModel;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTblDao;
+import com.ctrip.xpipe.redis.console.model.MigrationShardTblEntity;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
@@ -84,6 +87,38 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}
+	}
+	
+	public List<MigrationClusterModel> getMigrationCluster(final long eventId) {
+		List<MigrationClusterModel> res = new LinkedList<>();
+		
+		List<MigrationClusterTbl> migrationClusterTbls = queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
+			@Override
+			public List<MigrationClusterTbl> doQuery() throws DalException {
+				return migrationClusterDao.findByEventId(eventId, MigrationClusterTblEntity.READSET_FULL_ALL);
+			}
+		});
+		for(MigrationClusterTbl migrationClusterTbl : migrationClusterTbls) {
+			MigrationClusterModel model = new MigrationClusterModel();
+			model.setMigrationCluster(migrationClusterTbl);
+			
+			List<MigrationShardTbl> migrationShardTbls = queryHandler.handleQuery(new DalQuery<List<MigrationShardTbl>>() {
+				@Override
+				public List<MigrationShardTbl> doQuery() throws DalException {
+					return migrationShardDao.findByMigrationClusterId(migrationClusterTbl.getId(), MigrationShardTblEntity.READSET_FULL_ALL);
+				}
+			});
+			for(MigrationShardTbl migrationShardTbl : migrationShardTbls) {
+				MigrationShardModel shardModel = new MigrationShardModel();
+				shardModel.setMigrationShard(migrationShardTbl);
+				
+				model.addMigrationShard(shardModel);
+			}
+			
+			res.add(model);
+		}
+		
+		return res;
 	}
 	
 	public MigrationEvent buildMigrationEvent(final long eventId) {

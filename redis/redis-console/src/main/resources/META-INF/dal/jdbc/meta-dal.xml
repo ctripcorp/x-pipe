@@ -766,8 +766,18 @@
 	<entity name="migration-cluster-tbl" table="migration_cluster_tbl" alias="mct">
 		<var name="event-id" value-type="long"/>
 	
+		<relation name="cluster" entity-name="cluster-tbl" entity-alias="ct"/>
+		<relation name="dc" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="migration-event" entity-name="migration-event-tbl" entity-alias="met"/>
 		<relation name="migration-shards" entity-name="migration-shard-tbl" entity-alias="mst" multiple="true"/>
+		
+		<readsets>
+			<readset name="FULL_ALL">
+				<readset-ref name="FULL"/>
+				<readset-ref name="FULL" relation-name="cluster"/>
+				<readset-ref name="FULL" relation-name="dc"/>
+			</readset>
+		</readsets>
 		
 		<query-defs>
 			<query name="find-by-event-id" type="SELECT" multiple="true">
@@ -775,9 +785,13 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>,<TABLE name="migration-event"/>
+					FROM <TABLE/>,<TABLE name='migration-event'/>,<TABLE name='cluster'/>, <TABLE name='dc'/>
 					WHERE <FIELD name='migration-event-id'/> = ${event-id}
 					AND met.id = ${event-id}
+					AND ct.id = <FIELD name='cluster-id'/>
+					AND <FIELD name='destination-dc-id'/> = dt.id
+					AND dt.deleted = 0
+					AND ct.deleted = 0
 					AND met.deleted = 0
 					AND <FIELD name='deleted'/> = 0
 					]]>
@@ -824,15 +838,25 @@
 	</entity>
 	
 	<entity name="migration-shard-tbl" table="migration_shard_tbl" alias="mst">
+		<relation name="shard" entity-name="shard-tbl" entity-alias="st2"/>
+	
+		<readsets>
+			<readset name="FULL_ALL">
+				<readset-ref name="FULL"/>
+				<readset-ref name="FULL" relation-name="shard"/>
+			</readset>
+		</readsets>
+	
 		<query-defs>
-		
 			<query name="find-by-migration-cluster-id" type="SELECT" multiple="true">
 				<param name="migration-cluster-id"/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>
+					FROM <TABLE/>, <TABLE name='shard'/>
 					WHERE <FIELD name='migration-cluster-id'/> = ${migration-cluster-id}
+					AND st2.id = <FIELD name='shard-id'/>
+					AND st2.deleted = 0
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>

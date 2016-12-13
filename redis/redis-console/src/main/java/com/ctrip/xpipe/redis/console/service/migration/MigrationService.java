@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.migration;
 
 import java.util.List;
 
+import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationEventModel;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
@@ -13,6 +14,8 @@ public interface MigrationService {
 	MigrationClusterTbl findMigrationCluster(long eventId, long clusterId);
 	List<MigrationClusterTbl> findAllMigrationCluster(long clusterId);
 	List<MigrationShardTbl> findMigrationShards(long migrationClusterId);
+	
+	List<MigrationClusterModel> getMigrationClusterModel(long eventId);
 	
 	void updateMigrationShard(MigrationShardTbl shard);
 	void updateMigrationCluster(MigrationClusterTbl cluster);

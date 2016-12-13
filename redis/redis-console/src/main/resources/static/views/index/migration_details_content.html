@@ -2,50 +2,35 @@
 	<h3 class="header smaller lighter blue">
 		<div class="row">
 			<div class="col-md-1"></div>
-			<div class="col-md-3">
+			<div class="col-md-2">
 				<span>Migration Event:1</span>
 			</div>
-			<div class="col-md-3 text-center">
+			<div class="col-md-2 text-center">
 				<span>Cluster : Cluster1</span>
 			</div>
-			<div class="col-md-3 text-right">
+			<div class="col-md-2 text-center">
 				<span>Target : OY</span>
+			</div>
+			<div class="col-md-2 text-center">
+				<span>Status : Initiated</span>
 			</div>
 		</div>
 	</h3>
 	
 	<div>
-		<div class="row">
-			<div class="col-md-8">
-				<ul class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
-            		<li ng-repeat="dc in dcs" ng-class="{'active': currentDcName == dc.dcName}" ng-click="switchDc(dc)">
-                	<a data-toggle="tab">
-                    	{{dc.dcName}}
-                	</a>
-            		</li>
-        		</ul>
-			</div>
-			<div class="col-md-3">
-				<div class="progress">
-  					<div class="progress-bar" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100" style="width:70%">
-    					70%
-  					</div>
-				</div>
-			</div>
-			<div class="col-md-1"></div>
-		</div>
 		<div class="form-group" style="padding:15px 15px 0 15px">
-  			<textarea class="form-control" readonly rows="15" style="background-color:black;color:yellow;resize:none;">this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;
-  			this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;
+  			<textarea class="form-control" readonly rows="15" style="background-color:black;color:yellow;resize:none;">this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;this is a log&#13;&#10;this is another log&#13;&#10;
   			</textarea>
 		</div>
 		
 		<div class="row">
 			<div class="col-md-5"></div>
 			<div class="col-md-7">
-				<a type="button" class="btn btn-primary radius-border-fat" href=""><strong>重试</strong></a>
-					&nbsp&nbsp 
-					<a type="button" class="btn btn-danger radius-border-fat" href="/#/migration_event_list"><strong>取消</strong></a>
+				<a type="button" class="btn btn-primary radius-border-fat" href=""><strong>继续</strong></a>
+				&nbsp&nbsp 
+				<a type="button" class="btn btn-warnning radius-border-fat" href=""><strong>重试</strong></a>
+				&nbsp&nbsp 
+				<a type="button" class="btn btn-danger radius-border-fat" href="/#/migration_event_list"><strong>取消</strong></a>
 			</div>
 		</div>
 	</div>
