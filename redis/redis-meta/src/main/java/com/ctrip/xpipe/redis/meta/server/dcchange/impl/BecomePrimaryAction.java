@@ -15,7 +15,6 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.protocal.cmd.transaction.TransactionalSlaveOfCommand;
 import com.ctrip.xpipe.redis.meta.server.dcchange.NewMasterChooser;
@@ -58,7 +57,7 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 		
 		changeSentinel(clusterId, shardId, newMaster);
 		
-		return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.SUCCESS, executionLog.getLog());
+		return new PrimaryDcChangeMessage(executionLog.getLog(), newMaster.getKey(), newMaster.getValue());
 	}
 
 

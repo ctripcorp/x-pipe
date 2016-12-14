@@ -68,7 +68,6 @@ public interface MetaServerConsoleService extends MetaServerService{
 		public PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT errorType) {
 			super(errorType, null);
 		}
-
 	}
 	
 	public static enum PRIMARY_DC_CHANGE_RESULT{
@@ -79,15 +78,41 @@ public interface MetaServerConsoleService extends MetaServerService{
 	
 	public static class PrimaryDcChangeMessage extends ErrorMessage<PRIMARY_DC_CHANGE_RESULT>{
 		
+		private String newMasterIp;
+		
+		private int newMasterPort;
+		
 		public PrimaryDcChangeMessage(){}
 
 		public PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT errorType, String errorMessage) {
 			super(errorType, errorMessage);
 		}
 		
+		public PrimaryDcChangeMessage(String message, String newMasterIp, int newMasterPort){
+			super(PRIMARY_DC_CHANGE_RESULT.SUCCESS, message);
+			this.newMasterIp = newMasterIp;
+			this.newMasterPort = newMasterPort;
+		}
+		
 		public PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT errorType) {
 			super(errorType, null);
 		}
-
+		
+		public String getNewMasterIp() {
+			return newMasterIp;
+		}
+		
+		public int getNewMasterPort() {
+			return newMasterPort;
+		}
+		
+		@Override
+		public String toString() {
+			
+			if(getErrorType() == PRIMARY_DC_CHANGE_RESULT.SUCCESS){
+				return String.format("code:%s, newmaster:%s:%d, message:%s", getErrorType(), newMasterIp, newMasterPort, getErrorMessage());
+			}
+			return super.toString();
+		}
 	}
 }
