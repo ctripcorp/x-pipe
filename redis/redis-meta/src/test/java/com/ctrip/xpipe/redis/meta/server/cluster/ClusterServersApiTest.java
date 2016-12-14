@@ -41,6 +41,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 			logger.info(remarkableMessage("[testDoChangePrimaryDc][oy]"));
 			message = consoleService.doChangePrimaryDc(getClusterId(), getShardId(), "oy");
 			logger.info("{}", message);
+			break;
 		}
 	}
 	

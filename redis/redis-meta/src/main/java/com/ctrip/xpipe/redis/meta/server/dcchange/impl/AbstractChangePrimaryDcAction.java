@@ -72,9 +72,11 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 		List<KeeperMeta> keepers = currentMetaManager.getKeepers(clusterId, shardId);
 		executionLog.info("[makeKeepersOk]" + keepers);
 		
-		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(newMaster.getKey(), newMaster.getValue()), keyedObjectPool);
+		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, 
+				new Pair<String, Integer>(newMaster.getKey(), newMaster.getValue()), 
+				keyedObjectPool, 1000, 1);
 		try {
-			job.execute().get(waitTimeoutSeconds, TimeUnit.SECONDS);
+			job.execute().get(waitTimeoutSeconds/2, TimeUnit.SECONDS);
 			executionLog.info("[makeKeepersOk]success");
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			logger.error("[makeKeepersOk]" + e.getMessage());

@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTriggerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterArrangerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.FirstNewMasterChooserTest;
+import com.ctrip.xpipe.redis.meta.server.job.TransactionalSlaveOfJobTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
@@ -54,7 +55,8 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 	BackupDcKeeperMasterChooserAlgorithmTest.class,
 	PrimaryDcKeeperMasterChooserAlgorithmTest.class,
 	DefaultDcKeeperMasterChooserTest.class,
-	FirstNewMasterChooserTest.class
+	FirstNewMasterChooserTest.class,
+	TransactionalSlaveOfJobTest.class
 })
 public class AllTests {
 

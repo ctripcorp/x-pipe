@@ -36,12 +36,17 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 	private int delayBaseMilli = 1000;
 	private int retryTimes = 5;
-	
+
 	public KeeperStateChangeJob(List<KeeperMeta> keepers, Pair<String, Integer> activeKeeperMaster, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool){
-		
+		this(keepers, activeKeeperMaster, clientPool, 1000, 5);
+	}
+	
+	public KeeperStateChangeJob(List<KeeperMeta> keepers, Pair<String, Integer> activeKeeperMaster, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool, int delayBaseMilli, int retryTimes){
 		this.keepers = new LinkedList<>(keepers);
 		this.activeKeeperMaster = activeKeeperMaster;
 		this.clientPool = clientPool;
+		this.delayBaseMilli = delayBaseMilli;
+		this.retryTimes = retryTimes;
 	}
 
 	@Override

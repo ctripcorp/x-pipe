@@ -34,6 +34,14 @@ public abstract class AbstractCommandChain extends AbstractCommand<List<CommandF
 	}
 	
 	@Override
+	protected void doExecute() throws Exception {
+		
+		if(commands.size() == 0){
+			future().setSuccess();
+		}
+	}
+	
+	@Override
 	public String getName() {
 		StringBuilder sb = new StringBuilder();
 		for(Command<?> command : commands){

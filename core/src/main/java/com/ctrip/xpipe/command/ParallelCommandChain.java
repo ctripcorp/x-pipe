@@ -40,6 +40,7 @@ public class ParallelCommandChain extends AbstractCommandChain{
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	protected void doExecute() throws Exception {
+		super.doExecute();
 		
 		for(int i=0; i < commands.size() ;i++){
 			executors.execute(new Runnable() {
