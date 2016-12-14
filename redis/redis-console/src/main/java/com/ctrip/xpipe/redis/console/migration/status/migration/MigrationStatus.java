@@ -35,4 +35,8 @@ public enum MigrationStatus {
 	private static String formatStatus(MigrationStatus status) {
 		return status.toString().trim().toLowerCase();
 	}
+	
+	public static boolean isSameStatus(String status, MigrationStatus target) {
+		return status.toLowerCase().equals(target.toString().toLowerCase());
+	}
 }

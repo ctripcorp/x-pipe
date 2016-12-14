@@ -59,7 +59,7 @@ public class MigrationCheckingStat extends AbstractMigrationStat {
 		}
 		
 		if(successCnt == getHolder().getMigrationShards().size()) {
-			getHolder().updateStat(nextAfterSuccess());
+			updateAndProcess(nextAfterSuccess(), true);
 		}
 	}
 

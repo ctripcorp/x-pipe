@@ -22,18 +22,21 @@ public class MigrationPublishStat extends AbstractMigrationStat {
 	@Override
 	public void action() {
 		updateDB();
-
+		updateAndProcess(nextAfterSuccess(), true);
 	}
 
 	@DalTransaction
 	private void updateDB() {
 		ClusterTbl cluster = getHolder().getCurrentCluster();
+		cluster.setActivedcId(getHolder().getMigrationCluster().getDestinationDcId());
 		cluster.setStatus(ClusterStatus.TmpMigrated.toString());
 		getHolder().getClusterService().update(cluster);
 
 		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
 		migrationClusterTbl.setStatus(MigrationStatus.Publish.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
+		
+		
 	}
 
 	@Override

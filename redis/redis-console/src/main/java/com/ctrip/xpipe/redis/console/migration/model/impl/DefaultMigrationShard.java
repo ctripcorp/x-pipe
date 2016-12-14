@@ -101,7 +101,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					throws Exception {
 				PrimaryDcCheckMessage res = commandFuture.get();
 				if(res.getErrorType().equals(PRIMARY_DC_CHECK_RESULT.SUCCESS)) {
-					shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, true, res.getErrorMessage());
+					shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, true, "Check Success");
 				} else {
 					shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, res.getErrorMessage());
 				}
@@ -131,7 +131,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		}
 		
 		for(DcTbl dc : dcs.values()) {
-			if(!(dc.getDcName().equals(newPrimaryDc)) && !(dc.getDcName().equals(prevPrimaryDc))) {
+			if(!(dc.getDcName().equals(newPrimaryDc))) {
 				doOtherDcMigrate(cluster, shard, dc.getDcName(), newPrimaryDc);
 			}
 		}

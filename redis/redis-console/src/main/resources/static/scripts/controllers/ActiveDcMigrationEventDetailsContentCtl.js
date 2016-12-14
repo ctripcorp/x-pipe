@@ -28,8 +28,8 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
             });
         }
 
-        $interval(function() {
-            // TODO : refresh contents
-        }, 1000);
+        // $interval(function() {
+        //     // TODO : refresh contents
+        // }, 1000);
 
     }]);
