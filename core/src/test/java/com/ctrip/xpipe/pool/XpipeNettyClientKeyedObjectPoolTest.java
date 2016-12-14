@@ -19,7 +19,7 @@ import com.ctrip.xpipe.simpleserver.Server;
  */
 public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 
-	private int testCount = 1000;
+	private int testCount = 10;
 	private int maxPerKey = 4;
 
 	private XpipeNettyClientKeyedObjectPool pool;
