@@ -30,6 +30,7 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 
@@ -51,16 +52,18 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	private ClusterService clusterService;
 	private ShardService shardService;
 	private DcService dcService;
+	private RedisService redisService;
 	private MigrationService migrationService;
 
 	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
-			MigrationService migrationService) {
+			RedisService redisService,MigrationService migrationService) {
 		this.migrationCluster = migrationCluster;
 		setStatus();
 		
 		this.clusterService = clusterService;
 		this.shardService = shardService;
 		this.dcService = dcService;
+		this.redisService = redisService;
 		this.migrationService = migrationService;
 		
 		loadMetaInfo();
@@ -144,6 +147,11 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 		return dcService;
 	}
 
+	@Override
+	public RedisService getRedisService() {
+		return redisService;
+	}
+	
 	@Override
 	public MigrationService getMigrationService() {
 		return migrationService;

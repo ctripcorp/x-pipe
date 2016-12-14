@@ -476,7 +476,7 @@
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="migration-cluster-id" field="migration_cluster_id" value-type="long" length="20" nullable="false" />
     <member name="shard-id" field="shard_id" value-type="long" length="20" nullable="false" />
-    <member name="log" field="log" value-type="String" length="1024" nullable="false" />
+    <member name="log" field="log" value-type="String" length="10240" nullable="false" />
     <member name="data-changed-last-time" field="DataChangedLastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />

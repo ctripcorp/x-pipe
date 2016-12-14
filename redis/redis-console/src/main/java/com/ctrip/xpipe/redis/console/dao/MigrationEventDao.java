@@ -48,6 +48,7 @@ import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
@@ -65,6 +66,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private ClusterService clusterService;
 	@Autowired
 	private ShardService shardService;
+	@Autowired
+	private RedisService redisService;
 	@Autowired
 	private MigrationService migrationService;
 
@@ -189,7 +192,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				}
 				if(null == event.getMigrationCluster(cluster.getId())) {
 					event.addMigrationCluster(new DefaultMigrationCluster(detail.getRedundantClusters(),
-							dcService, clusterService, shardService, migrationService));
+							dcService, clusterService, shardService, redisService, migrationService));
 				}
 				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId()); 
 				migrationCluster.addNewMigrationShard(new DefaultMigrationShard(migrationCluster, shard,
@@ -269,7 +272,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 					for (ShardTbl shard : shards) {
 						MigrationShardTbl migrationShardProto = migrationShardTblDao.createLocal();
 						migrationShardProto.setMigrationClusterId(migrationCluster.getId()).setShardId(shard.getId())
-								.setLog("");
+						.setLog("");
 						toCreateMigrationShards.add(migrationShardProto);
 					}
 				}

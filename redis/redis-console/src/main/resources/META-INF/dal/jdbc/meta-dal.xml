@@ -733,6 +733,7 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/> DESC
 					]]>
 				</statement>
 			</query>

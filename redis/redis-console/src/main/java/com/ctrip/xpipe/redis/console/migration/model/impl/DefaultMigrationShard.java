@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
+import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT;
@@ -21,6 +22,8 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -86,6 +89,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		MigrationShardTbl toUpdate = getMigrationShard();
 		toUpdate.setLog(coder.encode(getShardMigrationResult()));
 		migrationService.updateMigrationShard(toUpdate);
+		
 	}
 	
 	@Override
@@ -172,6 +176,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 				PrimaryDcChangeMessage res = commandFuture.get();
 				if(res.getErrorType().equals(PRIMARY_DC_CHANGE_RESULT.SUCCESS)) {
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, true, res.getErrorMessage());
+					updateRedisMaster(res.getNewMasterIp(), res.getNewMasterPort());
 				} else {
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, res.getErrorMessage());
 				}
@@ -198,5 +203,35 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			}
 		});
 		return migrateResult;
+	}
+	
+	private void updateRedisMaster(final String ip, final int port) {
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				List<RedisTbl> toUpdate = new LinkedList<>();
+				
+				List<RedisTbl> prevDcRedises = parent.getRedisService().findAllByDcClusterShard(dcs.get(parent.getCurrentCluster().getActivedcId()).getDcName(), 
+						parent.getCurrentCluster().getClusterName(), getCurrentShard().getShardName());
+				for(RedisTbl redis : prevDcRedises) {
+					if(redis.isMaster()) {
+						redis.setMaster(false);
+						toUpdate.add(redis);
+					}
+				}
+				
+				List<RedisTbl> newDcRedises = parent.getRedisService().findAllByDcClusterShard(dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName(), 
+						parent.getCurrentCluster().getClusterName(), getCurrentShard().getShardName());
+				for(RedisTbl redis : newDcRedises) {
+					if(redis.getRedisIp().equals(ip) && redis.getRedisPort() == port) {
+						redis.setMaster(true);
+						toUpdate.add(redis);
+					}
+				}
+				
+				parent.getRedisService().batchUpdate(toUpdate);
+				
+			}
+		}).start();
 	}
 }
