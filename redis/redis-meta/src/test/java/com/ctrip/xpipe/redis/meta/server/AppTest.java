@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
@@ -86,7 +87,7 @@ public class AppTest extends AbstractMetaServerContextTest{
 	}
 	
 	@Override
-	protected ApplicationContext createSpringContext() {
+	protected ConfigurableApplicationContext createSpringContext() {
 		return null;
 	}
 	

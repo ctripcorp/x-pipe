@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper;
 
-
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
@@ -11,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
@@ -48,14 +46,18 @@ public class KeeperContainerApplication {
 					logger.error("[run][shutdown][dispose]", e);
 				}
 				
-				logger.info("[run][shutdown][close spring contex]");
-				context.close();
+				try {
+					logger.info("[run][shutdown][destroy]");
+					registry.destroy();
+				} catch (Exception e) {
+					logger.error("[run][shutdown][destroy]", e);
+				}
 			}
 		}));
 
     }
 
-    private static ComponentRegistry initComponentRegistry(ApplicationContext context) throws Exception {
+    private static ComponentRegistry initComponentRegistry(ConfigurableApplicationContext context) throws Exception {
     	
         final ComponentRegistry registry = new DefaultRegistry(new CreatedComponentRedistry(),
                 new SpringComponentRegistry(context));

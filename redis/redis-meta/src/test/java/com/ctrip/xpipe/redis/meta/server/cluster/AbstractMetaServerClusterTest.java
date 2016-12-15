@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
-import org.springframework.context.ApplicationContext;
 
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
@@ -45,11 +44,6 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 		return client.get();
 	}
 
-	@Override
-	protected ApplicationContext createSpringContext() {
-		return null;
-	}
-	
 	protected void createMetaServers(int serverCount) throws Exception{
 		
 		for(int i=0 ; i<serverCount ; i++){

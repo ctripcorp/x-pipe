@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.slf4j.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -130,7 +130,7 @@ public class AbstractTest {
 
 	private ComponentRegistry getSpringRegistry() {
 
-		ApplicationContext applicationContext = createSpringContext();
+		ConfigurableApplicationContext applicationContext = createSpringContext();
 		if (applicationContext != null) {
 			return new SpringComponentRegistry(applicationContext);
 		}
@@ -160,7 +160,7 @@ public class AbstractTest {
 	 * 
 	 * @return
 	 */
-	protected ApplicationContext createSpringContext() {
+	protected ConfigurableApplicationContext createSpringContext() {
 		return null;
 	}
 

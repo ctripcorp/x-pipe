@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,7 +26,7 @@ public class SpringComponentRegistryTest extends AbstractTest{
 	@Test
 	public void test() throws Exception{
 		
-		ApplicationContext applicationContext = new AnnotationConfigApplicationContext(TestFactory.class);
+		ConfigurableApplicationContext applicationContext = new AnnotationConfigApplicationContext(TestFactory.class);
 		
 		ComponentRegistry componentRegistry = new SpringComponentRegistry(applicationContext);
 

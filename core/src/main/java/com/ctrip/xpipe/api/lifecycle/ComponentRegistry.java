@@ -29,4 +29,5 @@ public interface ComponentRegistry extends Lifecycle, Destroyable{
 	
 	List<Lifecycle> lifecycleCallable();
 	
+	void cleanComponents();	
 }

@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.lifecycle;
 
-
-
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -138,8 +135,6 @@ public abstract class AbstractComponentRegistry extends AbstractLifecycle implem
 			}
 		}
 	}
-
-	protected abstract void cleanComponents() throws Exception;
 
 	@Override
 	protected void doStop() throws Exception {

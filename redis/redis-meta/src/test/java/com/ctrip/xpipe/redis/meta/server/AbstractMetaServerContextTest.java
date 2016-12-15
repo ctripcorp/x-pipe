@@ -1,12 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server;
 
-
-
 import java.util.Map;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
@@ -77,7 +75,7 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 
 
 	@Override
-	protected ApplicationContext createSpringContext() {
+	protected ConfigurableApplicationContext createSpringContext() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 		context.register(MetaServerContextConfig.class);
 		context.refresh();

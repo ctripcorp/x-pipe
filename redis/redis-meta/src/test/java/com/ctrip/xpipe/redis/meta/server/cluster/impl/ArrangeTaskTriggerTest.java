@@ -2,46 +2,53 @@ package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
 import java.io.IOException;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import static org.mockito.Mockito.*;
+import org.mockito.runners.MockitoJUnitRunner;
 
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
-import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
-
 
 /**
  * @author wenchao.meng
  *
  * Jul 27, 2016
  */
-public class ArrangeTaskTriggerTest extends AbstractMetaServerContextTest{
+@RunWith(MockitoJUnitRunner.class)
+public class ArrangeTaskTriggerTest extends AbstractMetaServerTest{
+	
+	@Mock
+	private ArrangeTaskExecutor arrangeTaskExecutor;
+	
+	@Mock
+	private ClusterServer clusterServer;
+
+	private ArrangeTaskTrigger arrangeTaskTrigger; 
+	
 	
 	@Before
 	public void beforeArrangeTaskTriggerTest() throws Exception{
 		
-		initRegistry();
-		startRegistry();
+		arrangeTaskTrigger = new ArrangeTaskTrigger();
+		arrangeTaskTrigger.initialize();
+		
+		add(arrangeTaskTrigger);
+		
+		arrangeTaskTrigger.setArrangeTaskExecutor(arrangeTaskExecutor);
+		
 	}
 	
 	@Test
 	public void testRestart() throws IOException{
 		
-		int timeout = 1000;
+		int timeout = 500;
 		
-		ArrangeTaskExecutor arrangeTaskExecutor = getBean(ArrangeTaskExecutor.class);
+		arrangeTaskTrigger.setWaitForRestartTimeMills(timeout);
 		
-		ArrangeTaskTrigger arrangeTaskTrigger = getBean(ArrangeTaskTrigger.class);
-		arrangeTaskTrigger.setWaitForRestartTimeMills(1000);
-		
-		RemoteClusterServerFactory<?> factory = getBean(RemoteClusterServerFactory.class);
-		
-		ClusterServer clusterServer = factory.createClusterServer(100, new ClusterServerInfo("localhost", randomPort()));
-
-		sleep(500);//wait for init task
-		long taskCount1 = arrangeTaskExecutor.getTotalTasks();
+		verify(arrangeTaskExecutor, times(0)).offer(any());;
 		
 		arrangeTaskTrigger.serverDead(clusterServer);
 		
@@ -51,15 +58,14 @@ public class ArrangeTaskTriggerTest extends AbstractMetaServerContextTest{
 
 		sleep(timeout * 2);
 
-		long taskCount2 = arrangeTaskExecutor.getTotalTasks();
-		Assert.assertEquals(taskCount1, taskCount2);
+		verify(arrangeTaskExecutor, times(0)).offer(any());;
 
 		
 		arrangeTaskTrigger.serverDead(clusterServer);
 		sleep(timeout * 2);
-		long taskCount3 = arrangeTaskExecutor.getTotalTasks();
-		
-		Assert.assertEquals(1, taskCount3 - taskCount2);
+
+		verify(arrangeTaskExecutor, times(1)).offer(any());;
+
 	}
 	
 	

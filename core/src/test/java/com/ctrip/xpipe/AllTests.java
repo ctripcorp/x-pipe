@@ -14,6 +14,7 @@ import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistryTest;
 import com.ctrip.xpipe.lifecycle.DefaultLifecycleControllerTest;
 import com.ctrip.xpipe.lifecycle.DefaultLifecycleStateTest;
+import com.ctrip.xpipe.lifecycle.DefaultRegistryTest;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistryTest;
 import com.ctrip.xpipe.netty.commands.RequestResponseCommandTest;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannelTest;
@@ -44,6 +45,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	DefaultLifecycleStateTest.class,
 	CreatedComponentRedistryTest.class,
 	SpringComponentRegistryTest.class,
+	DefaultRegistryTest.class,
 	OffsetNotifierTest.class,
 	RequestResponseCommandTest.class,
 	CommandRetryWrapperTest.class,

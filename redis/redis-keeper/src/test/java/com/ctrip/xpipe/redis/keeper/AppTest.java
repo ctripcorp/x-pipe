@@ -13,7 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
@@ -89,7 +88,7 @@ public class AppTest extends AbstractRedisKeeperTest {
         waitForAnyKeyToExit();
     }
 
-    private void initComponentRegistry(ApplicationContext context) throws Exception {
+    private void initComponentRegistry(ConfigurableApplicationContext  context) throws Exception {
         ComponentRegistry registry = new DefaultRegistry(new CreatedComponentRedistry(),
                 new SpringComponentRegistry(context));
         registry.initialize();

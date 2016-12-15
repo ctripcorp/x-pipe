@@ -132,7 +132,11 @@ public class DefaultRegistry extends AbstractComponentRegistry{
 	}
 	
 	@Override
-	protected void cleanComponents() throws Exception {
-		createdRegistry.destroy();
+	public void cleanComponents(){
+		
+		createdRegistry.cleanComponents();
+		if(springRegistry != null){
+			springRegistry.cleanComponents();
+		}
 	}
 }
