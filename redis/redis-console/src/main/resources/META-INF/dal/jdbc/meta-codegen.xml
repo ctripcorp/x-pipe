@@ -398,10 +398,11 @@
     <member name="start-time" field="start_time" value-type="Date" nullable="false" />
     <member name="end-time" field="end_time" value-type="Date" />
     <member name="status" field="status" value-type="String" length="16" nullable="false" />
-    <member name="data-changed-last-time" field="DataChangedLastTime" value-type="Date" nullable="false" />
+    <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -437,11 +438,11 @@
     <member name="start-time" field="start_time" value-type="Date" nullable="false" />
     <member name="operator" field="operator" value-type="String" length="128" nullable="false" />
     <member name="event-tag" field="event_tag" value-type="String" length="150" nullable="false" />
-    <member name="data-changed-last-time" field="DataChangedLastTime" value-type="Date" nullable="false" />
+    <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
-    <index name="event_tag" unique="true" members="event_tag ASC" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -477,10 +478,11 @@
     <member name="migration-cluster-id" field="migration_cluster_id" value-type="long" length="20" nullable="false" />
     <member name="shard-id" field="shard_id" value-type="long" length="20" nullable="false" />
     <member name="log" field="log" value-type="String" length="10240" nullable="false" />
-    <member name="data-changed-last-time" field="DataChangedLastTime" value-type="Date" nullable="false" />
+    <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
