@@ -20,6 +20,9 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
  * Sep 5, 2016
  */
 public class DefaultMetaServerConsoleService extends AbstractMetaService implements MetaServerConsoleService{
+	private int RETRY_TIMES = Integer.parseInt(System.getProperty("retry-times", "3"));
+	private int CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("connect-timeout", "2000"));
+	private int SO_TIMEOUT = Integer.parseInt(System.getProperty("so-timeout", "2000"));
 	
 	private String  metaServerAddress;
 	private String  changeClusterPath;
@@ -35,7 +38,7 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(metaServerAddress);
 		changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(metaServerAddress);
 		
-		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(10, 100, 20000, 20000, 3, RetryPolicyFactories.newRestOperationsRetryPolicyFactory(5)); 
+		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(10, 100, CONNECT_TIMEOUT, SO_TIMEOUT, RETRY_TIMES, RetryPolicyFactories.newRestOperationsRetryPolicyFactory(5)); 
 	}
 
 	@Override
