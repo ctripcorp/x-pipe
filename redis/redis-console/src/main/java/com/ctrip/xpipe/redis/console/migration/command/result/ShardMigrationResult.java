@@ -20,12 +20,16 @@ public class ShardMigrationResult  implements Serializable{
 		status = ShardMigrationResultStatus.FAIL;
 	}
 	
-	public ShardMigrationResultStatus getResult() {
+	public ShardMigrationResultStatus getStatus() {
 		return status;
 	}
 	
 	public void setStatus(ShardMigrationResultStatus status) {
 		this.status = status;
+	}
+	
+	public Map<ShardMigrationStep, Pair<Boolean, String>> getSteps() {
+		return steps;
 	}
 	
 	public boolean stepTerminated(ShardMigrationStep step) {

@@ -32,9 +32,12 @@
 				</td>
 				<td data-title="'cluster'">{{cluster.clusterName}}</td>
 				<td data-title="'目标主机房'">
-					<md-select ng-model="cluster.targetDc" md-on-close="targetDcSelected(cluster)" class="md-no-underline no-margin radius-border-thin" required placeholder="目标主机房">
+					<md-select ng-model="cluster.targetDc" md-on-close="targetDcSelected(cluster)" class="md-no-underline no-margin radius-border-thin" required placeholder="目标主机房" ng-if="availableTargetDcs(cluster).length > 1">
 						<md-option value="-" ng-selected="true">-</md-option>
 						<md-option ng-repeat="dcInfo in availableTargetDcs(cluster)" value="{{dcInfo.dcName}}">{{dcInfo.dcName}}</md-option>
+					</md-select>
+					<md-select ng-model="cluster.targetDc" md-on-close="targetDcSelected(cluster)" class="md-no-underline no-margin radius-border-thin" required placeholder="目标主机房" ng-if="availableTargetDcs(cluster).length == 1">
+						<md-option value="{{availableTargetDcs(cluster)[0].dcName}}" ng-selected="true">{{availableTargetDcs(cluster)[0].dcName}}</md-option>
 					</md-select>
 				</td>
 			</tr>

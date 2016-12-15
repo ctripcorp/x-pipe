@@ -56,17 +56,26 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
         	controller: 'ActiveDcMigrationEventListCtl'
         })
         .state('migration_event_details', {
-        	url: '/migration_event_details',
+        	url: '/migration_event_details/:eventId',
+            params: {
+                eventId: {
+                    value: '',
+                    squash: false
+                }
+            },
         	templateUrl: 'views/index/migration_details.html',
         	controller: 'ActiveDcMigrationEventDetailsCtl'
         })
         .state('migration_event_details.details', {
         	url: '/details',
+            params: {
+                migrationCluster: {
+                    value: {},
+                    squash: false
+                }
+            },
         	templateUrl: 'views/index/migration_details_content.html',
-        	controller : function($scope) {
-        		$scope.dcs = [{dcName : 'jq'}, {dcName : 'oy'}, {dcName : 'fq'}];
-        		$scope.currentDcName = 'jq';
-        	}
+        	controller : 'ActiveDcMigrationEventDetailsContentCtl'
         });
 
 });

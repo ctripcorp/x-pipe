@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.retry.RetryPolicyFactories;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 
 /**
  * @author wenchao.meng
@@ -18,6 +20,9 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
  * Sep 5, 2016
  */
 public class DefaultMetaServerConsoleService extends AbstractMetaService implements MetaServerConsoleService{
+	private int RETRY_TIMES = Integer.parseInt(System.getProperty("retry-times", "3"));
+	private int CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("connect-timeout", "2000"));
+	private int SO_TIMEOUT = Integer.parseInt(System.getProperty("so-timeout", "2000"));
 	
 	private String  metaServerAddress;
 	private String  changeClusterPath;
@@ -32,6 +37,8 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(metaServerAddress);
 		makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(metaServerAddress);
 		changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(metaServerAddress);
+		
+		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(10, 100, CONNECT_TIMEOUT, SO_TIMEOUT, RETRY_TIMES, RetryPolicyFactories.newRestOperationsRetryPolicyFactory(5)); 
 	}
 
 	@Override

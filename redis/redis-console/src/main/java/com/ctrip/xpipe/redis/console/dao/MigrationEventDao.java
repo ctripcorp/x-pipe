@@ -2,9 +2,6 @@ package com.ctrip.xpipe.redis.console.dao;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import javax.annotation.PostConstruct;
 
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
@@ -30,6 +27,7 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblEntity;
@@ -37,18 +35,20 @@ import com.ctrip.xpipe.redis.console.model.MigrationEventModel;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTblDao;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTblEntity;
+import com.ctrip.xpipe.redis.console.model.MigrationShardModel;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTblDao;
+import com.ctrip.xpipe.redis.console.model.MigrationShardTblEntity;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 @Repository
 public class MigrationEventDao extends AbstractXpipeConsoleDAO {
@@ -63,22 +63,22 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	@Autowired
 	private ShardService shardService;
 	@Autowired
+	private RedisService redisService;
+	@Autowired
 	private MigrationService migrationService;
 
-	private MigrationEventTblDao migrationEventDao;
-	private MigrationClusterTblDao migrationClusterDao;
-	private MigrationShardTblDao migrationShardDao;
+	private MigrationEventTblDao migrationEventTblDao;
+	private MigrationClusterTblDao migrationClusterTblDao;
+	private MigrationShardTblDao migrationShardTblDao;
 	private ClusterTblDao clusterTblDao;
 	private ShardTblDao shardTblDao;
-	
-	private ExecutorService cachedThreadPool = Executors.newCachedThreadPool(XpipeThreadFactory.create("MigrationEventDao"));
 
 	@PostConstruct
 	private void postConstruct() {
 		try {
-			migrationEventDao = ContainerLoader.getDefaultContainer().lookup(MigrationEventTblDao.class);
-			migrationClusterDao = ContainerLoader.getDefaultContainer().lookup(MigrationClusterTblDao.class);
-			migrationShardDao = ContainerLoader.getDefaultContainer().lookup(MigrationShardTblDao.class);
+			migrationEventTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationEventTblDao.class);
+			migrationClusterTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationClusterTblDao.class);
+			migrationShardTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationShardTblDao.class);
 			clusterTblDao = ContainerLoader.getDefaultContainer().lookup(ClusterTblDao.class);
 			shardTblDao = ContainerLoader.getDefaultContainer().lookup(ShardTblDao.class);
 		} catch (ComponentLookupException e) {
@@ -86,11 +86,43 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		}
 	}
 	
+	public List<MigrationClusterModel> getMigrationCluster(final long eventId) {
+		List<MigrationClusterModel> res = new LinkedList<>();
+		
+		List<MigrationClusterTbl> migrationClusterTbls = queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
+			@Override
+			public List<MigrationClusterTbl> doQuery() throws DalException {
+				return migrationClusterTblDao.findByEventId(eventId, MigrationClusterTblEntity.READSET_FULL_ALL);
+			}
+		});
+		for(MigrationClusterTbl migrationClusterTbl : migrationClusterTbls) {
+			MigrationClusterModel model = new MigrationClusterModel();
+			model.setMigrationCluster(migrationClusterTbl);
+			
+			List<MigrationShardTbl> migrationShardTbls = queryHandler.handleQuery(new DalQuery<List<MigrationShardTbl>>() {
+				@Override
+				public List<MigrationShardTbl> doQuery() throws DalException {
+					return migrationShardTblDao.findByMigrationClusterId(migrationClusterTbl.getId(), MigrationShardTblEntity.READSET_FULL_ALL);
+				}
+			});
+			for(MigrationShardTbl migrationShardTbl : migrationShardTbls) {
+				MigrationShardModel shardModel = new MigrationShardModel();
+				shardModel.setMigrationShard(migrationShardTbl);
+				
+				model.addMigrationShard(shardModel);
+			}
+			
+			res.add(model);
+		}
+		
+		return res;
+	}
+	
 	public MigrationEvent buildMigrationEvent(final long eventId) {
 		List<MigrationEventTbl> eventDetails = queryHandler.handleQuery(new DalQuery<List<MigrationEventTbl>>() {
 			@Override
 			public List<MigrationEventTbl> doQuery() throws DalException {
-				return migrationEventDao.findWithAllDetails(eventId, MigrationEventTblEntity.READSET_FULL_ALL);
+				return migrationEventTblDao.findWithAllDetails(eventId, MigrationEventTblEntity.READSET_FULL_ALL);
 			}
 		});
 		return loadMigrationEvent(eventDetails);
@@ -100,15 +132,15 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	public long createMigrationEvnet(MigrationEventModel event) {
 		if (null != event) {
 			/** Create event **/
-			MigrationEventTbl proto = migrationEventDao.createLocal();
+			MigrationEventTbl proto = migrationEventTblDao.createLocal();
 			final String eventTag = generateUniqueEventTag(userInfo.getUser().getUserId());
 			proto.setOperator(userInfo.getUser().getUserId()).setEventTag(eventTag);
 			final MigrationEventTbl forCreate = proto;
 			final MigrationEventTbl result = queryHandler.handleQuery(new DalQuery<MigrationEventTbl>() {
 				@Override
 				public MigrationEventTbl doQuery() throws DalException {
-					migrationEventDao.insert(forCreate);
-					return migrationEventDao.findByTag(eventTag, MigrationEventTblEntity.READSET_FULL);
+					migrationEventTblDao.insert(forCreate);
+					return migrationEventTblDao.findByTag(eventTag, MigrationEventTblEntity.READSET_FULL);
 				}
 			});
 
@@ -120,17 +152,21 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 			createMigrationShards(migrationClusters);
 
 			/** Notify event manager **/
-			cachedThreadPool.submit(new Runnable() {
-				@Override
-				public void run() {
-					eventManager.addEvent(buildMigrationEvent(result.getId()));
-				}
-			});
+			eventManager.addEvent(buildMigrationEvent(result.getId()));
 			
 			return result.getId();
 		} else {
 			throw new BadRequestException("Cannot create migration event from nothing!");
 		}
+	}
+	
+	public List<MigrationEventTbl> findAllUnfinished() {
+		return queryHandler.handleQuery(new DalQuery<List<MigrationEventTbl>>() {
+			@Override
+			public List<MigrationEventTbl> doQuery() throws DalException {
+				return migrationEventTblDao.findUnfinishedEvents(MigrationEventTblEntity.READSET_FULL);
+			}
+		});
 	}
 	
 	private MigrationEvent loadMigrationEvent(List<MigrationEventTbl> details) {
@@ -143,9 +179,9 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				if(MigrationStatus.isTerminated(cluster.getStatus())) {
 					continue;
 				}
-				if(null == event.getMigrationCluster(cluster.getClusterId())) {
+				if(null == event.getMigrationCluster(cluster.getId())) {
 					event.addMigrationCluster(new DefaultMigrationCluster(detail.getRedundantClusters(),
-							dcService, clusterService, shardService, migrationService));
+							dcService, clusterService, shardService, redisService, migrationService));
 				}
 				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId()); 
 				migrationCluster.addNewMigrationShard(new DefaultMigrationShard(migrationCluster, shard,
@@ -166,7 +202,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 			for (MigrationClusterTbl migrationCluster : migrationClusters) {
 				updateClusterStatus(migrationCluster.getClusterId(), ClusterStatus.Lock);
 				
-				MigrationClusterTbl proto = migrationClusterDao.createLocal();
+				MigrationClusterTbl proto = migrationClusterTblDao.createLocal();
 				proto.setMigrationEventId(eventId).setClusterId(migrationCluster.getClusterId())
 						.setDestinationDcId(migrationCluster.getDestinationDcId()).setStatus(MigrationStatus.Initiated.toString());
 				toCreateMigrationCluster.add(proto);
@@ -176,8 +212,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		return queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
 			@Override
 			public List<MigrationClusterTbl> doQuery() throws DalException {
-				migrationClusterDao.insertBatch(Lists.toArray(MigrationClusterTbl.class, toCreateMigrationCluster));
-				return migrationClusterDao.findByEventId(eventId, MigrationClusterTblEntity.READSET_FULL);
+				migrationClusterTblDao.insertBatch(Lists.toArray(MigrationClusterTbl.class, toCreateMigrationCluster));
+				return migrationClusterTblDao.findByEventId(eventId, MigrationClusterTblEntity.READSET_FULL);
 			}
 		});
 	}
@@ -223,9 +259,9 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 
 				if (null != shards) {
 					for (ShardTbl shard : shards) {
-						MigrationShardTbl migrationShardProto = migrationShardDao.createLocal();
+						MigrationShardTbl migrationShardProto = migrationShardTblDao.createLocal();
 						migrationShardProto.setMigrationClusterId(migrationCluster.getId()).setShardId(shard.getId())
-								.setLog("");
+						.setLog("");
 						toCreateMigrationShards.add(migrationShardProto);
 					}
 				}
@@ -235,7 +271,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		queryHandler.handleQuery(new DalQuery<Void>() {
 			@Override
 			public Void doQuery() throws DalException {
-				migrationShardDao.insertBatch(Lists.toArray(MigrationShardTbl.class, toCreateMigrationShards));
+				migrationShardTblDao.insertBatch(Lists.toArray(MigrationShardTbl.class, toCreateMigrationShards));
 				return null;
 			}
 		});

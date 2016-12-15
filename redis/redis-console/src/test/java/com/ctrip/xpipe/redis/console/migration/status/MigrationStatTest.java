@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import org.junit.Assert;
@@ -43,6 +44,8 @@ public class MigrationStatTest extends AbstractConsoleTest {
     private ShardService mockedShardService;
     @Mock
     private MigrationService mockedMigrationService;
+    @Mock
+    private RedisService mockedRedisService;
 
     @Mock
     private MigrationShard mockedMigrationShard;
@@ -51,7 +54,7 @@ public class MigrationStatTest extends AbstractConsoleTest {
     public void setUp() {
         prepareData();
         migrationCluster = new DefaultMigrationCluster(mockedMigrationCluster, mockedDcService, mockedClusterService,
-                mockedShardService, mockedMigrationService);
+                mockedShardService, mockedRedisService, mockedMigrationService);
         migrationCluster.addNewMigrationShard(mockedMigrationShard);
     }
 
