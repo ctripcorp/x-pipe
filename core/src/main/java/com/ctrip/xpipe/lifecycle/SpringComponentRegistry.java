@@ -7,11 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
-
 
 /**
  * @author wenchao.meng
@@ -20,9 +19,9 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
  */
 public class SpringComponentRegistry extends AbstractComponentRegistry{
 	
-	private ApplicationContext applicationContext;
+	private ConfigurableApplicationContext applicationContext;
 	
-	public SpringComponentRegistry(ApplicationContext applicationContext) {
+	public SpringComponentRegistry(ConfigurableApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
 	}
 
@@ -87,9 +86,9 @@ public class SpringComponentRegistry extends AbstractComponentRegistry{
 		return sort(result);
 	}
 
-
 	@Override
-	protected void cleanComponents() throws Exception {
+	public void cleanComponents() {
 		//nothing to do
+		applicationContext.close();
 	}
 }

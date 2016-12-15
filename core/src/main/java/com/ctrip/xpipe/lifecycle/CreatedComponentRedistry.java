@@ -150,7 +150,7 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 	}
 
 	@Override
-	protected void cleanComponents() {
+	public void cleanComponents() {
 		components.clear();
 	}
 	

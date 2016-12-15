@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.lifecycle;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -8,6 +7,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 
@@ -24,7 +24,7 @@ public class SpringComponentLifecycleManager implements ApplicationContextAware,
 	private Logger logger = LoggerFactory.getLogger(SpringComponentLifecycleManager.class);
 
 	private ComponentRegistry componentRegistry;
-	private static ApplicationContext applicationContext;
+	private static ConfigurableApplicationContext applicationContext;
 	
 	
 	public void startAll() throws Exception{
@@ -36,8 +36,8 @@ public class SpringComponentLifecycleManager implements ApplicationContextAware,
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		
-		SpringComponentLifecycleManager.applicationContext = applicationContext;
-		componentRegistry = new SpringComponentRegistry(applicationContext);
+		SpringComponentLifecycleManager.applicationContext = (ConfigurableApplicationContext)applicationContext;
+		componentRegistry = new SpringComponentRegistry((ConfigurableApplicationContext)applicationContext);
 	}
 	
 	public void stopAll() throws Exception{

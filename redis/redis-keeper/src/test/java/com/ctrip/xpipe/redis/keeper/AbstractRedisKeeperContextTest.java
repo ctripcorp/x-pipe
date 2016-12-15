@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.keeper;
 
-
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Before;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.xml.sax.SAXException;
 
@@ -20,7 +19,6 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.spring.KeeperContextConfig;
-
 
 /**
  * @author wenchao.meng
@@ -48,7 +46,7 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 	}
 	
 	@Override
-	protected ApplicationContext createSpringContext() {
+	protected ConfigurableApplicationContext createSpringContext() {
 		return new AnnotationConfigApplicationContext(KeeperContextConfig.class);
 	}
 

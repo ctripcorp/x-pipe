@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
@@ -29,7 +31,7 @@ import com.ctrip.xpipe.zk.ZkClient;
  * Jul 27, 2016
  */
 @Component
-public class ArrangeTaskTrigger {
+public class ArrangeTaskTrigger extends AbstractLifecycle implements TopElement{
 	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -47,9 +49,22 @@ public class ArrangeTaskTrigger {
 	@Autowired
 	private ArrangeTaskExecutor arrangeTaskExecutor;
 	
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+	private ScheduledExecutorService scheduled;
 	
-	private Map<ClusterServer, DeadServer> serverActions = new ConcurrentHashMap<>();  
+	private Map<ClusterServer, DeadServer> serverActions = new ConcurrentHashMap<>();
+	
+	@Override
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+		scheduled = Executors.newScheduledThreadPool(1);
+	}
+	
+	@Override
+	protected void doDispose() throws Exception {
+		
+		scheduled.shutdownNow();
+		super.doDispose();
+	}
 	
 	public void initSharding(ReshardingTask task){
 		
@@ -61,6 +76,8 @@ public class ArrangeTaskTrigger {
 	}
 	
 	public void serverDead(final ClusterServer clusterServer){
+		
+		logger.info("[serverDead]{}", clusterServer);
 		
 		MapUtils.getOrCreate(serverActions, clusterServer, new ObjectFactory<DeadServer>() {
 
@@ -76,7 +93,8 @@ public class ArrangeTaskTrigger {
 	}
 
 	public void serverAlive(ClusterServer clusterServer){
-		
+
+		logger.info("[serverAlive]{}", clusterServer);
 		DeadServer deadServer = serverActions.get(clusterServer);
 		if(deadServer == null){
 			arrangeTaskExecutor.offer(new ServerBalanceResharding(slotManager, clusterServers, zkClient));
@@ -112,6 +130,10 @@ public class ArrangeTaskTrigger {
 
 	public void setWaitForRestartTimeMills(int waitForRestartTimeMills) {
 		this.waitForRestartTimeMills = waitForRestartTimeMills;
+	}
+	
+	public void setArrangeTaskExecutor(ArrangeTaskExecutor arrangeTaskExecutor) {
+		this.arrangeTaskExecutor = arrangeTaskExecutor;
 	}
 
 }

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.spring;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -43,7 +44,7 @@ public class TestProfile extends AbstractProfile implements ApplicationContextAw
 
 	@Bean
 	public SpringComponentRegistry getSpringRegistry(){
-		return new SpringComponentRegistry(applicationContext);
+		return new SpringComponentRegistry((ConfigurableApplicationContext)applicationContext);
 	}
 
 	@Bean
