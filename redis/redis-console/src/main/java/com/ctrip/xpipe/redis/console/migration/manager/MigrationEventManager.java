@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.manager;
 
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 
 /**
@@ -7,7 +8,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
  *
  * Dec 8, 2016
  */
-public interface MigrationEventManager {
+public interface MigrationEventManager extends Observer{
 	void addEvent(MigrationEvent event);
 	MigrationEvent getEvent(long id);
 	void removeEvent(long id);

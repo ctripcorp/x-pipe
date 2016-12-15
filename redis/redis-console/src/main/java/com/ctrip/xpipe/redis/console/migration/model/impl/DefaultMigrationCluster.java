@@ -6,6 +6,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
@@ -40,6 +43,7 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
  * Dec 8, 2016
  */
 public class DefaultMigrationCluster extends AbstractObservable implements MigrationCluster {
+	private Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private MigrationStat currentStat;
 	private MigrationClusterTbl migrationCluster;
@@ -106,11 +110,14 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
 	@Override
 	public void process() {
+		logger.info("[Process]{}-{}, {}", migrationCluster.getEventId(),getCurrentCluster().getClusterName(), this.currentStat.getStat());
 		this.currentStat.action();
 	}
 
 	@Override
 	public void updateStat(MigrationStat stat) {
+		logger.info("[UpdateStat]{}-{}, {} -> {}",
+				migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentStat.getStat(), stat.getStat());
 		this.currentStat = stat;
 	}
 
@@ -130,6 +137,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	@Override
 	public void update(Object args, Observable observable) {
 		this.currentStat.refresh();
+		notifyObservers(this);
 
 	}
 

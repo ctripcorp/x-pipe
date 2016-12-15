@@ -2,9 +2,6 @@ package com.ctrip.xpipe.redis.console.dao;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import javax.annotation.PostConstruct;
 
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
@@ -52,7 +49,6 @@ import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 @Repository
 public class MigrationEventDao extends AbstractXpipeConsoleDAO {
@@ -76,8 +72,6 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private MigrationShardTblDao migrationShardTblDao;
 	private ClusterTblDao clusterTblDao;
 	private ShardTblDao shardTblDao;
-	
-	private ExecutorService cachedThreadPool = Executors.newCachedThreadPool(XpipeThreadFactory.create("MigrationEventDao"));
 
 	@PostConstruct
 	private void postConstruct() {
@@ -158,12 +152,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 			createMigrationShards(migrationClusters);
 
 			/** Notify event manager **/
-			cachedThreadPool.submit(new Runnable() {
-				@Override
-				public void run() {
-					eventManager.addEvent(buildMigrationEvent(result.getId()));
-				}
-			});
+			eventManager.addEvent(buildMigrationEvent(result.getId()));
 			
 			return result.getId();
 		} else {

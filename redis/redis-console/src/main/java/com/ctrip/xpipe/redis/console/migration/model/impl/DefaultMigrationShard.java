@@ -27,12 +27,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author shyin
  *
  * Dec 8, 2016
  */
 public class DefaultMigrationShard extends AbstractObservable implements MigrationShard {
+	private Logger logger = LoggerFactory.getLogger(getClass());
 	private static Codec coder = Codec.DEFAULT;
 	
 	private MigrationCluster parent;
@@ -98,6 +102,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		String shard = currentShard.getShardName();
 		String newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
 		
+		logger.info("[doCheck]{}-{}-{}", cluster, shard, newPrimaryDc);
 		CommandFuture<PrimaryDcCheckMessage> checkResult = commandBuilder.buildDcCheckCommand(cluster, shard, newPrimaryDc, newPrimaryDc).execute();
 		checkResult.addListener(new CommandFutureListener<PrimaryDcCheckMessage>() {
 			@Override
@@ -122,6 +127,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		String newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
 		String prevPrimaryDc = dcs.get(parent.getCurrentCluster().getActivedcId()).getDcName();
 		
+		logger.info("[doMigrate]{}-{}, {}->{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
 		try {
 			doPrevPrimaryDcMigrate(cluster, shard, prevPrimaryDc, newPrimaryDc).get();
 		} catch (InterruptedException | ExecutionException e) {
@@ -229,6 +235,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					}
 				}
 				
+				logger.info("[UpdateMasterTo]{}:{}", ip, port);
 				parent.getRedisService().batchUpdate(toUpdate);
 				
 			}

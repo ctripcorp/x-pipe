@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
+import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 
 /**
@@ -7,7 +8,7 @@ import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
  *
  * Dec 8, 2016
  */
-public interface MigrationEvent {
+public interface MigrationEvent extends Observable{
 	MigrationEventTbl getEvent();
 	MigrationCluster getMigrationCluster(long clusterId);
 	
