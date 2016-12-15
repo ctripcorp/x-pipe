@@ -130,6 +130,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	@Override
 	public void update(Object args, Observable observable) {
 		this.currentStat.refresh();
+
 	}
 
 	@Override
