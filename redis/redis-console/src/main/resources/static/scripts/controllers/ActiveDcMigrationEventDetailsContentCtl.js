@@ -5,6 +5,16 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
         if($scope.migrationCluster) {
             if($scope.migrationCluster.migrationShards) {
                 initStatus();
+            } else {
+                if($scope.$parent.eventDetails) {
+                    $scope.migrationCluster = $scope.$parent.eventDetails[0];
+                } else {
+                    MigrationService.findEventDetails($scope.$parent.eventId).then(function(result) {
+                        $scope.$parent.eventDetails = result;
+                        $scope.migrationCluster = $scope.$parent.eventDetails[0];
+                        initStatus();
+                    });
+                }
             }
         }
 
