@@ -2,9 +2,17 @@
     <div class="panel panel-primary" style="margin-top: 15px;">
         <header class="panel-heading">
             <div class="row">
-                <div class="col-md-6">{{migrationCluster.migrationCluster.cluster.clusterName}}</div>
-                <div class="col-md-3"></div>
                 <div class="col-md-3">
+                {{migrationCluster.migrationCluster.cluster.clusterName}}
+                &nbsp&nbsp&nbsp
+                目标机房 : {{migrationCluster.migrationCluster.dc.dcName}}
+                </div>
+                <div class="col-md-7">
+                开始时间 : {{migrationCluster.migrationCluster.startTime | date : 'medium'}}
+                &nbsp&nbsp&nbsp
+                结束时间 : {{migrationCluster.migrationCluster.endTime | date : 'medium'}}
+                </div>
+                <div class="col-md-2">
 					<a type="button" class="btn btn-primary radius-border-fat" ng-click="continueMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)">
                     <strong ng-if="migrationCluster.migrationCluster.status == 'Initiated'">执行</strong>
                     <strong ng-if="migrationCluster.migrationCluster.status != 'Initiated'">继续</strong>
