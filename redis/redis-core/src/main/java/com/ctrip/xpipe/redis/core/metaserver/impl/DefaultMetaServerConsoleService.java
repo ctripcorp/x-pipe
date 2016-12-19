@@ -20,7 +20,7 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
  * Sep 5, 2016
  */
 public class DefaultMetaServerConsoleService extends AbstractMetaService implements MetaServerConsoleService{
-	private int RETRY_TIMES = Integer.parseInt(System.getProperty("retry-times", "3"));
+	private int RETRY_TIMES = Integer.parseInt(System.getProperty("retry-times", "8"));
 	private int CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("connect-timeout", "2000"));
 	private int SO_TIMEOUT = Integer.parseInt(System.getProperty("so-timeout", "2000"));
 	
