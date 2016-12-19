@@ -50,32 +50,46 @@
             <tr ng-repeat="migrationShard in migrationCluster.migrationShards">
                 <td>{{migrationShard.migrationShard.shard.shardName}}</td>
                 <td>
-                <span class="label label-sm label-success" ng-if="migrationShard.status.steps.CHECK.true">Success</span>
-                <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.CHECK.false">Failed</span>
-                <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.CHECK">Waiting</span>
+                <div ng-model="migrationShard.status.steps.CHECK" ng-click="showLog(migrationShard.status.steps.CHECK)">
+                    <span class="label label-sm label-success" ng-if="migrationShard.status.steps.CHECK.true">Success</span>
+                    <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.CHECK.false">Failed</span>
+                    <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.CHECK">Waiting</span>
+                </div>
                 </td>
                 <td>
-                <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC.true">Success</span>
-                <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC.false">Failed</span>
-                <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC">Waiting</span>
+                <div ng-model="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC" ng-click="showLog(migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC)">
+                    <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC.true">Success</span>
+                    <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC.false">Failed</span>
+                    <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC">Waiting</span>
+                </div>
                 </td>
                 <td>
-                <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC.true">Success</span>
-                <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC.false">Failed</span>
-                <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC">Waiting</span>
+                <div ng-model="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC" ng-click="showLog(migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC)">
+                    <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC.true">Success</span>
+                    <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC.false">Failed</span>
+                    <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC">Waiting</span>
+                </div>
                 </td>
                 <td>
-                <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_OTHER_DC.true">Success</span>
-                <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_OTHER_DC.false">Failed</span>
-                <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_OTHER_DC">Waiting</span>
+                <div ng-model="migrationShard.status.steps.MIGRATE_OTHER_DC" ng-click="showLog(migrationShard.status.steps.MIGRATE_OTHER_DC)">
+                    <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_OTHER_DC.true">Success</span>
+                    <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_OTHER_DC.false">Failed</span>
+                    <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_OTHER_DC">Waiting</span>
+                </div>
                 </td>
                 <td>
-                <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE.true">Success</span>
-                <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE.false">Failed</span>
-                <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE">Waiting</span>
+                <div ng-model="migrationShard.status.steps.MIGRATE" ng-click="showLog(migrationShard.status.steps.MIGRATE)">
+                    <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE.true">Success</span>
+                    <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE.false">Failed</span>
+                    <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE">Waiting</span>
+                </div>
                 </td>
             </tr>
             </tbody>
         </table>
     </div>
 </div>
+
+<xpipeconfirmdialog xpipe-dialog-id="'log'" xpipe-title="'迁移日志'"
+                    xpipe-detail="currentQueryLog"
+                    xpipe-show-cancel-btn="false" xpipe-confirm="hideLog"></xpipeconfirmdialog>

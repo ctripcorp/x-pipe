@@ -1,6 +1,7 @@
 index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope', '$scope', '$window', '$stateParams','$interval','$state', 'AppUtil', 'toastr', 'NgTableParams', 'MigrationService',
     function ($rootScope, $scope, $window, $stateParams,$interval,$state, AppUtil, toastr, NgTableParams, MigrationService, $filters) {
         $scope.migrationCluster = $stateParams.migrationCluster;
+        $scope.currentQueryLog;
 
         if($scope.migrationCluster) {
             if($scope.migrationCluster.migrationShards) {
@@ -51,6 +52,22 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
                 function(result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
+        }
+
+        $scope.showLog = function(step) {
+            if(step) {
+                if(step.true) {
+                    $scope.currentQueryLog = step.true;
+                } else if (step.false) {
+                    $scope.currentQueryLog = step.false;
+                }
+                $('#log').modal('show');
+            }
+        }
+
+        $scope.hideLog = function() {
+            $scope.currentQueryLog = '';
+            $('#log').modal('hide');
         }
 
     }]);
