@@ -108,11 +108,16 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcCheckMessage> commandFuture)
 					throws Exception {
-				PrimaryDcCheckMessage res = commandFuture.get();
-				if(res.getErrorType().equals(PRIMARY_DC_CHECK_RESULT.SUCCESS)) {
-					shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, true, "Check Success");
-				} else {
-					shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, res.getErrorMessage());
+				try {
+					PrimaryDcCheckMessage res = commandFuture.get();
+					if(PRIMARY_DC_CHECK_RESULT.SUCCESS.equals(res.getErrorType())){
+						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, true, "Check success");
+					} else {
+						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, res.getErrorMessage());
+					}
+				} catch (ExecutionException e) {
+					logger.error("[doCheck][fail]",e);
+					shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, e.getMessage());
 				}
 				
 				notifyObservers(this);
@@ -131,19 +136,21 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		try {
 			doPrevPrimaryDcMigrate(cluster, shard, prevPrimaryDc, newPrimaryDc).get();
 		} catch (InterruptedException | ExecutionException e) {
-			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, "Ignore with fail.");
+			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, "Ignore:" + e.getMessage());
 		}
 		
 		try {
 			doNewPrimaryDcMigrate(cluster, shard, newPrimaryDc).get();
-		} catch (InterruptedException | ExecutionException e) {
-			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, "Cannot fetch migrate result");
-		}
-		
-		for(DcTbl dc : dcs.values()) {
-			if(!(dc.getDcName().equals(newPrimaryDc))) {
-				doOtherDcMigrate(cluster, shard, dc.getDcName(), newPrimaryDc);
+			
+			if(shardMigrationResult.stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
+				for(DcTbl dc : dcs.values()) {
+					if(!(dc.getDcName().equals(newPrimaryDc))) {
+						doOtherDcMigrate(cluster, shard, dc.getDcName(), newPrimaryDc);
+					}
+				}
 			}
+		} catch (InterruptedException | ExecutionException e) {
+			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, e.getMessage());
 		}
 		
 		if(shardMigrationResult.stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
@@ -161,11 +168,13 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
-				PrimaryDcChangeMessage res = commandFuture.get();
-				if(res.getErrorType().equals(PRIMARY_DC_CHANGE_RESULT.SUCCESS)) {
-					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, res.getErrorMessage());
-				} else {
-					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, res.getErrorMessage());
+				try {
+					commandFuture.get();
+					
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, "Ignored : make previous primary dc read only");
+				} catch (Exception e) {
+					logger.error("[doPrevPrimaryDcMigrate][fail]",e);
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, "Ignored:" + e.getMessage());
 				}
 				
 				notifyObservers(this);
@@ -179,12 +188,18 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
-				PrimaryDcChangeMessage res = commandFuture.get();
-				if(res.getErrorType().equals(PRIMARY_DC_CHANGE_RESULT.SUCCESS)) {
-					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, true, res.getErrorMessage());
-					updateRedisMaster(res.getNewMasterIp(), res.getNewMasterPort());
-				} else {
-					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, res.getErrorMessage());
+				try {
+					PrimaryDcChangeMessage res = commandFuture.get();
+					
+					if(PRIMARY_DC_CHANGE_RESULT.SUCCESS.equals(res.getErrorType())) {
+						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, true, res.getErrorMessage());
+						updateRedisMaster(res.getNewMasterIp(), res.getNewMasterPort());
+					} else {
+						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, res.getErrorMessage());
+					}
+				} catch (Exception e) {
+					logger.error("[doNewPrimaryDcMigrate][fail]",e);
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, e.getMessage());
 				}
 				
 				notifyObservers(this);
@@ -198,11 +213,17 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
-				PrimaryDcChangeMessage res = commandFuture.get();
-				if(res.getErrorType().equals(PRIMARY_DC_CHANGE_RESULT.SUCCESS)) {
-					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_OTHER_DC, true, res.getErrorMessage());
-				} else {
-					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_OTHER_DC, true, res.getErrorMessage());
+				try {
+					PrimaryDcChangeMessage res = commandFuture.get();
+					
+					if(PRIMARY_DC_CHANGE_RESULT.SUCCESS.equals(res.getErrorType())) {
+						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_OTHER_DC, true, res.getErrorMessage());
+					} else {
+						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_OTHER_DC, false, res.getErrorMessage());
+					}
+				} catch (Exception e) {
+					logger.error("[doOtherDcMigrate][fail]",e);
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_OTHER_DC, false, e.getMessage());
 				}
 				
 				notifyObservers(this);

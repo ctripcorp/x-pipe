@@ -133,8 +133,10 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
 	@Override
 	public void continueMigrationCluster(final long eventId, final long clusterId) {
-		if( null != migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId)) {
-			migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).process();
+		if(null != migrationEventManager.getEvent(eventId)) {
+			if(null != migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId)) {
+				migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).process();
+			}
 		}
 	}
 	

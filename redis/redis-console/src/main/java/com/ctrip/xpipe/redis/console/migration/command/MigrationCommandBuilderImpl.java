@@ -5,8 +5,6 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 
@@ -38,14 +36,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 					future().setSuccess(result);
 				} catch (Exception e) {
 					logger.error("[MigrateDcCheck][Failed]{}-{}-{}-{}", cluster, shard, dc, newPrimaryDc);
-					if(dc.equals(newPrimaryDc)) {
-						future().setSuccess(new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.FAIL,
-								e.getMessage()));
-					} else {
-						future().setSuccess(new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS,
-								String.format("Ingore on check failed with non-newPrimaryDc.%s-%s,%s,%s",
-										cluster, shard, dc, newPrimaryDc)));
-					}
+					future().setFailure(e);
 				}
 			}
 
@@ -71,14 +62,12 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 					metaServerConsoleServiceManagerWrapper
 						.get(prevPrimaryDc)
 						.makeMasterReadOnly(cluster, shard, true);
-					result = new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.SUCCESS, 
-							"Previous primary dc migrate success.");
+					
+					future().setSuccess(result);
 				} catch (Exception e) {
 					logger.error("[PrimaryDcChange][PrevPrimaryDc][Failed]{}-{}", cluster, shard, e);
-					result = new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.SUCCESS, 
-							String.format("Ignore previous primary dc migration fail.Reason:%s", e));
+					future().setFailure(e);
 				}
-				future().setSuccess(result);
 			}
 
 			@Override
@@ -102,13 +91,12 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 					result = metaServerConsoleServiceManagerWrapper
 							.get(newPrimaryDc)
 							.doChangePrimaryDc(cluster, shard, newPrimaryDc);
+
+					future().setSuccess(result);
 				} catch (Exception e) {
 					logger.error("[PrimaryDcChange][NewPrimaryDc][Failed]{}-{}", cluster, shard);
-					result = new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL,
-							String.format("New primary dc migration failed.Reason:", e));
+					future().setFailure(e);
 				}
-				
-				future().setSuccess(result);
 			}
 
 			@Override
@@ -132,13 +120,12 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 					result = metaServerConsoleServiceManagerWrapper
 							.get(otherDc)
 							.doChangePrimaryDc(cluster, shard, newPrimaryDc);
+
+					future().setSuccess(result);
 				} catch (Exception e) {
 					logger.error("[PrimaryDcChange][OtherDc][Failed]{}-{}", cluster, shard);
-					result = new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.SUCCESS,
-							String.format("Ignore other dc migration failed.Reason:", e));
+					future().setFailure(e);
 				}
-				
-				future().setSuccess(result);
 			}
 
 			@Override

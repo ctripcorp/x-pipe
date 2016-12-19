@@ -179,7 +179,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				if(MigrationStatus.isTerminated(cluster.getStatus())) {
 					continue;
 				}
-				if(null == event.getMigrationCluster(cluster.getId())) {
+				if(null == event.getMigrationCluster(cluster.getClusterId())) {
 					event.addMigrationCluster(new DefaultMigrationCluster(detail.getRedundantClusters(),
 							dcService, clusterService, shardService, redisService, migrationService));
 				}

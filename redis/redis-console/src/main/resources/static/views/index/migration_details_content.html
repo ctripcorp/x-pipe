@@ -8,9 +8,9 @@
                 目标机房 : {{migrationCluster.migrationCluster.dc.dcName}}
                 </div>
                 <div class="col-md-7">
-                开始时间 : {{migrationCluster.migrationCluster.startTime | date : 'medium'}}
+                开始时间 : {{migrationCluster.migrationCluster.startTime | date:'yyyy-MM-dd HH:mm:ss'}}
                 &nbsp&nbsp&nbsp
-                结束时间 : {{migrationCluster.migrationCluster.endTime | date : 'medium'}}
+                结束时间 : {{migrationCluster.migrationCluster.endTime | date:'yyyy-MM-dd HH:mm:ss'}}
                 </div>
                 <div class="col-md-2">
 					<a type="button" class="btn btn-primary radius-border-fat" ng-click="continueMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)">
