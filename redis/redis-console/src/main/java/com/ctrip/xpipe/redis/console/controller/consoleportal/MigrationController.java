@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,10 +31,12 @@ public class MigrationController extends AbstractConsoleController {
 	private MigrationService migrationService;
 	
 	@RequestMapping(value = "/migration/events", method = RequestMethod.POST)
-	public void createEvent(@RequestBody MigrationEventModel event) {
+	public Map<String, Long> createEvent(@RequestBody MigrationEventModel event) {
+		Map<String, Long> res = new HashMap<>();
 		logger.info("[Create Event]{}", event);
-		migrationService.createMigrationEvent(event);
+		res.put("value", migrationService.createMigrationEvent(event));
 		logger.info("[Create Event][Done]{}", event);
+		return res;
 	}
 	
 	@RequestMapping(value = "/migration/events/all", method = RequestMethod.GET) 

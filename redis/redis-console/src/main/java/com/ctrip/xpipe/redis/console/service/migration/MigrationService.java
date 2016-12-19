@@ -20,7 +20,7 @@ public interface MigrationService {
 	void updateMigrationShard(MigrationShardTbl shard);
 	void updateMigrationCluster(MigrationClusterTbl cluster);
 	
-	long createMigrationEvent(MigrationEventModel events);
+	Long createMigrationEvent(MigrationEventModel events);
 	void continueMigrationCluster(long eventId, long clusterId);
 	void continueMigrationEvent(long id);
 	void cancelMigrationEvent(long id);

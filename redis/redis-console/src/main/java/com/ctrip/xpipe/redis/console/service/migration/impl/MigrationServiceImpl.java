@@ -105,7 +105,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 	}
 	
 	@Override
-	public long createMigrationEvent(MigrationEventModel events) {
+	public Long createMigrationEvent(MigrationEventModel events) {
 		return migrationEventDao.createMigrationEvnet(events);
 	}
 	
