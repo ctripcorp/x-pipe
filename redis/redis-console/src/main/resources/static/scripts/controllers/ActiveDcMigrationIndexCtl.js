@@ -76,7 +76,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 				.then(function(result) {
 					$('#createEventWithLostConfirm').modal('hide');
 					toastr.success('创建成功');
-					$window.location.href = '/#/migration_event_list';
+					$window.location.href = '/#/migration_event_details/' + result.value;
 				}, function(result) {
 					toastr.error(AppUtil.errorMsg(result), '创建失败');
 				});
