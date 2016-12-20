@@ -5,6 +5,9 @@ insert into DC_CLUSTER_TBL (dc_id,cluster_id,dc_cluster_phase,metaserver_id) val
 
 insert into SHARD_TBL (id,shard_name,cluster_id) values(1,'shard1',1);
 
+insert into DC_CLUSTER_SHARD_TBL (dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (1,1,1,1);
+insert into DC_CLUSTER_SHARD_TBL (dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (2,1,2,1);
+
 insert into MIGRATION_EVENT_TBL (id,event_tag) values (1,'cluster1-111');
 
 insert into MIGRATION_CLUSTER_TBL (id,migration_event_id,cluster_id,source_dc_id, destination_dc_id,status) values (1,1,1,1,2,'Initiated');
