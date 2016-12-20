@@ -17,7 +17,6 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import static org.mockito.Mockito.*;
 
-
 /**
  * @author shyin
  *
@@ -36,7 +35,8 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 	@Autowired
 	protected MigrationService migrationService;
 
-	protected void mockSuccessCheckCommand(MigrationCommandBuilder migrationCommandBuilder,String cluster, String shard, String dc, String newPrimaryDc) {
+	protected void mockSuccessCheckCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
+			String shard, String dc, String newPrimaryDc) {
 		when(migrationCommandBuilder.buildDcCheckCommand(cluster, shard, dc, newPrimaryDc))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcCheckMessage>() {
 
@@ -57,7 +57,30 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 				});
 	}
 
-	protected void mockFailCheckCommand(MigrationCommandBuilder migrationCommandBuilder,String cluster, String shard, String dc, String newPrimaryDc, Throwable ex) {
+	protected void mockFailCheckCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster, String shard,
+			String dc, String newPrimaryDc) {
+		when(migrationCommandBuilder.buildDcCheckCommand(cluster, shard, dc, newPrimaryDc))
+				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcCheckMessage>() {
+
+					@Override
+					public String getName() {
+						return String.format("Mocked-CheckSuccess-%s-%s-%s-%s", cluster, shard, dc, newPrimaryDc);
+					}
+
+					@Override
+					protected void doExecute() throws Exception {
+						future().setSuccess(
+								new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.FAIL, "Check fail with some reason"));
+					}
+
+					@Override
+					protected void doReset() {
+					}
+				});
+	}
+
+	protected void mockFailCheckCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster, String shard,
+			String dc, String newPrimaryDc, Throwable ex) {
 		when(migrationCommandBuilder.buildDcCheckCommand(cluster, shard, dc, newPrimaryDc))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcCheckMessage>() {
 
@@ -77,7 +100,8 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 				});
 	}
 
-	protected void mockSuccessPrevPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder,String cluster, String shard, String prevPrimaryDc) {
+	protected void mockSuccessPrevPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
+			String shard, String prevPrimaryDc) {
 		when(migrationCommandBuilder.buildPrevPrimaryDcCommand(cluster, shard, prevPrimaryDc))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 					@Override
@@ -97,7 +121,8 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 				});
 	}
 
-	protected void mockFailPrevPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder,String cluster, String shard, String prevPrimaryDc, Throwable ex) {
+	protected void mockFailPrevPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
+			String shard, String prevPrimaryDc, Throwable ex) {
 		when(migrationCommandBuilder.buildPrevPrimaryDcCommand(cluster, shard, prevPrimaryDc))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 					@Override
@@ -116,7 +141,8 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 				});
 	}
 
-	protected void mockSuccessNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder,String cluster, String shard, String newPrimaryDc) {
+	protected void mockSuccessNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
+			String shard, String newPrimaryDc) {
 		when(migrationCommandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
@@ -136,8 +162,31 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 					}
 				});
 	}
+	
+	protected void mockFailNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
+			String shard, String newPrimaryDc) {
+		when(migrationCommandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc))
+				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
-	protected void mockFailNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder,String cluster, String shard, String newPrimaryDc, Throwable ex) {
+					@Override
+					public String getName() {
+						return String.format("Mocked-NewSuccess-%s-%s-%s", cluster, shard, newPrimaryDc);
+					}
+
+					@Override
+					protected void doExecute() throws Exception {
+						future().setSuccess(
+								new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, "New fail with some reason"));
+					}
+
+					@Override
+					protected void doReset() {
+					}
+				});
+	}
+
+	protected void mockFailNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
+			String shard, String newPrimaryDc, Throwable ex) {
 		when(migrationCommandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
@@ -157,41 +206,68 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 				});
 	}
 
-	protected void mockSuccessOtherDcCommand(MigrationCommandBuilder migrationCommandBuilder,String cluster, String shard, String newPrimaryDc, String otherDc) {
-		when(migrationCommandBuilder.buildOtherDcCommand(cluster, shard, newPrimaryDc, otherDc)).thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
+	protected void mockSuccessOtherDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
+			String shard, String newPrimaryDc, String otherDc) {
+		when(migrationCommandBuilder.buildOtherDcCommand(cluster, shard, newPrimaryDc, otherDc))
+				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
-			@Override
-			public String getName() {
-				return String.format("Mocked-OtherSuccess-%s-%s-%s-%s", cluster, shard, newPrimaryDc, otherDc);
-			}
+					@Override
+					public String getName() {
+						return String.format("Mocked-OtherSuccess-%s-%s-%s-%s", cluster, shard, newPrimaryDc, otherDc);
+					}
 
-			@Override
-			protected void doExecute() throws Exception {
-				future().setSuccess(new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.SUCCESS, "Other success"));
-			}
+					@Override
+					protected void doExecute() throws Exception {
+						future().setSuccess(
+								new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.SUCCESS, "Other success"));
+					}
 
-			@Override
-			protected void doReset() {
-			}
-		});
+					@Override
+					protected void doReset() {
+					}
+				});
 	}
 	
-	protected void mockFailOtherDcCommand(MigrationCommandBuilder migrationCommandBuilder,String cluster, String shard, String newPrimaryDc, String otherDc, Throwable ex) {
-		when(migrationCommandBuilder.buildOtherDcCommand(cluster, shard, newPrimaryDc, otherDc)).thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
+	protected void mockFailOtherDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
+			String shard, String newPrimaryDc, String otherDc) {
+		when(migrationCommandBuilder.buildOtherDcCommand(cluster, shard, newPrimaryDc, otherDc))
+				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
-			@Override
-			public String getName() {
-				return String.format("Mocked-OtherFail-%s-%s-%s-%s", cluster, shard, newPrimaryDc, otherDc);
-			}
+					@Override
+					public String getName() {
+						return String.format("Mocked-OtherSuccess-%s-%s-%s-%s", cluster, shard, newPrimaryDc, otherDc);
+					}
 
-			@Override
-			protected void doExecute() throws Exception {
-				future().setFailure(ex);
-			}
+					@Override
+					protected void doExecute() throws Exception {
+						future().setSuccess(
+								new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, "Other fail with some reason"));
+					}
 
-			@Override
-			protected void doReset() {
-			}
-		});
+					@Override
+					protected void doReset() {
+					}
+				});
+	}
+
+	protected void mockFailOtherDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster, String shard,
+			String newPrimaryDc, String otherDc, Throwable ex) {
+		when(migrationCommandBuilder.buildOtherDcCommand(cluster, shard, newPrimaryDc, otherDc))
+				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
+
+					@Override
+					public String getName() {
+						return String.format("Mocked-OtherFail-%s-%s-%s-%s", cluster, shard, newPrimaryDc, otherDc);
+					}
+
+					@Override
+					protected void doExecute() throws Exception {
+						future().setFailure(ex);
+					}
+
+					@Override
+					protected void doReset() {
+					}
+				});
 	}
 }
