@@ -2,12 +2,14 @@
     <div class="panel panel-primary" style="margin-top: 15px;">
         <header class="panel-heading">
             <div class="row">
-                <div class="col-md-3">
+                <div class="col-md-4">
                 {{migrationCluster.migrationCluster.cluster.clusterName}}
                 &nbsp&nbsp&nbsp
-                目标机房 : {{migrationCluster.migrationCluster.dc.dcName}}
+                源 : {{migrationCluster.migrationCluster.sourceDcName}}
+                &nbsp&nbsp&nbsp
+                目标 : {{migrationCluster.migrationCluster.destinationDcName}}
                 </div>
-                <div class="col-md-7">
+                <div class="col-md-6">
                 开始时间 : {{migrationCluster.migrationCluster.startTime | date:'yyyy-MM-dd HH:mm:ss'}}
                 &nbsp&nbsp&nbsp
                 结束时间 : {{migrationCluster.migrationCluster.endTime | date:'yyyy-MM-dd HH:mm:ss'}}

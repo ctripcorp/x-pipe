@@ -783,7 +783,6 @@
 		<var name="event-id" value-type="long"/>
 	
 		<relation name="cluster" entity-name="cluster-tbl" entity-alias="ct"/>
-		<relation name="dc" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="migration-event" entity-name="migration-event-tbl" entity-alias="met"/>
 		<relation name="migration-shards" entity-name="migration-shard-tbl" entity-alias="mst" multiple="true"/>
 		
@@ -791,7 +790,6 @@
 			<readset name="FULL_ALL">
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="cluster"/>
-				<readset-ref name="FULL" relation-name="dc"/>
 			</readset>
 		</readsets>
 		
@@ -801,12 +799,10 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>,<TABLE name='migration-event'/>,<TABLE name='cluster'/>, <TABLE name='dc'/>
+					FROM <TABLE/>,<TABLE name='migration-event'/>,<TABLE name='cluster'/>
 					WHERE <FIELD name='migration-event-id'/> = ${event-id}
 					AND met.id = ${event-id}
 					AND ct.id = <FIELD name='cluster-id'/>
-					AND <FIELD name='destination-dc-id'/> = dt.id
-					AND dt.deleted = 0
 					AND ct.deleted = 0
 					AND met.deleted = 0
 					AND <FIELD name='deleted'/> = 0
