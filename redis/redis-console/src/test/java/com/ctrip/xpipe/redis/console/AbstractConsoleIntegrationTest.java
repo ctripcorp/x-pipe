@@ -11,6 +11,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -25,11 +26,14 @@ import com.ctrip.xpipe.utils.FileUtils;
 public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest {
 	public static String DATA_SOURCE = "fxxpipe";
 	
-	@Before
-	public void setUp() throws ComponentLookupException, SQLException {
+	@BeforeClass
+	public static void setUp() {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty("FXXPIPE_HOME", "src/test/resources");
-		
+	}
+	
+	@Before
+	public void before() throws ComponentLookupException, SQLException {
 		setUpTestDataSource();
 	}
 	
@@ -46,11 +50,17 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 		PreparedStatement stmt = null;
 		try {
 			conn = dsManager.getDataSource(DATA_SOURCE).getConnection();
-			if(!Strings.isEmpty(prepareDatas())) {
-				stmt = conn.prepareStatement(prepareDatas());
-				stmt.executeUpdate();
+			String prepareSql = prepareDatas();
+			if(!Strings.isEmpty(prepareSql)) {
+				for(String sql : prepareSql.split(";")) {
+					logger.info("[setup][data]{}",sql.trim());
+					stmt = conn.prepareStatement(sql);
+					stmt.executeUpdate();
+				}
 			}
 			
+		} catch (Exception ex) {
+			logger.error("[SetUpTestDataSource][fail]:",ex);
 		} finally {
 			if(null != stmt) {
 				stmt.close();

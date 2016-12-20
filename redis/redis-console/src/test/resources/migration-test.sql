@@ -1,5 +1,5 @@
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status) values (1,'cluster1',1,'Cluster:cluster1 , ActiveDC : A','0000000000000000','Normal');
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status) values (2,'cluster2',1,'Cluster:cluster2 , ActiveDC : A','0000000000000000','Migrating');
+insert into CLUSTER_TBL (cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status) values ('cluster1',1,'Cluster:cluster1 , ActiveDC : A','0000000000000000','Normal');
+insert into CLUSTER_TBL (cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status) values ('cluster2',1,'Cluster:cluster2 , ActiveDC : A','0000000000000000','Migrating');
 
 insert into DC_CLUSTER_TBL (dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (1,1,1,0);
 insert into DC_CLUSTER_TBL (dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (2,1,1,0);

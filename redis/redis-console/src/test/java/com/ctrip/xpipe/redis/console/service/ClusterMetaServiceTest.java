@@ -21,6 +21,16 @@ public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 	private String clusterName1 = "cluster1";
 	private String clusterName2 = "cluster2";
 	
+	@Override
+	public String prepareDatas() {
+		try {
+			return prepareDatasFromFile("src/test/resources/migration-test.sql");
+		} catch (Exception ex) {
+			logger.error("Prepare data from file failed",ex);
+		}
+		return "";
+	}
+	
 	@Test
 	@DirtiesContext
 	public void testFindNonMigratingClusterMeta() {
