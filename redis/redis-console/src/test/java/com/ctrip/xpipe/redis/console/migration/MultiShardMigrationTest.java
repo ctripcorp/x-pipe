@@ -30,7 +30,7 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
  * Dec 20, 2016
  */
 public class MultiShardMigrationTest extends AbstractMigrationTest {
-	private static int TEST_SHARD_CNT = 1000;
+	private static int TEST_SHARD_CNT = 50;
 	
 	private MigrationCluster migrationCluster;
 	
