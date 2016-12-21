@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.transaction;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -31,8 +33,8 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 	
 	private SimpleObjectPool<NettyClient> parentClientPool;
 
-	public TransactionalCommand(SimpleObjectPool<NettyClient> clientPool, RedisCommand ... commands) {
-		super(clientPool);
+	public TransactionalCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, RedisCommand ... commands) {
+		super(clientPool, scheduled);
 		this.commands = commands;
 		this.parentClientPool = clientPool;
 	}
@@ -69,7 +71,7 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 
 		logger.info("[startTransaction]{}", this);
 		
-		new MultiCommand(clientPool).execute().addListener(new CommandFutureListener<String>() {
+		new MultiCommand(clientPool, scheduled).execute().addListener(new CommandFutureListener<String>() {
 
 			@Override
 			public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
@@ -87,7 +89,7 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 		
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		for(RedisCommand currentCommand : commands){
-			OneTranscationCommand oneTranscationCommand = new OneTranscationCommand(clientPool, currentCommand);
+			OneTranscationCommand oneTranscationCommand = new OneTranscationCommand(clientPool, currentCommand, scheduled);
 			chain.add(oneTranscationCommand);
 		}
 		
@@ -109,7 +111,7 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 		
 		logger.info("[endTranscation]{}", this);
 		
-		new ExecCommand(clientPool).execute().addListener(new CommandFutureListener<Object[]>() {
+		new ExecCommand(clientPool, scheduled).execute().addListener(new CommandFutureListener<Object[]>() {
 			
 			@Override
 			public void operationComplete(CommandFuture<Object[]> commandFuture) throws Exception {
@@ -125,8 +127,8 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 
 	public static class MultiCommand extends AbstractRedisCommand<String>{
 
-		public MultiCommand(SimpleObjectPool<NettyClient> clientPool) {
-			super(clientPool);
+		public MultiCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
 		}
 
 		@Override
@@ -142,8 +144,8 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 
 	public static class ExecCommand extends AbstractRedisCommand<Object[]>{
 
-		public ExecCommand(SimpleObjectPool<NettyClient> clientPool) {
-			super(clientPool);
+		public ExecCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
 		}
 
 		@Override

@@ -245,7 +245,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	private Replconf listeningPortCommand() throws CommandExecutionException {
 
 		Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT,
-				String.valueOf(redisKeeperServer.getListeningPort()));
+				String.valueOf(redisKeeperServer.getListeningPort()), scheduled);
 		return replconf;
 	}
 
@@ -260,7 +260,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	protected KinfoCommand kinfoCommand() throws CommandExecutionException {
 
-		KinfoCommand kinfoCommand = new KinfoCommand(clientPool);
+		KinfoCommand kinfoCommand = new KinfoCommand(clientPool, scheduled);
 
 		kinfoCommand.future().addListener(new CommandFutureListener<ReplicationStoreMeta>() {
 

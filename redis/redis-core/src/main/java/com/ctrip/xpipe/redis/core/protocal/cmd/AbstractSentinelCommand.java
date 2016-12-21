@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -20,8 +21,8 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 	
 	public static String SENTINEL = "sentinel";
 
-	public AbstractSentinelCommand(SimpleObjectPool<NettyClient> clientPool) {
-		super(clientPool);
+	public AbstractSentinelCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 	}
 
 	public static class Sentinels extends AbstractSentinelCommand<List<Sentinel>>{
@@ -30,8 +31,8 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		
 		private String masterName;
 
-		public Sentinels(SimpleObjectPool<NettyClient> clientPool, String masterName) {
-			super(clientPool);
+		public Sentinels(SimpleObjectPool<NettyClient> clientPool, String masterName, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
 			this.masterName = masterName;
 		}
 		
@@ -86,8 +87,8 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		private int quorum;
 		private String masterName;
 		
-		public SentinelAdd(SimpleObjectPool<NettyClient> clientPool, String masterName, String masterIp, int masterPort, int quorum) {
-			super(clientPool);
+		public SentinelAdd(SimpleObjectPool<NettyClient> clientPool, String masterName, String masterIp, int masterPort, int quorum, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
 			this.masterIp = masterIp;
 			this.masterPort = masterPort;
 			this.quorum = quorum;
@@ -116,8 +117,8 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		
 		private String masterName;
 
-		public SentinelRemove(SimpleObjectPool<NettyClient> clientPool, String masterName) {
-			super(clientPool);
+		public SentinelRemove(SimpleObjectPool<NettyClient> clientPool, String masterName, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
 			this.masterName = masterName;
 		}
 

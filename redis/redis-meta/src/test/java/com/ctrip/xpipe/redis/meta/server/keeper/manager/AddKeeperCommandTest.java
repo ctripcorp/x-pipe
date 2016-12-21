@@ -51,7 +51,7 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 		keeperMeta.setIp("localhost");
 		
 		keeperTransMeta  = new KeeperTransMeta("clusterId", "shardId", keeperMeta);
-		addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperTransMeta, timeoutMilli, checkInterval);
+		addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkInterval);
 	}
 	
 	@SuppressWarnings("unused")

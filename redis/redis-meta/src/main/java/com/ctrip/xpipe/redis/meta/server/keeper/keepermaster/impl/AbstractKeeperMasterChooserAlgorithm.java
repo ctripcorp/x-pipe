@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Pair;
@@ -22,15 +24,18 @@ public abstract class AbstractKeeperMasterChooserAlgorithm implements KeeperMast
 	protected CurrentMetaManager currentMetaManager;
 
 	protected String clusterId, shardId;
+	
+	protected ScheduledExecutorService scheduled;
 
 
 	public AbstractKeeperMasterChooserAlgorithm(String clusterId, String shardId, DcMetaCache dcMetaCache,
-			CurrentMetaManager currentMetaManager) {
+			CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled) {
 
 		this.dcMetaCache = dcMetaCache;
 		this.currentMetaManager = currentMetaManager;
 		this.clusterId = clusterId;
 		this.shardId = shardId;
+		this.scheduled = scheduled;
 	}
 
 	@Override

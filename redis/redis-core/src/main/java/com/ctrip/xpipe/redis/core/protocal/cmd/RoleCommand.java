@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
@@ -17,12 +19,12 @@ import io.netty.buffer.ByteBuf;
  */
 public class RoleCommand extends AbstractRedisCommand<Role>{
 
-	public RoleCommand(String host, int port) {
-		super(host, port);
+	public RoleCommand(String host, int port, ScheduledExecutorService scheduled) {
+		super(host, port, scheduled);
 	}
 	
-	public RoleCommand(SimpleObjectPool<NettyClient> clientPool) {
-		super(clientPool);
+	public RoleCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 	}
 
 	@Override

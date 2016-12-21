@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
@@ -25,13 +26,14 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 	private String promoteIp;
 	private int promotePort;
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> keyedClientPool;
+	private ScheduledExecutorService scheduled;
 	
-	public SlavePromotionJob(KeeperMeta keeperMeta, String promoteIp, int promotePort, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> keyedClientPool) {
-		
+	public SlavePromotionJob(KeeperMeta keeperMeta, String promoteIp, int promotePort, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> keyedClientPool, ScheduledExecutorService scheduled) {
 		this.keeperMeta = keeperMeta;
 		this.promoteIp = promoteIp;
 		this.promotePort = promotePort;
 		this.keyedClientPool = keyedClientPool;
+		this.scheduled = scheduled;
 	}
 
 	@Override
@@ -56,7 +58,7 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 				SimpleObjectPool<NettyClient> client = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(keyedClientPool, 
 						new InetSocketAddress(keeperMeta.getIp(), keeperMeta.getPort()));
 				
-				SlaveOfCommand slaveOfCommand = new SlaveOfCommand(client, null, 0, String.format("%s %d", promoteIp, promotePort));
+				SlaveOfCommand slaveOfCommand = new SlaveOfCommand(client, null, 0, String.format("%s %d", promoteIp, promotePort), scheduled);
 				slaveOfCommand.execute().addListener(this);
 				logger.info("[run][write cmd]{}", slaveOfCommand);
 			} catch (Exception e) {

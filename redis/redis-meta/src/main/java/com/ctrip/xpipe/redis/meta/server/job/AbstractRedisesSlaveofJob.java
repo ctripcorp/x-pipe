@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.job;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
@@ -33,13 +34,14 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 	private int delayBaseMilli = 100;
 	private int retryTimes = 5;
+	protected ScheduledExecutorService scheduled;
 	
-	public AbstractRedisesSlaveofJob(List<RedisMeta> slaves, String masterHost, int masterPort, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool){
-		
+	public AbstractRedisesSlaveofJob(List<RedisMeta> slaves, String masterHost, int masterPort, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool, ScheduledExecutorService scheduled){
 		this.redises = new LinkedList<>(slaves);
 		this.masterHost = masterHost;
 		this.masterPort = masterPort;
 		this.clientPool = clientPool;
+		this.scheduled = scheduled;
 	}
 
 	@Override
@@ -88,7 +90,7 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 				}
 				return super.retry(th);
 			}
-		}, command);
+		}, command, scheduled);
 	}
 
 	protected abstract Command<?> createSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String masterHost, int masterPort);

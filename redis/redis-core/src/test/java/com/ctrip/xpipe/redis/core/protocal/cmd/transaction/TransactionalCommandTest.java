@@ -44,8 +44,8 @@ public class TransactionalCommandTest extends AbstractRedisTest {
 	private TransactionalCommand createRightTransaction() throws Exception {
 
 		return new TransactionalCommand(
-				getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(ip, port)),
-				new SlaveOfCommand(null), new RoleCommand(null));
+				getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(ip, port)), scheduled,
+				new SlaveOfCommand(null, scheduled), new RoleCommand(null, scheduled));
 	}
 
 	@Test
@@ -71,8 +71,8 @@ public class TransactionalCommandTest extends AbstractRedisTest {
 	private TransactionalCommand createWrongTransaction() throws Exception {
 
 		return new TransactionalCommand(
-				getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(ip, port)),
-				new SlaveOfCommand(null), new WrongCommand(null));
+				getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(ip, port)), scheduled,
+				new SlaveOfCommand(null, scheduled), new WrongCommand(null));
 	}
 
 	@Test
@@ -89,7 +89,7 @@ public class TransactionalCommandTest extends AbstractRedisTest {
 	public static class WrongCommand extends AbstractRedisCommand<String> {
 
 		public WrongCommand(SimpleObjectPool<NettyClient> clientPool) {
-			super(clientPool);
+			super(clientPool, null);
 		}
 
 		@Override

@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -39,12 +40,14 @@ public class RedisPromotor {
 	private final RedisKeeperServer redisKeeperServer;
 	private final String promoteServerIp;
 	private final int promoteServerPort;
+	private ScheduledExecutorService scheduled;
 	
-	public RedisPromotor(RedisKeeperServer redisKeeperServer, String promoteServerIp, int promoteServerPort){
+	public RedisPromotor(RedisKeeperServer redisKeeperServer, String promoteServerIp, int promoteServerPort, ScheduledExecutorService scheduled){
 		
 		this.redisKeeperServer = redisKeeperServer;
 		this.promoteServerIp = promoteServerIp;
 		this.promoteServerPort = promoteServerPort;
+		this.scheduled = scheduled;
 	}
 	
 	public void promote() throws RedisSlavePromotionException{
@@ -79,7 +82,7 @@ public class RedisPromotor {
 			
 			try{
 				redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.BEGIN_PROMOTE_SLAVE);
-				Fsync fsyncCmd = new Fsync(fsyncPool);
+				Fsync fsyncCmd = new Fsync(fsyncPool, scheduled);
 				String fsyncResult = fsyncCmd.execute().get();
 				logger.info("[promoteSlaveToMaster][fsync done]{}, {},{}", fsyncResult, promoteServerIp, promoteServerPort);
 				redisModified(redisSlave, clientPool);
@@ -105,10 +108,10 @@ public class RedisPromotor {
 	private void redisModified(RedisSlave redisSlave, SimpleObjectPool<NettyClient> clientPool) throws Exception {
 		
 		try{
-			AbstractSlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
+			AbstractSlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool, scheduled);
 			slaveOfCmd.execute().sync();
 	
-			InfoCommand infoServerCmd = new InfoCommand(clientPool, "server");
+			InfoCommand infoServerCmd = new InfoCommand(clientPool, "server", scheduled);
 			String info = infoServerCmd.execute().get();
 			String masterId = null;
 	
@@ -119,7 +122,7 @@ public class RedisPromotor {
 						masterId = line.substring("run_id:".length());
 					}
 				}
-				InfoCommand infoLastMasterCmd = new InfoCommand(clientPool,"lastmaster");
+				InfoCommand infoLastMasterCmd = new InfoCommand(clientPool,"lastmaster", scheduled);
 				String infoLastMaster = infoLastMasterCmd.execute().get();
 				long keeperOffset = 0, newMasterOffset = 0;
 				try {
@@ -142,7 +145,7 @@ public class RedisPromotor {
 
 	private void redisNotModified(RedisSlave redisSlave, SimpleObjectPool<NettyClient> clientPool) throws InterruptedException, ExecutionException, IOException {
 		
-		AbstractSlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool);
+		AbstractSlaveOfCommand slaveOfCmd = new SlaveOfCommand(clientPool, scheduled);
 		slaveOfCmd.execute().sync();
 		
 		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.SLAVE_PROMTED, new InetSocketAddress(promoteServerIp, promoteServerPort));

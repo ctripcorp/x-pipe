@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
@@ -15,8 +17,8 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 
 	private String args;
 
-	public InfoCommand(SimpleObjectPool<NettyClient> clientPool, String args) {
-		super(clientPool);
+	public InfoCommand(SimpleObjectPool<NettyClient> clientPool, String args, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 		this.args = args;
 	}
 

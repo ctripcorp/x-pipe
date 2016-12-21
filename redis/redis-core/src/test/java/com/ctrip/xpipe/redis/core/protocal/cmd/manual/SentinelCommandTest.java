@@ -43,25 +43,25 @@ public class SentinelCommandTest extends AbstractCommandTest{
 	
 	private List<Sentinel> getSentinels() throws InterruptedException, ExecutionException {
 		
-		return new Sentinels(clientPool, masterName).execute().get();
+		return new Sentinels(clientPool, masterName, scheduled).execute().get();
 	}
 
 	@Test
 	public void testRemove() throws InterruptedException, ExecutionException{
 		
 		try{
-			new SentinelRemove(clientPool, masterName).execute().get();
+			new SentinelRemove(clientPool, masterName, scheduled).execute().get();
 		}catch(Exception e){
 			logger.error("[testRemove]", e);
 		}
 		
-		String addResult = new SentinelAdd(clientPool, masterName, "127.0.0.1", 6379, 3).execute().get();
+		String addResult = new SentinelAdd(clientPool, masterName, "127.0.0.1", 6379, 3, scheduled).execute().get();
 		logger.info("{}", addResult);
 		
-		String removeResult = new SentinelRemove(clientPool, masterName).execute().get();
+		String removeResult = new SentinelRemove(clientPool, masterName, scheduled).execute().get();
 		logger.info("{}", removeResult);
 
-		new SentinelAdd(clientPool, masterName, "127.0.0.1", 6379, 3).execute().get();
+		new SentinelAdd(clientPool, masterName, "127.0.0.1", 6379, 3, scheduled).execute().get();
 		logger.info("{}", addResult);
 
 		logger.info("{}", getSentinels());

@@ -49,7 +49,7 @@ public class DeleteKeeperCommandTest extends AbstractMetaServerTest{
 		keeperMeta.setPort(randomPort());
 		
 		deleteKeeperCommand = new DeleteKeeperCommand(keeperContainerService, 
-				new KeeperTransMeta(clusterId, shardId, keeperMeta), timeoutMilli, checkIntervalMili);
+				new KeeperTransMeta(clusterId, shardId, keeperMeta), scheduled, timeoutMilli, checkIntervalMili);
 		
 	}
 

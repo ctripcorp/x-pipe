@@ -35,7 +35,7 @@ public class FirstNewMasterChooserTest extends AbstractMetaServerTest{
 		redises.add(new RedisMeta().setIp("localhost").setPort(port1));
 		redises.add(new RedisMeta().setIp("localhost").setPort(randomPort(Arrays.asList(port1))));
 		
-		firstNewMasterChooser = new FirstNewMasterChooser(getXpipeNettyClientKeyedObjectPool());
+		firstNewMasterChooser = new FirstNewMasterChooser(getXpipeNettyClientKeyedObjectPool(), scheduled);
 	}
 	
 	@Test

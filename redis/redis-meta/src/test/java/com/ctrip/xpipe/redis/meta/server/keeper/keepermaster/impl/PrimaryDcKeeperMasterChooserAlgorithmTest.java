@@ -33,7 +33,7 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 	public void befoePrimaryDcKeeperMasterChooserTest() throws Exception{
 		
 		primaryAlgorithm =  new PrimaryDcKeeperMasterChooserAlgorithm(clusterId, shardId, 
-				dcMetaCache, currentMetaManager, getXpipeNettyClientKeyedObjectPool(), 1);
+				dcMetaCache, currentMetaManager, getXpipeNettyClientKeyedObjectPool(), 1, scheduled);
 		redises = new LinkedList<>();
 		int port1 = randomPort();
 		redises.add(new RedisMeta().setIp("localhost").setPort(port1));

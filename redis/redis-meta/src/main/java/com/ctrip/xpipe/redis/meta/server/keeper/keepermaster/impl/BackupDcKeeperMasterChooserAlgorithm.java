@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -17,8 +19,8 @@ public class BackupDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterCh
 	private MultiDcService multiDcService;
 
 	public BackupDcKeeperMasterChooserAlgorithm(String clusterId, String shardId, DcMetaCache dcMetaCache,
-			CurrentMetaManager currentMetaManager, MultiDcService multiDcService) {
-		super(clusterId, shardId, dcMetaCache, currentMetaManager);
+			CurrentMetaManager currentMetaManager, MultiDcService multiDcService, ScheduledExecutorService scheduled) {
+		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
 		this.multiDcService = multiDcService;
 	}
 	

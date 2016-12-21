@@ -11,7 +11,6 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.CommandTimeoutException;
-import com.ctrip.xpipe.pool.XpipeNettyClientPool;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -22,17 +21,17 @@ import io.netty.channel.Channel;
  * Jul 1, 2016
  */
 public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNettyCommand<V> implements ByteBufReceiver, RequestResponseCommand<V>{
+		
+	protected ScheduledExecutorService scheduled;
 	
-	public AbstractNettyRequestResponseCommand(String host, int port){
+	public AbstractNettyRequestResponseCommand(String host, int port, ScheduledExecutorService scheduled){
 		super(host, port);
+		this.scheduled = scheduled;
 	}
 	
-	public AbstractNettyRequestResponseCommand(SimpleObjectPool<NettyClient> clientPool) {
+	public AbstractNettyRequestResponseCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
 		super(clientPool);
-	}
-
-	public AbstractNettyRequestResponseCommand(XpipeNettyClientPool clientPool, ScheduledExecutorService scheduled) {
-		super(clientPool, scheduled);
+		this.scheduled = scheduled;
 	}
 	
 	@Override
@@ -51,7 +50,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 			return;
 		}
 		
-		if(getCommandTimeoutMilli() > 0){
+		if(getCommandTimeoutMilli() > 0 && scheduled != null){
 			
 			logger.debug("[doSendRequest][schedule timeout]{}, {}", this, getCommandTimeoutMilli());
 			final ScheduledFuture<?> timeoutFuture = scheduled.schedule(new Runnable() {

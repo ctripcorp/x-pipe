@@ -15,14 +15,12 @@ import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
  */
 public class PingCommandTest extends AbstractRedisTest{
 	
-	
-	
 	@Test
 	public void testPing() throws Exception {
 		
 		FakeRedisServer fakeRedisServer = startFakeRedisServer();
 		
-		PingCommand command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("localhost", fakeRedisServer.getPort())));
+		PingCommand command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("localhost", fakeRedisServer.getPort())), scheduled);
 		String result = command.execute().get();
 		Assert.assertEquals(PingCommand.PONG, result);
 	}

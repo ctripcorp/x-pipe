@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.command;
 
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,12 +31,15 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 	private Command<V> command;
 	private CommandFuture<V> currentCommandFuture;
 	
-	public CommandRetryWrapper(Command<V> command){
-		this(0, 0, new NoWaitRetry(), command);
+	private ScheduledExecutorService scheduled;
+	
+	private CommandRetryWrapper(Command<V> command, ScheduledExecutorService scheduled){
+		this(scheduled, 0, 0, new NoWaitRetry(), command);
 	}
 
-	public CommandRetryWrapper(int retryTimes, int retryTimeoutMilli, RetryPolicy retryPolicy, Command<V> command) {
+	private CommandRetryWrapper(ScheduledExecutorService scheduled, int retryTimes, int retryTimeoutMilli, RetryPolicy retryPolicy, Command<V> command) {
 		
+		this.scheduled = scheduled;
 		this.retryTimes = retryTimes;
 		this.retryPolicy = retryPolicy;
 		this.command = command;
@@ -46,12 +50,12 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 		}
 	}
 	
-	public static <V> Command<V>  buildCountRetry(int retryTimes, RetryPolicy retryPolicy, Command<V> command){
-		return new CommandRetryWrapper<>(retryTimes, -1, retryPolicy, command);
+	public static <V> Command<V>  buildCountRetry(int retryTimes, RetryPolicy retryPolicy, Command<V> command, ScheduledExecutorService scheduled){
+		return new CommandRetryWrapper<>(scheduled, retryTimes, -1, retryPolicy, command);
 	}
 	
-	public static <V> Command<V>  buildTimeoutRetry(int retryTimeoutMilli, RetryPolicy retryPolicy, Command<V> command){
-		return new CommandRetryWrapper<>(-1, retryTimeoutMilli, retryPolicy, command);
+	public static <V> Command<V>  buildTimeoutRetry(int retryTimeoutMilli, RetryPolicy retryPolicy, Command<V> command, ScheduledExecutorService scheduled){
+		return new CommandRetryWrapper<>(scheduled, -1, retryTimeoutMilli, retryPolicy, command);
 	}
 
 	
@@ -96,6 +100,10 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 		});
 	}
 
+	private void execute(int time, TimeUnit timeUnit) {
+		new ScheduleCommandWrapper<>(this, scheduled, time, timeUnit).execute();
+	}
+	
 	protected boolean shouldRetry(Throwable throwable) {
 		
 		if(retryTimes >=0 && executeCount.get() > retryTimes){

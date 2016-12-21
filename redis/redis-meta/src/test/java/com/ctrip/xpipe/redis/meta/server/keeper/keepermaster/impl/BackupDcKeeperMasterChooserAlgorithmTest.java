@@ -29,7 +29,7 @@ public class BackupDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperMa
 	public void beforeBackupDcKeeperMasterChooserTest() {
 
 		backupAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterId, shardId, 
-				dcMetaCache, currentMetaManager, multiDcService); 
+				dcMetaCache, currentMetaManager, multiDcService, scheduled); 
 		
 		when(dcMetaCache.getPrimaryDc(clusterId, shardId)).thenReturn(primaryDc);
 		when(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)).thenReturn(false);

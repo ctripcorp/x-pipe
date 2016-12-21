@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.command.AbstractCommand;
@@ -21,14 +23,14 @@ import com.ctrip.xpipe.retry.RetryDelay;
  */
 public class AddKeeperCommand extends AbstractKeeperCommand<KeeperRole>{
 
-	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
+	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,	ScheduledExecutorService scheduled,
 			int timeoutMilli) {
-		super(keeperContainerService, keeperTransMeta, timeoutMilli, 1000);
+		super(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, 1000);
 	}
 
-	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
+	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled,
 			int timeoutMilli, int checkIntervalMilli) {
-		super(keeperContainerService, keeperTransMeta, timeoutMilli, checkIntervalMilli);
+		super(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkIntervalMilli);
 	}
 
 	@Override
@@ -69,7 +71,7 @@ public class AddKeeperCommand extends AbstractKeeperCommand<KeeperRole>{
 			@Override
 			protected void doExecute() throws Exception {
 				
-				KeeperRole keeperRole = (KeeperRole) new RoleCommand(keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort()).execute().get();
+				KeeperRole keeperRole = (KeeperRole) new RoleCommand(keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort(), scheduled).execute().get();
 				if(keeperRole.getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED){
 					logger.info("[doExecute][success]{}", keeperRole);
 					future().setSuccess(keeperRole);

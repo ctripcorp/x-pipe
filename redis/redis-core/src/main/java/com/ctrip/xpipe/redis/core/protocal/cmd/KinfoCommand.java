@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.api.codec.Codec;
@@ -22,12 +22,12 @@ import io.netty.buffer.ByteBuf;
 public class KinfoCommand extends AbstractRedisCommand<ReplicationStoreMeta> {
 
 	private String args;
-	public KinfoCommand(SimpleObjectPool<NettyClient> clientPool) {
-		this(clientPool, "");
+	public KinfoCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		this(clientPool, "", scheduled);
 	}
 
-	public KinfoCommand(SimpleObjectPool<NettyClient> clientPool, String args) {
-		super(clientPool);
+	public KinfoCommand(SimpleObjectPool<NettyClient> clientPool, String args, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 		this.args = args;
 	}
 

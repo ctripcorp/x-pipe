@@ -172,7 +172,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	protected SERVER_ROLE getRedisServerRole(RedisMeta slave) throws Exception {
 		
 		SimpleObjectPool<NettyClient>  clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(slave.getIp(),slave.getPort()));
-		String info = new InfoCommand(clientPool, "replication").execute().get();
+		String info = new InfoCommand(clientPool, "replication", scheduled).execute().get();
 		for(String line : info.split("\r\n")){
 			String []parts = line.split(":");
 			if(parts.length >= 2 && parts[0].equals("role")){

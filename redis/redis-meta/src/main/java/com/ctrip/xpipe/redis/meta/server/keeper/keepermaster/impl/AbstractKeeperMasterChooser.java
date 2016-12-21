@@ -30,7 +30,7 @@ public abstract class AbstractKeeperMasterChooser extends AbstractStartStoppable
 
 	protected CurrentMetaManager currentMetaManager;
 
-	private ScheduledExecutorService scheduled;
+	protected ScheduledExecutorService scheduled;
 
 	private ScheduledFuture<?> future;
 

@@ -31,7 +31,7 @@ public class TransactionalSlaveOfCommandTest extends AbstractRedisTest{
 		for(int i=0; i < testCount; i++){
 			
 			logger.info(remarkableMessage("{}"), i);
-			TransactionalSlaveOfCommand command = new TransactionalSlaveOfCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(ip, port)), ip, port);
+			TransactionalSlaveOfCommand command = new TransactionalSlaveOfCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(ip, port)), ip, port, scheduled);
 			
 			Object []result = command.execute().get();
 			logger.info("{}", (Object)result);

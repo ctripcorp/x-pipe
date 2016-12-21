@@ -43,12 +43,12 @@ public class DefaultDcKeeperMasterChooser extends AbstractKeeperMasterChooser{
 			if(keeperMasterChooserAlgorithm == null || keeperMasterChooserAlgorithm instanceof BackupDcKeeperMasterChooserAlgorithm){
 				
 				logger.info("[chooseKeeperMaster][current dc become primary, change algorithm]{}, {}", clusterId, shardId);
-				keeperMasterChooserAlgorithm = new PrimaryDcKeeperMasterChooserAlgorithm(clusterId, shardId, dcMetaCache, currentMetaManager, keyedObjectPool, checkIntervalSeconds/2);
+				keeperMasterChooserAlgorithm = new PrimaryDcKeeperMasterChooserAlgorithm(clusterId, shardId, dcMetaCache, currentMetaManager, keyedObjectPool, checkIntervalSeconds/2, scheduled);
 			}
 		}else{
 			if(keeperMasterChooserAlgorithm == null || keeperMasterChooserAlgorithm instanceof PrimaryDcKeeperMasterChooserAlgorithm){
 				logger.info("[chooseKeeperMaster][current dc become backup, change algorithm]{}, {}", clusterId, shardId);
-				keeperMasterChooserAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterId, shardId, dcMetaCache, currentMetaManager, multiDcService);
+				keeperMasterChooserAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterId, shardId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
 			}
 		}
 		return keeperMasterChooserAlgorithm.choose();

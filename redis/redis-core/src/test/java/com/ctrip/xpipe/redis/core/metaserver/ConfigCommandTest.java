@@ -25,12 +25,12 @@ public class ConfigCommandTest extends AbstractRedisTest{
 		
 		InetSocketAddress address = new InetSocketAddress(ip, port);
 		
-		Integer min = new ConfigGetMinSlavesToWrite(getXpipeNettyClientKeyedObjectPool().getKeyPool(address)).execute().get();
+		Integer min = new ConfigGetMinSlavesToWrite(getXpipeNettyClientKeyedObjectPool().getKeyPool(address), scheduled).execute().get();
 		logger.info("{}", min);
-		Boolean result = new ConfigSetMinSlavesToWrite(getXpipeNettyClientKeyedObjectPool().getKeyPool(address), 100).execute().get();
+		Boolean result = new ConfigSetMinSlavesToWrite(getXpipeNettyClientKeyedObjectPool().getKeyPool(address), 100, scheduled).execute().get();
 		logger.info("{}", result);
 		
-		min = new ConfigGetMinSlavesToWrite(getXpipeNettyClientKeyedObjectPool().getKeyPool(address)).execute().get();
+		min = new ConfigGetMinSlavesToWrite(getXpipeNettyClientKeyedObjectPool().getKeyPool(address), scheduled).execute().get();
 		logger.info("{}", min);
 		
 	}

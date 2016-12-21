@@ -29,13 +29,14 @@ public class SingleKeeperGc extends AbstractKeeperIntegratedSingleDc{
 		}catch(Throwable e){
 			logger.error("[startTest]", e);
 		}
+		
+		waitForAnyKeyToExit();
 	}
 
 	
 	@Override
 	protected void doAfterAbstractTest() throws Exception {
 		super.doAfterAbstractTest();
-		waitForAnyKeyToExit();
 	}
 	
 	@Test

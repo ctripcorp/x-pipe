@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
@@ -13,8 +15,8 @@ import io.netty.buffer.ByteBuf;
  */
 public class ConfigRewrite extends AbstractConfigCommand<String>{
 
-	public ConfigRewrite(SimpleObjectPool<NettyClient> clientPool) {
-		super(clientPool);
+	public ConfigRewrite(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 	}
 
 	@Override

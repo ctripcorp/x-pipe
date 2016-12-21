@@ -3,6 +3,9 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+
+import javax.annotation.Resource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +24,7 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import com.ctrip.xpipe.redis.meta.server.dcchange.SentinelManager;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.AddSentinelException;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 
@@ -36,10 +40,13 @@ public class DefaultSentinelManager implements SentinelManager{
 	
 	private static Logger logger = LoggerFactory.getLogger(DefaultSentinelManager.class);
 	
+	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	private ScheduledExecutorService scheduled;
+	
 	@Autowired
 	private DcMetaCache dcMetaCache;
 
-	@Autowired
+	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool keyedClientPool;
 	
 	public DefaultSentinelManager(){
@@ -76,7 +83,7 @@ public class DefaultSentinelManager implements SentinelManager{
 			
 			InetSocketAddress sentinelAddress =  sentinels.get(i);
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(sentinelAddress);
-			SentinelAdd command = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getIp(), redisMaster.getPort(), quorum);
+			SentinelAdd command = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getIp(), redisMaster.getPort(), quorum, scheduled);
 			try {
 				String result = command.execute().get();
 				executionLog.info(String.format("add to sentinel %s : %s", sentinelAddress, result));
@@ -124,7 +131,7 @@ public class DefaultSentinelManager implements SentinelManager{
 		for(Sentinel sentinel : realSentinels){
 			
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new InetSocketAddress(sentinel.getIp(), sentinel.getPort()));
-			SentinelRemove sentinelRemove = new SentinelRemove(clientPool, sentinelMonitorName);
+			SentinelRemove sentinelRemove = new SentinelRemove(clientPool, sentinelMonitorName, scheduled);
 			try {
 				String result = sentinelRemove.execute().get();
 				executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, result));
@@ -141,7 +148,7 @@ public class DefaultSentinelManager implements SentinelManager{
 		for(InetSocketAddress sentinelAddress: sentinels){
 			
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(sentinelAddress);
-			Sentinels sentinelsCommand = new Sentinels(clientPool, sentinelMonitorName);
+			Sentinels sentinelsCommand = new Sentinels(clientPool, sentinelMonitorName, scheduled);
 			try {
 				realSentinels = sentinelsCommand.execute().get();
 				executionLog.info(String.format("get sentinels from %s : %s", sentinelAddress, realSentinels));

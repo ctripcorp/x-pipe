@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -33,9 +34,12 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser{
 	protected XpipeNettyClientKeyedObjectPool keyedObjectPool;
 	
 	protected RedisMeta newMaster = null;
+	
+	protected ScheduledExecutorService scheduled;
 
-	public AbstractNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool) {
+	public AbstractNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled) {
 		this.keyedObjectPool = keyedObjectPool;
+		this.scheduled = scheduled;
 	}
 
 	
@@ -75,7 +79,7 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser{
 		
 		try {
 			SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort()));
-			Role role = new RoleCommand(clientPool).execute().get(CHECK_NEW_MASTER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+			Role role = new RoleCommand(clientPool, scheduled).execute().get(CHECK_NEW_MASTER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 			return SERVER_ROLE.MASTER == role.getServerRole();
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			logger.error("[isMaster]" + redisMeta, e);

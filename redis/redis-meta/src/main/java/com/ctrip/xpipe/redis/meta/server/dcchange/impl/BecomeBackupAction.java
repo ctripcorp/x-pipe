@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.unidal.tuple.Pair;
 
@@ -28,8 +29,8 @@ public class BecomeBackupAction extends AbstractChangePrimaryDcAction{
 	private MultiDcService multiDcService;
 	
 	public BecomeBackupAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, 
-			MultiDcService multiDcService) {
-		super(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool);
+			MultiDcService multiDcService, ScheduledExecutorService scheduled) {
+		super(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, scheduled);
 		this.multiDcService = multiDcService;
 	}
 	
@@ -60,7 +61,7 @@ public class BecomeBackupAction extends AbstractChangePrimaryDcAction{
 	@Override
 	protected Pair<String, Integer> chooseNewMaster(String clusterId, String shardId) {
 		
-		BackupDcKeeperMasterChooserAlgorithm algorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterId, shardId, dcMetaCache, currentMetaManager, multiDcService);
+		BackupDcKeeperMasterChooserAlgorithm algorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterId, shardId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
 		return algorithm.choose();
 	}
 
@@ -81,7 +82,7 @@ public class BecomeBackupAction extends AbstractChangePrimaryDcAction{
 		
 		try {
 			executionLog.info("[makeRedisesOk]" + slaves + "->" + newMaster);
-			Command<Void> command = new TransactionalSlaveOfJob(slaves, newMaster.getKey(), newMaster.getValue(), keyedObjectPool);
+			Command<Void> command = new TransactionalSlaveOfJob(slaves, newMaster.getKey(), newMaster.getValue(), keyedObjectPool, scheduled);
 			command.execute().get();
 		} catch (InterruptedException | ExecutionException e) {
 			logger.error("[makeRedisesOk]" + slaves, e);

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.netty.commands;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
@@ -41,11 +40,6 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 		this.clientPool = clientPool;
 	}
 
-	public AbstractNettyCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
-		super(scheduled);
-		this.clientPool = clientPool;
-	}
-	
 	@Override
 	protected void doExecute() throws CommandExecutionException {
 		

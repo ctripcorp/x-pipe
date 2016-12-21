@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -31,8 +32,8 @@ public class PrimaryDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterC
 	private int checkRedisTimeoutSeconds;
 
 	public PrimaryDcKeeperMasterChooserAlgorithm(String clusterId, String shardId, DcMetaCache dcMetaCache,
-			CurrentMetaManager currentMetaManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, int checkRedisTimeoutSeconds) {
-		super(clusterId, shardId, dcMetaCache, currentMetaManager);
+			CurrentMetaManager currentMetaManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, int checkRedisTimeoutSeconds, ScheduledExecutorService scheduled) {
+		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
 		this.keyedObjectPool = keyedObjectPool;
 		this.checkRedisTimeoutSeconds = checkRedisTimeoutSeconds;
 	}
@@ -84,7 +85,7 @@ public class PrimaryDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterC
 		
 		try {
 			SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort()));
-			Role role = new RoleCommand(clientPool).execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);
+			Role role = new RoleCommand(clientPool, scheduled).execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);
 			return SERVER_ROLE.MASTER == role.getServerRole();
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			logger.error("[isMaster]" + redisMeta, e);

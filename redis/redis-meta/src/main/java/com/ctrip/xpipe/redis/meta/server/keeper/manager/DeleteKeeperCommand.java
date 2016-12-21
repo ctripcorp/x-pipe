@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.exception.ErrorMessage;
@@ -16,14 +18,14 @@ import com.ctrip.xpipe.utils.TcpPortCheck;
  */
 public class DeleteKeeperCommand extends AbstractKeeperCommand<Void>{
 	
-	public DeleteKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
+	public DeleteKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled,
 			int timeoutMilli) {
-		this(keeperContainerService, keeperTransMeta, timeoutMilli, 1000);
+		this(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, 1000);
 	}
 
-	public DeleteKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
+	public DeleteKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled,
 			int timeoutMilli, int checkIntervalMilli) {
-		super(keeperContainerService, keeperTransMeta, timeoutMilli, checkIntervalMilli);
+		super(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkIntervalMilli);
 	}
 
 

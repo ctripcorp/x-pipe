@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.payload.InOutPayload;
@@ -30,12 +31,12 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 	
 	private int commandTimeoutMilli = DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
-	public AbstractRedisCommand(String host, int port){
-		super(host, port);
+	public AbstractRedisCommand(String host, int port, ScheduledExecutorService scheduled){
+		super(host, port, scheduled);
 	}
 
-	public AbstractRedisCommand(SimpleObjectPool<NettyClient> clientPool) {
-		super(clientPool);
+	public AbstractRedisCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 	}
 
 	public static enum COMMAND_RESPONSE_STATE{

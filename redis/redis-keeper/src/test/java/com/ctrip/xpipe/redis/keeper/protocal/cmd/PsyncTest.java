@@ -50,7 +50,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		replicationStore = (DefaultReplicationStore) replicationStoreManager.create();
 		
 		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress("127.0.0.1", 1234));
-		psync = new DefaultPsync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager);
+		psync = new DefaultPsync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled);
 		psync.future().addListener(new CommandFutureListener<Object>() {
 			
 			@Override

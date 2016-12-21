@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.transaction;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.RedisCommand;
@@ -19,8 +21,8 @@ public class OneTranscationCommand extends AbstractRedisCommand<String>{
 
 	private RedisCommand redisCommand;
 	
-	public OneTranscationCommand(SimpleObjectPool<NettyClient> clientPool, RedisCommand redisCommand) {
-		super(clientPool);
+	public OneTranscationCommand(SimpleObjectPool<NettyClient> clientPool, RedisCommand redisCommand, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 		this.redisCommand = redisCommand;
 	}
 

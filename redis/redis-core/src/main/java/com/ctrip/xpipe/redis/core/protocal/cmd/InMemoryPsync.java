@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.unidal.tuple.Pair;
 
@@ -26,15 +26,15 @@ public class InMemoryPsync extends AbstractPsync{
 	private ByteArrayOutputStream commands = new ByteArrayOutputStream();
 	private ByteArrayOutputStreamPayload rdb = new ByteArrayOutputStreamPayload();
 
-	public InMemoryPsync(String masterHost, int masterPort, String requestMasterId, long   requestMasterOffset) throws Exception {
-		super(masterHost, masterPort, true);
+	public InMemoryPsync(String masterHost, int masterPort, String requestMasterId, long   requestMasterOffset, ScheduledExecutorService scheduled) throws Exception {
+		super(masterHost, masterPort, true, scheduled);
 		this.requestMasterId = requestMasterId;
 		this.requestMasterOffset = requestMasterOffset;
 		
 	}
 
-	public InMemoryPsync(SimpleObjectPool<NettyClient> clientPool, String requestMasterId, long   requestMasterOffset) throws Exception {
-		super(clientPool, true);
+	public InMemoryPsync(SimpleObjectPool<NettyClient> clientPool, String requestMasterId, long   requestMasterOffset, ScheduledExecutorService scheduled) throws Exception {
+		super(clientPool, true, scheduled);
 		this.requestMasterId = requestMasterId;
 		this.requestMasterOffset = requestMasterOffset;
 	}

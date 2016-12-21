@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 
@@ -12,8 +14,8 @@ public abstract class AbstractConfigCommand<T> extends AbstractRedisCommand<T>{
 	
 	public static String CONFIG = "config";
 
-	public AbstractConfigCommand(SimpleObjectPool<NettyClient> clientPool) {
-		super(clientPool);
+	public AbstractConfigCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 	}
 	
 	public static enum REDIS_CONFIG_TYPE{

@@ -23,7 +23,7 @@ public class FakeRedisRdbDumperTest extends AbstractFakeRedisTest {
 		fakeRedisServer.setSleepBeforeSendFullSyncInfo(sleepBeforeSendFullSyncInfo);
 		
 		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis();
-		InMemoryPsync inMemoryPsync = new InMemoryPsync("localhost", redisKeeperServer.getListeningPort(), "?", -1);
+		InMemoryPsync inMemoryPsync = new InMemoryPsync("localhost", redisKeeperServer.getListeningPort(), "?", -1, scheduled);
 		CommandFuture<?> future = inMemoryPsync.execute();
 
 		sleep(sleepBeforeSendFullSyncInfo + 1000);

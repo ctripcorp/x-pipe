@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
@@ -26,6 +27,7 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.impl.MinSlavesRedisReadOnly;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
+import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 
 /**
  * @author marsqing
@@ -35,8 +37,11 @@ import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 @Component
 public class DefaultMetaServer extends DefaultCurrentClusterServer implements MetaServer {
 
-	@Resource(name = "clientPool")
+	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
+
+	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	private ScheduledExecutorService scheduled;
 
 	@SuppressWarnings("unused")
 	@Autowired
@@ -179,7 +184,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		if(currentDc.equalsIgnoreCase(newPrimaryDc)){
 			
 			List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterId, shardId);
-			boolean result = new AtLeastOneChecker(redises, keyedObjectPool).check();
+			boolean result = new AtLeastOneChecker(redises, keyedObjectPool, scheduled).check();
 			if(result){
 				return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS);
 			}
@@ -199,7 +204,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		}
 		Pair<String, Integer>  keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
 		
-		RedisReadonly redisReadOnly = new  MinSlavesRedisReadOnly(keeperMaster.getKey(), keeperMaster.getValue(), keyedObjectPool);
+		RedisReadonly redisReadOnly = new  MinSlavesRedisReadOnly(keeperMaster.getKey(), keeperMaster.getValue(), keyedObjectPool, scheduled);
 		try {
 			if(readOnly){
 				logger.info("[makeMasterReadOnly][readonly]{}", keeperMaster);

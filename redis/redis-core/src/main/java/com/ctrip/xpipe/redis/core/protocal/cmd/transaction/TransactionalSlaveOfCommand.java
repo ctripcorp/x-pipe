@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.transaction;
 
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
@@ -27,8 +28,8 @@ public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 	
 	private int port;
 
-	public TransactionalSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String ip, int port) {
-		super(clientPool);
+	public TransactionalSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String ip, int port, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 		this.ip = ip;
 		this.port = port;
 	}
@@ -38,7 +39,7 @@ public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 
 		logger.info("[doExecute][try xslaveof]{}", this);
 		
-		TransactionalCommand slaveofTransaction = new TransactionalCommand(getClientPool(), new XSlaveofCommand(null, ip, port), new ConfigRewrite(null));
+		TransactionalCommand slaveofTransaction = new TransactionalCommand(getClientPool(), scheduled, new XSlaveofCommand(null, ip, port, scheduled), new ConfigRewrite(null, scheduled));
 		try{
 			slaveofTransaction.execute().addListener(new CommandFutureListener<Object[]>() {
 				
@@ -69,7 +70,7 @@ public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 		
 		logger.error("[doExecute][xlaveof fail, try slaveof]" + ip + ":"+ port, e);
 		
-		TransactionalCommand slaveofTransaction = new TransactionalCommand(getClientPool(), new SlaveOfCommand(null, ip, port), new ConfigRewrite(null));
+		TransactionalCommand slaveofTransaction = new TransactionalCommand(getClientPool(), scheduled, new SlaveOfCommand(null, ip, port, scheduled), new ConfigRewrite(null, scheduled));
 		try{
 			slaveofTransaction.execute().addListener(new CommandFutureListener<Object[]>() {
 				

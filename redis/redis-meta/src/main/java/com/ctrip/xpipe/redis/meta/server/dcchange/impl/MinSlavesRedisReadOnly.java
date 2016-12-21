@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,16 +29,19 @@ public class MinSlavesRedisReadOnly implements RedisReadonly{
 	
 	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 	
-	public MinSlavesRedisReadOnly(String ip, int port, XpipeNettyClientKeyedObjectPool keyedObjectPool) {
+	private ScheduledExecutorService scheduled;
+	
+	public MinSlavesRedisReadOnly(String ip, int port, XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled) {
 		this.ip = ip;
 		this.port = port;
 		this.keyedObjectPool = keyedObjectPool;
+		this.scheduled = scheduled;
 	}
 
 	@Override
 	public void makeReadOnly() throws Exception {
 		
-		ConfigSetMinSlavesToWrite command = new ConfigSetMinSlavesToWrite(keyedObjectPool.getKeyPool(new InetSocketAddress(ip, port)), READ_ONLY_NUMBER);
+		ConfigSetMinSlavesToWrite command = new ConfigSetMinSlavesToWrite(keyedObjectPool.getKeyPool(new InetSocketAddress(ip, port)), READ_ONLY_NUMBER, scheduled);
 		Boolean result = command.execute().get();
 		logger.info("[makeReadOnly]{}:{}, {}", ip, port, result);
 		
@@ -46,7 +50,7 @@ public class MinSlavesRedisReadOnly implements RedisReadonly{
 	@Override
 	public void makeWritable() throws Exception {
 		
-		ConfigSetMinSlavesToWrite command = new ConfigSetMinSlavesToWrite(keyedObjectPool.getKeyPool(new InetSocketAddress(ip, port)), WRITABLE_NUMBER);
+		ConfigSetMinSlavesToWrite command = new ConfigSetMinSlavesToWrite(keyedObjectPool.getKeyPool(new InetSocketAddress(ip, port)), WRITABLE_NUMBER, scheduled);
 		Boolean result = command.execute().get();
 		logger.info("[makeWritable]{}:{}, {}", ip, port, result);
 	}

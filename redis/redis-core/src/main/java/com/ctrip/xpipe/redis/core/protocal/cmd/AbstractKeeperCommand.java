@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -22,12 +24,12 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 	public static String SET_STATE = "setstate";
 
 	
-	public AbstractKeeperCommand(SimpleObjectPool<NettyClient> clientPool) {
-		super(clientPool);
+	public AbstractKeeperCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 	}
 
-	public AbstractKeeperCommand(KeeperMeta keeperMeta){
-		super(keeperMeta.getIp(), keeperMeta.getPort());
+	public AbstractKeeperCommand(KeeperMeta keeperMeta, ScheduledExecutorService scheduled){
+		super(keeperMeta.getIp(), keeperMeta.getPort(), scheduled);
 	}
 	
 	@Override
@@ -37,12 +39,12 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 	
 	public static class KeeperGetStateCommand extends AbstractKeeperCommand<KeeperState>{
 
-		public KeeperGetStateCommand(SimpleObjectPool<NettyClient> clientPool) {
-			super(clientPool);
+		public KeeperGetStateCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
 		}
 		
-		public KeeperGetStateCommand(KeeperMeta keeperMeta) {
-			super(keeperMeta);
+		public KeeperGetStateCommand(KeeperMeta keeperMeta, ScheduledExecutorService scheduled) {
+			super(keeperMeta, scheduled);
 		}
 
 		@Override
@@ -61,14 +63,14 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 		private KeeperState state;
 		private Pair<String, Integer> masterAddress;
 		
-		public KeeperSetStateCommand(SimpleObjectPool<NettyClient> clientPool, KeeperState state, Pair<String, Integer> masterAddress) {
-			super(clientPool);
+		public KeeperSetStateCommand(SimpleObjectPool<NettyClient> clientPool, KeeperState state, Pair<String, Integer> masterAddress, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
 			this.state = state;
 			this.masterAddress = masterAddress;
 		}
 
-		public KeeperSetStateCommand(KeeperMeta keeperMeta, KeeperState state, Pair<String, Integer> masterAddress) {
-			super(keeperMeta);
+		public KeeperSetStateCommand(KeeperMeta keeperMeta, KeeperState state, Pair<String, Integer> masterAddress, ScheduledExecutorService scheduled) {
+			super(keeperMeta, scheduled);
 			this.state = state;
 			this.masterAddress = masterAddress;
 			

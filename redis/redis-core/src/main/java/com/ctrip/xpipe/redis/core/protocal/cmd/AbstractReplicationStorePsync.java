@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.unidal.tuple.Pair;
 
@@ -11,7 +12,6 @@ import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 
 import io.netty.buffer.ByteBuf;
-
 
 /**
  * @author marsqing
@@ -26,8 +26,8 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 	
 	private volatile InOutPayloadReplicationStore inOutPayloadReplicationStore;
 	
-	public AbstractReplicationStorePsync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands) {
-		super(clientPool, saveCommands);
+	public AbstractReplicationStorePsync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands, ScheduledExecutorService scheduled) {
+		super(clientPool, saveCommands, scheduled);
 	}
 	
 

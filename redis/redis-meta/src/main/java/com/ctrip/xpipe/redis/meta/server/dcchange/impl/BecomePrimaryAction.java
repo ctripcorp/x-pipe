@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -36,8 +37,8 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 
 	private NewMasterChooser newMasterChooser;
 
-	public BecomePrimaryAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser) {
-		super(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool);
+	public BecomePrimaryAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser, ScheduledExecutorService scheduled) {
+		super(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, scheduled);
 		this.newMasterChooser = newMasterChooser;
 	}
 
@@ -81,12 +82,12 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 		executionLog.info("[make redis master]" + newMaster);
 		
 		SimpleObjectPool<NettyClient> masterPool = keyedObjectPool.getKeyPool(new InetSocketAddress(newMaster.getKey(), newMaster.getValue()));
-		Command<Object[]> command = new TransactionalSlaveOfCommand(masterPool, null, 0);
+		Command<Object[]> command = new TransactionalSlaveOfCommand(masterPool, null, 0, scheduled);
 		try {
 			Object[]result = command.execute().get();
 			executionLog.info("[make redis master]" + StringUtil.join(",", result));
 			
-			MinSlavesRedisReadOnly readonly = new MinSlavesRedisReadOnly(newMaster.getKey(), newMaster.getValue(), keyedObjectPool);
+			MinSlavesRedisReadOnly readonly = new MinSlavesRedisReadOnly(newMaster.getKey(), newMaster.getValue(), keyedObjectPool, scheduled);
 			readonly.makeWritable();
 		} catch (Exception e) {
 			logger.error("[makeRedisesOk]" + newMaster, e);
@@ -95,7 +96,7 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 		}
 		
 		executionLog.info("[make slaves slaveof]" + newMaster + "," + slaves);
-		Command<Void> slavesJob = new TransactionalSlaveOfJob(slaves, newMaster.getKey(), newMaster.getValue(), keyedObjectPool);
+		Command<Void> slavesJob = new TransactionalSlaveOfJob(slaves, newMaster.getKey(), newMaster.getValue(), keyedObjectPool, scheduled);
 		try {
 			slavesJob.execute().get(waitTimeoutSeconds, TimeUnit.SECONDS);
 			executionLog.info("[make slaves slaveof]success");

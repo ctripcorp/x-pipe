@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -18,16 +19,16 @@ public abstract class AbstractSlaveOfCommand extends AbstractRedisCommand<String
 	private int port;
 	private String param = "";
 
-	public AbstractSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool) {
-		super(clientPool);
+	public AbstractSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 	}
 	
-	public AbstractSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String ip, int port){
-		this(clientPool, ip, port, "");
+	public AbstractSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String ip, int port, ScheduledExecutorService scheduled){
+		this(clientPool, ip, port, "", scheduled);
 	}
 
-	public AbstractSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String ip, int port, String param) {
-		super(clientPool);
+	public AbstractSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String ip, int port, String param, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 		this.ip = ip;
 		this.port = port;
 		this.param = param;

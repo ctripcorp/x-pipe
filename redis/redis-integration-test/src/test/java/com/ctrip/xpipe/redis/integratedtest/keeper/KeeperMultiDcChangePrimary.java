@@ -47,7 +47,7 @@ public class KeeperMultiDcChangePrimary extends AbstractKeeperIntegratedMultiDc{
 	@Before
 	public void beforeKeeperMultiDcChangePrimary() throws Exception{
 		
-		newMasterChooser = new FirstNewMasterChooser(getXpipeNettyClientKeyedObjectPool());
+		newMasterChooser = new FirstNewMasterChooser(getXpipeNettyClientKeyedObjectPool(), scheduled);
 		
 	}
 
@@ -62,7 +62,7 @@ public class KeeperMultiDcChangePrimary extends AbstractKeeperIntegratedMultiDc{
 		when(currentMetaManager.getKeepers(getClusterId(), getShardId())).thenReturn(getDcKeepers(backupDc, getClusterId(), getShardId()));
 		
 		logger.info(remarkableMessage("[make dc primary]change dc primary to:" + backupDc));
-		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, getXpipeNettyClientKeyedObjectPool(), newMasterChooser);
+		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, getXpipeNettyClientKeyedObjectPool(), newMasterChooser, scheduled);
 		PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterId(), getShardId(), backupDc);
 		logger.info("{}", message);
 
@@ -76,7 +76,7 @@ public class KeeperMultiDcChangePrimary extends AbstractKeeperIntegratedMultiDc{
 		when(currentMetaManager.getKeeperActive(getClusterId(), getShardId())).thenReturn(getKeeperActive(primaryDc));
 		when(currentMetaManager.getKeepers(getClusterId(), getShardId())).thenReturn(getDcKeepers(primaryDc, getClusterId(), getShardId()));
 		
-		BecomeBackupAction becomeBackupAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, getXpipeNettyClientKeyedObjectPool(), multiDcService);
+		BecomeBackupAction becomeBackupAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, getXpipeNettyClientKeyedObjectPool(), multiDcService, scheduled);
 		message = becomeBackupAction.changePrimaryDc(getClusterId(), getShardId(), backupDc);
 		logger.info("{}", message);
 

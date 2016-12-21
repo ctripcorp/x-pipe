@@ -22,7 +22,7 @@ public class TransactionalSlaveOfJobTest extends AbstractMetaServerTest{
 	public void testNoneSlavesSuccess() throws Exception{
 		
 		List<RedisMeta> slaves = new LinkedList<>();
-		Command<Void> command = new TransactionalSlaveOfJob(slaves, "localhost", randomPort(), getXpipeNettyClientKeyedObjectPool());
+		Command<Void> command = new TransactionalSlaveOfJob(slaves, "localhost", randomPort(), getXpipeNettyClientKeyedObjectPool(), scheduled);
 		command.execute().get(1, TimeUnit.SECONDS);
 		
 	}

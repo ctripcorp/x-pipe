@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
-
-
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
@@ -23,6 +22,7 @@ import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.utils.MapUtils;
 
 /**
@@ -43,8 +43,11 @@ public class DefaultKeeperStateController implements KeeperStateController{
 	@Autowired
 	private DcMetaCache dcMetaCache;
 	
-	@Resource( name = "clientPool" )
+	@Resource( name = MetaServerContextConfig.CLIENT_POOL )
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
+	
+	@Resource( name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	private ScheduledExecutorService scheduled;
 	
 	private Map<Pair<String, String>, OneThreadTaskExecutor> shardExecutor = new ConcurrentHashMap<>();
 	
@@ -55,7 +58,7 @@ public class DefaultKeeperStateController implements KeeperStateController{
 		
 		KeeperContainerService keeperContainerService = getKeeperContainerService(keeperTransMeta);
 		OneThreadTaskExecutor oneThreadTaskExecutor = getOrCreate(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
-		oneThreadTaskExecutor.executeCommand(new AddKeeperCommand(keeperContainerService, keeperTransMeta, addKeeperSuccessTimeoutMilli));
+		oneThreadTaskExecutor.executeCommand(new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, addKeeperSuccessTimeoutMilli));
 	}
 
 	private OneThreadTaskExecutor getOrCreate(String clusterId, String shardId) {
@@ -75,7 +78,7 @@ public class DefaultKeeperStateController implements KeeperStateController{
 		
 		KeeperContainerService keeperContainerService = getKeeperContainerService(keeperTransMeta);
 		OneThreadTaskExecutor oneThreadTaskExecutor = getOrCreate(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
-		oneThreadTaskExecutor.executeCommand(new DeleteKeeperCommand(keeperContainerService, keeperTransMeta, removeKeeperSuccessTimeoutMilli));
+		oneThreadTaskExecutor.executeCommand(new DeleteKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli));
 	}
 
 	private KeeperContainerService getKeeperContainerService(KeeperTransMeta keeperTransMeta) {

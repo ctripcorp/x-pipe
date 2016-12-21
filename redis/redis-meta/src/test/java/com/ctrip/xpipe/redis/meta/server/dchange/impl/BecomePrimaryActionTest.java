@@ -60,7 +60,7 @@ public class BecomePrimaryActionTest extends AbstractMetaServerTest{
 	@Test
 	public void test() throws Exception{
 		
-		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, getXpipeNettyClientKeyedObjectPool(), newMasterChooser);
+		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, getXpipeNettyClientKeyedObjectPool(), newMasterChooser, scheduled);
 		
 		PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc);
 		

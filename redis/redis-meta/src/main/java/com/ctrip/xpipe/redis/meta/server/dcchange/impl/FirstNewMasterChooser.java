@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -19,8 +20,8 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
 public class FirstNewMasterChooser extends AbstractNewMasterChooser{
 	
 	
-	public FirstNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool) {
-		super(keyedObjectPool);
+	public FirstNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled) {
+		super(keyedObjectPool, scheduled);
 	}
 
 	@Override
@@ -38,7 +39,7 @@ public class FirstNewMasterChooser extends AbstractNewMasterChooser{
 		
 		SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort())); 
 		try {
-			new PingCommand(clientPool).execute().get();
+			new PingCommand(clientPool, scheduled).execute().get();
 			return true;
 		} catch (InterruptedException | ExecutionException e) {
 			logger.info("[isAlive]" + redisMeta, e);

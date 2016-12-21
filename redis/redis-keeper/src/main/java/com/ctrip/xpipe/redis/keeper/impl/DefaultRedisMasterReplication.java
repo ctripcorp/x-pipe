@@ -120,7 +120,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 				try {
 
 					logger.debug("[run][send ack]{}", masterChannel);
-					Command<Object> command = new Replconf(clientPool, ReplConfType.ACK, String.valueOf(redisMaster.getCurrentReplicationStore().getEndOffset()));
+					Command<Object> command = new Replconf(clientPool, ReplConfType.ACK, String.valueOf(redisMaster.getCurrentReplicationStore().getEndOffset()), scheduled);
 					command.execute();
 				} catch (Throwable th) {
 					logger.error("[run][send replack error]" + DefaultRedisMasterReplication.this, th);
@@ -157,7 +157,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	protected Psync createPsync() {
 		
-		Psync psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager());
+		Psync psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
 		return psync;

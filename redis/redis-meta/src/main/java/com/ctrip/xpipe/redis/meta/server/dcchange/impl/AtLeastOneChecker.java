@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,9 @@ public class AtLeastOneChecker implements HealthChecker{
 	
 	private XpipeNettyClientKeyedObjectPool pool;
 	
-	public AtLeastOneChecker(List<RedisMeta> list, XpipeNettyClientKeyedObjectPool pool) {
+	private ScheduledExecutorService scheduled;
+	
+	public AtLeastOneChecker(List<RedisMeta> list, XpipeNettyClientKeyedObjectPool pool, ScheduledExecutorService scheduled) {
 		this.redises = list;
 		this.pool = pool;
 	}
@@ -37,7 +40,7 @@ public class AtLeastOneChecker implements HealthChecker{
 		for(Redis  redis : redises){
 			
 			try {
-				new PingCommand(pool.getKeyPool(new InetSocketAddress(redis.getIp(), redis.getPort()))).execute().get();
+				new PingCommand(pool.getKeyPool(new InetSocketAddress(redis.getIp(), redis.getPort())), scheduled).execute().get();
 				return true;
 			} catch (InterruptedException | ExecutionException e) {
 				logger.info("[check]", e);
