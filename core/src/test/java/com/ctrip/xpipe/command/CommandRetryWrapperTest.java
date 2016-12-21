@@ -25,7 +25,7 @@ public class CommandRetryWrapperTest extends AbstractTest{
 	public void testSucccess() throws InterruptedException, ExecutionException{
 
 		TestCommand command = new TestCommand(message);
-		CommandRetryWrapper<String> wrapper = (CommandRetryWrapper<String>) CommandRetryWrapper.buildCountRetry(retryCount, new RetryDelay(sleepBase), command);
+		CommandRetryWrapper<String> wrapper = (CommandRetryWrapper<String>) CommandRetryWrapper.buildCountRetry(retryCount, new RetryDelay(sleepBase), command, scheduled);
 		
 		Assert.assertEquals(message, wrapper.execute().get());;
 	}
@@ -34,7 +34,7 @@ public class CommandRetryWrapperTest extends AbstractTest{
 	public void testRetry() throws CommandExecutionException{
 		
 		TestCommand command = new TestCommand(new Exception("just throw"));
-		CommandRetryWrapper<String> wrapper = (CommandRetryWrapper<String>) CommandRetryWrapper.buildCountRetry(retryCount, new RetryDelay(sleepBase), command);
+		CommandRetryWrapper<String> wrapper = (CommandRetryWrapper<String>) CommandRetryWrapper.buildCountRetry(retryCount, new RetryDelay(sleepBase), command, scheduled);
 		try {
 			wrapper.execute().get();
 			Assert.fail();
@@ -48,7 +48,7 @@ public class CommandRetryWrapperTest extends AbstractTest{
 	public void testRetryCancel(){
 
 		TestCommand command = new TestCommand(new Exception("just throw"));
-		CommandRetryWrapper<String> wrapper = (CommandRetryWrapper<String>) CommandRetryWrapper.buildCountRetry(retryCount, new RetryDelay(sleepBase), command);
+		CommandRetryWrapper<String> wrapper = (CommandRetryWrapper<String>) CommandRetryWrapper.buildCountRetry(retryCount, new RetryDelay(sleepBase), command, scheduled);
 		
 		final CommandFuture<String> future = wrapper.execute();
 		
@@ -73,9 +73,9 @@ public class CommandRetryWrapperTest extends AbstractTest{
 	@Test
 	public void testRetryUntilTimeout(){
 		
-		int timeout = 5000;
+		int timeout = sleepBase * 10;
 		TestCommand command = new TestCommand(new Exception("just throw"));
-		CommandRetryWrapper<String> wrapper = (CommandRetryWrapper<String>) CommandRetryWrapper.buildTimeoutRetry(timeout, new RetryDelay(sleepBase), command);
+		CommandRetryWrapper<String> wrapper = (CommandRetryWrapper<String>) CommandRetryWrapper.buildTimeoutRetry(timeout, new RetryDelay(sleepBase), command, scheduled);
 		
 		long before = System.currentTimeMillis();
 		try {

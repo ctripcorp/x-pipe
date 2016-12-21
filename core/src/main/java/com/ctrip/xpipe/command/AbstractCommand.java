@@ -1,11 +1,8 @@
 package com.ctrip.xpipe.command;
 
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -85,30 +82,6 @@ public abstract class AbstractCommand<V> implements Command<V>{
 
 	protected abstract void doExecute() throws Exception;
 
-	@Override
-	public CommandFuture<V> execute(final int time, TimeUnit timeUnit) {
-		
-		final ScheduledFuture<?> scheduleFuture = scheduled.schedule(new Runnable() {
-			
-			@Override
-			public void run() {
-				execute();
-			}
-		}, time, timeUnit);
-
-		future().addListener(new CommandFutureListener<V>() {
-
-			@Override
-			public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
-				if(commandFuture.isCancelled()){
-					logger.info("[command canceled][cancel execution]{}", time);
-					scheduleFuture.cancel(false);
-				}
-			}
-		});
-		return future.get();
-	}
-	
 	@Override
 	public void reset(){
 		

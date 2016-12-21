@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
@@ -23,6 +24,7 @@ import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
@@ -35,11 +37,14 @@ public class DefaultKeeperStateChangeHandler implements MetaServerStateChangeHan
 
 	protected static Logger logger = LoggerFactory.getLogger(DefaultKeeperStateChangeHandler.class);
 
-	@Resource(name = "clientPool")
+	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 
 	private ExecutorService executors = Executors
 			.newCachedThreadPool(XpipeThreadFactory.create("DefaultKeeperStateChangeHandler"));
+	
+	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	private ScheduledExecutorService scheduled;
 
 	@Autowired
 	private DcMetaCache dcMetaCache;
@@ -65,7 +70,7 @@ public class DefaultKeeperStateChangeHandler implements MetaServerStateChangeHan
 
 		List<KeeperMeta> keepers = new LinkedList<>();
 		keepers.add(activeKeeper);
-		new KeeperStateChangeJob(keepers, newMaster, clientPool).execute(executors);
+		new KeeperStateChangeJob(keepers, newMaster, clientPool, scheduled).execute(executors);
 	}
 
 	@Override
@@ -79,13 +84,13 @@ public class DefaultKeeperStateChangeHandler implements MetaServerStateChangeHan
 			return;
 		}
 		Pair<String, Integer> activeKeeperMaster = currentMetaServerMetaManager.getKeeperMaster(clusterId, shardId);
-		new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool).execute(executors);
+		new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool, scheduled).execute(executors);
 
 		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
 			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterId, shardId);
 			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{}", clusterId, shardId,
 					slaves);
-			new XSlaveofJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool).execute(executors);
+			new XSlaveofJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled).execute(executors);
 		}
 	}
 }

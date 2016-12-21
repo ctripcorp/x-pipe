@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
+import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 
 /**
  * @author marsqing
@@ -30,7 +31,7 @@ import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 @Component
 public class DefaultMetaServer extends DefaultCurrentClusterServer implements MetaServer {
 
-	@Resource(name = "clientPool")
+	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 
 	@SuppressWarnings("unused")

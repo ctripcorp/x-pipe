@@ -3,12 +3,10 @@ package com.ctrip.xpipe.netty.commands;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
@@ -180,38 +178,6 @@ public class RequestResponseCommandTest extends AbstractTest {
 
 			Assert.assertEquals(exception, e.getCause());
 		}
-	}
-
-	@Test
-	public void testSchedule() throws InterruptedException, ExecutionException, TimeoutException {
-
-		String request = randomString() + "\r\n";
-
-		TestCommand testCommand = new TestCommand(request, 0, clientPool, scheduled, null);
-		CommandFuture<String> future = testCommand.execute(1, TimeUnit.SECONDS);
-
-		sleep(10);
-		String result = future.getNow();
-		Assert.assertNull(result);
-
-		result = future.get(2, TimeUnit.SECONDS);
-		Assert.assertEquals(request, result);
-	}
-
-	@Test(expected = CancellationException.class)
-	public void testScheduleCancel() throws InterruptedException, ExecutionException, TimeoutException {
-
-		String request = randomString() + "\r\n";
-
-		TestCommand testCommand = new TestCommand(request, 0, clientPool, scheduled, null);
-		CommandFuture<String> future = testCommand.execute(1, TimeUnit.SECONDS);
-
-		sleep(10);
-		String result = future.getNow();
-		Assert.assertNull(result);
-
-		future.cancel(false);
-		result = future.get(2, TimeUnit.SECONDS);
 	}
 
 	class TestCommand extends AbstractNettyRequestResponseCommand<String> {

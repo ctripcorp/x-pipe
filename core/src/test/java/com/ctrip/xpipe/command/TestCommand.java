@@ -49,14 +49,14 @@ public class TestCommand extends AbstractCommand<String>{
 			@Override
 			public void run() {
 				try {
-					logger.info("[doExecute][begin]{}", this);
+					logger.debug("[doExecute][begin]{}", this);
 					if(e != null){
 						future().setFailure(e);
 					}else{
 						future().setSuccess(successMessage);
 					}
 				}finally{
-					logger.info("[doExecute][ end ]{}", this);
+					logger.debug("[doExecute][ end ]{}", this);
 				}
 			}
 		}, sleepIntervalMilli, TimeUnit.MILLISECONDS);

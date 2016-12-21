@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
@@ -22,12 +24,14 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 	
 	protected final KeeperContainerService keeperContainerService;
 	protected final KeeperTransMeta keeperTransMeta;
+	private ScheduledExecutorService scheduled;
 	protected int  timeoutMilli;
 	protected int  checkIntervalMilli = 1000;
 	
-	public AbstractKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta, int timeoutMilli, int checkIntervalMilli) {
+	public AbstractKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled, int timeoutMilli, int checkIntervalMilli) {
 		this.keeperContainerService = keeperContainerService;
 		this.keeperTransMeta = keeperTransMeta;
+		this.scheduled = scheduled;
 		this.timeoutMilli = timeoutMilli;
 		this.checkIntervalMilli = checkIntervalMilli;
 	}
@@ -60,7 +64,7 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 		
 		CommandRetryWrapper.buildTimeoutRetry(timeoutMilli, 
 				createRetryPolicy(), 
-				createCheckStateCommand()).execute().addListener(new CommandFutureListener<V>() {
+				createCheckStateCommand(), scheduled).execute().addListener(new CommandFutureListener<V>() {
 
 			@Override
 			public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
