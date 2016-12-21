@@ -14,6 +14,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestOperations;
 
@@ -54,14 +55,14 @@ public class RetryableRestOperationsTest extends AbstractTest {
 	@Test
 	public void retryableRestOperationsSuccessTest() throws Exception {
 		RestOperations restOperations = RestTemplateFactory.createCommonsHttpRestTemplate();
-		assertEquals(targetResponse, restOperations.getForObject(generateRequestURL(), String.class));
+		assertEquals(targetResponse, restOperations.getForObject(generateRequestURL("/test"), String.class));
 	}
 
 	@Test
 	public void retryableRestOperationsFailWithMethodNotSupportedTest() {
 		RestOperations restOperations = RestTemplateFactory.createCommonsHttpRestTemplate();
 		try {
-			restOperations.put(generateRequestURL(), null);
+			restOperations.put(generateRequestURL("/test"), null);
 			fail();
 		} catch (Exception e) {
 			assertTrue(e instanceof HttpClientErrorException);
@@ -84,7 +85,7 @@ public class RetryableRestOperationsTest extends AbstractTest {
 			}
 		});
 		appStartThread.start();
-		String response = restOperations.getForObject(generateRequestURL(), String.class);
+		String response = restOperations.getForObject(generateRequestURL("/test"), String.class);
 		assertEquals(targetResponse, response);
 		appStartThread.join();
 	}
@@ -101,7 +102,7 @@ public class RetryableRestOperationsTest extends AbstractTest {
 		RestOperations restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(10, 100, 5000, 5000,
 				retryTimes, mockedRetryPolicyFactory);
 		try {
-			restOperations.getForObject(generateRequestURL(), String.class);
+			restOperations.getForObject(generateRequestURL("/test"), String.class);
 		} catch (Exception e) {
 			verify(mockedRetryPolicy, times(retryTimes)).retry(any(Throwable.class));
 			// check the type of original exception
@@ -109,9 +110,22 @@ public class RetryableRestOperationsTest extends AbstractTest {
 		}
 
 	}
+	
+	@Test
+	public void retryableRestOperationFailWithHttpServerErrorExceptionTest() {
+		RestOperations restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(10, 100, 5000, 5000, 10,
+				RetryPolicyFactories.newRestOperationsRetryPolicyFactory(100));
+		
+		try {
+			restOperations.getForObject(generateRequestURL("/httpservererrorexception"), String.class);
+			fail();
+		} catch (Exception e) {
+			assertTrue(e instanceof HttpServerErrorException);
+		}
+	}
 
-	private String generateRequestURL() {
-		return "http://localhost:" + String.valueOf(port) + "/test";
+	private String generateRequestURL(String path) {
+		return "http://localhost:" + String.valueOf(port) + path;
 	}
 
 }
