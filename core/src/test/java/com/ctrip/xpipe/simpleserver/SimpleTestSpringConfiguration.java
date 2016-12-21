@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.simpleserver;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -18,5 +20,11 @@ public class SimpleTestSpringConfiguration {
 	@RequestMapping(value = "/test", method=RequestMethod.GET)
 	public String forTest() {
 		return response;
+	}
+	
+	@RequestMapping(value = "/httpservererrorexception", method=RequestMethod.GET)
+	public String forHttpServerErrorException(HttpServletResponse response) {
+		response.setStatus(502);
+		return "";
 	}
 }
