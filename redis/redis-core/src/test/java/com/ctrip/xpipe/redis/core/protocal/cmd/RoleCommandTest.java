@@ -25,7 +25,7 @@ public class RoleCommandTest extends AbstractRedisTest{
 		KeeperRole role = new KeeperRole(SERVER_ROLE.KEEPER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0L);
 		
 		Server server =  startServer(ByteBufUtils.readToString(role.format()));
-		RoleCommand roleCommand = new RoleCommand("localhost", server.getPort());
+		RoleCommand roleCommand = new RoleCommand("localhost", server.getPort(), scheduled);
 		
 		Role real = roleCommand.execute().get();
 

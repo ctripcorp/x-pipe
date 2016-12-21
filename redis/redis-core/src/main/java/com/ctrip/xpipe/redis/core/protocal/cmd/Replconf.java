@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
@@ -17,8 +19,8 @@ public class Replconf extends AbstractRedisCommand<Object>{
 	private ReplConfType replConfType;
 	private String argu;
 	
-	public Replconf(SimpleObjectPool<NettyClient> clientPool, ReplConfType replConfType, String argu) {
-		super(clientPool);
+	public Replconf(SimpleObjectPool<NettyClient> clientPool, ReplConfType replConfType, String argu, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 		this.replConfType = replConfType;
 		this.argu = argu;
 	}

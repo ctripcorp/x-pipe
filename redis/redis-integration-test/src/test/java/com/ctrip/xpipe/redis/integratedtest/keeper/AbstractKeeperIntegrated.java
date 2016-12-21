@@ -45,7 +45,7 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	}
 
 	protected void setKeeperState(KeeperMeta keeperMeta, KeeperState keeperState, String ip, Integer port, boolean sync) throws Exception {
-		KeeperSetStateCommand command = new KeeperSetStateCommand(keeperMeta, keeperState, new Pair<String, Integer>(ip, port));
+		KeeperSetStateCommand command = new KeeperSetStateCommand(keeperMeta, keeperState, new Pair<String, Integer>(ip, port), scheduled);
 		CommandFuture<?> future = command.execute();
 		if(sync){
 			future.sync();
@@ -53,7 +53,7 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	}
 
 	protected KeeperState getKeeperState(KeeperMeta keeperMeta) throws Exception {
-		KeeperGetStateCommand command = new KeeperGetStateCommand(keeperMeta);
+		KeeperGetStateCommand command = new KeeperGetStateCommand(keeperMeta, scheduled);
 		return command.execute().get();
 	}
 

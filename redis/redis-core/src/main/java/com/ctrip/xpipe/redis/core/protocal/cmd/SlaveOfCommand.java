@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 
@@ -10,16 +12,16 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
  */
 public class SlaveOfCommand extends AbstractSlaveOfCommand {
 
-	public SlaveOfCommand(SimpleObjectPool<NettyClient> clientPool) {
-		super(clientPool);
+	public SlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 	}
 	
-	public SlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String ip, int port) {
-		super(clientPool, ip, port);
+	public SlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String ip, int port, ScheduledExecutorService scheduled) {
+		super(clientPool, ip, port, scheduled);
 	}
 
-	public SlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String ip, int port, String param) {
-		super(clientPool, ip, port, param);
+	public SlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String ip, int port, String param, ScheduledExecutorService scheduled) {
+		super(clientPool, ip, port, param, scheduled);
 	}
 
 	@Override

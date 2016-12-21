@@ -41,7 +41,7 @@ public class ReplconfTest extends AbstractCommandTest {
 			try {
 				clientPool = createClientPool(host, port);
 
-				Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT, String.valueOf(1234));
+				Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT, String.valueOf(1234), scheduled);
 				replconf.execute().addListener(new CommandFutureListener<Object>() {
 
 					@Override
@@ -50,7 +50,7 @@ public class ReplconfTest extends AbstractCommandTest {
 					}
 				});
 
-				Psync psync = new InMemoryPsync(clientPool, "?", -1L);
+				Psync psync = new InMemoryPsync(clientPool, "?", -1L, scheduled);
 				try {
 					psync.execute().get(100, TimeUnit.MILLISECONDS);
 					Assert.fail();

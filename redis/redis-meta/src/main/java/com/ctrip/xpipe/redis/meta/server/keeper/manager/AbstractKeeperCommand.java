@@ -24,7 +24,7 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 	
 	protected final KeeperContainerService keeperContainerService;
 	protected final KeeperTransMeta keeperTransMeta;
-	private ScheduledExecutorService scheduled;
+	protected ScheduledExecutorService scheduled;
 	protected int  timeoutMilli;
 	protected int  checkIntervalMilli = 1000;
 	

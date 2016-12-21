@@ -55,7 +55,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 		when(replicationStore.getMetaStore()).thenReturn(metaStore);
 		when(metaStore.getMasterRunid()).thenReturn("?");
 		when(replicationStore.getEndOffset()).thenReturn(-1L);
-		defaultPsync = new DefaultPsync(pool, masterEndPoint, replicationStoreManager);
+		defaultPsync = new DefaultPsync(pool, masterEndPoint, replicationStoreManager, scheduled);
 		
 	}
 	

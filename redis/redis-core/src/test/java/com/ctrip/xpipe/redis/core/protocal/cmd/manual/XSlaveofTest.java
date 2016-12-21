@@ -34,7 +34,7 @@ public class XSlaveofTest extends AbstractCommandTest {
 	@Test
 	public void test() throws Exception {
 		
-		XSlaveofCommand command = new XSlaveofCommand(clientPool, "10.2.58.242", 6479);
+		XSlaveofCommand command = new XSlaveofCommand(clientPool, "10.2.58.242", 6479, scheduled);
 		command.execute().get();
 
 	}

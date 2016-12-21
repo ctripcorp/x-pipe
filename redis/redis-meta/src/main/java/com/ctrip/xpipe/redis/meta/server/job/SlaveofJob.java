@@ -26,7 +26,7 @@ public class SlaveofJob extends AbstractRedisesSlaveofJob{
 
 	@Override
 	protected Command<?> createSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String masterHost, int masterPort) {
-		return new SlaveOfCommand(clientPool, masterHost, masterPort);
+		return new SlaveOfCommand(clientPool, masterHost, masterPort, scheduled);
 	}
 
 }

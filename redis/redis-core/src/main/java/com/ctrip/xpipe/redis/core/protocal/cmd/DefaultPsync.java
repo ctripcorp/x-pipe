@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -23,8 +24,8 @@ public class DefaultPsync extends AbstractReplicationStorePsync{
 	
 	
 	public DefaultPsync(SimpleObjectPool<NettyClient> clientPool, 
-			Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager) {
-		super(clientPool, true);
+			Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled) {
+		super(clientPool, true, scheduled);
 		this.masterEndPoint = masterEndPoint;
 		this.replicationStoreManager = replicationStoreManager;
 		currentReplicationStore = getCurrentReplicationStore();

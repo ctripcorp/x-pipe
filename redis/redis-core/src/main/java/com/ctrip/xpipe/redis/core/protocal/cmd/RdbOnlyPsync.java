@@ -3,6 +3,8 @@
  */
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -14,8 +16,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
  */
 public class RdbOnlyPsync extends AbstractReplicationStorePsync{
 
-	public RdbOnlyPsync(SimpleObjectPool<NettyClient> clientPool, ReplicationStore store) {
-		super(clientPool, false);
+	public RdbOnlyPsync(SimpleObjectPool<NettyClient> clientPool, ReplicationStore store, ScheduledExecutorService scheduled) {
+		super(clientPool, false, scheduled);
 		currentReplicationStore = store;
 	}
 

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.command;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -12,6 +14,7 @@ public class TestCommand extends AbstractCommand<String>{
 	private Exception e;
 	private String successMessage;
 	private int sleepIntervalMilli = 100;
+	private ScheduledExecutorService scheduled;
 
 
 	public TestCommand(String successMessage) {
@@ -44,6 +47,7 @@ public class TestCommand extends AbstractCommand<String>{
 	@Override
 	protected void doExecute() throws Exception {
 
+		scheduled = Executors.newScheduledThreadPool(1);
 		scheduled.schedule(new Runnable() {
 			
 			@Override
@@ -57,6 +61,7 @@ public class TestCommand extends AbstractCommand<String>{
 					}
 				}finally{
 					logger.debug("[doExecute][ end ]{}", this);
+					scheduled.shutdown();
 				}
 			}
 		}, sleepIntervalMilli, TimeUnit.MILLISECONDS);

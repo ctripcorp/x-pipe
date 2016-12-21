@@ -25,7 +25,7 @@ public class XSlaveofJob extends AbstractRedisesSlaveofJob{
 
 	@Override
 	protected Command<?> createSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String masterHost, int masterPort) {
-		return new XSlaveofCommand(clientPool, masterHost, masterPort);
+		return new XSlaveofCommand(clientPool, masterHost, masterPort, scheduled);
 	}
 
 }

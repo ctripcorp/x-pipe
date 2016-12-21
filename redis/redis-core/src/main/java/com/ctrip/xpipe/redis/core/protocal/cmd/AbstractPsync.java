@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.unidal.tuple.Pair;
 
@@ -40,13 +41,13 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	protected PSYNC_STATE psyncState = PSYNC_STATE.PSYNC_COMMAND_WAITING_REPONSE;
 
-	public AbstractPsync(String host, int port, boolean saveCommands) {
-		super(host, port);
+	public AbstractPsync(String host, int port, boolean saveCommands, ScheduledExecutorService scheduled) {
+		super(host, port, scheduled);
 		this.saveCommands = saveCommands;
 	}
 
-	public AbstractPsync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands) {
-		super(clientPool);
+	public AbstractPsync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
 		this.saveCommands = saveCommands;
 	}
 

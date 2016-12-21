@@ -18,7 +18,7 @@ public class RoleCommandTest extends AbstractCommandTest{
 	@Test
 	public void test() throws Exception{
 		
-		RoleCommand roleCommand = new RoleCommand("10.3.2.23", 6379);
+		RoleCommand roleCommand = new RoleCommand("10.3.2.23", 6379, scheduled);
 		Role real = roleCommand.execute().get();
 		System.out.println(real.getServerRole() == SERVER_ROLE.SLAVE);
 		logger.info("[test]{}", real);
