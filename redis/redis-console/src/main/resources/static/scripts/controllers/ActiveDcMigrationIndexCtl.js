@@ -69,6 +69,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 			selectedClusters.forEach(function(cluster) {
 				migrationClusters.push({
 					clusterId : cluster.id,
+					sourceDcId : cluster.activedcId,
 					destinationDcId : getDcId(cluster.targetDc)
 				});
 			});

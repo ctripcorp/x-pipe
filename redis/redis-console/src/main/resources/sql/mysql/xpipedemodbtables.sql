@@ -182,6 +182,7 @@ CREATE TABLE `migration_cluster_tbl` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `migration_event_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'event id according to migration event',
   `cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'cluster id involved in this migration event',
+  `source_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'migration source for this cluster',
   `destination_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'migration destination for this cluster',
   `start_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'start time of this migration',
   `end_time` timestamp NULL DEFAULT NULL COMMENT 'end time of this migration',
@@ -190,7 +191,7 @@ CREATE TABLE `migration_cluster_tbl` (
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COMMENT='migration cluster tbl';
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8 COMMENT='migration cluster tbl';
 
 
 

@@ -13,6 +13,7 @@ import java.net.Socket;
 public class Server {
 
 	public static void main(String[] args) throws Exception {
+		@SuppressWarnings("resource")
 		ServerSocket ss = new ServerSocket(7777);
 
 		while (true) {

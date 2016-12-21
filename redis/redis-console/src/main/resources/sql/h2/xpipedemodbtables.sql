@@ -137,7 +137,7 @@ create table MIGRATION_EVENT_TBL
 	start_time timestamp default CURRENT_TIMESTAMP,
 	operator varchar(128) not null default 'xpipe',
 	event_tag varchar(150) not null unique,
-	DataChangedLastTime timestamp default CURRENT_TIMESTAMP,
+	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
 
@@ -148,11 +148,12 @@ create table MIGRATION_CLUSTER_TBL
 	id bigint unsigned not null auto_increment primary key,
 	migration_event_id bigint unsigned not null default 0,
 	cluster_id bigint unsigned not null default 0,
+	source_dc_id bigint unsigned not null default 0,
 	destination_dc_id bigint unsigned not null default 0,
 	start_time timestamp default CURRENT_TIMESTAMP,
 	end_time timestamp null default null,
 	status varchar(16) not null default 'initiated',
-	DataChangedLastTime timestamp default CURRENT_TIMESTAMP,
+	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
 
@@ -163,7 +164,7 @@ create table MIGRATION_SHARD_TBL
 	id bigint unsigned not null auto_increment primary key,
 	migration_cluster_id bigint unsigned not null default 0,
 	shard_id bigint unsigned not null default 0,
-	log varchar(1024) not null default '',
-	DataChangedLastTime timestamp default CURRENT_TIMESTAMP,
+	log varchar(10240) not null default '',
+	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );

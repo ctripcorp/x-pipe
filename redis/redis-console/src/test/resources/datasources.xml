@@ -11,7 +11,7 @@
          <user>sa</user>
          <password></password>
          <connectionProperties>
-         <![CDATA[DB_CLOSE_DELAY=-1;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:sql/h2/xpipedemodbtables.sql'\;RUNSCRIPT FROM 'classpath:sql/h2/xpipedemodbinitdata.sql']]>
+         <![CDATA[DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/h2/xpipedemodbtables.sql'\;RUNSCRIPT FROM 'classpath:sql/h2/xpipedemodbinitdata.sql']]>
          </connectionProperties>
       </properties>
    </data-source>

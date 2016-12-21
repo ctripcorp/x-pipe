@@ -1,25 +1,48 @@
-index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope', '$scope', '$window', '$stateParams','$interval','$state', 'AppUtil', 'toastr', 'NgTableParams', 'MigrationService',
-    function ($rootScope, $scope, $window, $stateParams,$interval,$state, AppUtil, toastr, NgTableParams, MigrationService, $filters) {
+index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope', '$scope', '$window', '$stateParams','$interval','$state', 'AppUtil', 'toastr', 'NgTableParams', 'MigrationService','DcService',
+    function ($rootScope, $scope, $window, $stateParams,$interval,$state, AppUtil, toastr, NgTableParams, MigrationService,DcService, $filters) {
         $scope.migrationCluster = $stateParams.migrationCluster;
         $scope.currentQueryLog;
+        $scope.dcs;
 
-        if($scope.migrationCluster) {
-            if($scope.migrationCluster.migrationShards) {
-                initStatus();
-            } else {
-                if($scope.$parent.eventDetails) {
-                    $scope.migrationCluster = $scope.$parent.eventDetails[0];
+        if($scope.$parent.dcs) {
+        	$scope.dcs = $scope.$parent.dcs;
+        	init();
+        } else {
+        	DcService.loadAllDcs().then(function(result) {
+        		$scope.dcs = result;
+        		init();
+        	});
+        }
+        
+        function init() {
+        	if($scope.migrationCluster) {
+        		if($scope.migrationCluster.migrationShards) {
+                    initStatus();
                 } else {
-                    MigrationService.findEventDetails($scope.$parent.eventId).then(function(result) {
-                        $scope.$parent.eventDetails = result;
+                    if($scope.$parent.eventDetails) {
                         $scope.migrationCluster = $scope.$parent.eventDetails[0];
                         initStatus();
-                    });
+                    } else {
+                        MigrationService.findEventDetails($scope.$parent.eventId).then(function(result) {
+                            $scope.$parent.eventDetails = result;
+                            $scope.migrationCluster = $scope.$parent.eventDetails[0];
+                            initStatus();
+                        });
+                    }
                 }
-            }
+        	}
         }
-
+        
         function initStatus() {
+        	$scope.dcs.forEach(function(dc) {
+        		if(dc.id == $scope.migrationCluster.migrationCluster.sourceDcId) {
+        			$scope.migrationCluster.migrationCluster.sourceDcName = dc.dcName;
+        		}
+        		if(dc.id == $scope.migrationCluster.migrationCluster.destinationDcId) {
+        			$scope.migrationCluster.migrationCluster.destinationDcName = dc.dcName;
+        		}
+        	});
+        	
             $scope.migrationCluster.migrationShards.forEach(function(migrationShard) {
                 if(migrationShard.migrationShard.log) {
                     migrationShard.status = JSON.parse(migrationShard.migrationShard.log);

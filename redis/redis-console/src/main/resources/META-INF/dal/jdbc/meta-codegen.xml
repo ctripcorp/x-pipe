@@ -394,6 +394,7 @@
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="migration-event-id" field="migration_event_id" value-type="long" length="20" nullable="false" />
     <member name="cluster-id" field="cluster_id" value-type="long" length="20" nullable="false" />
+    <member name="source-dc-id" field="source_dc_id" value-type="long" length="20" nullable="false" />
     <member name="destination-dc-id" field="destination_dc_id" value-type="long" length="20" nullable="false" />
     <member name="start-time" field="start_time" value-type="Date" nullable="false" />
     <member name="end-time" field="end_time" value-type="Date" />

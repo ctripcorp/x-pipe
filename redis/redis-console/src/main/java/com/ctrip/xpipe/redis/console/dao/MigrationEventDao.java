@@ -203,7 +203,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				updateClusterStatus(migrationCluster.getClusterId(), ClusterStatus.Lock);
 				
 				MigrationClusterTbl proto = migrationClusterTblDao.createLocal();
-				proto.setMigrationEventId(eventId).setClusterId(migrationCluster.getClusterId())
+				proto.setMigrationEventId(eventId).setClusterId(migrationCluster.getClusterId()).setSourceDcId(migrationCluster.getSourceDcId())
 						.setDestinationDcId(migrationCluster.getDestinationDcId()).setStatus(MigrationStatus.Initiated.toString());
 				toCreateMigrationCluster.add(proto);
 			}
