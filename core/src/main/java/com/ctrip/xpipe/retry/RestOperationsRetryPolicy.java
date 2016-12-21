@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.retry;
 
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 
 import com.ctrip.xpipe.api.retry.RetryPolicy;
@@ -23,7 +24,7 @@ public class RestOperationsRetryPolicy extends AbstractRetryPolicy implements Re
 
 	@Override
 	public boolean retry(Throwable e) {
-		if(e instanceof ResourceAccessException) {
+		if(e instanceof ResourceAccessException || e instanceof HttpServerErrorException) {
 			return true;
 		}
 		return false;
