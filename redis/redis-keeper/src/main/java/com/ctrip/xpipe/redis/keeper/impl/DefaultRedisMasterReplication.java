@@ -112,6 +112,10 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		if (logger.isInfoEnabled()) {
 			logger.info("[scheduleReplconf]" + this);
 		}
+		
+		if(replConfFuture != null){
+			replConfFuture.cancel(true);
+		}
 
 		replConfFuture = scheduled.scheduleWithFixedDelay(new Runnable() {
 
