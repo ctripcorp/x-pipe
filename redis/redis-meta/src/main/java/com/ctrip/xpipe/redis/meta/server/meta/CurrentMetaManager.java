@@ -38,8 +38,6 @@ public interface CurrentMetaManager extends Observable {
 
 	RedisMeta getRedisMaster(String clusterId, String shardId);
 
-	List<KeeperMeta> getKeepers(String clusterId, String shardId);
-
 	ClusterMeta getClusterMeta(String clusterId);
 
 	List<KeeperMeta> getSurviveKeepers(String clusterId, String shardId);
