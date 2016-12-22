@@ -13,10 +13,10 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 /**
  * @author shyin
  *
- * Dec 8, 2016
+ *         Dec 8, 2016
  */
 public class MigrationCheckingStat extends AbstractMigrationStat {
-	
+
 	private ExecutorService fixedThreadPool;
 
 	public MigrationCheckingStat(MigrationCluster holder) {
@@ -24,23 +24,22 @@ public class MigrationCheckingStat extends AbstractMigrationStat {
 		this.setNextAfterSuccess(new MigrationMigratingStat(getHolder())).setNextAfterFail(this);
 
 		int threadSize = holder.getMigrationShards().size() == 0 ? 1 : holder.getMigrationShards().size();
-		fixedThreadPool = Executors.newFixedThreadPool(threadSize, 
-					XpipeThreadFactory.create("MigrationChecking"));
+		fixedThreadPool = Executors.newFixedThreadPool(threadSize, XpipeThreadFactory.create("MigrationChecking"));
 	}
 
 	@Override
 	public void action() {
 		MigrationCluster migrationCluster = getHolder();
 		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
-		
+
 		// Update db
 		MigrationClusterTbl migrationClusterTbl = migrationCluster.getMigrationCluster();
 		migrationClusterTbl.setStatus(MigrationStatus.Checking.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
-		
+
 		for (final MigrationShard migrationShard : migrationShards) {
 			fixedThreadPool.submit(new Runnable() {
-				
+
 				@Override
 				public void run() {
 					migrationShard.doCheck();
@@ -48,17 +47,20 @@ public class MigrationCheckingStat extends AbstractMigrationStat {
 			});
 		}
 	}
-	
+
 	@Override
 	public void refresh() {
 		int successCnt = 0;
 		for (MigrationShard migrationShard : getHolder().getMigrationShards()) {
-			if(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK)) {
+			if (migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK)) {
 				++successCnt;
 			}
 		}
-		
-		if(successCnt == getHolder().getMigrationShards().size()) {
+		logger.info("[MigrationChecking]{} , {}/{}", getHolder().getCurrentCluster().getClusterName(), successCnt,
+				getHolder().getMigrationShards().size());
+
+		if (successCnt == getHolder().getMigrationShards().size()) {
+			logger.info("[MigrationChecking][success][continue]{}", getHolder().getCurrentCluster().getClusterName());
 			updateAndProcess(nextAfterSuccess(), true);
 		}
 	}

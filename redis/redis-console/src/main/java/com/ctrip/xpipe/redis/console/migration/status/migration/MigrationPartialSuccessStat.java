@@ -74,12 +74,16 @@ public class MigrationPartialSuccessStat extends AbstractMigrationStat {
 		
 		if(currentWorkingCnt == 0) {
 			if (successCnt == getHolder().getMigrationShards().size()) {
+				logger.info("[MigrationPartialSuccess][success][continue]{}", getHolder().getCurrentCluster().getClusterName());
 				updateAndProcess(nextAfterSuccess(), true);
 			} else {
+				logger.info("[MigrationPartialSuccess][fail]{}", getHolder().getCurrentCluster().getClusterName());
 				updateAndProcess(nextAfterFail(), false);
 			}
 		} else {
 			// Still migrating , Nothing to do
+			logger.info("[MigrationPartialSuccess]{}, Success:{}, CurrentWorking:{}, Total:{}", getHolder().getCurrentCluster().getClusterName(),
+					successCnt, currentWorkingCnt, getHolder().getMigrationShards().size());
 		}
 	}
 

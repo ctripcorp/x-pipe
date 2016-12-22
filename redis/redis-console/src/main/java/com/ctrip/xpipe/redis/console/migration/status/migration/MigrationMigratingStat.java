@@ -76,12 +76,16 @@ public class MigrationMigratingStat extends AbstractMigrationStat {
 		
 		if(currentWorkingCnt == 0) {
 			if (successCnt == getHolder().getMigrationShards().size()) {
+				logger.info("[MigrationMigrating][success][continue]{}", getHolder().getCurrentCluster().getClusterName());
 				updateAndProcess(nextAfterSuccess(), true);
 			} else {
+				logger.info("[MigrationMigrating][fail]{}", getHolder().getCurrentCluster().getClusterName());
 				updateAndProcess(nextAfterFail(), false);
 			}
 		} else {
 			// Still migrating , Nothing to do
+			logger.info("[MigrationMigrating]{}, Success : {}, CurrentWorking:{}, Total:{}", getHolder().getCurrentCluster().getClusterName(),
+					successCnt, currentWorkingCnt, getHolder().getMigrationShards().size());
 		}
 	}
 	
