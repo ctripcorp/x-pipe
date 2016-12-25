@@ -78,4 +78,9 @@ public class ByteArrayOutputStreamPayload extends AbstractInOutPayload{
 		}
 		return super.toString();
 	}
+
+	@Override
+	protected void doTruncate(int reduceLen) {
+		throw new UnsupportedOperationException();
+	}
 }

@@ -14,7 +14,6 @@ import io.netty.buffer.ByteBuf;
  */
 public interface InOutPayload {
 
-
 	void startInput();
 	
 	long inputSize();
@@ -22,7 +21,8 @@ public interface InOutPayload {
 	int in(ByteBuf byteBuf) throws IOException;
 	
 	void endInput();
-	
+
+	void endInputTruncate(int reduceLen) throws IOException;
 
 	void startOutput() throws IOException;
 	

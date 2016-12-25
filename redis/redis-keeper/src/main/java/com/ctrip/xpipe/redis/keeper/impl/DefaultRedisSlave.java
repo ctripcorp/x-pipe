@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -17,8 +18,8 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
-import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
+import com.ctrip.xpipe.redis.core.protocal.CAPA;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -52,13 +53,14 @@ public class DefaultRedisSlave implements RedisSlave {
 	
 	private PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 	
-	@SuppressWarnings("unused")
 	private Long rdbFileOffset;
 		
 	private ScheduledExecutorService scheduled;
 	private ScheduledFuture<?> 		  pingFuture, waitDumpTimeoutFuture;
 	private final int pingIntervalMilli = 1000;
 	private final int rdbDumpMaxWaitMilli = Integer.parseInt(System.getProperty(KEY_RDB_DUMP_MAX_WAIT_MILLI, "1800000"));//half an hour
+	
+	private volatile boolean putOnLineOnAck = false; 
 
 	private ExecutorService psyncExecutor;
 
@@ -137,6 +139,11 @@ public class DefaultRedisSlave implements RedisSlave {
 			logger.debug("[ack]{}, {}", this , ackOff);
 		}
 		
+		if(putOnLineOnAck){
+			putOnLineOnAck = false;
+			sendCommandForFullSync();
+		}
+		
 		this.replAckOff = ackOff;
 		this.replAckTime = System.currentTimeMillis();
 	}
@@ -165,19 +172,28 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 	
 	@Override
-	public void beginWriteRdb(long rdbFileSize, long rdbFileOffset) {
+	public void beginWriteRdb(EofType eofType, long rdbFileOffset) {
 		
-		logger.info("[beginWriteRdb]{}, {}", rdbFileSize, rdbFileOffset);
+		logger.info("[beginWriteRdb]{}, {}", eofType, rdbFileOffset);
+		
+		if(!eofType.support(getCapas())){
+			logger.error("[beginWriteRdb]{}, {}, {}", this, eofType, getCapas());
+			try {
+				close();
+			} catch (IOException e) {
+				logger.error("[beginWriteRdb]" + this, e);
+			}
+		}
 		
 		partialState = PARTIAL_STATE.FULL;
 		slaveState = SLAVE_STATE.REDIS_REPL_SEND_BULK;
 		this.rdbFileOffset = rdbFileOffset;
 		
+		putOnLineOnAck = eofType.putOnLineOnAck();
+		
 		cancelWaitRdb();
 		
-    	RequestStringParser parser = new RequestStringParser(String.valueOf((char)RedisClientProtocol.DOLLAR_BYTE)
-    			+String.valueOf(rdbFileSize)); 
-    	channel().writeAndFlush(parser.format());
+    	channel().writeAndFlush(eofType.getStart());
 	}
 
 	private void cancelWaitRdb() {
@@ -218,6 +234,23 @@ public class DefaultRedisSlave implements RedisSlave {
 			}
 		}
 		this.slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
+		
+		if(!putOnLineOnAck){
+			sendCommandForFullSync();
+		}
+	}
+
+	protected void sendCommandForFullSync() {
+		
+		logger.info("[sendCommandForFullSync]{}, {}", this, rdbFileOffset +1);
+		
+		processCommandSequentially(new AbstractExceptionLogTask() {
+			
+			@Override
+			protected void doRun() throws Exception {
+				beginWriteCommands(rdbFileOffset + 1);
+			}
+		});
 	}
 
 	@Override
@@ -302,7 +335,12 @@ public class DefaultRedisSlave implements RedisSlave {
 	public void capa(CAPA capa) {
 		redisClient.capa(capa);
 	}
-
+	
+	@Override
+	public Set<CAPA> getCapas() {
+		return redisClient.getCapas();
+	}
+	
 	public String[] readCommands(ByteBuf byteBuf) {
 		return redisClient.readCommands(byteBuf);
 	}
@@ -339,5 +377,5 @@ public class DefaultRedisSlave implements RedisSlave {
 		closed.set(true);
 		psyncExecutor.shutdownNow();
 	}
-	
+
 }

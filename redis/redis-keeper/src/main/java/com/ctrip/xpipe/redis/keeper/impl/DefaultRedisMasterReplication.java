@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -174,7 +175,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 
 	@Override
-	protected void doBeginWriteRdb(long fileSize, long masterRdbOffset) throws IOException {
+	protected void doBeginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
 
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_TRANSFER);
 		

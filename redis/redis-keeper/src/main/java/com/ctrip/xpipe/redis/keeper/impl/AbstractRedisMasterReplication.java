@@ -23,6 +23,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.KinfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -354,13 +355,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected abstract void doReFullSync();
 
 	@Override
-	public void beginWriteRdb(long fileSize, long masterRdbOffset) throws IOException {
+	public void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
 
-		doBeginWriteRdb(fileSize, masterRdbOffset);
+		doBeginWriteRdb(eofType, masterRdbOffset);
 		rdbDumper.get().beginReceiveRdbData(masterRdbOffset);
 	}
 
-	protected abstract void doBeginWriteRdb(long fileSize, long masterRdbOffset) throws IOException;
+	protected abstract void doBeginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException;
 
 	@Override
 	public void endWriteRdb() {

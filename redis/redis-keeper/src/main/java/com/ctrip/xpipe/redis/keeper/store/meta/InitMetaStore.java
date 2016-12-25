@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 
@@ -78,7 +79,7 @@ public class InitMetaStore implements MetaStore{
 	}
 
 	@Override
-	public ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, long rdbFileSize,
+	public ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, EofType eofType,
 			String cmdFilePrefix) throws IOException {
 		throw new UnsupportedOperationException();
 	}
@@ -91,7 +92,7 @@ public class InitMetaStore implements MetaStore{
 	}
 
 	@Override
-	public ReplicationStoreMeta rdbUpdated(String rdbFile, long rdbFileSize, long masterOffset) throws IOException {
+	public ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long masterOffset) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 
@@ -116,7 +117,13 @@ public class InitMetaStore implements MetaStore{
 	}
 
 	@Override
+	public void setRdbFileSize(long rdbFileSize) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public boolean isFresh() {
 		return true;
 	}
+
 }

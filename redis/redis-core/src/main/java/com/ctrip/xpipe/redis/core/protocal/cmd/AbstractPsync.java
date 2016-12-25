@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser.BulkStringParserListener;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -213,18 +214,19 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	}
 
 	@Override
-	public void onGotLengthFiled(long length) {
-		beginReadRdb(length);
+	public void onEofType(EofType eofType) {
+		beginReadRdb(eofType);
 	}
-
-	protected void beginReadRdb(long fileSize) {
+	
+	protected void beginReadRdb(EofType eofType) {
 
 		if (logger.isInfoEnabled()) {
-			logger.info("[beginReadRdb]{}, rdbFileSize:{}", this, fileSize);
+			logger.info("[beginReadRdb]{}, eof:{}", this, eofType);
 		}
+		
 		for (PsyncObserver observer : observers) {
 			try {
-				observer.beginWriteRdb(fileSize, masterRdbOffset);
+				observer.beginWriteRdb(eofType, masterRdbOffset);
 			} catch (Throwable th) {
 				logger.error("[beginReadRdb]" + this, th);
 			}

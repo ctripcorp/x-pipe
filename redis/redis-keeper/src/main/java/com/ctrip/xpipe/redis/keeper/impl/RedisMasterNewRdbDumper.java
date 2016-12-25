@@ -86,7 +86,7 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 			redisMaster.getCurrentReplicationStore().rdbUpdated(dumpedRdbStore);
 			super.beginReceiveRdbData(masterOffset);
 		} catch (IOException e) {
-			logger.error("[waitUntilPsyncDone]", e);
+			logger.error("[beginReceiveRdbData]", e);
 		}
 	}
 	

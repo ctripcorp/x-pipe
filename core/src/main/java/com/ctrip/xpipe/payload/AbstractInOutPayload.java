@@ -55,6 +55,14 @@ public abstract class AbstractInOutPayload implements InOutPayload{
 	}
 
 	protected void doEndInput(){}
+	
+	@Override
+	public void endInputTruncate(int reduceLen) throws IOException {
+		doTruncate(reduceLen);
+		endInput();
+	}
+	
+	protected abstract void doTruncate(int reduceLen) throws IOException;
 
 	@Override
 	public void startOutput() throws IOException {
@@ -63,7 +71,6 @@ public abstract class AbstractInOutPayload implements InOutPayload{
 	}
 
 	protected void doStartOutput() throws IOException{}
-	
 
 	@Override
 	public long outSize() {

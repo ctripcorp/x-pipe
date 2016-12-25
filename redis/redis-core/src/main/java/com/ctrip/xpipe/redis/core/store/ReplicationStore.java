@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 
 import io.netty.buffer.ByteBuf;
 
@@ -17,8 +18,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER";
 
 	// rdb related
-	RdbStore beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException;
-
+	RdbStore beginRdb(String masterRunid, long masterOffset, EofType eofType) throws IOException;
+	
 	DumpedRdbStore prepareNewRdb() throws IOException;
 
 	void rdbUpdated(DumpedRdbStore dumpedRdbStore) throws IOException;

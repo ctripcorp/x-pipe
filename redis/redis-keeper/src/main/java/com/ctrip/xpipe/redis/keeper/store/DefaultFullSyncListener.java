@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -48,10 +49,10 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
-	public void setRdbFileInfo(long rdbFileSize, long rdbFileKeeperOffset) {
+	public void setRdbFileInfo(EofType eofType, long rdbFileKeeperOffset) {
 
 		if (logger.isInfoEnabled()) {
-			logger.info("[setRdbFileInfo]rdbFileSize:" + rdbFileSize + ",rdbFileOffset:" + rdbFileKeeperOffset);
+			logger.info("[setRdbFileInfo]eofType:" + eofType + ",rdbFileOffset:" + rdbFileKeeperOffset);
 		}
 
 		SimpleStringParser simpleStringParser = new SimpleStringParser(StringUtil.join(" ", DefaultPsync.FULL_SYNC,
@@ -60,8 +61,7 @@ public class DefaultFullSyncListener implements FullSyncListener {
 		logger.info("[setRdbFileInfo]{},{}", simpleStringParser.getPayload(), redisSlave);
 		redisSlave.sendMessage(simpleStringParser.format());
 
-		redisSlave.beginWriteRdb(rdbFileSize, rdbFileKeeperOffset);
-
+		redisSlave.beginWriteRdb(eofType, rdbFileKeeperOffset);
 	}
 
 	@Override

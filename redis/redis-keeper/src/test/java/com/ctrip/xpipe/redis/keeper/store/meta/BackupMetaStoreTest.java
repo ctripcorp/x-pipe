@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 
@@ -31,7 +32,7 @@ public class BackupMetaStoreTest extends AbstractRedisKeeperTest{
 	public void beforeBackupMetaStoreTest() throws IOException{
 		String baseDir = getTestFileDir();
 		backupMetaStore = new BackupMetaStore(new File(baseDir), randomKeeperRunid());
-		backupMetaStore.rdbBegun(masterRunid, beginOffset, rdbFile, rdbFileSize, cmdFilePrefix);
+		backupMetaStore.rdbBegun(masterRunid, beginOffset, rdbFile, new LenEofType(rdbFileSize), cmdFilePrefix);
 	}
 	
 	@Test

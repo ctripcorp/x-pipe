@@ -3,11 +3,10 @@ package com.ctrip.xpipe.utils;
 /**
  * @author wenchao.meng
  *
- * 2016年3月28日 下午6:46:26
+ *         2016年3月28日 下午6:46:26
  */
 public class StringUtil {
-	
-	
+
 	public static String randomString(int length) {
 
 		StringBuilder sb = new StringBuilder();
@@ -17,31 +16,29 @@ public class StringUtil {
 
 		return sb.toString();
 	}
-	
-	
-	public static String join(String split, Object ...args){
-		
-		String []tmp = new String[args.length];
-		int i=0;
-		for(Object arg :args){
-			if(arg != null){
+
+	public static String join(String split, Object... args) {
+
+		String[] tmp = new String[args.length];
+		int i = 0;
+		for (Object arg : args) {
+			if (arg != null) {
 				tmp[i++] = arg.toString();
-			}else{
+			} else {
 				tmp[i++] = null;
 			}
 		}
 		return join(split, tmp);
 	}
 
-	
-	public static String join(String split, String ...args){
-		
+	public static String join(String split, String... args) {
+
 		int i = 0;
 		StringBuilder sb = new StringBuilder();
-		for(String arg : args){
-			if(arg != null){
-				
-				if( i > 0 ){
+		for (String arg : args) {
+			if (arg != null) {
+
+				if (i > 0) {
 					sb.append(split);
 				}
 				sb.append(arg);
@@ -50,9 +47,24 @@ public class StringUtil {
 		}
 		return sb.toString();
 	}
-	
-	public static boolean isEmpty(String str){
+
+	public static boolean isEmpty(String str) {
 		return str == null || str.trim().length() == 0;
+	}
+
+	public static String[] splitByLen(String buff, int splitLen) {
+
+		int count = buff.length()/splitLen;
+		if(buff.length()%splitLen > 0){
+			count++;
+		}
+		String []result = new String[count];
+		int index =0;
+		for(int i=0;i<count;i++){
+			result[i] = buff.substring(index, Math.min(index+splitLen, buff.length()));
+			index += splitLen;
+		}
+		return result;
 	}
 
 }

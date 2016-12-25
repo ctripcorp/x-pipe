@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.store;
 import java.io.IOException;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 
 /**
  * @author wenchao.meng
@@ -12,11 +13,7 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 public interface RdbFileListener {
 	
 	
-	/**
-	 * @param rdbFileSize
-	 * @param rdbFileOffset
-	 */
-	void setRdbFileInfo(long rdbFileSize, long rdbFileKeeperOffset);
+	void setRdbFileInfo(EofType eofType, long rdbFileKeeperOffset);
 	
 	/**
 	 * 

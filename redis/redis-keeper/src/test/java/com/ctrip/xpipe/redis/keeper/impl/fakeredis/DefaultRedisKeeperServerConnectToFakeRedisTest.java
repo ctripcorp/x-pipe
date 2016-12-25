@@ -37,7 +37,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 
 		startKeeperServerAndTestReFullSync(2, allCommandsSize);
 	}
-
+	
 	@Test
 	public void testNewDumpCommandsTooMush() throws Exception{
 		
@@ -56,7 +56,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		psync.execute();
 		sleep(1000);
 		int rdbDumpCount2 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
-		Assert.assertEquals(rdbDumpCount2, rdbDumpCount1 + 1);
+		Assert.assertEquals(rdbDumpCount1 + 1, rdbDumpCount2);
 		
 		assertPsyncResultEquals(psync);
 	}

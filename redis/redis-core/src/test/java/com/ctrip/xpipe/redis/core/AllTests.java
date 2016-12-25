@@ -13,6 +13,8 @@ import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsyncTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommandTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
+import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJuderManagerTest;
+import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJudgerTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
@@ -36,7 +38,9 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	ShardMetaComparatorTest.class,
 	RoleCommandTest.class,
 	DcInfoTest.class,
-	DefaultPsyncTest.class
+	DefaultPsyncTest.class,
+	BulkStringEofJudgerTest.class,
+	BulkStringEofJuderManagerTest.class
 })
 public class AllTests {
 
