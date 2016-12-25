@@ -34,8 +34,10 @@ public class EofMarkType extends AbstractEofType{
 	@Override
 	public ByteBuf getStart() {
 		
-    	RequestStringParser parser = new RequestStringParser(String.valueOf((char)RedisClientProtocol.DOLLAR_BYTE), new String(RedisClientProtocol.EOF)
-    			, eofMark); 
+    	RequestStringParser parser = new RequestStringParser(
+    			String.valueOf((char)RedisClientProtocol.DOLLAR_BYTE) 
+    			+ new String(RedisClientProtocol.EOF)  
+    			+ eofMark); 
 		return parser.format();
 	}
 

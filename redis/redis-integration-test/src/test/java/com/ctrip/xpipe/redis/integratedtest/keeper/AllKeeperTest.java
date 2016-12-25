@@ -12,10 +12,11 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({ 
 	KeeperSingleDc.class, 
-	KeeperMultiDc.class, 
 	KeeperSingleDcRestart.class, 
 	KeeperSingleDcSlaveof.class,
-	KeeperSingleDcWipeOutData.class
+	KeeperSingleDcWipeOutData.class,
+	KeeperSingleDcEof.class,
+	KeeperMultiDc.class
 	})
 public class AllKeeperTest {
 

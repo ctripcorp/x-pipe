@@ -37,6 +37,7 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 	@Before
 	public void beforeExceptionTest(){
 		System.setProperty(AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "1");
+		fakeRedisServer.setEof(false);
 	}
 	
 	

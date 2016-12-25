@@ -29,6 +29,8 @@ public class FakeRedisServer extends AbstractLifecycle{
 	private Server server; 
 	private String runId = RunidGenerator.DEFAULT.generateRunid();
 	
+	private boolean eof = Boolean.parseBoolean(System.getProperty("EOF", "true"));  
+	
 	private int sleepBeforeSendFullSyncInfo = 0;
 	private int sleepBeforeSendRdb = 0;
 	private boolean sendLFBeforeSendRdb = true;
@@ -179,6 +181,13 @@ public class FakeRedisServer extends AbstractLifecycle{
 	public void setSendLFBeforeSendRdb(boolean sendLFBeforeSendRdb) {
 		this.sendLFBeforeSendRdb = sendLFBeforeSendRdb;
 	}
-
+	
+	public boolean isEof() {
+		return eof;
+	}
+	
+	public void setEof(boolean eof) {
+		this.eof = eof;
+	}
 }
 

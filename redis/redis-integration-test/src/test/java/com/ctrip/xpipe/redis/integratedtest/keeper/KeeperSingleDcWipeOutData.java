@@ -15,7 +15,6 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
  */
 public class KeeperSingleDcWipeOutData extends AbstractKeeperIntegratedSingleDc{
 	
-	
 	@Test
 	public void testWipeOutSlaveDataAndRestart() throws Exception{
 		

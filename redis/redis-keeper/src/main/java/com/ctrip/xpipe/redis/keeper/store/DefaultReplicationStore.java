@@ -95,6 +95,7 @@ public class DefaultReplicationStore implements ReplicationStore {
 		
 		//must has length field
 		if(meta.getRdbFileSize() > 0){
+			logger.info("[initEofType][leneof]{}", meta);
 			return new LenEofType(meta.getRdbFileSize()); 
 		}
 		

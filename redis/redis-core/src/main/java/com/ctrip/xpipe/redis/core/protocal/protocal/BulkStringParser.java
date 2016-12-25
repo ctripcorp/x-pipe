@@ -61,8 +61,8 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 				if(eofJudger == null){
 					return null;
 				}
-				logger.info("[read]{}", eofJudger);
 				
+				logger.debug("[read]{}", eofJudger);
 				if(bulkStringParserListener != null){
 					bulkStringParserListener.onEofType(eofJudger.getEofType());
 				}

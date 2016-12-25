@@ -73,11 +73,10 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 		try {
 			rdbStore = currentReplicationStore.beginRdb(masterRunid, masterRdbOffset, eofType);
 			inOutPayloadReplicationStore.setRdbStore(rdbStore);
+			super.beginReadRdb(eofType);
 		} catch (IOException e) {
 			logger.error("[beginReadRdb]" + masterRunid + "," + masterRdbOffset, e);
 		}
-
-		super.beginReadRdb(eofType);
 	}
 
 	@Override
@@ -86,10 +85,10 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 		logger.info("[endReadRdb]{}", this);
 		try {
 			rdbStore.endRdb();
+			super.endReadRdb();
 		} catch (IOException e) {
 			logger.error("[endReadRdb]", e);
 		}
-		super.endReadRdb();
 	}
 
 	protected void appendCommands(ByteBuf byteBuf) throws IOException {

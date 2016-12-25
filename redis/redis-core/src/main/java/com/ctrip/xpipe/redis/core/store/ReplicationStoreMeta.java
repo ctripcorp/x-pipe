@@ -121,7 +121,7 @@ public class ReplicationStoreMeta implements Serializable{
 	public String toString() {
 		
 		return "ReplicationStoreMeta [masterRunid=" + masterRunid + ", masterAddress=" + masterAddress + ", beginOffset=" + beginOffset + ", rdbFile=" + rdbFile
-				+ ", rdbFileSize=" + rdbFileSize + "rdbFileEofMark:" + rdbEofMark + ", rdbLastKeeperOffset=" + rdbLastKeeperOffset + ", cmdFilePrefix=" + cmdFilePrefix + ", keeperState=" + keeperState
+				+ ", rdbFileSize=" + rdbFileSize + ",rdbFileEofMark:" + rdbEofMark + ", rdbLastKeeperOffset=" + rdbLastKeeperOffset + ", cmdFilePrefix=" + cmdFilePrefix + ", keeperState=" + keeperState
 				+ ", keeperBeginOffset=" + keeperBeginOffset + ", keeperRunid=" + keeperRunid + ", activeKeeperAddress:" + activeKeeperAddress + "]";
 	}
 

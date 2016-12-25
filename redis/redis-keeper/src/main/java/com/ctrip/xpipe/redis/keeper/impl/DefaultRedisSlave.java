@@ -54,6 +54,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	private PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 	
 	private Long rdbFileOffset;
+	private EofType eofType;
 		
 	private ScheduledExecutorService scheduled;
 	private ScheduledFuture<?> 		  pingFuture, waitDumpTimeoutFuture;
@@ -177,7 +178,7 @@ public class DefaultRedisSlave implements RedisSlave {
 		logger.info("[beginWriteRdb]{}, {}", eofType, rdbFileOffset);
 		
 		if(!eofType.support(getCapas())){
-			logger.error("[beginWriteRdb]{}, {}, {}", this, eofType, getCapas());
+			logger.error("[beginWriteRdb][eoftype not supported]{}, {}, {}", this, eofType, getCapas());
 			try {
 				close();
 			} catch (IOException e) {
@@ -187,7 +188,9 @@ public class DefaultRedisSlave implements RedisSlave {
 		
 		partialState = PARTIAL_STATE.FULL;
 		slaveState = SLAVE_STATE.REDIS_REPL_SEND_BULK;
+		
 		this.rdbFileOffset = rdbFileOffset;
+		this.eofType = eofType;
 		
 		putOnLineOnAck = eofType.putOnLineOnAck();
 		
@@ -196,6 +199,31 @@ public class DefaultRedisSlave implements RedisSlave {
     	channel().writeAndFlush(eofType.getStart());
 	}
 
+	
+	@Override
+	public void rdbWriteComplete() {
+		
+		logger.info("[rdbWriteComplete]{}", this);
+		
+		ByteBuf end = eofType.getEnd();
+		if(end != null){
+			channel().writeAndFlush(end);
+		}
+		
+
+		if(slaveState == SLAVE_STATE.REDIS_REPL_SEND_BULK){
+			if(logger.isInfoEnabled()){
+				logger.info("[writeComplete][rdbWriteComplete]" + this);
+			}
+		}
+		this.slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
+		
+		if(!putOnLineOnAck){
+			sendCommandForFullSync();
+		}
+	}
+
+	
 	private void cancelWaitRdb() {
 		
 		if(pingFuture != null){
@@ -223,22 +251,6 @@ public class DefaultRedisSlave implements RedisSlave {
 		}
 	}
 
-	@Override
-	public void rdbWriteComplete() {
-		
-		logger.info("[rdbWriteComplete]{}", this);
-
-		if(slaveState == SLAVE_STATE.REDIS_REPL_SEND_BULK){
-			if(logger.isInfoEnabled()){
-				logger.info("[writeComplete][rdbWriteComplete]" + this);
-			}
-		}
-		this.slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
-		
-		if(!putOnLineOnAck){
-			sendCommandForFullSync();
-		}
-	}
 
 	protected void sendCommandForFullSync() {
 		

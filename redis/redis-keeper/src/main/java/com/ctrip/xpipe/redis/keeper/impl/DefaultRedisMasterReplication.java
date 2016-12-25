@@ -199,14 +199,16 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	@Override
 	protected void doEndWriteRdb() {
+		logger.info("[doEndWriteRdb]{}", this);
+		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
 		scheduleReplconf();
 		
-		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
 	}
 
 	@Override
 	protected void doOnContinue(){
 		
+		logger.info("[doOnContinue]{}", this);
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
 		try {
 			redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());

@@ -52,8 +52,8 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		logger.info(remarkableMessage("send psync to redump rdb"));
 		
 		int rdbDumpCount1 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
-		InMemoryPsync psync = new InMemoryPsync("localhost", keeperPort, "?", -1L, scheduled);
-		psync.execute();
+		
+		InMemoryPsync psync = sendInmemoryPsync("localhost", keeperPort);
 		sleep(1000);
 		int rdbDumpCount2 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
 		Assert.assertEquals(rdbDumpCount1 + 1, rdbDumpCount2);
@@ -77,8 +77,9 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		
 		int keeperPort = redisKeeperServer.getListeningPort();
 		logger.info(remarkableMessage("send psync to keeper port:{}"), keeperPort);
-		InMemoryPsync psync = new InMemoryPsync("localhost", keeperPort, "?", -1L, scheduled);
-		psync.execute();
+		
+		InMemoryPsync psync = sendInmemoryPsync("localhost", keeperPort, "?", -1L);
+		
 		sleep(1000);
 		int rdbDumpCount2 = ((DefaultRedisKeeperServer)redisKeeperServer).getRdbDumpTryCount();
 		Assert.assertEquals(1, rdbDumpCount2);
