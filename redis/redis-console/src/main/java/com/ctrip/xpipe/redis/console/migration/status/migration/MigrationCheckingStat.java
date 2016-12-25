@@ -56,8 +56,6 @@ public class MigrationCheckingStat extends AbstractMigrationStat {
 				++successCnt;
 			}
 		}
-		logger.info("[MigrationChecking]{} , {}/{}", getHolder().getCurrentCluster().getClusterName(), successCnt,
-				getHolder().getMigrationShards().size());
 
 		if (successCnt == getHolder().getMigrationShards().size()) {
 			logger.info("[MigrationChecking][success][continue]{}", getHolder().getCurrentCluster().getClusterName());

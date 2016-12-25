@@ -17,7 +17,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  *
  * Dec 8, 2016
  */
-public class MigrationPartialSuccessStat extends AbstractMigrationStat {
+public class MigrationPartialSuccessStat extends AbstractMigrationMigratingStat {
 	
 	private ExecutorService cachedThreadPool;
 	
@@ -55,36 +55,6 @@ public class MigrationPartialSuccessStat extends AbstractMigrationStat {
 		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
 		migrationClusterTbl.setStatus(MigrationStatus.PartialSuccess.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
-	}
-	
-	@Override
-	public void refresh() {
-		int successCnt = 0;
-		int currentWorkingCnt = 0;
-		
-		for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
-			if(migrationShard.getShardMigrationResult().stepTerminated(ShardMigrationStep.MIGRATE)) {
-				if(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE)) {
-					++successCnt;
-				}
-			} else {
-				++currentWorkingCnt;
-			}
-		}
-		
-		if(currentWorkingCnt == 0) {
-			if (successCnt == getHolder().getMigrationShards().size()) {
-				logger.info("[MigrationPartialSuccess][success][continue]{}", getHolder().getCurrentCluster().getClusterName());
-				updateAndProcess(nextAfterSuccess(), true);
-			} else {
-				logger.info("[MigrationPartialSuccess][fail]{}", getHolder().getCurrentCluster().getClusterName());
-				updateAndProcess(nextAfterFail(), false);
-			}
-		} else {
-			// Still migrating , Nothing to do
-			logger.info("[MigrationPartialSuccess]{}, Success:{}, CurrentWorking:{}, Total:{}", getHolder().getCurrentCluster().getClusterName(),
-					successCnt, currentWorkingCnt, getHolder().getMigrationShards().size());
-		}
 	}
 
 }
