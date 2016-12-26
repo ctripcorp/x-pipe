@@ -3,13 +3,14 @@ package com.ctrip.xpipe.spring;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 
@@ -18,6 +19,8 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.retry.RetryNTimes;
 import com.ctrip.xpipe.retry.RetryPolicyFactories;
 import com.ctrip.xpipe.retry.RetryPolicyFactory;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author wenchao.meng
@@ -58,6 +61,12 @@ public class RestTemplateFactory {
 				.setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectTimeout).build()).build();
 		ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
 		RestTemplate restTemplate = new RestTemplate(factory);
+		for(HttpMessageConverter<?> hmc : restTemplate.getMessageConverters()) {
+			if(hmc instanceof MappingJackson2HttpMessageConverter) {
+				MappingJackson2HttpMessageConverter mj2hmc = (MappingJackson2HttpMessageConverter) hmc;
+				mj2hmc.setObjectMapper((new ObjectMapper()).configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true));
+			}
+		}
 
 		return (RestOperations) Proxy.newProxyInstance(RestOperations.class.getClassLoader(),
 				new Class[] { RestOperations.class },
