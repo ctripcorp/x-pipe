@@ -26,8 +26,8 @@ import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.netty.ChannelUtil;
+import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.IpUtils;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -91,8 +91,10 @@ public class DefaultRedisSlave implements RedisSlave {
 		
 		String getRemoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
 		String threadPrefix = "RedisClientPsync-" + getRemoteIpLocalPort;
-		psyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create(threadPrefix));
-		scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create(threadPrefix));
+		String clusterId = redisClient.getRedisKeeperServer().getClusterId();
+		String shardId = redisClient.getRedisKeeperServer().getShardId();
+		psyncExecutor = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, threadPrefix));
+		scheduled = Executors.newScheduledThreadPool(1, ClusterShardAwareThreadFactory.create(clusterId, shardId, threadPrefix));
 	}
 
 	@Override

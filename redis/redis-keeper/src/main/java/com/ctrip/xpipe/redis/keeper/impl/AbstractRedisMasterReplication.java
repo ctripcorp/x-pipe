@@ -20,9 +20,9 @@ import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
-import com.ctrip.xpipe.redis.core.protocal.cmd.KinfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.KinfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
@@ -32,7 +32,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -114,7 +114,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		String threadPoolName = String.format("%s:(%s:%d)", getClass().getSimpleName(), redisMaster.masterEndPoint().getHost(), redisMaster.masterEndPoint().getPort()); 
-		slaveEventLoopGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create(threadPoolName));
+		slaveEventLoopGroup = new NioEventLoopGroup(1, ClusterShardAwareThreadFactory.create(redisKeeperServer.getClusterId(), redisKeeperServer.getShardId(), threadPoolName));
 
 	}
 
