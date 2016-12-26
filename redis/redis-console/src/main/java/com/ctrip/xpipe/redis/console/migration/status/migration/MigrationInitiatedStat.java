@@ -39,6 +39,7 @@ public class MigrationInitiatedStat extends AbstractMigrationStat {
 	@Override
 	public void refresh() {
 		// nothing to do
+		logger.info("[MigrationInitiatedStat]{}", getHolder().getCurrentCluster().getClusterName());
 	}
 	
 }
