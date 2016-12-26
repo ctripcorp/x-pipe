@@ -143,7 +143,9 @@ public class DefaultRedisSlave implements RedisSlave {
 		}
 		
 		if(putOnLineOnAck){
+			
 			putOnLineOnAck = false;
+			logger.info("[ack][put slave online]{}", this);
 			sendCommandForFullSync();
 		}
 		

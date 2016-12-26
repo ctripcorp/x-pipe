@@ -58,8 +58,8 @@ public class ReferenceFileChannel implements Closeable, Releasable {
 
 		while(true){
 			
-			long fileEnd = fileChannel.size();
-			long previousPos = currentPos.get();
+			final long fileEnd = fileChannel.size();
+			final long previousPos = currentPos.get();
 			
 			long end = fileEnd;
 			if(maxBytes > 0){
@@ -69,6 +69,9 @@ public class ReferenceFileChannel implements Closeable, Releasable {
 			if(currentPos.compareAndSet(previousPos, end)){
 				
 				increase();
+				if(end - previousPos < 0){
+					logger.warn("[readTilEnd]pre:{}, end:{}, filelen:{}", previousPos, end, fileEnd);
+				}
 				return new ReferenceFileRegion(fileChannel, previousPos, end - previousPos, this);
 			}
 		}

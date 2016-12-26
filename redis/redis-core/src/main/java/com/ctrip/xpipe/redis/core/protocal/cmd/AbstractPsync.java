@@ -181,6 +181,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	protected void endReadRdb() {
 
+		logger.info("[endReadRdb]");
 		for (PsyncObserver observer : observers) {
 			try {
 				observer.endWriteRdb();
@@ -220,9 +221,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	
 	protected void beginReadRdb(EofType eofType) {
 
-		if (logger.isInfoEnabled()) {
-			logger.info("[beginReadRdb]{}, eof:{}", this, eofType);
-		}
+		logger.info("[beginReadRdb]{}, eof:{}", this, eofType);
 		
 		for (PsyncObserver observer : observers) {
 			try {
