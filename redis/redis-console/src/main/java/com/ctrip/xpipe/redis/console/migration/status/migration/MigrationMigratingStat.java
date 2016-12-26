@@ -4,7 +4,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
