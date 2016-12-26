@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -112,6 +113,10 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		if (logger.isInfoEnabled()) {
 			logger.info("[scheduleReplconf]" + this);
 		}
+		
+		if(replConfFuture != null){
+			replConfFuture.cancel(true);
+		}
 
 		replConfFuture = scheduled.scheduleWithFixedDelay(new Runnable() {
 
@@ -170,7 +175,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 
 	@Override
-	protected void doBeginWriteRdb(long fileSize, long masterRdbOffset) throws IOException {
+	protected void doBeginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
 
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_TRANSFER);
 		
@@ -194,14 +199,16 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	@Override
 	protected void doEndWriteRdb() {
+		logger.info("[doEndWriteRdb]{}", this);
+		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
 		scheduleReplconf();
 		
-		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
 	}
 
 	@Override
 	protected void doOnContinue(){
 		
+		logger.info("[doOnContinue]{}", this);
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
 		try {
 			redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());

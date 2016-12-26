@@ -10,6 +10,8 @@ import java.util.concurrent.TimeUnit;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBuf;
 
@@ -82,18 +84,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 	private String[] split(String command) {
 		
 		int splitLen = fakeRedisServer.getSendBatchSize();
-		
-		int count = command.length()/splitLen;
-		if(command.length()%splitLen >0){
-			count++;
-		}
-		String []result = new String[count];
-		int index =0;
-		for(int i=0;i<count;i++){
-			result[i] = command.substring(index, Math.min(index+splitLen, command.length()));
-			index += splitLen;
-		}
-		return result;
+		return StringUtil.splitByLen(command, splitLen);
 	}
 
 	private void handleFullSync(final OutputStream ous) throws IOException, InterruptedException {
@@ -125,13 +116,25 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 			future.cancel(true);
 		}
 		
-		BulkStringParser bulkStringParser = new BulkStringParser(fakeRedisServer.getRdbContent());
-		ByteBuf byteBuf = bulkStringParser.format();
-		byte []rdb = ByteBufUtils.readToBytes(byteBuf);
+		byte []rdb = null;
+		int sleepMilli = 0;
+		if(fakeRedisServer.isEof()){
+			String mark = RunidGenerator.DEFAULT.generateRunid();
+			String content = "$EOF:" + mark + "\r\n" + fakeRedisServer.getRdbContent() + mark;
+			rdb = content.getBytes();
+			sleepMilli = 100;
+		}else{
+			BulkStringParser bulkStringParser = new BulkStringParser(fakeRedisServer.getRdbContent());
+			ByteBuf byteBuf = bulkStringParser.format();
+			rdb = ByteBufUtils.readToBytes(byteBuf);
+		}
 		if(logger.isDebugEnabled()){
 			logger.debug("[handleFullSync]{}, {}", getSocket(), new String(rdb));
 		}
+		
 		ous.write(rdb);
+		ous.flush();
+		TimeUnit.MILLISECONDS.sleep(sleepMilli);
 		writeCommands(ous);
 		
 	}

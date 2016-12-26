@@ -8,6 +8,7 @@ import org.unidal.tuple.Pair;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 
@@ -68,15 +69,14 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 	}
 
 	@Override
-	protected void beginReadRdb(long fileSize) {
+	protected void beginReadRdb(EofType eofType) {
 		try {
-			rdbStore = currentReplicationStore.beginRdb(masterRunid, masterRdbOffset, fileSize);
+			rdbStore = currentReplicationStore.beginRdb(masterRunid, masterRdbOffset, eofType);
 			inOutPayloadReplicationStore.setRdbStore(rdbStore);
+			super.beginReadRdb(eofType);
 		} catch (IOException e) {
 			logger.error("[beginReadRdb]" + masterRunid + "," + masterRdbOffset, e);
 		}
-
-		super.beginReadRdb(fileSize);
 	}
 
 	@Override
@@ -85,10 +85,10 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 		logger.info("[endReadRdb]{}", this);
 		try {
 			rdbStore.endRdb();
+			super.endReadRdb();
 		} catch (IOException e) {
 			logger.error("[endReadRdb]", e);
 		}
-		super.endReadRdb();
 	}
 
 	protected void appendCommands(ByteBuf byteBuf) throws IOException {

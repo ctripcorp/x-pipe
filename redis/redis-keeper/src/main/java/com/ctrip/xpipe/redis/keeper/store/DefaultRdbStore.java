@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -13,8 +15,10 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
+import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
 
 import io.netty.buffer.ByteBuf;
 
@@ -28,7 +32,7 @@ public class DefaultRdbStore implements RdbStore {
 
 	private FileChannel channel;
 
-	protected long rdbFileSize;
+	protected EofType eofType;
 
 	private AtomicReference<Status> status = new AtomicReference<>(Status.Writing);
 
@@ -36,10 +40,12 @@ public class DefaultRdbStore implements RdbStore {
 
 	private AtomicInteger refCount = new AtomicInteger(0);
 	
-	public DefaultRdbStore(File file, long rdbLastKeeperOffset, long rdbFileSize) throws IOException {
+	private List<RdbStoreListener> rdbStoreListeners = new LinkedList<>();
+	
+	public DefaultRdbStore(File file, long rdbLastKeeperOffset, EofType eofType) throws IOException {
 
 		this.file = file;
-		this.rdbFileSize = rdbFileSize;
+		this.eofType = eofType;
 		this.rdbLastKeeperOffset = rdbLastKeeperOffset;
 		
 		if(file.length() > 0){
@@ -54,8 +60,12 @@ public class DefaultRdbStore implements RdbStore {
 	public int writeRdb(ByteBuf byteBuf) throws IOException {
 		
 		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, channel);
-		
 		return wrote;
+	}
+
+	@Override
+	public void truncate(int reduceLen) throws IOException {
+		channel.truncate(channel.size() - reduceLen);
 	}
 
 	@Override
@@ -63,19 +73,24 @@ public class DefaultRdbStore implements RdbStore {
 		try{
 			checkAndSetRdbState();
 		}finally{
+			for(RdbStoreListener listener : rdbStoreListeners){
+				listener.onEndRdb();
+			}
 			writeFile.close();
 		}
 	}
 
 	private void checkAndSetRdbState() {
 		
+		//TODO check file format
 		long actualFileLen = file.length();
-		if (actualFileLen == rdbFileSize) {
+		
+		if(eofType.fileOk(file)){
 			status.set(Status.Success);
 		} else {
-			logger.error("[endRdb]actual:{}, expected:{}, file:{}", actualFileLen, rdbFileSize, file);
+			logger.error("[endRdb]actual:{}, expected:{}, file:{}", actualFileLen, eofType, file);
 			status.set(Status.Fail);
-			throw new RdbStoreExeption(rdbFileSize, actualFileLen);
+			throw new RdbStoreExeption(eofType, file);
 		}
 		
 	}
@@ -97,7 +112,7 @@ public class DefaultRdbStore implements RdbStore {
 
 	private void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
 		
-		rdbFileListener.setRdbFileInfo(rdbFileSize, rdbLastKeeperOffset);
+		rdbFileListener.setRdbFileInfo(eofType, rdbLastKeeperOffset);
 
 		long lastLogTime = System.currentTimeMillis();
 		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
@@ -136,10 +151,6 @@ public class DefaultRdbStore implements RdbStore {
 		}
 	}
 
-	/**
-	 * @param status
-	 * @return
-	 */
 	private boolean isRdbWriting(Status status) {
 		return status != Status.Fail && status != Status.Success;
 	}
@@ -174,7 +185,7 @@ public class DefaultRdbStore implements RdbStore {
 
 	@Override
 	public String toString() {
-		return String.format("rdbFileSize:%d, rdbLastKeeperOffset:%d,file:%s, status:%s", rdbFileSize, rdbLastKeeperOffset, file, status.get());
+		return String.format("eofType:%s, rdbLastKeeperOffset:%d,file:%s, status:%s", eofType, rdbLastKeeperOffset, file, status.get());
 	}
 
 	@Override
@@ -191,6 +202,16 @@ public class DefaultRdbStore implements RdbStore {
 		if(writeFile != null){
 			writeFile.close();
 		}
+	}
+
+	@Override
+	public void addListener(RdbStoreListener rdbStoreListener) {
+		rdbStoreListeners.add(rdbStoreListener);
+	}
+
+	@Override
+	public void removeListener(RdbStoreListener rdbStoreListener) {
+		rdbStoreListeners.remove(rdbStoreListener);
 	}
 
 }

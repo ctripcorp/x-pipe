@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.core.store.exception.BadMetaStoreException;
@@ -148,7 +150,18 @@ public abstract class AbstractMetaStore implements MetaStore{
 		} else {
 			return new ReplicationStoreMeta();
 		}
-		
+	}
+	
+	@Override
+	public void setRdbFileSize(long rdbFileSize) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			if(metaDup.getRdbFileSize() != rdbFileSize){
+				metaDup.setRdbFileSize(rdbFileSize);
+				saveMeta(metaDup);
+			}
+		}
 	}
 	
 	
@@ -165,18 +178,33 @@ public abstract class AbstractMetaStore implements MetaStore{
 	}
 
 	@Override
-	public ReplicationStoreMeta rdbUpdated(String rdbFile, long rdbFileSize, long masterOffset) throws IOException {
+	public ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long masterOffset) throws IOException {
+		
 		synchronized (metaRef) {
+			
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 
 			metaDup.setRdbFile(rdbFile);
-			metaDup.setRdbFileSize(rdbFileSize);
+			setRdbFileInfo(metaDup, eofType);
 			metaDup.setRdbLastKeeperOffset(redisOffsetToKeeperOffset(masterOffset, metaDup));
 			logger.info("[rdbUpdated] update RdbLastKeeperOffset to {}", metaDup.getRdbLastKeeperOffset());
 
 			saveMeta(metaDup);
 
 			return metaDup;
+		}
+	}
+
+	protected void setRdbFileInfo(ReplicationStoreMeta metaDup, EofType eofType) {
+		
+		String tag = eofType.getTag(); 
+		
+		if(tag.length() == RedisClientProtocol.RUN_ID_LENGTH){
+			metaDup.setRdbEofMark(tag);
+			metaDup.setRdbFileSize(-1);
+		}else{
+			metaDup.setRdbFileSize(Long.valueOf(tag));
+			metaDup.setRdbEofMark(null);
 		}
 	}
 

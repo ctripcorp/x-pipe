@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-
 import java.io.IOException;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
@@ -9,10 +8,10 @@ import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.payload.StringInOutPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJudger.JudgeResult;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-
 
 /**
  * @author wenchao.meng
@@ -21,14 +20,13 @@ import io.netty.buffer.Unpooled;
  */
 public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 	
-	private Long totalLength = 0L;
-	private Long currentLength = 0L;
-	private BULK_STRING_STATE  bulkStringState = BULK_STRING_STATE.READING_LENGTH;
+	private BulkStringEofJudger eofJudger;
+	private BULK_STRING_STATE  bulkStringState = BULK_STRING_STATE.READING_EOF_MARK;
 	private BulkStringParserListener bulkStringParserListener;
 	
 	
 	public enum BULK_STRING_STATE{
-		READING_LENGTH,
+		READING_EOF_MARK,
 		READING_CONTENT,
 		READING_CR,
 		READING_LF,
@@ -53,59 +51,51 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 		this.bulkStringParserListener = bulkStringParserListener;
 	}
 	
-	/**
-	 * 返回值暂时没用
-	 * @throws IOException 
-	 */
 	@Override
 	public RedisClientProtocol<InOutPayload> read(ByteBuf byteBuf){
 		
-		
 		switch(bulkStringState){
 		
-			case READING_LENGTH:
-				totalLength = readLengthFiled(byteBuf);
-				
-				if(totalLength == null){
+			case READING_EOF_MARK:
+				eofJudger = readEOfMark(byteBuf);
+				if(eofJudger == null){
 					return null;
 				}
 				
-				if(logger.isDebugEnabled()){
-					logger.debug("[parse][length]" + totalLength);
-				}
-				
+				logger.debug("[read]{}", eofJudger);
 				if(bulkStringParserListener != null){
-					bulkStringParserListener.onGotLengthFiled(totalLength);
+					bulkStringParserListener.onEofType(eofJudger.getEofType());
 				}
 				
-				if(totalLength < 0){
-					throw new RedisRuntimeException("length < 0:" + totalLength);
-				}
 				bulkStringState = BULK_STRING_STATE.READING_CONTENT;
 				payload.startInput();
 			case READING_CONTENT:
 				
-				int readable = byteBuf.readableBytes();
-				int readCount = readable;
 				int readerIndex = byteBuf.readerIndex();
-				if(currentLength + readable > totalLength){
-					readCount = (int) (totalLength - currentLength);
-				}
-				
-				
+				JudgeResult result = eofJudger.end(byteBuf.slice());
 				int length = 0;
 				try {
-					length = payload.in(byteBuf.slice(readerIndex, readCount));
+					length = payload.in(byteBuf.slice(readerIndex, result.getReadLen()));
+					if(length != result.getReadLen()){
+						throw new IllegalStateException(String.format("expected readLen:%d, but real:%d", result.getReadLen(), length));
+					}
 				} catch (IOException e) {
 					logger.error("[read][exception]" + payload ,e);
 					throw new RedisRuntimeException("[write to payload exception]" + payload, e);
 				}
 				byteBuf.readerIndex(readerIndex + length);
 				
-				currentLength += length;
-				if(currentLength.equals(totalLength)){
-					//read finished
-					payload.endInput();
+				if(result.isEnd()){
+					int truncate = eofJudger.truncate();
+					if(truncate > 0){
+						try {
+							payload.endInputTruncate(truncate);
+						} catch (IOException e) {
+							throw new RedisRuntimeException("[write to payload truncate exception]" + payload, e);
+						}
+					}else{
+						payload.endInput();
+					}
 					bulkStringState = BULK_STRING_STATE.READING_CR;
 				}else{
 					break;
@@ -139,18 +129,24 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 		return null;
 	}
 
-	
-	private Long readLengthFiled(ByteBuf byteBuf){
+	private LfReader lfReader = null;
+
+	private BulkStringEofJudger readEOfMark(ByteBuf byteBuf){
 		
-		String lengthStr = readTilCRLFAsString(byteBuf);
-		if(lengthStr == null){
+		if(lfReader == null){
+			lfReader = new LfReader();
+		}
+		RedisClientProtocol<byte[]> markBytes= lfReader.read(byteBuf);
+		if(markBytes == null){
 			return null;
 		}
-		lengthStr = lengthStr.trim();
-		if(lengthStr.charAt(0) == DOLLAR_BYTE){
-			lengthStr = lengthStr.substring(1);
+		
+		if(markBytes.getPayload().length == 0){
+			lfReader = null;
+			return null;
 		}
-		return Long.parseLong(lengthStr);
+		
+		return BulkStringEofJuderManager.create(markBytes.getPayload());
 	}
 
 	
@@ -179,10 +175,8 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 		throw new UnsupportedOperationException();		
 	}
 
-	
 	public static interface BulkStringParserListener{
-		
-		void onGotLengthFiled(long length);
+		void onEofType(EofType eofType);
 	}
 
 	@Override

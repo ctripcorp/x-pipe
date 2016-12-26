@@ -39,6 +39,11 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	}
 
 	@Override
+	protected void doTruncate(int reduceLen) throws IOException {
+		rdbStore.truncate(reduceLen);
+	}
+
+	@Override
 	public void doStartOutput() throws IOException {
 		
 	}
@@ -47,7 +52,6 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	public long doOut(WritableByteChannel writableByteChannel) throws IOException {
 		throw new UnsupportedOperationException("Should not call doOut");
 	}
-
 
 	@Override
 	public void doEndOutput() {

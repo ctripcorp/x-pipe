@@ -22,7 +22,10 @@ public class ReplicationStoreMeta implements Serializable{
 	private DefaultEndPoint masterAddress;
 	private Long beginOffset;
 	private String rdbFile;
+	
 	private long rdbFileSize;
+	private String rdbEofMark;
+	
 	// last offset of rdb in keeper coordinate
 	private Long rdbLastKeeperOffset;
 	private String cmdFilePrefix;
@@ -45,7 +48,10 @@ public class ReplicationStoreMeta implements Serializable{
 		this.beginOffset = proto.beginOffset;
 		this.keeperState = proto.keeperState;
 		this.rdbFile = proto.rdbFile;
+		
 		this.rdbFileSize = proto.rdbFileSize;
+		this.rdbEofMark = proto.rdbEofMark;
+		
 		this.rdbLastKeeperOffset = proto.rdbLastKeeperOffset;
 		this.cmdFilePrefix = proto.cmdFilePrefix;
 
@@ -55,20 +61,20 @@ public class ReplicationStoreMeta implements Serializable{
 		proto.activeKeeperAddress = activeKeeperAddress;
 	}
 	
-
-	/**
-	 * @return the rdbFileSize
-	 */
 	public long getRdbFileSize() {
 		return rdbFileSize;
 	}
+	
+	public String getRdbEofMark() {
+		return rdbEofMark;
+	}
 
-	/**
-	 * @param rdbFileSize
-	 *            the rdbFileSize to set
-	 */
 	public void setRdbFileSize(long rdbFileSize) {
 		this.rdbFileSize = rdbFileSize;
+	}
+	
+	public void setRdbEofMark(String rdbEofMark) {
+		this.rdbEofMark = rdbEofMark;
 	}
 
 	public String getRdbFile() {
@@ -115,7 +121,7 @@ public class ReplicationStoreMeta implements Serializable{
 	public String toString() {
 		
 		return "ReplicationStoreMeta [masterRunid=" + masterRunid + ", masterAddress=" + masterAddress + ", beginOffset=" + beginOffset + ", rdbFile=" + rdbFile
-				+ ", rdbFileSize=" + rdbFileSize + ", rdbLastKeeperOffset=" + rdbLastKeeperOffset + ", cmdFilePrefix=" + cmdFilePrefix + ", keeperState=" + keeperState
+				+ ", rdbFileSize=" + rdbFileSize + ",rdbFileEofMark:" + rdbEofMark + ", rdbLastKeeperOffset=" + rdbLastKeeperOffset + ", cmdFilePrefix=" + cmdFilePrefix + ", keeperState=" + keeperState
 				+ ", keeperBeginOffset=" + keeperBeginOffset + ", keeperRunid=" + keeperRunid + ", activeKeeperAddress:" + activeKeeperAddress + "]";
 	}
 

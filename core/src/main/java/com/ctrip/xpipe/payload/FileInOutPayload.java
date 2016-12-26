@@ -74,6 +74,11 @@ public class FileInOutPayload extends AbstractInOutPayload{
 	}
 
 	@Override
+	protected void doTruncate(int reduceLen) throws IOException {
+		outFileChannel.truncate(outFileChannel.size() - reduceLen);
+	}
+	
+	@Override
 	public void doEndOutput() {
 		try {
 			outFileChannel.close();
@@ -81,4 +86,5 @@ public class FileInOutPayload extends AbstractInOutPayload{
 			logger.error("[error closing file]" + fileName, e);
 		}
 	}
+
 }

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.junit.Test;
 
+import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 
@@ -26,7 +27,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		int cmdLen = 10;
 
 		DefaultReplicationStore store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitorManager());
-		store.beginRdb("master", -1, -1);
+		store.beginRdb("master", -1, new LenEofType(-1));
 
 		for (int j = 0; j < cmdCount; j++) {
 			ByteBuf buf = Unpooled.buffer();

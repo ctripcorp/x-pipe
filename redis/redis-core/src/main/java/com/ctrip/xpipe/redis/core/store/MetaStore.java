@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 
 /**
  * @author marsqing
@@ -56,8 +57,10 @@ public interface MetaStore {
 	
 	void setKeeperState(String keeperRunid, KeeperState keeperState) throws IOException;
 
-	ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, long rdbFileSize, String cmdFilePrefix) throws IOException;
+	ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, EofType eofType, String cmdFilePrefix) throws IOException;
 
+	void setRdbFileSize(long rdbFileSize) throws IOException;
+	
 	/**
 	 * redis failover
 	 * @param newMasterEndPoint
@@ -67,7 +70,7 @@ public interface MetaStore {
 	 */
 	void masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) throws IOException;
 
-	ReplicationStoreMeta rdbUpdated(String rdbFile, long rdbFileSize, long masterOffset) throws IOException;
+	ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long masterOffset) throws IOException;
 	
 	long redisOffsetToKeeperOffset(long redisOffset);
 	

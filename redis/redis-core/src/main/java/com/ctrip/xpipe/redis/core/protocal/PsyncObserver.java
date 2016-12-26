@@ -2,13 +2,14 @@ package com.ctrip.xpipe.redis.core.protocal;
 
 import java.io.IOException;
 
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+
 /**
  * @author wenchao.meng
  *
  * 2016年3月29日 下午3:51:09
  */
 public interface PsyncObserver {
-	
 	
 	/**
 	 * get FULLSYNC response
@@ -23,7 +24,7 @@ public interface PsyncObserver {
 	 * @param offset
 	 * @throws IOException
 	 */
-	void beginWriteRdb(long fileSize, long masterRdbOffset) throws IOException;
+	void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException;
 
 
 	void endWriteRdb();

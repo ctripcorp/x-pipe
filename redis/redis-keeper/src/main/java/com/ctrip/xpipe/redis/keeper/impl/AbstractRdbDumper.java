@@ -138,7 +138,6 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		logger.info("[dumpFail]{}, {}", this, th.getMessage());
 		setRdbDumpState(RdbDumpState.FAIL);
 		future().setFailure(th);
-		;
 	}
 
 	@Override

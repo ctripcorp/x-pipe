@@ -13,6 +13,7 @@ import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
@@ -53,7 +54,7 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 		
 		this.channel = channel;
 		String remoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
-		nonPsyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create("RedisClientNonPsync-" + remoteIpLocalPort));
+		nonPsyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create("RedisClient-" + remoteIpLocalPort));
 		channel.closeFuture().addListener(new ChannelFutureListener() {
 			
 			@Override
@@ -260,5 +261,10 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	public void release() throws Exception {
 		logger.info("[release]{}", this);
 		nonPsyncExecutor.shutdownNow();
+	}
+
+	@Override
+	public Set<CAPA> getCapas() {
+		return new HashSet<>(capas);
 	}
 }

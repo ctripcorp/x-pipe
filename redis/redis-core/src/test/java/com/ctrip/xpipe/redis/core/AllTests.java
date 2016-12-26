@@ -14,6 +14,8 @@ import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICETest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsyncTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommandTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
+import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJuderManagerTest;
+import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJudgerTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
@@ -38,7 +40,9 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	RoleCommandTest.class,
 	DcInfoTest.class,
 	DefaultPsyncTest.class,
-	META_SERVER_SERVICETest.class
+	META_SERVER_SERVICETest.class,
+	BulkStringEofJudgerTest.class,
+	BulkStringEofJuderManagerTest.class
 })
 public class AllTests {
 

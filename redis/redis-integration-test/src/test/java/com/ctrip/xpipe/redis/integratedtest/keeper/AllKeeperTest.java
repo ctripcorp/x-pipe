@@ -16,7 +16,9 @@ import org.junit.runners.Suite.SuiteClasses;
 	KeeperMultiDcChangePrimary.class,
 	KeeperSingleDcRestart.class, 
 	KeeperSingleDcSlaveof.class,
-	KeeperSingleDcWipeOutData.class
+	KeeperSingleDcWipeOutData.class,
+	KeeperSingleDcEof.class,
+	KeeperMultiDc.class
 	})
 public class AllKeeperTest {
 

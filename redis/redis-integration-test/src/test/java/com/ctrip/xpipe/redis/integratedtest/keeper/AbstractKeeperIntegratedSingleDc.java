@@ -49,7 +49,7 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		backupKeeper = getKeepersBackup().get(0);
 		slaves = getRedisSlaves();
 
-		sleep(3000);//wait for structure to build
+		sleep(5000);//wait for structure to build
 	}
 
 	private void initResource() throws Exception {
@@ -64,7 +64,7 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		
 	}
 
-	private void makeKeeperRight() throws Exception {
+	protected void makeKeeperRight() throws Exception {
 
 		List<KeeperMeta> keepers = getDcKeepers(dc, getClusterId(), getShardId());
 		

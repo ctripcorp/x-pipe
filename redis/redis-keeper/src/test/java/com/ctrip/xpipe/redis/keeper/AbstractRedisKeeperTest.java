@@ -12,6 +12,7 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
@@ -123,7 +124,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		((DefaultReplicationStore)replicationStore).getRdbStore().readRdbFile(new RdbFileListener() {
 
 			@Override
-			public void setRdbFileInfo(long rdbFileSize, long rdbFileOffset) {
+			public void setRdbFileInfo(EofType eofType, long rdbFileOffset) {
 
 			}
 

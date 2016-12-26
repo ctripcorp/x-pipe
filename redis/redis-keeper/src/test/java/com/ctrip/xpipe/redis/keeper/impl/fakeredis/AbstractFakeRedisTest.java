@@ -1,11 +1,21 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.junit.Assert;
 import org.junit.Before;
 
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.command.SequenceCommandChain;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.FixedObjectPool;
+import com.ctrip.xpipe.redis.core.protocal.CAPA;
+import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
+import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -94,5 +104,64 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 	@Override
 	protected String getXpipeMetaConfigFile() {
 		return "keeper-test.xml";
+	}
+
+	protected InMemoryPsync sendInmemoryPsync(String ip, int port) throws Exception {
+
+		return sendInmemoryPsync(ip, port, "?", -1);
+	}
+
+	protected InMemoryPsync sendInmemoryPsync(String ip, int port, String runid, long offset) throws Exception {
+
+		SequenceCommandChain chain = new SequenceCommandChain(false);
+		
+		SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(ip, port));
+		NettyClient nettyClient = null;
+		
+		try{
+			nettyClient = pool.borrowObject();
+			
+			SimpleObjectPool<NettyClient> clientPool = new FixedObjectPool<NettyClient>(nettyClient);  
+			chain.add(new Replconf(clientPool, 
+					ReplConfType.CAPA, CAPA.EOF.toString(), scheduled));
+			InMemoryPsync psync = new InMemoryPsync(clientPool, runid, offset, scheduled);
+			chain.add(psync);
+			
+			psync.addPsyncObserver(new PsyncObserver() {
+				
+				private long masterRdbOffset = 0;
+				@Override
+				public void reFullSync() {
+					
+				}
+				
+				@Override
+				public void onFullSync() {
+					
+				}
+				
+				@Override
+				public void onContinue() {
+					
+				}
+				
+				@Override
+				public void endWriteRdb() {
+					new Replconf(clientPool, ReplConfType.ACK, String.valueOf(masterRdbOffset), scheduled).execute();
+				}
+				
+				@Override
+				public void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
+					this.masterRdbOffset = masterRdbOffset;
+				}
+			});;
+			
+			chain.execute();
+			return psync;
+		}finally{
+			if(nettyClient != null){
+				pool.returnObject(nettyClient);
+			}
+		}
 	}
 }

@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -72,7 +73,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest{
 		
 		sleep(waitDumpMilli/2);
 		
-		defaultRedisSlave.beginWriteRdb(1000, 2);
+		defaultRedisSlave.beginWriteRdb(new LenEofType(1000), 2);
 
 		sleep(waitDumpMilli);
 

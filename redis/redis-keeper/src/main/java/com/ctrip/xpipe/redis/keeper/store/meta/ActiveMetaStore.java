@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 
 /**
@@ -52,7 +53,7 @@ public class ActiveMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
-	public ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, long rdbFileSize,
+	public ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, EofType eofType,
 			String cmdFilePrefix) throws IOException {
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
@@ -60,7 +61,7 @@ public class ActiveMetaStore extends AbstractMetaStore{
 			metaDup.setMasterRunid(masterRunid);
 			metaDup.setBeginOffset(beginOffset);
 			metaDup.setRdbFile(rdbFile);
-			metaDup.setRdbFileSize(rdbFileSize);
+			setRdbFileInfo(metaDup, eofType);
 			metaDup.setCmdFilePrefix(cmdFilePrefix);
 			metaDup.setRdbLastKeeperOffset(metaDup.getKeeperBeginOffset() - 1);
 

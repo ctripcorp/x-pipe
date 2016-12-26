@@ -15,6 +15,7 @@ import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
+import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
@@ -28,7 +29,6 @@ import io.netty.buffer.ByteBufAllocator;
  * 2016年4月21日 下午3:11:30
  */
 public class PsyncTest extends AbstractRedisKeeperTest{
-	
 	
 	private ByteBufAllocator allocator  = ByteBufAllocator.DEFAULT;
 	private DefaultPsync psync;
@@ -71,8 +71,8 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 				commandContent
 		};
 		//create store
-		replicationStore.beginRdb(masterId, masterOffset, 0);
-		replicationStore.getRdbStore().endRdb();
+		replicationStore.beginRdb(masterId, masterOffset, new LenEofType(0));
+		replicationStore.getRdbStore().endRdb();;
 		
 		runData(data);
 	}

@@ -8,6 +8,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 
@@ -30,7 +32,7 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 		
 		File file = new File(fileName);
 		
-		DefaultRdbStore rdbStore = new DefaultRdbStore(file, 1L, rdbFileSize);
+		DefaultRdbStore rdbStore = new DefaultRdbStore(file, 1L, new LenEofType(rdbFileSize));
 
 		readRdbInNewThread(rdbStore);
 		
@@ -55,8 +57,8 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 					rdbStore.readRdbFile(new RdbFileListener() {
 						
 						@Override
-						public void setRdbFileInfo(long rdbFileSize, long rdbFileKeeperOffset) {
-							logger.info("[setRdbFileInfo]{}, {}", rdbFileSize, rdbFileKeeperOffset);
+						public void setRdbFileInfo(EofType eofType, long rdbFileKeeperOffset) {
+							logger.info("[setRdbFileInfo]{}, {}", eofType, rdbFileKeeperOffset);
 						}
 						
 						@Override

@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
@@ -82,17 +83,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public ReplicationStoreMeta rdbUpdated(String rdbFile, long rdbFileSize, long masterOffset) throws IOException {
-				throw new UnsupportedOperationException();
-			}
-
-			@Override
-			public ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, long rdbFileSize, String cmdFilePrefix)
-					throws IOException {
-				return null;
-			}
-
-			@Override
 			public long redisOffsetToKeeperOffset(long redisOffset) {
 				return 0;
 			}
@@ -121,6 +111,24 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			public boolean isFresh() {
 				return true;
 			}
+
+			@Override
+			public ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, EofType eofType,
+					String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long masterOffset)
+					throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			
+			@Override
+			public void setRdbFileSize(long rdbFileSize) throws IOException {
+			}
+
 		};
 	}
 
@@ -133,11 +141,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public RdbStore beginRdb(String masterRunid, long masterOffset, long rdbFileSize) throws IOException {
+	public RdbStore beginRdb(String masterRunid, long masterOffset, EofType eofType) throws IOException {
 		this.masterRunid = masterRunid;
 		this.masterOffset = masterOffset;
 		dumpedRdbStore.setMasterOffset(masterOffset);
-		dumpedRdbStore.setRdbFileSize(rdbFileSize);
+		dumpedRdbStore.setEofType(eofType);
 		return dumpedRdbStore;
 	}
 

@@ -44,4 +44,8 @@ public class StringInOutPayload extends AbstractInOutPayload{
 		return writableByteChannel.write(ByteBuffer.wrap(message.getBytes(charset)));
 	}
 
+	@Override
+	protected void doTruncate(int reduceLen) throws IOException {
+		throw new UnsupportedOperationException();
+	}
 }

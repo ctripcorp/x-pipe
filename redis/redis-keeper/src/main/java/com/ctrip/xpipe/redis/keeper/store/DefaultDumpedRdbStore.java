@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 import java.io.File;
 import java.io.IOException;
 
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 
 
@@ -16,7 +17,7 @@ public class DefaultDumpedRdbStore extends DefaultRdbStore implements DumpedRdbS
 	private long masterOffset;
 
 	public DefaultDumpedRdbStore(File file) throws IOException {
-		super(file, -1, -1);
+		super(file, -1, null);
 	}
 
 	@Override
@@ -29,15 +30,15 @@ public class DefaultDumpedRdbStore extends DefaultRdbStore implements DumpedRdbS
 		this.masterOffset = masterOffset;
 	}
 
-
 	@Override
-	public long getRdbFileSize() {
-		return this.rdbFileSize;
+	public EofType getEofType() {
+		return this.eofType;
 	}
 
+	
 	@Override
-	public void setRdbFileSize(long rdbFileSize) {
-		this.rdbFileSize = rdbFileSize;
+	public void setEofType(EofType eofType) {
+		this.eofType = eofType;
 	}
 
 	@Override

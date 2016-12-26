@@ -12,6 +12,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.command.CommandExecutionException;
+import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
@@ -20,9 +21,11 @@ import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.cmd.KinfoCommand;
+import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -173,6 +176,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		clientPool.getObject().handleResponse(channel, byteBuf);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void masterConnected(Channel channel) {
 
@@ -182,11 +186,15 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 		checkTimeout(channel);
 
+		SequenceCommandChain chain = new SequenceCommandChain(false);
+		chain.add(listeningPortCommand());
+		chain.add(new Replconf(clientPool, ReplConfType.CAPA, CAPA.EOF.toString(), scheduled));
+		
 		try {
-			executeCommand(listeningPortCommand()).addListener(new CommandFutureListener<Object>() {
+			executeCommand(chain).addListener(new CommandFutureListener() {
 
 				@Override
-				public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+				public void operationComplete(CommandFuture commandFuture) throws Exception {
 					if(commandFuture.isSuccess()){
 						sendReplicationCommand();
 					}else{
@@ -194,7 +202,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 					}
 				}
 			});
-		} catch (CommandExecutionException e) {
+		} catch (Exception e) {
 			logger.error("[masterConnected]" + channel, e);
 		}
 	}
@@ -242,7 +250,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		return null;
 	}
 
-	private Replconf listeningPortCommand() throws CommandExecutionException {
+	private Replconf listeningPortCommand() {
 
 		Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT,
 				String.valueOf(redisKeeperServer.getListeningPort()), scheduled);
@@ -356,13 +364,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected abstract void doReFullSync();
 
 	@Override
-	public void beginWriteRdb(long fileSize, long masterRdbOffset) throws IOException {
+	public void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
 
-		doBeginWriteRdb(fileSize, masterRdbOffset);
+		doBeginWriteRdb(eofType, masterRdbOffset);
 		rdbDumper.get().beginReceiveRdbData(masterRdbOffset);
 	}
 
-	protected abstract void doBeginWriteRdb(long fileSize, long masterRdbOffset) throws IOException;
+	protected abstract void doBeginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException;
 
 	@Override
 	public void endWriteRdb() {

@@ -13,6 +13,7 @@ import org.junit.Test;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -36,6 +37,7 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 	@Before
 	public void beforeExceptionTest(){
 		System.setProperty(AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "1");
+		fakeRedisServer.setEof(false);
 	}
 	
 	
@@ -54,9 +56,9 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, metaService, leaderElectorManager, createkeeperMonitorManager()){
 		
 			@Override
-			public void beginWriteRdb(long fileSize, long offset) {
+			public void beginWriteRdb(EofType eofType, long offset) {
 				
-				super.beginWriteRdb(fileSize, offset);
+				super.beginWriteRdb(eofType, offset);
 				latch.countDown();
 				try {
 					writeToRdb(getCurrentReplicationStore());

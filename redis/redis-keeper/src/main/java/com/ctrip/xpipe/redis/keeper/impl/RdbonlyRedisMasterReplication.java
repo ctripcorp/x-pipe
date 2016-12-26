@@ -6,6 +6,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -85,7 +86,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	@Override
-	protected void doBeginWriteRdb(long fileSize, long masterRdbOffset) throws IOException {
+	protected void doBeginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
 	}
 
 	@Override

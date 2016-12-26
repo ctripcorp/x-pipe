@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.keeper;
 
 import java.io.Closeable;
+import java.util.Set;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.redis.core.protocal.CAPA;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -20,18 +22,6 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole,
 		SLAVE
 	}
 	
-	public static enum CAPA{
-		
-		EOF;
-		
-		public static CAPA of(String capaString){
-			
-			if("eof".equalsIgnoreCase(capaString)){
-				return EOF;
-			}
-			throw new IllegalArgumentException("unsupported capa type:" + capaString);
-		}
-	}
 	RedisSlave becomeSlave();
 	
 	RedisKeeperServer getRedisKeeperServer();
@@ -41,6 +31,8 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole,
 	int getSlaveListeningPort();
 
 	void capa(CAPA capa);
+	
+	Set<CAPA> getCapas();
 	
 	String []readCommands(ByteBuf byteBuf);
 
