@@ -27,6 +27,8 @@ public interface DcMetaCache extends Observable {
 
 	boolean isCurrentDcPrimary(String clusterId, String shardId);
 
+	boolean isCurrentDcPrimary(String clusterId);
+
 	Set<String> getBakupDcs(String clusterId, String shardId);
 
 	String getPrimaryDc(String clusterId, String shardId);

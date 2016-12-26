@@ -9,7 +9,7 @@ import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.simpleserver.Server;
 
 import static org.mockito.Mockito.*;
@@ -53,7 +53,7 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 	@Test
 	public void testOneMaster() throws Exception{
 
-		KeeperRole role = new KeeperRole(SERVER_ROLE.MASTER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0L);
+		SlaveRole role = new SlaveRole(SERVER_ROLE.MASTER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0L);
 		RedisMeta chosen = redises.get(0);
 		startServer(chosen.getPort(), ByteBufUtils.readToString(role.format()));
 		
@@ -70,7 +70,7 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 	@Test
 	public void testLongConnection() throws Exception{
 
-		KeeperRole role = new KeeperRole(SERVER_ROLE.MASTER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0L);
+		SlaveRole role = new SlaveRole(SERVER_ROLE.MASTER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0L);
 		RedisMeta chosen = redises.get(0);
 		Server server = startServer(chosen.getPort(), ByteBufUtils.readToString(role.format()));
 		
@@ -87,7 +87,7 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 	@Test
 	public void testMultiMaster() throws Exception{
 
-		KeeperRole role = new KeeperRole(SERVER_ROLE.MASTER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0L);
+		SlaveRole role = new SlaveRole(SERVER_ROLE.MASTER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0L);
 		
 		for(RedisMeta redisMeta : redises){
 			startServer(redisMeta.getPort(), ByteBufUtils.readToString(role.format()));

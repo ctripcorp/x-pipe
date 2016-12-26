@@ -12,7 +12,7 @@ import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.FirstNewMasterChooser;
 
@@ -54,7 +54,7 @@ public class FirstNewMasterChooserTest extends AbstractMetaServerTest{
 	@Test
 	public void testChooseExistingMaster() throws Exception{
 
-		KeeperRole role = new KeeperRole(SERVER_ROLE.MASTER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0L);
+		SlaveRole role = new SlaveRole(SERVER_ROLE.MASTER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0L);
 		RedisMeta chosen = redises.get(1);
 		startServer(chosen.getPort(), ByteBufUtils.readToString(role.format()));
 		

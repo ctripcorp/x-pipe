@@ -42,7 +42,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	DefaultPsyncTest.class,
 	META_SERVER_SERVICETest.class,
 	BulkStringEofJudgerTest.class,
-	BulkStringEofJuderManagerTest.class
+	BulkStringEofJuderManagerTest.class,
+	RoleCommandTest.class
 })
 public class AllTests {
 

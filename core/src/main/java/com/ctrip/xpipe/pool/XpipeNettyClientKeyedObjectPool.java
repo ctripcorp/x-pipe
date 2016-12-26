@@ -71,7 +71,7 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 
 		try {
 			NettyClient value = this.objectPool.borrowObject(key);
-			logger.info("[borrowObject]{}, {}", key, value);
+			logger.debug("[borrowObject]{}, {}", key, value);
 			return value;
 		} catch (Exception e) {
 			logger.error("[borrowObject]" + key, e);
@@ -83,7 +83,7 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 	public void returnObject(InetSocketAddress key, NettyClient value) throws ReturnObjectException {
 
 		try {
-			logger.info("[returnObject]{}, {}", key, value);
+			logger.debug("[returnObject]{}, {}", key, value);
 			this.objectPool.returnObject(key, value);
 		} catch (Exception e) {
 			logger.error("[returnObject]", e);

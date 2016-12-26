@@ -131,7 +131,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 					logger.error("[run][send replack error]" + DefaultRedisMasterReplication.this, th);
 				}
 			}
-		}, REPLCONF_INTERVAL_MILLI, REPLCONF_INTERVAL_MILLI, TimeUnit.MILLISECONDS);
+		}, 0, REPLCONF_INTERVAL_MILLI, TimeUnit.MILLISECONDS);
 	}
 
 

@@ -98,7 +98,11 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	@Override
 	protected void doReset(){
 		throw new UnsupportedOperationException();
-		
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("%s -> %s:%d", redises, masterHost, masterPort);
 	}
 	
 }

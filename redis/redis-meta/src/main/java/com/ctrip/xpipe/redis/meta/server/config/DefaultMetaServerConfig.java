@@ -92,7 +92,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 			result.put(entry.getKey().toLowerCase(), entry.getValue());
 		}
 
-		logger.info("[getDcInofs]{}", result);
+		logger.debug("[getDcInofs]{}", result);
 		return result;
 	}
 

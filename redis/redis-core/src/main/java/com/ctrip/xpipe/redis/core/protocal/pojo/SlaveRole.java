@@ -13,14 +13,14 @@ import io.netty.buffer.ByteBuf;
  *
  *         Sep 16, 2016
  */
-public class KeeperRole extends AbstractRole {
+public class SlaveRole extends AbstractRole {
 
 	private String masterHost;
 	private int masterPort;
 	private MASTER_STATE masterState;
 	private long masterOffset;
 
-	public KeeperRole(Object[] payload) {
+	public SlaveRole(Object[] payload) {
 		expectedLen(payload, 5);
 		this.serverRole = SERVER_ROLE.of(payload[0].toString());
 		this.masterHost = payload[1].toString();
@@ -29,7 +29,7 @@ public class KeeperRole extends AbstractRole {
 		this.masterOffset = Long.parseLong(payload[4].toString());
 	}
 
-	public KeeperRole(SERVER_ROLE serverRole, String masterHost, int masterPort, MASTER_STATE masterState,
+	public SlaveRole(SERVER_ROLE serverRole, String masterHost, int masterPort, MASTER_STATE masterState,
 			long masterOffset) {
 		this.serverRole = serverRole;
 		this.masterHost = masterHost;
@@ -62,11 +62,11 @@ public class KeeperRole extends AbstractRole {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof KeeperRole)) {
+		if (!(obj instanceof SlaveRole)) {
 			return false;
 		}
 
-		KeeperRole other = (KeeperRole) obj;
+		SlaveRole other = (SlaveRole) obj;
 		if (!(ObjectUtils.equals(serverRole, other.serverRole))) {
 			return false;
 		}

@@ -197,6 +197,12 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	public boolean isCurrentDcPrimary(String clusterId, String shardId) {
 		return currentDc.equalsIgnoreCase(dcMetaManager.get().getActiveDc(clusterId, shardId));
 	}
+	
+	@Override
+	public boolean isCurrentDcPrimary(String clusterId) {
+		return isCurrentDcPrimary(clusterId, null);
+	}
+
 
 	@Override
 	public List<KeeperMeta> getShardKeepers(String clusterId, String shardId) {
@@ -233,5 +239,6 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	public void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc) {
 		dcMetaManager.get().primaryDcChanged(clusterId, shardId, newPrimaryDc);
 	}
+
 
 }

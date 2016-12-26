@@ -39,7 +39,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	protected void doSendRequest(final NettyClient nettyClient, ByteBuf byteBuf) {
 		
 		if(logRequest()){
-			logger.info("[doSendRequest]{} ,{}", nettyClient, ByteBufUtils.readToString(byteBuf.slice()));
+			logger.info("[doSendRequest]{} ,{}", nettyClient, ByteBufUtils.readToString(byteBuf.slice()).trim());
 		}
 		
 		if(hasResponse()){

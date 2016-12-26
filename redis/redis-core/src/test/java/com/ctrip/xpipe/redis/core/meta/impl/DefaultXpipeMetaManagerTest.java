@@ -37,6 +37,13 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	}
 	
 	@Test
+	public void testActiveDc(){
+		
+		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId, shardId));;
+		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId, null));;
+	}
+	
+	@Test
 	public void testChangePrimaryDc(){
 
 		String primaryDc = metaManager.getActiveDc(clusterId, shardId);
