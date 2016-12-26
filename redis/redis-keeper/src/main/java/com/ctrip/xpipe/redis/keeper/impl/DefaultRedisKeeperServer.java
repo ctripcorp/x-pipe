@@ -49,8 +49,8 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.OsUtils;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -133,7 +133,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
 		if(scheduled == null){
-			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(String.format("keeper:%s-%s", clusterId, shardId)));
+			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), ClusterShardAwareThreadFactory.create(clusterId, shardId, String.format("keeper:%s-%s", clusterId, shardId)));
 		}
 		this.scheduled = scheduled;
 	}
@@ -153,8 +153,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		String threadPoolName = String.format("keeper:%s-%s", clusterId, shardId); 
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
-		bossGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create("boss:" + threadPoolName));
-		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, XpipeThreadFactory.create(threadPoolName));
+		bossGroup = new NioEventLoopGroup(1, ClusterShardAwareThreadFactory.create(clusterId, shardId, "boss:" + threadPoolName));
+		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, ClusterShardAwareThreadFactory.create(clusterId, shardId, threadPoolName));
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = initKeeperServerState();
