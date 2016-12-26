@@ -24,4 +24,13 @@ public class CredisMigrationPublishServiceTest extends AbstractServiceTest {
 		
 		System.out.println(publishService.doMigrationPublish("cluster", "dc", Arrays.asList(InetSocketAddress.createUnresolved("127.0.0.1", 6379))));
 	}
+	
+	@Test
+	public void testConvertDcName() {
+		Assert.assertEquals("SHAJQ", ((CredisMigrationPublishService)MigrationPublishService.DEFAULT).convertDcName("ntgxh"));
+		Assert.assertEquals("SHAJQ", ((CredisMigrationPublishService)MigrationPublishService.DEFAULT).convertDcName("NTGXH"));
+		Assert.assertEquals("SHAOY", ((CredisMigrationPublishService)MigrationPublishService.DEFAULT).convertDcName("fat"));
+		Assert.assertEquals("SHAOY", ((CredisMigrationPublishService)MigrationPublishService.DEFAULT).convertDcName("FAT"));
+		Assert.assertEquals("dc", ((CredisMigrationPublishService)MigrationPublishService.DEFAULT).convertDcName("dc"));
+	}
 }
