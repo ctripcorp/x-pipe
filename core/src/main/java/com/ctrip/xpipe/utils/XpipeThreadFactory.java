@@ -96,7 +96,7 @@ public class XpipeThreadFactory implements ThreadFactory {
 		des.addAll(s);
 	}
 
-	private XpipeThreadFactory(String namePrefix, boolean daemon) {
+	protected XpipeThreadFactory(String namePrefix, boolean daemon) {
 		m_namePrefix = namePrefix;
 		m_daemon = daemon;
 	}

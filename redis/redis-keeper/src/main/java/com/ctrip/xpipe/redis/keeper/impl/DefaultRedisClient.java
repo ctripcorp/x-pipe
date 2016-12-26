@@ -21,7 +21,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.netty.ChannelUtil;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -50,11 +50,12 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	
 	private ExecutorService nonPsyncExecutor;
 	
-	private DefaultRedisClient(Channel channel) {
+	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
+		this.redisKeeperServer = redisKeeperServer;
 		
 		this.channel = channel;
 		String remoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
-		nonPsyncExecutor = Executors.newSingleThreadExecutor(XpipeThreadFactory.create("RedisClient-" + remoteIpLocalPort));
+		nonPsyncExecutor = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(redisKeeperServer.getClusterId(), redisKeeperServer.getShardId(), "RedisClient-" + remoteIpLocalPort));
 		channel.closeFuture().addListener(new ChannelFutureListener() {
 			
 			@Override
@@ -64,11 +65,6 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 				release();
 			}
 		});
-	}
-	
-	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
-		this(channel);
-		this.redisKeeperServer = redisKeeperServer;
 	}
 
 	@Override
