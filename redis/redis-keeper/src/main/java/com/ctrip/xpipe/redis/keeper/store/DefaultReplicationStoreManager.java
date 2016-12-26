@@ -1,19 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
-import com.ctrip.xpipe.observer.NodeAdded;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.utils.FileUtils;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.google.common.util.concurrent.MoreExecutors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Date;
 import java.util.Properties;
 import java.util.UUID;
@@ -23,6 +14,21 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
+import com.ctrip.xpipe.observer.NodeAdded;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.core.util.NonFinalizeFileInputStream;
+import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.utils.FileUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.util.concurrent.MoreExecutors;
 
 /**
  * @author marsqing
@@ -175,8 +181,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 	 * @throws IOException
 	 */
 	private void saveMeta(Properties meta) throws IOException {
-		try (Writer writer = new FileWriter(metaFile)) {
-			meta.store(writer, null);
+		try (OutputStream out = new NonFinalizeFileOutputStream(metaFile)) {
+			meta.store(out, null);
 		}
 		logger.info("[saveMeta][before]{}", currentMeta.get());
 		currentMeta.set(meta);
@@ -191,8 +197,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 		
 		if (metaFile.isFile()) {
 			Properties meta = new Properties();
-			try (Reader reader = new FileReader(metaFile)) {
-				meta.load(reader);
+			try (InputStream in = new NonFinalizeFileInputStream(metaFile)) {
+				meta.load(in);
 			}
 			return meta;
 		}
