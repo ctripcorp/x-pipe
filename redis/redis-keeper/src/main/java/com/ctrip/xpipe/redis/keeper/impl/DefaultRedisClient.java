@@ -20,7 +20,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.keeper.netty.ChannelUtil;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 
 import io.netty.buffer.ByteBuf;
@@ -92,7 +92,7 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 
 	@Override
 	public String toString() {
-		return channel.toString();
+		return ChannelUtil.getDesc(channel);
 	}
 
 

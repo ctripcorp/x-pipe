@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser.BulkStringParserListener;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBuf;
@@ -119,7 +120,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		case READING_RDB:
 
 			if (rdbReader == null) {
-				logger.info("[doReceiveResponse][createRdbReader]{}", channel);
+				logger.info("[doReceiveResponse][createRdbReader]{}", ChannelUtil.getDesc(channel));
 				rdbReader = createRdbReader();
 				rdbReader.setBulkStringParserListener(this);
 			}
@@ -153,7 +154,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	protected void handleRedisResponse(Channel channel, String psync) throws IOException {
 
 		if (logger.isInfoEnabled()) {
-			logger.info("[handleRedisResponse]{}, {}, {}", channel, this, psync);
+			logger.info("[handleRedisResponse]{}, {}, {}", ChannelUtil.getDesc(channel), this, psync);
 		}
 		String[] split = splitSpace(psync);
 		if (split.length == 0) {
@@ -166,7 +167,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			}
 			masterRunid = split[1];
 			masterRdbOffset = Long.parseLong(split[2]);
-			logger.debug("[readRedisResponse]{}, {},{},{}", channel, this, masterRunid, masterRdbOffset);
+			logger.debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, masterRunid, masterRdbOffset);
 			psyncState = PSYNC_STATE.READING_RDB;
 
 			doOnFullSync();
