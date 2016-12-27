@@ -1,6 +1,7 @@
 testbin
 TODO
 *.swp
+*.versionsBackup
 
 #maven
 target
