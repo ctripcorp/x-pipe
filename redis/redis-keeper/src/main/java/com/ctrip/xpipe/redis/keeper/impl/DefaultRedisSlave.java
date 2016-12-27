@@ -260,7 +260,7 @@ public class DefaultRedisSlave implements RedisSlave {
 		
 		logger.info("[sendCommandForFullSync]{}, {}", this, rdbFileOffset +1);
 		
-		processCommandSequentially(new AbstractExceptionLogTask() {
+		processPsyncSequentially(new AbstractExceptionLogTask() {
 			
 			@Override
 			protected void doRun() throws Exception {
