@@ -307,11 +307,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public List<KeeperMeta> getKeepers(String clusterId, String shardId) {
-		return ((DefaultDcMetaCache)dcMetaCache).getDcMeta().getKeepers(clusterId, shardId);
-	}
-
-	@Override
 	public ClusterMeta getClusterMeta(String clusterId) {
 		return dcMetaCache.getClusterMeta(clusterId);
 	}

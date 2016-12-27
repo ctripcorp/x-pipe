@@ -44,7 +44,7 @@ public class AbstractNettyCommandTest extends AbstractTest{
 		}
 
 		@Override
-		protected ByteBuf getRequest() {
+		public ByteBuf getRequest() {
 			return null;
 		}
 		

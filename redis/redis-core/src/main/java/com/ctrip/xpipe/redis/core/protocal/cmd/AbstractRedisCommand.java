@@ -10,6 +10,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.core.protocal.RedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LongParser;
@@ -24,7 +25,11 @@ import io.netty.channel.Channel;
  *
  * 2016年3月24日 下午12:04:13
  */
-public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestResponseCommand<T> {
+public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestResponseCommand<T> implements RedisCommand<T>{
+	
+	public static int DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = Integer.parseInt(System.getProperty("DEFAULT_REDIS_COMMAND_TIME_OUT_SECONDS", "30000"));
+	
+	private int commandTimeoutMilli = DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
 	public AbstractRedisCommand(String host, int port, ScheduledExecutorService scheduled){
 		super(host, port, scheduled);
@@ -105,7 +110,7 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 				if(result != null){
 					Object payload = result.getPayload();
 					if(payload instanceof Exception){
-						throw (Exception)payload;
+						handleRedisException((Exception)payload);
 					}
 					return format(payload);
 				}
@@ -116,6 +121,10 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		return null;
 	}
 	
+	protected void handleRedisException(Exception redisException) throws Exception {
+		throw redisException;
+	}
+
 	protected abstract T format(Object payload);
 	
 	
@@ -139,6 +148,31 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		}
 		
 		throw new IllegalStateException("unknown payload:" + payload);
+	}
+	
+	
+	protected Integer payloadToInteger(Object payload) {
+		
+		if(payload instanceof Integer){
+			return (Integer) payload;
+		}
+		
+		String result = payloadToString(payload);
+		return Integer.parseInt(result);
+	}
+
+	@Override
+	public String getName() {
+		return getClass().getSimpleName();
+	}
+	
+	@Override
+	public int getCommandTimeoutMilli() {
+		return commandTimeoutMilli;
+	}
+	
+	public void setCommandTimeoutMilli(int commandTimeoutMilli) {
+		this.commandTimeoutMilli = commandTimeoutMilli;
 	}
 
 }

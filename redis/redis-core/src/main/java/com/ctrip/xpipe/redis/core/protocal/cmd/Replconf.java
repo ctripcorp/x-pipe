@@ -58,7 +58,7 @@ public class Replconf extends AbstractRedisCommand<Object>{
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 		
 		boolean logRead = true, logWrite = true;
 		

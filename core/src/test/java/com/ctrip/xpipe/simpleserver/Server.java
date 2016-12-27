@@ -30,6 +30,7 @@ public class Server extends AbstractLifecycle{
 	private ExecutorService executors = Executors.newCachedThreadPool();
 	private ServerSocket ss;
 	private AtomicInteger connected = new AtomicInteger(0);
+	private AtomicInteger totalConnected = new AtomicInteger(0);
 	
 	public Server(int port, IoActionFactory ioActionFactory){
 		this.port = port;
@@ -42,6 +43,10 @@ public class Server extends AbstractLifecycle{
 	
 	public int getConnected() {
 		return connected.get();
+	}
+	
+	public int getTotalConnected() {
+		return totalConnected.get();
 	}
 	
 	@Override
@@ -66,6 +71,7 @@ public class Server extends AbstractLifecycle{
 							logger.info("[run][new socket]" + socket);
 						}
 						connected.incrementAndGet();
+						totalConnected.incrementAndGet();
 						IoAction ioAction = ioActionFactory.createIoAction();
 						if(ioAction instanceof SocketAware){
 							((SocketAware) ioAction).setSocket(socket);

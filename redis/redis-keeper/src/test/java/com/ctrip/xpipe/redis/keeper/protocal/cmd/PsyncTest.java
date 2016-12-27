@@ -146,11 +146,9 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		
 		if(!isPartial){
 			Assert.assertEquals(rdbContent, rdbResult);
-			System.out.println(commandContent);
 		}else{
 			Assert.assertTrue(rdbResult == null || rdbResult.length() == 0);
 		}
-		System.out.println(commandResult);
 		Assert.assertEquals(commandContent, commandResult);
 	}
 }

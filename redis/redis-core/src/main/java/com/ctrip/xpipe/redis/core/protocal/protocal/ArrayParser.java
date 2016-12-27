@@ -6,9 +6,9 @@ import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 /**
  * @author wenchao.meng
  *
@@ -124,7 +124,7 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	protected ByteBuf getWriteByteBuf() {
 		
 		int length = payload.length;
-		CompositeByteBuf result = ByteBufAllocator.DEFAULT.compositeBuffer();
+		CompositeByteBuf result = UnpooledByteBufAllocator.DEFAULT.compositeHeapBuffer();
 		String prefix = String.format("%c%d\r\n", ASTERISK_BYTE, length);
 		result.addComponent(Unpooled.wrappedBuffer(prefix.getBytes()));
 		for(Object o : payload){

@@ -21,7 +21,7 @@ public class FakeFoundationService implements FoundationService {
 
 	private static AtomicBoolean logged = new AtomicBoolean(false);
 
-	private static String dataCenter = "jq";
+	private static String dataCenter = System.getProperty("dataCenter", "jq");
 	
 	private String appId = System.getProperty("appId", "appid_xpipe");
 

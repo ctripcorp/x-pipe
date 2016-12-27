@@ -20,6 +20,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeeperMonitorManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 
@@ -77,7 +79,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir); 
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir, createkeeperMonitorManager()); 
 		replicationStoreManager.addObserver(new Observer() {
 			
 			@Override
@@ -95,6 +97,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 		});
 		return replicationStoreManager;
+	}
+	
+	protected KeeperMonitorManager createkeeperMonitorManager(){
+		return new NoneKeeperMonitorManager();
 	}
 	
 	protected String randomKeeperRunid(){

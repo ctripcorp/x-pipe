@@ -58,7 +58,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 
 		Pair<String, Long> requestInfo = getRequestMasterInfo();
 
@@ -242,6 +242,11 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	@Override
 	protected Object format(Object payload) {
 		return payload;
+	}
+
+	@Override
+	public int getCommandTimeoutMilli() {
+		return 0;
 	}
 
 	@Override

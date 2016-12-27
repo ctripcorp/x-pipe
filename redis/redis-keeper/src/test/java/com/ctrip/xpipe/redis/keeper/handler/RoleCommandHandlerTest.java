@@ -18,7 +18,7 @@ import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -94,12 +94,12 @@ public class RoleCommandHandlerTest extends AbstractRedisKeeperTest{
 
 		//reverse
 		Object []reverse = new ArrayParser().read(Unpooled.wrappedBuffer(real.getBytes())).getPayload();
-		KeeperRole keeperRole = new KeeperRole(reverse);
-		Assert.assertEquals(SERVER_ROLE.KEEPER, keeperRole.getServerRole());
-		Assert.assertEquals(host, keeperRole.getMasterHost());
-		Assert.assertEquals(port, keeperRole.getMasterPort());
-		Assert.assertEquals(masterState, keeperRole.getMasterState());
-		Assert.assertEquals(masterOffset, keeperRole.getMasterOffset());
+		SlaveRole slaveRole = new SlaveRole(reverse);
+		Assert.assertEquals(SERVER_ROLE.KEEPER, slaveRole.getServerRole());
+		Assert.assertEquals(host, slaveRole.getMasterHost());
+		Assert.assertEquals(port, slaveRole.getMasterPort());
+		Assert.assertEquals(masterState, slaveRole.getMasterState());
+		Assert.assertEquals(masterOffset, slaveRole.getMasterOffset());
 	}
 
 }

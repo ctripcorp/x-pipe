@@ -19,9 +19,17 @@ public class StringUtilTest extends AbstractTest{
 		Assert.assertEquals("a,b,c", StringUtil.join(",", null, "a", "b", "c"));;
 		
 		Assert.assertEquals("a,b,c", StringUtil.join(",", "a", null, "b", "c"));;
-
 		Assert.assertEquals("a,b,c", StringUtil.join(",", "a", null, "b", "c", null));;
 
+	}
+	
+	@Test
+	public void testTrimEquals(){
+		
+		Assert.assertTrue(StringUtil.trimEquals(" abc ", " abc  \t"));
+		Assert.assertFalse(StringUtil.trimEquals(null, " abc  \t"));
+		Assert.assertFalse(StringUtil.trimEquals("abc ", null));
+		
 	}
 
 }

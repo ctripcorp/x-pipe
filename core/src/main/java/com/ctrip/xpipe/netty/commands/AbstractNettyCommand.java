@@ -24,7 +24,9 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 	private SimpleObjectPool<NettyClient> clientPool;
 	
 	private volatile boolean poolCreated = false;
+	
 	private String host;
+	
 	private int port;
 
 	public AbstractNettyCommand(String host, int port){
@@ -50,7 +52,15 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 		} catch (BorrowObjectException e) {
 			throw new CommandExecutionException("execute " + this, e);
 		}finally{
-			
+
+			if( nettyClient != null){
+				try {
+					clientPool.returnObject(nettyClient);
+				} catch (ReturnObjectException e) {
+					logger.error("[doExecute]", e);
+				}
+			}
+
 			if(poolCreated){
 				future().addListener(new CommandFutureListener<V>() {
 
@@ -62,19 +72,12 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 				});
 			}
 			
-			if( nettyClient != null){
-				try {
-					clientPool.returnObject(nettyClient);
-				} catch (ReturnObjectException e) {
-					logger.error("[doExecute]", e);
-				}
-			}
 		}
 	}
 
 	protected abstract void doSendRequest(NettyClient nettyClient, ByteBuf byteBuf);
 
-	protected abstract ByteBuf getRequest();
+	public abstract ByteBuf getRequest();
 	
 
 	@Override

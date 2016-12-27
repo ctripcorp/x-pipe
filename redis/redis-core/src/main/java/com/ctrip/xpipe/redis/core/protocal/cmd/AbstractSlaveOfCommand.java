@@ -35,7 +35,7 @@ public abstract class AbstractSlaveOfCommand extends AbstractRedisCommand<String
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 		
 		RequestStringParser requestString = null;
 		if(ip == null){
@@ -48,7 +48,12 @@ public abstract class AbstractSlaveOfCommand extends AbstractRedisCommand<String
 
 	@Override
 	public String toString() {
-		return String.format("%s %s %d %s", getName(), ip, port, param);
+		
+		if(ip == null){
+			return String.format("%s no one", getName());
+		}else{
+			return String.format("%s %s %d %s", getName(), ip, port, param);
+		}
 	}
 
 	@Override

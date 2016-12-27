@@ -16,7 +16,7 @@
 						<md-option ng-repeat="dc in dcs" value="{{dc.dcName}}">{{dc.dcName}}</md-option>
 					</md-select>
 				</div>
-				<div class="col-md-5 text-right">
+				<div class="col-md-5 text-right	">
 					<a type="button" ng-click="preMigrate()" class="btn btn-primary radius-border-fat"><strong>迁移</strong></a>
 					&nbsp&nbsp 
 					<a type="button" class="btn btn-danger radius-border-fat" href="/#/migration_event_list"><strong>取消</strong></a>
@@ -32,9 +32,12 @@
 				</td>
 				<td data-title="'cluster'">{{cluster.clusterName}}</td>
 				<td data-title="'目标主机房'">
-					<md-select ng-model="cluster.targetDc" md-on-close="targetDcSelected(cluster)" class="md-no-underline no-margin radius-border-thin" required placeholder="目标主机房">
+					<md-select ng-model="cluster.targetDc" md-on-close="targetDcSelected(cluster)" class="md-no-underline no-margin radius-border-thin" required placeholder="目标主机房" ng-if="availableTargetDcs(cluster).length > 1">
 						<md-option value="-" ng-selected="true">-</md-option>
 						<md-option ng-repeat="dcInfo in availableTargetDcs(cluster)" value="{{dcInfo.dcName}}">{{dcInfo.dcName}}</md-option>
+					</md-select>
+					<md-select ng-model="cluster.targetDc" md-on-close="targetDcSelected(cluster)" class="md-no-underline no-margin radius-border-thin" required placeholder="目标主机房" ng-if="availableTargetDcs(cluster).length == 1">
+						<md-option value="{{availableTargetDcs(cluster)[0].dcName}}" ng-selected="true">{{availableTargetDcs(cluster)[0].dcName}}</md-option>
 					</md-select>
 				</td>
 			</tr>
@@ -46,3 +49,7 @@
 	class="btn-scroll-up btn btn-sm btn-inverse"> <i
 	class="icon-double-angle-up icon-only bigger-110"></i>
 </a>
+
+<xpipeconfirmdialog xpipe-dialog-id="'createEventWithLostConfirm'" xpipe-title="'创建事件'"
+                    xpipe-detail="'仍然有未指定目标机房的Cluster，是否继续（将忽略未指定目标机房的集群）?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="doMigrate"></xpipeconfirmdialog>

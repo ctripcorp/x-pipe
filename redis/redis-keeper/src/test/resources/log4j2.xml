@@ -3,12 +3,12 @@
 
     <appenders>
         <console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%X{xpipe.cluster.shard}[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito)}%n"/>
+            <PatternLayout pattern="%X{xpipe.cluster.shard}[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
         </console>
 
         <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe/xpipe-test-${sys:server.port:-start}.log"
                      filePattern="target/applogs/xpipe/xpipe-test-%d{yyyy-MM-dd}-%i.log">
-            <PatternLayout pattern="%X{xpipe.cluster.shard}[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito)}%n"/>
+            <PatternLayout pattern="%X{xpipe.cluster.shard}[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
@@ -20,8 +20,7 @@
     <loggers>
         <logger name="org.springframework" level="WARN"/>
         <logger name="io.netty" level="INFO"/>
-        <logger name="org.apache.zookeeper.server.ZooKeeperServer" level="WARN"/>
-        <logger name="org.apache.zookeeper.ZooKeeper" level="WARN"/>
+        <logger name="org.apache.zookeeper" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
 		<logger name="com.ctrip.xpipe.redis.keeper.monitor.CommandDelay" level="WARN"/>
 		<!--  

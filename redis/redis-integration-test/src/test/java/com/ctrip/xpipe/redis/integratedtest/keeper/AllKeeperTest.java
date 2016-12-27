@@ -12,6 +12,8 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({ 
 	KeeperSingleDc.class, 
+	KeeperMultiDc.class,
+	KeeperMultiDcChangePrimary.class,
 	KeeperSingleDcRestart.class, 
 	KeeperSingleDcSlaveof.class,
 	KeeperSingleDcWipeOutData.class,

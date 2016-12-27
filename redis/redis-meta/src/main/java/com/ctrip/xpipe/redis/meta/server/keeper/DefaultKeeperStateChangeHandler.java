@@ -21,7 +21,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
-import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
+import com.ctrip.xpipe.redis.meta.server.job.TransactionalSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
@@ -90,7 +90,7 @@ public class DefaultKeeperStateChangeHandler implements MetaServerStateChangeHan
 			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterId, shardId);
 			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{}", clusterId, shardId,
 					slaves);
-			new XSlaveofJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled).execute(executors);
+			new TransactionalSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled).execute(executors);
 		}
 	}
 }

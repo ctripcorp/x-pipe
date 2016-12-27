@@ -37,7 +37,7 @@ public class KinfoCommand extends AbstractRedisCommand<ReplicationStoreMeta> {
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 		
 		RequestStringParser requestString = new RequestStringParser(getName(), args);
 		return requestString.format();

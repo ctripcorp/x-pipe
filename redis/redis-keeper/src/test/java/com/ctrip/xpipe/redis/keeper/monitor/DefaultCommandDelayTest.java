@@ -14,6 +14,7 @@ import static org.mockito.Mockito.*;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultCommandStoreDelay;
 
 /**
  * @author wenchao.meng

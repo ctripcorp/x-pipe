@@ -24,12 +24,9 @@ import com.ctrip.xpipe.redis.console.service.meta.impl.DcMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.impl.KeepercontainerMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.impl.SentinelMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ShardMetaServiceImpl;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
-
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
 import static org.mockito.Matchers.*;
@@ -64,14 +61,6 @@ public class MetaServiceTest extends AbstractConsoleTest{
 	private ClusterMetaServiceImpl clusterMetaService;
 	@InjectMocks
 	private ShardMetaServiceImpl shardMetaService;
-	
-	@Test
-	public void testClusterMetaService() {
-		XpipeMeta xpipeMeta = getXpipeMeta();
-		ClusterMeta clusterMeta = xpipeMeta.getDcs().get("ntgxh").getClusters().get("cluster1");
-		
-		assertEquals(clusterMetaService.getClusterMeta("ntgxh", "cluster1"), clusterMeta);
-	}
 	
 	@Test
 	public void testKeepercontainerMetaService() {

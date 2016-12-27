@@ -59,6 +59,7 @@ CREATE TABLE `CLUSTER_TBL` (
   `activedc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'active dc id',
   `cluster_description` varchar(1024) NOT NULL DEFAULT 'nothing' COMMENT 'cluster description',
   `cluster_last_modified_time` varchar(40) NOT NULL DEFAULT '' COMMENT 'last modified tag',
+  `status` varchar(24) NOT NULL DEFAULT 'normal' COMMENT 'cluster status',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   `is_xpipe_interested` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'is xpipe interested',
@@ -157,3 +158,55 @@ CREATE TABLE `KEEPERCONTAINER_TBL` (
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `keepercontainer_dc` (`keepercontainer_dc`)
 ) DEFAULT CHARSET=utf8 COMMENT='keepercontainer base info';
+
+
+
+-- Migration Event Table
+drop table if exists migration_event_tbl;
+CREATE TABLE `migration_event_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `start_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'event start time',
+  `operator` varchar(128) NOT NULL DEFAULT 'xpipe' COMMENT 'event operator',
+  `event_tag` varchar(150) NOT NULL DEFAULT 'eventtag' COMMENT 'event mark tag',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COMMENT='migration events table';
+
+
+
+-- Migration Cluster Table
+drop table if exists migration_cluster_tbl;
+CREATE TABLE `migration_cluster_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `migration_event_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'event id according to migration event',
+  `cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'cluster id involved in this migration event',
+  `source_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'migration source for this cluster',
+  `destination_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'migration destination for this cluster',
+  `start_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'start time of this migration',
+  `end_time` timestamp NULL DEFAULT NULL COMMENT 'end time of this migration',
+  `status` varchar(16) NOT NULL DEFAULT 'initiated' COMMENT 'migration status',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8 COMMENT='migration cluster tbl';
+
+
+
+
+-- Migration Shard Table
+drop table if exists migration_shard_tbl;
+CREATE TABLE `migration_shard_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `migration_cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'migration cluster id',
+  `shard_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'migration shard under specific migration cluster',
+  `log` varchar(10240) NOT NULL DEFAULT '' COMMENT 'migration log',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COMMENT='migration events on specific shard';
+
+

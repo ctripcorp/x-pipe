@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 
@@ -49,6 +50,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	
 	List<MetaServerMeta> getMetaServers(String dc);
 	
+	SentinelMeta getSentinel(String dc, String clusterId, String shardId);
+	
 	ZkServerMeta  getZkServerMeta(String dc);
 
 	String getActiveDc(String clusterId, String shardId) throws MetaException;
@@ -64,5 +67,7 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	boolean hasCluster(String currentDc, String clusterId);
 
 	boolean hasShard(String currentDc, String clusterId, String shardId);
+
+	void primaryDcChanged(String currentDc, String clusterId, String shardId, String newPrimaryDc);
 
 }

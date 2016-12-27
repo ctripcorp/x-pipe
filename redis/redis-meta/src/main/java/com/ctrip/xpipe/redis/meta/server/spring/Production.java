@@ -12,6 +12,8 @@ import com.ctrip.xpipe.redis.meta.server.job.ConsoleNotifycationTask;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcNotifier;
+import com.ctrip.xpipe.redis.meta.server.redis.RedisStateManager;
+import com.ctrip.xpipe.redis.meta.server.redis.impl.DefaultRedisStateManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 
@@ -54,5 +56,10 @@ public class Production extends AbstractProfile{
 	@Bean
 	public MultiDcNotifier getMultiDcNotifier(){
 		return new MultiDcNotifier();
+	}
+	
+	@Bean
+	public RedisStateManager getRedisStateManager(){
+		return new DefaultRedisStateManager();
 	}
 }

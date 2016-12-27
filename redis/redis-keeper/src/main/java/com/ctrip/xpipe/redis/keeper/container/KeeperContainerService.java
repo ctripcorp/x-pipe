@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Lists;
@@ -32,6 +33,7 @@ import java.util.Set;
  */
 @Service
 public class KeeperContainerService {
+	
 	@Autowired
 	KeeperConfig keeperConfig;
     @Autowired
@@ -40,6 +42,8 @@ public class KeeperContainerService {
     private MetaServerKeeperService metaService;
     @Autowired
     private KeeperContainerConfig keeperContainerConfig;
+    @Autowired
+    private KeeperMonitorManager keeperMonitorManager;
 
     private Set<Integer> runningPorts = Sets.newConcurrentHashSet();
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
@@ -210,7 +214,7 @@ public class KeeperContainerService {
                                                       MetaServerKeeperService metaService) throws Exception {
 
         RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper, keeperConfig,
-                baseDir, metaService, leaderElectorManager);
+                baseDir, metaService, leaderElectorManager, keeperMonitorManager);
 
         register(redisKeeperServer);
         return redisKeeperServer;

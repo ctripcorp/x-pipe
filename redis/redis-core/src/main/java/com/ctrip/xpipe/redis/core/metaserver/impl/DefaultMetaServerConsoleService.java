@@ -1,11 +1,18 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.retry.RetryPolicyFactories;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 
 /**
  * @author wenchao.meng
@@ -13,14 +20,25 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
  * Sep 5, 2016
  */
 public class DefaultMetaServerConsoleService extends AbstractMetaService implements MetaServerConsoleService{
+	private int RETRY_TIMES = Integer.parseInt(System.getProperty("retry-times", "8"));
+	private int CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("connect-timeout", "2000"));
+	private int SO_TIMEOUT = Integer.parseInt(System.getProperty("so-timeout", "2000"));
 	
 	private String  metaServerAddress;
 	private String  changeClusterPath;
+	private String  changePrimaryDcCheckPath; 
+	private String  makeMasterReadonlyPath;
+	private String  changePrimaryDcPath;
 
 	
 	public DefaultMetaServerConsoleService(String metaServerAddress) {
 		this.metaServerAddress = metaServerAddress;
-		changeClusterPath = String.format("%s/%s/%s", metaServerAddress, MetaServerConsoleService.PATH_PREFIX, MetaServerConsoleService.PATH_CLUSTER_CHANGE);
+		changeClusterPath = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(metaServerAddress);
+		changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(metaServerAddress);
+		makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(metaServerAddress);
+		changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(metaServerAddress);
+		
+		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(10, 100, CONNECT_TIMEOUT, SO_TIMEOUT, RETRY_TIMES, RetryPolicyFactories.newRestOperationsRetryPolicyFactory(5)); 
 	}
 
 	@Override
@@ -46,6 +64,25 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	public DcMeta getDynamicInfo() {
 		
 		return null;
+	}
+
+	@Override
+	public PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc) {
+		
+		return restTemplate.getForObject(changePrimaryDcCheckPath, PrimaryDcCheckMessage.class, clusterId, shardId, newPrimaryDc);
+	}
+
+	@Override
+	public void makeMasterReadOnly(String clusterId, String shardId, boolean readOnly) {
+		restTemplate.put(makeMasterReadonlyPath, null, clusterId, shardId, readOnly);
+		
+	}
+
+	@Override
+	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
+		
+		HttpEntity<Object> entity = new HttpEntity<Object>(null);
+		return restTemplate.exchange(changePrimaryDcPath, HttpMethod.PUT, entity, PrimaryDcChangeMessage.class, clusterId, shardId, newPrimaryDc).getBody();
 	}
 
 	@Override

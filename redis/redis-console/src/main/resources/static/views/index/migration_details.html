@@ -1,31 +1,21 @@
-<div id="sidebar" class="sidebar responsive sidebar-fixed" style="margin-top: -25px;">
+<div id="sidebar" class="sidebar responsive sidebar-fixed" style="margin-top: -25px;width : 200px">
 	<ul class="nav nav-list">
-		<li class="active">
-			<a href="" class="dropdown-toggle"> 
-				<i class="menu-icon fa fa-caret-right"></i> Cluster1 
-				<b class="arrow fa fa-angle-down"></b>
+		<li ng-repeat="migrationCluster in eventDetails">
+			<a ui-sref=".details({migrationCluster: migrationCluster})" class="dropdown-toggle"> 
+				<i class="menu-icon fa fa-caret-right"></i> {{ migrationCluster.migrationCluster.cluster.clusterName }}
+				<div>
+					<span class="label label-sm label-default" ng-if="migrationCluster.migrationCluster.status == 'Initiated'">Initiated</span>
+					<span class="label label-sm label-info" ng-if="migrationCluster.migrationCluster.status == 'Checking'">Checking</span>
+					<span class="label label-sm label-info" ng-if="migrationCluster.migrationCluster.status == 'Migrating'">Migrating</span>
+					<span class="label label-sm label-info" ng-if="migrationCluster.migrationCluster.status == 'Publish'">Publishing</span>
+                	<span class="label label-sm label-success" ng-if="migrationCluster.migrationCluster.status == 'Success'">Success</span>
+				</div>
 			</a> 
-			<b class="arrow"></b>
-
-			<ul class="submenu">
-				<li class="">
-					<a ui-sref=".details" class="dropdown-toggle"> 
-						<i class="menu-icon fa fa-pencil orange"></i> Shard1 
-					</a> 
-					<b class="arrow"></b>
-				</li>
-				<li class="">
-					<a href="" class="dropdown-toggle"> 
-						<i class="menu-icon fa fa-pencil orange"></i> Shard2 
-					</a> 
-					<b class="arrow"></b>
-				</li>
-			</ul>
 		</li>
 	</ul>
 </div>
 
-<div ui-view style="margin-left:190px"></div>
+<div ui-view style="margin-left:200px"></div>
 
 <a href="#" id="btn-scroll-up"
 	class="btn-scroll-up btn btn-sm btn-inverse"> <i

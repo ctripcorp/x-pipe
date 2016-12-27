@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 
 /**
  * @author wenchao.meng
@@ -24,13 +25,9 @@ public interface DcMetaCache extends Observable {
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
-	void clusterAdded(ClusterMeta clusterMeta);
-
-	void clusterModified(ClusterMeta clusterMeta);
-
-	void clusterDeleted(String clusterId);
-
 	boolean isCurrentDcPrimary(String clusterId, String shardId);
+
+	boolean isCurrentDcPrimary(String clusterId);
 
 	Set<String> getBakupDcs(String clusterId, String shardId);
 
@@ -39,4 +36,17 @@ public interface DcMetaCache extends Observable {
 	List<KeeperMeta> getShardKeepers(String clusterId, String shardId);
 
 	List<RedisMeta> getShardRedises(String clusterId, String shardId);
+
+	SentinelMeta getSentinel(String clusterId, String shardId);
+
+	String getSentinelMonitorName(String clusterId, String shardId);
+	
+	
+	void clusterAdded(ClusterMeta clusterMeta);
+
+	void clusterModified(ClusterMeta clusterMeta);
+
+	void clusterDeleted(String clusterId);
+	
+	void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc);
 }

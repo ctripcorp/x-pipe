@@ -7,7 +7,6 @@ package com.ctrip.xpipe.redis.core.metaserver;
  */
 public interface MetaServerMultiDcService extends MetaServerService{
 
-	public static final String PATH_UPSTREAM_CHANGE = "/upstreamchange/{clusterId}/{shardId}/{ip}/{port}";
 
 	/**
 	 * used by backup dc

@@ -28,7 +28,7 @@ public class Fsync extends AbstractRedisCommand<String> {
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 		RequestStringParser requestString = new RequestStringParser(getName());
 		return requestString.format();
 	}

@@ -23,6 +23,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
@@ -84,6 +85,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 		if (dcMetaManager == null) {
 			String fileName = System.getProperty(MEMORY_META_SERVER_DAO_KEY, "memory_meta_server_dao_file.xml");
+			logger.info("[loadMetaManager][load from file]{}", fileName);
 			dcMetaManager = DefaultDcMetaManager.buildFromFile(currentDc, fileName);
 		}
 
@@ -195,6 +197,12 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	public boolean isCurrentDcPrimary(String clusterId, String shardId) {
 		return currentDc.equalsIgnoreCase(dcMetaManager.get().getActiveDc(clusterId, shardId));
 	}
+	
+	@Override
+	public boolean isCurrentDcPrimary(String clusterId) {
+		return isCurrentDcPrimary(clusterId, null);
+	}
+
 
 	@Override
 	public List<KeeperMeta> getShardKeepers(String clusterId, String shardId) {
@@ -216,5 +224,21 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	public String getPrimaryDc(String clusterId, String shardId) {
 		return dcMetaManager.get().getActiveDc(clusterId, shardId);
 	}
+
+	@Override
+	public SentinelMeta getSentinel(String clusterId, String shardId) {
+		return dcMetaManager.get().getSentinel(clusterId, shardId);
+	}
+
+	@Override
+	public String getSentinelMonitorName(String clusterId, String shardId) {
+		return dcMetaManager.get().getSentinelMonitorName(clusterId, shardId);
+	}
+
+	@Override
+	public void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc) {
+		dcMetaManager.get().primaryDcChanged(clusterId, shardId, newPrimaryDc);
+	}
+
 
 }

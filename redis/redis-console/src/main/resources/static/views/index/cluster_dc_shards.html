@@ -10,7 +10,7 @@
     <div>
         <ul class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
             <li ng-repeat="dc in dcs" ng-class="{'active': currentDcName == dc.dcName}">
-                <a href="#/cluster_dc_shards/{{clusterName}}/{{dc.dcName}}" data-toggle="tab">
+                <a ng-click="switchDc(dc)" data-toggle="tab">
                     {{dc.dcName}}
                 </a>
             </li>

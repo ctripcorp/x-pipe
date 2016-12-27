@@ -3,7 +3,7 @@
 
     <appenders>
         <console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito)}%n"/>
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
         </console>
 
         <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe/xpipe-test.log"
@@ -12,7 +12,7 @@
                 <ThresholdFilter level="INFO"/>
                 <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>
             </Filters>
-            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito)}%n"/>
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
@@ -26,12 +26,13 @@
         <logger name="org.springframework" level="INFO"/>
         <logger name="org.hibernate" level="INFO"/>
         <logger name="io.netty" level="INFO"/>
-        <logger name="org.apache.zookeeper.server.ZooKeeperServer" level="WARN"/>
-		<logger name="org.apache.zookeeper.ZooKeeper" level="WARN"/>
+		<logger name="org.apache.zookeeper" level="WARN"/>
         <logger name="com.ctrip.xpipe.lifecycle.CreatedComponentRedistry" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.SpringComponentRegistry" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
-		
+		<!--  
+		<logger name="io.netty.handler.logging.LoggingHandler" level="DEBUG"/>
+		-->
         <root level="INFO">
             <appender-ref ref="Console"/>
             <appender-ref ref="RollingFileInfo"/>

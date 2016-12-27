@@ -110,6 +110,9 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 		if(towrite != null){
 			ous.write(towrite);
 			ous.flush();
+		}else{
+			ous.write("-unsupported command\r\n".getBytes());
+			ous.flush();
 		}
 	}
 

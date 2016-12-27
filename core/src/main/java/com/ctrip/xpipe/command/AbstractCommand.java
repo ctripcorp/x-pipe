@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.google.common.util.concurrent.MoreExecutors;
 
 /**
@@ -68,6 +69,12 @@ public abstract class AbstractCommand<V> implements Command<V>{
 
 	protected abstract void doExecute() throws Exception;
 
+	protected void fail(Throwable ex) {
+		
+		future().setFailure(ExceptionUtils.getRootCause(ex));
+	}
+	
+	
 	@Override
 	public void reset(){
 		

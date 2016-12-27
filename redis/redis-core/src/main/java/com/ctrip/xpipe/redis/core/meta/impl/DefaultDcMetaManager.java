@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
@@ -201,6 +202,25 @@ public class DefaultDcMetaManager implements DcMetaManager{
 	public Set<String> getBackupDcs(String clusterId, String shardId) {
 		
 		return metaManager.getBackupDcs(clusterId, shardId);
+	}
+
+
+	@Override
+	public SentinelMeta getSentinel(String clusterId, String shardId) {
+		return metaManager.getSentinel(currentDc, clusterId, shardId);
+	}
+
+
+	@Override
+	public String getSentinelMonitorName(String clusterId, String shardId) {
+		
+		return metaManager.getShardMeta(currentDc, clusterId, shardId).getSentinelMonitorName();
+	}
+
+
+	@Override
+	public void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc) {
+		metaManager.primaryDcChanged(currentDc, clusterId, shardId, newPrimaryDc);
 	}
 
 

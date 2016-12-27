@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
+import com.ctrip.xpipe.api.migration.MigrationPublishService;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
@@ -54,6 +55,10 @@ public class ServicesUtil {
 	
 	public static MetricProxy getMetricProxy(){
 		return load(MetricProxy.class);
+	}
+	
+	public static MigrationPublishService getMigrationPublishService() {
+		return load(MigrationPublishService.class);
 	}
 
 	@SuppressWarnings("unchecked")

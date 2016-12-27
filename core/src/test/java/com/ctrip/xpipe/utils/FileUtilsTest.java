@@ -46,9 +46,15 @@ public class FileUtilsTest extends AbstractTest{
 		InputStream ins = FileUtils.getFileInputStream(new File(testDir).getAbsolutePath(), fileName);
 		
 		Assert.assertNotNull(ins);
+	}
+	
+	@Test
+	public void testShortPath(){
 		
-		
-		
+		Assert.assertEquals("#a#b#c", FileUtils.shortPath("#a#b#c", 2));
+		Assert.assertEquals("/d/e", FileUtils.shortPath("/a/b/c/d/e", 2));
+		Assert.assertEquals("/a/b/c/d/e", FileUtils.shortPath("/a/b/c/d/e", 5));
+		Assert.assertEquals("/a/b/c/d/e", FileUtils.shortPath("/a/b/c/d/e", 6));
 	}
 
 }

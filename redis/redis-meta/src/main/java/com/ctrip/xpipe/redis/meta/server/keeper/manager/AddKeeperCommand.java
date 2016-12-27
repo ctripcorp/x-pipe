@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
-import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.retry.RetryDelay;
 
 /**
@@ -21,7 +21,7 @@ import com.ctrip.xpipe.retry.RetryDelay;
  *
  * Sep 16, 2016
  */
-public class AddKeeperCommand extends AbstractKeeperCommand<KeeperRole>{
+public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 
 	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,	ScheduledExecutorService scheduled,
 			int timeoutMilli) {
@@ -60,8 +60,8 @@ public class AddKeeperCommand extends AbstractKeeperCommand<KeeperRole>{
 	}
 
 	@Override
-	protected Command<KeeperRole> createCheckStateCommand() {
-		return new AbstractCommand<KeeperRole>() {
+	protected Command<SlaveRole> createCheckStateCommand() {
+		return new AbstractCommand<SlaveRole>() {
 
 			@Override
 			public String getName() {
@@ -71,7 +71,7 @@ public class AddKeeperCommand extends AbstractKeeperCommand<KeeperRole>{
 			@Override
 			protected void doExecute() throws Exception {
 				
-				KeeperRole keeperRole = (KeeperRole) new RoleCommand(keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort(), scheduled).execute().get();
+				SlaveRole keeperRole = (SlaveRole) new RoleCommand(keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort(), scheduled).execute().get();
 				if(keeperRole.getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED){
 					logger.info("[doExecute][success]{}", keeperRole);
 					future().setSuccess(keeperRole);

@@ -12,6 +12,7 @@ import org.unidal.tuple.Pair;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 
@@ -33,6 +34,40 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 		metaManager = (DefaultXpipeMetaManager) DefaultXpipeMetaManager.buildFromFile("file-dao-test.xml");
 		add(metaManager);
+	}
+	
+	@Test
+	public void testActiveDc(){
+		
+		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId, shardId));;
+		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId, null));;
+	}
+	
+	@Test
+	public void testChangePrimaryDc(){
+
+		String primaryDc = metaManager.getActiveDc(clusterId, shardId);
+		Set<String> backupDcs = metaManager.getBackupDcs(clusterId, shardId);
+
+		metaManager.primaryDcChanged(dc, clusterId, shardId, primaryDc);
+
+		Assert.assertEquals(primaryDc, metaManager.getActiveDc(clusterId, shardId));
+		
+		String newPrimary = backupDcs.iterator().next();
+
+		metaManager.primaryDcChanged(dc, clusterId, shardId, newPrimary);
+		
+		Assert.assertEquals(newPrimary, metaManager.getActiveDc(clusterId, shardId));
+		
+		Assert.assertTrue(metaManager.getBackupDcs(clusterId, shardId).contains(primaryDc));
+		
+	}
+	
+	@Test
+	public void testGetSentinel(){
+		
+		SentinelMeta sentinelMeta = metaManager.getSentinel(dc, clusterId, shardId);
+		Assert.assertEquals("127.0.0.1:17171,127.0.0.1:17171", sentinelMeta.getAddress());
 	}
 
 	@Test

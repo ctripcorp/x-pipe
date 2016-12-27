@@ -4,7 +4,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
@@ -38,7 +38,7 @@ public class RoleCommand extends AbstractRedisCommand<Role>{
 		if(payload instanceof Object[]){
 			Object []arrayPayload = (Object[]) payload;
 			if(arrayPayload.length == 5){
-				return new KeeperRole(arrayPayload);
+				return new SlaveRole(arrayPayload);
 			}else if(arrayPayload.length == 3){
 				return new MasterRole(arrayPayload);
 			}
@@ -48,7 +48,7 @@ public class RoleCommand extends AbstractRedisCommand<Role>{
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 		return new RequestStringParser("role").format();
 	}
 }

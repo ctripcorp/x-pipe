@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperContainerConfig;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeeperMonitorManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.ZkTestServer;
@@ -52,6 +54,11 @@ public class TestProfile extends AbstractProfile{
 		zkTestServer.initialize();
 		zkTestServer.start();
 		return zkTestServer;
+	}
+	
+	@Bean
+	public KeeperMonitorManager getKeeperMonitorManager(){
+		return new NoneKeeperMonitorManager();
 	}
 	
 }

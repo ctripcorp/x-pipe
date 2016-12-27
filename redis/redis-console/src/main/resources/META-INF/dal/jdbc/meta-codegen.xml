@@ -6,6 +6,7 @@
     <member name="activedc-id" field="activedc_id" value-type="long" length="20" nullable="false" />
     <member name="cluster-description" field="cluster_description" value-type="String" length="1024" nullable="false" />
     <member name="cluster-last-modified-time" field="cluster_last_modified_time" value-type="String" length="40" nullable="false" />
+    <member name="status" field="status" value-type="String" length="24" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <member name="is-xpipe-interested" field="is_xpipe_interested" value-type="boolean" nullable="false" />
@@ -267,7 +268,7 @@
     <member name="redis-port" field="redis_port" value-type="int" length="10" nullable="false" />
     <member name="redis-role" field="redis_role" value-type="String" length="12" nullable="false" />
     <member name="keeper-active" field="keeper_active" value-type="boolean" nullable="false" />
-    <member name="master" field="master" value-type="boolean" nullable="false" />
+    <member name="master" field="master" value-type="boolean" />
     <member name="redis-master" field="redis_master" value-type="long" length="20" />
     <member name="keepercontainer-id" field="keepercontainer_id" value-type="long" length="20" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
@@ -389,4 +390,129 @@
       </query>
     </query-defs>
   </entity>
- </entities>
+  <entity name="migration-cluster-tbl" table="migration_cluster_tbl" alias="mct">
+    <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
+    <member name="migration-event-id" field="migration_event_id" value-type="long" length="20" nullable="false" />
+    <member name="cluster-id" field="cluster_id" value-type="long" length="20" nullable="false" />
+    <member name="source-dc-id" field="source_dc_id" value-type="long" length="20" nullable="false" />
+    <member name="destination-dc-id" field="destination_dc_id" value-type="long" length="20" nullable="false" />
+    <member name="start-time" field="start_time" value-type="Date" nullable="false" />
+    <member name="end-time" field="end_time" value-type="Date" />
+    <member name="status" field="status" value-type="String" length="16" nullable="false" />
+    <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
+    <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
+    <var name="key-id" value-type="long" key-member="id" />
+    <primary-key name="PRIMARY" members="id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <readsets>
+      <readset name="FULL" all="true" />
+    </readsets>
+    <updatesets>
+      <updateset name="FULL" all="true" />
+    </updatesets>
+    <query-defs>
+      <query name="find-by-PK" type="SELECT">
+        <param name="key-id" />
+        <statement><![CDATA[SELECT <FIELDS/>
+        FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="insert" type="INSERT">
+        <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
+        VALUES(<VALUES/>)]]></statement>
+      </query>
+      <query name="update-by-PK" type="UPDATE">
+        <param name="key-id" />
+        <statement><![CDATA[UPDATE <TABLE/>
+        SET <FIELDS/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="delete-by-PK" type="DELETE">
+        <param name="key-id" />
+        <statement><![CDATA[DELETE FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+    </query-defs>
+  </entity>
+  <entity name="migration-event-tbl" table="migration_event_tbl" alias="met">
+    <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
+    <member name="start-time" field="start_time" value-type="Date" nullable="false" />
+    <member name="operator" field="operator" value-type="String" length="128" nullable="false" />
+    <member name="event-tag" field="event_tag" value-type="String" length="150" nullable="false" />
+    <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
+    <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
+    <var name="key-id" value-type="long" key-member="id" />
+    <primary-key name="PRIMARY" members="id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <readsets>
+      <readset name="FULL" all="true" />
+    </readsets>
+    <updatesets>
+      <updateset name="FULL" all="true" />
+    </updatesets>
+    <query-defs>
+      <query name="find-by-PK" type="SELECT">
+        <param name="key-id" />
+        <statement><![CDATA[SELECT <FIELDS/>
+        FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="insert" type="INSERT">
+        <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
+        VALUES(<VALUES/>)]]></statement>
+      </query>
+      <query name="update-by-PK" type="UPDATE">
+        <param name="key-id" />
+        <statement><![CDATA[UPDATE <TABLE/>
+        SET <FIELDS/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="delete-by-PK" type="DELETE">
+        <param name="key-id" />
+        <statement><![CDATA[DELETE FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+    </query-defs>
+  </entity>
+  <entity name="migration-shard-tbl" table="migration_shard_tbl" alias="mst">
+    <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
+    <member name="migration-cluster-id" field="migration_cluster_id" value-type="long" length="20" nullable="false" />
+    <member name="shard-id" field="shard_id" value-type="long" length="20" nullable="false" />
+    <member name="log" field="log" value-type="String" length="10240" nullable="false" />
+    <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
+    <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
+    <var name="key-id" value-type="long" key-member="id" />
+    <primary-key name="PRIMARY" members="id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <readsets>
+      <readset name="FULL" all="true" />
+    </readsets>
+    <updatesets>
+      <updateset name="FULL" all="true" />
+    </updatesets>
+    <query-defs>
+      <query name="find-by-PK" type="SELECT">
+        <param name="key-id" />
+        <statement><![CDATA[SELECT <FIELDS/>
+        FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="insert" type="INSERT">
+        <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
+        VALUES(<VALUES/>)]]></statement>
+      </query>
+      <query name="update-by-PK" type="UPDATE">
+        <param name="key-id" />
+        <statement><![CDATA[UPDATE <TABLE/>
+        SET <FIELDS/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="delete-by-PK" type="DELETE">
+        <param name="key-id" />
+        <statement><![CDATA[DELETE FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+    </query-defs>
+  </entity>
+</entities>
+

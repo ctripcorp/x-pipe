@@ -26,7 +26,9 @@ public class SequenceCommandChain extends AbstractCommandChain{
 		this.failContinue = failContinue;
 	}
 	@Override
-	protected void doExecute() {
+	protected void doExecute() throws Exception {
+		super.doExecute();
+		
 		executeChain();
 	}
 	

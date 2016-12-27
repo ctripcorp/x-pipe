@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestOperations;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.google.common.base.Function;
@@ -71,16 +71,12 @@ public abstract class AbstractMetaService implements MetaServerService {
 			@Override
 			public KeeperMeta apply(String metaServerAddress) {
 
-				String activeKeeperPath = getRealPath(metaServerAddress, GET_ACTIVE_KEEPER);
+				
+				String activeKeeperPath = META_SERVER_SERVICE.GET_ACTIVE_KEEPER.getRealPath(metaServerAddress);
 				KeeperMeta keeperMeta = restTemplate.getForObject(activeKeeperPath, KeeperMeta.class, clusterId, shardId);
 				return keeperMeta;
 			}
 
 		});
-	}
-
-	public static String getRealPath(String metaServerAddress, String specificPath) {
-
-		return String.format("%s/%s/%s", metaServerAddress, MetaServerConsoleService.PATH_PREFIX, specificPath);
 	}
 }

@@ -32,7 +32,7 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	private String masterHost;
 	private int masterPort;
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
-	private int delayBaseMilli = 1000;
+	private int delayBaseMilli = 100;
 	private int retryTimes = 5;
 	protected ScheduledExecutorService scheduled;
 	
@@ -70,7 +70,7 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 					future().setFailure(commandFuture.cause());
 				}
 			}
-		});;
+		});
 	}
 
 	private Command<?> createSlaveofCommand(RedisMeta redisMeta, String masterHost, int masterPort) {
@@ -98,7 +98,11 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	@Override
 	protected void doReset(){
 		throw new UnsupportedOperationException();
-		
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("%s -> %s:%d", redises, masterHost, masterPort);
 	}
 	
 }

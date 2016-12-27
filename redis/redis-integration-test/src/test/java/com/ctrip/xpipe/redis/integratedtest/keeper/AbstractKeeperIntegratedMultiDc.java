@@ -37,6 +37,8 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		startRedises();
 		startKeepers();
 		makeKeeperRight();
+		
+		sleep(3000);
 	}
 
 	private void setKeeperActive() {
@@ -57,6 +59,26 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 			}
 		}
 	}
+	
+	protected String getPrimaryDc(){
+		
+		for(DcMeta dcMeta : getDcMetas()){
+			
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(getClusterId());
+			return clusterMeta.getActiveDc().trim().toLowerCase();
+		}
+		return null;
+	}
+	
+	protected String getBackupDc(){
+		
+		for(DcMeta dcMeta : getDcMetas()){
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(getClusterId());
+			return clusterMeta.getBackupDcs().trim().toLowerCase();
+		}
+		return null;
+	}
+
 
 	private void makeKeeperRight() throws Exception {
 

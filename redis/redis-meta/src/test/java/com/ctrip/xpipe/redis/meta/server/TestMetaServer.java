@@ -29,6 +29,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClient;
 @Import({com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.class, com.ctrip.xpipe.redis.meta.server.spring.TestProfile.class})
 public class TestMetaServer extends AbstractLifecycle{
 	
+	public static String KEY_CONFIG_FILE = "TEST_META_SERVER_CONFIG_FILE";
 	private static final int waitForRestartTimeMills = 1000;
 	private static final int zkSessionTimeoutMillis = 5000;
 	public static final int total_slots = 16;
@@ -36,7 +37,7 @@ public class TestMetaServer extends AbstractLifecycle{
 	private int serverPort;
 	private String zkConnectionStr;
 	private int serverId; 
-	private String configFile = DEFAULT_CONFIG_FILE;
+	private String configFile = System.getProperty(KEY_CONFIG_FILE, DEFAULT_CONFIG_FILE);
 	private ConfigurableApplicationContext context;
 	private SpringComponentRegistry manager;
 	
@@ -46,6 +47,9 @@ public class TestMetaServer extends AbstractLifecycle{
 
 	public TestMetaServer(int serverId, int serverPort, int zkPort){
 		this(serverId, serverPort, String.format("localhost:%d", zkPort), DEFAULT_CONFIG_FILE);
+	}
+	public TestMetaServer(int serverId, int serverPort, int zkPort, String configFile){
+		this(serverId, serverPort, String.format("localhost:%d", zkPort), configFile);
 	}
 
 	public TestMetaServer(int serverId, int serverPort, String zkConnectionStr){

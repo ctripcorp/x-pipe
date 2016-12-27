@@ -1,34 +1,21 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
+import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
-import com.ctrip.xpipe.redis.meta.server.cluster.SLOT_STATE;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
-import com.ctrip.xpipe.redis.meta.server.rest.ForwardType;
-import com.ctrip.xpipe.redis.meta.server.rest.exception.MovingTargetException;
-import com.ctrip.xpipe.redis.meta.server.rest.exception.UnfoundAliveSererException;
-import com.ctrip.xpipe.spring.AbstractController;
 
 /**
  * dispatch service to proper server
@@ -37,108 +24,32 @@ import com.ctrip.xpipe.spring.AbstractController;
  * Aug 3, 2016
  */
 @RestController
-@RequestMapping(MetaServerService.PATH_PREFIX)
-public class DispatcherMetaServerController extends AbstractController{
+@RequestMapping(META_SERVER_SERVICE.PATH.PATH_PREFIX)
+public class DispatcherMetaServerController extends AbstractDispatcherMetaServerController{
 	
-	private static final String MODEL_META_SERVER = "MODEL_META_SERVER";
-	
-	@Autowired
-	public MetaServer currentMetaServer;
-	
-	@Autowired
-	private SlotManager slotManager;
-	
-	@Autowired
-	public ClusterServers<MetaServer> servers;
-	
-	@ModelAttribute
-	public void populateModel(@PathVariable final String clusterId, 
-			@RequestHeader(name = MetaServerService.HTTP_HEADER_FOWRARD, required = false) ForwardInfo forwardInfo, Model model){
 
-		if(forwardInfo != null){
-			logger.info("[populateModel]{},{}", clusterId, forwardInfo);
-		}
-		MetaServer metaServer = getMetaServer(clusterId, forwardInfo);
-		if(metaServer == null){
-			throw new UnfoundAliveSererException(clusterId, slotManager.getServerIdByKey(clusterId), currentMetaServer.getServerId());
-		}
-		model.addAttribute(MODEL_META_SERVER, metaServer);
-		if(forwardInfo != null){
-			model.addAttribute(forwardInfo);
-		}
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public void clusterAdded(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta, 
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+
+		metaServer.clusterAdded(clusterMeta, forwardInfo.clone());
 	}
 	
-	@RequestMapping(path = MetaServerKeeperService.PATH_PING, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public void ping(@PathVariable String clusterId, @PathVariable String shardId, @RequestBody KeeperInstanceMeta keeperInstanceMeta,
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE, method = RequestMethod.PUT,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public void clusterModified(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta, 
 			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 		
-		metaServer.ping(clusterId, shardId, keeperInstanceMeta, forwardInfo);
+		metaServer.clusterModified(clusterMeta, forwardInfo.clone());
 	}
 
-	private MetaServer getMetaServer(String clusterId, ForwardInfo forwardInfo) {
-		
-		int slotId = slotManager.getSlotIdByKey(clusterId);
-		SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
-		
-		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MOVING){
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE, method = RequestMethod.DELETE)
+	public void clusterDeleted(@PathVariable String clusterId, 
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 
-			if(!(slotInfo.getSlotState() == SLOT_STATE.MOVING  && slotInfo.getToServerId() == currentMetaServer.getServerId())){
-				throw new MovingTargetException(forwardInfo, currentMetaServer.getServerId(), slotInfo, clusterId, slotId);
-			}
-			logger.info("[getMetaServer][use current server]");
-			return currentMetaServer;
-		}
-		
-		Integer serverId = slotManager.getServerIdByKey(clusterId);
-		if(serverId == null){
-			throw new IllegalStateException("clusterId:" + clusterId + ", unfound server");
-		}
-		return servers.getClusterServer(serverId);
+		metaServer.clusterDeleted(clusterId, forwardInfo.clone());
 	}
 
-	@RequestMapping(path = MetaServerConsoleService.PATH_CLUSTER_CHANGE, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public void clusterAdded(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta, @ModelAttribute ForwardInfo forwardInfo) {
-		
-		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MULTICASTING){
-			logger.info("[clusterAdded][multicast message][do now]");
-			currentMetaServer.clusterAdded(clusterMeta, forwardInfo);
-			return;
-		}
-		
-		for(MetaServer metaServer : servers.allClusterServers()){
-			metaServer.clusterAdded(clusterMeta, forwardInfo.clone());
-		}
-	}
-	
-	@RequestMapping(path = MetaServerConsoleService.PATH_CLUSTER_CHANGE, method = RequestMethod.PUT,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public void clusterModified(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta, @ModelAttribute ForwardInfo forwardInfo) {
-		
-		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MULTICASTING){
-			logger.info("[clusterModified][multicast message][do now]");
-			currentMetaServer.clusterModified(clusterMeta, forwardInfo);
-			return;
-		}
-		
-		for(MetaServer metaServer : servers.allClusterServers()){
-			metaServer.clusterModified(clusterMeta, forwardInfo.clone());
-		}
-	}
-
-	@RequestMapping(path = MetaServerConsoleService.PATH_CLUSTER_CHANGE, method = RequestMethod.DELETE)
-	public void clusterDeleted(@PathVariable String clusterId, @ModelAttribute ForwardInfo forwardInfo) {
-
-		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MULTICASTING){
-			logger.info("[clusterDeleted][multicast message][do now]");
-			currentMetaServer.clusterDeleted(clusterId, forwardInfo);
-			return;
-		}
-		
-		for(MetaServer metaServer : servers.allClusterServers()){
-			metaServer.clusterDeleted(clusterId, forwardInfo.clone());
-		}
-	}
-
-	@RequestMapping(path = MetaServerMultiDcService.PATH_UPSTREAM_CHANGE, method = RequestMethod.PUT)
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_UPSTREAM_CHANGE, method = RequestMethod.PUT)
 	public void upstreamChange(@PathVariable String clusterId, @PathVariable String shardId, 
 			@PathVariable String ip, @PathVariable int port,@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) throws Exception {
 		
@@ -146,12 +57,36 @@ public class DispatcherMetaServerController extends AbstractController{
 		metaServer.updateUpstream(clusterId, shardId, ip, port, forwardInfo);
 	}
 
-	@RequestMapping(path = MetaServerService.GET_ACTIVE_KEEPER, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.GET_ACTIVE_KEEPER, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public KeeperMeta getActiveKeeper(@PathVariable String clusterId, @PathVariable String shardId, 
 			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) throws Exception {
 		
 		logger.info("[getActiveKeeper]{},{},{},{}", clusterId, shardId);
 		return metaServer.getActiveKeeper(clusterId, shardId, forwardInfo);
+	}
+
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC_CHECK, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public PrimaryDcCheckMessage changePrimaryDcCheck(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc, 
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+		
+		logger.info("[changePrimaryDcCheck]{}, {}, {}", clusterId, shardId, newPrimaryDc);
+		return metaServer.changePrimaryDcCheck(clusterId, shardId, newPrimaryDc, forwardInfo);
+	}
+
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_MAKE_MASTER_READONLY, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public void makeMasterReadOnly(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable boolean readOnly, 
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+		
+		logger.info("[makeMasterReadOnly]{}, {}, {}", clusterId, shardId, readOnly);
+		metaServer.makeMasterReadOnly(clusterId, shardId, readOnly, forwardInfo);
+	}
+	
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public PrimaryDcChangeMessage doChangePrimaryDc(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc, 
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+		
+		logger.info("[doChangePrimaryDc]{}, {}, {}", clusterId, shardId, newPrimaryDc);
+		return metaServer.doChangePrimaryDc(clusterId, shardId, newPrimaryDc, forwardInfo);
 	}
 
 }

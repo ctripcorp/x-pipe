@@ -36,11 +36,26 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
 	                    });
 	                    
 	                    if(!$scope.currentDcName) {
-	                    	$scope.currentDcName = $scope.dcs[0].dcName; 
-	                    }
+                            ClusterService.load_cluster($stateParams.clusterName).then(function(result) {
+                                var cluster = result;
+                                var filteredDc = $scope.dcs.filter(function(dc) {
+                                    return dc.id == cluster.activedcId;
+                                })
+                                if(filteredDc.length > 0) {
+                                    $scope.currentDcName = filteredDc[0].dcName;
+                                } else {
+                                    $scope.currentDcName = $scope.dcs[0].dcName; 
+                                }
+
+                                loadShards($scope.clusterName, $scope.currentDcName);
+                            }, function(result) {
+                                $scope.currentDcName = $scope.dcs[0].dcName; 
+                                loadShards($scope.clusterName, $scope.currentDcName);
+                            });
+	                    } else {
+                            loadShards($scope.clusterName, $scope.currentDcName);
+                        }
                     }
-                    
-                    loadShards($scope.clusterName, $scope.currentDcName);
 
                 }, function (result) {
                     toastr.error(AppUtil.errorMsg(result));

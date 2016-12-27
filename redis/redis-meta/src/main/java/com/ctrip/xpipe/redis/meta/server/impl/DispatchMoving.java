@@ -18,7 +18,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.SLOT_STATE;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
-import com.ctrip.xpipe.redis.meta.server.rest.ForwardType;
+import com.ctrip.xpipe.rest.ForwardType;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**

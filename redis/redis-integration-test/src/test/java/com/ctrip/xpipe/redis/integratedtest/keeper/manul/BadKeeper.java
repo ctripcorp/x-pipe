@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
 
 import io.netty.buffer.Unpooled;
 
@@ -38,13 +39,12 @@ public class BadKeeper extends AbstractKeeperIntegratedSingleDc{
 	}
 	
 	
+	
 	@Override
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
-			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager) {
+			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeeperMonitorManager keeperMonitorManager) {
 		
-		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, metaService, scheduled, leaderElectorManager){
-			
-			
+		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, metaService, scheduled, leaderElectorManager, keeperMonitorManager){
 			@Override
 			public void endWriteRdb() {
 				super.endWriteRdb();

@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.simpleserver.Server;
@@ -47,19 +48,37 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 			sleep(10);
 		}
 	}
+	
+	@Test
+	public void testKeyPoolReuse() throws Exception{
+		
+		Server echoServer = startEchoServer();
+		InetSocketAddress key = new InetSocketAddress("localhost", echoServer.getPort());
+
+		Assert.assertEquals(0, echoServer.getConnected());
+		
+		SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(key);
+		
+		for (int i = 0; i < testCount; i++) {
+			
+			NettyClient client = objectPool.borrowObject();
+			Assert.assertEquals(1, echoServer.getTotalConnected());
+			objectPool.returnObject(client);
+		}
+	}
 
 	@Test
 	public void testSingleReuse() throws Exception {
 
 		Server echoServer = startEchoServer();
 
-		Assert.assertEquals(0, echoServer.getConnected());
+		Assert.assertEquals(0, echoServer.getTotalConnected());
 
 		for (int i = 0; i < testCount; i++) {
 			
 			InetSocketAddress key = new InetSocketAddress("localhost", echoServer.getPort());
 			NettyClient client = pool.borrowObject(key);
-			Assert.assertEquals(1, echoServer.getConnected());
+			Assert.assertEquals(1, echoServer.getTotalConnected());
 			pool.returnObject(key, client);
 		}
 	}

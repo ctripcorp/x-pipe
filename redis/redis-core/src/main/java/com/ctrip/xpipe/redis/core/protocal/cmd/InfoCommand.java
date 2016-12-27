@@ -28,7 +28,7 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 	}
 
 	@Override
-	protected ByteBuf getRequest() {
+	public ByteBuf getRequest() {
 		
 		RequestStringParser requestString = new RequestStringParser(getName(), args);
 		return requestString.format();

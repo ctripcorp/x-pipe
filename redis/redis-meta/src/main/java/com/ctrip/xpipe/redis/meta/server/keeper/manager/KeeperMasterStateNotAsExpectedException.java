@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.pojo.KeeperRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.meta.server.exception.MetaServerException;
 
 /**
@@ -14,15 +14,15 @@ public class KeeperMasterStateNotAsExpectedException extends MetaServerException
 	
 	private static final long serialVersionUID = 1L;
 		
-	private KeeperRole keeperRole;
+	private SlaveRole keeperRole;
 
-	public KeeperMasterStateNotAsExpectedException(KeeperMeta keeperMeta, KeeperRole role, MASTER_STATE expected){
+	public KeeperMasterStateNotAsExpectedException(KeeperMeta keeperMeta, SlaveRole role, MASTER_STATE expected){
 		super(String.format("keeper:%s:%d, current:%s, expected:%s", keeperMeta.getIp(), keeperMeta.getPort(), role.getMasterState(), expected));
 		this.keeperRole = role;
 		setOnlyLogMessage(true);
 	}
 
-	public KeeperRole getKeeperRole() {
+	public SlaveRole getKeeperRole() {
 		return keeperRole;
 	}
 }

@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperContainerConfig;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperMonitorManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 
@@ -39,5 +41,10 @@ public class TestWithoutZkProfile extends AbstractProfile{
 	@Bean
 	public KeeperContainerConfig getKeeperContainerConfig(){
 		return new TestKeeperContainerConfig(AbstractTest.getUserHome() + "/rsd");
+	}
+	
+	@Bean
+	public KeeperMonitorManager getKeeperMonitorManager(){
+		return new DefaultKeeperMonitorManager();
 	}
 }

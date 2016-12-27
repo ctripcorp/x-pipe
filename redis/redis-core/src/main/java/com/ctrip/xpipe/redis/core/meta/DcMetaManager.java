@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 
@@ -28,6 +29,10 @@ public interface DcMetaManager{
 	ClusterMeta getClusterMeta(String clusterId);
 	
 	String getActiveDc(String clusterId, String shardId);
+	
+	SentinelMeta getSentinel(String clusterId, String shardId);
+	
+	String getSentinelMonitorName(String clusterId, String shardId);
 
 	ShardMeta getShardMeta(String clusterId, String shardId);
 
@@ -70,5 +75,6 @@ public interface DcMetaManager{
 
 	Set<String> getBackupDcs(String clusterId, String shardId);
 
-	
+	void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc);
+
 }

@@ -53,6 +53,6 @@ public class ErrorMessage<T extends Enum<T>> {
 	
 	@Override
 	public String toString() {
-		return String.format("code:%s, message:", errorType, errorMessage);
+		return String.format("code:%s, message:%s", errorType, errorMessage);
 	}
 }
