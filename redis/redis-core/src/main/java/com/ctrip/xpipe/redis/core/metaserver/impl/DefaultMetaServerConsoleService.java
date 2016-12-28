@@ -21,8 +21,8 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
  */
 public class DefaultMetaServerConsoleService extends AbstractMetaService implements MetaServerConsoleService{
 	private int RETRY_TIMES = Integer.parseInt(System.getProperty("retry-times", "8"));
-	private int CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("connect-timeout", "2000"));
-	private int SO_TIMEOUT = Integer.parseInt(System.getProperty("so-timeout", "2000"));
+	private int CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("connect-timeout", "8000"));
+	private int SO_TIMEOUT = Integer.parseInt(System.getProperty("so-timeout", "8000"));
 	
 	private String  metaServerAddress;
 	private String  changeClusterPath;
