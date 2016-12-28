@@ -22,11 +22,11 @@ public class ChannelUtilTest extends AbstractTest{
 	public void test(){
 		
 		Channel channel = mock(Channel.class);
-		Assert.assertEquals("L(null),R(null)", ChannelUtil.getDesc(channel));
+		Assert.assertEquals("L(null)->R(null)", ChannelUtil.getDesc(channel));
 
 		when(channel.localAddress()).thenReturn(new InetSocketAddress("localhost", 1234));
 		
-		Assert.assertEquals("L(localhost:1234),R(null)", ChannelUtil.getDesc(channel));
+		Assert.assertEquals("L(localhost:1234)->R(null)", ChannelUtil.getDesc(channel));
 	}
 
 }

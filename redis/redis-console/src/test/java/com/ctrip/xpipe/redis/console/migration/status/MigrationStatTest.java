@@ -71,6 +71,8 @@ public class MigrationStatTest extends AbstractConsoleTest {
 
     @Test
     public void testCheckingToMigrating() {
+    	when(mockedMigrationShard.getCurrentShard()).thenReturn((new ShardTbl()).setShardName("test-shard"));
+    	
         Assert.assertEquals(MigrationStatus.Initiated, migrationCluster.getStatus());
 
         migrationCluster.updateStat(new MigrationMigratingStat(migrationCluster));
