@@ -39,7 +39,11 @@ public class MigrationPartialSuccessStat extends AbstractMigrationMigratingStat 
 
 					@Override
 					public void run() {
+						logger.info("[doMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
+								shard.getCurrentShard().getShardName());
 						shard.doMigrate();
+						logger.info("[doMigrate][done]{},{}",getHolder().getCurrentCluster().getClusterName(), 
+								shard.getCurrentShard().getShardName());
 					}
 				});
 			}
@@ -55,6 +59,8 @@ public class MigrationPartialSuccessStat extends AbstractMigrationMigratingStat 
 		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
 		migrationClusterTbl.setStatus(MigrationStatus.PartialSuccess.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
+		
+		logger.info("[updateDB]Cluster:{}, MigrationCluster:{}", cluster, migrationClusterTbl);
 	}
 
 }
