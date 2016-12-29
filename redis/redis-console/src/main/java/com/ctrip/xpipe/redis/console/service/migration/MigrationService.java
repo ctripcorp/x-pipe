@@ -24,4 +24,5 @@ public interface MigrationService {
 	void continueMigrationCluster(long eventId, long clusterId);
 	void continueMigrationEvent(long id);
 	void cancelMigrationCluster(long eventId, long clusterId);
+	void rollbackMigrationCluster(long eventId, long clusterId);
 }

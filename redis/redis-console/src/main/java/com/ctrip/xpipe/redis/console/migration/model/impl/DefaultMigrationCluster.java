@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,18 +13,6 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCancelledStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationForceFailStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationForcePublishStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationMigratingStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationSuccessStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationTmpEndStat;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -127,6 +116,16 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 		}
 		MigrationStat cancelStat = new MigrationCancelledStat(this);
 		cancelStat.action();
+	}
+
+	@Override
+	public void rollback() {
+		logger.info("[Rollback]{}-{}, {} -> Rollback", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentStat.getStat());
+		if(!MigrationStatus.isSameStatus(this.migrationCluster.getStatus(), MigrationStatus.PartialSuccess)) {
+			throw new IllegalStateException(String.format("Cannot rollback while %s", this.currentStat.getStat()));
+		}
+		MigrationStat rollBackStat = new MigrationRollBackStat(this);
+		rollBackStat.action();
 	}
 
 	@Override

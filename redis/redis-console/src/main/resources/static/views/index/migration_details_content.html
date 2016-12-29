@@ -16,6 +16,8 @@
 				ng-if="migrationCluster.migrationCluster.status == 'Success'">Success</span>
 			<span class="label label-sm label-danger"
 				ng-if="migrationCluster.migrationCluster.status == 'Cancelled'">Cancelled</span>
+			<span class="label label-info"
+			  ng-if="migrationCluster.migrationCluster.status == 'PartialSuccess'">PartialSuccess</span>
 			</div>
 			<div class="col-md-3">
 					<a type="button" class="btn btn-primary radius-border-fat"
@@ -31,9 +33,10 @@
 								migrationCluster.migrationCluster.status == 'Initiated' ">
 						<span>取消</span>
 					</a>
-					<a type="button" class="btn btn-danger radius-border-fat" 
-						ng-if="migrationCluster.migrationCluster.status == 'Migrating'">
-						<span>取消</span>
+					<a type="button" class="btn btn-danger radius-border-fat"
+					   ng-click="rollbackMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)"
+					   ng-if="migrationCluster.migrationCluster.status == 'PartialSuccess'">
+						<span>回滚</span>
 					</a>
 				</div>
 		</div>

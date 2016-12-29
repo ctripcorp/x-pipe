@@ -64,5 +64,10 @@ public class MigrationController extends AbstractConsoleController {
 	public void cancelMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
 		migrationService.cancelMigrationCluster(eventId, clusterId);
 	}
+
+	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/rollback", method = RequestMethod.POST)
+	public void rollbackMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		migrationService.rollbackMigrationCluster(eventId, clusterId);
+	}
 	
 }

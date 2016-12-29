@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
@@ -10,7 +7,6 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
  * @author shyin
@@ -19,14 +15,10 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  */
 public class MigrationPartialSuccessStat extends AbstractMigrationMigratingStat {
 	
-	private ExecutorService cachedThreadPool;
-	
 	public MigrationPartialSuccessStat(MigrationCluster holder) {
 		super(holder, MigrationStatus.PartialSuccess);
 		this.setNextAfterSuccess(new MigrationPublishStat(getHolder()))
 			.setNextAfterFail(this);
-		
-		cachedThreadPool = Executors.newCachedThreadPool(XpipeThreadFactory.create("MigrationPartialSuccess"));
 	}
 
 	@Override
@@ -35,7 +27,7 @@ public class MigrationPartialSuccessStat extends AbstractMigrationMigratingStat 
 		
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
 			if(!shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE)) {
-				cachedThreadPool.submit(new Runnable() {
+				fixedThreadPool.submit(new Runnable() {
 
 					@Override
 					public void run() {

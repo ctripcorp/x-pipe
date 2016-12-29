@@ -17,7 +17,8 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 	INSTANCE;
 
 	private MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper = new DefaultMetaServerConsoleServiceManagerWrapper();
-	
+
+	@Override
 	public Command<PrimaryDcCheckMessage> buildDcCheckCommand(final String cluster, final String shard, final String dc, final String newPrimaryDc) {
 		return new AbstractCommand<MetaServerConsoleService.PrimaryDcCheckMessage>() {
 
@@ -45,8 +46,8 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 			}
 		};
 	}
-	
-	
+
+	@Override
 	public Command<PrimaryDcChangeMessage> buildPrevPrimaryDcCommand(final String cluster, final String shard, final String prevPrimaryDc) {
 		return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
@@ -76,6 +77,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 		};
 	}
 
+	@Override
 	public Command<PrimaryDcChangeMessage> buildNewPrimaryDcCommand(final String cluster, final String shard, final String newPrimaryDc) {
 		return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
@@ -104,7 +106,8 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 			}
 		};
 	}
-	
+
+	@Override
 	public Command<PrimaryDcChangeMessage> buildOtherDcCommand(final String cluster, final String shard, final String newPrimaryDc, final String otherDc) {
 		return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
@@ -133,4 +136,35 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 			}
 		};
 	}
+
+	@Override
+	public Command<PrimaryDcChangeMessage> buildRollBackCommand(final String cluster, final String shard, final String prevPrimaryDc) {
+		return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
+
+			@Override
+			public String getName() {
+				return "PrimaryDcChange-RollBack";
+			}
+
+			@Override
+			protected void doExecute() throws Exception {
+				PrimaryDcChangeMessage result = null;
+				try {
+					metaServerConsoleServiceManagerWrapper
+							.get(prevPrimaryDc)
+							.makeMasterReadOnly(cluster, shard, false);
+
+					future().setSuccess(result);
+				} catch (Exception e) {
+					logger.error("[RollBack][PrevPrimaryDc][Failed]{}-{}", cluster, shard, e);
+					future().setFailure(e);
+				}
+			}
+
+			@Override
+			protected void doReset() {
+			}
+		};
+	}
+
 }
