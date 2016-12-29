@@ -76,6 +76,31 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
                 toastr.error(AppUtil.errorMsg(result));
             });
         }
+        
+        $scope.cancelMigrationCluster = function(eventId, clusterId) {
+        	MigrationService.cancelMigrationCluster(eventId, clusterId).then(
+        			function(result) {
+                        toastr.success("操作成功");
+
+                        $interval(function() {
+                        MigrationService.findEventDetails($scope.eventId).then(
+                            function(result) {
+                                $scope.$parent.eventDetails = result;
+                                $scope.$parent.eventDetails.forEach(function(migrationCluster) {
+                                    if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
+                                        $scope.migrationCluster = migrationCluster;
+                                        initStatus();
+                                    }
+                                });
+                            },
+                            function(result) {
+                            });
+                        }, 1000, 5);
+                    },
+                    function(result) {
+                    toastr.error(AppUtil.errorMsg(result));
+                });
+        }
 
         $scope.showLog = function(step) {
             if(step) {

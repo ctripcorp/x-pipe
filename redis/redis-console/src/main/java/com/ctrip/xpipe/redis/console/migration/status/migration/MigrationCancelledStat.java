@@ -1,6 +1,12 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import java.util.Date;
+
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 
 /**
  * @author shyin
@@ -17,11 +23,30 @@ public class MigrationCancelledStat extends AbstractMigrationStat implements Mig
 
 	@Override
 	public void action() {
-		getHolder().cancel();
+		try {
+			updateDB();
+			updateAndProcess(nextAfterSuccess(), false);
+		} catch (Exception e) {
+			logger.error("[MigrationCancelledStat][updateDB][Failed][will retry]",e);
+			updateAndProcess(nextAfterFail(), true);
+		}
+	}
+	
+	@DalTransaction
+	private void updateDB() {
+		ClusterTbl cluster = getHolder().getCurrentCluster();
+		cluster.setStatus(ClusterStatus.Normal.toString());
+		getHolder().getClusterService().update(cluster);
+		
+		MigrationClusterTbl migrationCluster = getHolder().getMigrationCluster();
+		migrationCluster.setStatus(MigrationStatus.Cancelled.toString());
+		migrationCluster.setEndTime(new Date());
+		getHolder().getMigrationService().updateMigrationCluster(migrationCluster);
 	}
 
 	@Override
 	public void refresh() {
 		// Nothing to do
+		logger.info("[MigrationCancelled]{}", getHolder().getCurrentCluster().getClusterName());
 	}
 }

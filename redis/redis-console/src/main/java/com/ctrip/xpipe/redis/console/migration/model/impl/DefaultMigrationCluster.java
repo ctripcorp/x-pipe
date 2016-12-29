@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,10 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractObservable;
-import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
-import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCancelledStat;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStat;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationForceFailStat;
@@ -122,16 +119,14 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	}
 
 	@Override
-	@DalTransaction
 	public void cancel() {
-		ClusterTbl cluster = currentCluster;
-		cluster.setStatus(ClusterStatus.Normal.toString());
-		getClusterService().update(cluster);
-		
-		MigrationClusterTbl migrationClusterTbl = migrationCluster;
-		migrationClusterTbl.setStatus(MigrationStatus.Cancelled.toString());
-		migrationClusterTbl.setEndTime(new Date());
-		getMigrationService().updateMigrationCluster(migrationClusterTbl);
+		logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentStat.getStat());
+		if(!MigrationStatus.isSameStatus(this.migrationCluster.getStatus(), MigrationStatus.Initiated)
+				&& !MigrationStatus.isSameStatus(this.migrationCluster.getStatus(), MigrationStatus.Checking)) {
+			throw new IllegalStateException(String.format("Cannot cancel while %s", this.currentStat.getStat()));
+		}
+		MigrationStat cancelStat = new MigrationCancelledStat(this);
+		cancelStat.action();
 	}
 
 	@Override

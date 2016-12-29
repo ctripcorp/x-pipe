@@ -77,7 +77,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());
@@ -117,7 +117,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
 		
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());
@@ -159,7 +159,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
 		
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());
@@ -202,7 +202,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());
@@ -244,7 +244,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());
@@ -286,7 +286,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());
@@ -328,7 +328,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());
@@ -369,7 +369,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());

@@ -81,7 +81,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 			mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), "B", "A");
 		}
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());
@@ -128,7 +128,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 			mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), "B", "A");
 		}
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());
@@ -185,7 +185,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 			mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), "B", "A");
 		}
 		ClusterTbl originalCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), originalCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
 		Assert.assertEquals(2, migrationCluster.getMigrationCluster().getDestinationDcId());
