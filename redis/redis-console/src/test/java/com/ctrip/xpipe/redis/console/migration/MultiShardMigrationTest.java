@@ -218,13 +218,14 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 				continue;
 			}
 			
-			Assert.assertEquals(ShardMigrationResultStatus.SUCCESS,migrationShard.getShardMigrationResult().getStatus());
+			Assert.assertEquals(ShardMigrationResultStatus.FAIL,migrationShard.getShardMigrationResult().getStatus());
 			Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
 			Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
 			Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
-			Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
-			Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+			Assert.assertNull(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.MIGRATE_OTHER_DC));
+			Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		}
+		Assert.assertEquals(MigrationStatus.PartialSuccess, migrationCluster.getStatus());
 	}
 	
 	private String getShardName(int id) {

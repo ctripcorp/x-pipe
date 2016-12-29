@@ -155,4 +155,13 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 		}
 	}
 
+	@Override
+	public void rollbackMigrationCluster(long eventId, long clusterId) {
+		if(null != migrationEventManager.getEvent(eventId)) {
+			if(null != migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId)) {
+				migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).rollback();
+			}
+		}
+	}
+
 }
