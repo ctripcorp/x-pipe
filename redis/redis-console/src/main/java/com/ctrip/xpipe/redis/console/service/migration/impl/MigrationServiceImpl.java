@@ -147,9 +147,12 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 	}
 
 	@Override
-	public void cancelMigrationEvent(long id) {
-		// TODO Auto-generated method stub
-		
+	public void cancelMigrationCluster(long eventId, long clusterId) {
+		if(null != migrationEventManager.getEvent(eventId)) {
+			if(null != migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId)) {
+				migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).cancel();
+			}
+		}
 	}
 
 }

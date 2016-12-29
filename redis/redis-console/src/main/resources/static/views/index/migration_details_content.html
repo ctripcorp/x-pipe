@@ -1,97 +1,134 @@
 <div class="col-xs-12">
-    <div class="panel panel-primary" style="margin-top: 15px;">
-        <header class="panel-heading">
-            <div class="row">
-                <div class="col-md-4">
-                {{migrationCluster.migrationCluster.cluster.clusterName}}
-                &nbsp&nbsp&nbsp
-                源 : {{migrationCluster.migrationCluster.sourceDcName}}
-                &nbsp&nbsp&nbsp
-                目标 : {{migrationCluster.migrationCluster.destinationDcName}}
-                </div>
-                <div class="col-md-6">
-                开始时间 : {{migrationCluster.migrationCluster.startTime | date:'yyyy-MM-dd HH:mm:ss'}}
-                &nbsp&nbsp&nbsp
-                结束时间 : {{migrationCluster.migrationCluster.endTime | date:'yyyy-MM-dd HH:mm:ss'}}
-                </div>
-                <div class="col-md-2">
-					<a type="button" class="btn btn-primary radius-border-fat" ng-click="continueMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)">
-                    <strong ng-if="migrationCluster.migrationCluster.status == 'Initiated'">执行</strong>
-                    <strong ng-if="migrationCluster.migrationCluster.status != 'Initiated'">继续</strong>
-                    </a>
-					&nbsp&nbsp 
-					<!-- <a type="button" class="btn btn-danger radius-border-fat" href="/#/migration_event_list"><strong>取消</strong></a> -->
+	<div class="header lighter black">
+		<div class="row" style="font-size:22px">
+			<div class="col-md-2"><strong>{{migrationCluster.migrationCluster.cluster.clusterName}}</strong></div>
+			<div class="col-md-7">状态: 
+			<span
+				class="label label-default"
+				ng-if="migrationCluster.migrationCluster.status == 'Initiated'">Initiated</span>
+			<span class="label label-info"
+				ng-if="migrationCluster.migrationCluster.status == 'Checking'">Checking</span>
+			<span class="label label-info"
+				ng-if="migrationCluster.migrationCluster.status == 'Migrating'">Migrating</span>
+			<span class="label label-info"
+				ng-if="migrationCluster.migrationCluster.status == 'Publish'">Publishing</span>
+			<span class="label label-success"
+				ng-if="migrationCluster.migrationCluster.status == 'Success'">Success</span>
+			<span class="label label-sm label-danger"
+				ng-if="migrationCluster.migrationCluster.status == 'Cancelled'">Cancelled</span>
+			</div>
+			<div class="col-md-3">
+					<a type="button" class="btn btn-primary radius-border-fat"
+						ng-click="continueMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)"
+						ng-if="migrationCluster.migrationCluster.status != 'Success' &&
+								migrationCluster.migrationCluster.status != 'Cancelled'">
+						<span ng-if="migrationCluster.migrationCluster.status == 'Initiated'">执行</span>
+						<span ng-if="migrationCluster.migrationCluster.status != 'Initiated'">重试</span>
+					</a>
+					<a type="button" class="btn btn-danger radius-border-fat" 
+						ng-click="cancelMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)"
+						ng-if="migrationCluster.migrationCluster.status == 'Checking' ||
+								migrationCluster.migrationCluster.status == 'Initiated' ">
+						<span>取消</span>
+					</a>
+					<a type="button" class="btn btn-danger radius-border-fat" 
+						ng-if="migrationCluster.migrationCluster.status == 'Migrating'">
+						<span>取消</span>
+					</a>
 				</div>
-            </div>
-        </header>
-        
-        <table class="table table-bordered table-hover">
-            <thead>
-            <tr>
-            	<th>
-                    Shard
-                </th>
-                <th>
-                    迁移检测
-                </th>
-                <th>
-                    原主机房预迁移
-                </th>
-                <th>
-                    目标主机房迁移
-                </th>
-                <th>
-                	其他机房迁移
-                </th>
-                <th>
-                	结果
-                </th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr ng-repeat="migrationShard in migrationCluster.migrationShards">
-                <td>{{migrationShard.migrationShard.shard.shardName}}</td>
-                <td>
-                <div ng-model="migrationShard.status.steps.CHECK" ng-click="showLog(migrationShard.status.steps.CHECK)">
-                    <span class="label label-sm label-success" ng-if="migrationShard.status.steps.CHECK.true">Success</span>
-                    <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.CHECK.false">Failed</span>
-                    <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.CHECK">Waiting</span>
-                </div>
-                </td>
-                <td>
-                <div ng-model="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC" ng-click="showLog(migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC)">
-                    <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC.true">Success</span>
-                    <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC.false">Failed</span>
-                    <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC">Waiting</span>
-                </div>
-                </td>
-                <td>
-                <div ng-model="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC" ng-click="showLog(migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC)">
-                    <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC.true">Success</span>
-                    <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC.false">Failed</span>
-                    <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC">Waiting</span>
-                </div>
-                </td>
-                <td>
-                <div ng-model="migrationShard.status.steps.MIGRATE_OTHER_DC" ng-click="showLog(migrationShard.status.steps.MIGRATE_OTHER_DC)">
-                    <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE_OTHER_DC.true">Success</span>
-                    <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE_OTHER_DC.false">Failed</span>
-                    <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE_OTHER_DC">Waiting</span>
-                </div>
-                </td>
-                <td>
-                <div ng-model="migrationShard.status.steps.MIGRATE" ng-click="showLog(migrationShard.status.steps.MIGRATE)">
-                    <span class="label label-sm label-success" ng-if="migrationShard.status.steps.MIGRATE.true">Success</span>
-                    <span class="label label-sm label-danger" ng-if="migrationShard.status.steps.MIGRATE.false">Failed</span>
-                    <span class="label label-sm label-default" ng-if="!migrationShard.status.steps.MIGRATE">Waiting</span>
-                </div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
+		</div>
+	</div>
+
+	<div class="panel panel-primary" style="margin-top: 15px;">
+		<header class="panel-heading">
+			<div class="row">
+				<div class="col-md-3">源 :
+					{{migrationCluster.migrationCluster.sourceDcName}} &nbsp&nbsp&nbsp
+					目标 : {{migrationCluster.migrationCluster.destinationDcName}}</div>
+				<div class="col-md-7">开始时间 :
+					{{migrationCluster.migrationCluster.startTime | date:'yyyy-MM-dd
+					HH:mm:ss'}} &nbsp&nbsp&nbsp 结束时间 :
+					{{migrationCluster.migrationCluster.endTime | date:'yyyy-MM-dd
+					HH:mm:ss'}}</div>
+			</div>
+		</header>
+
+		<table class="table table-bordered table-hover">
+			<thead>
+				<tr>
+					<th>Shard</th>
+					<th>迁移检测</th>
+					<th>原主机房预迁移</th>
+					<th>目标主机房迁移</th>
+					<th>其他机房迁移</th>
+					<th>结果</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="migrationShard in migrationCluster.migrationShards">
+					<td>{{migrationShard.migrationShard.shard.shardName}}</td>
+					<td>
+						<div ng-model="migrationShard.status.steps.CHECK"
+							ng-click="showLog(migrationShard.status.steps.CHECK)">
+							<span class="label label-sm label-success"
+								ng-if="migrationShard.status.steps.CHECK.true">Success</span> <span
+								class="label label-sm label-danger"
+								ng-if="migrationShard.status.steps.CHECK.false">Failed</span> <span
+								class="label label-sm label-default"
+								ng-if="!migrationShard.status.steps.CHECK">Waiting</span>
+						</div>
+					</td>
+					<td>
+						<div
+							ng-model="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC"
+							ng-click="showLog(migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC)">
+							<span class="label label-sm label-success"
+								ng-if="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC.true">Success</span>
+							<span class="label label-sm label-danger"
+								ng-if="migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC.false">Failed</span>
+							<span class="label label-sm label-default"
+								ng-if="!migrationShard.status.steps.MIGRATE_PREVIOUS_PRIMARY_DC">Waiting</span>
+						</div>
+					</td>
+					<td>
+						<div ng-model="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC"
+							ng-click="showLog(migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC)">
+							<span class="label label-sm label-success"
+								ng-if="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC.true">Success</span>
+							<span class="label label-sm label-danger"
+								ng-if="migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC.false">Failed</span>
+							<span class="label label-sm label-default"
+								ng-if="!migrationShard.status.steps.MIGRATE_NEW_PRIMARY_DC">Waiting</span>
+						</div>
+					</td>
+					<td>
+						<div ng-model="migrationShard.status.steps.MIGRATE_OTHER_DC"
+							ng-click="showLog(migrationShard.status.steps.MIGRATE_OTHER_DC)">
+							<span class="label label-sm label-success"
+								ng-if="migrationShard.status.steps.MIGRATE_OTHER_DC.true">Success</span>
+							<span class="label label-sm label-danger"
+								ng-if="migrationShard.status.steps.MIGRATE_OTHER_DC.false">Failed</span>
+							<span class="label label-sm label-default"
+								ng-if="!migrationShard.status.steps.MIGRATE_OTHER_DC">Waiting</span>
+						</div>
+					</td>
+					<td>
+						<div ng-model="migrationShard.status.steps.MIGRATE"
+							ng-click="showLog(migrationShard.status.steps.MIGRATE)">
+							<span class="label label-sm label-success"
+								ng-if="migrationShard.status.steps.MIGRATE.true">Success</span>
+							<span class="label label-sm label-danger"
+								ng-if="migrationShard.status.steps.MIGRATE.false">Failed</span>
+							<span class="label label-sm label-default"
+								ng-if="!migrationShard.status.steps.MIGRATE">Waiting</span>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
 </div>
 
 <xpipeconfirmdialog xpipe-dialog-id="'log'" xpipe-title="'迁移日志'"
-                    xpipe-detail="currentQueryLog"
-                    xpipe-show-cancel-btn="false" xpipe-confirm="hideLog"></xpipeconfirmdialog>
+	xpipe-detail="currentQueryLog" xpipe-show-cancel-btn="false"
+	xpipe-confirm="hideLog"></xpipeconfirmdialog>

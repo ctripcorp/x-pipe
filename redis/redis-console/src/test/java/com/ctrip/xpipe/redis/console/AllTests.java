@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
+import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
@@ -35,6 +36,7 @@ import org.junit.runner.RunWith;
 	SetOperationUtilTest.class,
 	ClusterMetaModifiedNotifierTest.class,
 	MetaNotifyTaskTest.class,
+	DefaultMigrationClusterTest.class,
 	DefaultMigrationShardTest.class,
 	MigrationStatTest.class,
 	MigrationPublishStatTest.class,

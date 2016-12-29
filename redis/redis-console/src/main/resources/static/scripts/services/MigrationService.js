@@ -17,6 +17,10 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		continue_migration_cluster: {
 			method : 'POST',
 			url : '/console/migration/events/:eventId/clusters/:clusterId'
+		},
+		cancel_migration_cluster: {
+			method: 'POST',
+			url : '/console/migration/events/:eventId/clusters/:clusterId/cancel'
 		}
 	});
 
@@ -80,11 +84,29 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 			});
 		return d.promise;
 	}
+	
+	function cancelMigrationCluster(eventId, clusterId) {
+		var d = $q.defer();
+		resource.cancel_migration_cluster(
+				{
+					eventId : eventId,
+					clusterId : clusterId
+				},
+				{},
+				function(result) {
+					return d.resolve(result);
+				},
+				function(result) {
+					return d.reject(result);
+				});
+		return d.promise;
+	}
 
 	return {
 		createEvent : createEvent,
 		findAll : findAll,
 		findEventDetails : findEventDetails,
-		continueMigrationCluster : continueMigrationCluster
+		continueMigrationCluster : continueMigrationCluster,
+		cancelMigrationCluster : cancelMigrationCluster
 	}
 }]);
