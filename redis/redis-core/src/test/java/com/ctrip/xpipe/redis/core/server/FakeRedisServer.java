@@ -123,7 +123,7 @@ public class FakeRedisServer extends AbstractLifecycle{
 
 	public void addCommandsListener(FakeRedisServerAction fakeRedisServerAction) {
 		
-		logger.info("[addCommandsListener]{}", fakeRedisServerAction);
+		logger.debug("[addCommandsListener]{}", fakeRedisServerAction);
 		fakeRedisServerAction.addCommands(commands);
 		commandListeners.add(fakeRedisServerAction);
 	}
@@ -146,7 +146,7 @@ public class FakeRedisServer extends AbstractLifecycle{
 	}
 
 	public void removeListener(FakeRedisServerAction fakeRedisServerAction) {
-		logger.info("[removeListener]{}", fakeRedisServerAction);
+		logger.debug("[removeListener]{}", fakeRedisServerAction);
 		commandListeners.remove(fakeRedisServerAction);
 	}
 	

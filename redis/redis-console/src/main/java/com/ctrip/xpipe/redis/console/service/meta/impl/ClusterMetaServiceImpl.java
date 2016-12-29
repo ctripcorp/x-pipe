@@ -55,7 +55,8 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 	@Override
 	public ClusterMeta loadClusterMeta(DcMeta dcMeta, ClusterTbl clusterTbl, DcMetaQueryVO dcMetaQueryVO) {
 		ClusterMeta clusterMeta = new ClusterMeta();
-
+		clusterTbl.setActivedcId(getClusterMetaCurrentPrimaryDc(dcMetaQueryVO.getCurrentDc(), clusterTbl));
+		
 		if (null != clusterTbl) {
 			clusterMeta.setId(clusterTbl.getClusterName());
 			for (DcClusterTbl dcCluster : dcMetaQueryVO.getAllDcClusterMap().get(clusterTbl.getId())) {

@@ -1,10 +1,8 @@
-/**
- * 
- */
-package com.ctrip.xpipe.redis.keeper.netty;
+package com.ctrip.xpipe.utils;
 
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,14 +33,38 @@ public class ChannelUtil {
 	}
 
 	public static String getRemoteAddr(Channel channel) {
+		
 		String remoteIpLocalPort = "unknown";
 		try {
-			InetSocketAddress remoteAddr = (InetSocketAddress)channel.remoteAddress();
-			return String.format("R(%s:%d)", remoteAddr.getHostName(), remoteAddr.getPort());
+			SocketAddress remoteAddr = channel.remoteAddress();
+			return String.format("R(%s)", getSimpleIpport(remoteAddr));
 		} catch (Exception e) {
 			logger.warn("Error parse remote ip and local port from Channel {}", channel);
 		}
 		return remoteIpLocalPort;
+	}
+
+	private static String getSimpleIpport(SocketAddress remoteAddr) {
+		
+		if(remoteAddr == null){
+			return null;
+		}
+		
+		if(remoteAddr instanceof InetSocketAddress){
+			
+			InetSocketAddress addr = (InetSocketAddress) remoteAddr;
+			return String.format("%s:%d", addr.getHostName(), addr.getPort());
+		}
+		return remoteAddr.toString();
+	}
+
+	public static String getDesc(Channel channel){
+		
+		if(channel == null){
+			return null;
+		}
+		return String.format("L(%s)->R(%s)", getSimpleIpport(channel.localAddress()), getSimpleIpport(channel.remoteAddress()));
+		
 	}
 
 }

@@ -54,7 +54,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		int rdbDumpCount1 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
 		
 		InMemoryPsync psync = sendInmemoryPsync("localhost", keeperPort);
-		sleep(1000);
+		sleep(3000);
 		int rdbDumpCount2 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
 		Assert.assertEquals(rdbDumpCount1 + 1, rdbDumpCount2);
 		

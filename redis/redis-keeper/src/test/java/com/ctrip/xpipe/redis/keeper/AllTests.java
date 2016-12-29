@@ -29,6 +29,7 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+	DefaultRedisKeeperServerConnectToFakeRedisTest.class,
 	PsyncTest.class,
 	RedisKeeperServerStateBackupTest.class,
 	RedisKeeperServerStateActiveTest.class,
@@ -41,7 +42,6 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 	DefaultRedisSlaveTest.class,
 	RoleCommandHandlerTest.class,
 	DefaultKeeperConfigTest.class,
-	DefaultRedisKeeperServerConnectToFakeRedisTest.class,
 	FakeRedisExceptionTest.class, 
 	FakeRedisRdbDumperTest.class,
 	FakeRedisRdbDumpLong.class,

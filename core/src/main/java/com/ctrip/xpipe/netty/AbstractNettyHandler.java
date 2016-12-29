@@ -3,6 +3,7 @@ package com.ctrip.xpipe.netty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.utils.ChannelUtil;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -21,9 +22,8 @@ public abstract class AbstractNettyHandler extends ChannelDuplexHandler{
 	
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		if(logger.isInfoEnabled()){
-			logger.info("[channelActive]" + ctx.channel());
-		}
+		
+		logger.info("[channelActive]{}", ChannelUtil.getDesc(ctx.channel()));
 		
 		super.channelActive(ctx);
 	}
@@ -32,7 +32,7 @@ public abstract class AbstractNettyHandler extends ChannelDuplexHandler{
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		
-		logger.error("[exceptionCaught][close channel]" + ctx.channel(), cause);
+		logger.error("[exceptionCaught][close channel]" + ChannelUtil.getDesc(ctx.channel()), cause);
 		ctx.channel().close();
 		
 		super.exceptionCaught(ctx, cause);
@@ -41,9 +41,7 @@ public abstract class AbstractNettyHandler extends ChannelDuplexHandler{
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 
-		if(logger.isInfoEnabled()){
-			logger.info("[channelInactive]" + ctx.channel());
-		}
+		logger.info("[channelInactive]{}", ChannelUtil.getDesc(ctx.channel()));
 
 		super.channelInactive(ctx);
 	}

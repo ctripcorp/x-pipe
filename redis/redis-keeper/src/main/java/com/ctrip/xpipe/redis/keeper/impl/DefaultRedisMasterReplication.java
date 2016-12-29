@@ -155,7 +155,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	protected void psyncFail(Throwable cause) {
 		
-		logger.info("[psyncFail][close channel, wait for reconnect]" + masterChannel, cause);
+		logger.info("[psyncFail][close channel, wait for reconnect]" + this, cause);
 		masterChannel.close();
 	}
 
@@ -234,7 +234,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected void doOnFullSync() {
 		
 		try {
-			logger.info("[doOnFullSync]{}", masterChannel);
+			logger.info("[doOnFullSync]{}", this);
 			RdbDumper rdbDumper  = new RedisMasterReplicationRdbDumper(this, redisKeeperServer);
 			setRdbDumper(rdbDumper);
 			redisKeeperServer.setRdbDumper(rdbDumper, true);

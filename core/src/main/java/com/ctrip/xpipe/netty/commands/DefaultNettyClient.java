@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.netty.commands;
 
-
-
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.ctrip.xpipe.utils.ChannelUtil;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -97,6 +97,6 @@ public class DefaultNettyClient implements NettyClient{
 	
 	@Override
 	public String toString() {
-		return channel.toString();
+		return ChannelUtil.getDesc(channel);
 	}
 }

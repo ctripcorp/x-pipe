@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -32,6 +31,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 
 import io.netty.bootstrap.Bootstrap;
@@ -209,7 +209,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private void checkTimeout(final Channel channel) {
 
-		logger.info("[checkTimeout]{}s, {}", replTimeoutSeconds, channel);
+		logger.info("[checkTimeout]{}s, {}", replTimeoutSeconds, ChannelUtil.getDesc(channel));
 		final ScheduledFuture<?> repliTimeoutCheckFuture = scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 
 					@Override
@@ -346,7 +346,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	public String toString() {
 
-		return String.format("%s(redisMaster:%s, %s)", getClass().getSimpleName(), redisMaster, masterChannel);
+		return String.format("%s(redisMaster:%s, %s)", getClass().getSimpleName(), redisMaster, ChannelUtil.getDesc(masterChannel));
 	}
 
 	@Override

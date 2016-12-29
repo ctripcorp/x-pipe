@@ -12,6 +12,7 @@ import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.netty.ByteBufUtils;
+import com.ctrip.xpipe.utils.ChannelUtil;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -104,7 +105,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 			 V result = doReceiveResponse(channel, byteBuf);
 			 if(result != null){
 				 if(logResponse()){
-					 logger.info("[receive]{}, {}", channel, result);
+					 logger.info("[receive]{}, {}", ChannelUtil.getDesc(channel), result);
 				 }
 				 future().setSuccess(result);
 			 }

@@ -92,7 +92,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	protected void doEndWriteRdb() {
 		
-		logger.info("[endWriteRdb]{}", masterChannel);
+		logger.info("[endWriteRdb]{}", this);
 		masterChannel.close();
 	}
 

@@ -69,7 +69,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 		ChannelFuture f = b.connect(key);
 		f.get(connectTimeoutMilli, TimeUnit.MILLISECONDS);
 		Channel channel = f.channel();
-		logger.info("[makeObject]{}", channel);
+		logger.debug("[makeObject]{}", channel);
 		NettyClient nettyClient = new DefaultNettyClient(channel);
 		channel.attr(NettyClientHandler.KEY_CLIENT).set(nettyClient);
 		return new DefaultPooledObject<NettyClient>(nettyClient);

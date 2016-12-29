@@ -25,7 +25,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
-import com.ctrip.xpipe.redis.keeper.netty.ChannelUtil;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.IpUtils;
 
@@ -143,7 +143,9 @@ public class DefaultRedisSlave implements RedisSlave {
 		}
 		
 		if(putOnLineOnAck){
+			
 			putOnLineOnAck = false;
+			logger.info("[ack][put slave online]{}", this);
 			sendCommandForFullSync();
 		}
 		
@@ -258,7 +260,7 @@ public class DefaultRedisSlave implements RedisSlave {
 		
 		logger.info("[sendCommandForFullSync]{}, {}", this, rdbFileOffset +1);
 		
-		processCommandSequentially(new AbstractExceptionLogTask() {
+		processPsyncSequentially(new AbstractExceptionLogTask() {
 			
 			@Override
 			protected void doRun() throws Exception {
