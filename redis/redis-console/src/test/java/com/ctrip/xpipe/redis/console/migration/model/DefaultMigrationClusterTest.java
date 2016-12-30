@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResu
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -187,5 +188,88 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		DcBMeta = dcMetaService.getDcMeta("B");
 		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
 		Assert.assertEquals("A", DcBMeta.findCluster("cluster1").getActiveDc());
+	}
+	
+	@Test
+	@DirtiesContext
+	public void testRollBackOnPartialSuccess() {
+		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
+		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B",new Throwable("mocked new fail"));
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		mockSuccessRollBackCommand(migrationCommandBuilder, "cluster1", "shard1", "A");
+		
+		migrationCluster.process();
+		sleep(1000);
+		DcMeta DcAMeta = dcMetaService.getDcMeta("A");
+		DcMeta DcBMeta = dcMetaService.getDcMeta("B");
+		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
+		Assert.assertEquals("B", DcBMeta.findCluster("cluster1").getActiveDc());
+		
+		Assert.assertEquals(MigrationStatus.PartialSuccess, migrationCluster.getStatus());
+		
+		migrationCluster.rollback();
+		sleep(1000);
+		DcAMeta = dcMetaService.getDcMeta("A");
+		DcBMeta = dcMetaService.getDcMeta("B");
+		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
+		Assert.assertEquals("A", DcBMeta.findCluster("cluster1").getActiveDc());
+		
+		Assert.assertEquals(MigrationStatus.Cancelled, migrationCluster.getStatus());
+		ClusterTbl currentCluster = clusterService.find(1);
+		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
+		Assert.assertEquals(1, currentCluster.getActivedcId());
+	}
+	
+	@Test
+	@DirtiesContext
+	public void testRollBackFailOnPartialSuccess() {
+		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
+		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B",new Throwable("mocked new fail"));
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		mockFailRollBackCommand(migrationCommandBuilder, "cluster1", "shard1", "A");
+		
+		migrationCluster.process();
+		sleep(1000);
+		DcMeta DcAMeta = dcMetaService.getDcMeta("A");
+		DcMeta DcBMeta = dcMetaService.getDcMeta("B");
+		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
+		Assert.assertEquals("B", DcBMeta.findCluster("cluster1").getActiveDc());
+		
+		Assert.assertEquals(MigrationStatus.PartialSuccess, migrationCluster.getStatus());
+		
+		migrationCluster.rollback();
+		sleep(1000);
+		DcAMeta = dcMetaService.getDcMeta("A");
+		DcBMeta = dcMetaService.getDcMeta("B");
+		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
+		Assert.assertEquals("A", DcBMeta.findCluster("cluster1").getActiveDc());
+		
+		Assert.assertEquals(MigrationStatus.Cancelled, migrationCluster.getStatus());
+		ClusterTbl currentCluster = clusterService.find(1);
+		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
+		Assert.assertEquals(1, currentCluster.getActivedcId());
+	}
+	
+	@Test(expected = IllegalStateException.class)
+	@DirtiesContext
+	public void testRollBackOnChecking() {
+		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
+		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B");
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		
+		migrationCluster.process();
+		sleep(1000);
+		
+		DcMeta DcAMeta = dcMetaService.getDcMeta("A");
+		DcMeta DcBMeta = dcMetaService.getDcMeta("B");
+		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
+		Assert.assertEquals("A", DcBMeta.findCluster("cluster1").getActiveDc());
+		
+		Assert.assertEquals(MigrationStatus.Checking, migrationCluster.getStatus());
+		
+		migrationCluster.rollback();
 	}
 }

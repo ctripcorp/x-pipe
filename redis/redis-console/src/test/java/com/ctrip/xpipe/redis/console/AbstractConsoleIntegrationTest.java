@@ -53,7 +53,7 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 			String prepareSql = prepareDatas();
 			if(!Strings.isEmpty(prepareSql)) {
 				for(String sql : prepareSql.split(";")) {
-					logger.info("[setup][data]{}",sql.trim());
+					logger.debug("[setup][data]{}",sql.trim());
 					stmt = conn.prepareStatement(sql);
 					stmt.executeUpdate();
 				}
