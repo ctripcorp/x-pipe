@@ -47,6 +47,6 @@ public class MigrationCancelledStat extends AbstractMigrationStat implements Mig
 	@Override
 	public void refresh() {
 		// Nothing to do
-		logger.info("[MigrationCancelled]{}", getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[MigrationCancelled]{}", getHolder().getCurrentCluster().getClusterName());
 	}
 }

@@ -38,7 +38,7 @@ public class MigrationSuccessStat extends AbstractMigrationStat {
 	@Override
 	public void refresh() {
 		// Nothing to do
-		logger.info("[MigrationSuccess]{}", getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[MigrationSuccess]{}", getHolder().getCurrentCluster().getClusterName());
 	}
 
 }

@@ -65,6 +65,6 @@ public abstract class AbstractMigrationPublishStat extends AbstractMigrationStat
 	@Override
 	public void refresh() {
 		// Nothing to do
-		logger.info("[]{}",getClass().toString(), getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[]{}",getClass().toString(), getHolder().getCurrentCluster().getClusterName());
 	}
 }
