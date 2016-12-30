@@ -110,8 +110,8 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	@Override
 	public void cancel() {
 		logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentStat.getStat());
-		if(!MigrationStatus.valueOf(migrationCluster.getStatus()).equals(MigrationStatus.Initiated)
-				&& !MigrationStatus.valueOf(migrationCluster.getStatus()).equals(MigrationStatus.Checking)) {
+		if(!currentStat.getStat().equals(MigrationStatus.Initiated)
+				&& !currentStat.getStat().equals(MigrationStatus.Checking)) {
 			throw new IllegalStateException(String.format("Cannot cancel while %s", this.currentStat.getStat()));
 		}
 		MigrationStat cancelStat = new MigrationCancelledStat(this);
@@ -121,7 +121,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	@Override
 	public void rollback() {
 		logger.info("[Rollback]{}-{}, {} -> Rollback", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentStat.getStat());
-		if(!MigrationStatus.isSameStatus(this.migrationCluster.getStatus(), MigrationStatus.PartialSuccess)) {
+		if(!currentStat.getStat().equals(MigrationStatus.PartialSuccess)) {
 			throw new IllegalStateException(String.format("Cannot rollback while %s", this.currentStat.getStat()));
 		}
 		MigrationStat rollBackStat = new MigrationRollBackStat(this);
