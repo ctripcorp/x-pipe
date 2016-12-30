@@ -140,7 +140,13 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	
 	@Override
 	public void forceEnd() {
-		// TODO : force end
+		logger.info("[ForceEnd]{}-{}, {} -> ForceEnd", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentStat.getStat());
+		if(!currentStat.getStat().equals(MigrationStatus.ForcePublish)
+				&& !currentStat.getStat().equals(MigrationStatus.Publish)) {
+			throw new IllegalStateException(String.format("Cannot force end while %s", this.currentStat.getStat()));
+		}
+		updateStat(new MigrationForceEndStat(this));
+		process();
 	}
 
 	@Override
