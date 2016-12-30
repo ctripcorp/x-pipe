@@ -38,6 +38,6 @@ public class MigrationForceFailStat extends AbstractMigrationStat {
 	@Override
 	public void refresh() {
 		// Nothing to do
-		logger.info("[MigrationForceFail]{}", getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[MigrationForceFail]{}", getHolder().getCurrentCluster().getClusterName());
 	}
 }

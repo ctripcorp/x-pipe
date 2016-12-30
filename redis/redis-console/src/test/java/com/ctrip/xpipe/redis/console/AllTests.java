@@ -14,10 +14,7 @@ import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
-import com.ctrip.xpipe.redis.console.service.BasicServiceTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
-
-import simpletest.SetOperationUtilTest;
 
 import org.junit.runner.RunWith;
 
@@ -31,9 +28,7 @@ import org.junit.runner.RunWith;
 	ConcurrentDalTransactionTest.class,
 	DalTransactionManagerTest.class,
 	ClusterMetaModifiedNotifierTest.class,
-	BasicServiceTest.class,
 	MetaServiceTest.class,
-	SetOperationUtilTest.class,
 	ClusterMetaModifiedNotifierTest.class,
 	MetaNotifyTaskTest.class,
 	DefaultMigrationClusterTest.class,
