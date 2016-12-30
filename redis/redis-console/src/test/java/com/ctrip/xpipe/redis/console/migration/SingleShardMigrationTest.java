@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
-import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

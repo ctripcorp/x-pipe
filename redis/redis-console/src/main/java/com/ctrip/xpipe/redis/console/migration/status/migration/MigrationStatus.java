@@ -14,8 +14,8 @@ public enum MigrationStatus {
 	Cancelled,
 	PartialSuccess,
 	ForcePublish,
-	TmpEnd,
 	ForceFail,
+	ForceEnd,
 	RollBack;
 	
 	public static boolean isTerminated(String currentStatus) {
