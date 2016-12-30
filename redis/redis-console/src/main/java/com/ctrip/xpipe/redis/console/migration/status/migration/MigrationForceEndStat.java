@@ -9,35 +9,35 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 /**
  * @author shyin
  *
- * Dec 8, 2016
+ * Dec 30, 2016
  */
-public class MigrationTmpEndStat extends AbstractMigrationStat {
-	
-	public MigrationTmpEndStat(MigrationCluster holder) {
-		super(holder, MigrationStatus.TmpEnd);
-		this.setNextAfterSuccess(new MigrationForceFailStat(getHolder()))
-			.setNextAfterFail(new MigrationForceFailStat(getHolder()));
-	}
+public class MigrationForceEndStat extends AbstractMigrationStat {
 
+	public MigrationForceEndStat(MigrationCluster holder) {
+		super(holder, MigrationStatus.ForceEnd);
+		this.setNextAfterSuccess(this)
+			.setNextAfterFail(this);
+	}
+	
 	@Override
 	public void action() {
 		updateDB();
-
 	}
 
 	@DalTransaction
 	private void updateDB() {
 		ClusterTbl cluster = getHolder().getCurrentCluster();
-		cluster.setStatus(ClusterStatus.TmpMigrated.toString());
+		cluster.setStatus(ClusterStatus.Normal.toString());
 		getHolder().getClusterService().update(cluster);
 
 		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
-		migrationClusterTbl.setStatus(MigrationStatus.TmpEnd.toString());
+		migrationClusterTbl.setStatus(MigrationStatus.ForceEnd.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
 	}
 
 	@Override
 	public void refresh() {
 		// Nothing to do
+		logger.info("[MigrationForceEnd]{}", getHolder().getCurrentCluster().getClusterName());
 	}
 }

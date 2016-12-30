@@ -110,8 +110,8 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	@Override
 	public void cancel() {
 		logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentStat.getStat());
-		if(!MigrationStatus.isSameStatus(this.migrationCluster.getStatus(), MigrationStatus.Initiated)
-				&& !MigrationStatus.isSameStatus(this.migrationCluster.getStatus(), MigrationStatus.Checking)) {
+		if(!MigrationStatus.valueOf(migrationCluster.getStatus()).equals(MigrationStatus.Initiated)
+				&& !MigrationStatus.valueOf(migrationCluster.getStatus()).equals(MigrationStatus.Checking)) {
 			throw new IllegalStateException(String.format("Cannot cancel while %s", this.currentStat.getStat()));
 		}
 		MigrationStat cancelStat = new MigrationCancelledStat(this);
@@ -127,12 +127,21 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 		MigrationStat rollBackStat = new MigrationRollBackStat(this);
 		rollBackStat.action();
 	}
+	
+	@Override
+	public void forcePublish() {
+		// TODO : force publish
+	}
+	
+	@Override
+	public void forceEnd() {
+		// TODO : force end
+	}
 
 	@Override
 	public void update(Object args, Observable observable) {
 		this.currentStat.refresh();
 		notifyObservers(this);
-
 	}
 
 	@Override
@@ -161,29 +170,44 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	}
 
 	private void setStatus() {
-		String status = this.migrationCluster.getStatus();
-		if(MigrationStatus.isSameStatus(status, MigrationStatus.Initiated)) {
-			this.currentStat = new MigrationInitiatedStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.Checking)) {
-			this.currentStat = new MigrationCheckingStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.Migrating)) {
-			this.currentStat = new MigrationMigratingStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.Publish)) {
-			this.currentStat = new MigrationPublishStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.Success)) {
-			this.currentStat = new MigrationSuccessStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.Cancelled)) {
-			this.currentStat = new MigrationCancelledStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.PartialSuccess)) {
-			this.currentStat = new MigrationPartialSuccessStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.ForcePublish)) {
-			this.currentStat = new MigrationForcePublishStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.TmpEnd)) {
-			this.currentStat = new MigrationTmpEndStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.ForceFail)) {
-			this.currentStat = new MigrationForceFailStat(this);
-		} else {
-			this.currentStat = new MigrationInitiatedStat(this);
+		MigrationStatus status = MigrationStatus.valueOf(migrationCluster.getStatus());
+		switch(status) {
+		case Initiated :
+			currentStat = new MigrationInitiatedStat(this);
+			break;
+		case Cancelled:
+			currentStat = new MigrationCancelledStat(this);
+			break;
+		case Checking:
+			currentStat = new MigrationCheckingStat(this);
+			break;
+		case ForceFail:
+			currentStat = new MigrationForceFailStat(this);
+			break;
+		case ForcePublish:
+			currentStat = new MigrationForcePublishStat(this);
+			break;
+		case Migrating:
+			currentStat = new MigrationMigratingStat(this);
+			break;
+		case PartialSuccess:
+			currentStat = new MigrationPartialSuccessStat(this);
+			break;
+		case Publish:
+			currentStat = new MigrationPublishStat(this);
+			break;
+		case RollBack:
+			currentStat = new MigrationRollBackStat(this);
+			break;
+		case ForceEnd:
+			currentStat = new MigrationForceEndStat(this);
+			break;
+		case Success:
+			currentStat = new MigrationSuccessStat(this);
+			break;
+		default:
+			currentStat = new MigrationInitiatedStat(this);
+			break;
 		}
 	}
 	

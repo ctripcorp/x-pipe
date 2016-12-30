@@ -17,7 +17,7 @@ public class MigrationPartialSuccessStat extends AbstractMigrationMigratingStat 
 	
 	public MigrationPartialSuccessStat(MigrationCluster holder) {
 		super(holder, MigrationStatus.PartialSuccess);
-		this.setNextAfterSuccess(new MigrationPublishStat(getHolder()))
+		this.setNextAfterSuccess(new MigrationPublishStat(holder))
 			.setNextAfterFail(this);
 	}
 
@@ -26,9 +26,8 @@ public class MigrationPartialSuccessStat extends AbstractMigrationMigratingStat 
 		updateDB();
 		
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
-			if(!shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE)) {
+			if(!shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
 				fixedThreadPool.submit(new Runnable() {
-
 					@Override
 					public void run() {
 						logger.info("[doMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 

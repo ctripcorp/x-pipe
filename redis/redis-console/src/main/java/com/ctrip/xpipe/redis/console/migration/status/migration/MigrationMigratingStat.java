@@ -16,8 +16,8 @@ public class MigrationMigratingStat extends AbstractMigrationMigratingStat {
 
 	public MigrationMigratingStat(MigrationCluster holder) {
 		super(holder, MigrationStatus.Migrating);
-		this.setNextAfterSuccess(new MigrationPublishStat(getHolder()))
-			.setNextAfterFail(new MigrationPartialSuccessStat(getHolder()));
+		this.setNextAfterSuccess(new MigrationPublishStat(holder))
+			.setNextAfterFail(new MigrationPartialSuccessStat(holder));
 	}
 
 	@Override
@@ -26,7 +26,6 @@ public class MigrationMigratingStat extends AbstractMigrationMigratingStat {
 		
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
 			fixedThreadPool.submit(new Runnable() {
-				
 				@Override
 				public void run() {
 					logger.info("[doMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
@@ -51,7 +50,7 @@ public class MigrationMigratingStat extends AbstractMigrationMigratingStat {
 		migrationCluster.setStatus(MigrationStatus.Migrating.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationCluster);
 		
-		logger.info("[updateDB]Cluster:{}, MigrationCluster:{}", cluster, migrationCluster);
+		logger.info("[updateDB]Cluster:{}, MigrationCluster:{}", cluster.getClusterName(), migrationCluster);
 	}
 	
 }

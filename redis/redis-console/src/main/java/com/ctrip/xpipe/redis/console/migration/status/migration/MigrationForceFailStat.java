@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
  *
  * Dec 8, 2016
  */
-public class MigrationForceFailStat extends AbstractMigrationStat implements MigrationStat {
+public class MigrationForceFailStat extends AbstractMigrationStat {
 
 	public MigrationForceFailStat(MigrationCluster holder) {
 		super(holder, MigrationStatus.ForceFail);
@@ -22,7 +22,6 @@ public class MigrationForceFailStat extends AbstractMigrationStat implements Mig
 	@Override
 	public void action() {
 		updateDB();
-
 	}
 
 	@DalTransaction
@@ -34,11 +33,11 @@ public class MigrationForceFailStat extends AbstractMigrationStat implements Mig
 		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
 		migrationClusterTbl.setStatus(MigrationStatus.ForceFail.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
-
 	}
 
 	@Override
 	public void refresh() {
 		// Nothing to do
+		logger.info("[MigrationForceFail]{}", getHolder().getCurrentCluster().getClusterName());
 	}
 }

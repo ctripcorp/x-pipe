@@ -14,5 +14,7 @@ public interface MigrationClusterAction {
     void updateStat(MigrationStat stat);
     void cancel();
     void rollback();
+    void forcePublish();
+    void forceEnd();
 
 }

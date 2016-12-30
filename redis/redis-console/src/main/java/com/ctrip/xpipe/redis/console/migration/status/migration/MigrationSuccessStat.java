@@ -22,7 +22,6 @@ public class MigrationSuccessStat extends AbstractMigrationStat {
 	@Override
 	public void action() {
 		updateDB();
-
 	}
 
 	@DalTransaction

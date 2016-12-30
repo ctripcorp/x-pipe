@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -22,14 +23,21 @@ public class MigrationRollBackStat extends AbstractMigrationStat implements Migr
 
     @Override
     public void action() {
+    	CountDownLatch latch = new CountDownLatch(getHolder().getMigrationShards().size());
         for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
             cachedThreadPool.submit(new Runnable() {
                 @Override
                 public void run() {
                     migrationShard.doRollBack();
+                    latch.countDown();
                 }
             });
         }
+        try {
+			latch.await();
+		} catch (InterruptedException e) {
+			logger.error("[MigrationRollBackStat][await][shard][doRollBack][fail]",e);
+		}
         updateAndProcess(nextAfterSuccess(), true);
     }
 

@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.observer.Observable;
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilderImpl;
@@ -22,7 +21,6 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
-import com.ctrip.xpipe.retry.RetryNTimes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,25 +181,10 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 
 		logger.info("[rollback]{}-{}, {}<-{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
 		try {
-			new RetryNTimes<Object>(5).execute(new AbstractCommand<Object>() {
-                @Override
-                protected void doExecute() throws Exception {
-                    doRollBackPrevPrimaryDc(cluster, shard, prevPrimaryDc).get();
-                }
-
-                @Override
-                protected void doReset() {
-                }
-
-                @Override
-                public String getName() {
-                    return "RollBack";
-                }
-            });
-		} catch (Exception e) {
+			doRollBackPrevPrimaryDc(cluster, shard, prevPrimaryDc).get();
+		} catch (InterruptedException | ExecutionException e1) {
 			logger.error("[rollback][fail]{}-{}, {}<-{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
 		}
-
 	}
 	
 	private CommandFuture<PrimaryDcChangeMessage> doPrevPrimaryDcMigrate(String cluster, String shard, String dc) {

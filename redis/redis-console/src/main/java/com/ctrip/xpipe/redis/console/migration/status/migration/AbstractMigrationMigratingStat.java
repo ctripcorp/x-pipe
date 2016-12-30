@@ -64,7 +64,6 @@ public abstract class AbstractMigrationMigratingStat extends AbstractMigrationSt
     private void doMigrateOtherDc() {
     	for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
 			fixedThreadPool.submit(new Runnable() {
-				
 				@Override
 				public void run() {
 					logger.info("[doOtherDcMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
