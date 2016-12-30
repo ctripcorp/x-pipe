@@ -272,4 +272,54 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		
 		migrationCluster.rollback();
 	}
+	
+	@Test
+	@DirtiesContext
+	public void testForcePublishOnPartialSuccess() {
+		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
+		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B",new Throwable("mocked new fail"));
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		
+		migrationCluster.process();
+		sleep(1000);
+		DcMeta DcAMeta = dcMetaService.getDcMeta("A");
+		DcMeta DcBMeta = dcMetaService.getDcMeta("B");
+		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
+		Assert.assertEquals("B", DcBMeta.findCluster("cluster1").getActiveDc());
+		
+		Assert.assertEquals(MigrationStatus.PartialSuccess, migrationCluster.getStatus());
+		
+		migrationCluster.forcePublish();
+		DcAMeta = dcMetaService.getDcMeta("A");
+		DcBMeta = dcMetaService.getDcMeta("B");
+		Assert.assertEquals("B", DcAMeta.findCluster("cluster1").getActiveDc());
+		Assert.assertEquals("B", DcBMeta.findCluster("cluster1").getActiveDc());
+		
+		Assert.assertEquals(MigrationStatus.ForceFail, migrationCluster.getStatus());
+		ClusterTbl currentCluster = clusterService.find(1);
+		Assert.assertEquals("Normal", currentCluster.getStatus());
+		Assert.assertEquals(2, currentCluster.getActivedcId());
+	}
+	
+	@Test(expected = IllegalStateException.class)
+	@DirtiesContext
+	public void testForcePublishOnChecking() {
+		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
+		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B");
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		
+		migrationCluster.process();
+		sleep(1000);
+		
+		DcMeta DcAMeta = dcMetaService.getDcMeta("A");
+		DcMeta DcBMeta = dcMetaService.getDcMeta("B");
+		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
+		Assert.assertEquals("A", DcBMeta.findCluster("cluster1").getActiveDc());
+		
+		Assert.assertEquals(MigrationStatus.Checking, migrationCluster.getStatus());
+		
+		migrationCluster.forcePublish();
+	}
 }

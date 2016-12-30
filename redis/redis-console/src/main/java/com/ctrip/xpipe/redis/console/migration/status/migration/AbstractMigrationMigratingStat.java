@@ -61,7 +61,7 @@ public abstract class AbstractMigrationMigratingStat extends AbstractMigrationSt
     	}
     }
     
-    private void doMigrateOtherDc() {
+    protected void doMigrateOtherDc() {
     	for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
 			fixedThreadPool.submit(new Runnable() {
 				@Override

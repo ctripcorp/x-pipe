@@ -97,7 +97,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		}
 		
 		migrationCluster.process();
-		sleep(10000);
+		sleep(1000);
 		
 		ClusterTbl currentCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
@@ -144,7 +144,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		}
 		
 		migrationCluster.process();
-		sleep(10000);
+		sleep(1000);
 		
 		ClusterTbl currentCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Lock.toString(), currentCluster.getStatus());
@@ -201,7 +201,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		}
 		
 		migrationCluster.process();
-		sleep(10000);
+		sleep(1000);
 		
 		ClusterTbl currentCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Migrating.toString(), currentCluster.getStatus());
