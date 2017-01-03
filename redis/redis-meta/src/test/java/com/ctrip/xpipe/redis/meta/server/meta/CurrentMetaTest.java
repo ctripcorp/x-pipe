@@ -41,6 +41,23 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 	
 	
 	@Test
+	public void testGetKeeperMaster(){
+		
+		Pair<String, Integer> keeperMaster = new Pair<>("localhost", 6379);
+		currentMeta.setKeeperMaster(clusterId, shardId, keeperMaster);
+		
+		Pair<String, Integer> gotMaster = currentMeta.getKeeperMaster(clusterId, shardId);
+		Assert.assertEquals(keeperMaster, gotMaster);
+		Assert.assertTrue(keeperMaster != gotMaster);;
+		
+		
+		keeperMaster.setKey("127.0.0.2");
+		gotMaster = currentMeta.getKeeperMaster(clusterId, shardId);
+		Assert.assertNotEquals(keeperMaster, gotMaster);
+		Assert.assertTrue(keeperMaster != gotMaster);;
+	}
+	
+	@Test
 	public void testDefaultMaster(){
 		
 		CurrentMeta currentMeta = new CurrentMeta();

@@ -384,7 +384,11 @@ public class CurrentMeta implements Releasable {
 		}
 
 		public Pair<String, Integer> getKeeperMaster() {
-			return keeperMaster;
+			
+			if(keeperMaster == null){
+				return null;
+			}
+			return new Pair<String, Integer>(keeperMaster.getKey(), keeperMaster.getValue());
 		}
 
 		public synchronized boolean setKeeperMaster(Pair<String, Integer> keeperMaster) {
@@ -394,7 +398,11 @@ public class CurrentMeta implements Releasable {
 				return false;
 			}
 
-			this.keeperMaster = keeperMaster;
+			if(keeperMaster == null){
+				this.keeperMaster = null;
+			}else{
+				this.keeperMaster = new Pair<String, Integer>(keeperMaster.getKey(), keeperMaster.getValue());
+			}
 			return true;
 		}
 
