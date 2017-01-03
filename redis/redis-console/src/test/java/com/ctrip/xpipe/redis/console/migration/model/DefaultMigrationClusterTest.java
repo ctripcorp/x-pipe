@@ -87,12 +87,12 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		
 		ClusterTbl afterCacelledCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Normal.toString(), afterCacelledCluster.getStatus());
-		Assert.assertEquals("Cancelled", migrationCluster.getStatus().toString());
+		Assert.assertEquals(MigrationStatus.Aborted.toString(), migrationCluster.getStatus().toString());
 		Assert.assertEquals(ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
 		
 		MigrationClusterTbl migrationCluster = migrationService.findMigrationCluster(1, 1);
-		Assert.assertEquals("Cancelled", migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.Aborted.toString(), migrationCluster.getStatus());
 	}
 	
 	@Test
@@ -134,12 +134,12 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		migrationCluster.cancel();
 		ClusterTbl afterCacelledCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Normal.toString(), afterCacelledCluster.getStatus());
-		Assert.assertEquals("Cancelled", migrationCluster.getStatus().toString());
+		Assert.assertEquals(MigrationStatus.Aborted.toString(), migrationCluster.getStatus().toString());
 		Assert.assertEquals(ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
 		
 		MigrationClusterTbl migrationCluster = migrationService.findMigrationCluster(1, 1);
-		Assert.assertEquals("Cancelled", migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.Aborted.toString(), migrationCluster.getStatus());
 	}
 	
 	@Test(expected = IllegalStateException.class)
@@ -215,7 +215,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
 		Assert.assertEquals("A", DcBMeta.findCluster("cluster1").getActiveDc());
 		
-		Assert.assertEquals(MigrationStatus.Cancelled, migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.Aborted, migrationCluster.getStatus());
 		ClusterTbl currentCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
 		Assert.assertEquals(1, currentCluster.getActivedcId());
@@ -246,7 +246,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
 		Assert.assertEquals("A", DcBMeta.findCluster("cluster1").getActiveDc());
 		
-		Assert.assertEquals(MigrationStatus.Cancelled, migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.Aborted, migrationCluster.getStatus());
 		ClusterTbl currentCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
 		Assert.assertEquals(1, currentCluster.getActivedcId());
@@ -296,7 +296,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals("B", DcAMeta.findCluster("cluster1").getActiveDc());
 		Assert.assertEquals("B", DcBMeta.findCluster("cluster1").getActiveDc());
 		
-		Assert.assertEquals(MigrationStatus.ForceFail, migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.Success, migrationCluster.getStatus());
 		ClusterTbl currentCluster = clusterService.find(1);
 		Assert.assertEquals("Normal", currentCluster.getStatus());
 		Assert.assertEquals(2, currentCluster.getActivedcId());

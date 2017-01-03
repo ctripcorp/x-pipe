@@ -9,11 +9,11 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
  *
  * Dec 8, 2016
  */
-public class MigrationInitiatedStat extends AbstractMigrationStat {
+public class MigrationInitiatedState extends AbstractMigrationState {
 	
-	public MigrationInitiatedStat(MigrationCluster holder) {
+	public MigrationInitiatedState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Initiated);
-		this.setNextAfterSuccess(new MigrationCheckingStat(holder))
+		this.setNextAfterSuccess(new MigrationCheckingState(holder))
 			.setNextAfterFail(this);
 	}
 

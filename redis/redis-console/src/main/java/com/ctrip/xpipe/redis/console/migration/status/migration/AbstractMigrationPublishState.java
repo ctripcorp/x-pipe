@@ -15,11 +15,11 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
  *
  * Dec 30, 2016
  */
-public abstract class AbstractMigrationPublishStat extends AbstractMigrationStat {
+public abstract class AbstractMigrationPublishState extends AbstractMigrationState {
 
 	protected MigrationPublishService publishService = MigrationPublishService.DEFAULT;
 	
-	public AbstractMigrationPublishStat(MigrationCluster holder, MigrationStatus status) {
+	public AbstractMigrationPublishState(MigrationCluster holder, MigrationStatus status) {
 		super(holder, status);
 	}
 	

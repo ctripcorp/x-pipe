@@ -11,16 +11,16 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
  *
  * Dec 8, 2016
  */
-public abstract class AbstractMigrationStat implements MigrationStat {
+public abstract class AbstractMigrationState implements MigrationState {
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private MigrationCluster holder;
 	private MigrationStatus status;
 	
-	private MigrationStat nextAfterSuccess;
-	private MigrationStat nextAfterFail;
+	private MigrationState nextAfterSuccess;
+	private MigrationState nextAfterFail;
 	
-	public AbstractMigrationStat(MigrationCluster holder, MigrationStatus status) {
+	public AbstractMigrationState(MigrationCluster holder, MigrationStatus status) {
 		this.holder = holder;
 		this.status = status;
 	}
@@ -30,31 +30,31 @@ public abstract class AbstractMigrationStat implements MigrationStat {
 	}
 	
 	@Override
-	public MigrationStatus getStat() {
+	public MigrationStatus getStatus() {
 		return status;
 	}
 	
 	@Override
-	public MigrationStat nextAfterSuccess() {
+	public MigrationState nextAfterSuccess() {
 		return nextAfterSuccess;
 	}
 	
-	public AbstractMigrationStat setNextAfterSuccess(MigrationStat nextAfterSuccess) {
+	public AbstractMigrationState setNextAfterSuccess(MigrationState nextAfterSuccess) {
 		this.nextAfterSuccess = nextAfterSuccess;
 		return this;
 	}
 	
 	@Override
-	public MigrationStat nextAfterFail() {
+	public MigrationState nextAfterFail() {
 		return nextAfterFail;
 	}
 	
-	public AbstractMigrationStat setNextAfterFail(MigrationStat nextAfterFail) {
+	public AbstractMigrationState setNextAfterFail(MigrationState nextAfterFail) {
 		this.nextAfterFail = nextAfterFail;
 		return this;
 	}
 	
-	public void updateAndProcess(MigrationStat stat, boolean continueProcess) {
+	public void updateAndProcess(MigrationState stat, boolean continueProcess) {
 		getHolder().updateStat(stat);
 		if(continueProcess) {
 			getHolder().process();

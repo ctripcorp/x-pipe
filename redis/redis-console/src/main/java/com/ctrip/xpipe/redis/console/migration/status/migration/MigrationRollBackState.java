@@ -9,15 +9,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Created by Chris on 29/12/2016.
+ * @author shyin
+ *
+ * Dec 8, 2016
  */
-public class MigrationRollBackStat extends AbstractMigrationStat implements MigrationStat {
+public class MigrationRollBackState extends AbstractMigrationState {
 
     private ExecutorService cachedThreadPool = Executors.newCachedThreadPool(XpipeThreadFactory.create("MigrationRollBack"));
 
-    public MigrationRollBackStat(MigrationCluster holder) {
+    public MigrationRollBackState(MigrationCluster holder) {
         super(holder, MigrationStatus.RollBack);
-        this.setNextAfterSuccess(new MigrationCancelledStat(holder))
+        this.setNextAfterSuccess(new MigrationAbortedState(holder))
                 .setNextAfterFail(this);
     }
 
@@ -44,6 +46,6 @@ public class MigrationRollBackStat extends AbstractMigrationStat implements Migr
     @Override
     public void refresh() {
         // Nothing to do
-        logger.info("[MigrationRollBack]{}", getHolder().getCurrentCluster().getClusterName());
+        logger.debug("[MigrationRollBack]{}", getHolder().getCurrentCluster().getClusterName());
     }
 }

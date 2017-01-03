@@ -15,13 +15,13 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  *
  *         Dec 8, 2016
  */
-public class MigrationCheckingStat extends AbstractMigrationStat {
+public class MigrationCheckingState extends AbstractMigrationState {
 
 	private ExecutorService fixedThreadPool;
 
-	public MigrationCheckingStat(MigrationCluster holder) {
+	public MigrationCheckingState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Checking);
-		this.setNextAfterSuccess(new MigrationMigratingStat(holder))
+		this.setNextAfterSuccess(new MigrationMigratingState(holder))
 			.setNextAfterFail(this);
 
 		int threadSize = holder.getMigrationShards().size() == 0 ? 1 : holder.getMigrationShards().size();
