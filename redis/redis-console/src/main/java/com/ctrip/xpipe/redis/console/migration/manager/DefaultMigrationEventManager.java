@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.console.migration.manager;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 
 import org.slf4j.Logger;
@@ -74,6 +76,15 @@ public class DefaultMigrationEventManager implements MigrationEventManager {
 
 	@Override
 	public void update(Object args, Observable observable) {
-		removeEvent(((MigrationEvent) args).getEvent().getId()); 
+		MigrationEvent event = (MigrationEvent) args;
+		int successCnt = 0;
+		for(MigrationCluster cluster : event.getMigrationClusters()) {
+			if(MigrationStatus.isTerminated(cluster.getStatus())) {
+				++successCnt;
+			}
+		}
+		if(successCnt == event.getMigrationClusters().size()) {
+			removeEvent(((MigrationEvent) args).getEvent().getId());
+		}
 	}
 }

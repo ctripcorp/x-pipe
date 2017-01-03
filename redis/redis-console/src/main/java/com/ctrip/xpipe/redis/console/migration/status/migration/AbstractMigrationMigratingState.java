@@ -16,12 +16,15 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 public abstract class AbstractMigrationMigratingState extends AbstractMigrationState{
 
 	protected ExecutorService fixedThreadPool;
+	private boolean doOtherDcMigrate;
 	
     public AbstractMigrationMigratingState(MigrationCluster holder, MigrationStatus status) {
         super(holder, status);
         
         int threadSize = holder.getMigrationShards().size() == 0 ? 1 : holder.getMigrationShards().size();
         fixedThreadPool = Executors.newFixedThreadPool(threadSize, XpipeThreadFactory.create(getClass().toString()));
+        
+        doOtherDcMigrate = false;
     }
 
     @Override
@@ -47,8 +50,10 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
     					++finishedCnt;
     				}
     			}
-    			if(0 == finishedCnt) {
+    			
+    			if(0 == finishedCnt && !doOtherDcMigrate) {
     				doMigrateOtherDc();
+    				doOtherDcMigrate = true;
     			} else if(finishedCnt == getHolder().getMigrationShards().size()) {
     				logger.info("[{}][success][continue]{}",getClass(), getHolder().getCurrentCluster().getClusterName());
                     updateAndProcess(nextAfterSuccess(), true);

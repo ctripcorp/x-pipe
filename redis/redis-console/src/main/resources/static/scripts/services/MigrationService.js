@@ -25,6 +25,14 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		rollback_migration_cluster: {
 			method: 'POST',
 			url: '/console/migration/events/:eventId/clusters/:clusterId/rollback'
+		},
+		forcepublish_migration_cluster: {
+			method: 'POST',
+			url: '/console/migration/events/:eventId/clusters/:clusterId/forcePublish'
+		},
+		forceend_migration_cluster: {
+			method: 'POST',
+			url: '/console/migration/events/:eventId/clusters/:clusterId/forceEnd'
 		}
 	});
 
@@ -122,6 +130,40 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
             });
         return d.promise;
     }
+    
+    function forcePublishMigrationCluster(eventId, clusterId) {
+        var d = $q.defer();
+        resource.forcepublish_migration_cluster(
+            {
+                eventId : eventId,
+                clusterId : clusterId
+            },
+            {},
+            function(result) {
+                return d.resolve(result);
+            },
+            function(result) {
+                return d.reject(result);
+            });
+        return d.promise;
+    }
+    
+    function forceEndMigrationCluster(eventId, clusterId) {
+        var d = $q.defer();
+        resource.forceend_migration_cluster(
+            {
+                eventId : eventId,
+                clusterId : clusterId
+            },
+            {},
+            function(result) {
+                return d.resolve(result);
+            },
+            function(result) {
+                return d.reject(result);
+            });
+        return d.promise;
+    }
 
 	return {
 		createEvent : createEvent,
@@ -129,6 +171,8 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		findEventDetails : findEventDetails,
 		continueMigrationCluster : continueMigrationCluster,
 		cancelMigrationCluster : cancelMigrationCluster,
-		rollbackMigrationCluster: rollbackMigrationCluster
+		rollbackMigrationCluster: rollbackMigrationCluster,
+		forcePublishMigrationCluster : forcePublishMigrationCluster,
+		forceEndMigrationCluster : forceEndMigrationCluster
 	}
 }]);
