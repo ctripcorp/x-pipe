@@ -9,16 +9,16 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 /**
  * @author shyin
  *
- * Dec 8, 2016
+ * Dec 30, 2016
  */
-public class MigrationSuccessStat extends AbstractMigrationStat {
-	
-	public MigrationSuccessStat(MigrationCluster holder) {
-		super(holder, MigrationStatus.Success);
+public class MigrationForceEndState extends AbstractMigrationState {
+
+	public MigrationForceEndState(MigrationCluster holder) {
+		super(holder, MigrationStatus.ForceEnd);
 		this.setNextAfterSuccess(this)
 			.setNextAfterFail(this);
 	}
-
+	
 	@Override
 	public void action() {
 		updateDB();
@@ -31,14 +31,13 @@ public class MigrationSuccessStat extends AbstractMigrationStat {
 		getHolder().getClusterService().update(cluster);
 
 		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
-		migrationClusterTbl.setStatus(MigrationStatus.Success.toString());
+		migrationClusterTbl.setStatus(MigrationStatus.ForceEnd.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
 	}
-	
+
 	@Override
 	public void refresh() {
 		// Nothing to do
-		logger.debug("[MigrationSuccess]{}", getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[MigrationForceEnd]{}", getHolder().getCurrentCluster().getClusterName());
 	}
-
 }

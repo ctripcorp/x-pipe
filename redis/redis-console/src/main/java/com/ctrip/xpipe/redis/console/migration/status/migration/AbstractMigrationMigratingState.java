@@ -13,11 +13,11 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  *
  * Dec 25, 2016
  */
-public abstract class AbstractMigrationMigratingStat extends AbstractMigrationStat{
+public abstract class AbstractMigrationMigratingState extends AbstractMigrationState{
 
 	protected ExecutorService fixedThreadPool;
 	
-    public AbstractMigrationMigratingStat(MigrationCluster holder, MigrationStatus status) {
+    public AbstractMigrationMigratingState(MigrationCluster holder, MigrationStatus status) {
         super(holder, status);
         
         int threadSize = holder.getMigrationShards().size() == 0 ? 1 : holder.getMigrationShards().size();
