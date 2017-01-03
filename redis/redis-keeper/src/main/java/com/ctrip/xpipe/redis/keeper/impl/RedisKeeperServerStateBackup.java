@@ -72,7 +72,17 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 			protected void doRun() throws Exception {
 				
 				redisClient.sendMessage(RedisProtocol.CRLF.getBytes());
-				redisKeeperServer.addObserver(new PsyncKeeperServerStateObserver(args, redisClient));
+				PsyncKeeperServerStateObserver psyncKeeperServerStateObserver = new PsyncKeeperServerStateObserver(args, redisClient);
+				
+				redisKeeperServer.addObserver(psyncKeeperServerStateObserver);
+				redisClient.addChannelCloseReleaseResources(new Releasable() {
+					
+					@Override
+					public void release() throws Exception {
+						psyncKeeperServerStateObserver.release();
+					}
+				});
+				
 			}})){
 			//state backup
 			return false;
@@ -112,6 +122,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 
 		@Override
 		public void release() throws Exception {
+			logger.info("[release]{}", this);
 			this.redisClient.getRedisKeeperServer().removeObserver(this);
 		}
 	}
