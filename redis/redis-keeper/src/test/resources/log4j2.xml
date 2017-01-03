@@ -23,6 +23,7 @@
         <logger name="org.apache.zookeeper" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
 		<logger name="com.ctrip.xpipe.redis.keeper.monitor.CommandDelay" level="WARN"/>
+		<logger name="com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer" level="WARN"/>
 		<!--  
 		<logger name="io.netty.handler.logging.LoggingHandler" level="DEBUG"/>
 		-->

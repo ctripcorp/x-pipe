@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.api.monitor;
 
+import com.ctrip.xpipe.monitor.CatTransactionMonitor;
+
 /**
  * @author wenchao.meng
  *
@@ -7,8 +9,10 @@ package com.ctrip.xpipe.api.monitor;
  */
 public interface TransactionMonitor {
 	
-	public static TransactionMonitor  DEFAULT = null;
+	public static TransactionMonitor  DEFAULT = new CatTransactionMonitor();
 	
-	void logTransaction(String type, String  name);
+	void logTransaction(String type, String  name, Task task) throws Throwable;
+	
+	void logTransactionSwallowException(String type, String  name, Task task);
 	
 }

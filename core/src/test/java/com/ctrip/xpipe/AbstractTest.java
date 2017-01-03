@@ -38,6 +38,7 @@ import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.monitor.CatUtils;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.simpleserver.AbstractIoAction;
@@ -87,7 +88,7 @@ public class AbstractTest {
 		doBeforeAbstractTest();
 
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
-		System.setProperty(CatUtils.CAT_ENABLED_KEY, "false");
+		System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
 
 		logger.info(remarkableMessage("[begin test][{}]"), name.getMethodName());
 

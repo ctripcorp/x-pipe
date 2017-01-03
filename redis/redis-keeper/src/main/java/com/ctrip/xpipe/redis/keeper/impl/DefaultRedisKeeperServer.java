@@ -17,6 +17,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ElectContext;
@@ -432,12 +434,22 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public synchronized void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState){
+	public synchronized void setRedisKeeperServerState(final RedisKeeperServerState redisKeeperServerState){
 		
-		RedisKeeperServerState previous = this.redisKeeperServerState;
-		logger.info("[setRedisKeeperServerState]{}, {}->{}", this, previous, redisKeeperServerState);
-		this.redisKeeperServerState = redisKeeperServerState;
-		notifyObservers(new KeeperServerStateChanged(previous, redisKeeperServerState));
+		TransactionMonitor transactionMonitor = TransactionMonitor.DEFAULT;
+		String name = String.format("%s,%s,%s", clusterId, shardId, redisKeeperServerState);
+		transactionMonitor.logTransactionSwallowException("setRedisKeeperServerState", name, new Task() {
+			
+			@Override
+			public void go() throws Throwable {
+				
+				RedisKeeperServerState previous = DefaultRedisKeeperServer.this.redisKeeperServerState;
+				logger.info("[setRedisKeeperServerState]{}, {}->{}", this, previous, redisKeeperServerState);
+				DefaultRedisKeeperServer.this.redisKeeperServerState = redisKeeperServerState;
+				notifyObservers(new KeeperServerStateChanged(previous, redisKeeperServerState));
+			}
+		});
+		
 	}
 	
 	@Override

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.*;
 
 import java.net.InetSocketAddress;
 
+import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
@@ -17,6 +18,7 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 
 /**
@@ -28,6 +30,24 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 	
 	@Before
 	public void beforeDefaultRedisKeeperServerTest() throws Exception {
+	}
+	
+	@Test
+	public void testSetState() throws Exception{
+		
+		
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
+		for(int i=0;i<10;i++){
+			
+			RedisKeeperServerState redisKeeperServerState = Mockito.mock(RedisKeeperServerState.class);
+			long begin = System.currentTimeMillis();
+			redisKeeperServer.setRedisKeeperServerState(redisKeeperServerState);
+			long end = System.currentTimeMillis();
+			if(end - begin > 50){
+				logger.info("[testSetState]i:{}, {}", i, end - begin);
+				Assert.fail();
+			}
+		}
 		
 	}
 	
