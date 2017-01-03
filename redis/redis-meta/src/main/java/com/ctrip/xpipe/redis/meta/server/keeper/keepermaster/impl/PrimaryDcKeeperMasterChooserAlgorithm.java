@@ -85,7 +85,7 @@ public class PrimaryDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterC
 		
 		try {
 			SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort()));
-			Role role = new RoleCommand(clientPool, scheduled).execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);
+			Role role = new RoleCommand(clientPool, false, scheduled).execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);
 			return SERVER_ROLE.MASTER == role.getServerRole();
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			logger.error("[isMaster]" + redisMeta, e);

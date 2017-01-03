@@ -86,7 +86,7 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 			
 			try{
 				boolean change = false;
-				RoleCommand roleCommand = new RoleCommand(pool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort())), scheduled);
+				RoleCommand roleCommand = new RoleCommand(pool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort())), false, scheduled);
 				Role role = roleCommand.execute().get();
 				
 				if(role.getServerRole() == SERVER_ROLE.MASTER){

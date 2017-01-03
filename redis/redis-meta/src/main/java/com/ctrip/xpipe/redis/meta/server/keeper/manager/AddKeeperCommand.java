@@ -71,7 +71,7 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 			@Override
 			protected void doExecute() throws Exception {
 				
-				SlaveRole keeperRole = (SlaveRole) new RoleCommand(keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort(), scheduled).execute().get();
+				SlaveRole keeperRole = (SlaveRole) new RoleCommand(keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort(), true, scheduled).execute().get();
 				if(keeperRole.getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED){
 					logger.info("[doExecute][success]{}", keeperRole);
 					future().setSuccess(keeperRole);

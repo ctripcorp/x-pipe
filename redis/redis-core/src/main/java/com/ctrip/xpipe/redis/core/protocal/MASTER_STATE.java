@@ -11,7 +11,12 @@ public enum MASTER_STATE {
 	REDIS_REPL_CONNECT("connect"),
 	REDIS_REPL_CONNECTING("connecting"),
 	REDIS_REPL_TRANSFER("sync"),
-	REDIS_REPL_CONNECTED("connected");
+	REDIS_REPL_CONNECTED("connected"),
+	
+	//NOT IMPLEMENTED IN KEEPER
+	REDIS_REPL_HANDSHAKE("handshake"),
+	REDIS_REPL_UNKNOWN("unknown");
+	
 
 	private String desc;
 	MASTER_STATE(String desc){

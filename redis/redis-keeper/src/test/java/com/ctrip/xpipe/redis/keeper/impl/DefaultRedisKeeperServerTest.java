@@ -10,7 +10,6 @@ import static org.mockito.Mockito.*;
 
 import java.net.InetSocketAddress;
 
-import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;

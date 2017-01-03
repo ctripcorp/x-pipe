@@ -18,13 +18,26 @@ import io.netty.buffer.ByteBuf;
  * Sep 16, 2016
  */
 public class RoleCommand extends AbstractRedisCommand<Role>{
+	
+	private boolean log = true;
 
 	public RoleCommand(String host, int port, ScheduledExecutorService scheduled) {
-		super(host, port, scheduled);
+		this(host, port, true, scheduled);
 	}
-	
+
+	public RoleCommand(String host, int port, boolean log, ScheduledExecutorService scheduled) {
+		super(host, port, scheduled);
+		this.log = log;
+	}
+
 	public RoleCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		this(clientPool, true, scheduled);
+	}
+
+	public RoleCommand(SimpleObjectPool<NettyClient> clientPool, boolean log, ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);
+		this.log = log;
+		
 	}
 
 	@Override
@@ -50,5 +63,15 @@ public class RoleCommand extends AbstractRedisCommand<Role>{
 	@Override
 	public ByteBuf getRequest() {
 		return new RequestStringParser("role").format();
+	}
+	
+	@Override
+	protected boolean logRequest() {
+		return log;
+	}
+	
+	@Override
+	protected boolean logResponse() {
+		return log;
 	}
 }
