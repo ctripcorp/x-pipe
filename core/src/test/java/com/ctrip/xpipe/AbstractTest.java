@@ -476,8 +476,8 @@ public class AbstractTest {
 					@Override
 					protected Object doRead(InputStream ins) throws IOException {
 						line = readLine(ins);
-						logger.info("[doRead]{}", line.length());
 						logger.debug("[doRead]{}", line);
+						logger.info("[doRead]{}", line == null ? null : line.length());
 						return line;
 					}
 

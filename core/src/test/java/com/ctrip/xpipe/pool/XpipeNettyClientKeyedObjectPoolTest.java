@@ -62,6 +62,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		for (int i = 0; i < testCount; i++) {
 			
 			NettyClient client = objectPool.borrowObject();
+			sleep(10);
 			Assert.assertEquals(1, echoServer.getTotalConnected());
 			objectPool.returnObject(client);
 		}
@@ -78,6 +79,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 			
 			InetSocketAddress key = new InetSocketAddress("localhost", echoServer.getPort());
 			NettyClient client = pool.borrowObject(key);
+			sleep(10);
 			Assert.assertEquals(1, echoServer.getTotalConnected());
 			pool.returnObject(key, client);
 		}

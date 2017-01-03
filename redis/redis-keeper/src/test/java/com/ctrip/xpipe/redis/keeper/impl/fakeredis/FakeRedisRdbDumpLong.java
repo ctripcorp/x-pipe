@@ -38,7 +38,7 @@ public class FakeRedisRdbDumpLong extends AbstractFakeRedisTest {
 	@Test
 	public void testRedisNoLf() throws Exception {
 
-		int sleepBeforeSendRdb = replicationTimeout * 2000;
+		int sleepBeforeSendRdb = replicationTimeout * 3000;
 		fakeRedisServer.setSleepBeforeSendRdb(sleepBeforeSendRdb);
 		fakeRedisServer.setSendLFBeforeSendRdb(false);
 
