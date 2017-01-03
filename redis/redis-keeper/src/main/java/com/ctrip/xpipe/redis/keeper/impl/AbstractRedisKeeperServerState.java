@@ -135,11 +135,11 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	
 	protected void doBecomeBackup(InetSocketAddress masterAddress){
 		
-		logger.info("[activeToBackup]{}", this);
+		logger.info("[doBecomeBackup]{}", this);
 		try{
 			redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
 		}catch(Exception e){
-			logger.error("[activeToBackup]" + this, e);
+			logger.error("[activedoBecomeBackupToBackup]" + this, e);
 		}
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, masterAddress));
 		reconnectMaster();
@@ -147,12 +147,12 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 
 	protected void doBecomeActive(InetSocketAddress masterAddress){
 		
-		logger.info("[backupBecomeActive]{}", this);
+		logger.info("[doBecomeActive]{}", this);
 		try{
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 			replicationStore.getMetaStore().becomeActive();
 		}catch(Exception e){
-			logger.error("[backupToActive]" + this + "," + masterAddress, e);
+			logger.error("[doBecomeActive]" + this + "," + masterAddress, e);
 		}
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, masterAddress));
 		reconnectMaster();

@@ -84,8 +84,12 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 		
 		logger.info("[endReadRdb]{}", this);
 		try {
-			rdbStore.endRdb();
-			super.endReadRdb();
+			if(rdbStore != null){
+				rdbStore.endRdb();
+				super.endReadRdb();
+			}else{
+				logger.warn("[endReadRdb][rdbstore null]");
+			}
 		} catch (IOException e) {
 			logger.error("[endReadRdb]", e);
 		}

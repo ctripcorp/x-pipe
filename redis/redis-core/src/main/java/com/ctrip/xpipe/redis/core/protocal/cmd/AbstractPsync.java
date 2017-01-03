@@ -48,7 +48,8 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		this.saveCommands = saveCommands;
 	}
 
-	public AbstractPsync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands, ScheduledExecutorService scheduled) {
+	public AbstractPsync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands,
+			ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);
 		this.saveCommands = saveCommands;
 	}
@@ -72,7 +73,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		}
 		RequestStringParser requestString = new RequestStringParser(getName(), masterRunidRequest,
 				String.valueOf(offset));
-		if(logger.isDebugEnabled()){
+		if (logger.isDebugEnabled()) {
 			logger.debug("[doRequest]{}, {}", this, StringUtil.join(" ", requestString.getPayload()));
 		}
 		return requestString.format();
@@ -92,15 +93,15 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			super.clientClosed(nettyClient);
 		}
 		switch (psyncState) {
-		case PSYNC_COMMAND_WAITING_REPONSE:
-			break;
-		case READING_RDB:
-			endReadRdb();
-			break;
-		case READING_COMMANDS:
-			break;
-		default:
-			throw new IllegalStateException("unknown state:" + psyncState);
+			case PSYNC_COMMAND_WAITING_REPONSE:
+				break;
+			case READING_RDB:
+				endReadRdb();
+				break;
+			case READING_COMMANDS:
+				break;
+			default:
+				throw new IllegalStateException("unknown state:" + psyncState);
 		}
 	}
 
@@ -167,7 +168,8 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			}
 			masterRunid = split[1];
 			masterRdbOffset = Long.parseLong(split[2]);
-			logger.debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, masterRunid, masterRdbOffset);
+			logger.debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, masterRunid,
+					masterRdbOffset);
 			psyncState = PSYNC_STATE.READING_RDB;
 
 			doOnFullSync();
@@ -219,11 +221,11 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	public void onEofType(EofType eofType) {
 		beginReadRdb(eofType);
 	}
-	
+
 	protected void beginReadRdb(EofType eofType) {
 
 		logger.info("[beginReadRdb]{}, eof:{}", this, eofType);
-		
+
 		for (PsyncObserver observer : observers) {
 			try {
 				observer.beginWriteRdb(eofType, masterRdbOffset);
