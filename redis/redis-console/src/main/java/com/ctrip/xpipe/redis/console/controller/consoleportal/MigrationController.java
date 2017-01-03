@@ -70,4 +70,14 @@ public class MigrationController extends AbstractConsoleController {
 		migrationService.rollbackMigrationCluster(eventId, clusterId);
 	}
 	
+	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forcePublish", method = RequestMethod.POST)
+	public void forcePublishMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		migrationService.forcePublishMigrationCluster(eventId, clusterId);
+	}
+	
+	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forceEnd", method = RequestMethod.POST)
+	public void forceEndMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		migrationService.forceEndMigrationClsuter(eventId, clusterId);
+	}
+	
 }

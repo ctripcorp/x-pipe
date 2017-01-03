@@ -21,6 +21,8 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +50,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	private Map<Long, DcTbl> dcs;
 
 	private MigrationCommandBuilder commandBuilder;
+	
+	private Pair<String, Integer> newMasterAddr;
 
 	public DefaultMigrationShard(MigrationCluster parent, MigrationShardTbl migrationShard, ShardTbl currentShard,Map<Long, DcTbl> dcs,
 			MigrationService migrationService) {
@@ -169,6 +173,9 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		} else {
 			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE, false, "Failed");
 		}
+		if(null != newMasterAddr) {
+			updateRedisMaster(newMasterAddr.getLeft(), newMasterAddr.getRight());
+		}
 		notifyObservers(this);
 	}
 
@@ -217,7 +224,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					
 					if(PRIMARY_DC_CHANGE_RESULT.SUCCESS.equals(res.getErrorType())) {
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, true, res.getErrorMessage());
-						updateRedisMaster(res.getNewMasterIp(), res.getNewMasterPort());
+						newMasterAddr = Pair.of(res.getNewMasterIp(), res.getNewMasterPort());
 					} else {
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, res.getErrorMessage());
 					}
