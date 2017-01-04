@@ -14,7 +14,6 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT;
@@ -22,12 +21,10 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -51,7 +48,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 
 	private MigrationCommandBuilder commandBuilder;
 	
-	private Pair<String, Integer> newMasterAddr;
+	private InetSocketAddress newMasterAddr;
 
 	public DefaultMigrationShard(MigrationCluster parent, MigrationShardTbl migrationShard, ShardTbl currentShard,Map<Long, DcTbl> dcs,
 			MigrationService migrationService) {
@@ -72,6 +69,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 
 		this.commandBuilder = commandBuilder;
 
+		this.newMasterAddr = null;
+		
 		addObserver(parent);
 		addObserver(this);
 	}
@@ -89,6 +88,11 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	@Override
 	public ShardTbl getCurrentShard() {
 		return currentShard;
+	}
+	
+	@Override
+	public InetSocketAddress getNewMasterAddress() {
+		return newMasterAddr;
 	}
 
 	@Override
@@ -173,9 +177,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		} else {
 			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE, false, "Failed");
 		}
-		if(null != newMasterAddr) {
-			updateRedisMaster(newMasterAddr.getLeft(), newMasterAddr.getRight());
-		}
+
 		notifyObservers(this);
 	}
 
@@ -224,7 +226,10 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					
 					if(PRIMARY_DC_CHANGE_RESULT.SUCCESS.equals(res.getErrorType())) {
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, true, res.getErrorMessage());
-						newMasterAddr = Pair.of(res.getNewMasterIp(), res.getNewMasterPort());
+						
+						if(null != res.getNewMasterIp()) {
+							newMasterAddr = InetSocketAddress.createUnresolved(res.getNewMasterIp(), res.getNewMasterPort());
+						}
 					} else {
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, res.getErrorMessage());
 					}
@@ -281,34 +286,4 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		return migrateResult;
 	}
 
-	private void updateRedisMaster(final String ip, final int port) {
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				List<RedisTbl> toUpdate = new LinkedList<>();
-				
-				List<RedisTbl> prevDcRedises = parent.getRedisService().findAllByDcClusterShard(dcs.get(parent.getCurrentCluster().getActivedcId()).getDcName(), 
-						parent.getCurrentCluster().getClusterName(), getCurrentShard().getShardName());
-				for(RedisTbl redis : prevDcRedises) {
-					if(redis.isMaster()) {
-						redis.setMaster(false);
-						toUpdate.add(redis);
-					}
-				}
-				
-				List<RedisTbl> newDcRedises = parent.getRedisService().findAllByDcClusterShard(dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName(), 
-						parent.getCurrentCluster().getClusterName(), getCurrentShard().getShardName());
-				for(RedisTbl redis : newDcRedises) {
-					if(redis.getRedisIp().equals(ip) && redis.getRedisPort() == port) {
-						redis.setMaster(true);
-						toUpdate.add(redis);
-					}
-				}
-				
-				logger.info("[UpdateMasterTo]{}:{}", ip, port);
-				parent.getRedisService().batchUpdate(toUpdate);
-				
-			}
-		}).start();
-	}
 }
