@@ -11,32 +11,12 @@ public enum MigrationStatus {
 	Migrating,
 	Publish,
 	Success,
-	Cancelled,
 	PartialSuccess,
-	ForcePublish,
-	TmpEnd,
-	ForceFail;
-	
-	public static boolean isTerminated(String currentStatus) {
-		return formatStatus(currentStatus).equals(formatStatus(MigrationStatus.Success)) ||
-				formatStatus(currentStatus).equals(formatStatus(MigrationStatus.Cancelled)) ||
-				formatStatus(currentStatus).equals(formatStatus(MigrationStatus.ForceFail));
-	}
+	ForceEnd,
+	RollBack,
+	Aborted;
 	
 	public static boolean isTerminated(MigrationStatus status) {
-		return status == MigrationStatus.Cancelled || status == MigrationStatus.Success 
-				|| status == MigrationStatus.ForceFail;
-	}
-	
-	private static String formatStatus(String status) {
-		return status.trim().toLowerCase();
-	}
-	
-	private static String formatStatus(MigrationStatus status) {
-		return status.toString().trim().toLowerCase();
-	}
-	
-	public static boolean isSameStatus(String status, MigrationStatus target) {
-		return status.toLowerCase().equals(target.toString().toLowerCase());
+		return status.equals(Aborted) || status.equals(Success) || status.equals(ForceEnd);
 	}
 }

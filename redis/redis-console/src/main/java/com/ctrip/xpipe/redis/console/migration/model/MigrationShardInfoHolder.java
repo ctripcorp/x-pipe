@@ -9,7 +9,7 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
  *
  * Dec 8, 2016
  */
-public interface MigratinoShardInfoHolder {
+public interface MigrationShardInfoHolder {
     MigrationShardTbl getMigrationShard();
     ShardMigrationResult getShardMigrationResult();
 

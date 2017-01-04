@@ -11,9 +11,9 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
  *
  * Dec 8, 2016
  */
-public class MigrationSuccessStat extends AbstractMigrationStat {
+public class MigrationSuccessState extends AbstractMigrationState {
 	
-	public MigrationSuccessStat(MigrationCluster holder) {
+	public MigrationSuccessState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Success);
 		this.setNextAfterSuccess(this)
 			.setNextAfterFail(this);
@@ -22,7 +22,6 @@ public class MigrationSuccessStat extends AbstractMigrationStat {
 	@Override
 	public void action() {
 		updateDB();
-
 	}
 
 	@DalTransaction
@@ -39,7 +38,7 @@ public class MigrationSuccessStat extends AbstractMigrationStat {
 	@Override
 	public void refresh() {
 		// Nothing to do
-		logger.info("[MigrationSuccess]{}", getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[MigrationSuccess]{}", getHolder().getCurrentCluster().getClusterName());
 	}
 
 }

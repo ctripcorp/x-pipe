@@ -270,4 +270,48 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 					}
 				});
 	}
+	
+	protected void mockSuccessRollBackCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster, String shard,
+			String prevPrimaryDc) {
+		when(migrationCommandBuilder.buildRollBackCommand(cluster, shard, prevPrimaryDc))
+			.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>(){
+
+				@Override
+				public String getName() {
+					return String.format("Mocked-RollBackSuccess-%s-%s-%s", cluster, shard, prevPrimaryDc);
+				}
+
+				@Override
+				protected void doExecute() throws Exception {
+					future().setSuccess();
+				}
+
+				@Override
+				protected void doReset() {
+				}
+				
+			});
+	}
+	
+	protected void mockFailRollBackCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster, String shard,
+			String prevPrimaryDc) {
+		when(migrationCommandBuilder.buildRollBackCommand(cluster, shard, prevPrimaryDc))
+			.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>(){
+
+				@Override
+				public String getName() {
+					return String.format("Mocked-RollBackSuccess-%s-%s-%s", cluster, shard, prevPrimaryDc);
+				}
+
+				@Override
+				protected void doExecute() throws Exception {
+					future().setFailure(new Throwable("mocked throwable"));
+				}
+
+				@Override
+				protected void doReset() {
+				}
+				
+			});
+	}
 }

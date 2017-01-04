@@ -4,6 +4,7 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
+import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.RedisService;
@@ -14,10 +15,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.*;
 
@@ -162,7 +166,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_OTHER_DC));
 
         migrationShard.doMigrate();
-        verify(mockedMigrationService, times(4)).updateMigrationShard((MigrationShardTbl) anyObject());
+        verify(mockedMigrationService, times(5)).updateMigrationShard((MigrationShardTbl) anyObject());
         Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE));
         Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.SUCCESS, migrationShard.getShardMigrationResult().getStatus());
     }
@@ -242,6 +246,20 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
         when(mockedMigrationCluster.getMigrationCluster()).thenReturn((new MigrationClusterTbl()).setClusterId(1)
                 .setDestinationDcId(2L));
         when(mockedMigrationCluster.getRedisService()).thenReturn(mockedRedisService);
+        final AtomicInteger cnt = new AtomicInteger(0);
+        doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				Object[] args = invocation.getArguments();
+				System.out.println(args[0]);
+				if(cnt.incrementAndGet() == 3) {
+					if(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
+						migrationShard.doMigrateOtherDc();
+					}
+				};
+				return null;
+			}
+		}).when(mockedMigrationCluster).update(anyObject(), anyObject());
 
         mockedMigrationShard = (new MigrationShardTbl()).setId(1).setKeyId(1).setShardId(1).setMigrationClusterId(1);
         mockedCurrentShard = (new ShardTbl()).setId(1).setKeyId(1).setShardName("test-shard").setClusterId(1)

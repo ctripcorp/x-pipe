@@ -7,6 +7,6 @@ import com.ctrip.xpipe.api.observer.Observer;
  *
  * Dec 8, 2016
  */
-public interface MigrationShard extends MigratinoShardInfoHolder, MigrationShardAction, Observer{
+public interface MigrationShard extends MigrationShardInfoHolder, MigrationShardAction, Observer{
 
 }

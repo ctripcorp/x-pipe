@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import java.util.Date;
+
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
@@ -11,33 +13,34 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
  *
  * Dec 8, 2016
  */
-public class MigrationTmpEndStat extends AbstractMigrationStat {
-	
-	public MigrationTmpEndStat(MigrationCluster holder) {
-		super(holder, MigrationStatus.TmpEnd);
-		this.setNextAfterSuccess(new MigrationForceFailStat(getHolder()))
-			.setNextAfterFail(new MigrationForceFailStat(getHolder()));
+public class MigrationAbortedState extends AbstractMigrationState implements MigrationState {
+
+	public MigrationAbortedState(MigrationCluster holder) {
+		super(holder, MigrationStatus.Aborted);
+		this.setNextAfterSuccess(this)
+			.setNextAfterFail(this);
 	}
 
 	@Override
 	public void action() {
 		updateDB();
-
 	}
-
+	
 	@DalTransaction
 	private void updateDB() {
 		ClusterTbl cluster = getHolder().getCurrentCluster();
-		cluster.setStatus(ClusterStatus.TmpMigrated.toString());
+		cluster.setStatus(ClusterStatus.Normal.toString());
 		getHolder().getClusterService().update(cluster);
-
-		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
-		migrationClusterTbl.setStatus(MigrationStatus.TmpEnd.toString());
-		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
+		
+		MigrationClusterTbl migrationCluster = getHolder().getMigrationCluster();
+		migrationCluster.setStatus(MigrationStatus.Aborted.toString());
+		migrationCluster.setEndTime(new Date());
+		getHolder().getMigrationService().updateMigrationCluster(migrationCluster);
 	}
 
 	@Override
 	public void refresh() {
 		// Nothing to do
+		logger.debug("[MigrationCancelled]{}", getHolder().getCurrentCluster().getClusterName());
 	}
 }
