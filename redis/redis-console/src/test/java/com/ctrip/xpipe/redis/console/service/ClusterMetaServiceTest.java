@@ -9,10 +9,14 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
+import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 
 public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 	
+	@Autowired
+	private DcMetaService dcMetaService;
 	@Autowired
 	private ClusterMetaService clusterMetaService;
 	@Autowired
@@ -55,5 +59,23 @@ public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 		ClusterMeta clusterMetaB = clusterMetaService.getClusterMeta("B", clusterName2);
 		Assert.assertEquals("A", clusterMetaA.getActiveDc());
 		Assert.assertEquals("B", clusterMetaB.getActiveDc());
+	}
+	
+	@Test
+	@DirtiesContext
+	public void testGetDifferentActiveDcForDcMetaWhileMigrating() {
+		ClusterTbl clusterA = clusterService.find(clusterName1);
+		Assert.assertEquals(ClusterStatus.Normal.toString(), clusterA.getStatus());
+		ClusterTbl clusterB = clusterService.find(clusterName2);
+		Assert.assertEquals(ClusterStatus.Migrating.toString(), clusterB.getStatus());
+		
+		DcMeta dcAMeta = dcMetaService.getDcMeta("A");
+		DcMeta dcBMeta = dcMetaService.getDcMeta("B");
+		
+		Assert.assertEquals("A", dcAMeta.findCluster(clusterName1).getActiveDc());
+		Assert.assertEquals("A", dcBMeta.findCluster(clusterName1).getActiveDc());
+		Assert.assertEquals("A", dcAMeta.findCluster(clusterName2).getActiveDc());
+		Assert.assertEquals("B", dcBMeta.findCluster(clusterName2).getActiveDc());
+		
 	}
 }

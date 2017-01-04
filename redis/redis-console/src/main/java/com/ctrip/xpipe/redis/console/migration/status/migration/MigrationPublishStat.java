@@ -57,6 +57,8 @@ public class MigrationPublishStat extends AbstractMigrationStat {
 		migrationClusterTbl.setStatus(MigrationStatus.Publish.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
 		
+		logger.info("[updateDB]Cluster:{}, MigrationCluster:{}", cluster, migrationClusterTbl);
+		
 	}
 	
 	private boolean publish() {
