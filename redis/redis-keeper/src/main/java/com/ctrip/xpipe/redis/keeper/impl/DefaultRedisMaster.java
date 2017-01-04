@@ -108,7 +108,12 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	
 	public void setMasterState(MASTER_STATE masterState) {
 		
-		logger.info("[setMasterState]{}", masterState);
+		logger.info("[setMasterState]{}, {}", this, masterState);
 		this.masterState = masterState;
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("%s", endpoint);
 	}
 }

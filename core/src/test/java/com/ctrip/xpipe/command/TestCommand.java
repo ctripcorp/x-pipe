@@ -15,6 +15,8 @@ public class TestCommand extends AbstractCommand<String>{
 	private String successMessage;
 	private int sleepIntervalMilli = 100;
 	private ScheduledExecutorService scheduled;
+	private boolean beginExecute = false;
+	
 
 
 	public TestCommand(String successMessage) {
@@ -46,6 +48,7 @@ public class TestCommand extends AbstractCommand<String>{
 
 	@Override
 	protected void doExecute() throws Exception {
+		beginExecute = true;
 
 		scheduled = Executors.newScheduledThreadPool(1);
 		scheduled.schedule(new Runnable() {
@@ -67,6 +70,10 @@ public class TestCommand extends AbstractCommand<String>{
 		}, sleepIntervalMilli, TimeUnit.MILLISECONDS);
 	}
 
+	public boolean isBeginExecute() {
+		return beginExecute;
+	}
+	
 	@Override
 	protected void doReset(){
 		

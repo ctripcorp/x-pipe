@@ -11,7 +11,9 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTriggerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterArrangerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.FirstNewMasterChooserTest;
+import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.TransactionalSlaveOfJobTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
@@ -20,6 +22,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.BackupDcKeeper
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.DefaultDcKeeperMasterChooserTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.PrimaryDcKeeperMasterChooserAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.AddKeeperCommandTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateControllerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DeleteKeeperCommandTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaManagerTest;
@@ -56,7 +59,10 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 	PrimaryDcKeeperMasterChooserAlgorithmTest.class,
 	DefaultDcKeeperMasterChooserTest.class,
 	FirstNewMasterChooserTest.class,
-	TransactionalSlaveOfJobTest.class
+	TransactionalSlaveOfJobTest.class,
+	DefaultKeeperStateControllerTest.class,
+	KeeperStateChangeJobTest.class,
+	DefaultKeeperStateChangeHandlerTest.class
 })
 public class AllTests {
 

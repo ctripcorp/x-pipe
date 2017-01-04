@@ -50,7 +50,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	@Override
 	protected void doStart() throws Exception {
 		
-		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads, XpipeThreadFactory.create("KeyedPoolClientFactory"));
+		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads, XpipeThreadFactory.create("NettyKeyedPoolClientFactory"));
 		b.group(eventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
 				.handler(new ChannelInitializer<SocketChannel>() {
 					@Override

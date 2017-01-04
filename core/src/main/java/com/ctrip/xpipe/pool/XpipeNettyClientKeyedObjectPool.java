@@ -70,8 +70,9 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 	public NettyClient borrowObject(InetSocketAddress key) throws BorrowObjectException {
 
 		try {
+			logger.debug("[borrowObject][begin]{}", key);
 			NettyClient value = this.objectPool.borrowObject(key);
-			logger.debug("[borrowObject]{}, {}", key, value);
+			logger.debug("[borrowObject][end]{}, {}", key, value);
 			return value;
 		} catch (Exception e) {
 			logger.error("[borrowObject]" + key, e);

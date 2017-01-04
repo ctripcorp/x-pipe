@@ -50,6 +50,7 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V> {
 			}
 
 			try {
+				logger.debug("[execute]{}, {}", i, command);
 				return command.execute().get(retryPolicy.waitTimeoutMilli(), TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				logger.error(String.format("cmd:%s, message:%s", command, e.getMessage()), e);

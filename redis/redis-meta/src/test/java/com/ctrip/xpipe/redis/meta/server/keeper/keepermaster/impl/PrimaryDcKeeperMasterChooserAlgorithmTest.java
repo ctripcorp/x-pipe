@@ -11,10 +11,10 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.simpleserver.Server;
+import com.google.common.collect.Sets;
 
 import static org.mockito.Mockito.*;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -38,7 +38,7 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 		int port1 = randomPort();
 		redises.add(new RedisMeta().setIp("localhost").setPort(port1));
 		
-		redises.add(new RedisMeta().setIp("localhost").setPort(randomPort(Arrays.asList(port1))));
+		redises.add(new RedisMeta().setIp("localhost").setPort(randomPort(Sets.newHashSet(port1))));
 		when(dcMetaCache.getShardRedises(clusterId, shardId)).thenReturn(redises);
 		when(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)).thenReturn(true);
 	}

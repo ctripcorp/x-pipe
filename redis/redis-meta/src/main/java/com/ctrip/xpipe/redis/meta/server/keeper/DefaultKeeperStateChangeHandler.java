@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.meta.server.keeper;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
@@ -15,7 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
+import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -25,7 +26,6 @@ import com.ctrip.xpipe.redis.meta.server.job.TransactionalSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
  * @author wenchao.meng
@@ -33,30 +33,35 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  *         Jul 8, 2016
  */
 @Component
-public class DefaultKeeperStateChangeHandler implements MetaServerStateChangeHandler {
+public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implements MetaServerStateChangeHandler, TopElement {
 
 	protected static Logger logger = LoggerFactory.getLogger(DefaultKeeperStateChangeHandler.class);
 
 	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 
-	private ExecutorService executors = Executors
-			.newCachedThreadPool(XpipeThreadFactory.create("DefaultKeeperStateChangeHandler"));
-	
 	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
+	
+	private KeyedOneThreadTaskExecutor<Pair<String, String>> keyedOneThreadTaskExecutor;
 
 	@Autowired
 	private DcMetaCache dcMetaCache;
 
 	@Autowired
-	private CurrentMetaManager currentMetaServerMetaManager;
-
+	private CurrentMetaManager currentMetaManager;
+	
+	@Override
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+		keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<>("KeeperStateChangeHandler");
+	}
+	
 	@Override
 	public void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {
 
 		logger.info("[keeperMasterChanged]{},{},{}", clusterId, shardId, newMaster);
-		KeeperMeta activeKeeper = currentMetaServerMetaManager.getKeeperActive(clusterId, shardId);
+		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterId, shardId);
 
 		if (activeKeeper == null) {
 			logger.info("[keeperMasterChanged][no active keeper, do nothing]{},{},{}", clusterId, shardId, newMaster);
@@ -70,7 +75,8 @@ public class DefaultKeeperStateChangeHandler implements MetaServerStateChangeHan
 
 		List<KeeperMeta> keepers = new LinkedList<>();
 		keepers.add(activeKeeper);
-		new KeeperStateChangeJob(keepers, newMaster, clientPool, scheduled).execute(executors);
+		
+		keyedOneThreadTaskExecutor.execute(new Pair<String, String>(clusterId, shardId), new KeeperStateChangeJob(keepers, newMaster, clientPool, scheduled));
 	}
 
 	@Override
@@ -78,19 +84,44 @@ public class DefaultKeeperStateChangeHandler implements MetaServerStateChangeHan
 
 		logger.info("[keeperActiveElected]{},{},{}", clusterId, shardId, activeKeeper);
 
-		List<KeeperMeta> keepers = currentMetaServerMetaManager.getSurviveKeepers(clusterId, shardId);
+		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterId, shardId);
 		if (keepers == null || keepers.size() == 0) {
 			logger.info("[keeperActiveElected][none keeper survive, do nothing]");
 			return;
 		}
-		Pair<String, Integer> activeKeeperMaster = currentMetaServerMetaManager.getKeeperMaster(clusterId, shardId);
-		new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool, scheduled).execute(executors);
+		Pair<String, Integer> activeKeeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
+		KeeperStateChangeJob keeperStateChangeJob = new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool, scheduled);
 
 		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
 			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterId, shardId);
 			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{}", clusterId, shardId,
 					slaves);
-			new TransactionalSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled).execute(executors);
+			keeperStateChangeJob.setActiveSuccessCommand(new TransactionalSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled));
 		}
+		
+		keyedOneThreadTaskExecutor.execute(new Pair<String, String>(clusterId, shardId), keeperStateChangeJob);
+	}
+
+	@Override
+	protected void doDispose() throws Exception {
+		
+		keyedOneThreadTaskExecutor.destroy();;
+		super.doDispose();
+	}
+	
+	public void setcurrentMetaManager(CurrentMetaManager currentMetaManager) {
+		this.currentMetaManager = currentMetaManager;
+	}
+	
+	public void setDcMetaCache(DcMetaCache dcMetaCache) {
+		this.dcMetaCache = dcMetaCache;
+	}
+	
+	public void setClientPool(SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool) {
+		this.clientPool = clientPool;
+	}
+	
+	public void setScheduled(ScheduledExecutorService scheduled) {
+		this.scheduled = scheduled;
 	}
 }

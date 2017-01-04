@@ -410,6 +410,21 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		keeperMeta.setId("localhost");
 		keeperMeta.setPort(port);
 		return keeperMeta;
-		
+	}
+	
+	protected List<KeeperMeta> createRandomKeepers(int count) {
+
+		List<Integer>  ports = new LinkedList<>(randomPorts(count));
+		List<KeeperMeta> result = new LinkedList<>();
+		for(int i=0; i < count;i++){
+			KeeperMeta keeperMeta = new KeeperMeta().setIp("localhost").setPort(ports.get(i));
+			if( i == 0){
+				keeperMeta.setActive(true);
+			}else{
+				keeperMeta.setActive(false);
+			}
+			result.add(keeperMeta);
+		}		
+		return result;
 	}
 }

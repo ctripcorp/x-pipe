@@ -27,8 +27,7 @@
         <logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="INFO"/>
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
 		<logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="WARN"/>
-		<logger name="com.ctrip.xpipe.redis.meta.server.redis.impl.BackupDcClusterRedisStateAjust" level="DEBUG"/>
-        		
+			    		
         
         <root level="INFO">
             <appender-ref ref="console"/>

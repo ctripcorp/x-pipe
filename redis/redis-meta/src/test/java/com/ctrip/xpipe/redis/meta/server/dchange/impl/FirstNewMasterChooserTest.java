@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -15,6 +14,7 @@ import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.FirstNewMasterChooser;
+import com.google.common.collect.Sets;
 
 /**
  * @author wenchao.meng
@@ -33,7 +33,7 @@ public class FirstNewMasterChooserTest extends AbstractMetaServerTest{
 		redises = new LinkedList<>();
 		int port1 = randomPort();
 		redises.add(new RedisMeta().setIp("localhost").setPort(port1));
-		redises.add(new RedisMeta().setIp("localhost").setPort(randomPort(Arrays.asList(port1))));
+		redises.add(new RedisMeta().setIp("localhost").setPort(randomPort(Sets.newHashSet(port1))));
 		
 		firstNewMasterChooser = new FirstNewMasterChooser(getXpipeNettyClientKeyedObjectPool(), scheduled);
 	}

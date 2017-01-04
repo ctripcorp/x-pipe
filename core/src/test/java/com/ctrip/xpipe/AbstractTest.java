@@ -10,9 +10,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -39,7 +37,6 @@ import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.monitor.CatConfig;
-import com.ctrip.xpipe.monitor.CatUtils;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.simpleserver.AbstractIoAction;
 import com.ctrip.xpipe.simpleserver.IoAction;
@@ -311,8 +308,18 @@ public class AbstractTest {
 	public static int randomPort() {
 		return randomPort(10000, 20000, null);
 	}
+	
+	public static Set<Integer> randomPorts(int count){
+		
+		Set<Integer> result = new HashSet<>();
+		for(int i=0;i<count;i++){
+			result.add(randomPort(result));
+		}
+		return result;
+	}
+	
 
-	public static int randomPort(List<Integer> different) {
+	public static int randomPort(Set<Integer> different) {
 		return randomPort(10000, 20000, different);
 	}
 
@@ -328,14 +335,14 @@ public class AbstractTest {
 		return randomPort(min, max, null);
 	}
 
-	public static int randomPort(int min, int max, List<Integer> different) {
+	public static int randomPort(int min, int max, Set<Integer> different) {
 
 		Random random = new Random();
-		Set<Integer> differentSet = different == null ? Collections.<Integer>emptySet() : new HashSet<>(different);
+		
 		for (int i = min; i <= max; i++) {
 
 			int port = min + random.nextInt(max - min + 1);
-			if (!differentSet.contains(new Integer(port)) && isUsable(port)) {
+			if (different == null || !different.contains(new Integer(port)) && isUsable(port)) {
 				return port;
 			}
 		}

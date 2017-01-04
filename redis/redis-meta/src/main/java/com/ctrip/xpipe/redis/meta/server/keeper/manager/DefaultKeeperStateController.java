@@ -1,20 +1,20 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 import java.net.InetSocketAddress;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
-import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.tuple.Pair;
 
-import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
-import com.ctrip.xpipe.concurrent.OneThreadTaskExecutor;
+import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
@@ -23,14 +23,13 @@ import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
-import com.ctrip.xpipe.utils.MapUtils;
 
 /**
  * @author wenchao.meng
  *
  * Aug 5, 2016
  */
-public class DefaultKeeperStateController implements KeeperStateController{
+public class DefaultKeeperStateController extends AbstractLifecycle implements KeeperStateController, TopElement{
 	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -49,7 +48,13 @@ public class DefaultKeeperStateController implements KeeperStateController{
 	@Resource( name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 	
-	private Map<Pair<String, String>, OneThreadTaskExecutor> shardExecutor = new ConcurrentHashMap<>();
+	private KeyedOneThreadTaskExecutor<Pair<String, String>> shardExecutor;
+	
+	@Override
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+		shardExecutor = new KeyedOneThreadTaskExecutor<>("DefaultKeeperStateController");
+	}
 	
 	@Override
 	public void addKeeper(KeeperTransMeta keeperTransMeta) {
@@ -57,34 +62,41 @@ public class DefaultKeeperStateController implements KeeperStateController{
 		logger.info("[addKeeper]{}", keeperTransMeta);
 		
 		KeeperContainerService keeperContainerService = getKeeperContainerService(keeperTransMeta);
-		OneThreadTaskExecutor oneThreadTaskExecutor = getOrCreate(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
-		oneThreadTaskExecutor.executeCommand(new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, addKeeperSuccessTimeoutMilli));
+		shardExecutor.execute(new Pair<>(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId()), 
+				createAddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, addKeeperSuccessTimeoutMilli));
 	}
 
-	private OneThreadTaskExecutor getOrCreate(String clusterId, String shardId) {
-		return MapUtils.getOrCreate(shardExecutor, new Pair<>(clusterId, shardId), new ObjectFactory<OneThreadTaskExecutor>() {
-
-			@Override
-			public OneThreadTaskExecutor create() {
-				return new OneThreadTaskExecutor("[DefaultKeeperStateController]");
-			}
-		});
+	protected Command<?> createAddKeeperCommand(KeeperContainerService keeperContainerService,
+			KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled, int addKeeperSuccessTimeoutMilli) {
+		return new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, addKeeperSuccessTimeoutMilli);
 	}
 
 	@Override
 	public void removeKeeper(KeeperTransMeta keeperTransMeta) {
 		
 		logger.info("[removeKeeper]{}", keeperTransMeta);
-		
 		KeeperContainerService keeperContainerService = getKeeperContainerService(keeperTransMeta);
-		OneThreadTaskExecutor oneThreadTaskExecutor = getOrCreate(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
-		oneThreadTaskExecutor.executeCommand(new DeleteKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli));
+		shardExecutor.execute(new Pair<>(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId()),
+				createDeleteKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli));
 	}
 
-	private KeeperContainerService getKeeperContainerService(KeeperTransMeta keeperTransMeta) {
+	protected Command<?> createDeleteKeeperCommand(KeeperContainerService keeperContainerService,
+			KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled,
+			int removeKeeperSuccessTimeoutMilli) {
+		return new DeleteKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli);
+	}
+
+	protected KeeperContainerService getKeeperContainerService(KeeperTransMeta keeperTransMeta) {
 		
 		KeeperContainerMeta keeperContainerMeta = dcMetaCache.getKeeperContainer(keeperTransMeta.getKeeperMeta());
 		KeeperContainerService keeperContainerService = keeperContainerServiceFactory.getOrCreateKeeperContainerService(keeperContainerMeta);
 		return keeperContainerService;
+	}
+
+
+	@Override
+	protected void doDispose() throws Exception {
+		shardExecutor.destroy();
+		super.doDispose();
 	}
 }

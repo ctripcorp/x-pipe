@@ -33,7 +33,7 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	private int masterPort;
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 	private int delayBaseMilli = 100;
-	private int retryTimes = 5;
+	private int retryTimes = 2;
 	protected ScheduledExecutorService scheduled;
 	
 	public AbstractRedisesSlaveofJob(List<RedisMeta> slaves, String masterHost, int masterPort, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool, ScheduledExecutorService scheduled){

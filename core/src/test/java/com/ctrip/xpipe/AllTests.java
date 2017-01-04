@@ -8,6 +8,7 @@ import com.ctrip.xpipe.command.CommandRetryWrapperTest;
 import com.ctrip.xpipe.command.DefaultCommandFutureTest;
 import com.ctrip.xpipe.command.ParallelCommandChainTest;
 import com.ctrip.xpipe.command.SequenceCommandChainTest;
+import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutorTest;
 import com.ctrip.xpipe.concurrent.OneThreadTaskExecutorTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
@@ -57,7 +58,8 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	TestZkClientTest.class,
 	StringUtilTest.class,
 	ReferenceFileChannelTest.class,
-	ChannelUtilTest.class
+	ChannelUtilTest.class,
+	KeyedOneThreadTaskExecutorTest.class
 })
 public class AllTests {
 

@@ -74,10 +74,10 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 
 			@Override
 			public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
+				
 				if(commandFuture.isSuccess()){
 					future().setSuccess(commandFuture.get());
 				}else{
-					
 					if(!shouldRetry(commandFuture.cause())){
 						logger.info("[opetationComplete][retry fail than max retry]{}", command);
 						future().setFailure(commandFuture.cause());
@@ -141,6 +141,4 @@ public class CommandRetryWrapper<V> extends AbstractCommand<V>{
 	public int getExecuteCount() {
 		return executeCount.get();
 	}
-	
-	
 }

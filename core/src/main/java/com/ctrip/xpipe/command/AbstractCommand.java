@@ -25,11 +25,16 @@ public abstract class AbstractCommand<V> implements Command<V>{
 
 	@Override
 	public CommandFuture<V> future() {
+		if(future == null){
+			return null;
+		}
 		return future.get();
 	}
 	
 	@Override
 	public CommandFuture<V> execute(){
+		
+		logger.debug("[execute]{}", this);
 		return execute(MoreExecutors.sameThreadExecutor());
 	}
 

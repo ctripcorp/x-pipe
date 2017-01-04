@@ -23,6 +23,7 @@ public class SimpleTest extends AbstractSimpleTest{
 		while(true){
 			
 			TimeUnit.MILLISECONDS.sleep(1);
+			@SuppressWarnings("unused")
 			byte [] data = new byte[ 1 << 10 ];
 		}
 		

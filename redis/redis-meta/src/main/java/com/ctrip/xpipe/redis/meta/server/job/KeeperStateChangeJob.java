@@ -37,6 +37,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	private int delayBaseMilli = 1000;
 	private int retryTimes = 5;
 	private ScheduledExecutorService scheduled;
+	private Command<?> activeSuccessCommand;
 
 	public KeeperStateChangeJob(List<KeeperMeta> keepers, Pair<String, Integer> activeKeeperMaster, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool
 			, ScheduledExecutorService scheduled){
@@ -76,6 +77,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 
 		if(activeKeeperMaster != null){
 			Command<?> setActiveCommand = createKeeperSetStateCommand(activeKeeper, activeKeeperMaster);
+			addActiveCommandHook(setActiveCommand);
 			chain.add(setActiveCommand);
 		}
 
@@ -114,7 +116,25 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	@Override
 	protected void doReset(){
 		throw new UnsupportedOperationException();
-		
 	}
 	
+	public void setActiveSuccessCommand(Command<?> activeSuccessCommand) {
+		this.activeSuccessCommand = activeSuccessCommand;
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private void addActiveCommandHook(final Command<?> setActiveCommand) {
+		
+		setActiveCommand.future().addListener(new CommandFutureListener() {
+
+			@Override
+			public void operationComplete( CommandFuture commandFuture) throws Exception {
+				
+				if(commandFuture.isSuccess() && activeSuccessCommand != null){
+					logger.info("[addActiveCommandHook][set active success, execute hook]{}", setActiveCommand, activeSuccessCommand);
+					activeSuccessCommand.execute();
+				}
+			}
+		});
+	}
 }
