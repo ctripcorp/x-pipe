@@ -22,6 +22,8 @@ public class MigrationSuccessState extends AbstractMigrationState {
 	@Override
 	public void action() {
 		updateDB();
+		
+		getHolder().update(getHolder(), getHolder());
 	}
 
 	@DalTransaction

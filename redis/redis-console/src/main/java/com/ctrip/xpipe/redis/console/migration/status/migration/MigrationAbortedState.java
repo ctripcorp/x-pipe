@@ -24,6 +24,8 @@ public class MigrationAbortedState extends AbstractMigrationState implements Mig
 	@Override
 	public void action() {
 		updateDB();
+		
+		getHolder().update(getHolder(), getHolder());
 	}
 	
 	@DalTransaction

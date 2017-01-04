@@ -61,7 +61,14 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
     		} else {
     			// any fail
     			logger.info("[{}][fail]{}",getClass(), getHolder().getCurrentCluster().getClusterName());
-                updateAndProcess(nextAfterFail(), false);
+    			if(this instanceof MigrationMigratingState) {
+    				updateAndProcess(nextAfterFail(), true);
+    				return;
+    			} 
+    			if(this instanceof MigrationPartialSuccessState){
+    				updateAndProcess(nextAfterFail(), false);
+    				return;
+    			}
     		}
     	}
     }

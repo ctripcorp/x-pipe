@@ -22,6 +22,8 @@ public class MigrationForceEndState extends AbstractMigrationState {
 	@Override
 	public void action() {
 		updateDB();
+		
+		getHolder().update(getHolder(), getHolder());
 	}
 
 	@DalTransaction

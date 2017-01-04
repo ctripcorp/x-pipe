@@ -79,6 +79,11 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 			mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), "A");
 			mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), "B");
 			mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), "B", "A");
+			
+			if(cnt != 1) {
+				migrationCluster.getShardService().createShard("cluster1", (new ShardTbl()).setShardName(getShardName(cnt)).setClusterId(1)
+						.setSetinelMonitorName("cluster1" + "-" + getShardName(cnt)));
+			}
 		}
 		ClusterTbl originalCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
