@@ -39,7 +39,11 @@ public class MigrationMigratingStat extends AbstractMigrationMigratingStat {
 				
 				@Override
 				public void run() {
+					logger.info("[doMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
+							shard.getCurrentShard().getShardName());
 					shard.doMigrate();
+					logger.info("[doMigrate][done]{},{}",getHolder().getCurrentCluster().getClusterName(), 
+							shard.getCurrentShard().getShardName());
 				}
 			});
 		}
@@ -56,6 +60,8 @@ public class MigrationMigratingStat extends AbstractMigrationMigratingStat {
 		MigrationClusterTbl migrationCluster = getHolder().getMigrationCluster();
 		migrationCluster.setStatus(MigrationStatus.Migrating.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationCluster);
+		
+		logger.info("[updateDB]Cluster:{}, MigrationCluster:{}", cluster, migrationCluster);
 	}
 	
 }

@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
@@ -21,6 +22,8 @@ import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
+import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 
 
 /**
@@ -34,6 +37,8 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 
 	@Mock
 	private MigrationCommandBuilder migrationCommandBuilder;
+	@Autowired
+	private ClusterMetaService clusterMetaService;
 	
 	@Override
 	public String prepareDatas() {
@@ -96,6 +101,11 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+		
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
+		Assert.assertEquals("B", prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
+		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
 	}
 
 	@Test
@@ -133,6 +143,11 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.CHECK).equals(""));
+		
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
+		Assert.assertEquals("A", prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
+		Assert.assertEquals("A", newPrimaryDcMeta.getActiveDc());
 	}
 	
 	@Test
@@ -170,6 +185,11 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.CHECK).equals(""));
+		
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
+		Assert.assertEquals("A", prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
+		Assert.assertEquals("A", newPrimaryDcMeta.getActiveDc());
 	}
 
 	@Test
@@ -207,6 +227,11 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+		
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
+		Assert.assertEquals("B", prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
+		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
 	}
 
 	@Test
@@ -244,6 +269,11 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertNull(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+		
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
+		Assert.assertEquals("A", prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
+		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
 	}
 	
 	@Test
@@ -281,6 +311,11 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertNull(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+		
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
+		Assert.assertEquals("A", prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
+		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
 	}
 
 	@Test
@@ -317,6 +352,11 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+		
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
+		Assert.assertEquals("B", prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
+		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
 	}
 	
 	@Test
@@ -353,6 +393,11 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+		
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
+		Assert.assertEquals("B", prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
+		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
 	}
 
 }
