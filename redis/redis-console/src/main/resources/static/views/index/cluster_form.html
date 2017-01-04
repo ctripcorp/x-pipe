@@ -32,6 +32,7 @@
                         <label ng-repeat="dc in allDcs" ng-show="!slaveExists(dc)">
                             <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
                                    ng-value="dc.id" ng-checked="cluster.activedcId == dc.id"
+                                   ng-change="activeDcSelected(dc)"
                                    ng-disabled="operateType == 'update'" ng-required="true"/>
                             <span class="lbl" ng-bind="dc.dcName"></span>
                             &nbsp&nbsp&nbsp&nbsp

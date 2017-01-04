@@ -23,6 +23,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
+import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 /**
  * @author shyin
@@ -82,7 +83,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 			
 			if(cnt != 1) {
 				migrationCluster.getShardService().createShard("cluster1", (new ShardTbl()).setShardName(getShardName(cnt)).setClusterId(1)
-						.setSetinelMonitorName("cluster1" + "-" + getShardName(cnt)));
+						.setSetinelMonitorName("cluster1" + "-" + getShardName(cnt)),new HashMap<Long, SetinelTbl>());
 			}
 		}
 		ClusterTbl originalCluster = clusterService.find(1);

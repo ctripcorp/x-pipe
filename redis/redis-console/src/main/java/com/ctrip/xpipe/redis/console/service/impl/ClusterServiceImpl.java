@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
@@ -106,7 +106,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public ClusterTbl createCluster(ClusterModel clusterModel) {
 		ClusterTbl cluster = clusterModel.getClusterTbl();
     	List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
-    	List<ShardTbl> shards = clusterModel.getShards();
+    	List<ShardModel> shards = clusterModel.getShards();
     	
     	// ensure active dc assigned
     	if(XpipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
@@ -131,8 +131,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     		bindDc(cluster.getClusterName(), dc.getDcName());
     	}
     	
-    	for (ShardTbl shard : shards) {
-			shardService.createShard(cluster.getClusterName(), shard);
+    	for (ShardModel shard : shards) {
+			shardService.createShard(cluster.getClusterName(), shard.getShardTbl(), shard.getSentinels());
 		}
     	
     	return result;
