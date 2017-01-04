@@ -12,7 +12,7 @@ public class ClusterModel implements java.io.Serializable{
 	
 	private ClusterTbl clusterTbl;
 	private List<DcTbl> slaveDcs;
-	private List<ShardTbl> shards;
+	private List<ShardModel> shards;
 	
 	public ClusterModel() {
 		
@@ -36,11 +36,11 @@ public class ClusterModel implements java.io.Serializable{
 		return this;
 	}
 
-	public List<ShardTbl> getShards() {
+	public List<ShardModel> getShards() {
 		return shards;
 	}
 
-	public void setShards(List<ShardTbl> shards) {
+	public void setShards(List<ShardModel> shards) {
 		this.shards = shards;
 	}
 	

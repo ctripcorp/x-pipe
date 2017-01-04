@@ -7,6 +7,7 @@
     <tr>
         <td>shard 名称</td>
         <td>setinel 监控名称</td>
+        <td ng-repeat="dc in clusterRelatedDcs">Sentinel-{{dc.dcName}}</td>
         <td>操作</td>
     </tr>
     </thead>
@@ -14,6 +15,7 @@
     	<tr ng-repeat="shard in shards">
 			<td>{{shard.shardName}}</td>
 			<td>{{shard.setinelMonitorName}}</td>
+			<td ng-repeat="dc in clusterRelatedDcs">{{shard.sentinels[dc.id].setinelAddress}}</td>
             <td>
 	        	<a ng-click="deleteShard(shard.shardName)">删除</a>
 			</td>
@@ -39,15 +41,31 @@
                         <apollorequiredfiled></apollorequiredfiled>
                         shard 名称</label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="currentShard.shardName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9_-]+$">
+                        <input type="text" class="form-control" ng-model="currentShard.shardName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9_-]+$"
+                        	ng-change="shardNameChanged()">
                     </div>
                 </div>
                 <div class="form-group" valdr-form-group>
                     <label class="col-sm-4 control-label">
-                        setinel 监控名称
+                        sentinel 监控名称
                     </label>
                     <div class="col-sm-6">
                         <input type="text" class="form-control" ng-model="currentShard.setinelMonitorName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9_-]+$">
+                    </div>
+                </div>
+                <div class="form-group" valdr-form-group>
+                	<div class="col-sm-12">
+                        <table ng-table="tableParams" class="table table-striped table-hover">
+						<tr ng-repeat="dc in clusterRelatedDcs">
+						<td data-title="'机房'">{{dc.dcName}}</td>
+						<td data-title="'Sentinels'">
+							<select class="form-control" ng-model="currentShard.sentinels[dc.id]"
+								ng-options="sentinel.setinelAddress for sentinel in sentinels[dc.dcName]" required>
+								<option></option>
+							</select>
+						</td>
+						</tr>
+					</table>
                     </div>
                 </div>
             </div>
