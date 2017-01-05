@@ -31,6 +31,7 @@
 					<md-checkbox ng-checked="cluster.selected" ng-click="cluster.selected = !cluster.selected"></md-checkbox>
 				</td>
 				<td data-title="'cluster'">{{cluster.clusterName}}</td>
+				<td data-title="'cluster描述'">{{cluster.clusterDescription}}</td>
 				<td data-title="'目标主机房'">
 					<md-select ng-model="cluster.targetDc" md-on-close="targetDcSelected(cluster)" class="md-no-underline no-margin radius-border-thin" required placeholder="目标主机房" ng-if="availableTargetDcs(cluster).length > 1">
 						<md-option value="-" ng-selected="true">-</md-option>
