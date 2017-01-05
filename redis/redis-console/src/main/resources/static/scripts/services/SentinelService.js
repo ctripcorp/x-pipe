@@ -5,10 +5,10 @@ services.service('SentinelService', ['$resource', '$q', function ($resource, $q)
 			url: '/console/:dcName/sentinels',
 			isArray: true
 		},
-		find_sentinel_by_id: $resource('', {}, {
+		find_sentinel_by_id: {
 			method: 'GET',
 			url: '/console/sentinels/:sentinelId'
-		})
+		}
 	});
 	
 	function findSentinelsByDc(dcName) {

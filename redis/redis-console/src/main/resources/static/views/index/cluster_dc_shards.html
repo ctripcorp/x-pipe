@@ -45,6 +45,7 @@
                         <tbody>
                         <tr ng-repeat="redis in shard.redises">
                             <td title="{{redis.runId}}">
+                            	<span class="label-sm" ng-class="{'text-danger':(redis.delay == -99 || redis.delay == 99999), 'text-success':redis.delay}">{{redis.delay}}</span>
                                 <span class="label label-info" ng-if="redis.master === true">
                                     Master</span>  Redis
                             </td>

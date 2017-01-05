@@ -14,7 +14,7 @@ import com.ctrip.xpipe.redis.console.health.HealthChecker;
 public class App {
 	public static void main(String[] args){
 		System.setProperty("spring.profiles.active", "production");
-		System.setProperty(HealthChecker.ENABLED, "false");
+		System.setProperty(HealthChecker.ENABLED, "true");
 		SpringApplication.run(App.class, args);
 	}
 }
