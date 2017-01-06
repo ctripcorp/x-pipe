@@ -152,7 +152,7 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
                     });
         }
         
-        $scope.forceEnd = function(eventId, clusterId) {
+        $scope.forceEndMigrationCluster = function(eventId, clusterId) {
         	MigrationService.forceEndMigrationCluster(eventId, clusterId).then(
                     function(result) {
                         toastr.success("操作成功");
