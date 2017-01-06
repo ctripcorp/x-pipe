@@ -50,11 +50,11 @@ public abstract class AbstractInOutPayload implements InOutPayload{
 	protected abstract int doIn(ByteBuf byteBuf) throws IOException;
 	
 	@Override
-	public void endInput() {
+	public void endInput() throws IOException {
 		doEndInput();
 	}
 
-	protected void doEndInput(){}
+	protected void doEndInput() throws IOException{}
 	
 	@Override
 	public void endInputTruncate(int reduceLen) throws IOException {

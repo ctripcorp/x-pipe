@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.utils.DefaultControllableFile;
 
 /**
  * @author wenchao.meng
@@ -36,7 +37,7 @@ public class ReferenceFileChannelTest extends AbstractTest {
 			ous.write(randomString(totalFileLen).getBytes());
 		}
 
-		referenceFileChannel = new ReferenceFileChannel(new File(file));
+		referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(file));
 	}
 
 	@Test

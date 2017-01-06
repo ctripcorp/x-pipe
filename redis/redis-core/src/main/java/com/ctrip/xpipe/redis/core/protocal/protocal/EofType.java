@@ -25,4 +25,5 @@ public interface EofType {
 	ByteBuf getEnd();
 
 	boolean support(Set<CAPA> capas);
+	
 }

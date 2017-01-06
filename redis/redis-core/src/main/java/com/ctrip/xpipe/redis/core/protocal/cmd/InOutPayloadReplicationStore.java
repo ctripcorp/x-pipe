@@ -39,10 +39,15 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	}
 
 	@Override
-	protected void doTruncate(int reduceLen) throws IOException {
-		rdbStore.truncate(reduceLen);
+	public void endInputTruncate(int reduceLen) throws IOException {
+		rdbStore.truncateEndRdb(reduceLen);
 	}
-
+	
+	@Override
+	protected void doEndInput() throws IOException {
+		rdbStore.endRdb();
+		super.doEndInput();
+	}
 	@Override
 	public void doStartOutput() throws IOException {
 		
@@ -56,6 +61,11 @@ public class InOutPayloadReplicationStore extends AbstractInOutPayload implement
 	@Override
 	public void doEndOutput() {
 		stop.set(true);
+	}
+
+	@Override
+	protected void doTruncate(int reduceLen) throws IOException {
+		
 	}
 
 }

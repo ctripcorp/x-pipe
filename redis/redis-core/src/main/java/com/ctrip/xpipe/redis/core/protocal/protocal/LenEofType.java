@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
+
 import java.io.File;
 import java.util.Set;
 
@@ -62,5 +63,4 @@ public class LenEofType extends AbstractEofType{
 	public boolean support(Set<CAPA> capas) {
 		return true;
 	}
-
 }

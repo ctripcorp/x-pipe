@@ -21,7 +21,7 @@ import redis.clients.jedis.Jedis;
  */
 public class RightCheck extends AbstractStartStoppable{
 	
-	private String configFile = "check_servers.properties";
+	private String configFile = System.getProperty("configFile", "check_servers.properties");
 	private int expireTime = 10;
 	
 	

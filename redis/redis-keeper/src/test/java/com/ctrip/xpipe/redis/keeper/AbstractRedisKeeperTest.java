@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.observer.Observable;
@@ -16,6 +17,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -118,10 +120,18 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	
 	protected String readRdbFileTilEnd(ReplicationStore replicationStore) throws IOException, InterruptedException {
 
+		RdbStore rdbStore = ((DefaultReplicationStore)replicationStore).getRdbStore();
+		
+		return readRdbFileTilEnd(rdbStore);
+	}
+
+	protected String readRdbFileTilEnd(RdbStore rdbStore) throws IOException, InterruptedException {
+
 		final ByteArrayWritableByteChannel bachannel = new ByteArrayWritableByteChannel();
 		final CountDownLatch latch = new CountDownLatch(1);
+		
 
-		((DefaultReplicationStore)replicationStore).getRdbStore().readRdbFile(new RdbFileListener() {
+		rdbStore.readRdbFile(new RdbFileListener() {
 
 			@Override
 			public void setRdbFileInfo(EofType eofType, long rdbFileOffset) {
@@ -151,8 +161,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			public void beforeFileData() {
 			}
 		});
-
-		latch.await();
+		latch.await(5, TimeUnit.SECONDS);
 		return new String(bachannel.getResult());
 	}
 

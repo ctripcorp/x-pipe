@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.keeper.impl.fakeredis.FakeRedisRdbDumpLong;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.FakeRedisRdbDumperTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStoreTest;
+import com.ctrip.xpipe.redis.keeper.store.DefaultRdbStoreEofMarkTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultRdbStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManagerTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.BackupMetaStoreTest;
@@ -38,6 +39,7 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 	DefaultReplicationStoreManagerTest.class,
 	DefaultRedisKeeperServerTest.class,
 	DefaultRdbStoreTest.class,
+	DefaultRdbStoreEofMarkTest.class,
 	DefaultCommandStoreTest.class,
 	DefaultRedisSlaveTest.class,
 	RoleCommandHandlerTest.class,

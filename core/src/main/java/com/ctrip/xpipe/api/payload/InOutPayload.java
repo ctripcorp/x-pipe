@@ -20,7 +20,7 @@ public interface InOutPayload {
 	
 	int in(ByteBuf byteBuf) throws IOException;
 	
-	void endInput();
+	void endInput() throws IOException;
 
 	void endInputTruncate(int reduceLen) throws IOException;
 

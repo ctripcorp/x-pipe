@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
+import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 
 import io.netty.buffer.ByteBuf;
@@ -202,7 +203,7 @@ public class DefaultCommandStore implements CommandStore {
 			this.curFile = curFile;
 
 			curPosition = extractStartOffset(curFile) + initChannelPosition;
-			referenceFileChannel = new ReferenceFileChannel(this.curFile, initChannelPosition);
+			referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curFile), initChannelPosition);
 		}
 
 		@Override
@@ -243,8 +244,7 @@ public class DefaultCommandStore implements CommandStore {
 				if (nextFile != null) {
 					curFile = nextFile;
 					referenceFileChannel.close();
-
-					referenceFileChannel = new ReferenceFileChannel(curFile);
+					referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curFile));
 				}
 			}
 		}
