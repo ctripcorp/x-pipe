@@ -87,25 +87,6 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	}
 
 	@Override
-	public void clientClosed(NettyClient nettyClient) {
-
-		if (!future().isDone()) {
-			super.clientClosed(nettyClient);
-		}
-		switch (psyncState) {
-			case PSYNC_COMMAND_WAITING_REPONSE:
-				break;
-			case READING_RDB:
-				endReadRdb();
-				break;
-			case READING_COMMANDS:
-				break;
-			default:
-				throw new IllegalStateException("unknown state:" + psyncState);
-		}
-	}
-
-	@Override
 	protected Object doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
 
 		switch (psyncState) {

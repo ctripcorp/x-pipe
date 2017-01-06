@@ -236,6 +236,15 @@ public class RequestResponseCommandTest extends AbstractTest {
 		public String getName() {
 			return "unittest comamnd";
 		}
-
+		
+		@Override
+		protected boolean logRequest() {
+			return false;
+		}
+		
+		@Override
+		protected boolean logResponse() {
+			return false;
+		}
 	}
 }

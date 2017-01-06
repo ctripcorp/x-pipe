@@ -79,22 +79,6 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 		}
 	}
 
-	@Override
-	protected void endReadRdb() {
-		
-		logger.info("[endReadRdb]{}", this);
-		try {
-			if(rdbStore != null){
-				rdbStore.endRdb();
-				super.endReadRdb();
-			}else{
-				logger.warn("[endReadRdb][rdbstore null]");
-			}
-		} catch (IOException e) {
-			logger.error("[endReadRdb]", e);
-		}
-	}
-
 	protected void appendCommands(ByteBuf byteBuf) throws IOException {
 		
 		currentReplicationStore.appendCommands(byteBuf);

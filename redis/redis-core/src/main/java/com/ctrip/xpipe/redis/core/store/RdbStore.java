@@ -16,7 +16,7 @@ public interface RdbStore extends Destroyable, Closeable{
 
 	int writeRdb(ByteBuf buf) throws IOException;
 
-	void truncate(int reduceLen) throws IOException;
+	void truncateEndRdb(int reduceLen) throws IOException;
 	
 	void endRdb() throws IOException;
 	

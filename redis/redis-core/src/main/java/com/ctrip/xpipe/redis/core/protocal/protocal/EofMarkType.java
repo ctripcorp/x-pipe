@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
+
 import java.io.File;
 import java.util.Set;
 
@@ -61,4 +62,5 @@ public class EofMarkType extends AbstractEofType{
 	public boolean support(Set<CAPA> capas) {
 		return capas.contains(CAPA.EOF);
 	}
+
 }

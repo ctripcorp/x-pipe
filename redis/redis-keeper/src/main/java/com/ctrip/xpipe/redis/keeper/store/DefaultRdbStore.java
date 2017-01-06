@@ -12,20 +12,26 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.api.utils.ControllableFile;
+import com.ctrip.xpipe.api.utils.FileSize;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
+import com.ctrip.xpipe.utils.DefaultControllableFile;
+import com.ctrip.xpipe.utils.SizeControllableFile;
 
 import io.netty.buffer.ByteBuf;
 
 public class DefaultRdbStore implements RdbStore {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRdbStore.class);
-
+	
 	private RandomAccessFile writeFile;
 
 	protected File file;
@@ -41,6 +47,8 @@ public class DefaultRdbStore implements RdbStore {
 	private AtomicInteger refCount = new AtomicInteger(0);
 	
 	private List<RdbStoreListener> rdbStoreListeners = new LinkedList<>();
+	
+	private Object truncateLock = new Object();
 	
 	public DefaultRdbStore(File file, long rdbLastKeeperOffset, EofType eofType) throws IOException {
 
@@ -64,12 +72,24 @@ public class DefaultRdbStore implements RdbStore {
 	}
 
 	@Override
-	public void truncate(int reduceLen) throws IOException {
-		channel.truncate(channel.size() - reduceLen);
+	public void truncateEndRdb(int reduceLen) throws IOException {
+		
+		logger.info("[truncateEndRdb]{}, {}", this, reduceLen);
+		
+		synchronized (truncateLock) {
+			channel.truncate(channel.size() - reduceLen);
+			endRdb();
+		}
 	}
 
 	@Override
 	public void endRdb() throws IOException {
+		
+		if(status.get() != Status.Writing){
+			logger.info("[endRdb][already ended]{}, {}, {}", this, file, status);
+			return;
+		}
+		
 		try{
 			checkAndSetRdbState();
 		}finally{
@@ -83,16 +103,14 @@ public class DefaultRdbStore implements RdbStore {
 	private void checkAndSetRdbState() {
 		
 		//TODO check file format
-		long actualFileLen = file.length();
-		
 		if(eofType.fileOk(file)){
 			status.set(Status.Success);
 		} else {
-			logger.error("[endRdb]actual:{}, expected:{}, file:{}", actualFileLen, eofType, file);
 			status.set(Status.Fail);
+			long actualFileLen = file.length();
+			logger.error("[endRdb]actual:{}, expected:{}, file:{}", actualFileLen, eofType, file);
 			throw new RdbStoreExeption(eofType, file);
 		}
-		
 	}
 
 	@Override
@@ -101,7 +119,7 @@ public class DefaultRdbStore implements RdbStore {
 		rdbFileListener.beforeFileData();
 		refCount.incrementAndGet();
 
-		try (ReferenceFileChannel channel = new ReferenceFileChannel(file)) {
+		try (ReferenceFileChannel channel = new ReferenceFileChannel(createControllableFile())) {
 			doReadRdbFile(rdbFileListener, channel);
 		} catch (Exception e) {
 			logger.error("[readRdbFile]Error read rdb file" + file, e);
@@ -109,6 +127,36 @@ public class DefaultRdbStore implements RdbStore {
 			refCount.decrementAndGet();
 		}
 	}
+
+	private ControllableFile createControllableFile() {
+		
+		if(eofType instanceof LenEofType){
+			return new DefaultControllableFile(file);
+		}else if(eofType instanceof EofMarkType){
+			return new SizeControllableFile(file, new FileSize() {
+				
+				@Override
+				public long getSize(FileChannel fileChannel) throws IOException {
+					
+					long realSize = 0;
+					synchronized (truncateLock) {//truncate may make size wrong
+						realSize = fileChannel.size();
+					}
+					
+					if(status.get() == Status.Writing){
+						
+						long ret = realSize - ((EofMarkType)eofType).getTag().length(); 
+						logger.debug("[getSize][writing]{}, {}", DefaultRdbStore.this, ret);
+						return ret < 0 ? 0 : ret;
+					}
+					return realSize;
+				}
+			});
+		}else{
+			throw new IllegalStateException("unknown eoftype:" + eofType.getClass() + "," + eofType);
+		}
+	}
+	
 
 	private void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
 		
@@ -137,7 +185,6 @@ public class DefaultRdbStore implements RdbStore {
 		logger.info("[doReadRdbFile] done with status {}", status.get());
 
 		switch (status.get()) {
-		
 			case Success:
 				rdbFileListener.onFileData(null);
 				break;
@@ -145,8 +192,8 @@ public class DefaultRdbStore implements RdbStore {
 			case Fail:
 				rdbFileListener.exception(new Exception("[rdb error]" + file));
 				break;
-	
 			default:
+				rdbFileListener.exception(new Exception("[status not write]" + file + "," + status));
 				break;
 		}
 	}

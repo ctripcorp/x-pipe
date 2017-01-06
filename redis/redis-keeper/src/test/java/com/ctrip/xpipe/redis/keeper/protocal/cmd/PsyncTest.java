@@ -16,6 +16,7 @@ import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
@@ -77,6 +78,23 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		runData(data);
 	}
 
+	
+	@Test
+	public void testPsyncEofMark() throws XpipeException, IOException, InterruptedException{
+		
+		String eof = RunidGenerator.DEFAULT.generateRunid();
+		String []data = new String[]{
+				"+" + DefaultPsync.FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n",
+				"$EOF:" + eof + "\r\n",
+				rdbContent,
+				eof,
+				commandContent
+		};
+		
+		runData(data);
+	}
+
+	
 	@Test
 	public void testPsyncFullRight() throws XpipeException, IOException, InterruptedException{
 		
