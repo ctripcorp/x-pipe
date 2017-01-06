@@ -44,9 +44,9 @@ public class ShardController extends AbstractConsoleController{
   }
 
   @RequestMapping(value = "/clusters/{clusterName}/shards", method = RequestMethod.POST)
-  public ShardTbl createShard(@PathVariable String clusterName, @RequestBody ShardTbl shard) {
+  public ShardTbl createShard(@PathVariable String clusterName, @RequestBody ShardModel shard) {
 	logger.info("[Create Shard]{},{}",clusterName, shard);
-    return shardService.createShard(clusterName, shard);
+    return shardService.createShard(clusterName, shard.getShardTbl(), shard.getSentinels());
   }
 
   @RequestMapping(value = "/clusters/{clusterName}/shards/{shardName}", method = RequestMethod.DELETE)

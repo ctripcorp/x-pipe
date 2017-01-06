@@ -1,0 +1,35 @@
+package com.ctrip.xpipe.redis.console.controller.consoleportal;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.service.SentinelService;
+
+/**
+ * @author shyin
+ *
+ * Jan 4, 2017
+ */
+@RestController
+@RequestMapping("/console")
+public class SentinelController extends AbstractConsoleController{
+	@Autowired
+	private SentinelService sentinelService;
+	
+	@RequestMapping(value="/{dcName}/sentinels", method = RequestMethod.GET)
+	public List<SetinelTbl> getSentinelsByDcName(@PathVariable String dcName) {
+		return sentinelService.findAllByDcName(dcName);
+	}
+	
+	@RequestMapping(value="/sentinels/{sentinelId}", method = RequestMethod.GET) 
+	public SetinelTbl findSentinel(@PathVariable long sentinelId){
+		return sentinelService.find(sentinelId);
+	}
+}

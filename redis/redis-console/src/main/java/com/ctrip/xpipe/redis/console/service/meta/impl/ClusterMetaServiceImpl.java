@@ -164,7 +164,7 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 			List<MigrationClusterTbl> migrationClusterHistory = migrationService
 					.findAllMigrationCluster(clusterInfo.getId());
 			for (MigrationClusterTbl migrationCluster : migrationClusterHistory) {
-				if (!MigrationStatus.isTerminated(migrationCluster.getStatus())) {
+				if (!MigrationStatus.isTerminated(MigrationStatus.valueOf(migrationCluster.getStatus()))) {
 					if(dcInfo.getId() == migrationCluster.getDestinationDcId()) {
 						return migrationCluster.getDestinationDcId();
 					}

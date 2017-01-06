@@ -17,5 +17,16 @@ public class CatTest extends AbstractTest{
 		
 		Cat.getProducer().logError(new Exception());
 	}
+	
+	@Test
+	public void testEnable() {
+		Cat.newTransaction("test", "test");
+	}
+	
+	@Test
+	public void testDisable() {
+		System.setProperty("cat.client.enabled", "false");
+		Cat.newTransaction("test", "test");
+	}
 
 }

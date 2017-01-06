@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import com.ctrip.xpipe.redis.console.health.HealthChecker;
+
 /**
  * @author shyin
  *
@@ -12,6 +14,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class App {
 	public static void main(String[] args){
 		System.setProperty("spring.profiles.active", "production");
+		System.setProperty(HealthChecker.ENABLED, "true");
 		SpringApplication.run(App.class, args);
 	}
 }

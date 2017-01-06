@@ -760,7 +760,8 @@
 					WHERE <FIELD name='id'/> = mct.migration_event_id
 					AND mst.migration_cluster_id = mct.id
 					AND mct.status != 'Success'
-					AND mct.status != 'ForceFail'
+					AND mct.status != 'ForceEnd'
+					AND mct.status != 'Aborted'
 					AND mct.deleted = 0
 					AND mst.deleted = 0
 					AND <FIELD name='deleted'/> = 0

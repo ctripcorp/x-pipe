@@ -24,5 +24,15 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 			}
     	});
 	}
+	
+	@Override
+	public SetinelTbl find(final long id) {
+		return queryHandler.handleQuery(new DalQuery<SetinelTbl>() {
+			@Override
+			public SetinelTbl doQuery() throws DalException {
+				return dao.findByPK(id, SetinelTblEntity.READSET_FULL);
+			}
+		});
+	}
 
 }

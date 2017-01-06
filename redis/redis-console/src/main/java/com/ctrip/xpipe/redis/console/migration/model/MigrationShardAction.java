@@ -8,5 +8,6 @@ package com.ctrip.xpipe.redis.console.migration.model;
 public interface MigrationShardAction {
     void doCheck();
     void doMigrate();
-
+    void doMigrateOtherDc();
+    void doRollBack();
 }

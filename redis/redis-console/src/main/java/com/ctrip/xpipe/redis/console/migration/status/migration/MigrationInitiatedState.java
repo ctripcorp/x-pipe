@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -10,11 +9,11 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
  *
  * Dec 8, 2016
  */
-public class MigrationInitiatedStat extends AbstractMigrationStat {
+public class MigrationInitiatedState extends AbstractMigrationState {
 	
-	public MigrationInitiatedStat(MigrationCluster holder) {
+	public MigrationInitiatedState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Initiated);
-		this.setNextAfterSuccess(new MigrationCheckingStat(holder))
+		this.setNextAfterSuccess(new MigrationCheckingState(holder))
 			.setNextAfterFail(this);
 	}
 
@@ -22,14 +21,14 @@ public class MigrationInitiatedStat extends AbstractMigrationStat {
 	public void action() {
 		// Check cluster status
 		ClusterTbl cluster = getHolder().getCurrentCluster();
-		if(!ClusterStatus.isSameClusterStatus(cluster.getStatus(), ClusterStatus.Lock)) {
-			if(ClusterStatus.isSameClusterStatus(cluster.getStatus(), ClusterStatus.Normal)) {
+		ClusterStatus status = ClusterStatus.valueOf(cluster.getStatus());
+		if(! status.equals(ClusterStatus.Lock)) {
+			if(status.equals(ClusterStatus.Normal)) {
 				logger.info("Cluster:{} Initiated but Unlocked.Lock it now !!!", cluster.getClusterName());
 				cluster.setStatus(ClusterStatus.Lock.toString());
 				getHolder().getClusterService().update(cluster);
-				
 			} else {
-				throw new BadRequestException(String.format("Invalid: cluster %s with status %s", cluster.getClusterName(), cluster.getStatus()));
+				throw new IllegalStateException(String.format("Invalid: cluster %s with status %s", cluster.getClusterName(), cluster.getStatus()));
 			}
 		}
 		
@@ -39,7 +38,7 @@ public class MigrationInitiatedStat extends AbstractMigrationStat {
 	@Override
 	public void refresh() {
 		// nothing to do
-		logger.info("[MigrationInitiatedStat]{}", getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[MigrationInitiatedStat]{}", getHolder().getCurrentCluster().getClusterName());
 	}
 	
 }

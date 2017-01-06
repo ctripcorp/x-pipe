@@ -56,8 +56,28 @@ public class MigrationController extends AbstractConsoleController {
 	}
 	
 	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}", method = RequestMethod.POST)
-	public void continueMigratiionCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+	public void continueMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
 		migrationService.continueMigrationCluster(eventId, clusterId);
+	}
+	
+	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/cancel", method = RequestMethod.POST)
+	public void cancelMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		migrationService.cancelMigrationCluster(eventId, clusterId);
+	}
+
+	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/rollback", method = RequestMethod.POST)
+	public void rollbackMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		migrationService.rollbackMigrationCluster(eventId, clusterId);
+	}
+	
+	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forcePublish", method = RequestMethod.POST)
+	public void forcePublishMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		migrationService.forcePublishMigrationCluster(eventId, clusterId);
+	}
+	
+	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forceEnd", method = RequestMethod.POST)
+	public void forceEndMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		migrationService.forceEndMigrationClsuter(eventId, clusterId);
 	}
 	
 }
