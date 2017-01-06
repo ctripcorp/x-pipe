@@ -10,8 +10,8 @@ import org.springframework.web.client.ResourceAccessException;
 import com.ctrip.xpipe.api.migration.MigrationPublishService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStat;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationState;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -71,8 +71,8 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 
 	@Test
 	public void migrationPublishStatActionTest() {
-		MigrationStat stat = new MigrationPublishStat(migrationCluster);
-		MigrationStat spy = spy(stat);
+		MigrationState stat = new MigrationPublishState(migrationCluster);
+		MigrationState spy = spy(stat);
 
 		spy.action();
 		verify(spy, times(1)).nextAfterSuccess();
@@ -81,8 +81,8 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 	
 	@Test
 	public void publishFailWithNetworkProblemTest() {
-		MigrationPublishStat stat = new MigrationPublishStat(migrationCluster);
-		MigrationPublishStat spy = spy(stat);
+		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
+		MigrationPublishState spy = spy(stat);
 		doReturn(new MigrationPublishService() {
 			
 			@Override
@@ -110,8 +110,8 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 	
 	@Test
 	public void publishFailWithReturnFail() {
-		MigrationPublishStat stat = new MigrationPublishStat(migrationCluster);
-		MigrationPublishStat spy = spy(stat);
+		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
+		MigrationPublishState spy = spy(stat);
 		doReturn(new MigrationPublishService() {
 			
 			@Override

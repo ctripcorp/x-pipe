@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.ctrip.xpipe.api.observer.Observable;
@@ -10,6 +11,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
+import com.google.common.collect.Lists;
 
 /**
  * @author shyin
@@ -33,6 +35,11 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
 	public MigrationCluster getMigrationCluster(long clusterId) {
 		return migrationClusters.get(clusterId);
 	}
+	
+	@Override
+	public List<MigrationCluster> getMigrationClusters() {
+		return Lists.newLinkedList(migrationClusters.values());
+	}
 
 	@Override
 	public void addMigrationCluster(MigrationCluster migrationClsuter) {
@@ -48,13 +55,13 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
 				processNext();
 			}
 		}
-		int successCnt = 0;
+		int finishedCnt = 0;
 		for(MigrationCluster cluster : migrationClusters.values()) {
-			if(cluster.getStatus().equals(MigrationStatus.Success)) {
-				++successCnt;
+			if(MigrationStatus.isTerminated(cluster.getStatus())) {
+				++finishedCnt;
 			}
 		}
-		if(successCnt == migrationClusters.size()) {
+		if(finishedCnt == migrationClusters.size()) {
 			notifyObservers(this);
 		}
 	}

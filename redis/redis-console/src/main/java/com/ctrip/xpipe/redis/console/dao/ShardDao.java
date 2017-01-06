@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.dao;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +25,6 @@ import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.DcClusterTblEntity;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
-import com.ctrip.xpipe.redis.console.model.SetinelTblDao;
-import com.ctrip.xpipe.redis.console.model.SetinelTblEntity;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
@@ -45,7 +42,6 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	private DcClusterTblDao dcClusterTblDao;
 	private ShardTblDao shardTblDao;
 	private DcClusterShardTblDao dcClusterShardTblDao;
-	private SetinelTblDao setinelTblDao;
 	
 	@Autowired
 	private DcClusterShardDao dcClusterShardDao;
@@ -57,14 +53,13 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			dcClusterTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterTblDao.class);
 			shardTblDao = ContainerLoader.getDefaultContainer().lookup(ShardTblDao.class);
 			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
-			setinelTblDao = ContainerLoader.getDefaultContainer().lookup(SetinelTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}
 	}
 	
 	@DalTransaction
-	public ShardTbl createShard(String clusterName, ShardTbl shard) throws DalException{
+	public ShardTbl createShard(String clusterName, ShardTbl shard, Map<Long, SetinelTbl> sentinels) throws DalException{
 		// shard basic
 		validateShard(clusterName, shard);
 		final ClusterTbl cluster = clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
@@ -73,7 +68,6 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 		ShardTbl result = shardTblDao.findShard(clusterName, shard.getShardName(), ShardTblEntity.READSET_FULL);
 		
 		// dc-cluster-shards
-		Map<Long,SetinelTbl> mapSetinels = generateSetinelsMap();
 		List<DcClusterTbl> dcClusters = queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
 			@Override
 			public List<DcClusterTbl> doQuery() throws DalException {
@@ -87,8 +81,8 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 				DcClusterShardTbl dcClusterShardProto = dcClusterShardTblDao.createLocal();
 				dcClusterShardProto.setDcClusterId(dcCluster.getDcClusterId())
 					.setShardId(result.getId());
-				if(null != mapSetinels.get(dcCluster.getDcId())) {
-					dcClusterShardProto.setSetinelId(mapSetinels.get(dcCluster.getDcId()).getSetinelId());
+				if(null != sentinels.get(dcCluster.getDcId())) {
+					dcClusterShardProto.setSetinelId(sentinels.get(dcCluster.getDcId()).getSetinelId());
 				}
 				dcClusterShards.add(dcClusterShardProto);
 			}
@@ -144,38 +138,22 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	
 	private void validateShard(final String clusterName, ShardTbl shard) throws DalException {
 		// validate shard name
-		List<ShardTbl> shardNames = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>(){
+		List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>(){
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
-				return shardTblDao.findAllByClusterName(clusterName, ShardTblEntity.READSET_NAME);
+				return shardTblDao.findAllByClusterName(clusterName, ShardTblEntity.READSET_FULL);
 			}
 		});
-		if(null == shardNames) return;
+		if(null == shards) return;
 		
-		for(ShardTbl shardName : shardNames) {
-			if(shardName.getShardName().equals(shard.getShardName())) {
+		for(ShardTbl shardTbl : shards) {
+			if(shardTbl.getShardName().equals(shard.getShardName())) {
 				throw new BadRequestException("Duplicated shard name under same cluster.");
 			}
-		}
-	}
-	
-	private Map<Long, SetinelTbl> generateSetinelsMap() {
-		List<SetinelTbl> setinels = queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
-			@Override
-			public List<SetinelTbl> doQuery() throws DalException {
-				return setinelTblDao.findAll(SetinelTblEntity.READSET_FULL);
-			}
-		});
-		
-		Map<Long,SetinelTbl> mapSetinels = new HashMap<Long,SetinelTbl>();
-		if(null != setinels) {
-			for(SetinelTbl setinel : setinels) {
-				mapSetinels.put(setinel.getDcId(), setinel);
+			if(shardTbl.getSetinelMonitorName().equals(shard.getSetinelMonitorName())) {
+				throw new BadRequestException("Duplicated sentinel monitor name under same cluster.");
 			}
 		}
-		return mapSetinels;
 	}
-	
-	
 	
 }

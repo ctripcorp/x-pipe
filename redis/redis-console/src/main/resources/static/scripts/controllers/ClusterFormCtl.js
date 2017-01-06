@@ -1,8 +1,8 @@
 index_module.controller('ClusterFromCtl',
                         ['$rootScope', '$scope', '$stateParams', '$window', 'toastr', 'AppUtil', 'ClusterService',
-                         'DcService',
+                         'DcService', 'SentinelService',
                          function ($rootScope, $scope, $stateParams, $window, toastr, AppUtil, ClusterService,
-                                   DcService) {
+                                   DcService, SentinelService) {
 
                              $rootScope.currentNav = '1-3';
 
@@ -19,6 +19,7 @@ index_module.controller('ClusterFromCtl',
                              $scope.selectedDcs = [];
                              $scope.shards = [];
                              $scope.currentShard = {};
+                             $scope.sentinels = {};
 
                              $scope.doCluster = doCluster;
                              $scope.getDcName = getDcName;
@@ -29,7 +30,9 @@ index_module.controller('ClusterFromCtl',
                              $scope.preCreateShard = preCreateShard;
                              $scope.createShard = createShard;
                              $scope.deleteShard = deleteShard;
-
+                             $scope.activeDcSelected = activeDcSelected;
+                             $scope.shardNameChanged = shardNameChanged;
+                             
                              init();
 
                              function init() {
@@ -37,6 +40,13 @@ index_module.controller('ClusterFromCtl',
                                 DcService.loadAllDcs()
                                     .then(function (result) {
                                         $scope.allDcs = result;
+                                        $scope.allDcs.forEach(function(dc) {
+                                        	SentinelService.findSentinelsByDc(dc.dcName)
+                                        		.then(function(result) {
+                                        			$scope.sentinels[dc.dcName] = result;
+                                        		}); 
+                                        });
+                                        
                                     });
 
                                  if ($scope.operateType != OPERATE_TYPE.CREATE) {
@@ -48,11 +58,17 @@ index_module.controller('ClusterFromCtl',
                                          })
                                  } else {
                                      $scope.cluster = {};
+                                     $scope.clusterRelatedDcs = [];
                                  }
                              }
 
                              function doCluster() {
                                  if ($scope.operateType == OPERATE_TYPE.CREATE) {
+                                	 $scope.shards.forEach(function(shard) {
+                                		shard.shardTbl = {};
+                                		shard.shardTbl.shardName = shard.shardName;
+                                		shard.shardTbl.setinelMonitorName = shard.setinelMonitorName;
+                                	 });
                                      ClusterService.createCluster($scope.cluster, $scope.selectedDcs, $scope.shards)
                                          .then(function (result) {
                                              toastr.success("创建成功");
@@ -112,9 +128,14 @@ index_module.controller('ClusterFromCtl',
                             	var idx = $scope.selectedDcs.indexOf(dc);
                      		    if (idx > -1) {
                      		    	$scope.selectedDcs.splice(idx, 1);
+                     		    	var clusterRelatedDcIdx = $scope.clusterRelatedDcs.indexOf(dc);
+                     		    	if(clusterRelatedDcIdx > -1) {
+                     		    		$scope.clusterRelatedDcs.splice(clusterRelatedDcIdx,1);
+                     		    	}
                      		    }
                      		    else {
                      		    	$scope.selectedDcs.push(dc);
+                     		    	$scope.clusterRelatedDcs.push(dc);
                      		    }
                              }
                              
@@ -123,9 +144,14 @@ index_module.controller('ClusterFromCtl',
                              }
                              
                              function createShard() {
+                                 var shardSentinels = {};
+                                 for(var key in $scope.currentShard.sentinels) {
+                                	 shardSentinels[key] = $scope.currentShard.sentinels[key];
+                                 }
                              	$scope.shards.push({
                              		shardName: $scope.currentShard.shardName,
-                             		setinelMonitorName: $scope.currentShard.setinelMonitorName
+                             		setinelMonitorName: $scope.currentShard.setinelMonitorName,
+                                    sentinels : shardSentinels
                              	});
                              	$('#createShardModal').modal('hide');
                              }
@@ -138,4 +164,31 @@ index_module.controller('ClusterFromCtl',
                              		}
                              	} 
                              }
+                             
+                             function activeDcSelected(toPush) {
+                            	 var forDeleted = [];
+                            	 $scope.clusterRelatedDcs.forEach(function(dc) {
+                            		if($scope.selectedDcs.indexOf(dc) == -1) {
+                            			forDeleted.push(dc);
+                            		} 
+                            	 });
+                            	 
+                            	 forDeleted.forEach(function(forDeleted) {
+                            		var idx = $scope.clusterRelatedDcs.indexOf(forDeleted);
+                            		if(idx > -1) {
+                            			$scope.clusterRelatedDcs.splice(idx,1);
+                            		}
+                            	 });
+                            	 
+                            	 $scope.clusterRelatedDcs.push(toPush);
+                             }
+                             
+                             function shardNameChanged() {
+                            	 if($scope.cluster) {
+                            		 if($scope.currentShard) {
+                            			 $scope.currentShard.setinelMonitorName = $scope.cluster.clusterName + '-' + $scope.currentShard.shardName;
+                            		 }
+                            	 }
+                             }
+                             
                          }]);

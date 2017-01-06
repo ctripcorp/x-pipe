@@ -1,32 +1,17 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
+import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractObservable;
-import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
-import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCancelledStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationForceFailStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationForcePublishStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationMigratingStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationSuccessStat;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationTmpEndStat;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -45,7 +30,7 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 public class DefaultMigrationCluster extends AbstractObservable implements MigrationCluster {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	
-	private MigrationStat currentStat;
+	private MigrationState currentState;
 	private MigrationClusterTbl migrationCluster;
 	private List<MigrationShard> migrationShards = new LinkedList<>();
 
@@ -75,7 +60,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
 	@Override
 	public MigrationStatus getStatus() {
-		return currentStat.getStat();
+		return currentState.getStatus();
 	}
 
 	@Override
@@ -110,35 +95,62 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
 	@Override
 	public void process() {
-		logger.info("[Process]{}-{}, {}", migrationCluster.getEventId(),getCurrentCluster().getClusterName(), this.currentStat.getStat());
-		this.currentStat.action();
+		logger.info("[Process]{}-{}, {}", migrationCluster.getEventId(),getCurrentCluster().getClusterName(), this.currentState.getStatus());
+		this.currentState.action();
 	}
 
 	@Override
-	public void updateStat(MigrationStat stat) {
+	public void updateStat(MigrationState stat) {
 		logger.info("[UpdateStat]{}-{}, {} -> {}",
-				migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentStat.getStat(), stat.getStat());
-		this.currentStat = stat;
+				migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus(), stat.getStatus());
+		this.currentState = stat;
 	}
 
 	@Override
-	@DalTransaction
 	public void cancel() {
-		ClusterTbl cluster = currentCluster;
-		cluster.setStatus(ClusterStatus.Normal.toString());
-		getClusterService().update(cluster);
-		
-		MigrationClusterTbl migrationClusterTbl = migrationCluster;
-		migrationClusterTbl.setStatus(MigrationStatus.Cancelled.toString());
-		migrationClusterTbl.setEndTime(new Date());
-		getMigrationService().updateMigrationCluster(migrationClusterTbl);
+		logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+		if(!currentState.getStatus().equals(MigrationStatus.Initiated)
+				&& !currentState.getStatus().equals(MigrationStatus.Checking)) {
+			throw new IllegalStateException(String.format("Cannot cancel while %s", this.currentState.getStatus()));
+		}
+		updateStat(new MigrationAbortedState(this));
+		process();
+	}
+
+	@Override
+	public void rollback() {
+		logger.info("[Rollback]{}-{}, {} -> Rollback", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+		if(!currentState.getStatus().equals(MigrationStatus.PartialSuccess)) {
+			throw new IllegalStateException(String.format("Cannot rollback while %s", this.currentState.getStatus()));
+		}
+		updateStat(new MigrationRollBackState(this));
+		process();
+	}
+	
+	@Override
+	public void forcePublish() {
+		logger.info("[ForcePublish]{}-{}, {} -> ForcePublish", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+		if(!currentState.getStatus().equals(MigrationStatus.PartialSuccess)) {
+			throw new IllegalStateException(String.format("cannot cancel while %s", this.currentState.getStatus()));
+		}
+		updateStat(new MigrationForcePublishState(this));
+		process();
+	}
+	
+	@Override
+	public void forceEnd() {
+		logger.info("[ForceEnd]{}-{}, {} -> ForceEnd", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+		if(!currentState.getStatus().equals(MigrationStatus.Publish)) {
+			throw new IllegalStateException(String.format("Cannot force end while %s", this.currentState.getStatus()));
+		}
+		updateStat(new MigrationForceEndState(this));
+		process();
 	}
 
 	@Override
 	public void update(Object args, Observable observable) {
-		this.currentStat.refresh();
+		this.currentState.refresh();
 		notifyObservers(this);
-
 	}
 
 	@Override
@@ -167,29 +179,38 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	}
 
 	private void setStatus() {
-		String status = this.migrationCluster.getStatus();
-		if(MigrationStatus.isSameStatus(status, MigrationStatus.Initiated)) {
-			this.currentStat = new MigrationInitiatedStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.Checking)) {
-			this.currentStat = new MigrationCheckingStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.Migrating)) {
-			this.currentStat = new MigrationMigratingStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.Publish)) {
-			this.currentStat = new MigrationPublishStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.Success)) {
-			this.currentStat = new MigrationSuccessStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.Cancelled)) {
-			this.currentStat = new MigrationCancelledStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.PartialSuccess)) {
-			this.currentStat = new MigrationPartialSuccessStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.ForcePublish)) {
-			this.currentStat = new MigrationForcePublishStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.TmpEnd)) {
-			this.currentStat = new MigrationTmpEndStat(this);
-		} else if (MigrationStatus.isSameStatus(status, MigrationStatus.ForceFail)) {
-			this.currentStat = new MigrationForceFailStat(this);
-		} else {
-			this.currentStat = new MigrationInitiatedStat(this);
+		MigrationStatus status = MigrationStatus.valueOf(migrationCluster.getStatus());
+		switch(status) {
+		case Initiated :
+			currentState = new MigrationInitiatedState(this);
+			break;
+		case Checking:
+			currentState = new MigrationCheckingState(this);
+			break;
+		case Migrating:
+			currentState = new MigrationMigratingState(this);
+			break;
+		case PartialSuccess:
+			currentState = new MigrationPartialSuccessState(this);
+			break;
+		case Publish:
+			currentState = new MigrationPublishState(this);
+			break;
+		case Aborted :
+			currentState = new MigrationAbortedState(this);
+			break;
+		case RollBack:
+			currentState = new MigrationRollBackState(this);
+			break;
+		case ForceEnd:
+			currentState = new MigrationForceEndState(this);
+			break;
+		case Success:
+			currentState = new MigrationSuccessState(this);
+			break;
+		default:
+			currentState = new MigrationInitiatedState(this);
+			break;
 		}
 	}
 	

@@ -176,7 +176,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				MigrationClusterTbl cluster = detail.getRedundantClusters();
 				MigrationShardTbl shard = detail.getRedundantShards();
 				
-				if(MigrationStatus.isTerminated(cluster.getStatus())) {
+				if(MigrationStatus.isTerminated(MigrationStatus.valueOf(cluster.getStatus()))) {
 					continue;
 				}
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {

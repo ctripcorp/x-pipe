@@ -13,4 +13,5 @@ public interface MigrationCommandBuilder {
     Command<MetaServerConsoleService.PrimaryDcChangeMessage> buildPrevPrimaryDcCommand(final String cluster, final String shard, final String prevPrimaryDc);
     Command<MetaServerConsoleService.PrimaryDcChangeMessage> buildNewPrimaryDcCommand(final String cluster, final String shard, final String newPrimaryDc);
     Command<MetaServerConsoleService.PrimaryDcChangeMessage> buildOtherDcCommand(final String cluster, final String shard, final String newPrimaryDc, final String otherDc);
+    Command<MetaServerConsoleService.PrimaryDcChangeMessage> buildRollBackCommand(final String cluster, final String shard, final String prevPrimaryDc);
 }

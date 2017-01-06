@@ -53,7 +53,7 @@ public class ClusterMetaModifiedNotifierTest extends AbstractConsoleTest {
 	private DcTbl mockedDcTbl;
 	private String clusterName;
 	private ClusterMeta mockedClusterMeta;
-	private int retryTimes = 10;
+	private int retryTimes = 5;
 
 	@Before
 	public void initMockData() {

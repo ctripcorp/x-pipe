@@ -1,5 +1,5 @@
-index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '$window', '$location', 'toastr', 'AppUtil', 'ClusterService', 'ShardService',
-    function ($rootScope, $scope, $stateParams, $window, $location, toastr, AppUtil, ClusterService, ShardService) {
+index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '$window','$interval', '$location', 'toastr', 'AppUtil', 'ClusterService', 'ShardService','HealthCheckService',
+    function ($rootScope, $scope, $stateParams, $window, $interval, $location, toastr, AppUtil, ClusterService, ShardService, HealthCheckService) {
 
         $scope.dcs, $scope.shards;
         $scope.clusterName = $stateParams.clusterName;
@@ -72,5 +72,26 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                     toastr.error(AppUtil.errorMsg(result));
                 });
         }
+        
+        function healthCheck() {
+        	if($scope.shards) {
+        		$scope.shards.forEach(function(shard) {
+        			shard.redises.forEach(function(redis) {
+//        				HealthCheckService.isRedisHealth(redis.redisIp, redis.redisPort)
+//        					.then(function(result) {
+//        						redis.health = result.isHealth;
+//        					});
+        				HealthCheckService.getReplDelay(redis.redisIp, redis.redisPort)
+        					.then(function(result) {
+        						redis.delay = result.delay;
+        					});
+        			});
+        		});
+        	}
+        }
 
+        $scope.refreshHealthStatus = $interval(healthCheck, 2000);
+        $scope.$on('$destroy', function() {
+            $interval.cancel($scope.refreshHealthStatus);
+          });
     }]);
