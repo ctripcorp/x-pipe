@@ -18,7 +18,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
 import org.unidal.lookup.ContainerLoader;
 
-import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.FileUtils;
 
@@ -32,6 +31,7 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty("spring.main.show_banner", "false");
 		System.setProperty("FXXPIPE_HOME", "src/test/resources");
+		System.setProperty("cat.client.enabled", "false");
 	}
 	
 	@Before
@@ -52,6 +52,7 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 		PreparedStatement stmt = null;
 		try {
 			conn = dsManager.getDataSource(DATA_SOURCE).getConnection();
+			conn.setAutoCommit(false);
 			String prepareSql = prepareDatas();
 			if(!Strings.isEmpty(prepareSql)) {
 				for(String sql : prepareSql.split(";")) {
@@ -60,14 +61,19 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 					stmt.executeUpdate();
 				}
 			}
+			conn.commit();
 			
 		} catch (Exception ex) {
 			logger.error("[SetUpTestDataSource][fail]:",ex);
+			if(null != conn) {
+				conn.rollback();
+			}
 		} finally {
 			if(null != stmt) {
 				stmt.close();
 			}
 			if (null != conn) {
+				conn.setAutoCommit(true);
 				conn.close();
 			}
 		}
