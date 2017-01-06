@@ -18,6 +18,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
 import org.unidal.lookup.ContainerLoader;
 
+import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.FileUtils;
 
@@ -29,6 +30,7 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 	@BeforeClass
 	public static void setUp() {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
+		System.setProperty("spring.main.show_banner", "false");
 		System.setProperty("FXXPIPE_HOME", "src/test/resources");
 	}
 	
@@ -53,7 +55,7 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 			String prepareSql = prepareDatas();
 			if(!Strings.isEmpty(prepareSql)) {
 				for(String sql : prepareSql.split(";")) {
-					logger.info("[setup][data]{}",sql.trim());
+					logger.debug("[setup][data]{}",sql.trim());
 					stmt = conn.prepareStatement(sql);
 					stmt.executeUpdate();
 				}

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author shyin
@@ -16,6 +17,9 @@ public class ShardModel implements java.io.Serializable{
 	
 	private List<RedisTbl> m_keepers = new ArrayList<RedisTbl>();
 	private List<RedisTbl> m_redises = new ArrayList<RedisTbl>();
+	
+	private ShardTbl shardTbl;
+	private Map<Long, SetinelTbl> sentinels;
 	
 	public ShardModel(){
 	}
@@ -58,5 +62,21 @@ public class ShardModel implements java.io.Serializable{
 	public ShardModel setUpstream(String upstream) {
 		m_upstream = upstream;
 		return this;
+	}
+	
+	public ShardTbl getShardTbl() {
+		return this.shardTbl;
+	}
+	
+	public void setShardTbl(ShardTbl shardTbl) {
+		this.shardTbl = shardTbl;
+	}
+	
+	public Map<Long, SetinelTbl> getSentinels() {
+		return this.sentinels;
+	}
+	
+	public void setSentinels(Map<Long, SetinelTbl> sentinels) {
+		this.sentinels = sentinels;
 	}
 }

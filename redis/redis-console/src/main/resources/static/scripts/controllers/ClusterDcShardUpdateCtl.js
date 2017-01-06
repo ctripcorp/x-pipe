@@ -35,6 +35,9 @@ index_module.controller('ClusterDcShardUpdateCtl',
                              function findKeeperContainers(dcName) {
                                  KeeperContainerService.findKeeperContainersByDc(dcName)
                                      .then(function (result) {
+                                    	 result.sort(function(keeperA, keeperB) {
+                                    		 return keeperA.keepercontainerIp.localeCompare(keeperB.keepercontainerIp);
+                                    	 });
                                          $scope.keeperContainers = result;
                                      })
 

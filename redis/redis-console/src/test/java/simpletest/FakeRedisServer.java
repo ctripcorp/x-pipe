@@ -27,4 +27,16 @@ public class FakeRedisServer extends AbstractRedisTest{
 		startFakeRedisServer(6369);
 		waitForAnyKeyToExit();
 	}
+	
+	@Test
+	public void startTestRedis63639() throws Exception{
+		startFakeRedisServer(6339);
+		waitForAnyKeyToExit();
+	}
+	
+	@Test
+	public void startTestRedis6349() throws Exception{
+		startFakeRedisServer(6349);
+		waitForAnyKeyToExit();
+	}
 }

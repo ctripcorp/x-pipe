@@ -6,4 +6,5 @@ import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 
 public interface SentinelService {
 	List<SetinelTbl> findAllByDcName(String dcName);
+	SetinelTbl find(long id);
 }
