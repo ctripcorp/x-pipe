@@ -1,7 +1,7 @@
 <div class="col-xs-12">
 	<div class="header lighter black">
 		<div class="row" style="font-size:22px">
-			<div class="col-md-2"><strong>{{migrationCluster.migrationCluster.cluster.clusterName}}</strong></div>
+			<div class="col-md-2"><strong>{{migrationCluster.migrationCluster.cluster.clusterName}}</strong><strong ng-if="!migrationCluster.migrationCluster">Cluster deleted!!!</strong></div>
 			<div class="col-md-7">状态: 
 			<span class="label label-sm" ng-class="{'label-default':migrationCluster.migrationCluster.status == 'Initiated',
 						'label-info':migrationCluster.migrationCluster.status == 'Checking' || 
