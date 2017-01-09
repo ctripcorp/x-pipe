@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.dianping.cat.Cat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -172,7 +173,7 @@ public class XPipeStabilityTest {
 		}
 	}
 
-	private class ProducerThread implements Runnable {
+	private class ProducerThread extends AbstractExceptionLogTask{
 		
 		private UnsignedLongByte key = new UnsignedLongByte();
 		private UnsignedLongByte nanoTime = new UnsignedLongByte();
@@ -180,7 +181,7 @@ public class XPipeStabilityTest {
 		byte []preBytes = new byte[50];
 		
 		@Override
-		public void run() {
+		public void doRun() {
 			Jedis master = null;
 			byte[] value = null;
 			
