@@ -45,6 +45,7 @@
                         <tbody>
                         <tr ng-repeat="redis in shard.redises">
                             <td title="{{redis.runId}}">
+                            	<a class="glyphicon glyphicon-info-sign grey" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.id,redis.redisIp, redis.redisPort)"></a>
                             	<span class="label-sm" ng-class="{'text-danger':(redis.delay == -99 || redis.delay == 99999), 'text-success':redis.delay}">{{redis.delay}}</span>
                                 <span class="label label-info" ng-if="redis.master === true">
                                     Master</span>  Redis
