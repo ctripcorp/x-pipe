@@ -8,6 +8,10 @@ services.service('SentinelService', ['$resource', '$q', function ($resource, $q)
 		find_sentinel_by_id: {
 			method: 'GET',
 			url: '/console/sentinels/:sentinelId'
+		},
+		find_sentinels_by_shard: {
+			method: 'GET',
+			url: '/console/sentinels/shard/:shardId'
 		}
 	});
 	
@@ -33,12 +37,24 @@ services.service('SentinelService', ['$resource', '$q', function ($resource, $q)
 		}, function(result) {
 			d.reject(result);
 		});
+		return d.promise;
 	}
 	
-	
+	function findSentinelsByShardId(shardId) {
+		var d = $q.defer();
+		resource.find_sentinels_by_shard({
+			shardId : shardId
+		}, function(result) {
+			d.resolve(result);
+		}, function(result) {
+			d.reject(result);
+		});
+		return d.promise;
+	}
 	
 	return {
 		findSentinelsByDc: findSentinelsByDc,
-		findSentinelById: findSentinelById
+		findSentinelById: findSentinelById,
+		findSentinelsByShardId: findSentinelsByShardId
 	}
 }]);

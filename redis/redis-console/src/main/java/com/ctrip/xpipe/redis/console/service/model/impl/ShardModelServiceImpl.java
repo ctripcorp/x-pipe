@@ -96,7 +96,9 @@ public class ShardModelServiceImpl implements ShardModelService{
 		try {
 			if(null == future_dcInfo.get() || null == future_clusterInfo.get() || null == future_shardInfo.get()
 					|| null == future_dcClusterInfo.get() || null == future_dcClusterShardInfo.get()) {
-				return new ShardModel().setId(shardName);
+				ShardModel res = new ShardModel();
+				res.setShardTbl((new ShardTbl()).setShardName(shardName));
+				return res;
 			}
 			return getShardModel(future_dcInfo.get(),future_clusterInfo.get(),future_shardInfo.get(),
 					future_dcClusterInfo.get(), future_dcClusterShardInfo.get());
@@ -114,8 +116,8 @@ public class ShardModelServiceImpl implements ShardModelService{
 		if(null == dcInfo || null == clusterInfo || null == shardInfo || null == dcClusterInfo || null == dcClusterShardInfo) {
 			return shardModel;
 		}
-		
-		shardModel.setId(shardInfo.getShardName());
+
+		shardModel.setShardTbl(shardInfo);
 		
 		List<RedisTbl> shard_redises = redisService.findAllByDcClusterShard(dcClusterShardInfo.getDcClusterShardId());
 		if(null != shard_redises) {
