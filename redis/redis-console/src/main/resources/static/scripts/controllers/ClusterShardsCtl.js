@@ -26,6 +26,13 @@ index_module.controller('ClusterShardCtl',
                                  ShardService.findClusterShards($scope.clusterName)
                                  	.then(function (result) {
                                  		$scope.shards = result;
+                                 		
+                                 		$scope.shards.forEach(function(shard) {
+                                 			SentinelService.findSentinelsByShardId(shard.id)
+                                 			.then(function(result) {
+                                 				shard.sentinels = result;
+                                 			});
+                                 		});
                                  	});
                                  ClusterService.findClusterDCs($scope.clusterName)
                               		.then(function(result) {

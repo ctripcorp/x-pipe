@@ -21,9 +21,9 @@
                 <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="shard in shards">
                     <header class="panel-heading">
                         <div class="row">
-                            <div class="col-md-6">{{shard.id}}</div>
+                            <div class="col-md-6">{{shard.shardTbl.shardName}}</div>
                             <div class="col-md-6 text-right">
-                            	<a class="btn btn-primary btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.id}}&currentDcName={{currentDcName}}">编辑</a>
+                            	<a class="btn btn-primary btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.shardTbl.shardName}}&currentDcName={{currentDcName}}">编辑</a>
                             </div>
                         </div>
                     </header>
@@ -45,7 +45,7 @@
                         <tbody>
                         <tr ng-repeat="redis in shard.redises">
                             <td title="{{redis.runId}}">
-                            	<a class="glyphicon glyphicon-info-sign grey" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.id,redis.redisIp, redis.redisPort)"></a>
+                            	<a class="glyphicon glyphicon-info-sign grey" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></a>
                             	<span class="label-sm" ng-class="{'text-danger':(redis.delay == -99 || redis.delay == 99999), 'text-success':redis.delay}">{{redis.delay}}</span>
                                 <span class="label label-info" ng-if="redis.master === true">
                                     Master</span>  Redis

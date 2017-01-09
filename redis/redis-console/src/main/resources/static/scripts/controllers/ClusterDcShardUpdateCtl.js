@@ -223,7 +223,7 @@ index_module.controller('ClusterDcShardUpdateCtl',
 
                                  var shard = $scope.dcShards[$scope.currentDcName];
 
-                                 RedisService.updateShardRedis($scope.clusterName, $scope.currentDcName, shard.id, shard)
+                                 RedisService.updateShardRedis($scope.clusterName, $scope.currentDcName, shard.shardTbl.shardName, shard)
                                      .then(function (result) {
                                          toastr.success("operation success");
                                          $window.location.href =

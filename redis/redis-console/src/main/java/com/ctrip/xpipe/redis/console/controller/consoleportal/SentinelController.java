@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,5 +32,10 @@ public class SentinelController extends AbstractConsoleController{
 	@RequestMapping(value="/sentinels/{sentinelId}", method = RequestMethod.GET) 
 	public SetinelTbl findSentinel(@PathVariable long sentinelId){
 		return sentinelService.find(sentinelId);
+	}
+	
+	@RequestMapping(value="/sentinels/shard/{shardId}", method = RequestMethod.GET) 
+	public Map<Long,SetinelTbl> findSentinelByShard(@PathVariable long shardId) {
+		return sentinelService.findByShard(shardId);
 	}
 }

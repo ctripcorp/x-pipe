@@ -24,7 +24,6 @@ public class UserController {
   @Autowired
   private LogoutHandler logoutHandler;
 
-
   @RequestMapping("/user/current")
   public UserInfo getCurrentUserName() {
     return userInfoHolder.getUser();
