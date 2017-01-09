@@ -40,13 +40,17 @@
                             <th>
                                 端口
                             </th>
+                            <th>
+                            	状态
+                            </th>
+                            <th>
+                            	Hickwall
+                            </th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr ng-repeat="redis in shard.redises">
                             <td title="{{redis.runId}}">
-                            	<a class="glyphicon glyphicon-info-sign grey" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></a>
-                            	<span class="label-sm" ng-class="{'text-danger':(redis.delay == -99 || redis.delay == 99999), 'text-success':redis.delay}">{{redis.delay}}</span>
                                 <span class="label label-info" ng-if="redis.master === true">
                                     Master</span>  Redis
                             </td>
@@ -54,6 +58,11 @@
                             </td>
                             <td ng-bind="redis.redisPort">
                             </td>
+                            <td>
+                            <span ng-class="{'glyphicon glyphicon-remove-sign red':(redis.delay == -99 || redis.delay == 99999), 
+                            					'glyphicon glyphicon-ok-sign green':redis.delay && redis.delay != -99 && redis.delay != 99999}"></span>
+                            </td>
+                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
                             <td title="{{keeper.runId}}">
@@ -64,6 +73,8 @@
                             </td>
                             <td ng-bind="keeper.redisPort">
                             </td>
+                            <td></td>
+                            <td></td>
                         </tr>
                         </tbody>
                     </table>
