@@ -35,21 +35,27 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
         
         function initStatus() {
         	$scope.dcs.forEach(function(dc) {
-        		if(dc.id == $scope.migrationCluster.migrationCluster.sourceDcId) {
-        			$scope.migrationCluster.migrationCluster.sourceDcName = dc.dcName;
-        		}
-        		if(dc.id == $scope.migrationCluster.migrationCluster.destinationDcId) {
-        			$scope.migrationCluster.migrationCluster.destinationDcName = dc.dcName;
+        		if($scope.migrationCluster) {
+        			if(dc.id == $scope.migrationCluster.migrationCluster.sourceDcId) {
+            			$scope.migrationCluster.migrationCluster.sourceDcName = dc.dcName;
+            		}
+            		if(dc.id == $scope.migrationCluster.migrationCluster.destinationDcId) {
+            			$scope.migrationCluster.migrationCluster.destinationDcName = dc.dcName;
+            		}
         		}
         	});
         	
-            $scope.migrationCluster.migrationShards.forEach(function(migrationShard) {
-                if(migrationShard.migrationShard.log) {
-                    migrationShard.status = JSON.parse(migrationShard.migrationShard.log);
-                } else {
-                    migrationShard.status = {};
-                }
-            });
+        	if($scope.migrationCluster) {
+        		$scope.migrationCluster.migrationShards.forEach(function(migrationShard) {
+                	if(migrationShard.migrationShard) {
+                		if(migrationShard.migrationShard.log) {
+                            migrationShard.status = JSON.parse(migrationShard.migrationShard.log);
+                        } else {
+                            migrationShard.status = {};
+                        }	
+                	}
+                });	
+        	}
         }
         
         $scope.continueMigrationCluster = function(eventId, clusterId) {
@@ -192,5 +198,17 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
             $scope.currentQueryLog = '';
             $('#log').modal('hide');
         }
+        
+        $scope.showPublishResult = function(publishInfo) {
+        	if(publishInfo) {
+        		$scope.publishInfo = publishInfo;
+        	}
+        	$('#publishLog').modal('show');
+        }
 
+        $scope.hidePublishLog = function() {
+        	$scope.publishInfo = '';
+        	$('#publishLog').modal('hide');
+        }
+        
     }]);
