@@ -16,9 +16,9 @@ public class DefaultMigrationPublishService extends AbstractMigrationPublishServ
 	public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) {
 		logger.info("[doMigrationPublish]Cluster:{}, NewPrimaryDc:{}, Masters:{}", clusterName, primaryDcName,
 				newMasters);
-		Date startTime = new Date();
+		String startTime = sdf.format(new Date());
 		MigrationPublishResult res = new MigrationPublishResult("default-addr", clusterName, primaryDcName, newMasters);
-		Date endTime = new Date();
+		String endTime = sdf.format(new Date());
 		res.setSuccess(true);res.setMessage("default-success");
 		res.setStartTime(startTime);
 		res.setEndTime(endTime);
@@ -30,9 +30,9 @@ public class DefaultMigrationPublishService extends AbstractMigrationPublishServ
 			InetSocketAddress newMaster) {
 		logger.info("[doMigrationPublish]Cluster:{}, Shard:{}, NewPrimaryDc:{}, NewMaster:{}", clusterName, shardName,
 				primaryDcName, newMaster);
-		Date startTime = new Date();
+		String startTime = sdf.format(new Date());
 		MigrationPublishResult res = new MigrationPublishResult("default-addr", clusterName, primaryDcName, Arrays.asList(newMaster));
-		Date endTime = new Date();
+		String endTime = sdf.format(new Date());
 		res.setSuccess(true);res.setMessage("default-success");
 		res.setStartTime(startTime);
 		res.setEndTime(endTime);

@@ -28,11 +28,11 @@ public class CredisMigrationPublishService extends AbstractMigrationPublishServi
 	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) {
 		logger.info("[doMigrationPublish]Cluster:{}, NewPrimaryDc:{} -> ConvertedDcName:{} , NewMasters:{}", clusterName, primaryDcName,convertDcName(primaryDcName), newMasters);
-		Date startTime = new Date();
+		String startTime = sdf.format(new Date());
 		MigrationPublishResult res = restOperations.postForObject(
 				CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()),
 				newMasters, MigrationPublishResult.class, clusterName, convertDcName(primaryDcName));
-		Date endTime = new Date();
+		String endTime = sdf.format(new Date());
 		res.setPublishAddress(CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()));
 		res.setClusterName(clusterName);
 		res.setPrimaryDcName(primaryDcName);
@@ -46,11 +46,11 @@ public class CredisMigrationPublishService extends AbstractMigrationPublishServi
 	public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
 			InetSocketAddress newMaster) {
 		logger.info("[doMigrationPublish]Cluster:{}, NewPrimaryDc:{} -> ConvertedDcName:{}, NewMaster:{}", clusterName, primaryDcName,convertDcName(primaryDcName), newMaster);
-		Date startTime = new Date();
+		String startTime = sdf.format(new Date());
 		MigrationPublishResult res = restOperations.postForObject(
 				CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()),
 				Arrays.asList(newMaster), MigrationPublishResult.class, clusterName, convertDcName(primaryDcName));
-		Date endTime = new Date();
+		String endTime = sdf.format(new Date());
 		res.setPublishAddress(CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()));
 		res.setClusterName(clusterName);
 		res.setPrimaryDcName(primaryDcName);
