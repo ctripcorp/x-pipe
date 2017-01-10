@@ -27,18 +27,28 @@ public class CredisMigrationPublishService extends AbstractMigrationPublishServi
 	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) {
 		logger.info("[doMigrationPublish]Cluster:{}, NewPrimaryDc:{} -> ConvertedDcName:{} , NewMasters:{}", clusterName, primaryDcName,convertDcName(primaryDcName), newMasters);
-		return restOperations.postForObject(
+		MigrationPublishResult res = restOperations.postForObject(
 				CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()),
 				newMasters, MigrationPublishResult.class, clusterName, convertDcName(primaryDcName));
+		res.setPublishAddress(CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()));
+		res.setClusterName(clusterName);
+		res.setPrimaryDcName(primaryDcName);
+		res.setNewMasters(newMasters);
+		return res;
 	}
 
 	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
 			InetSocketAddress newMaster) {
 		logger.info("[doMigrationPublish]Cluster:{}, NewPrimaryDc:{} -> ConvertedDcName:{}, NewMaster:{}", clusterName, primaryDcName,convertDcName(primaryDcName), newMaster);
-		return restOperations.postForObject(
+		MigrationPublishResult res = restOperations.postForObject(
 				CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()),
 				Arrays.asList(newMaster), MigrationPublishResult.class, clusterName, convertDcName(primaryDcName));
+		res.setPublishAddress(CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()));
+		res.setClusterName(clusterName);
+		res.setPrimaryDcName(primaryDcName);
+		res.setNewMasters(Arrays.asList(newMaster));
+		return res;
 	}
 	
 	String convertDcName(String dc) {

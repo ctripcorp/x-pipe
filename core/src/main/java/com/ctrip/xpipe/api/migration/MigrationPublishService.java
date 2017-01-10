@@ -3,6 +3,7 @@ package com.ctrip.xpipe.api.migration;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.utils.ServicesUtil;
 
@@ -23,6 +24,22 @@ public interface MigrationPublishService extends Ordered{
 		private boolean Success;
 		private String Message;
 		
+		private String publishAddress;
+		private String clusterName;
+		private String primaryDcName;
+		private List<InetSocketAddress> newMasters;
+		
+		public MigrationPublishResult() {
+			
+		}
+		
+		public MigrationPublishResult(String publishAddress, String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) {
+			this.publishAddress = publishAddress;
+			this.clusterName = clusterName;
+			this.primaryDcName = primaryDcName;
+			this.newMasters = newMasters;
+		}
+		
 		public boolean isSuccess() {
 			return Success;
 		}
@@ -38,10 +55,42 @@ public interface MigrationPublishService extends Ordered{
 		public void setMessage(String message) {
 			Message = message;
 		}
+		
+		public String getPublishAddress() {
+			return publishAddress;
+		}
 
+		public void setPublishAddress(String publishAddress) {
+			this.publishAddress = publishAddress;
+		}
+
+		public String getClusterName() {
+			return clusterName;
+		}
+
+		public void setClusterName(String clusterName) {
+			this.clusterName = clusterName;
+		}
+
+		public String getPrimaryDcName() {
+			return primaryDcName;
+		}
+
+		public void setPrimaryDcName(String primaryDcName) {
+			this.primaryDcName = primaryDcName;
+		}
+
+		public List<InetSocketAddress> getNewMasters() {
+			return newMasters;
+		}
+
+		public void setNewMasters(List<InetSocketAddress> newMasters) {
+			this.newMasters = newMasters;
+		}
+		
 		@Override
 		public String toString() {
-			return String.format("Success:%s, Message:%s", Success, Message);
+			return Codec.DEFAULT.encode(this);
 		}
 	}
 }

@@ -7,6 +7,7 @@ import java.util.List;
 import com.ctrip.xpipe.api.migration.MigrationPublishService;
 import com.ctrip.xpipe.api.migration.MigrationPublishService.MigrationPublishResult;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 
@@ -30,24 +31,30 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 	
 	protected boolean publish() {
 		String cluster = getHolder().getCurrentCluster().getClusterName();
-		String newPirmaryDc = getHolder().getClusterDcs().get(getHolder().getMigrationCluster().getDestinationDcId()).getDcName();
+		String newPrimaryDc = getHolder().getClusterDcs().get(getHolder().getMigrationCluster().getDestinationDcId()).getDcName();
 		List<InetSocketAddress> newMasters = new LinkedList<>();
 		for(ShardTbl shard : getHolder().getClusterShards().values()) {
-			InetSocketAddress addr = getMasterAddress(getHolder().getRedisService().findAllByDcClusterShard(newPirmaryDc, cluster, shard.getShardName()));
+			InetSocketAddress addr = getMasterAddress(getHolder().getRedisService().findAllByDcClusterShard(newPrimaryDc, cluster, shard.getShardName()));
 			if(null != addr) {
 				newMasters.add(addr);
 			}
 		}
 		
 		boolean ret = false;
+		MigrationPublishResult res = null;
 		try {
-			MigrationPublishResult res = getMigrationPublishService().doMigrationPublish(cluster, newPirmaryDc, newMasters);
+			res = getMigrationPublishService().doMigrationPublish(cluster, newPrimaryDc, newMasters);
 			logger.info("[MigrationPublishStat][result]{}",res);
 			ret = res.isSuccess();
 		} catch (Exception e) {
+			res = new MigrationPublishResult("", cluster, newPrimaryDc, newMasters);
+			res.setSuccess(false);
+			res.setMessage(e.getMessage());
 			logger.error("[MigrationPublish][fail]",e);
 			ret = false;
 		}
+		
+		updateMigrationPublishResult(res);
 		
 		return ret;
  	}
@@ -60,6 +67,14 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 			}
 		}
 		return res;
+	}
+	
+	private void updateMigrationPublishResult(MigrationPublishResult res) {
+		if(null != res) {
+			MigrationClusterTbl migrationCluster = getHolder().getMigrationCluster();
+			migrationCluster.setPublishInfo(res.toString());
+			getHolder().getMigrationService().updateMigrationCluster(migrationCluster);
+		}
 	}
 	
 	@Override

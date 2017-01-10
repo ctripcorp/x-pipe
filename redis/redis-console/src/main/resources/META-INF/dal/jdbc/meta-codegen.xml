@@ -399,6 +399,7 @@
     <member name="start-time" field="start_time" value-type="Date" nullable="false" />
     <member name="end-time" field="end_time" value-type="Date" />
     <member name="status" field="status" value-type="String" length="16" nullable="false" />
+    <member name="publish-info" field="publish_info" value-type="String" lenght="10240" nullable="false"/>
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
