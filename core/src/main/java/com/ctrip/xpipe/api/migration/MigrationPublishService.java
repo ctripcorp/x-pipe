@@ -24,6 +24,8 @@ public interface MigrationPublishService extends Ordered{
 		private boolean Success;
 		private String Message;
 		
+		private String startTime;
+		private String endTime;
 		private String publishAddress;
 		private String clusterName;
 		private String primaryDcName;
@@ -86,6 +88,22 @@ public interface MigrationPublishService extends Ordered{
 
 		public void setNewMasters(List<InetSocketAddress> newMasters) {
 			this.newMasters = newMasters;
+		}
+		
+		public String getStartTime() {
+			return startTime;
+		}
+
+		public void setStartTime(String startTime) {
+			this.startTime = startTime;
+		}
+
+		public String getEndTime() {
+			return endTime;
+		}
+
+		public void setEndTime(String endTime) {
+			this.endTime = endTime;
 		}
 		
 		@Override
