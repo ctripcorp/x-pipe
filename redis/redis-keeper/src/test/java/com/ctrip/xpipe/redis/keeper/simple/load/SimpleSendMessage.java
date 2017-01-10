@@ -35,7 +35,7 @@ public class SimpleSendMessage extends AbstractLoadRedis {
 	protected void doStart() throws Exception {
 		super.doStart();
 
-		try (Jedis jedis = new Jedis(master.getHostName(), master.getPort())) {
+		try (Jedis jedis = new Jedis(master.getHostString(), master.getPort())) {
 			while (true) {
 				long index = increase();
 				if (index < 0) {

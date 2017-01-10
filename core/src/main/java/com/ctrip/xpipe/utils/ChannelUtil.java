@@ -53,7 +53,7 @@ public class ChannelUtil {
 		if(remoteAddr instanceof InetSocketAddress){
 			
 			InetSocketAddress addr = (InetSocketAddress) remoteAddr;
-			return String.format("%s:%d", addr.getHostName(), addr.getPort());
+			return String.format("%s:%d", addr.getHostString(), addr.getPort());
 		}
 		return remoteAddr.toString();
 	}

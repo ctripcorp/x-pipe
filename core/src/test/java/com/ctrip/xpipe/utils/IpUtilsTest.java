@@ -16,7 +16,8 @@ public class IpUtilsTest extends AbstractTest{
 	@Test
 	public void testGetFistNonLocalServerAddress(){
 		
-		logger.info("{}", IpUtils.getFistNonLocalIpv4ServerAddress());
+		logger.info("addr:{}", IpUtils.getFistNonLocalIpv4ServerAddress());
+		logger.info("hostaddress:{}", IpUtils.getFistNonLocalIpv4ServerAddress().getHostAddress());
 	}
 
 	@Test
@@ -26,6 +27,8 @@ public class IpUtilsTest extends AbstractTest{
 		logger.info("{}", IpUtils.getIp(address));
 		logger.info("{}", address.getAddress().getHostAddress());
 	}
+	
+	
 
 
 }
