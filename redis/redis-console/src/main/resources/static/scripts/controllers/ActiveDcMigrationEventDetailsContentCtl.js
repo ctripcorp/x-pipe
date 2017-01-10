@@ -198,5 +198,17 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
             $scope.currentQueryLog = '';
             $('#log').modal('hide');
         }
+        
+        $scope.showPublishResult = function(publishInfo) {
+        	if(publishInfo) {
+        		$scope.publishInfo = publishInfo;
+        	}
+        	$('#publishLog').modal('show');
+        }
 
+        $scope.hidePublishLog = function() {
+        	$scope.publishInfo = '';
+        	$('#publishLog').modal('hide');
+        }
+        
     }]);

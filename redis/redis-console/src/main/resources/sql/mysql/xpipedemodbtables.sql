@@ -187,6 +187,7 @@ CREATE TABLE `migration_cluster_tbl` (
   `start_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'start time of this migration',
   `end_time` timestamp NULL DEFAULT NULL COMMENT 'end time of this migration',
   `status` varchar(16) NOT NULL DEFAULT 'initiated' COMMENT 'migration status',
+  `publish_info` varchar(10240) NOT NULL DEFAULT '' COMMENT 'migration publish information',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
