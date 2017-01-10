@@ -105,10 +105,11 @@ public class DefaultRdbStore implements RdbStore {
 		//TODO check file format
 		if(eofType.fileOk(file)){
 			status.set(Status.Success);
+			logger.info("[checkAndSetRdbState]{}, {}", this, status);
 		} else {
 			status.set(Status.Fail);
 			long actualFileLen = file.length();
-			logger.error("[endRdb]actual:{}, expected:{}, file:{}", actualFileLen, eofType, file);
+			logger.error("[checkAndSetRdbState]actual:{}, expected:{}, file:{}, status:{}", actualFileLen, eofType, file, status);
 			throw new RdbStoreExeption(eofType, file);
 		}
 	}
@@ -128,36 +129,6 @@ public class DefaultRdbStore implements RdbStore {
 		}
 	}
 
-	private ControllableFile createControllableFile() {
-		
-		if(eofType instanceof LenEofType){
-			return new DefaultControllableFile(file);
-		}else if(eofType instanceof EofMarkType){
-			return new SizeControllableFile(file, new FileSize() {
-				
-				@Override
-				public long getSize(FileChannel fileChannel) throws IOException {
-					
-					long realSize = 0;
-					synchronized (truncateLock) {//truncate may make size wrong
-						realSize = fileChannel.size();
-					}
-					
-					if(status.get() == Status.Writing){
-						
-						long ret = realSize - ((EofMarkType)eofType).getTag().length(); 
-						logger.debug("[getSize][writing]{}, {}", DefaultRdbStore.this, ret);
-						return ret < 0 ? 0 : ret;
-					}
-					return realSize;
-				}
-			});
-		}else{
-			throw new IllegalStateException("unknown eoftype:" + eofType.getClass() + "," + eofType);
-		}
-	}
-	
-
 	private void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
 		
 		rdbFileListener.setRdbFileInfo(eofType, rdbLastKeeperOffset);
@@ -173,7 +144,8 @@ public class DefaultRdbStore implements RdbStore {
 				Thread.sleep(1);
 				long currentTime = System.currentTimeMillis();
 				if(currentTime - lastLogTime > 10000){
-					logger.info("[doReadRdbFile]status:{}, referenceFileChannel:{}, rdbFileListener:{}", status.get(), referenceFileChannel, rdbFileListener);
+					logger.info("[doReadRdbFile]status:{}, referenceFileChannel:{}, count:{}, rdbFileListener:{}", 
+							status.get(), referenceFileChannel, referenceFileRegion.count(), rdbFileListener);
 					lastLogTime = currentTime;
 				}
 			} catch (InterruptedException e) {
@@ -261,4 +233,33 @@ public class DefaultRdbStore implements RdbStore {
 		rdbStoreListeners.remove(rdbStoreListener);
 	}
 
+	private ControllableFile createControllableFile() throws IOException {
+		
+		if(eofType instanceof LenEofType){
+			return new DefaultControllableFile(file);
+		}else if(eofType instanceof EofMarkType){
+			
+			return new SizeControllableFile(file, new FileSize() {
+				
+				@Override
+				public long getSize(FileChannel fileChannel) throws IOException {
+					
+					long realSize = 0;
+					synchronized (truncateLock) {//truncate may make size wrong
+						realSize = fileChannel.size();
+					}
+					
+					if(status.get() == Status.Writing){
+						
+						long ret = realSize - ((EofMarkType)eofType).getTag().length(); 
+						logger.debug("[getSize][writing]{}, {}", DefaultRdbStore.this, ret);
+						return ret < 0 ? 0 : ret;
+					}
+					return realSize;
+				}
+			});
+		}else{
+			throw new IllegalStateException("unknown eoftype:" + eofType.getClass() + "," + eofType);
+		}
+	}
 }

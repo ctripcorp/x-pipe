@@ -18,7 +18,7 @@ public class DefaultEndPoint implements Endpoint, Serializable{
 	}
 
 	public DefaultEndPoint(InetSocketAddress address) {
-		this(address.getHostName(), address.getPort());
+		this(address.getHostString(), address.getPort());
 	}
 
 	public DefaultEndPoint(String ip, int port){

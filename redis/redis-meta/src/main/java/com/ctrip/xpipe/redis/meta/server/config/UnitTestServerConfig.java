@@ -61,7 +61,7 @@ public class UnitTestServerConfig implements MetaServerConfig{
 
 	@Override
 	public String getMetaServerIp() {
-		return IpUtils.getFistNonLocalIpv4ServerAddress().getHostName();
+		return IpUtils.getFistNonLocalIpv4ServerAddress().getHostAddress();
 	}
 
 

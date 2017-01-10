@@ -145,7 +145,19 @@ public abstract class AbstractRedisTest extends AbstractTest{
 			jedis.set(String.valueOf(currentIndex), randomString(messageLength));
 			jedis.incr("incr");
 		}
-		logger.info("[sendRandomMessage][end  ]{}", jedis);
+		logger.info("[sendRandomMessage][ end ]{}", jedis);
+	}
+
+	protected void sendMessage(RedisMeta redisMeta, int count, String message) {
+		
+		Jedis jedis = createJedis(redisMeta);
+		logger.info("[sendMessage][begin]{}", jedis);
+		for(int i=0; i < count; i++){
+			
+			long currentIndex = totalSendMessageCount.incrementAndGet(); 
+			jedis.set(String.valueOf(currentIndex), message);
+		}
+		logger.info("[sendMessage][ end ]{}", jedis);
 	}
 
 

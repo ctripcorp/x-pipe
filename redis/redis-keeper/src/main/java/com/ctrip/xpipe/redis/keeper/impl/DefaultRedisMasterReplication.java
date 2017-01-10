@@ -36,7 +36,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	private ScheduledFuture<?> replConfFuture;
 	
-	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "5"));
+	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled, int replTimeoutSeconds) {
 		super(redisKeeperServer, redisMaster, scheduled, replTimeoutSeconds);

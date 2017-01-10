@@ -153,7 +153,7 @@ public class DefaultSentinelManager implements SentinelManager{
 				realSentinels = sentinelsCommand.execute().get();
 				executionLog.info(String.format("get sentinels from %s : %s", sentinelAddress, realSentinels));
 				if(realSentinels.size() > 0){
-					realSentinels.add(new Sentinel(sentinelAddress.toString(), sentinelAddress.getHostName(), sentinelAddress.getPort()));
+					realSentinels.add(new Sentinel(sentinelAddress.toString(), sentinelAddress.getHostString(), sentinelAddress.getPort()));
 					break;
 				}
 			} catch (InterruptedException | ExecutionException e) {

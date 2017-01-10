@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.utils;
-
 import java.io.File;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng
@@ -9,12 +10,16 @@ import java.io.File;
  */
 public class DefaultControllableFile extends AbstractControllableFile{
 
-	public DefaultControllableFile(String file){
-		super(file);
+	public DefaultControllableFile(String file) throws IOException{
+		super(file, 0);
 	}
 	
-	public DefaultControllableFile(File file) {
-		super(file);
+	public DefaultControllableFile(File file) throws IOException {
+		super(file, 0);
+	}
+
+	public DefaultControllableFile(File file, long pos) throws IOException {
+		super(file, pos);
 	}
 
 }

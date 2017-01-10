@@ -33,7 +33,6 @@ public class SingleKeeper extends AbstractKeeperIntegratedSingleDc{
 		waitForAnyKeyToExit();
 	}
 
-	
 	@Override
 	protected void doAfterAbstractTest() throws Exception {
 		super.doAfterAbstractTest();
