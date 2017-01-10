@@ -23,6 +23,7 @@
             <tr>
                 <td>shard 名称</td>
                 <td>sentinel 监控名称</td>
+                <td ng-repeat="dc in clusterDcs">{{dc.dcName}}</td>
                 <td>操作</td>
             </tr>
             </thead>
@@ -30,6 +31,7 @@
             <tr ng-repeat="shard in shards">
                 <td>{{shard.shardName}}</td>
                 <td>{{shard.setinelMonitorName}}</td>
+                <td ng-repeat="dc in clusterDcs">{{shard.sentinels[dc.id].setinelAddress}}</td>
                 <td>
                     <a ng-click="preDeleteShard(shard.shardName)">删除</a>
                 </td>

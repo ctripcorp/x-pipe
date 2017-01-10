@@ -7,6 +7,10 @@ services.service('HealthCheckService', ['$resource', '$q', function($resource, $
 		get_repl_delay: {
 			method: 'GET',
 			url: '/console/redis/delay/:redisIp/:redisPort'
+		},
+		get_hickwall_addr: {
+			method: 'GET',
+			url: '/console/redis/health/hickwall/:cluster/:shard/:redisIp/:redisPort'
 		}
 	});
 	
@@ -37,8 +41,25 @@ services.service('HealthCheckService', ['$resource', '$q', function($resource, $
 		return d.promise;
 	}
 	
+	function getHickwallAddr(cluster, shard, redisIp, redisPort) {
+		var d = $q.defer();
+		resource.get_hickwall_addr({
+			cluster : cluster,
+			shard : shard,
+			redisIp : redisIp,
+			redisPort : redisPort
+		},
+				function(result) {
+			d.resolve(result);
+		}, function(result) {
+			d.reject(result);
+		});
+		return d.promise;
+	}
+	
 	return {
 		isRedisHealth : isRedisHealth,
-		getReplDelay : getReplDelay
+		getReplDelay : getReplDelay,
+		getHickwallAddr : getHickwallAddr
 	}
 }]);

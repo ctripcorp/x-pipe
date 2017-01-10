@@ -21,9 +21,9 @@
                 <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="shard in shards">
                     <header class="panel-heading">
                         <div class="row">
-                            <div class="col-md-6">{{shard.id}}</div>
+                            <div class="col-md-6">{{shard.shardTbl.shardName}}</div>
                             <div class="col-md-6 text-right">
-                            	<a class="btn btn-primary btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.id}}&currentDcName={{currentDcName}}">编辑</a>
+                            	<a class="btn btn-primary btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.shardTbl.shardName}}&currentDcName={{currentDcName}}">编辑</a>
                             </div>
                         </div>
                     </header>
@@ -40,12 +40,17 @@
                             <th>
                                 端口
                             </th>
+                            <th>
+                            	状态
+                            </th>
+                            <th>
+                            	Hickwall
+                            </th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr ng-repeat="redis in shard.redises">
                             <td title="{{redis.runId}}">
-                            	<span class="label-sm" ng-class="{'text-danger':(redis.delay == -99 || redis.delay == 99999), 'text-success':redis.delay}">{{redis.delay}}</span>
                                 <span class="label label-info" ng-if="redis.master === true">
                                     Master</span>  Redis
                             </td>
@@ -53,6 +58,11 @@
                             </td>
                             <td ng-bind="redis.redisPort">
                             </td>
+                            <td>
+                            <span ng-class="{'glyphicon glyphicon-remove-sign red':(redis.delay == -99 || redis.delay == 99999), 
+                            					'glyphicon glyphicon-ok-sign green':redis.delay && redis.delay != -99 && redis.delay != 99999}"></span>
+                            </td>
+                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
                             <td title="{{keeper.runId}}">
@@ -63,6 +73,8 @@
                             </td>
                             <td ng-bind="keeper.redisPort">
                             </td>
+                            <td></td>
+                            <td></td>
                         </tr>
                         </tbody>
                     </table>

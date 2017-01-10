@@ -1,1 +1,1 @@
-com.ctrip.xpipe.service.hickwall.ThriftHickwallProxy
+com.ctrip.xpipe.service.hickwall.HickwallMetricProxy
