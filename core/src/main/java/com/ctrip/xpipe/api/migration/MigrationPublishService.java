@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.api.migration;
 
 import java.net.InetSocketAddress;
+import java.util.Date;
 import java.util.List;
 
 import com.ctrip.xpipe.api.codec.Codec;
@@ -24,6 +25,8 @@ public interface MigrationPublishService extends Ordered{
 		private boolean Success;
 		private String Message;
 		
+		private Date startTime;
+		private Date endTime;
 		private String publishAddress;
 		private String clusterName;
 		private String primaryDcName;
@@ -86,6 +89,22 @@ public interface MigrationPublishService extends Ordered{
 
 		public void setNewMasters(List<InetSocketAddress> newMasters) {
 			this.newMasters = newMasters;
+		}
+		
+		public Date getStartTime() {
+			return startTime;
+		}
+
+		public void setStartTime(Date startTime) {
+			this.startTime = startTime;
+		}
+
+		public Date getEndTime() {
+			return endTime;
+		}
+
+		public void setEndTime(Date endTime) {
+			this.endTime = endTime;
 		}
 		
 		@Override

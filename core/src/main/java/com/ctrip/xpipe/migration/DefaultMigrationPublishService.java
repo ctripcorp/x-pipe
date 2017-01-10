@@ -2,6 +2,7 @@ package com.ctrip.xpipe.migration;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -15,8 +16,12 @@ public class DefaultMigrationPublishService extends AbstractMigrationPublishServ
 	public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) {
 		logger.info("[doMigrationPublish]Cluster:{}, NewPrimaryDc:{}, Masters:{}", clusterName, primaryDcName,
 				newMasters);
+		Date startTime = new Date();
 		MigrationPublishResult res = new MigrationPublishResult("default-addr", clusterName, primaryDcName, newMasters);
+		Date endTime = new Date();
 		res.setSuccess(true);res.setMessage("default-success");
+		res.setStartTime(startTime);
+		res.setEndTime(endTime);
 		return res;
 	}
 
@@ -25,8 +30,12 @@ public class DefaultMigrationPublishService extends AbstractMigrationPublishServ
 			InetSocketAddress newMaster) {
 		logger.info("[doMigrationPublish]Cluster:{}, Shard:{}, NewPrimaryDc:{}, NewMaster:{}", clusterName, shardName,
 				primaryDcName, newMaster);
+		Date startTime = new Date();
 		MigrationPublishResult res = new MigrationPublishResult("default-addr", clusterName, primaryDcName, Arrays.asList(newMaster));
+		Date endTime = new Date();
 		res.setSuccess(true);res.setMessage("default-success");
+		res.setStartTime(startTime);
+		res.setEndTime(endTime);
 		return res;
 	}
 
