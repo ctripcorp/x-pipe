@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.ctrip.xpipe.redis</groupId>
 		<artifactId>package</artifactId>
-		<version>0.1.2-SNAPSHOT</version>
+		<version>0.1.3-SNAPSHOT</version>
 	</parent>
 	<artifactId>redis-keeper-package</artifactId>
 

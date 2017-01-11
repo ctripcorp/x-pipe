@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.ctrip.xpipe</groupId>
 		<artifactId>xpipe-parent</artifactId>
-		<version>0.1.2-SNAPSHOT</version>
+		<version>0.1.3-SNAPSHOT</version>
 	</parent>
 	<artifactId>services</artifactId>
 	<packaging>pom</packaging>
