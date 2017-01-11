@@ -207,7 +207,7 @@ public class XPipeStabilityTest {
 				master.set(key.getBytes(), value);
 				queryCnt.incrementAndGet();
 			} catch (Exception e) {
-				logger.error(String.format("[startProducerJob][run]InsertValue Exception : Key:%", key), 
+				logger.error(String.format("[startProducerJob][run]InsertValue Exception : Key:%s", key), 
 						e);
 				records.remove(key);
 			} finally {
