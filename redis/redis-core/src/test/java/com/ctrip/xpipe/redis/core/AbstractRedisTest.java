@@ -101,6 +101,13 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		return jedis;
 	}
 
+	protected Jedis createJedis(InetSocketAddress address) {
+		
+		Jedis jedis = new Jedis(address.getHostString(), address.getPort()); 
+		logger.info("[createJedis]{}", jedis);
+		return jedis;
+	}
+
 	protected void assertRedisEquals(RedisMeta redisMaster, List<RedisMeta> slaves) {
 		
 		Map<String, String> values = new HashMap<>(); 

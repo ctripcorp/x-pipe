@@ -182,12 +182,7 @@ public class DefaultRedisSlave implements RedisSlave {
 		logger.info("[beginWriteRdb]{}, {}", eofType, rdbFileOffset);
 		
 		if(!eofType.support(getCapas())){
-			logger.error("[beginWriteRdb][eoftype not supported]{}, {}, {}", this, eofType, getCapas());
-			try {
-				close();
-			} catch (IOException e) {
-				logger.error("[beginWriteRdb]" + this, e);
-			}
+			logger.warn("[beginWriteRdb][eoftype not supported]{}, {}, {}", this, eofType, getCapas());
 		}
 		
 		partialState = PARTIAL_STATE.FULL;

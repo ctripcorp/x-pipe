@@ -2,6 +2,7 @@ package com.ctrip.xpipe.command;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -17,8 +18,9 @@ public class TestCommand extends AbstractCommand<String>{
 	private ScheduledExecutorService scheduled;
 	private boolean beginExecute = false;
 	
-
-
+	
+	private ScheduledFuture<?> future;
+	
 	public TestCommand(String successMessage) {
 		this(null, successMessage, 100);
 	}
@@ -51,7 +53,7 @@ public class TestCommand extends AbstractCommand<String>{
 		beginExecute = true;
 
 		scheduled = Executors.newScheduledThreadPool(1);
-		scheduled.schedule(new Runnable() {
+		future = scheduled.schedule(new Runnable() {
 			
 			@Override
 			public void run() {
@@ -77,5 +79,14 @@ public class TestCommand extends AbstractCommand<String>{
 	@Override
 	protected void doReset(){
 		
+	}
+	
+	@Override
+	protected void doCancel() {
+		super.doCancel();
+		
+		if(future != null){
+			future.cancel(true);
+		}
 	}
 }

@@ -11,6 +11,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.command.CommandExecutionException;
+import com.ctrip.xpipe.command.FailSafeCommandWrapper;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.XpipeException;
@@ -188,7 +189,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		chain.add(listeningPortCommand());
-		chain.add(new Replconf(clientPool, ReplConfType.CAPA, CAPA.EOF.toString(), scheduled));
+		chain.add(new FailSafeCommandWrapper<>(new Replconf(clientPool, ReplConfType.CAPA, CAPA.EOF.toString(), scheduled)));
 		
 		try {
 			executeCommand(chain).addListener(new CommandFutureListener() {

@@ -49,7 +49,11 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		backupKeeper = getKeepersBackup().get(0);
 		slaves = getRedisSlaves();
 
-		sleep(5000);//wait for structure to build
+		sleep(getInitSleepMilli());//wait for structure to build
+	}
+
+	protected int getInitSleepMilli() {
+		return 5000;
 	}
 
 	private void initResource() throws Exception {
