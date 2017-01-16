@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
-import com.ctrip.xpipe.command.CommandExecutionException;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
@@ -77,6 +77,13 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	
 	
 	@Override
+	public void masterConnected(Channel channel) {
+		super.masterConnected(channel);
+		
+		cancelReplConf();
+	}
+	
+	@Override
 	public void masterDisconntected(Channel channel) {
 		super.masterDisconntected(channel);
 		
@@ -101,11 +108,8 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	public void stopReplication() {
 		super.stopReplication();
-		
-		if (replConfFuture != null) {
-			replConfFuture.cancel(true);
-			replConfFuture = null;
-		}
+
+		cancelReplConf();
 	}
 
 	private void scheduleReplconf() {
@@ -114,42 +118,48 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 			logger.info("[scheduleReplconf]" + this);
 		}
 		
-		if(replConfFuture != null){
-			replConfFuture.cancel(true);
-		}
+		cancelReplConf();
 
-		replConfFuture = scheduled.scheduleWithFixedDelay(new Runnable() {
-
+		replConfFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+			
 			@Override
-			public void run() {
-				try {
-
-					logger.debug("[run][send ack]{}", masterChannel);
-					Command<Object> command = new Replconf(clientPool, ReplConfType.ACK, String.valueOf(redisMaster.getCurrentReplicationStore().getEndOffset()), scheduled);
-					command.execute();
-				} catch (Throwable th) {
-					logger.error("[run][send replack error]" + DefaultRedisMasterReplication.this, th);
-				}
+			protected void doRun() throws Exception {
+				
+				logger.debug("[run][send ack]{}", masterChannel);
+				
+				Command<Object> command = createReplConf();
+				command.execute();
+				
 			}
+
 		}, 0, REPLCONF_INTERVAL_MILLI, TimeUnit.MILLISECONDS);
 	}
 
-
+	protected void cancelReplConf() {
+		
+		if (replConfFuture != null) {
+			replConfFuture.cancel(true);
+			replConfFuture = null;
+		}
+	}
+	
 	@Override
 	protected void kinfoFail(Throwable e) {
 		
 		logger.info("[doWhenKinfoFail][retry]");
-		scheduled.schedule(new Runnable() {
-
+		scheduled.schedule(new AbstractExceptionLogTask() {
+			
 			@Override
-			public void run() {
-				try {
-					executeCommand(kinfoCommand());
-				} catch (CommandExecutionException e) {
-					logger.error("[run]", e);
-				}
+			protected void doRun() throws Exception {
+				executeCommand(kinfoCommand());
+				
 			}
 		}, 1, TimeUnit.SECONDS);
+	}
+
+	protected Command<Object> createReplConf() {
+		
+		return new Replconf(clientPool, ReplConfType.ACK, String.valueOf(redisMaster.getCurrentReplicationStore().getEndOffset()), scheduled);
 	}
 
 	@Override
