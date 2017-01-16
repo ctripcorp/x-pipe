@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStat;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationState;
 
 /**
  * @author shyin
@@ -11,7 +11,10 @@ public interface MigrationClusterAction {
     void addNewMigrationShard(MigrationShard migrationShard);
 
     void process();
-    void updateStat(MigrationStat stat);
+    void updateStat(MigrationState stat);
     void cancel();
+    void rollback();
+    void forcePublish();
+    void forceEnd();
 
 }

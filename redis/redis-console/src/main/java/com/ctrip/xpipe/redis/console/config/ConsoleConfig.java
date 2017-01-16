@@ -24,4 +24,6 @@ public interface ConsoleConfig extends CoreConfig {
 	Set<String> getConsoleUserAccessWhiteList();
 	
 	int getRedisReplicationHealthCheckInterval();
+	
+	String getHickwallAddress();
 }

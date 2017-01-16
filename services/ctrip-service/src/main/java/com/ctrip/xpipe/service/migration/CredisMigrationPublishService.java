@@ -2,6 +2,7 @@ package com.ctrip.xpipe.service.migration;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -27,18 +28,36 @@ public class CredisMigrationPublishService extends AbstractMigrationPublishServi
 	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) {
 		logger.info("[doMigrationPublish]Cluster:{}, NewPrimaryDc:{} -> ConvertedDcName:{} , NewMasters:{}", clusterName, primaryDcName,convertDcName(primaryDcName), newMasters);
-		return restOperations.postForObject(
+		String startTime = sdf.format(new Date());
+		MigrationPublishResult res = restOperations.postForObject(
 				CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()),
 				newMasters, MigrationPublishResult.class, clusterName, convertDcName(primaryDcName));
+		String endTime = sdf.format(new Date());
+		res.setPublishAddress(CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()));
+		res.setClusterName(clusterName);
+		res.setPrimaryDcName(primaryDcName);
+		res.setNewMasters(newMasters);
+		res.setStartTime(startTime);
+		res.setEndTime(endTime);
+		return res;
 	}
 
 	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
 			InetSocketAddress newMaster) {
 		logger.info("[doMigrationPublish]Cluster:{}, NewPrimaryDc:{} -> ConvertedDcName:{}, NewMaster:{}", clusterName, primaryDcName,convertDcName(primaryDcName), newMaster);
-		return restOperations.postForObject(
+		String startTime = sdf.format(new Date());
+		MigrationPublishResult res = restOperations.postForObject(
 				CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()),
 				Arrays.asList(newMaster), MigrationPublishResult.class, clusterName, convertDcName(primaryDcName));
+		String endTime = sdf.format(new Date());
+		res.setPublishAddress(CREDIS_SERVICE.MIGRATION_PUBLISH.getRealPath(MigrationPublishServiceConfig.INSTANCE.getCredisServiceAddress()));
+		res.setClusterName(clusterName);
+		res.setPrimaryDcName(primaryDcName);
+		res.setNewMasters(Arrays.asList(newMaster));
+		res.setStartTime(startTime);
+		res.setEndTime(endTime);
+		return res;
 	}
 	
 	String convertDcName(String dc) {

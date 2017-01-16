@@ -19,6 +19,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	public static final String KEY_METASERVERS = "metaservers";
 	public static final String KEY_USER_ACCESS_WHITE_LIST = "user.access.white.list";
 	public static final String KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL = "redis.replication.health.check.interval";
+	public static final String KEY_HICKWALL_ADDRESS = "console.hickwall.address";
 
 	@Override
 	public String getDatasource() {
@@ -54,6 +55,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	@Override
 	public int getRedisReplicationHealthCheckInterval() {
 		return getIntProperty(KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL, 10000);
+	}
+	
+	@Override
+	public String getHickwallAddress() {
+		return getProperty(KEY_HICKWALL_ADDRESS,"");
 	}
 
 }

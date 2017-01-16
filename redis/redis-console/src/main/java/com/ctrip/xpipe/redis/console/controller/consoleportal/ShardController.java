@@ -29,7 +29,7 @@ public class ShardController extends AbstractConsoleController{
   private ShardService shardService;
 
   @RequestMapping("/clusters/{clusterName}/dcs/{dcName}/shards")
-  public List<ShardModel> findShardMetas(@PathVariable String clusterName, @PathVariable String dcName){
+  public List<ShardModel> findShardModels(@PathVariable String clusterName, @PathVariable String dcName){
     return new ArrayList<ShardModel>(shardModelService.getAllShardModel(dcName, clusterName));
   }
 
@@ -39,14 +39,14 @@ public class ShardController extends AbstractConsoleController{
   }
   
   @RequestMapping("/clusters/{clusterName}/dcs/{dcName}/shards/{shardName}")
-  public ShardModel findShardMeta(@PathVariable String clusterName, @PathVariable String dcName, @PathVariable String shardName) {
+  public ShardModel findShardModel(@PathVariable String clusterName, @PathVariable String dcName, @PathVariable String shardName) {
 	  return shardModelService.getShardModel(dcName, clusterName, shardName);
   }
 
   @RequestMapping(value = "/clusters/{clusterName}/shards", method = RequestMethod.POST)
-  public ShardTbl createShard(@PathVariable String clusterName, @RequestBody ShardTbl shard) {
+  public ShardTbl createShard(@PathVariable String clusterName, @RequestBody ShardModel shard) {
 	logger.info("[Create Shard]{},{}",clusterName, shard);
-    return shardService.createShard(clusterName, shard);
+    return shardService.createShard(clusterName, shard.getShardTbl(), shard.getSentinels());
   }
 
   @RequestMapping(value = "/clusters/{clusterName}/shards/{shardName}", method = RequestMethod.DELETE)
@@ -54,6 +54,5 @@ public class ShardController extends AbstractConsoleController{
 	  logger.info("[Delete Shard]{},{}",clusterName, shardName);
 	  shardService.deleteShard(clusterName, shardName);
   }
-
 
 }

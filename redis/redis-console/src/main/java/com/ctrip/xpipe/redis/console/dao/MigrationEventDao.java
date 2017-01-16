@@ -176,7 +176,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				MigrationClusterTbl cluster = detail.getRedundantClusters();
 				MigrationShardTbl shard = detail.getRedundantShards();
 				
-				if(MigrationStatus.isTerminated(cluster.getStatus())) {
+				if(MigrationStatus.isTerminated(MigrationStatus.valueOf(cluster.getStatus()))) {
 					continue;
 				}
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {
@@ -204,7 +204,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				
 				MigrationClusterTbl proto = migrationClusterTblDao.createLocal();
 				proto.setMigrationEventId(eventId).setClusterId(migrationCluster.getClusterId()).setSourceDcId(migrationCluster.getSourceDcId())
-						.setDestinationDcId(migrationCluster.getDestinationDcId()).setStatus(MigrationStatus.Initiated.toString());
+						.setDestinationDcId(migrationCluster.getDestinationDcId()).setStatus(MigrationStatus.Initiated.toString()).setPublishInfo("");
 				toCreateMigrationCluster.add(proto);
 			}
 		}

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.unidal.dal.jdbc.DalException;
 
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
@@ -68,11 +70,11 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	}
 
 	@Override
-	public ShardTbl createShard(final String clusterName, final ShardTbl shard) {
+	public ShardTbl createShard(final String clusterName, final ShardTbl shard, final Map<Long, SetinelTbl> sentinels) {
 		return queryHandler.handleQuery(new DalQuery<ShardTbl>() {
 			@Override
 			public ShardTbl doQuery() throws DalException {
-				return shardDao.createShard(clusterName, shard);
+				return shardDao.createShard(clusterName, shard, sentinels);
 			}
     	});
 	}

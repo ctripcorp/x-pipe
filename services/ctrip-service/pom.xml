@@ -60,6 +60,10 @@
 			<groupId>com.ctrip.hickwall</groupId>
 			<artifactId>hickwall-protocol</artifactId>
 		</dependency> 
+		<dependency>
+        	<groupId>com.ctrip.hickwall</groupId>
+        	<artifactId>client</artifactId>
+		</dependency>
 	</dependencies>
 
 

@@ -35,21 +35,27 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
         
         function initStatus() {
         	$scope.dcs.forEach(function(dc) {
-        		if(dc.id == $scope.migrationCluster.migrationCluster.sourceDcId) {
-        			$scope.migrationCluster.migrationCluster.sourceDcName = dc.dcName;
-        		}
-        		if(dc.id == $scope.migrationCluster.migrationCluster.destinationDcId) {
-        			$scope.migrationCluster.migrationCluster.destinationDcName = dc.dcName;
+        		if($scope.migrationCluster) {
+        			if(dc.id == $scope.migrationCluster.migrationCluster.sourceDcId) {
+            			$scope.migrationCluster.migrationCluster.sourceDcName = dc.dcName;
+            		}
+            		if(dc.id == $scope.migrationCluster.migrationCluster.destinationDcId) {
+            			$scope.migrationCluster.migrationCluster.destinationDcName = dc.dcName;
+            		}
         		}
         	});
         	
-            $scope.migrationCluster.migrationShards.forEach(function(migrationShard) {
-                if(migrationShard.migrationShard.log) {
-                    migrationShard.status = JSON.parse(migrationShard.migrationShard.log);
-                } else {
-                    migrationShard.status = {};
-                }
-            });
+        	if($scope.migrationCluster) {
+        		$scope.migrationCluster.migrationShards.forEach(function(migrationShard) {
+                	if(migrationShard.migrationShard) {
+                		if(migrationShard.migrationShard.log) {
+                            migrationShard.status = JSON.parse(migrationShard.migrationShard.log);
+                        } else {
+                            migrationShard.status = {};
+                        }	
+                	}
+                });	
+        	}
         }
         
         $scope.continueMigrationCluster = function(eventId, clusterId) {
@@ -76,6 +82,106 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
                 toastr.error(AppUtil.errorMsg(result));
             });
         }
+        
+        $scope.cancelMigrationCluster = function(eventId, clusterId) {
+        	MigrationService.cancelMigrationCluster(eventId, clusterId).then(
+        			function(result) {
+                        toastr.success("操作成功");
+
+                        $interval(function() {
+                        MigrationService.findEventDetails($scope.eventId).then(
+                            function(result) {
+                                $scope.$parent.eventDetails = result;
+                                $scope.$parent.eventDetails.forEach(function(migrationCluster) {
+                                    if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
+                                        $scope.migrationCluster = migrationCluster;
+                                        initStatus();
+                                    }
+                                });
+                            },
+                            function(result) {
+                            });
+                        }, 1000, 5);
+                    },
+                    function(result) {
+                    toastr.error(AppUtil.errorMsg(result));
+                });
+        }
+
+        $scope.rollbackMigrationCluster = function (eventId, clusterId) {
+            MigrationService.rollbackMigrationCluster(eventId, clusterId).then(
+                function(result) {
+                    toastr.success("操作成功");
+
+                    $interval(function() {
+                        MigrationService.findEventDetails($scope.eventId).then(
+                            function(result) {
+                                $scope.$parent.eventDetails = result;
+                                $scope.$parent.eventDetails.forEach(function(migrationCluster) {
+                                    if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
+                                        $scope.migrationCluster = migrationCluster;
+                                        initStatus();
+                                    }
+                                });
+                            },
+                            function(result) {
+                            });
+                    }, 1000, 5);
+                },
+                function(result) {
+                    toastr.error(AppUtil.errorMsg(result));
+                });
+        }
+        
+        $scope.forcePublishMigrationCluster = function(eventId, clusterId) {
+        	MigrationService.forcePublishMigrationCluster(eventId, clusterId).then(
+                    function(result) {
+                        toastr.success("操作成功");
+
+                        $interval(function() {
+                            MigrationService.findEventDetails($scope.eventId).then(
+                                function(result) {
+                                    $scope.$parent.eventDetails = result;
+                                    $scope.$parent.eventDetails.forEach(function(migrationCluster) {
+                                        if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
+                                            $scope.migrationCluster = migrationCluster;
+                                            initStatus();
+                                        }
+                                    });
+                                },
+                                function(result) {
+                                });
+                        }, 1000, 5);
+                    },
+                    function(result) {
+                        toastr.error(AppUtil.errorMsg(result));
+                    });
+        }
+        
+        $scope.forceEndMigrationCluster = function(eventId, clusterId) {
+        	MigrationService.forceEndMigrationCluster(eventId, clusterId).then(
+                    function(result) {
+                        toastr.success("操作成功");
+
+                        $interval(function() {
+                            MigrationService.findEventDetails($scope.eventId).then(
+                                function(result) {
+                                    $scope.$parent.eventDetails = result;
+                                    $scope.$parent.eventDetails.forEach(function(migrationCluster) {
+                                        if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
+                                            $scope.migrationCluster = migrationCluster;
+                                            initStatus();
+                                        }
+                                    });
+                                },
+                                function(result) {
+                                });
+                        }, 1000, 5);
+                    },
+                    function(result) {
+                        toastr.error(AppUtil.errorMsg(result));
+                    });
+        }
 
         $scope.showLog = function(step) {
             if(step) {
@@ -92,5 +198,17 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
             $scope.currentQueryLog = '';
             $('#log').modal('hide');
         }
+        
+        $scope.showPublishResult = function(publishInfo) {
+        	if(publishInfo) {
+        		$scope.publishInfo = publishInfo;
+        	}
+        	$('#publishLog').modal('show');
+        }
 
+        $scope.hidePublishLog = function() {
+        	$scope.publishInfo = '';
+        	$('#publishLog').modal('hide');
+        }
+        
     }]);

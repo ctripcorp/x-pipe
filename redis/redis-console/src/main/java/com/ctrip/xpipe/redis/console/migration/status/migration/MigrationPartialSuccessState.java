@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
@@ -10,23 +7,18 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
  * @author shyin
  *
  * Dec 8, 2016
  */
-public class MigrationPartialSuccessStat extends AbstractMigrationMigratingStat {
+public class MigrationPartialSuccessState extends AbstractMigrationMigratingState {
 	
-	private ExecutorService cachedThreadPool;
-	
-	public MigrationPartialSuccessStat(MigrationCluster holder) {
+	public MigrationPartialSuccessState(MigrationCluster holder) {
 		super(holder, MigrationStatus.PartialSuccess);
-		this.setNextAfterSuccess(new MigrationPublishStat(getHolder()))
+		this.setNextAfterSuccess(new MigrationPublishState(holder))
 			.setNextAfterFail(this);
-		
-		cachedThreadPool = Executors.newCachedThreadPool(XpipeThreadFactory.create("MigrationPartialSuccess"));
 	}
 
 	@Override
@@ -34,9 +26,8 @@ public class MigrationPartialSuccessStat extends AbstractMigrationMigratingStat 
 		updateDB();
 		
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
-			if(!shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE)) {
-				cachedThreadPool.submit(new Runnable() {
-
+			if(!shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
+				fixedThreadPool.submit(new Runnable() {
 					@Override
 					public void run() {
 						logger.info("[doMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
@@ -60,7 +51,7 @@ public class MigrationPartialSuccessStat extends AbstractMigrationMigratingStat 
 		migrationClusterTbl.setStatus(MigrationStatus.PartialSuccess.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
 		
-		logger.info("[updateDB]Cluster:{}, MigrationCluster:{}", cluster, migrationClusterTbl);
+		logger.debug("[updateDB]Cluster:{}, MigrationCluster:{}", cluster, migrationClusterTbl);
 	}
 
 }

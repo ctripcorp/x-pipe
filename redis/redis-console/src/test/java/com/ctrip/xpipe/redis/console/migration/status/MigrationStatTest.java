@@ -5,7 +5,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationMigratingStat;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationMigratingState;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -75,7 +75,7 @@ public class MigrationStatTest extends AbstractConsoleTest {
     	
         Assert.assertEquals(MigrationStatus.Initiated, migrationCluster.getStatus());
 
-        migrationCluster.updateStat(new MigrationMigratingStat(migrationCluster));
+        migrationCluster.updateStat(new MigrationMigratingState(migrationCluster));
         Assert.assertEquals(MigrationStatus.Migrating, migrationCluster.getStatus());
         migrationCluster.process();
         sleep(100);

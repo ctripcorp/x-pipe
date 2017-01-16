@@ -153,6 +153,7 @@ create table MIGRATION_CLUSTER_TBL
 	start_time timestamp default CURRENT_TIMESTAMP,
 	end_time timestamp null default null,
 	status varchar(16) not null default 'initiated',
+	publish_info varchar(10240) not null default '',
 	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );

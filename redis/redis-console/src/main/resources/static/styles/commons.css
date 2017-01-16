@@ -29,3 +29,13 @@ a {
 	border-style : solid;
 	border-width : 1px;
 }
+
+.hickwall {
+	display : inline-block;
+	background-image : url(../images/grafana_icon.svg);
+	background-repeat : no-repeat;
+	background-position : center;
+	background-size : cover;
+	width : 18px;
+	height : 18px;
+}

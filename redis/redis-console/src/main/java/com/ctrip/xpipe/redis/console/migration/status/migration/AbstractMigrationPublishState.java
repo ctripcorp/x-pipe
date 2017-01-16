@@ -1,16 +1,12 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import java.net.InetSocketAddress;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
 import com.ctrip.xpipe.api.migration.MigrationPublishService;
 import com.ctrip.xpipe.api.migration.MigrationPublishService.MigrationPublishResult;
-import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
@@ -18,50 +14,22 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
 /**
  * @author shyin
  *
- * Dec 8, 2016
+ * Dec 30, 2016
  */
-public class MigrationPublishStat extends AbstractMigrationStat {
+public abstract class AbstractMigrationPublishState extends AbstractMigrationState {
+
+	protected MigrationPublishService publishService = MigrationPublishService.DEFAULT;
 	
-	private MigrationPublishService publishService = MigrationPublishService.DEFAULT;
-	
-	public MigrationPublishStat(MigrationCluster holder) {
-		super(holder, MigrationStatus.Publish);
-		this.setNextAfterSuccess(new MigrationSuccessStat(getHolder()))
-			.setNextAfterFail(this);
+	public AbstractMigrationPublishState(MigrationCluster holder, MigrationStatus status) {
+		super(holder, status);
 	}
 	
 	public MigrationPublishService getMigrationPublishService() {
 		return publishService;
 	}
 
-	@Override
-	public void action() {
-		updateDB();
-		
-		if(publish()) {
-			updateAndProcess(nextAfterSuccess(), true);
-		} else {
-			updateAndProcess(nextAfterFail(), false);
-		}
-	}
-
-	@DalTransaction
-	private void updateDB() {
-		ClusterTbl cluster = getHolder().getCurrentCluster();
-		cluster.setActivedcId(getHolder().getMigrationCluster().getDestinationDcId());
-		cluster.setStatus(ClusterStatus.TmpMigrated.toString());
-		getHolder().getClusterService().update(cluster);
-
-		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
-		migrationClusterTbl.setEndTime(new Date());
-		migrationClusterTbl.setStatus(MigrationStatus.Publish.toString());
-		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
-		
-		logger.info("[updateDB]Cluster:{}, MigrationCluster:{}", cluster, migrationClusterTbl);
-		
-	}
 	
-	private boolean publish() {
+	protected boolean publish() {
 		String cluster = getHolder().getCurrentCluster().getClusterName();
 		String newPrimaryDc = getHolder().getClusterDcs().get(getHolder().getMigrationCluster().getDestinationDcId()).getDcName();
 		List<InetSocketAddress> newMasters = new LinkedList<>();
@@ -73,17 +41,23 @@ public class MigrationPublishStat extends AbstractMigrationStat {
 		}
 		
 		boolean ret = false;
+		MigrationPublishResult res = null;
 		try {
-			MigrationPublishResult res = getMigrationPublishService().doMigrationPublish(cluster, newPrimaryDc, newMasters);
+			res = getMigrationPublishService().doMigrationPublish(cluster, newPrimaryDc, newMasters);
 			logger.info("[MigrationPublishStat][result]{}",res);
 			ret = res.isSuccess();
 		} catch (Exception e) {
+			res = new MigrationPublishResult("", cluster, newPrimaryDc, newMasters);
+			res.setSuccess(false);
+			res.setMessage(e.getMessage());
 			logger.error("[MigrationPublish][fail]",e);
 			ret = false;
 		}
 		
+		updateMigrationPublishResult(res);
+		
 		return ret;
-	}
+ 	}
 	
 	private InetSocketAddress getMasterAddress(List<RedisTbl> redises) {
 		InetSocketAddress res = null;
@@ -94,10 +68,18 @@ public class MigrationPublishStat extends AbstractMigrationStat {
 		}
 		return res;
 	}
-
+	
+	private void updateMigrationPublishResult(MigrationPublishResult res) {
+		if(null != res) {
+			MigrationClusterTbl migrationCluster = getHolder().getMigrationCluster();
+			migrationCluster.setPublishInfo(res.toString());
+			getHolder().getMigrationService().updateMigrationCluster(migrationCluster);
+		}
+	}
+	
 	@Override
 	public void refresh() {
 		// Nothing to do
-		logger.info("[MigrationPublish]{}", getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[]{}",getClass().toString(), getHolder().getCurrentCluster().getClusterName());
 	}
 }

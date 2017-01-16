@@ -15,13 +15,14 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  *
  *         Dec 8, 2016
  */
-public class MigrationCheckingStat extends AbstractMigrationStat {
+public class MigrationCheckingState extends AbstractMigrationState {
 
 	private ExecutorService fixedThreadPool;
 
-	public MigrationCheckingStat(MigrationCluster holder) {
+	public MigrationCheckingState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Checking);
-		this.setNextAfterSuccess(new MigrationMigratingStat(getHolder())).setNextAfterFail(this);
+		this.setNextAfterSuccess(new MigrationMigratingState(holder))
+			.setNextAfterFail(this);
 
 		int threadSize = holder.getMigrationShards().size() == 0 ? 1 : holder.getMigrationShards().size();
 		fixedThreadPool = Executors.newFixedThreadPool(threadSize, XpipeThreadFactory.create("MigrationChecking"));
@@ -30,16 +31,15 @@ public class MigrationCheckingStat extends AbstractMigrationStat {
 	@Override
 	public void action() {
 		MigrationCluster migrationCluster = getHolder();
-		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
-
+		
 		// Update db
 		MigrationClusterTbl migrationClusterTbl = migrationCluster.getMigrationCluster();
 		migrationClusterTbl.setStatus(MigrationStatus.Checking.toString());
 		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
 
+		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
 		for (final MigrationShard migrationShard : migrationShards) {
 			fixedThreadPool.submit(new Runnable() {
-
 				@Override
 				public void run() {
 					migrationShard.doCheck();
@@ -51,13 +51,14 @@ public class MigrationCheckingStat extends AbstractMigrationStat {
 	@Override
 	public void refresh() {
 		int successCnt = 0;
-		for (MigrationShard migrationShard : getHolder().getMigrationShards()) {
+		List<MigrationShard> migrationShards = getHolder().getMigrationShards();
+		for (MigrationShard migrationShard : migrationShards) {
 			if (migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK)) {
 				++successCnt;
 			}
 		}
 
-		if (successCnt == getHolder().getMigrationShards().size()) {
+		if (successCnt == migrationShards.size()) {
 			logger.info("[MigrationChecking][success][continue]{}", getHolder().getCurrentCluster().getClusterName());
 			updateAndProcess(nextAfterSuccess(), true);
 		}
