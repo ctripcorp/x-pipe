@@ -10,11 +10,6 @@
 	<artifactId>ctrip-service</artifactId>
 
 
-	<properties>
-		<cat.version>1.5.1</cat.version>
-		<apollo.version>0.0.8</apollo.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -57,6 +52,10 @@
 				<exclusion>
 					<groupId>redis.clients</groupId>
 					<artifactId>jedis</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>cglib</groupId>
+					<artifactId>cglib</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>
