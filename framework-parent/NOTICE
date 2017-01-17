@@ -1,0 +1,15 @@
+NOTICE
+
+1. remove ctripcorp related configuration
+2. add plugin management 
+
+        <maven-enforcer-plugin_version>1.3.1</maven-enforcer-plugin_version>
+
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <version>${maven-enforcer-plugin_version}</version>
+        </plugin>
+
+
+

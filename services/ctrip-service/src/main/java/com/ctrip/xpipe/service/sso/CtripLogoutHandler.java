@@ -32,7 +32,8 @@ public class CtripLogoutHandler implements LogoutHandler {
         response.addCookie(cookie);
 
         String casServerUrlPrefix = config.get(SSOConfigurations.KEY_CAS_SERVER_URL_PREFIX);
-        String casRegisterServerName = config.get(SSOConfigurations.KEY_CAS_REGISTER_SERVER_NAME);
+        @SuppressWarnings("unused")
+		String casRegisterServerName = config.get(SSOConfigurations.KEY_CAS_REGISTER_SERVER_NAME);
 
         try {
             response.sendRedirect(casServerUrlPrefix + "/logout?service=");

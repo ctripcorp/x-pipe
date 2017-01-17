@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
@@ -28,13 +28,13 @@ public class MultiMetaServer implements InvocationHandler {
 
 	private MetaServer dstServer;
 	private List<MetaServer> otherServers;
-	private ExecutorService executors;
+	private Executor executors;
 
 	public MultiMetaServer(MetaServer dstServer, List<MetaServer> otherServers) {
-		this(dstServer, otherServers, MoreExecutors.sameThreadExecutor());
+		this(dstServer, otherServers, MoreExecutors.directExecutor());
 	}
 
-	public MultiMetaServer(MetaServer dstServer, List<MetaServer> otherServers, ExecutorService executors) {
+	public MultiMetaServer(MetaServer dstServer, List<MetaServer> otherServers, Executor executors) {
 		this.dstServer = dstServer;
 		this.otherServers = otherServers;
 		this.executors = executors;

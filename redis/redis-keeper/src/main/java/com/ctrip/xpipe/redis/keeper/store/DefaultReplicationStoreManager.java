@@ -70,7 +70,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 	private KeeperMonitorManager keeperMonitorManager;
 	
 	public DefaultReplicationStoreManager(KeeperConfig keeperConfig, String clusterName, String shardName, String keeperRunid, File baseDir, KeeperMonitorManager keeperMonitorManager) {
-		super(MoreExecutors.sameThreadExecutor());
+		super(MoreExecutors.directExecutor());
 		this.clusterName = clusterName;
 		this.shardName = shardName;
 		this.keeperRunid = keeperRunid;

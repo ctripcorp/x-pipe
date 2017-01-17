@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.command;
 
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -35,11 +35,11 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	public CommandFuture<V> execute(){
 		
 		logger.debug("[execute]{}", this);
-		return execute(MoreExecutors.sameThreadExecutor());
+		return execute(MoreExecutors.directExecutor());
 	}
 
 	@Override
-	public CommandFuture<V> execute(ExecutorService executors) {
+	public CommandFuture<V> execute(Executor executors) {
 		
 		future().addListener(new CommandFutureListener<V>() {
 

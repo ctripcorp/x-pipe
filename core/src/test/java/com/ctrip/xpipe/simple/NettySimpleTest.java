@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.simple;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;

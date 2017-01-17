@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
  * @author lepdou 2016-11-08
  */
 @Configuration
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class SSOConfigurations {
     public static final String KEY_CAS_REGISTER_SERVER_NAME = "cas.register.server.name";
     public static final String KEY_CAS_SERVER_LOGIN_URL = "cas.server.login.url";
@@ -33,7 +34,7 @@ public class SSOConfigurations {
 
     private Config config = Config.DEFAULT;
 
-    @Bean
+	@Bean
     public ServletListenerRegistrationBean redisAppSettingListener() {
         ServletListenerRegistrationBean redisAppSettingListener = new ServletListenerRegistrationBean();
         redisAppSettingListener.setListener(listener("org.jasig.cas.client.credis.CRedisAppSettingListner"));

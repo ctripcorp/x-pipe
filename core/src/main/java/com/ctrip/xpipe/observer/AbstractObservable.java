@@ -2,7 +2,7 @@ package com.ctrip.xpipe.observer;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -22,12 +22,12 @@ public abstract class AbstractObservable implements Observable{
 	
 	private List<Observer> observers = new LinkedList<>();
 		
-	private ExecutorService executors = MoreExecutors.sameThreadExecutor();
+	private Executor executors = MoreExecutors.directExecutor();
 
 	public AbstractObservable() {
 	}
 
-	public AbstractObservable(ExecutorService executors) {
+	public AbstractObservable(Executor executors) {
 		this.executors = executors;
 	}
 
