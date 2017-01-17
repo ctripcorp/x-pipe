@@ -154,7 +154,6 @@ public class RequestResponseCommandTest extends AbstractTest {
 			future.get();
 			Assert.fail();
 		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
 			if (!(e instanceof ExecutionException && (((ExecutionException) e).getCause() instanceof IOException))) {
 				Assert.fail();
 			}

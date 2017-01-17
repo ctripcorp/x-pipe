@@ -66,7 +66,7 @@ public class DefaultCommandStore implements CommandStore {
 
 		long currentStartOffset = findMaxStartOffset();
 		File currentFile = fileForStartOffset(currentStartOffset);
-		logger.info("Write to " + currentFile.getName());
+		logger.info("Write to {}", currentFile.getName());
 		CommandFileContext cmdFileCtx = new CommandFileContext(currentStartOffset, currentFile);
 		cmdFileCtxRef.set(cmdFileCtx);
 		offsetNotifier = new OffsetNotifier(cmdFileCtx.totalLength() - 1);

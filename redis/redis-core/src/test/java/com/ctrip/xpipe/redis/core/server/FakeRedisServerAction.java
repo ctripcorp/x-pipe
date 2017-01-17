@@ -122,7 +122,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 			String mark = RunidGenerator.DEFAULT.generateRunid();
 			String content = "$EOF:" + mark + "\r\n" + fakeRedisServer.getRdbContent() + mark;
 			rdb = content.getBytes();
-			sleepMilli = 100;
+			sleepMilli = 150;
 		}else{
 			BulkStringParser bulkStringParser = new BulkStringParser(fakeRedisServer.getRdbContent());
 			ByteBuf byteBuf = bulkStringParser.format();
