@@ -1,0 +1,11 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Fri Aug 12 16:49:52 CST 2016
+http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/public/.error=Could not transfer artifact org.unidal.framework\:test-framework\:pom\:2.5.0 from/to public (http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/public)\: connect timed out
+http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/groups/public/.lastUpdated=1470991792959
+@default-ctrip_fx_snapshot-http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/fxsnapshot/.lastUpdated=1470991382372
+@default-public-http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/public/.lastUpdated=1470991392772
+@default-localsnapshots-http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/snapshots/.lastUpdated=1470991362358
+http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/snapshots/.error=Could not transfer artifact org.unidal.framework\:test-framework\:pom\:2.5.0 from/to localsnapshots (http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/snapshots)\: connect timed out
+http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/releases/.error=Could not transfer artifact org.unidal.framework\:test-framework\:pom\:2.5.0 from/to localreleases (http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/releases)\: connect timed out
+@default-localreleases-http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/releases/.lastUpdated=1470991372364
+http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/fxsnapshot/.error=Could not transfer artifact org.unidal.framework\:test-framework\:pom\:2.5.0 from/to ctrip_fx_snapshot (http\://maven.dev.sh.ctripcorp.com\:8081/nexus/content/repositories/fxsnapshot)\: connect timed out
