@@ -39,7 +39,7 @@
 			<directory>target</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
-				<include>${project.artifactId}-*.jar</include>
+				<include>${project.artifactId}-${project.version}.jar</include>
 			</includes>
 			<fileMode>0755</fileMode>
 		</fileSet>

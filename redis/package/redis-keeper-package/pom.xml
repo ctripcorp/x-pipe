@@ -21,7 +21,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>com.ctrip.framework.xpipe.redis.keeper.KeeperContainerApplication</mainClass>
+					<mainClass>com.ctrip.xpipe.redis.keeper.KeeperContainerApplication</mainClass>
 					<executable>true</executable>
 				</configuration>
 			</plugin>
