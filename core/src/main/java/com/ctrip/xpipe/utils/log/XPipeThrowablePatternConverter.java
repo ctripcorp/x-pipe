@@ -7,7 +7,7 @@ import org.apache.logging.log4j.core.impl.ThrowableProxy;
 import org.apache.logging.log4j.core.pattern.ConverterKeys;
 import org.apache.logging.log4j.core.pattern.PatternConverter;
 import org.apache.logging.log4j.core.pattern.ThrowablePatternConverter;
-import org.apache.logging.log4j.util.Strings;
+import org.apache.logging.log4j.core.util.Constants;
 
 import com.ctrip.xpipe.exception.ExceptionUtils;
 
@@ -46,7 +46,10 @@ public class XPipeThrowablePatternConverter extends ThrowablePatternConverter{
     @Override
     public void format(final LogEvent event, final StringBuilder toAppendTo) {
 
+    	
+        final ThrowableProxy proxy = event.getThrownProxy();
         final Throwable throwable = event.getThrown();
+        
         
         //xpipe code
         if(throwable != null){
@@ -60,27 +63,20 @@ public class XPipeThrowablePatternConverter extends ThrowablePatternConverter{
 				toAppendTo.append(String.format("\n[%s]", extra));
 			}
         }
-        
-        formatExtend(event, toAppendTo);
-    }
 
-    //copy from ExtendedThrowablePatternConverter 
-    public void formatExtend(final LogEvent event, final StringBuilder toAppendTo) {
-        final ThrowableProxy proxy = event.getThrownProxy();
-        final Throwable throwable = event.getThrown();
         if ((throwable != null || proxy != null) && options.anyLines()) {
             if (proxy == null) {
                 super.format(event, toAppendTo);
                 return;
             }
-            final String extStackTrace = proxy.getExtendedStackTraceAsString(options.getIgnorePackages(), options.getTextRenderer());
+            final String extStackTrace = proxy.getExtendedStackTraceAsString(options.getPackages());
             final int len = toAppendTo.length();
             if (len > 0 && !Character.isWhitespace(toAppendTo.charAt(len - 1))) {
                 toAppendTo.append(' ');
             }
-            if (!options.allLines() || !Strings.LINE_SEPARATOR.equals(options.getSeparator())) {
+            if (!options.allLines() || !Constants.LINE_SEPARATOR.equals(options.getSeparator())) {
                 final StringBuilder sb = new StringBuilder();
-                final String[] array = extStackTrace.split(Strings.LINE_SEPARATOR);
+                final String[] array = extStackTrace.split(Constants.LINE_SEPARATOR);
                 final int limit = options.minLines(array.length) - 1;
                 for (int i = 0; i <= limit; ++i) {
                     sb.append(array[i]);
@@ -89,9 +85,12 @@ public class XPipeThrowablePatternConverter extends ThrowablePatternConverter{
                     }
                 }
                 toAppendTo.append(sb.toString());
+
             } else {
                 toAppendTo.append(extStackTrace);
             }
         }
     }
+
+
 }
