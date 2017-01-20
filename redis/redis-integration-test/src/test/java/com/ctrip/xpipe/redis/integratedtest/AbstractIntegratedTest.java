@@ -59,7 +59,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	private String clusterId = "cluster1", shardId = "shard1";
 
-	private int defaultTestMessageCount = 10000;
+	private int defaultTestMessageCount = 5000;
 
 	private Set<RedisMeta> allRedisStarted = new HashSet<>();
 
@@ -293,7 +293,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	protected void sendMesssageToMasterAndTest(int messageCount, RedisMeta redisMaster, List<RedisMeta> slaves){
 
 		sendMessageToMaster(redisMaster, messageCount);
-		sleep(6000);
+		sleep(4000);
 		assertRedisEquals(redisMaster, slaves);
 	}
 

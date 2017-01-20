@@ -32,7 +32,7 @@ import io.netty.channel.ChannelFutureListener;
  *
  *         Aug 9, 2016
  */
-public class DefaultCommandStore implements CommandStore {
+public class DefaultCommandStore extends AbstractStore implements CommandStore {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 	
@@ -54,7 +54,7 @@ public class DefaultCommandStore implements CommandStore {
 	private Object cmdFileCtxRefLock = new Object();
 	
 	private CommandStoreDelay commandStoreDelay;
-
+	
 	public DefaultCommandStore(File file, int maxFileSize, KeeperMonitorManager keeperMonitorManager) throws IOException {
 		
 		this.baseDir = file.getParentFile();
@@ -101,15 +101,20 @@ public class DefaultCommandStore implements CommandStore {
 
 	@Override
 	public int appendCommands(ByteBuf byteBuf) throws IOException {
+		
+		makeSureOpen();
+
 		rotateFileIfNenessary();
 
 		CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
 
 		//delay monitor
-		delayTraceLogger.debug("[appendCommands][begin]");
+		delayTraceLogger.debug("[appendCommands][begin]{}");
 		commandStoreDelay.beginWrite();
 		
+//		logger.debug("[appendCommands]{}, {}, {}", cmdFileCtx, byteBuf.readableBytes(), cmdFileCtx.fileLength());
 		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.getChannel(), delayTraceLogger);
+		logger.debug("[appendCommands]{}, {}, {}", cmdFileCtx, byteBuf.readableBytes(), cmdFileCtx.fileLength());
 
 		long offset = cmdFileCtx.totalLength() - 1;
 		
@@ -145,6 +150,8 @@ public class DefaultCommandStore implements CommandStore {
 
 	@Override
 	public CommandReader beginRead(long startOffset) throws IOException {
+
+		makeSureOpen();
 
 		File targetFile = findFileForOffset(startOffset);
 		if (targetFile == null) {
@@ -229,14 +236,16 @@ public class DefaultCommandStore implements CommandStore {
 			
 			referenceFileRegion.setTotalPos(curPosition);
 			
-			if (referenceFileRegion.count() <= 0) {
-				logger.info("[read]{}", referenceFileRegion);
+			if (referenceFileRegion.count() < 0) {
+				logger.error("[read]{}", referenceFileRegion);
 			}
 
 			return referenceFileRegion;
 		}
 
 		private void readNextFileIfNecessary() throws IOException {
+
+			makeSureOpen();
 
 			if (!referenceFileChannel.hasAnythingToRead()) {
 				// TODO notify when next file ready
@@ -282,6 +291,7 @@ public class DefaultCommandStore implements CommandStore {
 	@Override
 	public void addCommandsListener(long offset, final CommandsListener listener) throws IOException {
 
+		makeSureOpen();
 		logger.info("[addCommandsListener][begin] from offset {}, {}", offset, listener);
 
 		CommandReader cmdReader = null;
@@ -336,12 +346,15 @@ public class DefaultCommandStore implements CommandStore {
 
 	@Override
 	public void close() throws IOException {
-		
-		logger.info("[close]{}", this);
 
-		CommandFileContext commandFileContext = cmdFileCtxRef.get();
-		if (commandFileContext != null) {
-			commandFileContext.close();
+		if(cmpAndSetClosed()){
+			logger.info("[close]{}", this);
+			CommandFileContext commandFileContext = cmdFileCtxRef.get();
+			if (commandFileContext != null) {
+				commandFileContext.close();
+			}
+		}else{
+			logger.warn("[close][already closed]{}", this);
 		}
 	}
 

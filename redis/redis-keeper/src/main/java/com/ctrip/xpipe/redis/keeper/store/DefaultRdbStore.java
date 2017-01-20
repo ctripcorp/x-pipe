@@ -28,7 +28,7 @@ import com.ctrip.xpipe.utils.SizeControllableFile;
 
 import io.netty.buffer.ByteBuf;
 
-public class DefaultRdbStore implements RdbStore {
+public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRdbStore.class);
 	
@@ -66,7 +66,8 @@ public class DefaultRdbStore implements RdbStore {
 	
 	@Override
 	public int writeRdb(ByteBuf byteBuf) throws IOException {
-		
+		makeSureOpen();
+
 		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, channel);
 		return wrote;
 	}
@@ -117,6 +118,8 @@ public class DefaultRdbStore implements RdbStore {
 	@Override
 	public void readRdbFile(final RdbFileListener rdbFileListener) throws IOException {
 		
+		makeSureOpen();
+
 		rdbFileListener.beforeFileData();
 		refCount.incrementAndGet();
 
@@ -158,14 +161,18 @@ public class DefaultRdbStore implements RdbStore {
 
 		switch (status.get()) {
 			case Success:
-				rdbFileListener.onFileData(null);
+				if(file.exists()){//this is necessery because file may be deleted
+					rdbFileListener.onFileData(null);
+				}else{
+					rdbFileListener.exception((new Exception("rdb file not exists now " + file)));
+				}
 				break;
 	
 			case Fail:
 				rdbFileListener.exception(new Exception("[rdb error]" + file));
 				break;
 			default:
-				rdbFileListener.exception(new Exception("[status not write]" + file + "," + status));
+				rdbFileListener.exception(new Exception("[status not right]" + file + "," + status));
 				break;
 		}
 	}
@@ -199,12 +206,13 @@ public class DefaultRdbStore implements RdbStore {
 
 	@Override
 	public boolean checkOk() {
-		return status.get() == Status.Writing || status.get() == Status.Success;
+		return status.get() == Status.Writing 
+				|| ( status.get() == Status.Success && file.exists());
 	}
 
 	@Override
 	public String toString() {
-		return String.format("eofType:%s, rdbLastKeeperOffset:%d,file:%s, status:%s", eofType, rdbLastKeeperOffset, file, status.get());
+		return String.format("eofType:%s, rdbLastKeeperOffset:%d,file:%s, exists:%b, status:%s", eofType, rdbLastKeeperOffset, file, file.exists(), status.get());
 	}
 
 	@Override
@@ -217,9 +225,13 @@ public class DefaultRdbStore implements RdbStore {
 	@Override
 	public void close() throws IOException {
 		
-		logger.info("[close]{}", file);
-		if(writeFile != null){
-			writeFile.close();
+		if(cmpAndSetClosed()){
+			logger.info("[close]{}", file);
+			if(writeFile != null){
+				writeFile.close();
+			}
+		}else{
+			logger.warn("[close][already closed]{}", this);
 		}
 	}
 

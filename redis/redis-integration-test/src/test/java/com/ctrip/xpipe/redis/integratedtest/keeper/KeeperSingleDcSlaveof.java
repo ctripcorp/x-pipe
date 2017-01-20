@@ -9,6 +9,8 @@ import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.meta.server.job.SlaveofJob;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
 
@@ -24,8 +26,18 @@ public class KeeperSingleDcSlaveof extends AbstractKeeperIntegratedSingleDc {
 	public void testXSlaveof() throws Exception {
 
 		testMakeRedisSlave(true);
-
 	}
+	
+	@Override
+	protected KeeperConfig getKeeperConfig() {
+		
+		TestKeeperConfig testKeeperConfig = (TestKeeperConfig) super.getKeeperConfig();
+		testKeeperConfig.setReplicationStoreCommandFileSize(1 << 11);
+		testKeeperConfig.setReplicationStoreCommandFileNumToKeep(1 << 20);
+		return testKeeperConfig;
+	}
+
+
 
 	@Test
 	public void testSlaveof() throws Exception {
@@ -93,6 +105,11 @@ public class KeeperSingleDcSlaveof extends AbstractKeeperIntegratedSingleDc {
 		}
 
 		sendMessageToMasterAndTestSlaveRedis();
+	}
+
+	@Override
+	protected boolean deleteTestDirAfterTest() {
+		return false;
 	}
 
 }

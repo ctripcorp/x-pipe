@@ -57,8 +57,10 @@ public class ByteBufUtils {
 	public static int writeByteBufToFileChannel(ByteBuf byteBuf, FileChannel fileChannel, Logger tracelogger) throws IOException{
 
 		int wrote = 0;
+		final int readerIndex = byteBuf.readerIndex();
+		final int readable = byteBuf.readableBytes();
 		try{
-			ByteBuffer buf = byteBuf.internalNioBuffer(byteBuf.readerIndex(), byteBuf.readableBytes());
+			ByteBuffer buf = byteBuf.internalNioBuffer(readerIndex, readable);
 			if(logger.isDebugEnabled()){
 				logger.debug("[appendCommands]{}", ByteBufferUtils.readToString(buf.slice()));
 			}
@@ -81,8 +83,11 @@ public class ByteBufUtils {
 				}
 			}
 		}
-		byteBuf.readerIndex(byteBuf.writerIndex());
 		
+		if(wrote < readable){
+			logger.warn("[writeByteBufToFileChannel][wrote < readable]{} < {}", wrote, readable);
+		}
+		byteBuf.readerIndex(readerIndex + wrote);
 		return wrote;
 	}
 

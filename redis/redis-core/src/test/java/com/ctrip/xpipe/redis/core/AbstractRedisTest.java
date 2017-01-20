@@ -22,6 +22,7 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
 import org.junit.Assert;
 import org.junit.Before;
+import org.unidal.tuple.Pair;
 import org.xml.sax.SAXException;
 
 import com.ctrip.xpipe.AbstractTest;
@@ -108,6 +109,20 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		return jedis;
 	}
 
+	protected boolean checkVersion(InetSocketAddress redis, String version) {
+
+		try (Jedis jedis = createJedis(redis)) {
+			String server = jedis.info("server");
+			for (String line : server.split("\r*\n+")) {
+				String[] part = line.split("\\s*:\\s*");
+				if (part.length == 2 && part[1].equals(version)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	protected void assertRedisEquals(RedisMeta redisMaster, List<RedisMeta> slaves) {
 		
 		Map<String, String> values = new HashMap<>(); 
@@ -122,20 +137,47 @@ public abstract class AbstractRedisTest extends AbstractTest{
 			logger.info(remarkableMessage("[assertRedisEquals]redisSlave:" + redisSlave));
 			
 			Jedis slave = createJedis(redisSlave);
-			int sizeExpected = values.size();
-			int sizeReal = slave.keys("*").size();
+			Set<String> slaveKeys = slave.keys("*");
 			
-			Assert.assertEquals(sizeExpected, sizeReal);
-			
-			for(Entry<String, String> entry : values.entrySet()){
-				
-				String realValue = slave.get(entry.getKey());
-				Assert.assertEquals(entry.getValue(), realValue);
+			Pair<Set<String>, Set<String>> diff = diff(values.keySet(), slaveKeys);
+			boolean fail = false;
+			if(diff.getKey().size() != 0){
+				logger.info("[lack keys]{}", diff.getKey());
+				fail = true;
 			}
+			if(diff.getValue().size() != 0){
+				logger.info("[more keys]{}", diff.getKey());
+				fail = true;
+			}
+			
+			Assert.assertFalse(fail);
+			
+			Set<String> keysWrong = new HashSet<>();
+			for(Entry<String, String> entry : values.entrySet()){
+				String realValue = slave.get(entry.getKey());
+				if(!realValue.equals(entry.getValue())){
+					keysWrong.add(entry.getKey());
+				}
+			}
+			
+			if(keysWrong.size() != 0){
+				logger.info("[keysWrong]{}", keysWrong);
+			}
+			Assert.assertEquals(0, keysWrong.size());
 		}
-		
-		
 	}
+
+	private Pair<Set<String>, Set<String>> diff(Set<String> keySet1, Set<String> keySet2) {
+		
+		Set<String> keySet1Copy = new HashSet<>(keySet1);
+		Set<String> keySet2Copy = new HashSet<>(keySet2);
+		
+		keySet1Copy.removeAll(keySet2);
+		keySet2Copy.removeAll(keySet1);
+		
+		return new Pair<>(keySet1Copy, keySet2Copy);
+	}
+
 
 	protected void sendRandomMessage(RedisMeta redisMeta, int count) {
 

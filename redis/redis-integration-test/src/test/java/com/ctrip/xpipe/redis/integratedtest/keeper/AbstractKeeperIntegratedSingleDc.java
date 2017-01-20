@@ -53,7 +53,7 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	}
 
 	protected int getInitSleepMilli() {
-		return 5000;
+		return 3000;
 	}
 
 	private void initResource() throws Exception {

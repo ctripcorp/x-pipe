@@ -27,6 +27,7 @@
 		<!--  
 		<logger name="io.netty.handler.logging.LoggingHandler" level="DEBUG"/>
 		-->
+		
         <root level="INFO">
             <appender-ref ref="Console"/>
             <appender-ref ref="RollingFileInfo"/>

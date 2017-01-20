@@ -28,6 +28,9 @@ public class KeeperSingleDcVersionTest extends AbstractKeeperIntegratedSingleDc{
 		
 		addr_2_8_19 = IpUtils.parseSingle(addr_2_8_19_str);
 		
+		if(!checkVersion(addr_2_8_19, "2.8.19")){
+			throw new IllegalStateException("redis version not right, expected:2.8.19");
+		}
 		makeRedisMaster(addr_2_8_19);
 		flushAll(addr_2_8_19);
 	}

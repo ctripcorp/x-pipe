@@ -19,7 +19,10 @@ public class CommandFileContext {
 
 	private ControllableFile controllableFile;
 
+	private File currentFile;
+	
 	public CommandFileContext(long currentStartOffset, File currentFile) throws IOException {
+		this.currentFile = currentFile;
 		this.currentStartOffset = currentStartOffset;
 		this.controllableFile = new DefaultControllableFile(currentFile, currentFile.length());
 	}
@@ -45,6 +48,11 @@ public class CommandFileContext {
 
 	public FileChannel getChannel() throws IOException {
 		return controllableFile.getFileChannel();
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("%s", currentFile);
 	}
 
 }
