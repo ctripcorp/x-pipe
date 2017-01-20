@@ -24,8 +24,10 @@ import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPoolTest;
 import com.ctrip.xpipe.pool.XpipeNettyClientPoolTest;
 import com.ctrip.xpipe.utils.ChannelUtilTest;
+import com.ctrip.xpipe.utils.DefaultControllableFileTest;
 import com.ctrip.xpipe.utils.FileUtilsTest;
 import com.ctrip.xpipe.utils.OffsetNotifierTest;
+import com.ctrip.xpipe.utils.SizeControllableFileTest;
 import com.ctrip.xpipe.utils.StringUtilTest;
 import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 
@@ -59,7 +61,9 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	StringUtilTest.class,
 	ReferenceFileChannelTest.class,
 	ChannelUtilTest.class,
-	KeyedOneThreadTaskExecutorTest.class
+	KeyedOneThreadTaskExecutorTest.class,
+	DefaultControllableFileTest.class,
+	SizeControllableFileTest.class
 })
 public class AllTests {
 

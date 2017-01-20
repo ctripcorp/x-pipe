@@ -43,9 +43,13 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 		
 		//make sure keeper works
 		sendMessageToMaster();
+		
+		logger.info("allSlaves:{}", getRedisSlaves());
+		
 		RedisMeta newSlave = createSlave(backupKeeper.getIp(), backupKeeper.getPort());
 		startRedis(getDcMeta(), newSlave);
 		
+		logger.info("allSlaves:{}", getRedisSlaves());
 		assertRedisEquals();
 	}
 
