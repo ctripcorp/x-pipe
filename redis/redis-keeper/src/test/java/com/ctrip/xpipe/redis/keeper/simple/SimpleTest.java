@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.keeper.simple;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.Calendar;
 
 import org.junit.Assert;
@@ -32,12 +31,6 @@ public class SimpleTest extends AbstractTest {
 		
 		File f = new File("/opt/logs/test");
 		logger.info("[exist]{}", f.exists());
-		
-		RandomAccessFile file = new RandomAccessFile(f, "rw");
-		
-		logger.info("[exist]{}", f.exists());
-		
-		
 		
 	}
 

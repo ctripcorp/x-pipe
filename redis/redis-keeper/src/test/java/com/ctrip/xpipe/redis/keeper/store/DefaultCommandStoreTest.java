@@ -24,7 +24,6 @@ import com.google.common.util.concurrent.SettableFuture;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
-import redis.clients.jedis.Commands;
 
 /**
  * @author wenchao.meng
