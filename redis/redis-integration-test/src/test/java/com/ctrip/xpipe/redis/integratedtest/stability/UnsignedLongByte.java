@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.stability;
 
+import org.junit.Assert;
+
 /**
  * @author wenchao.meng
  *
@@ -15,19 +17,19 @@ public class UnsignedLongByte {
 
 		len = 0;
 
-		while (data != 0) {
+		do{
 
 			int current = (int) (data % 10);
 			dat[len++] = (byte) ('0' + current & 0XFF);
 			data = data / 10;
-		}
+		}while (data != 0);
 		reverse(dat, 0, len);
 		return this;
 	}
 
 	private void reverse(byte[] data, int begin, int end) {
 
-		for (int i = begin; i < (begin + end - 1) / 2; i++) {
+		for (int i = begin; i <= (begin + end - 1) / 2; i++) {
 
 			byte tmp = data[i];
 			int endIndex = end - (i - begin) - 1;
@@ -64,17 +66,35 @@ public class UnsignedLongByte {
 
 	public static void main(String[] argc) {
 
-		UnsignedLongByte unsignedLongByte = new UnsignedLongByte();
-		unsignedLongByte.from(Long.MAX_VALUE);
 
-		System.out.println(unsignedLongByte.toString());
-		System.out.println(Long.MAX_VALUE);
+		UnsignedLongByte test = new UnsignedLongByte();
+		System.out.println(test.from(1230));
 
-		byte[] dst = new byte[100];
+		for(long i = Long.MAX_VALUE; i >= Long.MAX_VALUE - 10000;i--){
+			
+			UnsignedLongByte unsignedLongByte = new UnsignedLongByte();
+			unsignedLongByte.from(i);
+			
+			Assert.assertEquals(i, Long.parseLong(unsignedLongByte.toString()));
 
-		int len = unsignedLongByte.put(dst);
+			byte[] dst = new byte[100];
+			int len = unsignedLongByte.put(dst);
+			
+			Assert.assertEquals(i, Long.parseLong(new String(dst, 0, len)));
+		}
 
-		System.out.println(new String(dst, 0, len));
+		for(long i = 0; i <= 100000;i++){
+			
+			UnsignedLongByte unsignedLongByte = new UnsignedLongByte();
+			unsignedLongByte.from(i);
+			
+			Assert.assertEquals(i, Long.parseLong(unsignedLongByte.toString()));
+
+			byte[] dst = new byte[100];
+			int len = unsignedLongByte.put(dst);
+			
+			Assert.assertEquals(i, Long.parseLong(new String(dst, 0, len)));
+		}
 
 	}
 }

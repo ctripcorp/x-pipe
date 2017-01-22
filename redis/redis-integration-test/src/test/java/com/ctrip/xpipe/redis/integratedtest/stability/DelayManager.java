@@ -48,6 +48,8 @@ public class DelayManager{
 		totalDelay.addAndGet(delayNanos);
 		
 		if(delayNanos >= tooLongBaseMilli * 1000000){
+			
+			logger.debug("{}", delayNanos);
 			tooLongCount.incrementAndGet();
 		}
 		
@@ -78,7 +80,7 @@ public class DelayManager{
 			long average = countDelta == 0 ? 0 : (currentTotalDelay - previousTotalDelay)/countDelta;
 			long countLong = currentTooLongCount - previousTooLongCount;
 			
-			logger.info("average:{} micro, time > {}ms: {}", average/1000, tooLongBaseMilli, countLong,maxDelayNanos/1000);
+			logger.info("average:{} micro, time > {}ms: {}", average/1000, tooLongBaseMilli, countLong);
 			logger.info("max: {} micro, happen time:{}", maxDelayNanos/1000, sdf.format(new Date(maxDelayTime)));
 			
 			maxDelayNanos = 0;

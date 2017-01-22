@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.stability;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.Map.Entry;
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,6 +14,7 @@ import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -161,7 +162,6 @@ public class XPipeStabilityTest {
 
 		startQpsCheckJob();
 		startCatLogMetricJob();
-		startExpireCheckJob();
 
 		TimeUnit.DAYS.sleep(runDays);
 	}
@@ -203,12 +203,11 @@ public class XPipeStabilityTest {
 				
 				String pre = new String(preBytes, 0, preIndex);
 
-				records.put(key.toString(), pre);
+				putRecord(key.toString(), pre);
 				master.set(key.getBytes(), value);
 				queryCnt.incrementAndGet();
 			} catch (Exception e) {
-				logger.error(String.format("[startProducerJob][run]InsertValue Exception : Key:%s", key), 
-						e);
+				logger.error(String.format("[startProducerJob][run]InsertValue Exception : Key:%s", key), e);
 				records.remove(key);
 			} finally {
 				if(value != null){
@@ -223,6 +222,53 @@ public class XPipeStabilityTest {
 				}
 			}
 		}
+	}
+	
+	private void putRecord(String key, String value) {
+		
+		String previous = records.put(key, value); 
+		if(previous != null){
+			Pair<Long, Long> date = extractTimeFromValue(value);
+			Cat.logMetricForSum("xpipe.redis.lack", 1);
+			logger.warn("[putRecord][replace but old value still exists]{}, previous:{}, {}", key, valueForPrint(previous), new Date(date.getRight()));
+
+		}
+	}
+
+	public Pair<Long, Long> extractTimeFromValue(String value){
+		
+		int indexNano = value.indexOf("-");
+		int indexMilli = value.indexOf("-", indexNano + 1);
+		if(indexMilli == -1){
+			indexMilli = value.length();
+		}
+		
+		return Pair.of(Long.parseLong(value.substring(0, indexNano)), 
+				Long.parseLong(value.substring(indexNano + 1, indexMilli)));
+	}
+	
+	@Test
+	public void simpleTest(){
+		
+		Long long1 = System.nanoTime();
+		Long long2 = System.currentTimeMillis();
+		
+		String value = long1 + "-" + long2 + "-";
+		Pair<Long, Long> result = extractTimeFromValue(value);
+		
+		Assert.assertEquals(long1, result.getLeft());
+		Assert.assertEquals(long2, result.getRight());
+	}
+	
+	
+	private String valueForPrint(String value) {
+		
+		if(value == null){
+			return null;
+		}
+		
+		int end = Math.min(45, value.length());
+		return value.substring(0, end);
 	}
 
 	private void buildValue(byte[]data, byte []preBytes, int len) {
@@ -274,6 +320,9 @@ public class XPipeStabilityTest {
 				long current = System.nanoTime();
 				long produceTime = Long.valueOf(value.substring(0, value.indexOf("-")));
 				long delay = current - produceTime;
+				if(delay < 0){
+					logger.error("[onPMessage][delay < 0]{}, {}-{}, {}", delay, current, produceTime, value);
+				}
 				catIntervalTotalDelay.addAndGet(delay);
 				
 				delayManager.delay(delay);
@@ -319,41 +368,11 @@ public class XPipeStabilityTest {
 				Cat.logMetricForSum("xpipe.redis.map", records.size());
 				Cat.logMetricForSum("xpipe.redis.queue", valueCheck.queueSize());
 
-				logger.info("[startQpsCheckJob][run]QPS : {}", qps);
+				logger.info("[startQpsCheckJob][run]QPS: {}", qps);
 				logger.info("[startQpsCheckJob][run]MapSize : {}", records.size());
 				logger.info("[startQpsCheckJob][run]QueueSize : {}", valueCheck.queueSize());
 			}
 		}, 1, QPS_COUNT_INTERVAL, TimeUnit.SECONDS);
-	}
-
-	private void startExpireCheckJob() {
-
-		expireCheckThreadPool.scheduleAtFixedRate(new Runnable() {
-			@Override
-			public void run() {
-
-				for (Entry<String, String> entry : records.entrySet()) {
-
-					String key = entry.getKey();
-					String value = entry.getValue();
-
-					long currentTime = System.nanoTime();
-					long timeout = TimeUnit.NANOSECONDS
-							.toSeconds(currentTime - Long.valueOf(value.substring(value.indexOf("-") + 1)));
-					if (timeout > TIMEOUT_SECONDS) {
-						if (null != records.get(key)) {
-							logger.error("[startExpireCheckJob][run][Timeout]Key:{} Timeout:{}", key, timeout);
-						}
-					}
-					if (timeout > 3 * TIMEOUT_SECONDS) {
-						if (null != records.get(key)) {
-							logger.error("[startExpireCheckJob][run][Timeout][NoMoreCheck]Key:{}", key, timeout);
-							records.remove(key);
-						}
-					}
-				}
-			}
-		}, 1, 1, TimeUnit.SECONDS);
 	}
 
 	private JedisPool getJedisPool(String ip, int port, int maxTotal, int maxIdle, int timeout) {
