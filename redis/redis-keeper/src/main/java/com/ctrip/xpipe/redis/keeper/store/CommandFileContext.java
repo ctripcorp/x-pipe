@@ -32,6 +32,10 @@ public class CommandFileContext {
 		controllableFile.close();
 	}
 	
+	//if file not exist, create it
+	public void createIfNotExist() throws IOException{
+		controllableFile.getFileChannel();
+	}
 	
 	
 	public long fileLength(){

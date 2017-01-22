@@ -23,7 +23,6 @@
         <logger name="org.hibernate" level="INFO"/>
         <logger name="io.netty" level="INFO"/>
 		<logger name="io.netty.handler.logging.LoggingHandler" level="INFO"/>
-
 		<logger name="com.ctrip.xpipe.redis.keeper.monitor.DefaultCommandStoreDelay" level="INFO"/>
 		
         <root level="INFO">

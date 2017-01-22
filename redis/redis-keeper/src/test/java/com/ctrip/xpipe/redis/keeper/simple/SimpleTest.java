@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.simple;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.Calendar;
 
 import org.junit.Assert;
@@ -23,6 +26,20 @@ import com.dianping.cat.message.Transaction;
 public class SimpleTest extends AbstractTest {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
+	
+	@Test
+	public void test() throws FileNotFoundException{
+		
+		File f = new File("/opt/logs/test");
+		logger.info("[exist]{}", f.exists());
+		
+		RandomAccessFile file = new RandomAccessFile(f, "rw");
+		
+		logger.info("[exist]{}", f.exists());
+		
+		
+		
+	}
 
 	@Test
 	public void testFormat() {

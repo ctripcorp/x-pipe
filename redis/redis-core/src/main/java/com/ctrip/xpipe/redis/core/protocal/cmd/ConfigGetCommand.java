@@ -60,8 +60,57 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 		protected String getConfigName() {
 			return REDIS_CONFIG_TYPE.MIN_SLAVES_TO_WRITE.getConfigName();
 		}
+	}
+
+	public static class ConfigGetDisklessSync extends ConfigGetCommand<Boolean>{
+
+		public ConfigGetDisklessSync(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+		}
+
+		@Override
+		protected Boolean doFormat(Object[] payload) {
+			
+			if(payload.length < 2){
+				throw new IllegalStateException(getName() + " result length not right:" + payload.length);
+			}
+			String result = payloadToString(payload[1]);
+			if(result.equalsIgnoreCase("yes")){
+				return true;
+			}
+			if(result.equalsIgnoreCase("no")){
+				return false;
+			}
+			throw new IllegalStateException("expected yes or no, but:" + result);
+		}
 
 
+		@Override
+		protected String getConfigName() {
+			return REDIS_CONFIG_TYPE.DISKLESS_SYNC.getConfigName();
+		}
+	}
+
+	public static class ConfigGetDisklessSyncDelay extends ConfigGetCommand<Integer>{
+
+		public ConfigGetDisklessSyncDelay(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+		}
+
+		@Override
+		protected Integer doFormat(Object[] payload) {
+			
+			if(payload.length < 2){
+				throw new IllegalStateException(getName() + " result length not right:" + payload.length);
+			}
+			return payloadToInteger(payload[1]);
+		}
+
+
+		@Override
+		protected String getConfigName() {
+			return REDIS_CONFIG_TYPE.DISKLESS_SYNC_DELAY.getConfigName();
+		}
 	}
 
 }

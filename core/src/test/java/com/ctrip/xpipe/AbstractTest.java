@@ -73,7 +73,7 @@ public class AbstractTest {
 
 	private ComponentRegistry startedComponentRegistry;
 
-	protected void doBeforeAbstractTest() {}
+	protected void doBeforeAbstractTest() throws Exception {}
 	
 	@Before
 	public void beforeAbstractTest() throws Exception {
@@ -202,7 +202,7 @@ public class AbstractTest {
 		if (testDir != null) {
 			result = testDir.replace("~", userHome);
 		}
-		return result + "/" + currentTestName();
+		return result + "/" + getClass().getSimpleName() + "-" + currentTestName();
 	}
 
 	public static String getUserHome() {

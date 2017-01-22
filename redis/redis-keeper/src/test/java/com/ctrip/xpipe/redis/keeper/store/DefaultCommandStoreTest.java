@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.SettableFuture;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
+import redis.clients.jedis.Commands;
 
 /**
  * @author wenchao.meng
@@ -326,6 +327,22 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		String result = readCommandStoreTilNoMessage(commandStore, sb.length());
 		logger.info("[testReadWrite]{}, {}", sb.length(), result.length());
 		Assert.assertTrue(sb.toString().equals(result));
+	}
+	
+	@Test
+	public void testBeginRead() throws IOException{
+		
+		int testCount = 10;
+		long total = commandStore.totalLength();
+				
+		Assert.assertEquals(0, total);
+		for(int i=0;i < testCount;i++){
+			
+			commandStore.appendCommands(Unpooled.wrappedBuffer(randomString(maxFileSize).getBytes()));
+			total += maxFileSize;
+			commandStore.beginRead(total);
+		}
+		
 	}
 
 	@After

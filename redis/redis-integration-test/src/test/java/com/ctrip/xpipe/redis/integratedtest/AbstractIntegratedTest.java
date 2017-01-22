@@ -73,11 +73,17 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	@Before
 	public void beforeAbstractIntegratedTest() throws Exception {
 
+		doBeforeIntegratedTest();
+		
 		integratedProperties = new Properties();
 		integratedProperties.load(com.ctrip.xpipe.utils.FileUtils.getFileInputStream(integratedPropertiesFile));
 
 		initRegistry();
 		startRegistry();
+	}
+
+	protected void doBeforeIntegratedTest() throws Exception {
+		
 	}
 
 	protected static void cleanLog(File log, List<File> cleanFiles) {
@@ -293,7 +299,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	protected void sendMesssageToMasterAndTest(int messageCount, RedisMeta redisMaster, List<RedisMeta> slaves){
 
 		sendMessageToMaster(redisMaster, messageCount);
-		sleep(4000);
+		sleep(2000);
 		assertRedisEquals(redisMaster, slaves);
 	}
 
@@ -397,6 +403,11 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 				logger.error("[afterAbstractIntegratedTest][error stop redis]" + redisMeta, e);
 			}
 		}
+	}
+
+	@Override
+	protected boolean deleteTestDirAfterTest() {
+		return false;
 	}
 
 }

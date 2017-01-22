@@ -141,8 +141,10 @@ public abstract class AbstractRedisTest extends AbstractTest{
 			
 			Pair<Set<String>, Set<String>> diff = diff(values.keySet(), slaveKeys);
 			boolean fail = false;
+			
 			if(diff.getKey().size() != 0){
 				logger.info("[lack keys]{}", diff.getKey());
+				printKeysAround(diff.getKey(), slave);
 				fail = true;
 			}
 			if(diff.getValue().size() != 0){
@@ -166,6 +168,21 @@ public abstract class AbstractRedisTest extends AbstractTest{
 			Assert.assertEquals(0, keysWrong.size());
 		}
 	}
+
+	private void printKeysAround(Set<String> keys, Jedis slave) {
+		
+		for(String key : keys){
+			try{
+				Integer keyInt = Integer.parseInt(key);
+				for(int i = keyInt -1;i <= keyInt + 1; i++){
+					logger.info("[printKeysAround]{}, {}, {}", slave, i, slave.get(String.valueOf(i)));
+				}
+			}catch(Throwable th){
+				logger.error("[printKeysAround]" + key + "," + slave, th);
+			}
+		}
+	}
+
 
 	private Pair<Set<String>, Set<String>> diff(Set<String> keySet1, Set<String> keySet2) {
 		

@@ -112,7 +112,6 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 		delayTraceLogger.debug("[appendCommands][begin]{}");
 		commandStoreDelay.beginWrite();
 		
-//		logger.debug("[appendCommands]{}, {}, {}", cmdFileCtx, byteBuf.readableBytes(), cmdFileCtx.fileLength());
 		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.getChannel(), delayTraceLogger);
 		logger.debug("[appendCommands]{}, {}, {}", cmdFileCtx, byteBuf.readableBytes(), cmdFileCtx.fileLength());
 
@@ -142,7 +141,11 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 			File newFile = new File(baseDir, fileNamePrefix + newStartOffset);
 			logger.info("Rotate to {}", newFile.getName());
 			synchronized (cmdFileCtxRefLock) {
-				cmdFileCtxRef.set(new CommandFileContext(newStartOffset, newFile));
+				
+				CommandFileContext newCmdFileCtx = new CommandFileContext(newStartOffset, newFile);
+				newCmdFileCtx.createIfNotExist();
+				cmdFileCtxRef.set(newCmdFileCtx);
+				
 				curCmdFileCtx.close();
 			}
 		}

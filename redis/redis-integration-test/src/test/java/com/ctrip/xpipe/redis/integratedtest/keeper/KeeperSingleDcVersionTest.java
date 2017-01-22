@@ -3,11 +3,14 @@ package com.ctrip.xpipe.redis.integratedtest.keeper;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import org.junit.Before;
 import org.junit.Test;
 
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand.ConfigGetDisklessSync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand.ConfigGetDisklessSyncDelay;
 import com.ctrip.xpipe.utils.IpUtils;
 
 import redis.clients.jedis.Jedis;
@@ -23,16 +26,13 @@ public class KeeperSingleDcVersionTest extends AbstractKeeperIntegratedSingleDc{
 	
 	private InetSocketAddress addr_2_8_19;
 	
-	@Before
-	public void beforeKeeperSingleDcVersionTest(){
-		
+	@Override
+	protected void doBeforeIntegratedTest() throws Exception {
+		super.doBeforeIntegratedTest();
+
 		addr_2_8_19 = IpUtils.parseSingle(addr_2_8_19_str);
-		
-		if(!checkVersion(addr_2_8_19, "2.8.19")){
-			throw new IllegalStateException("redis version not right, expected:2.8.19");
-		}
-		makeRedisMaster(addr_2_8_19);
-		flushAll(addr_2_8_19);
+
+		checkAndPrepareRedis(addr_2_8_19, "2.8.19");
 	}
 	
 	@Test
@@ -60,6 +60,24 @@ public class KeeperSingleDcVersionTest extends AbstractKeeperIntegratedSingleDc{
 		
 	}
 
+	private void checkAndPrepareRedis(InetSocketAddress redisAddr, String version) throws Exception {
+		
+		if(!checkVersion(redisAddr, version)){
+			throw new IllegalStateException("redis(" + redisAddr +") version not right, expected:" + version);
+		}
+		
+		SimpleObjectPool<NettyClient>  clientPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(redisAddr);
+		Boolean diskLess = new ConfigGetDisklessSync(clientPool, scheduled).execute().get();
+		if(diskLess){
+			int diskLessSyncDelay = new ConfigGetDisklessSyncDelay(clientPool, scheduled).execute().get();
+			if(diskLessSyncDelay != 0){
+				throw new IllegalArgumentException("redis(" + redisAddr + ")expected diskless sync delay 0, but:" + diskLessSyncDelay);
+			}
+		}
+		makeRedisMaster(redisAddr);
+		flushAll(redisAddr);
+	}
+
 	private void makeRedisMaster(InetSocketAddress addr) {
 		try(Jedis jedis = createJedis(addr)){
 			jedis.slaveofNoOne();
@@ -79,7 +97,6 @@ public class KeeperSingleDcVersionTest extends AbstractKeeperIntegratedSingleDc{
 			jedis.flushAll();
 		}
 	}
-
 
 	@Override
 	protected int getInitSleepMilli() {
