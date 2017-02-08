@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -176,7 +177,12 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 
 	private String[] handleString(String result) {
 		
-		return result.trim().split("\\s+");
+		String [] args = StringUtil.splitRemoveEmpty("\\s+", result);
+		if(args.length == 0){
+			logger.info("[handleString][split null]{}", result);
+			return null;
+		}
+		return args;
 	}
 
 	private boolean hasDataRead(ByteBuf byteBuf) {

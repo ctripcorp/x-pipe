@@ -95,4 +95,10 @@ public class SimpleTest extends AbstractTest {
 			Assert.assertFalse(isUsable(server.getPort()));
 		}
 	}
+	
+	@Test
+	public void testHandler(){
+		
+		System.out.println("".split("\\s+").length);
+	}
 }

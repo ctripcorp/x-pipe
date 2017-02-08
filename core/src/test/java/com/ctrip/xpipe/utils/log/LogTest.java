@@ -23,6 +23,7 @@ public class LogTest extends AbstractTest {
 	@Test
 	public void testLog() throws IOException {
 
+		logger.error("{}", "nihao");
 		logger.error("[testLog]", new IOException("io exception"));
 		logger.error("[testLog]", new HttpServerErrorException(HttpStatus.BAD_GATEWAY, "statusCode",
 				"responseBodyExample".getBytes(), Charset.defaultCharset()));
