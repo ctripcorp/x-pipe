@@ -42,6 +42,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.FileUtils;
+import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import io.netty.buffer.ByteBufAllocator;
@@ -98,6 +99,14 @@ public abstract class AbstractRedisTest extends AbstractTest{
 		
 		String ip = StringUtil.isEmpty(redisMeta.getIp())? "localhost" : redisMeta.getIp();
 		Jedis jedis = new Jedis(ip, redisMeta.getPort()); 
+		logger.info("[createJedis]{}", jedis);
+		return jedis;
+	}
+
+	protected Jedis createJedis(String addr) {
+		
+		InetSocketAddress address = IpUtils.parseSingle(addr);
+		Jedis jedis = new Jedis(address.getHostString(), address.getPort()); 
 		logger.info("[createJedis]{}", jedis);
 		return jedis;
 	}

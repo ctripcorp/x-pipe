@@ -90,7 +90,8 @@ public class XPipeStabilityTest {
 	private int slavePort = Integer.parseInt(System.getProperty("slave-port", "6379"));
 
 	private ValueCheck valueCheck;
-	private DelayManager delayManager;
+	private DelayManager totalDelayManager;
+	private DelayManager beginSend;
 
 	@Before
 	public void setUp() {
@@ -125,7 +126,6 @@ public class XPipeStabilityTest {
 		slavePool = getJedisPool(slaveAddress, slavePort, valueCheckThreadNum * 2, valueCheckThreadNum, 2000);
 
 		if (startValueCheck) {
-
 			logger.info("[setUp][addValueCheck]");
 			valueCheck = new DefaultValueCheck(valueCheckThreadNum, slavePool);
 		} else {
@@ -134,7 +134,8 @@ public class XPipeStabilityTest {
 			valueCheck = new NullValueCheck();
 		}
 		
-		delayManager = new DelayManager(qpsCheckThreadPool, TIME_TOO_LONG_TO_LOG_MILLI);
+		totalDelayManager = new DelayManager(qpsCheckThreadPool, "total", TIME_TOO_LONG_TO_LOG_MILLI);
+		beginSend =new DelayManager(qpsCheckThreadPool, "beginsend", TIME_TOO_LONG_TO_LOG_MILLI, false);
 	}
 
 	@After
@@ -187,12 +188,14 @@ public class XPipeStabilityTest {
 			
 			try {
 				master = masterPool.getResource();
+				value = dataPool.borrowObject();
+				long milli = System.currentTimeMillis();
+				long nano = System.nanoTime();
 				
 				key.from(globalCnt.getAndIncrement() % maxKeys);
-				nanoTime.from(System.nanoTime());
-				currentMilli.from(System.currentTimeMillis());
+				nanoTime.from(nano);
+				currentMilli.from(milli);
 				
-				value = dataPool.borrowObject();
 				
 				int preIndex = nanoTime.put(preBytes);
 				preBytes[preIndex++] = '-';
@@ -202,8 +205,11 @@ public class XPipeStabilityTest {
 				buildValue(value, preBytes, preIndex);
 				
 				String pre = new String(preBytes, 0, preIndex);
+				
+				String strKey = key.toString();
+				putRecord(strKey, pre);
 
-				putRecord(key.toString(), pre);
+				beginSend.delay(System.nanoTime() - nano);
 				master.set(key.getBytes(), value);
 				queryCnt.incrementAndGet();
 			} catch (Exception e) {
@@ -325,7 +331,7 @@ public class XPipeStabilityTest {
 				}
 				catIntervalTotalDelay.addAndGet(delay);
 				
-				delayManager.delay(delay);
+				totalDelayManager.delay(delay);
 			} else {
 				logger.error("[XPipeStabilityTestJedisPubSub][Get Null From records]Key:{} Value:{}", key, value);
 			}
