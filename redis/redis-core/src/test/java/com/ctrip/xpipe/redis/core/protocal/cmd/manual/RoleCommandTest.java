@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.manual;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Assert;
 import org.junit.Test;
 

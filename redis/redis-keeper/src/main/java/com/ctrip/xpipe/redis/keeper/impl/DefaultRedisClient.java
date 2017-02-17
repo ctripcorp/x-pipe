@@ -83,6 +83,7 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 
 	@Override
 	public void capa(CAPA capa) {
+		logger.info("[capa]{}, {}", this, capa);
 		capas.add(capa);
 	}
 	

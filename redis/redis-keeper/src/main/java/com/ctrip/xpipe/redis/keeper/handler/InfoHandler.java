@@ -4,6 +4,9 @@ import java.util.Set;
 
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.store.MetaStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -75,6 +78,11 @@ public class InfoHandler extends AbstractCommandHandler{
 	private void replication(boolean isDefault, boolean isAll, String section, StringBuilder sb, RedisKeeperServer redisKeeperServer) {
 
 		if(isDefault || isAll || "replication".equalsIgnoreCase(section)){
+			
+			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+			long slaveReplOffset = replicationStore.getEndOffset();
+			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
+
 
 			sb.append("# Replication" + RedisProtocol.CRLF);
 			sb.append("role:" + redisKeeperServer.role() + RedisProtocol.CRLF);
@@ -91,6 +99,12 @@ public class InfoHandler extends AbstractCommandHandler{
 				 */
 				sb.append("master_link_status:up" +  RedisProtocol.CRLF );
 			}
+			/**
+			 * To make sure keeper is the least option to be the new master when master is down
+             */
+			sb.append("slave_repl_offset:" + slaveReplOffset + RedisProtocol.CRLF);
+			sb.append("slave_priority:0" + RedisProtocol.CRLF);
+
 			Set<RedisSlave> slaves = redisKeeperServer.slaves();
 			sb.append("connected_slaves:" + slaves.size() + RedisProtocol.CRLF);
 			int slaveIndex = 0;
@@ -98,15 +112,25 @@ public class InfoHandler extends AbstractCommandHandler{
 				sb.append(String.format("slave%d:%s" + RedisProtocol.CRLF, slaveIndex, slave.info()));
 				slaveIndex++;
 			}
-			/**
-			 * To make sure keeper is the least option to be the new master when master is down
-             */
-			sb.append("slave_repl_offset:0" + RedisProtocol.CRLF);
-			sb.append("slave_priority:0" + RedisProtocol.CRLF);
-
-			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
-
+			
 			long beginOffset = keeperRepl.getBeginOffset();
+			MetaStore metaStore = replicationStore.getMetaStore();
+			String replid = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : metaStore.getReplId(); 
+			String replid2 = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : metaStore.getReplId2();
+			long  secondReplIdOffset = metaStore == null? ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET : metaStore.getSecondReplIdOffset();
+			
+			if(replid == null){ 
+				replid = ReplicationStoreMeta.EMPTY_REPL_ID; 
+			}
+			if(replid2 == null){ 
+				replid2 = ReplicationStoreMeta.EMPTY_REPL_ID; 
+			}
+			
+			sb.append("master_replid:" + replid + RedisProtocol.CRLF);
+			sb.append("master_replid2:" + replid2 + RedisProtocol.CRLF);
+			sb.append("master_repl_offset:" + keeperRepl.getEndOffset() + RedisProtocol.CRLF);
+			sb.append("second_repl_offset:" + secondReplIdOffset + RedisProtocol.CRLF);
+			
 			sb.append("repl_backlog_active:1" + RedisProtocol.CRLF);
 			sb.append("repl_backlog_first_byte_offset:" + beginOffset+ RedisProtocol.CRLF);
             try {

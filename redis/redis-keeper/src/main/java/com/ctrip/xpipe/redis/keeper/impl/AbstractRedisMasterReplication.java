@@ -185,7 +185,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		chain.add(listeningPortCommand());
-		chain.add(new FailSafeCommandWrapper<>(new Replconf(clientPool, ReplConfType.CAPA, CAPA.EOF.toString(), scheduled)));
+		chain.add(new FailSafeCommandWrapper<>(new Replconf(clientPool, ReplConfType.CAPA, scheduled, CAPA.EOF.toString(), CAPA.PSYNC2.toString())));
 		
 		try {
 			executeCommand(chain).addListener(new CommandFutureListener() {
@@ -249,8 +249,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private Replconf listeningPortCommand() {
 
-		Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT,
-				String.valueOf(redisKeeperServer.getListeningPort()), scheduled);
+		Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT, scheduled,
+				String.valueOf(redisKeeperServer.getListeningPort()));
 		return replconf;
 	}
 

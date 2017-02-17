@@ -1,14 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import static org.mockito.Mockito.*;
-
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 
 import org.mockito.runners.MockitoJUnitRunner;
 

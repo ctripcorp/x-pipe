@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.manual;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -24,11 +25,19 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 public class ReplconfTest extends AbstractCommandTest {
 
 	private String host = "127.0.0.1";
+	
 	private int port = 6379;
 
 	@Before
 	public void beforeReplconfTest() throws Exception {
 
+	}
+	
+	@Test
+	public void testCapa() throws Exception{
+		
+		Replconf conf = new Replconf(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(host, port)), ReplConfType.CAPA, scheduled, "eof", "psync2");
+		logger.info("{}", conf.execute().get());		
 	}
 
 	@Test
@@ -41,7 +50,7 @@ public class ReplconfTest extends AbstractCommandTest {
 			try {
 				clientPool = createClientPool(host, port);
 
-				Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT, String.valueOf(1234), scheduled);
+				Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT, scheduled, String.valueOf(1234));
 				replconf.execute().addListener(new CommandFutureListener<Object>() {
 
 					@Override

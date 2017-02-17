@@ -18,16 +18,19 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
 @SuppressWarnings("serial")
 public class ReplicationStoreMeta implements Serializable{
 
-	public static final int DEFAULT_KEEPER_BEGIN_OFFSET = 2;
-
+	public static final String EMPTY_REPL_ID = "0000000000000000000000000000000000000000";
+	public static final long DEFAULT_BEGIN_OFFSET = 1;
+	public static final long DEFAULT_END_OFFSET = 0;
+	public static final long DEFAULT_SECOND_REPLID_OFFSET = -1;
+	
 	private transient Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private DefaultEndPoint masterAddress;
-	private Long beginOffset;
+	private Long beginOffset = DEFAULT_BEGIN_OFFSET;
 	
-	private String replId;
-	private String replId2;
-	private Long secondReplIdOffset;
+	private String replId = EMPTY_REPL_ID;
+	private String replId2 = EMPTY_REPL_ID;
+	private Long secondReplIdOffset = DEFAULT_SECOND_REPLID_OFFSET;
 	
 	
 	private String rdbFile;

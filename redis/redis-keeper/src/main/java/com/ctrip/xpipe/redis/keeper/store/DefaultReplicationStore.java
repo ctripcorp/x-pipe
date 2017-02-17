@@ -197,7 +197,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public long getEndOffset() {
 		if (metaStore == null || metaStore.beginOffset() == null || cmdStore == null) {
 			// TODO
-			return -2L;
+			return ReplicationStoreMeta.DEFAULT_END_OFFSET;
 		} else {
 			long beginOffset = metaStore.beginOffset();
 			long totalLength = cmdStore.totalLength();
@@ -209,9 +209,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	
 	@Override
 	public long firstAvailableOffset() {
-
+		
+		long beginOffset = metaStore == null? ReplicationStoreMeta.DEFAULT_BEGIN_OFFSET : metaStore.beginOffset();
+		
 		long minCmdOffset = cmdStore == null ? 0 : cmdStore.lowestAvailableOffset();
-		long firstAvailableOffset = minCmdOffset + metaStore.beginOffset();
+		long firstAvailableOffset = minCmdOffset + beginOffset;
 		return firstAvailableOffset;
 	}
 	

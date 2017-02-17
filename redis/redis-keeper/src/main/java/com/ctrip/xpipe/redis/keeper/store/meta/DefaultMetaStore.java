@@ -77,8 +77,8 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	protected void clearReplicationId2(ReplicationStoreMeta meta){
 		
 		logger.info("[clearReplicationId2]");
-		meta.setReplId2(null);
-		meta.setSecondReplIdOffset(null);
+		meta.setReplId2(ReplicationStoreMeta.EMPTY_REPL_ID);
+		meta.setSecondReplIdOffset(ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET);
 	}
 	
 	@Override
