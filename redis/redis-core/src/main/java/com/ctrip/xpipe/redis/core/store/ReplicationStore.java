@@ -18,7 +18,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER";
 
 	// rdb related
-	RdbStore beginRdb(String masterRunid, long masterOffset, EofType eofType) throws IOException;
+	RdbStore beginRdb(String replId, long rdbOffset, EofType eofType) throws IOException;
 	
 	DumpedRdbStore prepareNewRdb() throws IOException;
 
@@ -38,14 +38,14 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	MetaStore getMetaStore();
 
 	long getEndOffset();
+	
+	long firstAvailableOffset();
+
+	long beginOffsetWhenCreated();
 
 	boolean isFresh();
 
 	boolean checkOk();
-
-	long getKeeperEndOffset();
-
-	long nextNonOverlappingKeeperBeginOffset();
 
 	boolean gc();
 }

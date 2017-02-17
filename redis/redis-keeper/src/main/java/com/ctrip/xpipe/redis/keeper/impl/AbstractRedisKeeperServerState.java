@@ -128,11 +128,6 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		logger.info("[initPromotionState][nothing to do]");
 	}
 	
-	@Override
-	public boolean sendKinfo() {
-		return false;
-	}
-	
 	protected void doBecomeBackup(InetSocketAddress masterAddress){
 		
 		logger.info("[doBecomeBackup]{}", this);

@@ -24,7 +24,6 @@ import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 
-
 /**
  * @author wenchao.meng
  *
@@ -53,7 +52,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 		
 		when(replicationStoreManager.createIfNotExist()).thenReturn(replicationStore);
 		when(replicationStore.getMetaStore()).thenReturn(metaStore);
-		when(metaStore.getMasterRunid()).thenReturn("?");
+		when(metaStore.getReplId()).thenReturn("?");
 		when(replicationStore.getEndOffset()).thenReturn(-1L);
 		defaultPsync = new DefaultPsync(pool, masterEndPoint, replicationStoreManager, scheduled);
 		
@@ -75,27 +74,6 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 		});
 		
 		sleep(1000);
-		verify(replicationStoreManager).create(anyString(), anyLong());
+		verify(replicationStoreManager).create();
 	}
-
-	@Test
-	public void testRefullSyncFail() throws IOException{
-		
-		when(replicationStore.isFresh()).thenReturn(false);
-		when(replicationStore.nextNonOverlappingKeeperBeginOffset()).thenThrow(new RuntimeException("just throw"));
-
-		defaultPsync.execute().addListener(new CommandFutureListener<Object>() {
-			
-			@Override
-			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
-				if(!commandFuture.isSuccess()){
-					logger.error("[operationComplete]", commandFuture.cause());
-				}
-			}
-		});
-
-		sleep(1000);
-		verify(replicationStoreManager).create(anyString(), anyLong());
-	}
-
 }

@@ -8,8 +8,6 @@ import org.mockito.Mockito;
 
 import static org.mockito.Mockito.*;
 
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
@@ -108,14 +106,14 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.initialize();
 		redisKeeperServer.start();
 		
-		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new InetSocketAddress(server1.getPort())));
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, localhostInetAddress(server1.getPort())));
 		redisKeeperServer.reconnectMaster();
 		sleep(100);
 		Assert.assertEquals(1, server1.getConnected());
 		
 		redisKeeperServer.stop();
 		
-		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new InetSocketAddress(server2.getPort())));
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, localhostInetAddress(server2.getPort())));
 		redisKeeperServer.reconnectMaster();
 		sleep(100);
 		Assert.assertEquals(0, server1.getConnected());
@@ -123,7 +121,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		
 		redisKeeperServer.dispose();
 		
-		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new InetSocketAddress(server3.getPort())));
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, localhostInetAddress(server3.getPort())));
 		redisKeeperServer.reconnectMaster();
 		sleep(100);
 		Assert.assertEquals(0, server1.getConnected());

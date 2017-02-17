@@ -36,6 +36,7 @@ public class MultiThreadDelayTest extends AbstractIntegratedTest {
 				@Override
 				public void run() {
 
+					@SuppressWarnings("unused")
 					int i = 0;
 					while (true) {
 						long nano = System.nanoTime();

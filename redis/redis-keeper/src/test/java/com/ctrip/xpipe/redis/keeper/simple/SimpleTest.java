@@ -3,7 +3,16 @@ package com.ctrip.xpipe.redis.keeper.simple;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
 import java.util.Calendar;
+import java.util.Enumeration;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -25,13 +34,13 @@ import com.dianping.cat.message.Transaction;
 public class SimpleTest extends AbstractTest {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
-	
+
 	@Test
-	public void test() throws FileNotFoundException{
-		
+	public void test() throws FileNotFoundException {
+
 		File f = new File("/opt/logs/test");
 		logger.info("[exist]{}", f.exists());
-		
+
 	}
 
 	@Test
@@ -56,7 +65,6 @@ public class SimpleTest extends AbstractTest {
 
 		ReplicationStoreMeta meta = new ReplicationStoreMeta();
 		meta.setBeginOffset(100L);
-		meta.setMasterRunid("abdc");
 
 		String json = JSON.toJSONString(meta);
 
@@ -95,10 +103,49 @@ public class SimpleTest extends AbstractTest {
 			Assert.assertFalse(isUsable(server.getPort()));
 		}
 	}
-	
+
 	@Test
-	public void testHandler(){
-		
+	public void testHandler() {
+
 		System.out.println("".split("\\s+").length);
 	}
+
+	@Test
+	public void simpleTest() throws Exception {
+
+		int port = 1111;
+		startEchoServer(port);
+
+		logger.info("any host");
+		try {
+			Socket socket = new Socket();
+			SocketAddress target = new InetSocketAddress(port);
+			logger.info("{}", target);
+			socket.connect(target);
+			logger.info("{}", socket);
+		} catch (Exception e) {
+			logger.error("[simpleTest]", e);
+		}
+	}
+
+	@Test
+	public void testInet() throws SocketException {
+		
+		Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+		if (interfaces == null) {
+			return ;
+		}
+		while (interfaces.hasMoreElements()) {
+			NetworkInterface current = interfaces.nextElement();
+			List<InterfaceAddress> addresses = current.getInterfaceAddresses();
+			if (addresses.size() == 0) {
+				continue;
+			}
+			for (InterfaceAddress interfaceAddress : addresses) {
+				InetAddress address = interfaceAddress.getAddress();
+				logger.info("{}", address);
+			}
+		}
+	}
+
 }

@@ -53,7 +53,7 @@ public class SimpleSendMessage extends AbstractLoadRedis {
 
 	public static void main(String[] args) throws Exception {
 
-		SimpleSendMessage simpleSendMessage = new SimpleSendMessage(new InetSocketAddress(6379));
+		SimpleSendMessage simpleSendMessage = new SimpleSendMessage(new InetSocketAddress("localhost", 6379));
 		simpleSendMessage.initialize();
 		simpleSendMessage.start();
 

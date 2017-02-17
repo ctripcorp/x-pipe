@@ -42,7 +42,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private AtomicReference<Status> status = new AtomicReference<>(Status.Writing);
 
-	protected long rdbLastKeeperOffset;
+	protected long rdbOffset;
 
 	private AtomicInteger refCount = new AtomicInteger(0);
 	
@@ -50,11 +50,11 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	
 	private Object truncateLock = new Object();
 	
-	public DefaultRdbStore(File file, long rdbLastKeeperOffset, EofType eofType) throws IOException {
+	public DefaultRdbStore(File file, long rdbOffset, EofType eofType) throws IOException {
 
 		this.file = file;
 		this.eofType = eofType;
-		this.rdbLastKeeperOffset = rdbLastKeeperOffset;
+		this.rdbOffset = rdbOffset;
 		
 		if(file.length() > 0){
 			checkAndSetRdbState();
@@ -134,7 +134,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
 		
-		rdbFileListener.setRdbFileInfo(eofType, rdbLastKeeperOffset);
+		rdbFileListener.setRdbFileInfo(eofType, rdbOffset);
 
 		long lastLogTime = System.currentTimeMillis();
 		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
@@ -192,8 +192,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	@Override
-	public long lastKeeperOffset() {
-		return rdbLastKeeperOffset;
+	public long rdbOffset() {
+		return rdbOffset;
 	}
 	
 	public void incrementRefCount() {
@@ -208,11 +208,6 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	public boolean checkOk() {
 		return status.get() == Status.Writing 
 				|| ( status.get() == Status.Success && file.exists());
-	}
-
-	@Override
-	public String toString() {
-		return String.format("eofType:%s, rdbLastKeeperOffset:%d,file:%s, exists:%b, status:%s", eofType, rdbLastKeeperOffset, file, file.exists(), status.get());
 	}
 
 	@Override
@@ -274,4 +269,10 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 			throw new IllegalStateException("unknown eoftype:" + eofType.getClass() + "," + eofType);
 		}
 	}
+
+	@Override
+	public String toString() {
+		return String.format("eofType:%s, rdbOffset:%d,file:%s, exists:%b, status:%s", eofType, rdbOffset, file, file.exists(), status.get());
+	}
+
 }

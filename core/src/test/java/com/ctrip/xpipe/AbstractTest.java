@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Properties;
@@ -435,6 +436,10 @@ public class AbstractTest {
 
 	public static int defaultMetaServerPort() {
 		return 9747;
+	}
+
+	protected InetSocketAddress localhostInetAddress(int port) {
+		return new InetSocketAddress("localhost", port);
 	}
 
 	protected Server startEmptyServer() throws Exception {

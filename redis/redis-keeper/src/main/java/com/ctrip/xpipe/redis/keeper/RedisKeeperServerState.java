@@ -32,8 +32,6 @@ public interface RedisKeeperServerState{
 	
 	void initPromotionState();
 	
-	boolean sendKinfo();
-	
 	boolean psync(RedisClient redisClient, String []args);
 	
 	KeeperState keeperState();

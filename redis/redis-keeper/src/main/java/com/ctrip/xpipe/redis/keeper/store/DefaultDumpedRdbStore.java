@@ -14,20 +14,8 @@ import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
  */
 public class DefaultDumpedRdbStore extends DefaultRdbStore implements DumpedRdbStore{
 	
-	private long masterOffset;
-
 	public DefaultDumpedRdbStore(File file) throws IOException {
 		super(file, -1, null);
-	}
-
-	@Override
-	public long getMasterOffset() {
-		return this.masterOffset;
-	}
-
-	@Override
-	public void setMasterOffset(long masterOffset) {
-		this.masterOffset = masterOffset;
 	}
 
 	@Override
@@ -47,12 +35,7 @@ public class DefaultDumpedRdbStore extends DefaultRdbStore implements DumpedRdbS
 	}
 
 	@Override
-	public void setRdbLastKeeperOffset(long rdbLastKeeperOffset){
-		this.rdbLastKeeperOffset = rdbLastKeeperOffset;
-	}
-	
-	@Override
-	public String toString() {
-		return String.format("masterOffset:%d,%s", masterOffset, super.toString());
+	public void setRdbOffset(long rdbOffset){
+		this.rdbOffset = rdbOffset;
 	}
 }

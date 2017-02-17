@@ -35,17 +35,17 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 	@Override
 	protected  Pair<String, Long> getRequestMasterInfo() {
 		
-		String masterRunidRequest = null;
+		String replIdRequest = null;
 		long offset = -1;
 		
 		if(currentReplicationStore == null){
-			masterRunidRequest = "?";
+			replIdRequest = "?";
 			offset = -1;
 		}else{
-			masterRunidRequest = currentReplicationStore.getMetaStore().getMasterRunid();
+			replIdRequest = currentReplicationStore.getMetaStore().getReplId();
 			offset = currentReplicationStore.getEndOffset() + 1;
 		}
-		return new Pair<String, Long>(masterRunidRequest, offset);
+		return new Pair<String, Long>(replIdRequest, offset);
 	}
 
 
@@ -55,7 +55,7 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 	protected void doOnFullSync() throws IOException {
 		
 		if(currentReplicationStore == null || !currentReplicationStore.isFresh()){
-			doWhenFullSyncToNonFreshReplicationStore(masterRunid);
+			doWhenFullSyncToNonFreshReplicationStore(replId);
 		}
 		super.doOnFullSync();
 	}
@@ -71,11 +71,11 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 	@Override
 	protected void beginReadRdb(EofType eofType) {
 		try {
-			rdbStore = currentReplicationStore.beginRdb(masterRunid, masterRdbOffset, eofType);
+			rdbStore = currentReplicationStore.beginRdb(replId, masterRdbOffset, eofType);
 			inOutPayloadReplicationStore.setRdbStore(rdbStore);
 			super.beginReadRdb(eofType);
 		} catch (IOException e) {
-			logger.error("[beginReadRdb]" + masterRunid + "," + masterRdbOffset, e);
+			logger.error("[beginReadRdb]" + replId + "," + masterRdbOffset, e);
 		}
 	}
 

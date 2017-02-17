@@ -230,8 +230,8 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,shardId, keeperRunid, baseDir);
 		
-		assertEquals(metaStore.getMasterRunid(), mgr2.getCurrent().getMetaStore().getMasterRunid());
-		assertEquals(metaStore.getKeeperBeginOffset(), mgr2.getCurrent().getMetaStore().getKeeperBeginOffset());
+		assertEquals(metaStore.getReplId(), mgr2.getCurrent().getMetaStore().getReplId());
+		assertEquals(metaStore.beginOffset(), mgr2.getCurrent().getMetaStore().beginOffset());
 		assertEquals(metaStore.getMasterAddress(), mgr2.getCurrent().getMetaStore().getMasterAddress());
 		assertEquals(metaStore.beginOffset(), mgr2.getCurrent().getMetaStore().beginOffset());
 	}

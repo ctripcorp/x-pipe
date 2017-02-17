@@ -29,7 +29,7 @@ public class RoleCommandTest extends AbstractCommandTest{
 					+ "$9\r\n127.0.0.1\r\n"
 					+ "$4\r\n6479\r\n"
 					+ "$1\r\n0\r\n");
-		RoleCommand roleCommand = new RoleCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(master.getPort())), false, scheduled);
+		RoleCommand roleCommand = new RoleCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(localhostInetAddress(master.getPort())), false, scheduled);
 		Role role = roleCommand.execute().get();
 		
 		Assert.assertEquals(SERVER_ROLE.MASTER, role.getServerRole());
@@ -47,7 +47,7 @@ public class RoleCommandTest extends AbstractCommandTest{
 					+ ":6379\r\n"
 					+ "$" +masterState.getDesc().length()+ "\r\n" + masterState.getDesc()+ "\r\n"
 					+ ":477\r\n");
-			RoleCommand roleCommand = new RoleCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(slave.getPort())), false, scheduled);
+			RoleCommand roleCommand = new RoleCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(localhostInetAddress(slave.getPort())), false, scheduled);
 			SlaveRole role = (SlaveRole) roleCommand.execute().get();
 			
 			Assert.assertEquals(SERVER_ROLE.SLAVE, role.getServerRole());
@@ -68,7 +68,7 @@ public class RoleCommandTest extends AbstractCommandTest{
 				+ ":6379\r\n"
 				+ "$9\r\nconnected\r\n"
 				+ ":477\r\n");
-		RoleCommand roleCommand = new RoleCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(slave.getPort())), false, scheduled);
+		RoleCommand roleCommand = new RoleCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(localhostInetAddress(slave.getPort())), false, scheduled);
 		SlaveRole role = (SlaveRole) roleCommand.execute().get();
 		
 		Assert.assertEquals(SERVER_ROLE.KEEPER, role.getServerRole());

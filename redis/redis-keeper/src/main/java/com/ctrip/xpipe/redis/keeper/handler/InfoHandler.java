@@ -106,11 +106,11 @@ public class InfoHandler extends AbstractCommandHandler{
 
 			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 
-			long beginOffset = keeperRepl.getKeeperBeginOffset();
+			long beginOffset = keeperRepl.getBeginOffset();
 			sb.append("repl_backlog_active:1" + RedisProtocol.CRLF);
 			sb.append("repl_backlog_first_byte_offset:" + beginOffset+ RedisProtocol.CRLF);
             try {
-				long endOffset = keeperRepl.getKeeperEndOffset();
+				long endOffset = keeperRepl.getEndOffset();
                 sb.append("master_repl_offset:" + endOffset + RedisProtocol.CRLF);
                 sb.append("repl_backlog_size:" + (endOffset - beginOffset + 1) + RedisProtocol.CRLF);
                 sb.append("repl_backlog_histlen:" + (endOffset - beginOffset + 1)+ RedisProtocol.CRLF);

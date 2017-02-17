@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,6 +44,9 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	private final String fileNamePrefix;
 
 	private final int maxFileSize;
+	
+	private final int fileNumToKeep;
+	private final int minTimeMilliToGcAfterModified; 
 
 	private final FilenameFilter fileFilter;
 
@@ -54,12 +58,18 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	private Object cmdFileCtxRefLock = new Object();
 	
 	private CommandStoreDelay commandStoreDelay;
-	
+
 	public DefaultCommandStore(File file, int maxFileSize, KeeperMonitorManager keeperMonitorManager) throws IOException {
+		this(file, maxFileSize, 3600*1000, 20, keeperMonitorManager);
+	}
+
+	public DefaultCommandStore(File file, int maxFileSize, int minTimeMilliToGcAfterModified, int fileNumToKeep, KeeperMonitorManager keeperMonitorManager) throws IOException {
 		
 		this.baseDir = file.getParentFile();
 		this.fileNamePrefix = file.getName();
 		this.maxFileSize = maxFileSize;
+		this.fileNumToKeep = fileNumToKeep;
+		this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
 		this.commandStoreDelay = keeperMonitorManager.createCommandStoreDelay(this);
 		
 		fileFilter = new PrefixFileFilter(fileNamePrefix);
@@ -92,7 +102,11 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	}
 
 	private File[] allFiles() {
-		return baseDir.listFiles((FilenameFilter) fileFilter);
+		File []files = baseDir.listFiles((FilenameFilter) fileFilter);
+		if(files == null){
+			files = new File[0];
+		}
+		return files;
 	}
 
 	public long extractStartOffset(File file) {
@@ -132,7 +146,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 			return cmdFileCtxRef.get().totalLength();
 		}
 	}
-
+	
 	private void rotateFileIfNenessary() throws IOException {
 
 		CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
@@ -379,4 +393,63 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	public String toString() {
 		return String.format("CommandStore:%s", baseDir);
 	}
+
+	@Override
+	public long lowestAvailableOffset() {
+		
+		long minCmdOffset = Long.MAX_VALUE; // start from zero
+		File[] files = allFiles();
+
+		if (files == null || files.length == 0) {
+			logger.info("[minCmdKeeperOffset][no cmd files][start offset 0]");
+			minCmdOffset = 0L;
+		} else {
+			for (File cmdFile : files) {
+				minCmdOffset = Math.min(extractStartOffset(cmdFile), minCmdOffset);
+			}
+		}
+		return minCmdOffset;
+	}
+
+	@Override
+	public void gc() {
+		
+		for (File cmdFile : allFiles()) {
+			long fileStartOffset = extractStartOffset(cmdFile);
+			if (canDeleteCmdFile(lowestReadingOffset(), fileStartOffset, cmdFile.length(),
+					cmdFile.lastModified())) {
+				logger.info("[GC] delete command file {}", cmdFile);
+				cmdFile.delete();
+			}
+		}
+	}
+	
+	private boolean canDeleteCmdFile(long lowestReadingOffset, long fileStartOffset, long fileSize, long lastModified) {
+		
+		boolean lowestReading = (fileStartOffset + fileSize < lowestReadingOffset);
+		
+		logger.debug("[canDeleteCmdFile][lowestReading]{}, {}+{}<{}", lowestReading, fileStartOffset, fileSize, lowestReadingOffset);
+		if(!lowestReading){
+			return false;
+		}
+
+		Date now = new Date();
+		boolean time = now.getTime() - lastModified >= minTimeMilliToGcAfterModified;
+
+		logger.debug("[canDeleteCmdFile][time]{}, {} - {} > {}", time, now, new Date(lastModified), minTimeMilliToGcAfterModified);
+		if(!time){
+			return false;
+		}
+
+		long totalLength = totalLength();
+		long totalKeep = (long)fileSize * fileNumToKeep;
+		boolean fileKeep = totalLength - (fileStartOffset + fileSize) > totalKeep;
+		
+		logger.debug("[canDeleteCmdFile][fileKeep]{}, {} - {} > {}({}*{})", fileKeep, totalLength, (fileStartOffset + fileSize), totalKeep, fileSize, fileNumToKeep);
+		if(!fileKeep){
+			return false;
+		}
+		return true;
+	}
+	
 }

@@ -35,7 +35,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	private BulkStringParser rdbReader;
 
-	protected String masterRunid;
+	protected String replId;
 
 	protected long masterRdbOffset;
 
@@ -64,14 +64,14 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 		Pair<String, Long> requestInfo = getRequestMasterInfo();
 
-		String masterRunidRequest = requestInfo.getKey();
+		String replIdRequest = requestInfo.getKey();
 		long offset = requestInfo.getValue();
 
-		if (masterRunidRequest == null) {
-			masterRunidRequest = "?";
+		if (replIdRequest == null) {
+			replIdRequest = "?";
 			offset = -1;
 		}
-		RequestStringParser requestString = new RequestStringParser(getName(), masterRunidRequest,
+		RequestStringParser requestString = new RequestStringParser(getName(), replIdRequest,
 				String.valueOf(offset));
 		if (logger.isDebugEnabled()) {
 			logger.debug("[doRequest]{}, {}", this, StringUtil.join(" ", requestString.getPayload()));
@@ -147,9 +147,9 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			if (split.length != 3) {
 				throw new RedisRuntimeException("unknown reply:" + psync);
 			}
-			masterRunid = split[1];
+			replId = split[1];
 			masterRdbOffset = Long.parseLong(split[2]);
-			logger.debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, masterRunid,
+			logger.debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, replId,
 					masterRdbOffset);
 			psyncState = PSYNC_STATE.READING_RDB;
 

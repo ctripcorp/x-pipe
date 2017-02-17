@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-
-
 import java.io.IOException;
 
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
@@ -69,8 +67,8 @@ public class PsyncHandler extends AbstractCommandHandler{
 		}else if(args[0].equals(redisKeeperServer.getKeeperRunid())){
 			
 			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
-			Long beginOffset = keeperRepl.getKeeperBeginOffset();
-			Long endOffset = keeperRepl.getKeeperEndOffset();
+			Long beginOffset = keeperRepl.getBeginOffset();
+			Long endOffset = keeperRepl.getEndOffset();
 			Long offsetRequest = Long.valueOf(args[1]);
 			
 			if(offsetRequest < beginOffset){
@@ -106,7 +104,7 @@ public class PsyncHandler extends AbstractCommandHandler{
 				
 				try {
 					ReplicationStore replicationStore = redisSlave.getRedisKeeperServer().getReplicationStore();
-					boolean result = replicationStore.awaitCommandsOffset(offsetRequest - replicationStore.getMetaStore().getKeeperBeginOffset() - 1, WAIT_OFFSET_TIME_MILLI);
+					boolean result = replicationStore.awaitCommandsOffset(offsetRequest - replicationStore.beginOffsetWhenCreated() - 1, WAIT_OFFSET_TIME_MILLI);
 					if(result){
 						logger.info("[waitForoffset][wait succeed]{}", redisSlave);
 						doPartialSync(redisSlave, offsetRequest);

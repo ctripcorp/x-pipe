@@ -59,11 +59,6 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	@Override
-	protected void kinfoFail(Throwable cause) {
-		throw new IllegalStateException("impossible to be here");
-	}
-
-	@Override
 	protected void psyncFail(Throwable cause) {
 	}
 

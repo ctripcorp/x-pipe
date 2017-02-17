@@ -24,7 +24,7 @@ public interface RdbStore extends Destroyable, Closeable{
 	
 	int refCount();
 
-	long lastKeeperOffset();
+	long rdbOffset();
 
 	File getRdbFile();
 

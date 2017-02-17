@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.core.store;
 import java.io.IOException;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 
 /**
@@ -19,7 +18,13 @@ public interface MetaStore {
 	
 	public static final String METHOD_BECOME_BACKUP = "becomeBackup";
 
-	String getMasterRunid();
+	String getReplId();
+	
+	String getReplId2();
+	
+	Long getSecondReplIdOffset();
+	
+	ReplicationStoreMeta shiftReplicationId(String newReplId, Long currentOffset) throws IOException;
 	
 	/**
 	 * the first byte offset,
@@ -32,16 +37,10 @@ public interface MetaStore {
 	
 	DefaultEndPoint getMasterAddress();
 	
-	long getKeeperBeginOffset();
-	
 	ReplicationStoreMeta dupReplicationStoreMeta();
 	
 	void loadMeta() throws IOException;
-	
-	void saveKinfo(ReplicationStoreMeta replicationStoreMeta) throws IOException;
-	
-	void psyncBegun(String masterRunid, long keeperBeginOffset) throws IOException;
-	
+		
 	/**
 	 * keeper backup -> active
 	 * @param name
@@ -55,24 +54,14 @@ public interface MetaStore {
 	 */
 	void becomeBackup() throws IOException;
 	
-	void setKeeperState(String keeperRunid, KeeperState keeperState) throws IOException;
-
-	ReplicationStoreMeta rdbBegun(String masterRunid, long beginOffset, String rdbFile, EofType eofType, String cmdFilePrefix) throws IOException;
+	ReplicationStoreMeta rdbBegun(String replId, long beginOffset, String rdbFile, EofType eofType, String cmdFilePrefix) throws IOException;
 
 	void setRdbFileSize(long rdbFileSize) throws IOException;
-	
-	/**
-	 * redis failover
-	 * @param newMasterEndPoint
-	 * @param newMasterId
-	 * @param offsetdelta  newBeginOffset = beginoffset + delta
-	 * @throws IOException 
-	 */
+
+	@Deprecated
 	void masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) throws IOException;
 
-	ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long masterOffset) throws IOException;
-	
-	long redisOffsetToKeeperOffset(long redisOffset);
+	ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long rdbOffset) throws IOException;
 	
 	void updateKeeperRunid(String keeperRunid) throws IOException;
 

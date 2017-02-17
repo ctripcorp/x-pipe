@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import static org.mockito.Mockito.*;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -37,9 +38,8 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest{
 	public void beforeDefaultRedisSlaveTest(){
 		
 		when(channel.closeFuture()).thenReturn(new DefaultChannelPromise(channel));
-		when(channel.remoteAddress()).thenReturn(new InetSocketAddress(randomPort()));
+		when(channel.remoteAddress()).thenReturn(localhostInetAddress(randomPort()));
 	}
-	
 	
 	@SuppressWarnings("resource")
 	@Test

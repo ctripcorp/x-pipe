@@ -20,7 +20,6 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultRdbStoreEofMarkTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultRdbStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManagerTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreTest;
-import com.ctrip.xpipe.redis.keeper.store.meta.BackupMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManagerTest;
@@ -53,7 +52,6 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 	FakeRedisExceptionTest.class, 
 	FakeRedisRdbDumperTest.class,
 	FakeRedisRdbDumpLong.class,
-	BackupMetaStoreTest.class
 })
 public class AllTests {
 

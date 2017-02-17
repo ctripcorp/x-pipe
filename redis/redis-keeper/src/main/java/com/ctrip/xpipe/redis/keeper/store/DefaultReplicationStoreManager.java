@@ -137,16 +137,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 	}
 	
 	@Override
-	public synchronized ReplicationStore create(String masterRunid, long keeperBeginOffset) throws IOException {
-		
-		ReplicationStore replicationStore = create();
-		
-		replicationStore.getMetaStore().psyncBegun(masterRunid, keeperBeginOffset);
-		
-		return replicationStore;
-	}
-
-	@Override
 	public synchronized ReplicationStore create() throws IOException {
 
 		File storeBaseDir = new File(baseDir, UUID.randomUUID().toString());

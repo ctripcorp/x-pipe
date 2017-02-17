@@ -34,6 +34,4 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	
 	String getShardName();
 
-	ReplicationStore create(String masterRunid, long keeperBeginOffset) throws IOException;
-	
 }

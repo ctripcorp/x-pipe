@@ -185,7 +185,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 			
 			private void doRun() throws IOException {
-				replicationStore.addCommandsListener(replicationStore.getMetaStore().getKeeperBeginOffset() + beginOffset, new CommandsListener() {
+				replicationStore.addCommandsListener(replicationStore.beginOffsetWhenCreated() + beginOffset, new CommandsListener() {
 					
 					@Override
 					public boolean isOpen() {
