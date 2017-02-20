@@ -7,6 +7,12 @@ package com.ctrip.xpipe.redis.keeper;
  */
 public interface KeeperRepl {
 	
+	String replId();
+	
+	String replId2();
+	
+	Long   secondReplIdOffset();
+	
 	long getBeginOffset();
 	
 	long getEndOffset();	

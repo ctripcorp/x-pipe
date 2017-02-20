@@ -6,6 +6,7 @@ import java.io.IOException;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
+import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**
  * @author wenchao.meng
@@ -88,6 +89,10 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 
 			String currentReplId = metaDup.getReplId();
+			if(ObjectUtils.equals(currentReplId, newReplId)){
+				logger.info("[shiftReplicationId][repidEqueal]{}", newReplId);
+				return metaDup;
+			}
 			
 			metaDup.setReplId(newReplId);
 			metaDup.setReplId2(currentReplId);

@@ -203,4 +203,9 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	public long beginOffsetWhenCreated() {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public void shiftReplicationId(String newReplId) throws IOException {
+		throw new UnsupportedOperationException();
+	}
 }

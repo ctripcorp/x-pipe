@@ -23,6 +23,7 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManagerTest;
+import com.ctrip.xpipe.redis.keeper.handler.PsyncHandlerTest;
 import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 
 /**
@@ -52,6 +53,7 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 	FakeRedisExceptionTest.class, 
 	FakeRedisRdbDumperTest.class,
 	FakeRedisRdbDumpLong.class,
+	PsyncHandlerTest.class
 })
 public class AllTests {
 

@@ -389,4 +389,9 @@ public class DefaultRedisSlave implements RedisSlave {
 		psyncExecutor.shutdownNow();
 	}
 
+	@Override
+	public boolean capaOf(CAPA capa) {
+		return redisClient.capaOf(capa);
+	}
+
 }

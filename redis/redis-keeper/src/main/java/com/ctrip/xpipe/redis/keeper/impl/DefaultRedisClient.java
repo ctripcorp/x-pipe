@@ -88,6 +88,11 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	}
 	
 	@Override
+	public boolean capaOf(CAPA capa) {
+		return capas.contains(capa);
+	}
+	
+	@Override
 	public int getSlaveListeningPort() {
 		return this.slaveListeningPort;
 	}

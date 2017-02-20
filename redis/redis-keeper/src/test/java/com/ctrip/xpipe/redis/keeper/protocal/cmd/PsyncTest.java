@@ -38,7 +38,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 	private DefaultReplicationStore replicationStore;
 
 	private String masterId = randomString(40);
-	private Long masterOffset = 1024L;
+	private Long masterOffset;
 	private String rdbContent = randomString();
 	private String commandContent = randomString();
 	
@@ -47,6 +47,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 	@Before
 	public void beforePsyncTest() throws Exception{
 		
+		masterOffset = (long) randomInt(0, Integer.MAX_VALUE - 1);
 		replicationStoreManager = createReplicationStoreManager();
 		replicationStore = (DefaultReplicationStore) replicationStoreManager.create();
 		
@@ -76,6 +77,76 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		replicationStore.getRdbStore().endRdb();;
 		
 		runData(data);
+	}
+
+	@Test
+	public void testPsync2() throws XpipeException, IOException, InterruptedException{
+
+		isPartial = true;
+		
+		String newReplId = RunidGenerator.DEFAULT.generateRunid();
+		String []data = new String[]{
+				"+" + DefaultPsync.PARTIAL_SYNC + " " + newReplId + "\r\n",
+				commandContent
+		};
+		//create store
+		replicationStore.beginRdb(masterId, masterOffset, new LenEofType(0));
+		replicationStore.getRdbStore().endRdb();
+		
+		Long secondReplIdOffset = replicationStore.getEndOffset() + 1;
+		
+		runData(data);
+		
+		Assert.assertEquals(newReplId, replicationStore.getMetaStore().getReplId());
+		Assert.assertEquals(masterId, replicationStore.getMetaStore().getReplId2());
+		Assert.assertEquals(secondReplIdOffset, replicationStore.getMetaStore().getSecondReplIdOffset());
+	}
+
+	@Test
+	public void testPsync2Spaces() throws XpipeException, IOException, InterruptedException{
+
+		isPartial = true;
+		String newReplId = RunidGenerator.DEFAULT.generateRunid();
+
+		String []data = new String[]{
+				"+" + DefaultPsync.PARTIAL_SYNC + "   " + newReplId + "  \r\n",
+				commandContent
+		};
+		//create store
+		replicationStore.beginRdb(masterId, masterOffset, new LenEofType(0));
+		replicationStore.getRdbStore().endRdb();
+		
+		Long secondReplIdOffset = replicationStore.getEndOffset() + 1;
+
+		runData(data);
+		
+		Assert.assertEquals(newReplId, replicationStore.getMetaStore().getReplId());
+		Assert.assertEquals(masterId, replicationStore.getMetaStore().getReplId2());
+		Assert.assertEquals(secondReplIdOffset, replicationStore.getMetaStore().getSecondReplIdOffset());
+	}
+	
+	@Test
+	public void testPsync2SplitTcp() throws XpipeException, IOException, InterruptedException{
+
+		isPartial = true;
+		String newReplId = RunidGenerator.DEFAULT.generateRunid();
+
+		String []data = new String[]{
+				"+" + DefaultPsync.PARTIAL_SYNC , 
+				"  " + newReplId + "  \r\n",
+				commandContent
+		};
+		//create store
+		replicationStore.beginRdb(masterId, masterOffset, new LenEofType(0));
+		replicationStore.getRdbStore().endRdb();;
+		
+		Long secondReplIdOffset = replicationStore.getEndOffset() + 1;
+
+		runData(data);
+		
+		Assert.assertEquals(newReplId, replicationStore.getMetaStore().getReplId());
+		Assert.assertEquals(masterId, replicationStore.getMetaStore().getReplId2());
+		Assert.assertEquals(secondReplIdOffset, replicationStore.getMetaStore().getSecondReplIdOffset());
 	}
 
 	

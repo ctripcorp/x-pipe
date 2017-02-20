@@ -59,6 +59,16 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 		}
 		super.doOnFullSync();
 	}
+	
+	
+	@Override
+	protected void doOnContinue(String newReplId) throws IOException {
+		
+		if(newReplId != null){
+			currentReplicationStore.shiftReplicationId(newReplId);
+		}
+		super.doOnContinue(newReplId);
+	}
 
 	@Override
 	protected BulkStringParser createRdbReader() {

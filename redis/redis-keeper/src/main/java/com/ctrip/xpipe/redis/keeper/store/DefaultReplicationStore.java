@@ -222,6 +222,15 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return metaStore;
 	}
 
+	@Override
+	public void shiftReplicationId(String newReplId) throws IOException {
+		
+		logger.info("[shiftReplicationId]{}", newReplId);
+		if(newReplId != null){
+			this.metaStore.shiftReplicationId(newReplId, getEndOffset());
+		}
+	}
+
 	private File[] rdbFilesOnFS() {
 		File[] rdbFiles = baseDir.listFiles(RDB_FILE_FILTER);
 		return rdbFiles != null ? rdbFiles : new File[0];
@@ -401,4 +410,5 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 		return true;
 	}
+
 }

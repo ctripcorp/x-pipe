@@ -37,6 +37,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	// meta related
 	MetaStore getMetaStore();
 
+	void shiftReplicationId(String newReplId) throws IOException;
+	
 	long getEndOffset();
 	
 	long firstAvailableOffset();

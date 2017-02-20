@@ -56,7 +56,7 @@ public class DefaultFullSyncListener implements FullSyncListener {
 		}
 
 		SimpleStringParser simpleStringParser = new SimpleStringParser(StringUtil.join(" ", DefaultPsync.FULL_SYNC,
-				redisSlave.getRedisKeeperServer().getKeeperRunid(), String.valueOf(rdbOffset)));
+				redisSlave.getRedisKeeperServer().getKeeperRepl().replId(), String.valueOf(rdbOffset)));
 
 		logger.info("[setRdbFileInfo]{},{}", simpleStringParser.getPayload(), redisSlave);
 		redisSlave.sendMessage(simpleStringParser.format());

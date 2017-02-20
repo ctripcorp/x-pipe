@@ -20,7 +20,7 @@ public class ReplicationStoreMeta implements Serializable{
 
 	public static final String EMPTY_REPL_ID = "0000000000000000000000000000000000000000";
 	public static final long DEFAULT_BEGIN_OFFSET = 1;
-	public static final long DEFAULT_END_OFFSET = 0;
+	public static final long DEFAULT_END_OFFSET = DEFAULT_BEGIN_OFFSET - 1;
 	public static final long DEFAULT_SECOND_REPLID_OFFSET = -1;
 	
 	private transient Logger logger = LoggerFactory.getLogger(getClass());
@@ -28,8 +28,8 @@ public class ReplicationStoreMeta implements Serializable{
 	private DefaultEndPoint masterAddress;
 	private Long beginOffset = DEFAULT_BEGIN_OFFSET;
 	
-	private String replId = EMPTY_REPL_ID;
-	private String replId2 = EMPTY_REPL_ID;
+	private String replId;
+	private String replId2;
 	private Long secondReplIdOffset = DEFAULT_SECOND_REPLID_OFFSET;
 	
 	
