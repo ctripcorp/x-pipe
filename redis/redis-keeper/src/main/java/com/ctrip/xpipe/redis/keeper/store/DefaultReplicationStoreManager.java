@@ -6,7 +6,7 @@ import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -67,9 +67,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 	
 	private ScheduledExecutorService scheduled;
 
-	private KeeperMonitorManager keeperMonitorManager;
+	private KeeperMonitor keeperMonitor;
 	
-	public DefaultReplicationStoreManager(KeeperConfig keeperConfig, String clusterName, String shardName, String keeperRunid, File baseDir, KeeperMonitorManager keeperMonitorManager) {
+	public DefaultReplicationStoreManager(KeeperConfig keeperConfig, String clusterName, String shardName, String keeperRunid, File baseDir, KeeperMonitor keeperMonitor) {
 		super(MoreExecutors.sameThreadExecutor());
 		this.clusterName = clusterName;
 		this.shardName = shardName;
@@ -77,7 +77,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 		this.keeperConfig = keeperConfig;
 		this.baseDir = new File(baseDir, clusterName + "/" + shardName);
 		metaFile = new File(this.baseDir, META_FILE);
-		this.keeperMonitorManager = keeperMonitorManager;
+		this.keeperMonitor = keeperMonitor;
 	}
 	
 	@Override
@@ -146,7 +146,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
 		recrodLatestStore(storeBaseDir.getName());
 
-		ReplicationStore replicationStore = new DefaultReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitorManager);
+		ReplicationStore replicationStore = new DefaultReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor);
 
 		closeCurrentStore();
 		
@@ -224,7 +224,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 					File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
 					logger.info("[getCurrent][latest]{}", latestStoreDir);
 					if (latestStoreDir.isDirectory()) {
-						currentStore.set(new DefaultReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitorManager));
+						currentStore.set(new DefaultReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor));
 					}
 				}
 			}

@@ -5,10 +5,11 @@ import com.ctrip.xpipe.redis.core.store.CommandStore;
 /**
  * @author wenchao.meng
  *
- * Nov 24, 2016
+ * Feb 20, 2017
  */
-public interface KeeperMonitorManager {
-	
+public interface KeeperMonitor {
+
 	CommandStoreDelay createCommandStoreDelay(CommandStore commandStore);
 	
+	KeeperStats getKeeperStats();
 }

@@ -47,7 +47,8 @@ import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
@@ -112,25 +113,26 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	//for test
 	private AtomicInteger  rdbDumpTryCount = new AtomicInteger();
 	
-	@SuppressWarnings("unused")
-	private KeeperMonitorManager keeperMonitorManager;
+	private KeepersMonitorManager keepersMonitorManager;
+	private KeeperMonitor keeperMonitor;
 	
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
-			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeeperMonitorManager keeperMonitorManager){
-		this(currentKeeperMeta, keeperConfig, baseDir, metaService, null, leaderElectorManager, keeperMonitorManager);
+			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeepersMonitorManager keepersMonitorManager){
+		this(currentKeeperMeta, keeperConfig, baseDir, metaService, null, leaderElectorManager, keepersMonitorManager);
 	}
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
 			MetaServerKeeperService metaService, 
 			ScheduledExecutorService scheduled, 
 			LeaderElectorManager leaderElectorManager,
-			KeeperMonitorManager keeperMonitorManager){
+			KeepersMonitorManager keepersMonitorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
 		this.shardId = currentKeeperMeta.parent().getId();
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.keeperConfig = keeperConfig;
-		this.keeperMonitorManager = keeperMonitorManager;
-		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitorManager);
+		this.keepersMonitorManager = keepersMonitorManager;
+		this.keeperMonitor = keepersMonitorManager.getOrCreate(this);
+		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
@@ -549,6 +551,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void destroy() throws Exception {
+		this.keepersMonitorManager.remove(this);
 		this.replicationStoreManager.destroy();
 	}
 
@@ -638,5 +641,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				logger.error("[initReplicationStore]" + replicationStore, e);
 			}
 		}
+	}
+
+	@Override
+	public KeeperMonitor getKeeperMonitor() {
+		return keeperMonitor;
+	}
+
+	@Override
+	public RdbDumper rdbDumper() {
+		return rdbDumper.get();
 	}
 }

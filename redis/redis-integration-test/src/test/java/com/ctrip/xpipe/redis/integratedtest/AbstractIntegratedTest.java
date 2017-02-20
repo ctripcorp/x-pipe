@@ -37,8 +37,8 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaService;
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
-import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeeperMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.google.common.collect.Lists;
 
@@ -124,28 +124,29 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		startZk(zkPort);
 	}
 
-	protected void startKeeper(KeeperMeta keeperMeta, MetaServerKeeperService metaService,
+	protected RedisKeeperServer startKeeper(KeeperMeta keeperMeta, MetaServerKeeperService metaService,
 			LeaderElectorManager leaderElectorManager) throws Exception {
 
-		startKeeper(keeperMeta, getKeeperConfig(), metaService, leaderElectorManager);
+		return startKeeper(keeperMeta, getKeeperConfig(), metaService, leaderElectorManager);
 	}
 
 	protected KeeperConfig getKeeperConfig() {
 		return new DefaultKeeperConfig();
 	}
 
-	protected void startKeeper(KeeperMeta keeperMeta, KeeperConfig keeperConfig, MetaServerKeeperService metaService,
+	protected RedisKeeperServer startKeeper(KeeperMeta keeperMeta, KeeperConfig keeperConfig, MetaServerKeeperService metaService,
 			LeaderElectorManager leaderElectorManager) throws Exception {
 
 		logger.info(remarkableMessage("[startKeeper]{}, {}"), keeperMeta);
 		File baseDir = new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort());
 
-		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, baseDir, keeperConfig, metaService, leaderElectorManager, new NoneKeeperMonitorManager());
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, baseDir, keeperConfig, metaService, leaderElectorManager, new NoneKeepersMonitorManager());
 		add(redisKeeperServer);
+		return redisKeeperServer;
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
-			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeeperMonitorManager keeperMonitorManager) {
+			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
 
 		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, metaService, leaderElectorManager, keeperMonitorManager);
 	}

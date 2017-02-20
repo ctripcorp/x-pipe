@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
@@ -25,6 +26,11 @@ public class PsyncHandler extends AbstractCommandHandler{
 	protected void doHandle(final String[] args, final RedisClient redisClient) {
 		// in non-psync executor
 		final RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+		
+		if(redisKeeperServer.rdbDumper() == null && redisKeeperServer.getReplicationStore().isFresh()){
+			redisClient.sendMessage(new RedisErrorParser("-NOMASTERLINK Can't SYNC while replicationstore fresh").format());
+			return;
+		}
 		
 		if(!redisKeeperServer.getRedisKeeperServerState().psync(redisClient, args)){
 			return;
@@ -77,6 +83,7 @@ public class PsyncHandler extends AbstractCommandHandler{
 			
 			if(offsetRequest < beginOffset){
 				logger.info("[innerDoHandle][offset < beginOffset][begin, end, request]{}, {}, {}" , beginOffset , endOffset, offsetRequest);
+				redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
 				doFullSync(redisSlave);
 			}else if(offsetRequest > endOffset +1){
 				logger.info("[innerDoHandle][wait for offset]{}, {} > {} + 1", redisSlave, offsetRequest, endOffset);
@@ -86,10 +93,12 @@ public class PsyncHandler extends AbstractCommandHandler{
 					doPartialSync(redisSlave, keeperRepl.replId(), offsetRequest);
 				} else {
 					logger.info("[innerDoHandle][too much commands to transfer]{} - {} < {}", endOffset, offsetRequest, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());
+					redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
 					doFullSync(redisSlave);
 				}
 			}
 		}else{
+			redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
 			doFullSync(redisSlave);
 		}
 	}
@@ -126,6 +135,7 @@ public class PsyncHandler extends AbstractCommandHandler{
 					return;
 				}
 				logger.info("[run][offset wait failed]{}", redisSlave);
+				redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
 				doFullSync(redisSlave);
 			}
 		}).start();
@@ -147,6 +157,8 @@ public class PsyncHandler extends AbstractCommandHandler{
 		redisSlave.sendMessage(simpleStringParser.format());
 		redisSlave.beginWriteCommands(offset);
 		redisSlave.partialSync();
+		
+		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();;
 	}
 
 	protected void doFullSync(RedisSlave redisSlave) {
@@ -157,6 +169,8 @@ public class PsyncHandler extends AbstractCommandHandler{
 			}
 			RedisKeeperServer redisKeeperServer = redisSlave.getRedisKeeperServer();
 			redisKeeperServer.fullSyncToSlave(redisSlave);
+			
+			redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();
 		} catch (IOException e) {
 			logger.error("[doFullSync][close client]" + redisSlave, e);
 			try {

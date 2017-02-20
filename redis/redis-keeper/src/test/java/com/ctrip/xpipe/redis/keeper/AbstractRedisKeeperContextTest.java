@@ -117,7 +117,7 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig,
 			MetaServerKeeperService metaService, File baseDir, LeaderElectorManager leaderElectorManager) {
-		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, metaService, leaderElectorManager, createkeeperMonitorManager());
+		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, metaService, leaderElectorManager, createkeepersMonitorManager());
 	}
 
 	protected RedisMeta createRedisMeta() {

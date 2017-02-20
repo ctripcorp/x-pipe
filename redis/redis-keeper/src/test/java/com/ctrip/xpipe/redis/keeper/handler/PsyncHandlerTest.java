@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperMonitor;
 
 /**
  * @author wenchao.meng
@@ -43,13 +44,10 @@ public class PsyncHandlerTest extends AbstractRedisKeeperTest{
 	
 	@Mock
 	private RedisSlave redisSlave;
-	
 	@Mock
 	private RedisKeeperServer redisKeeperServer;
-	
 	@Mock
 	private KeeperRepl keeperRepl;
-	
 	@Mock
 	private KeeperConfig KeeperConfig;
 	
@@ -58,6 +56,7 @@ public class PsyncHandlerTest extends AbstractRedisKeeperTest{
 		
 		when(redisSlave.getRedisKeeperServer()).thenReturn(redisKeeperServer);
 		when(redisKeeperServer.getKeeperRepl()).thenReturn(keeperRepl);
+		when(redisKeeperServer.getKeeperMonitor()).thenReturn(new DefaultKeeperMonitor(redisKeeperServer));
 		when(redisKeeperServer.getKeeperConfig()).thenReturn(KeeperConfig);
 
 		when(keeperRepl.getBeginOffset()).thenReturn(begin);

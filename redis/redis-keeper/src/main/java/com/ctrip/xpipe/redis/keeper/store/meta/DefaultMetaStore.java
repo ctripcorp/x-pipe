@@ -90,7 +90,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 
 			String currentReplId = metaDup.getReplId();
 			if(ObjectUtils.equals(currentReplId, newReplId)){
-				logger.info("[shiftReplicationId][repidEqueal]{}", newReplId);
+				logger.info("[shiftReplicationId][repidEqual]{}", newReplId);
 				return metaDup;
 			}
 			

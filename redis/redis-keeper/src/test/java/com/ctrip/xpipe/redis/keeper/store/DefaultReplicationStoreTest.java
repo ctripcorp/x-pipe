@@ -35,7 +35,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Before
 	public void beforeDefaultReplicationStoreTest() throws IOException{
 		baseDir = new File(getTestFileDir());
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitorManager());
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor());
 		store.getMetaStore().becomeActive();
 	}
 	

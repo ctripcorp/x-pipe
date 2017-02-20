@@ -43,7 +43,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 		String testDir = getTestFileDir();
 		File commandTemplate = new File(testDir, getTestName());
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, createkeeperMonitorManager());
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, createkeeperMonitor());
 	}
 
 	@Test
@@ -188,7 +188,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		try {
 			String testDir = getTestFileDir();
 			File commandTemplate = new File(testDir, getTestName());
-			commandStore.set(new DefaultCommandStore(commandTemplate, 1, createkeeperMonitorManager()));
+			commandStore.set(new DefaultCommandStore(commandTemplate, 1, createkeeperMonitor()));
 			final AtomicBoolean appendResult = new AtomicBoolean(false);
 			final SettableFuture<Void> future = SettableFuture.create();
 

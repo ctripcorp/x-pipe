@@ -78,8 +78,10 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	
 	@Override
 	public void masterConnected(Channel channel) {
-		super.masterConnected(channel);
 		
+		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_HANDSHAKE);
+		
+		super.masterConnected(channel);
 		cancelReplConf();
 	}
 	

@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import com.ctrip.xpipe.utils.FileUtils;
 
@@ -62,14 +62,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private AtomicInteger rdbUpdateCount = new AtomicInteger();
 
-	private KeeperMonitorManager keeperMonitorManager;
+	private KeeperMonitor keeperMonitor;
 
 	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
-			KeeperMonitorManager keeperMonitorManager) throws IOException {
+			KeeperMonitor keeperMonitor) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.config = config;
-		this.keeperMonitorManager = keeperMonitorManager;
+		this.keeperMonitor = keeperMonitor;
 
 		metaStore = new DefaultMetaStore(baseDir, keeperRunid);
 
@@ -82,7 +82,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				cmdStore = new DefaultCommandStore(new File(baseDir, meta.getCmdFilePrefix()), cmdFileSize, 
 						config.getReplicationStoreMinTimeMilliToGcAfterCreate(), 
 						config.getReplicationStoreCommandFileNumToKeep(), 
-						keeperMonitorManager);
+						keeperMonitor);
 			}
 		}
 
@@ -133,7 +133,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		cmdStore = new DefaultCommandStore(new File(baseDir, newMeta.getCmdFilePrefix()), cmdFileSize,
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(), 
 				config.getReplicationStoreCommandFileNumToKeep(), 
-				keeperMonitorManager);
+				keeperMonitor);
 
 		return rdbStoreRef.get();
 	}

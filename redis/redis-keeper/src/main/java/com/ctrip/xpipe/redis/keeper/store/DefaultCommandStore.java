@@ -19,7 +19,7 @@ import com.ctrip.xpipe.redis.core.store.CommandReader;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.OffsetNotifier;
@@ -59,18 +59,18 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	
 	private CommandStoreDelay commandStoreDelay;
 
-	public DefaultCommandStore(File file, int maxFileSize, KeeperMonitorManager keeperMonitorManager) throws IOException {
-		this(file, maxFileSize, 3600*1000, 20, keeperMonitorManager);
+	public DefaultCommandStore(File file, int maxFileSize, KeeperMonitor keeperMonitor) throws IOException {
+		this(file, maxFileSize, 3600*1000, 20, keeperMonitor);
 	}
 
-	public DefaultCommandStore(File file, int maxFileSize, int minTimeMilliToGcAfterModified, int fileNumToKeep, KeeperMonitorManager keeperMonitorManager) throws IOException {
+	public DefaultCommandStore(File file, int maxFileSize, int minTimeMilliToGcAfterModified, int fileNumToKeep, KeeperMonitor keeperMonitor) throws IOException {
 		
 		this.baseDir = file.getParentFile();
 		this.fileNamePrefix = file.getName();
 		this.maxFileSize = maxFileSize;
 		this.fileNumToKeep = fileNumToKeep;
 		this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
-		this.commandStoreDelay = keeperMonitorManager.createCommandStoreDelay(this);
+		this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
 		
 		fileFilter = new PrefixFileFilter(fileNamePrefix);
 

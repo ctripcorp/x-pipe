@@ -103,7 +103,6 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		case NORMAL:
 			logger.warn("[tryFullSync]{}", redisSlave);
 			redisKeeperServer.clearRdbDumper(this);
-			;
 			redisKeeperServer.fullSyncToSlave(redisSlave);
 			break;
 		case WAIT_DUMPPING:

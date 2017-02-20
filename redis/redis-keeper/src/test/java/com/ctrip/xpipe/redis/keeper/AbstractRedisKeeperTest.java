@@ -22,8 +22,10 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
-import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeeperMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneKeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 
@@ -43,6 +45,13 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	protected String getShardId() {
 
 		return currentTestName() + "-shardId";
+	}
+
+	protected ReplicationStoreManager createReplicationStoreManager(String keeperRunid, KeeperConfig keeperConfig) {
+		
+		String tmpDir = getTestFileDir();
+
+		return createReplicationStoreManager(getClusterId(), getShardId(), keeperRunid, keeperConfig, new File(tmpDir));
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig) {
@@ -81,7 +90,9 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir, createkeeperMonitorManager()); 
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir, 
+				createkeeperMonitor());
+		
 		replicationStoreManager.addObserver(new Observer() {
 			
 			@Override
@@ -101,10 +112,14 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return replicationStoreManager;
 	}
 	
-	protected KeeperMonitorManager createkeeperMonitorManager(){
-		return new NoneKeeperMonitorManager();
+	protected KeepersMonitorManager createkeepersMonitorManager(){
+		return new NoneKeepersMonitorManager();
 	}
-	
+
+	protected KeeperMonitor createkeeperMonitor(){
+		return new NoneKeeperMonitor();
+	}
+
 	protected String randomKeeperRunid(){
 
 		return RunidGenerator.DEFAULT.generateRunid();
