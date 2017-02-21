@@ -84,9 +84,6 @@ public class KeeperSingleDcSlaveof extends AbstractKeeperIntegratedSingleDc {
 				logger.info("[testXSlaveof][role keeper]{}, {}", redisSlave, redisSlave.partialState());
 			} else {
 				logger.info("[testXSlaveof][role redis]{}, {}", redisSlave, redisSlave.partialState());
-				if (!xslaveof) {
-					dest = PARTIAL_STATE.FULL;
-				}
 			}
 			Assert.assertEquals(dest, redisSlave.partialState());
 		}
