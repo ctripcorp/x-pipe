@@ -411,9 +411,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void reFullSync() {
+
+		closeSlaves("reFullSync");
+	}
+
+	@Override
+	public void onFullSync() {
+		
+	}
+
+	private void closeSlaves(String reason) {
+		
 		for(RedisSlave redisSlave : slaves()){
 			try {
-				logger.info("[reFullSync][close slave]{}", redisSlave);
+				logger.info("[{}][close slave]{}", reason, redisSlave);
 				redisSlave.close();
 			} catch (IOException e) {
 				logger.error("[beginWriteRdb][close slaves]", e);
@@ -422,7 +433,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void onContinue() {
+	public void onContinue(String requestReplId, String responseReplId) {
+		
+		if(!requestReplId.equals(responseReplId)){
+			closeSlaves(String.format("replid changed: %s->%s", requestReplId, responseReplId));
+		}
 	}
 	
 	@Override
@@ -553,11 +568,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public void destroy() throws Exception {
 		this.keepersMonitorManager.remove(this);
 		this.replicationStoreManager.destroy();
-	}
-
-	@Override
-	public void onFullSync() {
-		
 	}
 
 	@Override

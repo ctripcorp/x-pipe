@@ -12,6 +12,7 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({ 
 	KeeperPsync2.class,
+	KeeperPsync2Continue.class,
 	KeeperSingleDc.class,
 	KeeperMultiDc.class,
 	KeeperMultiDcChangePrimary.class,

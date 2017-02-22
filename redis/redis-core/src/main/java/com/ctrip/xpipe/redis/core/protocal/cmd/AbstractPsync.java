@@ -35,6 +35,9 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	private boolean saveCommands;
 
 	private BulkStringParser rdbReader;
+	
+	private String replIdRequest;
+	private long offsetRequest;
 
 	protected String replId;
 
@@ -65,15 +68,15 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 		Pair<String, Long> requestInfo = getRequestMasterInfo();
 
-		String replIdRequest = requestInfo.getKey();
-		long offset = requestInfo.getValue();
+		replIdRequest = requestInfo.getKey();
+		offsetRequest = requestInfo.getValue();
 
 		if (replIdRequest == null) {
 			replIdRequest = "?";
-			offset = -1;
+			offsetRequest = -1;
 		}
 		RequestStringParser requestString = new RequestStringParser(getName(), replIdRequest,
-				String.valueOf(offset));
+				String.valueOf(offsetRequest));
 		if (logger.isDebugEnabled()) {
 			logger.debug("[doRequest]{}, {}", this, StringUtil.join(" ", requestString.getPayload()));
 		}
@@ -199,13 +202,13 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	
 	protected void doOnContinue(String newReplId) throws IOException{
 		logger.debug("[doOnContinue]{}",newReplId);
-		notifyContinue();
+		notifyContinue(newReplId);
 	}
 
-	private void notifyContinue() {
+	private void notifyContinue(String newReplId) {
 
 		for (PsyncObserver observer : observers) {
-			observer.onContinue();
+			observer.onContinue(replIdRequest, newReplId);
 		}
 	}
 

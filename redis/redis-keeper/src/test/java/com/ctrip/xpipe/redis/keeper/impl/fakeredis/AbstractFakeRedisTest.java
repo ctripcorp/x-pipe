@@ -141,7 +141,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 				}
 				
 				@Override
-				public void onContinue() {
+				public void onContinue(String requestReplId, String responseReplId) {
 					
 				}
 				

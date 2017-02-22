@@ -39,6 +39,7 @@ import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaService;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
+import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.google.common.collect.Lists;
 
@@ -405,6 +406,17 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 			}
 		}
 	}
+
+	protected void xslaveof(String masterIp, Integer masterPort, RedisMeta ... slaves) throws Exception {
+		
+		new XSlaveofJob(Lists.newArrayList(slaves), masterIp, masterPort, getXpipeNettyClientKeyedObjectPool(), scheduled).execute().sync();
+	}
+
+	protected void xslaveof(String masterIp, Integer masterPort, List<RedisMeta> slaves) throws Exception {
+		
+		new XSlaveofJob(slaves, masterIp, masterPort, getXpipeNettyClientKeyedObjectPool(), scheduled).execute().sync();
+	}
+
 
 	@Override
 	protected boolean deleteTestDirAfterTest() {

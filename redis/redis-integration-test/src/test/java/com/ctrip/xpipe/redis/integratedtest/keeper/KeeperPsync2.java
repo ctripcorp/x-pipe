@@ -66,7 +66,7 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 			}
 			sendMessageToMaster(redisMaster, 10);
 			redisKeeperServers = currentKeepers;
-			
+
 			sleep(2000);
 			assertSyncCount(redisKeeperServers);
 			assertCommandsEquals(redisKeeperServers);

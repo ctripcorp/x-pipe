@@ -351,7 +351,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected abstract void doEndWriteRdb();
 
 	@Override
-	public void onContinue() {
+	public void onContinue(String requestReplId, String responseReplId) {
 		doOnContinue();
 	}
 
