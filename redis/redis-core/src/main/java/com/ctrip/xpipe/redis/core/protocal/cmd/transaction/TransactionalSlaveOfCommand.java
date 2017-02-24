@@ -18,10 +18,12 @@ import io.netty.buffer.ByteBuf;
 
 /**
  * first try xslaveof, then slaveof
+ * @Deprecated because redis may get inconsistent when using slaveof in transaction
  * @author wenchao.meng
  *
  * Dec 9, 2016
  */
+@Deprecated
 public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 	
 	private String ip;

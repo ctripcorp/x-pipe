@@ -23,6 +23,7 @@ public class TransactionalSlaveOfCommandTest extends AbstractRedisTest{
 	
 	private int testCount = 10;
 	
+	@SuppressWarnings("deprecation")
 	@Test
 	public void testXslaveof() throws Exception{
 		

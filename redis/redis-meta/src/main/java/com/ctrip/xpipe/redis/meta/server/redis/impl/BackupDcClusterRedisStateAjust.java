@@ -16,7 +16,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
-import com.ctrip.xpipe.redis.meta.server.job.TransactionalSlaveOfJob;
+import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 
 /**
@@ -65,7 +65,7 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 			}
 			
 			logger.info("[doRun][change state]{}, {}", keeperActive, redisesNeedChange);
-			new TransactionalSlaveOfJob(redisesNeedChange, keeperActive.getIp(), keeperActive.getPort(), pool, scheduled).
+			new DefaultSlaveOfJob(redisesNeedChange, keeperActive.getIp(), keeperActive.getPort(), pool, scheduled).
 			execute().addListener(new CommandFutureListener<Void>() {
 				
 				@Override

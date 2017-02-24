@@ -15,8 +15,8 @@ import io.netty.buffer.ByteBuf;
  */
 public abstract class AbstractSlaveOfCommand extends AbstractRedisCommand<String> {
 	
-	private String ip;
-	private int port;
+	protected String ip;
+	protected int port;
 	private String param = "";
 
 	public AbstractSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {

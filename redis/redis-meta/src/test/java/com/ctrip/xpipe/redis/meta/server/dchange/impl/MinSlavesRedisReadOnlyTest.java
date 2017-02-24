@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.impl.MinSlavesRedisReadOnly;
  *
  * Jan 22, 2017
  */
+@SuppressWarnings("deprecation")
 public class MinSlavesRedisReadOnlyTest extends AbstractMetaServerTest{
 	
 	private MinSlavesRedisReadOnly minSlavesRedisReadOnly;

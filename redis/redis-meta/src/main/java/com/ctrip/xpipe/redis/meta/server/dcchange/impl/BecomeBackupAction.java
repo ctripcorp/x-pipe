@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.meta.server.dcchange.SentinelManager;
-import com.ctrip.xpipe.redis.meta.server.job.TransactionalSlaveOfJob;
+import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.BackupDcKeeperMasterChooserAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -82,7 +82,7 @@ public class BecomeBackupAction extends AbstractChangePrimaryDcAction{
 		
 		try {
 			executionLog.info("[makeRedisesOk]" + slaves + "->" + newMaster);
-			Command<Void> command = new TransactionalSlaveOfJob(slaves, newMaster.getKey(), newMaster.getValue(), keyedObjectPool, scheduled);
+			Command<Void> command = new DefaultSlaveOfJob(slaves, newMaster.getKey(), newMaster.getValue(), keyedObjectPool, scheduled);
 			command.execute().get();
 		} catch (InterruptedException | ExecutionException e) {
 			logger.error("[makeRedisesOk]" + slaves, e);

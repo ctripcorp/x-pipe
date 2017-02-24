@@ -104,9 +104,12 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	}
 
 	protected Jedis createJedis(String addr) {
-		
 		InetSocketAddress address = IpUtils.parseSingle(addr);
-		Jedis jedis = new Jedis(address.getHostString(), address.getPort()); 
+		return createJedis(address.getHostString(), address.getPort());
+	}
+
+	protected Jedis createJedis(String host, int port) {
+		Jedis jedis = new Jedis(host, port); 
 		logger.info("[createJedis]{}", jedis);
 		return jedis;
 	}

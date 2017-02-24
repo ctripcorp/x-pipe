@@ -23,7 +23,6 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.RedisReadonly;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
-import com.ctrip.xpipe.redis.meta.server.dcchange.impl.MinSlavesRedisReadOnly;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
@@ -204,7 +203,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		}
 		Pair<String, Integer>  keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
 		
-		RedisReadonly redisReadOnly = new  MinSlavesRedisReadOnly(keeperMaster.getKey(), keeperMaster.getValue(), keyedObjectPool, scheduled);
+		RedisReadonly redisReadOnly = RedisReadonly.create(keeperMaster.getKey(), keeperMaster.getValue(), keyedObjectPool, scheduled); 
 		try {
 			if(readOnly){
 				logger.info("[makeMasterReadOnly][readonly]{}", keeperMaster);
