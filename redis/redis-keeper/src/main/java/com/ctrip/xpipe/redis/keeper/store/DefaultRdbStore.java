@@ -28,7 +28,7 @@ import com.ctrip.xpipe.utils.SizeControllableFile;
 
 import io.netty.buffer.ByteBuf;
 
-public class DefaultRdbStore implements RdbStore {
+public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRdbStore.class);
 	
@@ -42,7 +42,7 @@ public class DefaultRdbStore implements RdbStore {
 
 	private AtomicReference<Status> status = new AtomicReference<>(Status.Writing);
 
-	protected long rdbLastKeeperOffset;
+	protected long rdbOffset;
 
 	private AtomicInteger refCount = new AtomicInteger(0);
 	
@@ -50,11 +50,11 @@ public class DefaultRdbStore implements RdbStore {
 	
 	private Object truncateLock = new Object();
 	
-	public DefaultRdbStore(File file, long rdbLastKeeperOffset, EofType eofType) throws IOException {
+	public DefaultRdbStore(File file, long rdbOffset, EofType eofType) throws IOException {
 
 		this.file = file;
 		this.eofType = eofType;
-		this.rdbLastKeeperOffset = rdbLastKeeperOffset;
+		this.rdbOffset = rdbOffset;
 		
 		if(file.length() > 0){
 			checkAndSetRdbState();
@@ -66,7 +66,8 @@ public class DefaultRdbStore implements RdbStore {
 	
 	@Override
 	public int writeRdb(ByteBuf byteBuf) throws IOException {
-		
+		makeSureOpen();
+
 		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, channel);
 		return wrote;
 	}
@@ -117,6 +118,8 @@ public class DefaultRdbStore implements RdbStore {
 	@Override
 	public void readRdbFile(final RdbFileListener rdbFileListener) throws IOException {
 		
+		makeSureOpen();
+
 		rdbFileListener.beforeFileData();
 		refCount.incrementAndGet();
 
@@ -131,7 +134,7 @@ public class DefaultRdbStore implements RdbStore {
 
 	private void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
 		
-		rdbFileListener.setRdbFileInfo(eofType, rdbLastKeeperOffset);
+		rdbFileListener.setRdbFileInfo(eofType, rdbOffset);
 
 		long lastLogTime = System.currentTimeMillis();
 		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
@@ -158,14 +161,18 @@ public class DefaultRdbStore implements RdbStore {
 
 		switch (status.get()) {
 			case Success:
-				rdbFileListener.onFileData(null);
+				if(file.exists()){//this is necessery because file may be deleted
+					rdbFileListener.onFileData(null);
+				}else{
+					rdbFileListener.exception((new Exception("rdb file not exists now " + file)));
+				}
 				break;
 	
 			case Fail:
 				rdbFileListener.exception(new Exception("[rdb error]" + file));
 				break;
 			default:
-				rdbFileListener.exception(new Exception("[status not write]" + file + "," + status));
+				rdbFileListener.exception(new Exception("[status not right]" + file + "," + status));
 				break;
 		}
 	}
@@ -185,8 +192,8 @@ public class DefaultRdbStore implements RdbStore {
 	}
 
 	@Override
-	public long lastKeeperOffset() {
-		return rdbLastKeeperOffset;
+	public long rdbOffset() {
+		return rdbOffset;
 	}
 	
 	public void incrementRefCount() {
@@ -199,12 +206,8 @@ public class DefaultRdbStore implements RdbStore {
 
 	@Override
 	public boolean checkOk() {
-		return status.get() == Status.Writing || status.get() == Status.Success;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("eofType:%s, rdbLastKeeperOffset:%d,file:%s, status:%s", eofType, rdbLastKeeperOffset, file, status.get());
+		return status.get() == Status.Writing 
+				|| ( status.get() == Status.Success && file.exists());
 	}
 
 	@Override
@@ -217,9 +220,13 @@ public class DefaultRdbStore implements RdbStore {
 	@Override
 	public void close() throws IOException {
 		
-		logger.info("[close]{}", file);
-		if(writeFile != null){
-			writeFile.close();
+		if(cmpAndSetClosed()){
+			logger.info("[close]{}", file);
+			if(writeFile != null){
+				writeFile.close();
+			}
+		}else{
+			logger.warn("[close][already closed]{}", this);
 		}
 	}
 
@@ -262,4 +269,10 @@ public class DefaultRdbStore implements RdbStore {
 			throw new IllegalStateException("unknown eoftype:" + eofType.getClass() + "," + eofType);
 		}
 	}
+
+	@Override
+	public String toString() {
+		return String.format("eofType:%s, rdbOffset:%d,file:%s, exists:%b, status:%s", eofType, rdbOffset, file, file.exists(), status.get());
+	}
+
 }

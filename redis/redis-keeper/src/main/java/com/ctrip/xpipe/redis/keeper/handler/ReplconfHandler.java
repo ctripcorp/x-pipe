@@ -29,7 +29,10 @@ public class ReplconfHandler extends AbstractCommandHandler{
 		if("listening-port".equalsIgnoreCase(args[0])){
 			redisClient.setSlaveListeningPort(Integer.valueOf(args[1]));
 		}else if("capa".equalsIgnoreCase(args[0])){
-			redisClient.capa(CAPA.of(args[1]));
+			for(int i=0;i<args.length;i++){
+				i++;
+				redisClient.capa(CAPA.of(args[i]));
+			}
 		}else if("ack".equalsIgnoreCase(args[0])){
 			
 			if(redisClient instanceof RedisSlave){

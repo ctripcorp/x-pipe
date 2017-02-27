@@ -10,13 +10,9 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 public interface DumpedRdbStore extends RdbStore{
 	
 	void setEofType(EofType eofType);
-	
-	void setMasterOffset(long masterOffset);
-	
+		
 	EofType getEofType();
 	
-	long getMasterOffset();
-
-	void setRdbLastKeeperOffset(long rdbLastKeeperOffset);
+	void setRdbOffset(long rdbLastOffset);
 
 }

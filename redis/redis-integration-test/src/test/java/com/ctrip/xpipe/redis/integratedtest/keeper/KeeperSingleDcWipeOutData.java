@@ -34,12 +34,12 @@ public class KeeperSingleDcWipeOutData extends AbstractKeeperIntegratedSingleDc{
 		RedisKeeperServer newSlave = getRedisKeeperServer(backupKeeper);
 		
 		//wait for slave to synchronize with master
-		sleep(1000);
+		sleep(3000);
 		Assert.assertEquals(PARTIAL_STATE.FULL, newSlave.getRedisMaster().partialState());
 		
 		
 		setKeeperState(backupKeeper, KeeperState.ACTIVE, redisMaster.getIp(), redisMaster.getPort());
-		sleep(1000);
+		sleep(3000);
 		//should be partial
 		Assert.assertEquals(PARTIAL_STATE.PARTIAL, newSlave.getRedisMaster().partialState());
 		

@@ -9,8 +9,8 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitorManager;
-import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeepersMonitorManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 
@@ -39,8 +39,8 @@ public class Production extends AbstractProfile{
 	}
 	
 	@Bean
-	public KeeperMonitorManager getKeeperMonitorManager(){
-		return new DefaultKeeperMonitorManager();
+	public KeepersMonitorManager getKeeperMonitorManager(){
+		return new DefaultKeepersMonitorManager();
 	}
 
 }

@@ -3,11 +3,13 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigRewrite;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigSetCommand.ConfigSetMinSlavesToWrite;
+import com.ctrip.xpipe.redis.core.protocal.cmd.transaction.TransactionalCommand;
 import com.ctrip.xpipe.redis.meta.server.dcchange.RedisReadonly;
 
 /**
@@ -15,44 +17,35 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.RedisReadonly;
  *
  * Dec 2, 2016
  */
-public class MinSlavesRedisReadOnly implements RedisReadonly{
+@Deprecated
+public class MinSlavesRedisReadOnly extends AbstractRedisReadOnly implements RedisReadonly{
 	
-	private Logger logger = LoggerFactory.getLogger(MinSlavesRedisReadOnly.class);
-
-	private int READ_ONLY_NUMBER = Integer.MAX_VALUE;
+	public static int READ_ONLY_NUMBER = Integer.MAX_VALUE;
 	
-	private int WRITABLE_NUMBER = 0;
-	
-	private String ip;
-	
-	private int port;
-	
-	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
-	
-	private ScheduledExecutorService scheduled;
+	public static int WRITABLE_NUMBER = 0;
 	
 	public MinSlavesRedisReadOnly(String ip, int port, XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled) {
-		this.ip = ip;
-		this.port = port;
-		this.keyedObjectPool = keyedObjectPool;
-		this.scheduled = scheduled;
+		super(ip, port, keyedObjectPool, scheduled);
 	}
 
 	@Override
-	public void makeReadOnly() throws Exception {
-		
-		ConfigSetMinSlavesToWrite command = new ConfigSetMinSlavesToWrite(keyedObjectPool.getKeyPool(new InetSocketAddress(ip, port)), READ_ONLY_NUMBER, scheduled);
-		Boolean result = command.execute().get();
-		logger.info("[makeReadOnly]{}:{}, {}", ip, port, result);
-		
+	protected Command<?> createReadOnlyCommand() {
+		return createTransactionalCommand(READ_ONLY_NUMBER);
 	}
 
+
 	@Override
-	public void makeWritable() throws Exception {
-		
-		ConfigSetMinSlavesToWrite command = new ConfigSetMinSlavesToWrite(keyedObjectPool.getKeyPool(new InetSocketAddress(ip, port)), WRITABLE_NUMBER, scheduled);
-		Boolean result = command.execute().get();
-		logger.info("[makeWritable]{}:{}, {}", ip, port, result);
+	protected Command<?> createWritableCommand() {
+		return createTransactionalCommand(WRITABLE_NUMBER);
 	}
+
+	private Command<?> createTransactionalCommand(int number){
+		
+		SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(ip, port));
+		ConfigSetMinSlavesToWrite configSetMinSlavesToWrite = new ConfigSetMinSlavesToWrite(null, number, scheduled);
+		
+		return new TransactionalCommand(clientPool, scheduled, configSetMinSlavesToWrite, new ConfigRewrite(null, scheduled));
+	}
+
 
 }

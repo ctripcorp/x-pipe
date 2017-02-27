@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 public interface RdbFileListener {
 	
 	
-	void setRdbFileInfo(EofType eofType, long rdbFileKeeperOffset);
+	void setRdbFileInfo(EofType eofType, long rdbOffset);
 	
 	/**
 	 * 

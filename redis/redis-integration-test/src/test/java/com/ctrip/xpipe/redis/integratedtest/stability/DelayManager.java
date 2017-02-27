@@ -19,7 +19,8 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 public class DelayManager{
 	
 	private static Logger logger = LoggerFactory.getLogger(DelayManager.class);
-	
+
+	private String desc;
 	private int delayPrintInterval = Integer.parseInt(System.getProperty("delay-print-interval", "5000"));
 	
 	private ScheduledExecutorService scheduled;
@@ -32,14 +33,22 @@ public class DelayManager{
 	private long maxDelayTime = 0;
 	
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+    
+    private boolean info = true;
 	
 	private AtomicLong totalCount = new AtomicLong();
 	private AtomicLong totalDelay = new AtomicLong();
-	
-	public DelayManager(ScheduledExecutorService scheduled, int tooLongBaseMilli){
+
+	public DelayManager(ScheduledExecutorService scheduled, String desc, int tooLongBaseMilli, boolean info){
+		this.desc = desc;
 		this.scheduled = scheduled;
 		this.tooLongBaseMilli = tooLongBaseMilli;
+		this.info = info;
 		this.scheduled.scheduleAtFixedRate(new DelayPrinter(), delayPrintInterval, delayPrintInterval, TimeUnit.MILLISECONDS);
+	}
+
+	public DelayManager(ScheduledExecutorService scheduled, String desc, int tooLongBaseMilli){
+		this(scheduled, desc, tooLongBaseMilli, true);
 	}
 	
 	public void delay(long delayNanos){
@@ -48,6 +57,8 @@ public class DelayManager{
 		totalDelay.addAndGet(delayNanos);
 		
 		if(delayNanos >= tooLongBaseMilli * 1000000){
+			
+			logger.debug("{}", delayNanos);
 			tooLongCount.incrementAndGet();
 		}
 		
@@ -78,8 +89,13 @@ public class DelayManager{
 			long average = countDelta == 0 ? 0 : (currentTotalDelay - previousTotalDelay)/countDelta;
 			long countLong = currentTooLongCount - previousTooLongCount;
 			
-			logger.info("average:{} micro, time > {}ms: {}", average/1000, tooLongBaseMilli, countLong,maxDelayNanos/1000);
-			logger.info("max: {} micro, happen time:{}", maxDelayNanos/1000, sdf.format(new Date(maxDelayTime)));
+			if(info){
+				logger.info("{}, average:{} micro, time > {}ms: {}", desc, average/1000, tooLongBaseMilli, countLong);
+				logger.info("{}, max: {} micro, happen time:{}", desc, maxDelayNanos/1000, sdf.format(new Date(maxDelayTime)));
+			}else{
+				logger.debug("{}, average:{} micro, time > {}ms: {}", desc, average/1000, tooLongBaseMilli, countLong);
+				logger.debug("{}, max: {} micro, happen time:{}", desc, maxDelayNanos/1000, sdf.format(new Date(maxDelayTime)));
+			}
 			
 			maxDelayNanos = 0;
 			previousTotalCount = currentTotalCount;

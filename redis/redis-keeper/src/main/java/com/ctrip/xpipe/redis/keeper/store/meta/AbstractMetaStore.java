@@ -28,7 +28,6 @@ public abstract class AbstractMetaStore implements MetaStore{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
-
 	protected final AtomicReference<ReplicationStoreMeta> metaRef = new AtomicReference<>();
 
 	protected File baseDir;
@@ -71,28 +70,16 @@ public abstract class AbstractMetaStore implements MetaStore{
 	protected static ReplicationStoreMeta loadMetaFromFile(File file) throws IOException{
 		
 		if(file.isFile()){
-			return JSON.parseObject(IO.INSTANCE.readFrom(file, "utf-8"), ReplicationStoreMeta.class);
+			return deserializeFromString(IO.INSTANCE.readFrom(file, "utf-8"));
 		}
 		
 		throw new RedisKeeperRuntimeException("[loadMetaFromFile][not file]" + file.getAbsolutePath());
 	}
-
-	/**
-	 * keeperOffset - keeperBeginOffset == redisOffset - beginOffset
-	 */
-	@Override
-	public long redisOffsetToKeeperOffset(long redisOffset) {
-		return redisOffsetToKeeperOffset(redisOffset, metaRef.get());
+	
+	public static ReplicationStoreMeta deserializeFromString(String str){
+		return JSON.parseObject(str, ReplicationStoreMeta.class);
 	}
 
-	private long redisOffsetToKeeperOffset(long redisOffset, ReplicationStoreMeta meta) {
-		
-		if(meta.getBeginOffset() == null){
-			logger.info("[redisOffsetToKeeperOffset][first time create rdb, rdb end set 1]");
-			return meta.getKeeperBeginOffset() - 1; 
-		}
-		return redisOffset - meta.getBeginOffset() + meta.getKeeperBeginOffset();
-	}
 
 	@Override
 	public void updateKeeperRunid(String keeperRunid) throws IOException {
@@ -106,13 +93,6 @@ public abstract class AbstractMetaStore implements MetaStore{
 			metaDup.setKeeperRunid(keeperRunid);;
 			saveMeta(metaDup);
 		}
-		
-	}
-
-	@Override
-	public long getKeeperBeginOffset() {
-
-		return metaRef.get().getKeeperBeginOffset();
 	}
 
 	@Override
@@ -165,20 +145,18 @@ public abstract class AbstractMetaStore implements MetaStore{
 	}
 	
 	
-	@Override
-	public void setKeeperState(String keeperRunid, KeeperState keeperState) throws IOException {
+	private void setKeeperState(KeeperState keeperState) throws IOException {
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 
 			metaDup.setKeeperState(keeperState);;
-			metaDup.setKeeperRunid(keeperRunid);
 
 			saveMeta(metaDup);
 		}
 	}
 
 	@Override
-	public ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long masterOffset) throws IOException {
+	public ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long rdbOffset) throws IOException {
 		
 		synchronized (metaRef) {
 			
@@ -186,9 +164,9 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 			metaDup.setRdbFile(rdbFile);
 			setRdbFileInfo(metaDup, eofType);
-			metaDup.setRdbLastKeeperOffset(redisOffsetToKeeperOffset(masterOffset, metaDup));
-			logger.info("[rdbUpdated] update RdbLastKeeperOffset to {}", metaDup.getRdbLastKeeperOffset());
-
+			metaDup.setRdbLastOffset(rdbOffset);
+			
+			logger.info("[rdbUpdated] update rdbLastOffset to {}", rdbOffset);
 			saveMeta(metaDup);
 
 			return metaDup;
@@ -235,12 +213,12 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 	@Override
 	public void becomeActive() throws IOException {
-		throw new UnsupportedOperationException();
+		setKeeperState(KeeperState.ACTIVE);
 	}
 
 	@Override
 	public void becomeBackup() throws IOException {
-		throw new UnsupportedOperationException();
+		setKeeperState(KeeperState.BACKUP);
 	}
 	
 	@Override

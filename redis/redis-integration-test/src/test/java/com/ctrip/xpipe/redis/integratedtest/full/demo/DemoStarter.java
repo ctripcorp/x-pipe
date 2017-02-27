@@ -127,7 +127,7 @@ public class DemoStarter extends AbstractMultiDcTest{
 	}
 	
 	@Override
-	protected boolean deleteTestDir() {
+	protected boolean deleteTestDirBeforeTest() {
 		return false;
 	}
 	

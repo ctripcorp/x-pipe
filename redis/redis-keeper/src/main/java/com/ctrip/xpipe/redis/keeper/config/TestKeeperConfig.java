@@ -12,7 +12,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int replicationStoreGcIntervalSeconds = 2;
 	private int replicationStoreCommandFileSize = 1024;
 	private int replicationStoreCommandFileNumToKeep = 2;
-	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
+	private long replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
 	private int minTimeMilliToGcAfterCreate = 2000;
 	private int rdbDumpMinIntervalMilli = 1000;
 	
@@ -23,7 +23,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		
 	}
 	public TestKeeperConfig(int replicationStoreCommandFileSize, int replicationStoreCommandFileNumToKeep, 
-			int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) {
+			long replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) {
 		this.replicationStoreCommandFileNumToKeep = replicationStoreCommandFileNumToKeep;
 		this.replicationStoreCommandFileSize = replicationStoreCommandFileSize;
 		this.replicationStoreMaxCommandsToTransferBeforeCreateRdb = replicationStoreMaxCommandsToTransferBeforeCreateRdb;

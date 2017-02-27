@@ -2,7 +2,6 @@ package com.ctrip.xpipe.utils.log;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.SocketException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 
@@ -24,7 +23,8 @@ public class LogTest extends AbstractTest {
 	@Test
 	public void testLog() throws IOException {
 
-		logger.error("[testLog]", new SocketException("io exception"));
+		logger.error("{}", "nihao");
+		logger.error("[testLog]", new IOException("io exception"));
 		logger.error("[testLog]", new HttpServerErrorException(HttpStatus.BAD_GATEWAY, "statusCode",
 				"responseBodyExample".getBytes(), Charset.defaultCharset()));
 

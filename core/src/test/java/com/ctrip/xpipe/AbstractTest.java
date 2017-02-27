@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Properties;
@@ -73,7 +74,7 @@ public class AbstractTest {
 
 	private ComponentRegistry startedComponentRegistry;
 
-	protected void doBeforeAbstractTest() {}
+	protected void doBeforeAbstractTest() throws Exception {}
 	
 	@Before
 	public void beforeAbstractTest() throws Exception {
@@ -106,8 +107,8 @@ public class AbstractTest {
 		}
 
 		File file = new File(getTestFileDir());
-		if (file.exists() && deleteTestDir()) {
-			FileUtils.forceDelete(file);
+		if (file.exists() && deleteTestDirBeforeTest()) {
+			deleteTestDir();
 		}
 
 		if (!file.exists()) {
@@ -122,7 +123,7 @@ public class AbstractTest {
 		return name.getMethodName();
 	}
 
-	protected boolean deleteTestDir() {
+	protected boolean deleteTestDirBeforeTest() {
 		return true;
 	}
 
@@ -202,7 +203,7 @@ public class AbstractTest {
 		if (testDir != null) {
 			result = testDir.replace("~", userHome);
 		}
-		return result + "/" + currentTestName();
+		return result + "/" + getClass().getSimpleName() + "-" + currentTestName();
 	}
 
 	public static String getUserHome() {
@@ -350,7 +351,7 @@ public class AbstractTest {
 		throw new IllegalStateException(String.format("random port not found:(%d, %d)", min, max));
 	}
 
-	private static boolean isUsable(int port) {
+	protected static boolean isUsable(int port) {
 
 		try (ServerSocket s = new ServerSocket()) {
 			s.bind(new InetSocketAddress(port));
@@ -435,6 +436,10 @@ public class AbstractTest {
 
 	public static int defaultMetaServerPort() {
 		return 9747;
+	}
+
+	protected InetSocketAddress localhostInetAddress(int port) {
+		return new InetSocketAddress("localhost", port);
 	}
 
 	protected Server startEmptyServer() throws Exception {
@@ -580,9 +585,12 @@ public class AbstractTest {
 			logger.error("[afterAbstractTest]", e);
 		}
 
+		
+		
 		try {
-			File file = new File(getTestFileDir());
-			FileUtils.deleteQuietly(file);
+			if(deleteTestDirAfterTest()){
+				deleteTestDir();
+			}
 		} catch (Exception e) {
 			logger.error("[afterAbstractTest][clean test dir]", e);
 		}
@@ -597,6 +605,16 @@ public class AbstractTest {
 		
 		executors.shutdownNow();
 		scheduled.shutdownNow();
+	}
+
+	private void deleteTestDir() {
+		File file = new File(getTestFileDir());
+		FileUtils.deleteQuietly(file);
+	}
+
+	protected boolean deleteTestDirAfterTest() {
+		
+		return true;
 	}
 
 	protected void doAfterAbstractTest() throws Exception {

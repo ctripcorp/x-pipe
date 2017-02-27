@@ -43,7 +43,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 		String testDir = getTestFileDir();
 		File commandTemplate = new File(testDir, getTestName());
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, createkeeperMonitorManager());
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, createkeeperMonitor());
 	}
 
 	@Test
@@ -188,7 +188,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		try {
 			String testDir = getTestFileDir();
 			File commandTemplate = new File(testDir, getTestName());
-			commandStore.set(new DefaultCommandStore(commandTemplate, 1, createkeeperMonitorManager()));
+			commandStore.set(new DefaultCommandStore(commandTemplate, 1, createkeeperMonitor()));
 			final AtomicBoolean appendResult = new AtomicBoolean(false);
 			final SettableFuture<Void> future = SettableFuture.create();
 
@@ -326,6 +326,22 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		String result = readCommandStoreTilNoMessage(commandStore, sb.length());
 		logger.info("[testReadWrite]{}, {}", sb.length(), result.length());
 		Assert.assertTrue(sb.toString().equals(result));
+	}
+	
+	@Test
+	public void testBeginRead() throws IOException{
+		
+		int testCount = 10;
+		long total = commandStore.totalLength();
+				
+		Assert.assertEquals(0, total);
+		for(int i=0;i < testCount;i++){
+			
+			commandStore.appendCommands(Unpooled.wrappedBuffer(randomString(maxFileSize).getBytes()));
+			total += maxFileSize;
+			commandStore.beginRead(total);
+		}
+		
 	}
 
 	@After

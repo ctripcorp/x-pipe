@@ -161,6 +161,16 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		return Integer.parseInt(result);
 	}
 
+	protected Boolean payloadToBoolean(Object payload) {
+		
+		if(payload instanceof Boolean){
+			return (Boolean) payload;
+		}
+		
+		String result = payloadToString(payload);
+		return Boolean.parseBoolean(result);
+	}
+
 	@Override
 	public String getName() {
 		return getClass().getSimpleName();

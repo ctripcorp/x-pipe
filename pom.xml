@@ -10,7 +10,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ctrip.framework.xpipe</groupId>
 	<artifactId>xpipe-parent</artifactId>
-	<version>0.1.3-SNAPSHOT</version>
+	<version>0.2.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 

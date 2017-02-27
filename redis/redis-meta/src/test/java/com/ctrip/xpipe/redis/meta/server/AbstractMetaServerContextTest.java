@@ -63,7 +63,7 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 
 	
 	@Override
-	protected void doBeforeAbstractTest() {
+	protected void doBeforeAbstractTest() throws Exception {
 		super.doBeforeAbstractTest();
 		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, xpipeConfig);
 		System.setProperty("TOTAL_SLOTS", "16");

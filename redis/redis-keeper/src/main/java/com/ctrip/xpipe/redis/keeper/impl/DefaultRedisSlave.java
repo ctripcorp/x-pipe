@@ -73,7 +73,7 @@ public class DefaultRedisSlave implements RedisSlave {
 		public void operationComplete(ChannelFuture future) throws Exception {
 			
 			if(!future.isSuccess()){
-				logger.error("[operationComplete][write fail]" + this, future.cause());
+				logger.error("[operationComplete][write fail]" + DefaultRedisSlave.this, future.cause());
 			}
 		}
 	};
@@ -387,6 +387,11 @@ public class DefaultRedisSlave implements RedisSlave {
 		logger.info("[release]{}", this);
 		closed.set(true);
 		psyncExecutor.shutdownNow();
+	}
+
+	@Override
+	public boolean capaOf(CAPA capa) {
+		return redisClient.capaOf(capa);
 	}
 
 }

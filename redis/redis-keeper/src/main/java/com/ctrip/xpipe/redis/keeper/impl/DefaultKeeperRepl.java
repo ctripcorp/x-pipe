@@ -18,12 +18,27 @@ public class DefaultKeeperRepl implements KeeperRepl {
 	}
 
 	@Override
-	public long getKeeperBeginOffset() {
-		return replicationStore.getMetaStore().getKeeperBeginOffset();
+	public long getBeginOffset() {
+		return replicationStore.firstAvailableOffset();
 	}
 
 	@Override
-	public long getKeeperEndOffset() {
-		return replicationStore.getKeeperEndOffset();
+	public long getEndOffset() {
+		return replicationStore.getEndOffset();
+	}
+
+	@Override
+	public String replId() {
+		return replicationStore.getMetaStore().getReplId();
+	}
+
+	@Override
+	public String replId2() {
+		return replicationStore.getMetaStore().getReplId2();
+	}
+
+	@Override
+	public Long secondReplIdOffset() {
+		return replicationStore.getMetaStore().getSecondReplIdOffset();
 	}
 }

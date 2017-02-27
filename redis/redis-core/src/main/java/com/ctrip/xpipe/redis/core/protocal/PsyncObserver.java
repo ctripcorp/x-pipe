@@ -29,5 +29,5 @@ public interface PsyncObserver {
 
 	void endWriteRdb();
 	
-	void onContinue();
+	void onContinue(String requestReplId, String responseReplId);
 }

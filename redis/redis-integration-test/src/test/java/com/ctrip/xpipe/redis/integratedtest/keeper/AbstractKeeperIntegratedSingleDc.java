@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 
 /**
@@ -53,7 +54,7 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	}
 
 	protected int getInitSleepMilli() {
-		return 5000;
+		return 3000;
 	}
 
 	private void initResource() throws Exception {
@@ -104,8 +105,8 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		}
 	}
 	
-	protected void startKeeper(KeeperMeta keeperMeta) throws Exception{
-		startKeeper(keeperMeta, metaService, leaderElectorManager);
+	protected RedisKeeperServer startKeeper(KeeperMeta keeperMeta) throws Exception{
+		return startKeeper(keeperMeta, metaService, leaderElectorManager);
 	}
 	
 	@Override

@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 
 import io.netty.channel.Channel;
 
@@ -82,5 +83,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	void setRdbDumper(RdbDumper rdbDumper) throws SetRdbDumperException;
 
 	void setRdbDumper(RdbDumper rdbDumper, boolean force) throws SetRdbDumperException;
-
+	
+	RdbDumper rdbDumper();
+	
+	KeeperMonitor getKeeperMonitor();
 }

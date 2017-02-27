@@ -22,11 +22,9 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.KinfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -88,8 +86,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected Channel masterChannel;
 
 	protected RedisKeeperServer redisKeeperServer;
-
-	private ReplicationStoreMeta kinfo;
 
 	protected AtomicReference<Command<?>> currentCommand = new AtomicReference<Command<?>>(null);
 
@@ -189,7 +185,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		chain.add(listeningPortCommand());
-		chain.add(new FailSafeCommandWrapper<>(new Replconf(clientPool, ReplConfType.CAPA, CAPA.EOF.toString(), scheduled)));
+		chain.add(new FailSafeCommandWrapper<>(new Replconf(clientPool, ReplConfType.CAPA, scheduled, CAPA.EOF.toString(), CAPA.PSYNC2.toString())));
 		
 		try {
 			executeCommand(chain).addListener(new CommandFutureListener() {
@@ -253,42 +249,14 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private Replconf listeningPortCommand() {
 
-		Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT,
-				String.valueOf(redisKeeperServer.getListeningPort()), scheduled);
+		Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT, scheduled,
+				String.valueOf(redisKeeperServer.getListeningPort()));
 		return replconf;
 	}
 
 	protected void sendReplicationCommand() throws CommandExecutionException {
-
-		if (redisKeeperServer.getRedisKeeperServerState().sendKinfo()) {
-			executeCommand(kinfoCommand());
-		} else {
-			executeCommand(psyncCommand());
-		}
+		executeCommand(psyncCommand());
 	}
-
-	protected KinfoCommand kinfoCommand() throws CommandExecutionException {
-
-		KinfoCommand kinfoCommand = new KinfoCommand(clientPool, scheduled);
-
-		kinfoCommand.future().addListener(new CommandFutureListener<ReplicationStoreMeta>() {
-
-			@Override
-			public void operationComplete(CommandFuture<ReplicationStoreMeta> commandFuture) throws Exception {
-
-				try {
-					kinfo = commandFuture.get();
-					executeCommand(psyncCommand());
-				} catch (Exception e) {
-					logger.error("[operationComplete][kinfo fail]" + redisMaster, e);
-					kinfoFail(e);
-				}
-			}
-		});
-		return kinfoCommand;
-	}
-
-	protected abstract void kinfoFail(Throwable e);
 
 	protected Psync psyncCommand() {
 
@@ -383,7 +351,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected abstract void doEndWriteRdb();
 
 	@Override
-	public void onContinue() {
+	public void onContinue(String requestReplId, String responseReplId) {
 		doOnContinue();
 	}
 
@@ -419,9 +387,4 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	public RdbDumper getRdbDumper() {
 		return rdbDumper.get();
 	}
-
-	protected ReplicationStoreMeta getKinfo() {
-		return kinfo;
-	}
-
 }

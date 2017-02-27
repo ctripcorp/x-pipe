@@ -31,5 +31,17 @@ public class CommandChainException extends XpipeException{
 	public List<CommandFuture<?>> getResult() {
 		return result;
 	}
+	
+	@Override
+	public String getMessage() {
+		
+		StringBuilder sb = new StringBuilder();
+		for(CommandFuture<?> future : result){
+			if(!future.isSuccess()){
+				sb.append(future.command() + "," + future.cause().getMessage());
+			}
+		}
+		return sb.toString();
+	}
 
 }

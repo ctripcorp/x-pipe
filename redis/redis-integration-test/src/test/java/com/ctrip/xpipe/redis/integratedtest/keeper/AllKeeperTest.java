@@ -11,16 +11,23 @@ import org.junit.runners.Suite.SuiteClasses;
  */
 @RunWith(Suite.class)
 @SuiteClasses({ 
-	KeeperSingleDc.class, 
+	KeeperPsync2.class,
+	KeeperPsync2Continue.class,
+	KeeperSingleDc.class,
 	KeeperMultiDc.class,
 	KeeperMultiDcChangePrimary.class,
 	KeeperSingleDcRestart.class, 
 	KeeperSingleDcSlaveof.class,
 	KeeperSingleDcWipeOutData.class,
-	KeeperSingleDcVersionTest.class,
 	KeeperSingleDcEof.class,
-	KeeperMultiDc.class
+	KeeperMultiDc.class,
+	KeeperSingleDcVersionTest.class
 	})
 public class AllKeeperTest {
+	
+	/*
+	 * before run test, you should 
+	 * 1. start redis 2.8.19 at localhost, for testCase: 	KeeperSingleDcVersionTest
+	 */
 
 }

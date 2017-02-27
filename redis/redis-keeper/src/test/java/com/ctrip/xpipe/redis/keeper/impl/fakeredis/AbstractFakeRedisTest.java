@@ -123,7 +123,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 			
 			SimpleObjectPool<NettyClient> clientPool = new FixedObjectPool<NettyClient>(nettyClient);  
 			chain.add(new Replconf(clientPool, 
-					ReplConfType.CAPA, CAPA.EOF.toString(), scheduled));
+					ReplConfType.CAPA, scheduled, CAPA.EOF.toString()));
 			InMemoryPsync psync = new InMemoryPsync(clientPool, runid, offset, scheduled);
 			chain.add(psync);
 			
@@ -141,13 +141,13 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 				}
 				
 				@Override
-				public void onContinue() {
+				public void onContinue(String requestReplId, String responseReplId) {
 					
 				}
 				
 				@Override
 				public void endWriteRdb() {
-					new Replconf(clientPool, ReplConfType.ACK, String.valueOf(masterRdbOffset), scheduled).execute();
+					new Replconf(clientPool, ReplConfType.ACK, scheduled, String.valueOf(masterRdbOffset)).execute();
 				}
 				
 				@Override

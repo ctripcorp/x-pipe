@@ -56,22 +56,23 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 	@Override
 	protected void doHandle(final String[] args, final RedisClient redisClient) {
 		if (args.length == 0) {
-			logger.error("[doHandle][arg length]" + redisClient);
+			logger.error("[doHandle][arg length]{}", redisClient);
 			return;
 		}
 
-		final CommandHandler handler = handlers.get(args[0].toLowerCase());
-		if (handler == null) {
-			logger.error("[doHandler][no handler found]" + StringUtil.join(" ", args));
-			redisClient.sendMessage(new RedisErrorParser("unsupported command:" + args[0]).format());
-			return;
-		}
 
 		redisClient.processCommandSequentially(new Runnable() {
 
 			@Override
 			public void run() {
+				
 				try {
+					CommandHandler handler = handlers.get(args[0].toLowerCase());
+					if (handler == null) {
+						logger.error("[doHandler][no handler found]{}, {}", redisClient, StringUtil.join(" ", args));
+						redisClient.sendMessage(new RedisErrorParser("unsupported command:" + args[0]).format());
+						return;
+					}
 					innerDoHandle(args, redisClient, handler);
 				} catch (Exception e) {
 					logger.error("Error process command {} for client {}", Arrays.asList(args), redisClient, e);

@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
@@ -34,8 +35,11 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	private boolean saveCommands;
 
 	private BulkStringParser rdbReader;
+	
+	private String replIdRequest;
+	private long offsetRequest;
 
-	protected String masterRunid;
+	protected String replId;
 
 	protected long masterRdbOffset;
 
@@ -64,15 +68,15 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 		Pair<String, Long> requestInfo = getRequestMasterInfo();
 
-		String masterRunidRequest = requestInfo.getKey();
-		long offset = requestInfo.getValue();
+		replIdRequest = requestInfo.getKey();
+		offsetRequest = requestInfo.getValue();
 
-		if (masterRunidRequest == null) {
-			masterRunidRequest = "?";
-			offset = -1;
+		if (replIdRequest == null) {
+			replIdRequest = "?";
+			offsetRequest = -1;
 		}
-		RequestStringParser requestString = new RequestStringParser(getName(), masterRunidRequest,
-				String.valueOf(offset));
+		RequestStringParser requestString = new RequestStringParser(getName(), replIdRequest,
+				String.valueOf(offsetRequest));
 		if (logger.isDebugEnabled()) {
 			logger.debug("[doRequest]{}, {}", this, StringUtil.join(" ", requestString.getPayload()));
 		}
@@ -147,9 +151,9 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			if (split.length != 3) {
 				throw new RedisRuntimeException("unknown reply:" + psync);
 			}
-			masterRunid = split[1];
+			replId = split[1];
 			masterRdbOffset = Long.parseLong(split[2]);
-			logger.debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, masterRunid,
+			logger.debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, replId,
 					masterRdbOffset);
 			psyncState = PSYNC_STATE.READING_RDB;
 
@@ -157,7 +161,12 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		} else if (split[0].equalsIgnoreCase(PARTIAL_SYNC)) {
 
 			psyncState = PSYNC_STATE.READING_COMMANDS;
-			notifyContinue();
+			
+			String newReplId = null;
+			if(split.length >= 2 && split[1].length() == RedisProtocol.RUN_ID_LENGTH){
+				newReplId = split[1];
+			}
+			doOnContinue(newReplId);
 		} else {
 			throw new RedisRuntimeException("unknown reply:" + psync);
 		}
@@ -190,11 +199,16 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			observer.onFullSync();
 		}
 	}
+	
+	protected void doOnContinue(String newReplId) throws IOException{
+		logger.debug("[doOnContinue]{}",newReplId);
+		notifyContinue(newReplId);
+	}
 
-	private void notifyContinue() {
+	private void notifyContinue(String newReplId) {
 
 		for (PsyncObserver observer : observers) {
-			observer.onContinue();
+			observer.onContinue(replIdRequest, newReplId);
 		}
 	}
 

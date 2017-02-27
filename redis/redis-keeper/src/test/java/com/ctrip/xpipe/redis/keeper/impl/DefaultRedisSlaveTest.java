@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import static org.mockito.Mockito.*;
-
-import java.net.InetSocketAddress;
 
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -37,9 +36,8 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest{
 	public void beforeDefaultRedisSlaveTest(){
 		
 		when(channel.closeFuture()).thenReturn(new DefaultChannelPromise(channel));
-		when(channel.remoteAddress()).thenReturn(new InetSocketAddress(randomPort()));
+		when(channel.remoteAddress()).thenReturn(localhostInetAddress(randomPort()));
 	}
-	
 	
 	@SuppressWarnings("resource")
 	@Test

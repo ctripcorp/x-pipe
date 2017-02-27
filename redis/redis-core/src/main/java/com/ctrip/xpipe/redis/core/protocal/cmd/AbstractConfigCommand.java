@@ -21,7 +21,9 @@ public abstract class AbstractConfigCommand<T> extends AbstractRedisCommand<T>{
 	public static enum REDIS_CONFIG_TYPE{
 		
 		MIN_SLAVES_TO_WRITE("min-slaves-to-write"),
-		REWRITE("rewrite")
+		REWRITE("rewrite"),
+		DISKLESS_SYNC("repl-diskless-sync"),
+		DISKLESS_SYNC_DELAY("repl-diskless-sync-delay")
 		;
 		
 		private String configName;

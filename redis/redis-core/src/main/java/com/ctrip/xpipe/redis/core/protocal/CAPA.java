@@ -7,12 +7,15 @@ package com.ctrip.xpipe.redis.core.protocal;
  */
 public enum CAPA {
 	
-	EOF;
-
+	EOF,
+	PSYNC2;
+	
 	public static CAPA of(String capaString) {
-
-		if ("eof".equalsIgnoreCase(capaString)) {
-			return EOF;
+		
+		for(CAPA capa : CAPA.values()){
+			if(capa.toString().equalsIgnoreCase(capaString)){
+				return capa;
+			}
 		}
 		throw new IllegalArgumentException("unsupported capa type:" + capaString);
 	}

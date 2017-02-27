@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.LoggerFactory;
@@ -59,11 +60,15 @@ public class Server extends AbstractLifecycle{
 			public void run() {
 				
 				try {
-					ss = new ServerSocket(port);
+					try{
+						ss = new ServerSocket(port);
+					}finally{
+						latch.countDown();
+					}
+					
 					if(logger.isInfoEnabled()){
 						logger.info("[run][listening]" + port);
 					}
-					latch.countDown();
 					while(true){
 						
 						Socket socket = ss.accept();
@@ -81,10 +86,11 @@ public class Server extends AbstractLifecycle{
 					
 				} catch (IOException e) {
 					logger.warn("[run]" + port + "," + e.getMessage());
+				}finally{
 				}
 			}
 		});
-		latch.await();
+		latch.await(10, TimeUnit.SECONDS);
 	}
 
 	@Override

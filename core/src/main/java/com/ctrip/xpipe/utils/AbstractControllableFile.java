@@ -7,6 +7,7 @@ import java.io.RandomAccessFile;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,7 @@ public abstract class AbstractControllableFile implements ControllableFile{
 	
 	private File file;
 	
-	private RandomAccessFile randomAccessFile;
+	private AtomicReference<RandomAccessFile> randomAccessFile = new AtomicReference<RandomAccessFile>(null);
 	
 	private AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -51,8 +52,8 @@ public abstract class AbstractControllableFile implements ControllableFile{
 	public void close() throws IOException {
 		
 		closed.set(true);
-		if(randomAccessFile != null){
-			randomAccessFile.close();
+		if(randomAccessFile.get() != null){
+			randomAccessFile.get().close();
 		}
 	}
 
@@ -77,26 +78,32 @@ public abstract class AbstractControllableFile implements ControllableFile{
 
 	protected void tryOpen() throws IOException{
 		
-		if(randomAccessFile == null){
+		if(randomAccessFile.get() == null){
 			doOpen();
-		}else if(!randomAccessFile.getChannel().isOpen()){
+		}else if(!randomAccessFile.get().getChannel().isOpen()){
 			logger.debug("[tryOpen][file closed, reopen it]{}", file);
 			doOpen();
 		}
 	}
 
-	protected void doOpen() throws IOException {
+	protected synchronized void doOpen() throws IOException {
+		
+		if(randomAccessFile.get() != null && randomAccessFile.get().getChannel().isOpen()){
+			return;
+		}
 		
 		logger.debug("[doOpen]{}", file);
 		closed.set(false);
-		randomAccessFile = new RandomAccessFile(file, "rw");
+		randomAccessFile.set(new RandomAccessFile(file, "rw"));;
+		FileChannel fileChannel = randomAccessFile.get().getChannel();
+		fileChannel.position(fileChannel.size());
 	}
 
 	@Override
 	public FileChannel getFileChannel() throws IOException{
 		
 		tryOpen();
-		return randomAccessFile.getChannel();
+		return randomAccessFile.get().getChannel();
 	}
 	
 	@Override

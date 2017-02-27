@@ -78,8 +78,10 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	
 	@Override
 	public void masterConnected(Channel channel) {
-		super.masterConnected(channel);
 		
+		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_HANDSHAKE);
+		
+		super.masterConnected(channel);
 		cancelReplConf();
 	}
 	
@@ -143,23 +145,9 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		}
 	}
 	
-	@Override
-	protected void kinfoFail(Throwable e) {
-		
-		logger.info("[doWhenKinfoFail][retry]");
-		scheduled.schedule(new AbstractExceptionLogTask() {
-			
-			@Override
-			protected void doRun() throws Exception {
-				executeCommand(kinfoCommand());
-				
-			}
-		}, 1, TimeUnit.SECONDS);
-	}
-
 	protected Command<Object> createReplConf() {
 		
-		return new Replconf(clientPool, ReplConfType.ACK, String.valueOf(redisMaster.getCurrentReplicationStore().getEndOffset()), scheduled);
+		return new Replconf(clientPool, ReplConfType.ACK, scheduled, String.valueOf(redisMaster.getCurrentReplicationStore().getEndOffset()));
 	}
 
 	@Override
@@ -191,21 +179,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		
 		partialState = PARTIAL_STATE.FULL;
 		redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
-		
-		if(redisKeeperServer.getRedisKeeperServerState().sendKinfo()){
-			logger.info("[doBeginWriteRdb]{}", masterRdbOffset);
-			saveKinfo();
-		}
 	}
-
-	protected void saveKinfo(){
-		try{
-			redisMaster.getCurrentReplicationStore().getMetaStore().saveKinfo(getKinfo());
-		} catch (IOException e) {
-			throw new IllegalStateException("[saveKinfo][save kinfo]" + getKinfo());
-		}
-	}
-
 
 	@Override
 	protected void doEndWriteRdb() {
@@ -229,10 +203,6 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		scheduleReplconf();
 		partialState = PARTIAL_STATE.PARTIAL;
 		redisKeeperServer.getRedisKeeperServerState().initPromotionState();
-		
-		if(redisKeeperServer.getRedisKeeperServerState().sendKinfo()){
-			saveKinfo();
-		}
 	}
 
 	@Override

@@ -56,12 +56,6 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		throw new IllegalStateException("state backup, promotion unsupported!");
 	}
 
-	
-	@Override
-	public boolean sendKinfo() {
-		return true;
-	}
-
 	@Override
 	public boolean psync(final RedisClient redisClient, final String []args) {
 		

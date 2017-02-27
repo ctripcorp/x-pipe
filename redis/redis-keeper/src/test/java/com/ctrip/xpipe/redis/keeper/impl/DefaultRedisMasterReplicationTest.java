@@ -16,6 +16,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -89,7 +90,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest{
 			}
 		};
 		
-		defaultRedisMasterReplication.onContinue();
+		defaultRedisMasterReplication.onContinue(RunidGenerator.DEFAULT.generateRunid(), RunidGenerator.DEFAULT.generateRunid());
 		
 		Channel channel = mock(Channel.class);
 		when(channel.closeFuture()).thenReturn(new DefaultChannelPromise(channel));

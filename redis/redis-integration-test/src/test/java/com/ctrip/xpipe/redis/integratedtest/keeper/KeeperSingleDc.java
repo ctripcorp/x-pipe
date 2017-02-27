@@ -23,7 +23,7 @@ import com.google.common.collect.Lists;
 public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 	
 	@Test
-	public void testSync() throws IOException{
+	public void testSignleKeeperSync() throws IOException{
 
 		sendMessageToMasterAndTestSlaveRedis();
 	}
@@ -39,14 +39,6 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 		
 		sleep(2000);
 		Assert.assertEquals(PARTIAL_STATE.PARTIAL, redisKeeperServer.getRedisMaster().partialState());
-		
-		
-		//make sure keeper works
-		sendMessageToMaster();
-		RedisMeta newSlave = createSlave(backupKeeper.getIp(), backupKeeper.getPort());
-		startRedis(getDcMeta(), newSlave);
-		
-		assertRedisEquals();
 	}
 
 	@Test
@@ -111,7 +103,7 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 			
 			logger.info(remarkableMessage("[testReFullSync]{}"), i);
 			startRedis(dcMeta, slave1);
-			sleep(5000);
+			sleep(3000);
 			int currentRdbUpdateCount = replicationStore.getRdbUpdateCount();
 			logger.info("[testReFullSync]{},{}", lastRdbUpdateCount, currentRdbUpdateCount);
 			Assert.assertEquals(lastRdbUpdateCount + 1, currentRdbUpdateCount);
@@ -128,5 +120,4 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 		slave.setPort(randomPort());		
 		return slave;
 	}
-
 }

@@ -16,6 +16,7 @@ import org.junit.Test;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -49,10 +50,12 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 	@Test
 	public void testMultiManagerGc() throws InterruptedException, IOException {
+		
+		String keeperRunid = RunidGenerator.DEFAULT.generateRunid();
 
-		final DefaultReplicationStoreManager replicationStoreManager1 = (DefaultReplicationStoreManager) createReplicationStoreManager(
+		final DefaultReplicationStoreManager replicationStoreManager1 = (DefaultReplicationStoreManager) createReplicationStoreManager(keeperRunid, 
 				keeperConfig);
-		final DefaultReplicationStoreManager replicationStoreManager2 = (DefaultReplicationStoreManager) createReplicationStoreManager(
+		final DefaultReplicationStoreManager replicationStoreManager2 = (DefaultReplicationStoreManager) createReplicationStoreManager(keeperRunid,
 				keeperConfig);
 		final AtomicReference<DefaultReplicationStore> store = new AtomicReference<DefaultReplicationStore>(null);
 
@@ -68,7 +71,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 				public void run() {
 					
 					try {
-						store.set((DefaultReplicationStore) replicationStoreManager1.create());;
+						store.set((DefaultReplicationStore) replicationStoreManager1.create());
 					} catch (IOException e) {
 						logger.error("[run]" + replicationStoreManager1, e);
 					}finally{
@@ -230,8 +233,8 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,shardId, keeperRunid, baseDir);
 		
-		assertEquals(metaStore.getMasterRunid(), mgr2.getCurrent().getMetaStore().getMasterRunid());
-		assertEquals(metaStore.getKeeperBeginOffset(), mgr2.getCurrent().getMetaStore().getKeeperBeginOffset());
+		assertEquals(metaStore.getReplId(), mgr2.getCurrent().getMetaStore().getReplId());
+		assertEquals(metaStore.beginOffset(), mgr2.getCurrent().getMetaStore().beginOffset());
 		assertEquals(metaStore.getMasterAddress(), mgr2.getCurrent().getMetaStore().getMasterAddress());
 		assertEquals(metaStore.beginOffset(), mgr2.getCurrent().getMetaStore().beginOffset());
 	}

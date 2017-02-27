@@ -46,7 +46,7 @@ public class FakeRedisRdbDumpLong extends AbstractFakeRedisTest {
 
 		sleep(replicationTimeout * 3000);
 
-		Assert.assertEquals(MASTER_STATE.REDIS_REPL_CONNECTING, redisKeeperServer.getRedisMaster().getMasterState());
+		Assert.assertEquals(MASTER_STATE.REDIS_REPL_HANDSHAKE, redisKeeperServer.getRedisMaster().getMasterState());
 
 	}
 

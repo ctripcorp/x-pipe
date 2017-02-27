@@ -49,19 +49,19 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
-	public void setRdbFileInfo(EofType eofType, long rdbFileKeeperOffset) {
+	public void setRdbFileInfo(EofType eofType, long rdbOffset) {
 
 		if (logger.isInfoEnabled()) {
-			logger.info("[setRdbFileInfo]eofType:" + eofType + ",rdbFileOffset:" + rdbFileKeeperOffset);
+			logger.info("[setRdbFileInfo]eofType:" + eofType + ",rdbFileOffset:" + rdbOffset);
 		}
 
 		SimpleStringParser simpleStringParser = new SimpleStringParser(StringUtil.join(" ", DefaultPsync.FULL_SYNC,
-				redisSlave.getRedisKeeperServer().getKeeperRunid(), String.valueOf(rdbFileKeeperOffset)));
+				redisSlave.getRedisKeeperServer().getKeeperRepl().replId(), String.valueOf(rdbOffset)));
 
 		logger.info("[setRdbFileInfo]{},{}", simpleStringParser.getPayload(), redisSlave);
 		redisSlave.sendMessage(simpleStringParser.format());
 
-		redisSlave.beginWriteRdb(eofType, rdbFileKeeperOffset);
+		redisSlave.beginWriteRdb(eofType, rdbOffset);
 	}
 
 	@Override

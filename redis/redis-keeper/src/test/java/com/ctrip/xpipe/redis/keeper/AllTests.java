@@ -4,6 +4,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisClientTest;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServerTest;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisSlaveTest;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActiveTest;
@@ -18,9 +19,11 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultRdbStoreEofMarkTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultRdbStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManagerTest;
-import com.ctrip.xpipe.redis.keeper.store.meta.BackupMetaStoreTest;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
+import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManagerTest;
+import com.ctrip.xpipe.redis.keeper.handler.PsyncHandlerTest;
 import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 
 /**
@@ -32,12 +35,15 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 @SuiteClasses({
 	DefaultRedisKeeperServerConnectToFakeRedisTest.class,
 	PsyncTest.class,
+	DefaultRedisClientTest.class,
+	CommandHandlerManagerTest.class,
 	RedisKeeperServerStateBackupTest.class,
 	RedisKeeperServerStateActiveTest.class,
 	RedisKeeperServerStateUnknownTest.class,
 	KeeperContainerServiceTest.class,
 	DefaultReplicationStoreManagerTest.class,
 	DefaultRedisKeeperServerTest.class,
+	DefaultReplicationStoreTest.class,
 	DefaultRdbStoreTest.class,
 	DefaultRdbStoreEofMarkTest.class,
 	DefaultCommandStoreTest.class,
@@ -47,7 +53,7 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 	FakeRedisExceptionTest.class, 
 	FakeRedisRdbDumperTest.class,
 	FakeRedisRdbDumpLong.class,
-	BackupMetaStoreTest.class
+	PsyncHandlerTest.class
 })
 public class AllTests {
 

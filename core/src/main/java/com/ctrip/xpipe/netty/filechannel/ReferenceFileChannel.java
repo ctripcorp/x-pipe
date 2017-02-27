@@ -112,7 +112,14 @@ public class ReferenceFileChannel implements Closeable, Releasable {
 	
 	public boolean hasAnythingToRead() throws IOException{
 		
-		return currentPos.get() < file.size(); 
+		long fileSize = file.size();
+		long current = currentPos.get();
+
+		if(current > fileSize){
+			throw new IllegalStateException("currentPos > fileSize + " + current + ">" + fileSize);
+		}
+		
+		return current < fileSize;
 	}
 	
 	@Override

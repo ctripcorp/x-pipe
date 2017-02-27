@@ -9,7 +9,6 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 
 /**
  * @author wenchao.meng
@@ -49,29 +48,26 @@ public class DefaultPsync extends AbstractReplicationStorePsync{
 	}
 	
 	@Override
-	protected void doWhenFullSyncToNonFreshReplicationStore(String masterRunid) throws IOException {
+	protected void doWhenFullSyncToNonFreshReplicationStore(String replId) throws IOException {
 		
 		ReplicationStore oldStore = currentReplicationStore;
-		long newKeeperBeginOffset = ReplicationStoreMeta.DEFAULT_KEEPER_BEGIN_OFFSET;
 		if(oldStore != null){
 			try {
 				logger.info("[doWhenFullSyncToNonFreshReplicationStore][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
-				newKeeperBeginOffset = oldStore.nextNonOverlappingKeeperBeginOffset();
 				oldStore.close();
-				oldStore.destroy();
 			} catch (Exception e) {
 				logger.error("[handleRedisReponse]" + oldStore, e);
 			}
 			notifyReFullSync();
 		}
-		logger.info("[doWhenFullSyncToNonFreshReplicationStore][set keepermeta]{}, {}", masterRunid, newKeeperBeginOffset);
-		currentReplicationStore = createReplicationStore(masterRunid, newKeeperBeginOffset);
+		logger.info("[doWhenFullSyncToNonFreshReplicationStore][set keepermeta]{}", replId);
+		currentReplicationStore = createReplicationStore(replId);
 	}
 	
-	private ReplicationStore createReplicationStore(String masterRunid, long keeperBeginOffset) {
+	private ReplicationStore createReplicationStore(String replId) {
 		
 		try {
-			return replicationStoreManager.create(masterRunid, keeperBeginOffset);
+			return replicationStoreManager.create();
 		} catch (IOException e) {
 			throw new XpipeRuntimeException("[createNewReplicationStore]" + replicationStoreManager, e);
 		}

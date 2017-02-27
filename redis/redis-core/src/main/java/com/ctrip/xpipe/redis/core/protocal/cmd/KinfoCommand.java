@@ -65,7 +65,7 @@ public class KinfoCommand extends AbstractRedisCommand<ReplicationStoreMeta> {
 		if(meta == null){
 			return false;
 		}
-		if(meta.getMasterRunid() == null || meta.getMasterRunid().length() != RedisProtocol.RUN_ID_LENGTH){
+		if(meta.getReplId() == null || meta.getReplId().length() != RedisProtocol.RUN_ID_LENGTH){
 			return false;
 		}
 		if(meta.getBeginOffset() == null){

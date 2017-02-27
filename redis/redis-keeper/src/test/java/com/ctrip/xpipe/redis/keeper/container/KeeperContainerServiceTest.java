@@ -10,6 +10,8 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,6 +38,9 @@ public class KeeperContainerServiceTest {
     private KeeperContainerConfig keeperContainerConfig;
     @Mock
     private ComponentRegistry componentRegistry;
+    @Mock
+    private KeepersMonitorManager keepersMonitorManager;
+    
     private KeeperContainerService keeperContainerService;
     private String someCluster;
     private String someShard;
@@ -52,6 +57,7 @@ public class KeeperContainerServiceTest {
         ReflectionTestUtils.setField(keeperContainerService, "leaderElectorManager", leaderElectorManager);
         ReflectionTestUtils.setField(keeperContainerService, "keeperContainerConfig", keeperContainerConfig);
         ReflectionTestUtils.setField(keeperContainerService, "keeperConfig", keeperConfig);
+        ReflectionTestUtils.setField(keeperContainerService, "keepersMonitorManager", keepersMonitorManager);
 
         someCluster = "someCluster";
         someShard = "someShard";
