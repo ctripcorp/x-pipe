@@ -30,8 +30,12 @@ public class DefaultSlaveOfJobTest extends AbstractMetaServerTest{
 	public void testSlavesSuccess() throws Exception{
 		
 		List<RedisMeta> slaves = new LinkedList<>();
-		slaves.add(new RedisMeta().setIp("localhost").setPort(6479));
-		slaves.add(new RedisMeta().setIp("localhost").setPort(6579));
+		List<Integer> ports = new LinkedList<>(randomPorts(2));
+		slaves.add(new RedisMeta().setIp("localhost").setPort(ports.get(0)));
+		slaves.add(new RedisMeta().setIp("localhost").setPort(ports.get(1)));
+		
+		startServer(ports.get(0), "+OK\r\n");
+		startServer(ports.get(1), "+OK\r\n");
 		
 		Command<Void> command = new DefaultSlaveOfJob(slaves, "localhost", randomPort(), getXpipeNettyClientKeyedObjectPool(), scheduled);
 		command.execute().get(1, TimeUnit.SECONDS);
