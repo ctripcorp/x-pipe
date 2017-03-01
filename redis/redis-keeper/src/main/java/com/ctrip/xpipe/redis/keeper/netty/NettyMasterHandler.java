@@ -2,11 +2,13 @@ package com.ctrip.xpipe.redis.keeper.netty;
 
 
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.netty.AbstractNettyHandler;
 import com.ctrip.xpipe.netty.ByteBufReadAction;
+import com.ctrip.xpipe.netty.TrafficReportingEvent;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -97,4 +99,16 @@ public class NettyMasterHandler extends AbstractNettyHandler implements Observer
 			client.set((RedisSlave)args);
 		}
 	}
+	
+	 @Override
+	    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+	        if (evt instanceof TrafficReportingEvent) {
+	            TrafficReportingEvent tEvt = (TrafficReportingEvent) evt;
+	            if(tEvt.getWrittenBytes() > 0) {
+	                String type = String.format("Keeper.Out.%s", redisKeeperServer.getClusterId());
+	                String name = String.format("%s-%s", redisKeeperServer.getShardId(), tEvt.getRemoteAddr());
+	                EventMonitor.DEFAULT.logEvent(type, name, tEvt.getWrittenBytes());
+	            }
+	        }
+	    }
 }

@@ -16,6 +16,7 @@ import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.netty.ChannelTrafficStatisticsHandler;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -150,6 +151,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 					public void initChannel(SocketChannel ch) throws Exception {
 						ChannelPipeline p = ch.pipeline();
 						p.addLast(new LoggingHandler(LogLevel.DEBUG));
+						p.addLast(new ChannelTrafficStatisticsHandler(redisKeeperServer.getKeeperConfig().getTrafficReportIntervalMillis(), TimeUnit.MILLISECONDS));
 						p.addLast(new NettySimpleMessageHandler());
 						p.addLast(createHandler());
 					}
@@ -287,7 +289,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected abstract void psyncFail(Throwable cause);
 
 	protected ChannelDuplexHandler createHandler() {
-		return new NettySlaveHandler(this);
+		return new NettySlaveHandler(this, redisKeeperServer);
 	}
 
 	@Override
