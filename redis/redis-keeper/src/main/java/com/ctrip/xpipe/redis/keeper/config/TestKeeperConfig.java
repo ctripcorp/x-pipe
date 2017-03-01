@@ -113,4 +113,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getDelayLogLimitMicro() {
 		return 20*1000;
 	}
+
+	@Override
+    public long getTrafficReportIntervalMillis() {
+        return 10000L;
+    }
 }
