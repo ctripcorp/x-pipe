@@ -293,7 +293,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
                  ChannelPipeline p = ch.pipeline();
                  p.addLast(new LoggingHandler(LogLevel.DEBUG));
                  p.addLast(new NettySimpleMessageHandler());
-                 p.addLast(new NettyMasterHandler(DefaultRedisKeeperServer.this, new CommandHandlerManager()));
+                 p.addLast(new NettyMasterHandler(DefaultRedisKeeperServer.this, new CommandHandlerManager(), keeperConfig.getTrafficReportIntervalMillis()));
              }
          });
         serverSocketChannel = (ServerSocketChannel) b.bind(currentKeeperMeta.getPort()).sync().channel();

@@ -287,7 +287,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected abstract void psyncFail(Throwable cause);
 
 	protected ChannelDuplexHandler createHandler() {
-		return new NettySlaveHandler(this);
+		return new NettySlaveHandler(this, redisKeeperServer, redisKeeperServer.getKeeperConfig().getTrafficReportIntervalMillis());
 	}
 
 	@Override
