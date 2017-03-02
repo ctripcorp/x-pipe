@@ -1,26 +1,32 @@
 package com.ctrip.xpipe.redis.keeper.netty;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.exception.XpipeException;
-import com.ctrip.xpipe.netty.AbstractNettyHandler;
 import com.ctrip.xpipe.netty.ByteBufReadAction;
+import com.ctrip.xpipe.netty.ChannelTrafficStatisticsHandler;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 
 /**
  * @author wenchao.meng
  *
  * 2016年4月21日 下午3:09:44
  */
-public class NettySlaveHandler extends AbstractNettyHandler{
+public class NettySlaveHandler extends ChannelTrafficStatisticsHandler{
 
-	
+    private RedisKeeperServer redisKeeperServer;
+    
 	private RedisMasterReplication redisMasterReplication;
 	
-	public NettySlaveHandler(RedisMasterReplication redisMasterReplication) {
+	public NettySlaveHandler(RedisMasterReplication redisMasterReplication, RedisKeeperServer redisKeeperServer, long trafficReportIntervalMillis) {
+	    super(trafficReportIntervalMillis);
 		this.redisMasterReplication = redisMasterReplication;
+		this.redisKeeperServer = redisKeeperServer;
 	}
 
 	@Override
@@ -45,7 +51,7 @@ public class NettySlaveHandler extends AbstractNettyHandler{
 	}
 	
 	@Override
-	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+	protected void doChannelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		
 		ByteBuf byteBuf = (ByteBuf) msg;
 		byteBufReadPolicy.read(ctx.channel(), byteBuf, new ByteBufReadAction() {
@@ -54,7 +60,19 @@ public class NettySlaveHandler extends AbstractNettyHandler{
 				redisMasterReplication.handleResponse(channel, byteBuf);
 			}
 		});
-		super.channelRead(ctx, msg);
 	}
 	
+	@Override
+	protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
+        if(readBytes > 0) {
+            String type = String.format("Keeper.In.%s", redisKeeperServer.getClusterId());
+            String name = redisKeeperServer.getShardId();
+            EventMonitor.DEFAULT.logEvent(type, name, readBytes);
+        }
+    }
+
+    @Override
+    protected void doWrite(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        
+    }
 }
