@@ -194,7 +194,7 @@ public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 		
 		DcInfo dcInfo = getDcInfos().get(dcMeta.getId());		
 		
-		TestMetaServer testMetaServer = new TestMetaServer(dcInfo.getIncreaseServerId(), metaServerMeta.getPort(), zkServerMeta.getAddress(), getIntegrated_test_config_file());
+		TestMetaServer testMetaServer = new TestMetaServer(dcInfo.getIncreaseServerId(), metaServerMeta.getPort(), zkServerMeta.getAddress(), getXpipeMetaConfigFile());
 		testMetaServer.initialize();
 		testMetaServer.start();
 		

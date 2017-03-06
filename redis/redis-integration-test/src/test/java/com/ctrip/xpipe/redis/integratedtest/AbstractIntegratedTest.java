@@ -106,10 +106,6 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return integrated_test_config_file;
 	}
 
-	public String getIntegrated_test_config_file() {
-		return integrated_test_config_file;
-	}
-
 	protected void startZkServer(ZkServerMeta zkServerMeta) {
 
 		String[] addresses = zkServerMeta.getAddress().split("\\s*,\\s*");

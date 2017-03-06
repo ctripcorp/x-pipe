@@ -42,7 +42,7 @@ public class CommandHandlerManagerTest extends AbstractRedisKeeperTest {
 	}
 
 	@Test
-	public void testHandleSequentially() {
+	public void testHandleSequentially() throws Exception {
 
 		List<String> sendCommands = new LinkedList<>();
 

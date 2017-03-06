@@ -32,7 +32,7 @@ public interface RedisKeeperServerState{
 	
 	void initPromotionState();
 	
-	boolean psync(RedisClient redisClient, String []args);
+	boolean psync(RedisClient redisClient, String []args) throws Exception;
 	
 	KeeperState keeperState();
 

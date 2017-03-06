@@ -3,8 +3,6 @@ package com.ctrip.xpipe.netty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.exception.XpipeException;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
@@ -28,7 +26,7 @@ public class RetryByteBufReadPolicy implements ByteBufReadPolicy{
 	
 	
 	@Override
-	public void read(Channel channel, ByteBuf byteBuf, ByteBufReadAction byteBufReadAction) throws XpipeException {
+	public void read(Channel channel, ByteBuf byteBuf, ByteBufReadAction byteBufReadAction) throws Exception {
 
 		for(int i = 0; i < retry ; ){
 			

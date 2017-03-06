@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.error.NoMasterlinkRedisError;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
@@ -39,8 +40,8 @@ public class RedisKeeperServerStatePreBackup extends AbstractRedisKeeperServerSt
 	}
 
 	@Override
-	public boolean psync(RedisClient redisClient, String[] args) {
-		throw new UnsupportedOperationException();
+	public boolean psync(RedisClient redisClient, String[] args) throws Exception {
+		throw new NoMasterlinkRedisError("keeper state :" + keeperState());
 	}
 
 	@Override

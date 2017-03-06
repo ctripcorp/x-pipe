@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
+import com.ctrip.xpipe.redis.core.protocal.error.NoMasterlinkRedisError;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -23,12 +24,12 @@ public class PsyncHandler extends AbstractCommandHandler{
 	public static final int WAIT_OFFSET_TIME_MILLI = 60 * 1000;
 	
 	@Override
-	protected void doHandle(final String[] args, final RedisClient redisClient) {
+	protected void doHandle(final String[] args, final RedisClient redisClient) throws Exception {
 		// in non-psync executor
 		final RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
 		
 		if(redisKeeperServer.rdbDumper() == null && redisKeeperServer.getReplicationStore().isFresh()){
-			redisClient.sendMessage(new RedisErrorParser("-NOMASTERLINK Can't SYNC while replicationstore fresh").format());
+			redisClient.sendMessage(new RedisErrorParser(new NoMasterlinkRedisError("Can't SYNC while replicationstore fresh")).format());
 			return;
 		}
 		

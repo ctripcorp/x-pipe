@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJuderManagerTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJudgerTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParserTest;
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 
@@ -31,6 +32,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	ArrayParserTest.class,
 	BulkStringParserTest.class,
 	ArrayParserTest.class,
+	RedisErrorParserTest.class,
 	MetaCloneTest.class,
 	DefaultXpipeMetaManagerTest.class,
 	ReplicationStoreMetaTest.class,

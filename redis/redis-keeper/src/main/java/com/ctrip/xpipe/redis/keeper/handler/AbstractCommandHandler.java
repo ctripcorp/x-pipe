@@ -16,11 +16,11 @@ public abstract class AbstractCommandHandler implements CommandHandler{
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Override
-	public void handle(String[] args, RedisClient redisClient) {
+	public void handle(String[] args, RedisClient redisClient) throws Exception {
 		doHandle(args, redisClient);
 	}
 
-	protected abstract void doHandle(String[] args, RedisClient redisClient);
+	protected abstract void doHandle(String[] args, RedisClient redisClient) throws Exception;
 	
 	@Override
 	public boolean isLog(String[] args) {

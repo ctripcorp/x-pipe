@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.netty;
 
-import com.ctrip.xpipe.exception.XpipeException;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
@@ -12,6 +10,6 @@ import io.netty.channel.Channel;
  */
 public interface ByteBufReadPolicy {
 	
-	void read(Channel channel, ByteBuf byteBuf, ByteBufReadAction byteBufReadAction) throws XpipeException;
+	void read(Channel channel, ByteBuf byteBuf, ByteBufReadAction byteBufReadAction) throws Exception;
 	
 }

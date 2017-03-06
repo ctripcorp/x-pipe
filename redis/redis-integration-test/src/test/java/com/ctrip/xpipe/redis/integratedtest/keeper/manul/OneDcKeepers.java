@@ -19,7 +19,7 @@ import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
  *
  * Sep 29, 2016
  */
-public class SingleKeeper extends AbstractKeeperIntegratedSingleDc{
+public class OneDcKeepers extends AbstractKeeperIntegratedSingleDc{
 	
 	@Test
 	public void startTest() throws IOException{

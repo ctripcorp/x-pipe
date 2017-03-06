@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-
 import java.io.IOException;
 import java.util.List;
 
@@ -47,7 +46,10 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 
 		redisMaster = getRedisMaster();
 		activeKeeper = getKeeperActive();
-		backupKeeper = getKeepersBackup().get(0);
+		List<KeeperMeta> keepersBackup = getKeepersBackup();
+		if(keepersBackup.size() > 0){
+			backupKeeper = getKeepersBackup().get(0);
+		}
 		slaves = getRedisSlaves();
 
 		sleep(getInitSleepMilli());//wait for structure to build

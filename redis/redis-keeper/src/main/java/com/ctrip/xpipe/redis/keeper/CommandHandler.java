@@ -9,7 +9,7 @@ public interface CommandHandler {
 	
 	String[] getCommands();
 	
-	void handle(String []args, RedisClient redisClient);
+	void handle(String []args, RedisClient redisClient) throws Exception;
 	
 	boolean isLog(String []args);	
 }

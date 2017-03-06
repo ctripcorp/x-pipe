@@ -19,6 +19,7 @@ public class BuffSize{
 	
 	private static int receiveBuffSize = Integer.parseInt(System.getProperty("receiveBuffSize", "0"));
 	
+	@SuppressWarnings("resource")
 	public static void main(String []argc) throws IOException{
 
 		Socket s = new Socket();

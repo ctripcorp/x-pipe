@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 	}
 
 	@Override
-	public boolean psync(final RedisClient redisClient, final String []args) {
+	public boolean psync(final RedisClient redisClient, final String []args) throws Exception {
 		
 		logger.info("[psync][server state backup, ask slave to wait]{}, {}", redisClient, this);
 		
@@ -91,6 +92,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		private static Logger logger = LoggerFactory.getLogger(PsyncKeeperServerStateObserver.class);
 		
 		private String []args;
+		
 		private RedisClient redisClient;
 		
 		public PsyncKeeperServerStateObserver(String []args, RedisClient redisClient) {
@@ -105,11 +107,22 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 			logger.info("[update]{},{},{}", redisClient, updateArgs, observable);
 			
 			if(updateArgs instanceof KeeperServerStateChanged){
-				new PsyncHandler().handle(args, redisClient);
+				
 				try {
-					release();
+					new PsyncHandler().handle(args, redisClient);
 				} catch (Exception e) {
 					logger.error("[update]" + updateArgs+ "," + observable + "," + redisClient, e);
+					try {
+						redisClient.close();
+					} catch (IOException e1) {
+						logger.error("[update][closeclient]" + redisClient, e);
+					}
+				}finally{
+					try {
+						release();
+					} catch (Exception e) {
+						logger.error("[update][release]" + updateArgs+ "," + observable + "," + redisClient, e);
+					}
 				}
 			}
 		}
