@@ -20,12 +20,13 @@ public class ParallelCommandChainTest extends AbstractCommandChainTest{
 	private String successMessage = randomString();
 
 	
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testSuccess() throws InterruptedException, ExecutionException{
 		
 		ParallelCommandChain chain = new ParallelCommandChain(executors, createSuccessCommands(totalCommandCount, successMessage));
 		
-		List<CommandFuture<?>> result = chain.execute().get();
+		List<CommandFuture<?>> result = (List<CommandFuture<?>>) chain.execute().get();
 		Assert.assertEquals(totalCommandCount, result.size());
 	}
 	
@@ -63,7 +64,7 @@ public class ParallelCommandChainTest extends AbstractCommandChainTest{
 
 		final int sleepInterval = 1000;
 		ParallelCommandChain chain = new ParallelCommandChain(executors, createSuccessCommands(totalCommandCount, successMessage, sleepInterval));
-		final CommandFuture<List<CommandFuture<?>>> future = chain.execute();
+		final CommandFuture<Object> future = chain.execute();
 		
 		new Thread(new Runnable() {
 			

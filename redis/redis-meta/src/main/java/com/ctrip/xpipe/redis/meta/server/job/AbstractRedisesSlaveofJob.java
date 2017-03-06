@@ -59,10 +59,10 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 			commandChain.add(backupCommand);
 		}
 
-		commandChain.execute().addListener(new CommandFutureListener<List<CommandFuture<?>>>() {
+		commandChain.execute().addListener(new CommandFutureListener<Object>() {
 			
 			@Override
-			public void operationComplete(CommandFuture<List<CommandFuture<?>>> commandFuture) throws Exception {
+			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
 				
 				if(commandFuture.isSuccess()){
 					future().setSuccess(null);

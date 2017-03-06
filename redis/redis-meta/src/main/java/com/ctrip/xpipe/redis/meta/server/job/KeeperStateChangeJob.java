@@ -92,10 +92,10 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 
 		chain.add(backupChain);
 		
-		chain.execute().addListener(new CommandFutureListener<List<CommandFuture<?>>>() {
+		chain.execute().addListener(new CommandFutureListener<Object>() {
 			
 			@Override
-			public void operationComplete(CommandFuture<List<CommandFuture<?>>> commandFuture) throws Exception {
+			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
 				
 				if(commandFuture.isSuccess()){
 					future().setSuccess(null);
@@ -103,7 +103,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 					future().setFailure(commandFuture.cause());
 				}
 			}
-		});;
+		});
 	}
 
 	private Command<?> createKeeperSetStateCommand(KeeperMeta keeper, Pair<String, Integer> masterAddress) {

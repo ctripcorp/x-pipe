@@ -81,6 +81,10 @@ public class TestCommand extends AbstractCommand<String>{
 		
 	}
 	
+	public String getSuccessMessage() {
+		return successMessage;
+	}
+	
 	@Override
 	protected void doCancel() {
 		super.doCancel();

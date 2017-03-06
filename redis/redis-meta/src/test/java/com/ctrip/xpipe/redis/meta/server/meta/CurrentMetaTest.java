@@ -112,7 +112,6 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		});
 		
 		String json = currentMeta.toString();
-		logger.info("[testToString]{}", json);
 		CurrentMeta de = CurrentMeta.fromJson(json);
 		Assert.assertEquals(json, de.toString());
 		
@@ -176,7 +175,6 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		comparator.compare();
 		
 		currentMeta.changeCluster(comparator);
-		logger.info("[testChange]{}", currentMeta);
 		Assert.assertFalse(currentMeta.hasShard(clusterId, shardId));
 		Assert.assertTrue(currentMeta.hasShard(clusterId, newShardId));
 	}

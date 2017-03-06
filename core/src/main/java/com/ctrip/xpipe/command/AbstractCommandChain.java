@@ -14,7 +14,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
  *
  * Jul 1, 2016
  */
-public abstract class AbstractCommandChain extends AbstractCommand<List<CommandFuture<?>>> implements CommandChain<List<CommandFuture<?>>>{
+public abstract class AbstractCommandChain extends AbstractCommand<Object> implements CommandChain<Object>{
 	
 	protected final List<Command<?>>  commands = new LinkedList<>();
 	
@@ -26,8 +26,13 @@ public abstract class AbstractCommandChain extends AbstractCommand<List<CommandF
 		
 	}
 
+	public AbstractCommandChain(@SuppressWarnings("rawtypes") List<Command> commandsList) {
+		for(Command<?> command : commandsList){
+			this.commands.add(command);
+		}
+	}
+
 	public AbstractCommandChain(Command<?> ... commands) {
-		
 		for(Command<?> command : commands){
 			this.commands.add(command);
 		}
@@ -92,6 +97,9 @@ public abstract class AbstractCommandChain extends AbstractCommand<List<CommandF
 		return future;
 	}
 	
+	protected Command<?> currentCommand(){
+		return getCommand(current.get());
+	}
 	
 	protected CommandFuture<?> executeNext(){
 		

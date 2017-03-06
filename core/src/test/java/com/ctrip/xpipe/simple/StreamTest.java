@@ -3,6 +3,7 @@ package com.ctrip.xpipe.simple;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.channels.FileChannel;
 
@@ -48,5 +49,17 @@ public class StreamTest extends AbstractTest{
 		channel.close();
 	}
 	
+	@Test
+	public void testSendBuff() throws Exception{
+		
+		Server server = startEchoServer();
+		Socket socket = new Socket();
+		socket.connect(new InetSocketAddress("localhost", server.getPort()));
+		
+		System.out.println(socket.getSendBufferSize());
+		System.out.println(socket.getReceiveBufferSize());
+		
+		
+	}
 
 }
