@@ -36,7 +36,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements KeeperManager, TopElement {
 
 	private int deadKeeperCheckIntervalMilli = Integer
-			.parseInt(System.getProperty("deadKeeperCheckIntervalMilli", "30000"));
+			.parseInt(System.getProperty("deadKeeperCheckIntervalMilli", "15000"));
 
 	@Autowired
 	private KeeperStateController keeperStateController;
