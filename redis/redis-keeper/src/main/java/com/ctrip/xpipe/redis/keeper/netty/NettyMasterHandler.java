@@ -106,8 +106,8 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
         if (writtenBytes > 0) {
             String type = String.format("Keeper.Out.%s", redisKeeperServer.getClusterId());
             String name = slaveListeningPort == -1
-                    ? String.format("%s.client.%s", redisKeeperServer.getShardId(), remoteIp)
-                    : String.format("%s.slave.%s:%s", redisKeeperServer.getShardId(), remoteIp, slaveListeningPort);
+                    ? String.format("client.%s.%s", redisKeeperServer.getShardId(), remoteIp)
+                    : String.format("slave.%s.%s:%s", redisKeeperServer.getShardId(), remoteIp, slaveListeningPort);
             EventMonitor.DEFAULT.logEvent(type, name, writtenBytes);
         }
     }
