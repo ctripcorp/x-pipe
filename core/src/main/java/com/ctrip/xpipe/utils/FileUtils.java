@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
+import org.codehaus.plexus.util.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,6 +116,14 @@ public class FileUtils {
 		}
 
 		throw new FileNotFoundException(path + ","  + fileName);
+	}
+	
+	public static String readFileAsString(String fileName) throws IOException{
+		
+		try(InputStream ins = getFileInputStream(fileName)){ 
+			String fileContent = IOUtil.toString(ins);
+			return fileContent;
+		}
 	}
 
 }

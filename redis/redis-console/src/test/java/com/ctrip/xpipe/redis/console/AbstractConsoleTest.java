@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.console;
 
+import org.junit.BeforeClass;
+
+import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 
 /**
@@ -7,6 +10,12 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
  *
  * Jun 23, 2016
  */
-public class AbstractConsoleTest extends AbstractRedisTest{
+public abstract class AbstractConsoleTest extends AbstractRedisTest{
+	
+	@BeforeClass
+	public static void beforeAbstractConsoleTest(){
+		System.setProperty(HealthChecker.ENABLED, "false");
+	}
+	
 	
 }

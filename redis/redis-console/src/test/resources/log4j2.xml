@@ -19,14 +19,15 @@
 
     <loggers>
         <!--过滤掉spring和hibernate的一些无用的debug信息-->
-        <logger name="org.springframework" level="WARN">
-        </logger>
-        <logger name="org.hibernate" level="INFO">
-        </logger>
-        <logger name="io.netty" level="INFO">
-        </logger>
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="INFO"/>
+        <logger name="io.netty" level="INFO"/>
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
-        <logger name="com.ctrip.xpipe.redis.console.monitor.impl.StandaloneStatMonitor" level="DEBUG"></logger>
+        <logger name="com.ctrip.xpipe.redis.console.monitor.impl.StandaloneStatMonitor" level="DEBUG"/>
+		<logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
+		<logger name="com.mchange.v2.c3p0.impl.AbstractPoolBackedDataSource" level="WARN"/>
+		<logger name="org.h2" level="DEBUG"/>
+        
         <root level="INFO">
         	<appender-ref ref="Console"/>
             <appender-ref ref="RollingFileInfo"/>

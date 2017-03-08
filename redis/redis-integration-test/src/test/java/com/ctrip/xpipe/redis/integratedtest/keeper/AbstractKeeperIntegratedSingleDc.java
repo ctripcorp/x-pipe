@@ -36,13 +36,15 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	@Before
 	public void beforeAbstractKeeperIntegratedSingleDc() throws Exception{
 
-		startZkServer(getDcMeta().getZkServer());
-		
 		setFistKeeperActive();
 		initResource();
-		startRedises();
-		startKeepers();
-		makeKeeperRight();
+
+		if(startServers()){
+			startZkServer(getDcMeta().getZkServer());
+			startRedises();
+			startKeepers();
+			makeKeeperRight();
+		}
 
 		redisMaster = getRedisMaster();
 		activeKeeper = getKeeperActive();
@@ -53,6 +55,10 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		slaves = getRedisSlaves();
 
 		sleep(getInitSleepMilli());//wait for structure to build
+	}
+
+	protected boolean startServers() {
+		return true;
 	}
 
 	protected int getInitSleepMilli() {

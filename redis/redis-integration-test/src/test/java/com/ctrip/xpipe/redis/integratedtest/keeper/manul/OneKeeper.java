@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegratedSingleDc;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -37,6 +38,18 @@ public class OneKeeper extends AbstractKeeperIntegratedSingleDc{
 		}catch(Throwable e){
 			logger.error("[startTest]", e);
 		}
+		
+		waitForAnyKeyToExit();
+	}
+	
+	@Test
+	public void testRedis() throws Exception{
+		
+		RedisMeta redis8000 = new RedisMeta().setIp("localhost").setPort(8000);
+		startRedis(getDcMeta(), redis8000);
+		
+		startRedis(getDcMeta(), redisMaster);
+		
 		
 		
 		waitForAnyKeyToExit();

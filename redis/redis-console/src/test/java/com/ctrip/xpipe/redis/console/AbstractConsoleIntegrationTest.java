@@ -26,6 +26,10 @@ import com.ctrip.xpipe.utils.FileUtils;
 public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest {
 	public static String DATA_SOURCE = "fxxpipe";
 	
+	public static final String TABLE_STRUCTURE = "sql/h2/xpipedemodbtables.sql";
+	public static final String TABLE_DATA = "sql/h2/xpipedemodbinitdata.sql";
+	
+	
 	@BeforeClass
 	public static void setUp() {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
@@ -35,7 +39,7 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 	}
 	
 	@Before
-	public void before() throws ComponentLookupException, SQLException {
+	public void before() throws ComponentLookupException, SQLException, IOException {
 		setUpTestDataSource();
 	}
 	
@@ -45,7 +49,15 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 	}
 
 	
-	private void setUpTestDataSource() throws ComponentLookupException, SQLException {
+	private void setUpTestDataSource() throws ComponentLookupException, SQLException, IOException {
+		
+		executeSqlScript(FileUtils.readFileAsString(TABLE_STRUCTURE));
+		executeSqlScript(FileUtils.readFileAsString(TABLE_DATA));
+		executeSqlScript(prepareDatas());
+	}
+
+	private void executeSqlScript(String prepareSql) throws ComponentLookupException, SQLException {
+		
 		DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
 		
 		Connection conn = null;
@@ -53,7 +65,6 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 		try {
 			conn = dsManager.getDataSource(DATA_SOURCE).getConnection();
 			conn.setAutoCommit(false);
-			String prepareSql = prepareDatas();
 			if(!Strings.isEmpty(prepareSql)) {
 				for(String sql : prepareSql.split(";")) {
 					logger.debug("[setup][data]{}",sql.trim());
@@ -77,7 +88,6 @@ public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleTest
 				conn.close();
 			}
 		}
-		
 	}
 
 	protected String prepareDatas() {
