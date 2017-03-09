@@ -39,10 +39,15 @@ public class EternalWatcher extends AbstractStartStoppable implements Releasable
 			
 			@Override
 			public void process(WatchedEvent event) throws Exception {
-				
-				addWatcher();
+				try{
+					addWatcher();
+				}catch(Exception e){
+					logger.error("[process][addWatcher]" + EternalWatcher.this, e);
+				}
 				if(isStarted()){
 					realWatcher.process(event);
+				}else{
+					logger.warn("[process][event got, but stopped]{}, {}", EternalWatcher.this, event);
 				}
 			}
 
@@ -107,6 +112,6 @@ public class EternalWatcher extends AbstractStartStoppable implements Releasable
 	
 	@Override
 	public String toString() {
-		return String.format("%s(%s)", getClass().getSimpleName(), realWatcher);
+		return String.format("%s(%s:%s)", getClass().getSimpleName(), path, realWatcher);
 	}
 }
