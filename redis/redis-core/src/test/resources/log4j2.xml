@@ -26,7 +26,8 @@
         <logger name="org.springframework" level="WARN"/>
         <logger name="org.hibernate" level="INFO"/>
         <logger name="io.netty" level="INFO"/>
-		<logger name="org.apache.zookeeper" level="WARN"/>
+        <logger name="org.apache" level="WARN"/>
+
         <logger name="com.ctrip.xpipe.lifecycle.CreatedComponentRedistry" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.SpringComponentRegistry" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>

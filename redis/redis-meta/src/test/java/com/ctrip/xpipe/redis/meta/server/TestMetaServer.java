@@ -73,6 +73,7 @@ public class TestMetaServer extends AbstractLifecycle{
 		SpringApplication application = new SpringApplication(TestMetaServer.class);
 		application.setBannerMode(Mode.OFF);
 		application.setEnvironment(createEnvironment());
+		
 		context = application.run(new String[]{});
 		
 		TestZkClient client = context.getBean(TestZkClient.class);

@@ -22,6 +22,9 @@
         <logger name="org.springframework" level="WARN"/>
         <logger name="org.hibernate" level="INFO"/>
         <logger name="io.netty" level="INFO"/>
+        <logger name="org.apache" level="WARN"/>
+
+
 		<logger name="io.netty.handler.logging.LoggingHandler" level="INFO"/>
 		<logger name="com.ctrip.xpipe.redis.keeper.monitor.DefaultCommandStoreDelay" level="INFO"/>
 		<logger name="com.ctrip.xpipe.redis.integratedtest.stability.DelayManager" level="INFO"/>
