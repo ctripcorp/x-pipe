@@ -9,5 +9,5 @@ import java.net.Socket;
  */
 public interface SocketAware {
 
-	void setSocket(Socket socket);
+	Socket getSocket();
 }

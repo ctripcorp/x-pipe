@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.simpleserver;
 
+import java.net.Socket;
+
 /**
  * @author wenchao.meng
  *
@@ -7,5 +9,5 @@ package com.ctrip.xpipe.simpleserver;
  */
 public interface IoActionFactory {
 
-	IoAction createIoAction();
+	IoAction createIoAction(Socket socket);
 }

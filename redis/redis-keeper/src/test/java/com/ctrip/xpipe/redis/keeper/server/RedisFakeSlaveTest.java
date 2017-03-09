@@ -48,8 +48,8 @@ public class RedisFakeSlaveTest extends AbstractRedisKeeperTest{
 		new Server(fakeSlavePort, new IoActionFactory() {
 			
 			@Override
-			public IoAction createIoAction() {
-				return new AbstractRedisSlaveAction() {
+			public IoAction createIoAction(Socket socket) {
+				return new AbstractRedisSlaveAction(socket) {
 					
 					@Override
 					protected String getInfo() {

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.server;
 
+import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -47,8 +48,8 @@ public class FakeRedisServer extends AbstractLifecycle{
 		this.server = new Server(port, new IoActionFactory() {
 			
 			@Override
-			public IoAction createIoAction() {
-				return new FakeRedisServerAction(FakeRedisServer.this);
+			public IoAction createIoAction(Socket socket) {
+				return new FakeRedisServerAction(FakeRedisServer.this, socket);
 			}
 		});
 	}

@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Properties;
@@ -445,9 +446,9 @@ public class AbstractTest {
 		return startServer(new IoActionFactory() {
 			
 			@Override
-			public IoAction createIoAction() {
+			public IoAction createIoAction(Socket socket) {
 				
-				return new AbstractIoAction() {
+				return new AbstractIoAction(socket) {
 					
 					@Override
 					protected void doWrite(OutputStream ous) throws IOException {
@@ -480,8 +481,8 @@ public class AbstractTest {
 		return startServer(port, new IoActionFactory() {
 
 			@Override
-			public IoAction createIoAction() {
-				return new AbstractIoAction() {
+			public IoAction createIoAction(Socket socket) {
+				return new AbstractIoAction(socket) {
 
 					private String line;
 
@@ -543,8 +544,8 @@ public class AbstractTest {
 		IoActionFactory ioActionFactory = new IoActionFactory() {
 
 			@Override
-			public IoAction createIoAction() {
-				return new AbstractIoAction() {
+			public IoAction createIoAction(Socket socket) {
+				return new AbstractIoAction(socket) {
 
 					@Override
 					protected void doWrite(OutputStream ous) throws IOException {

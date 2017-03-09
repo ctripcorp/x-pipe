@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.simpleserver;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
@@ -77,10 +75,7 @@ public class Server extends AbstractLifecycle{
 						if(logger.isInfoEnabled()){
 							logger.info("[run][new socket]" + socket);
 						}
-						IoAction ioAction = ioActionFactory.createIoAction();
-						if(ioAction instanceof SocketAware){
-							((SocketAware) ioAction).setSocket(socket);
-						}
+						IoAction ioAction = ioActionFactory.createIoAction(socket);
 						executors.execute(new Task(socket, ioAction));
 					}
 					
@@ -115,15 +110,12 @@ public class Server extends AbstractLifecycle{
 		public void run() {
 			
 			try {
-				InputStream ins = socket.getInputStream();
-				OutputStream ous = socket.getOutputStream();
-				
 				while(true){
-					Object read = ioAction.read(ins);
+					Object read = ioAction.read();
 					if(read == null){
 						break;
 					}
-					ioAction.write(ous);
+					ioAction.write();
 				}
 			} catch (IOException e) {
 				logger.error("[run]" + socket, e);

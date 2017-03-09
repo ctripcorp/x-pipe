@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +22,11 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 	
 	private boolean slaveof = false;
 	private List<String> slaveOfCommands = new ArrayList<String>();
-	
+
+	public AbstractRedisAction(Socket socket) {
+		super(socket);
+	}
+
 	@Override
 	protected Object doRead(InputStream ins) throws IOException {
 		
@@ -99,29 +104,44 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 			towrite = OK;
 		}
 		
+		boolean writeToWrite = true;
+		
 		if(line.startsWith("psync")){
 			try {
+				writeToWrite = false;
 				handlePsync(ous, line);
 			} catch (InterruptedException e) {
 				logger.error("[handlepsync]", e);
 			}
 		}
-		
-		if(towrite != null){
-			ous.write(towrite);
-			ous.flush();
-		}else{
-			ous.write("-unsupported command\r\n".getBytes());
-			ous.flush();
+
+		if(writeToWrite){
+			if(towrite != null){
+				ous.write(towrite);
+				ous.flush();
+			}else{
+				ous.write("-unsupported command\r\n".getBytes());
+				ous.flush();
+			}
 		}
 	}
 
-	protected byte[] handleReplconf(String line) {
+	protected byte[] handleReplconf(String line) throws NumberFormatException, IOException{
+		
 		String []sp = line.split("\\s+");
 		if(sp[1].equals("ack")){
+			try {
+				replconfAck(Long.parseLong(sp[2]));
+			} catch (InterruptedException e) {
+				logger.error("[handleReplconf]", e);
+			}
 			return null;
 		}
 		return OK;
+	}
+
+	protected void replconfAck(long ackPos) throws IOException, InterruptedException {
+		
 	}
 
 	protected void handlePsync(OutputStream ous, String line) throws IOException, InterruptedException {

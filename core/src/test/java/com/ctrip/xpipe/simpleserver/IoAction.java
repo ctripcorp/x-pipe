@@ -1,18 +1,15 @@
 package com.ctrip.xpipe.simpleserver;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
+import java.io.IOException;
 /**
  * @author wenchao.meng
  *
  * 2016年4月15日 下午2:58:27
  */
-public interface IoAction {
+public interface IoAction extends SocketAware{
 
+	Object read() throws IOException;
 	
-	Object read(InputStream ins) throws IOException;
-	
-	void write(OutputStream ous) throws IOException;
+	void write() throws IOException;
 }

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.server;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
@@ -23,9 +24,11 @@ import io.netty.buffer.ByteBuf;
 public class FakeRedisServerAction extends AbstractRedisAction{
 		
 	private BlockingQueue<String> writeCommands = new LinkedBlockingQueue<>();
+	private boolean waitAckToSendCommands = false;
 	
 	private FakeRedisServer fakeRedisServer;
-	public FakeRedisServerAction(FakeRedisServer fakeRedisServer) {
+	public FakeRedisServerAction(FakeRedisServer fakeRedisServer, Socket socket) {
+		super(socket);
 		this.fakeRedisServer = fakeRedisServer;
 	}
 
@@ -117,16 +120,16 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		}
 		
 		byte []rdb = null;
-		int sleepMilli = 0;
 		if(fakeRedisServer.isEof()){
 			String mark = RunidGenerator.DEFAULT.generateRunid();
 			String content = "$EOF:" + mark + "\r\n" + fakeRedisServer.getRdbContent() + mark;
 			rdb = content.getBytes();
-			sleepMilli = 150;
+			waitAckToSendCommands = true;
 		}else{
 			BulkStringParser bulkStringParser = new BulkStringParser(fakeRedisServer.getRdbContent());
 			ByteBuf byteBuf = bulkStringParser.format();
 			rdb = ByteBufUtils.readToBytes(byteBuf);
+			waitAckToSendCommands = false;
 		}
 		if(logger.isDebugEnabled()){
 			logger.debug("[handleFullSync]{}, {}", getSocket(), new String(rdb));
@@ -134,9 +137,20 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		
 		ous.write(rdb);
 		ous.flush();
-		TimeUnit.MILLISECONDS.sleep(sleepMilli);
-		writeCommands(ous);
+		if(!waitAckToSendCommands){
+			writeCommands(ous);
+		}
+	}
+	
+	@Override
+	protected void replconfAck(long ackPos) throws IOException, InterruptedException{
+		super.replconfAck(ackPos);
 		
+		if(waitAckToSendCommands){
+			waitAckToSendCommands = false;
+			logger.info("[replconfAck][ack][sendCommands]{}", ackPos);
+			writeCommands(getSocket().getOutputStream());
+		}
 	}
 
 	private ScheduledFuture<?> sendLfToSlave(final OutputStream ous) {

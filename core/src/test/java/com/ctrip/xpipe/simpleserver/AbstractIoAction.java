@@ -15,26 +15,30 @@ import org.slf4j.Logger;
  *
  * 2016年4月15日 下午2:59:11
  */
-public abstract class AbstractIoAction implements IoAction, SocketAware, DeadAware{
+public abstract class AbstractIoAction implements IoAction, DeadAware{
 
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	protected ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(4);
 	
 	protected Socket socket; 
+	
+	public AbstractIoAction(Socket socket) {
+		this.socket = socket;
+	}
 
 	@Override
-	public Object read(InputStream ins) throws IOException {
+	public Object read() throws IOException {
 		
-		return doRead(ins);
+		return doRead(socket.getInputStream());
 	}
 
 	protected abstract Object doRead(InputStream ins) throws IOException;
 
 	@Override
-	public void write(OutputStream ous) throws IOException {
+	public void write() throws IOException {
 		
-		doWrite(ous);
+		doWrite(socket.getOutputStream());
 	}
 
 	protected abstract void doWrite(OutputStream ous) throws IOException;
@@ -61,11 +65,8 @@ public abstract class AbstractIoAction implements IoAction, SocketAware, DeadAwa
 		return sb.toString();
 	}
 
-	@Override
-	public void setSocket(Socket socket) {
-		this.socket = socket;
-	}
 
+	@Override
 	public Socket getSocket() {
 		return socket;
 	}
