@@ -71,6 +71,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 	}
 
 	private void writeCommands(OutputStream ous) throws IOException, InterruptedException {
+		
 		while(true){
 			
 			String command = writeCommands.poll(10, TimeUnit.MILLISECONDS);
@@ -79,7 +80,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 			}
 			String []sps = split(command);
 			for(String sp : sps){
-				logger.debug("[writeCommands]{}, {}", socket, sp);
+				logger.debug("[writeCommands]{}, {}", socket, sp.length());
 				ous.write(sp.getBytes());
 				ous.flush();
 				TimeUnit.MILLISECONDS.sleep(fakeRedisServer.getSendBatchIntervalMilli());

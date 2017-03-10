@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -14,6 +13,7 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -29,10 +29,8 @@ import io.netty.buffer.Unpooled;
  *         2016年4月21日 下午5:42:29
  */
 public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
-	
-	private AtomicInteger errorCount = new AtomicInteger();
-	private int totalErrorCount = 2;
-	private CountDownLatch latch = new CountDownLatch(totalErrorCount + 1);
+
+	private CountDownLatch countDownLatch = new CountDownLatch(1);
 	
 	@Before
 	public void beforeExceptionTest(){
@@ -44,9 +42,11 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 	@Test
 	public void testRdbFileError() throws Exception{
 		
-		startRedisKeeperServerAndConnectToFakeRedis();
+		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis();
 		
-		Assert.assertTrue(latch.await((totalErrorCount + 1) * 2, TimeUnit.SECONDS));;
+		countDownLatch.await(10, TimeUnit.SECONDS);
+		RdbStore rdbStore = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbStore();
+		Assert.assertFalse(rdbStore.checkOk());
 	}
 	
 	
@@ -59,7 +59,6 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 			public void beginWriteRdb(EofType eofType, long offset) {
 				
 				super.beginWriteRdb(eofType, offset);
-				latch.countDown();
 				try {
 					writeToRdb(getCurrentReplicationStore());
 				} catch (IOException e) {
@@ -67,17 +66,16 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 				}
 			}
 			
+			@Override
+			public void endWriteRdb() {
+				super.endWriteRdb();
+				countDownLatch.countDown();
+			}
+			
 		};
 	}
 
 	private void writeToRdb(ReplicationStore currentReplicationStore) throws IOException {
-
-		int current = errorCount.incrementAndGet();
-		
-		if(current > totalErrorCount){
-			logger.info("[writeToRdb][no write]");
-			return;
-		}
 		
 		logger.info("[writeToRdb][write error byte]");
 		DefaultReplicationStore replicationStore = (DefaultReplicationStore) currentReplicationStore;

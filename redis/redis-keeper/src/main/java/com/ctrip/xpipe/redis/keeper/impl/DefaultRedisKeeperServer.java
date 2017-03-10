@@ -16,6 +16,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
@@ -581,6 +583,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		if(rdbDumper.compareAndSet(null, newDumper)){
 			lastDumpTime = System.currentTimeMillis();
+			dumpListener(newDumper);
 			return;
 		}
 		
@@ -594,9 +597,28 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			}
 			rdbDumper.set(newDumper);
 			lastDumpTime = System.currentTimeMillis();
+			dumpListener(newDumper);
 		}else{
 			throw new SetRdbDumperException(olRdbDumper);
 		}
+	}
+
+	private void dumpListener(RdbDumper newDumper) {
+		
+		CommandFuture<Void> future = newDumper.future();
+		if(future == null){
+			return;
+		}
+		future.addListener(new CommandFutureListener<Void>() {
+			@Override
+			public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
+				
+				if(!commandFuture.isSuccess()){
+					logger.info("[operationComplete][dump fail, clear dump time]", commandFuture.cause());
+					lastDumpTime = 0;
+				}
+			}
+		});
 	}
 
 	@Override

@@ -118,7 +118,6 @@ public class Server extends AbstractLifecycle{
 					ioAction.write();
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
 				logger.error("[run]" + socket, e);
 			}finally{
 				try {

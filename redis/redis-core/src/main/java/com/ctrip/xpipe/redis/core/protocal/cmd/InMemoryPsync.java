@@ -54,6 +54,11 @@ public class InMemoryPsync extends AbstractPsync{
 	protected BulkStringParser createRdbReader() {
 		return new BulkStringParser(rdb);
 	}
+	
+	@Override
+	protected void failReadRdb(Throwable throwable) {
+		logger.error("[failReadRdb]", throwable);
+	}
 
 	public byte[] getCommands() {
 		return commands.toByteArray();

@@ -7,8 +7,11 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.unidal.tuple.Pair;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
@@ -62,6 +65,33 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	public String getName() {
 		return "psync";
 	}
+	
+	@Override
+	protected void doExecute() throws CommandExecutionException {
+		super.doExecute();
+		addFutureListener();
+		
+	}
+
+	//public for unit test
+	public void addFutureListener() {
+		future().addListener(new CommandFutureListener<Object>() {
+			@Override
+			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+				if(!commandFuture.isSuccess()){
+					failPsync(commandFuture.cause());
+				}
+			}
+		});
+	}
+
+	protected void failPsync(Throwable throwable) {
+		if(psyncState == PSYNC_STATE.READING_RDB){
+			failReadRdb(throwable);
+		}
+	}
+
+	protected abstract void failReadRdb(Throwable throwable);
 
 	@Override
 	public ByteBuf getRequest() {
@@ -89,10 +119,12 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	public void addPsyncObserver(PsyncObserver observer) {
 		this.observers.add(observer);
 	}
+	
+	
 
 	@Override
 	protected Object doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
-
+		
 		switch (psyncState) {
 
 		case PSYNC_COMMAND_WAITING_REPONSE:

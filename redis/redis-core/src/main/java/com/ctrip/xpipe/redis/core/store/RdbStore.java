@@ -20,7 +20,7 @@ public interface RdbStore extends Destroyable, Closeable{
 	
 	void endRdb() throws IOException;
 	
-	void failRdb(Exception e);
+	void failRdb(Throwable th);
 	
 	void readRdbFile(final RdbFileListener rdbFileListener) throws IOException;
 	

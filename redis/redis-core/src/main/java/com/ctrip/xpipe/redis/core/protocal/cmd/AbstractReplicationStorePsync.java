@@ -88,6 +88,11 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 			logger.error("[beginReadRdb]" + replId + "," + masterRdbOffset, e);
 		}
 	}
+	
+	@Override
+	protected void failReadRdb(Throwable throwable) {
+		rdbStore.failRdb(throwable);
+	}
 
 	protected void appendCommands(ByteBuf byteBuf) throws IOException {
 		

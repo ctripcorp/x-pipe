@@ -36,11 +36,14 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	@Before
 	public void beforeAbstractKeeperIntegratedSingleDc() throws Exception{
 
+		if(startServers()){
+			startZkServer(getDcMeta().getZkServer());
+		}
+
 		setFistKeeperActive();
 		initResource();
 
 		if(startServers()){
-			startZkServer(getDcMeta().getZkServer());
 			startRedises();
 			startKeepers();
 			makeKeeperRight();

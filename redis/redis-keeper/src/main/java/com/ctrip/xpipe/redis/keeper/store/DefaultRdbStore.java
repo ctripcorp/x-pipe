@@ -117,9 +117,14 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	@Override
-	public void failRdb(Exception e) {
+	public void failRdb(Throwable throwable) {
 		
-		logger.info("[failRdb]" + this, e);
+		logger.info("[failRdb]" + this, throwable);
+		
+		if(status.get() != Status.Writing){
+			throw new IllegalStateException("already finished with final state:" + status.get());
+		}
+		
 		status.set(Status.Fail);
 		notifyListenersEndRdb();
 		try {
@@ -148,7 +153,6 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 			status.set(Status.Fail);
 			long actualFileLen = file.length();
 			logger.error("[checkAndSetRdbState]actual:{}, expected:{}, file:{}, status:{}", actualFileLen, eofType, file, status);
-			throw new RdbStoreExeption(eofType, file);
 		}
 	}
 

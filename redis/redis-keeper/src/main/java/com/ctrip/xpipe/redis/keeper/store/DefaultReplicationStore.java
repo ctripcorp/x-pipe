@@ -237,7 +237,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		
 		synchronized (lock) {
 			RdbStore rdbStore = rdbStoreRef.get();
-			if (rdbStore == null) {
+			if (rdbStore == null || !rdbStore.checkOk()) {
+				logger.info("[lockAndCheckIfFullSyncPossible][false]{}", rdbStore);
 				return new FullSyncContext(false);
 			}
 
@@ -327,16 +328,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public boolean checkOk() {
-
-		if (isFresh()) {
-			return true;
-		}
-
-		RdbStore rdbStore = getRdbStore();
-		if (rdbStore != null && !rdbStore.checkOk()) {
-			logger.info("[checkOk][rdbStore not ok]{}", rdbStore);
-			return false;
-		}
 		return true;
 	}
 

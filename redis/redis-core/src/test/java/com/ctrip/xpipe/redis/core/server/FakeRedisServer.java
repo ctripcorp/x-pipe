@@ -103,9 +103,11 @@ public class FakeRedisServer extends AbstractLifecycle{
 	public synchronized void reGenerateRdb() {
 
 		rdbOffset += commands.length();
-
-		rdbContent = AbstractTest.randomString(rdbSize);
-		String prefix = String.format("rdboffset:%d--", rdbOffset);
+		
+		String prefix = String.format("rdb_rdboffset:%d--", rdbOffset);
+		rdbContent = prefix + AbstractTest.randomString(rdbSize - prefix.length());
+		
+		prefix = String.format("cmd_rdboffset:%d--", rdbOffset);
 		commands = prefix + AbstractTest.randomString(commandsLength - prefix.length());
 		
 		addCommands(commands);

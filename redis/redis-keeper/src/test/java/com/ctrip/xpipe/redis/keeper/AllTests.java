@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackupTest;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateUnknownTest;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.DefaultRedisKeeperServerConnectToFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.FakeRedisExceptionTest;
+import com.ctrip.xpipe.redis.keeper.impl.fakeredis.FakeRedisHalfRdbServerFail;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.FakeRedisRdbDumpLong;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.FakeRedisRdbDumperTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
@@ -34,6 +35,7 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 @RunWith(Suite.class)
 @SuiteClasses({
 	DefaultRedisKeeperServerConnectToFakeRedisTest.class,
+	FakeRedisHalfRdbServerFail.class,
 	PsyncTest.class,
 	DefaultRedisClientTest.class,
 	CommandHandlerManagerTest.class,

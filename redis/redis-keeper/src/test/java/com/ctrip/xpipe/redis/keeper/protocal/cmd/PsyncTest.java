@@ -207,7 +207,29 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		runData(data);
 	}
 
+	@Test
+	public void testPsyncFailHalfRdb() throws XpipeException, IOException, InterruptedException{
+		
+		psync.addFutureListener();
+		
+		int midIndex = rdbContent.length()/2;
+		String []data = new String[]{
+				"+" + DefaultPsync.FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n",
+				"$" + rdbContent.length() + "\r\n",
+				rdbContent.substring(0, midIndex) + "\r\n",
+		};
+		runData(data, false);
+		
+		psync.clientClosed(null);
+		
+		Assert.assertFalse(replicationStore.getRdbStore().checkOk());
+	}
+
 	private void runData(String []data) throws XpipeException, IOException, InterruptedException {
+		runData(data, true);
+	}
+
+	private void runData(String []data, boolean assertResult) throws XpipeException, IOException, InterruptedException {
 		
 		ByteBuf []byteBufs = new ByteBuf[data.length];
 		
@@ -223,7 +245,9 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 			psync.receive(null, byteBuf);
 		}
 
-		assertResult();
+		if(assertResult){
+			assertResult();
+		}
 		
 	}
 
