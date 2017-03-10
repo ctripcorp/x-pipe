@@ -92,20 +92,17 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	private EofType initEofType(ReplicationStoreMeta meta) {
 
 		// must has length field
-		if (meta.getRdbFileSize() > 0) {
-			logger.info("[initEofType][leneof]{}", meta);
-			return new LenEofType(meta.getRdbFileSize());
-		}
-
-		throw new IllegalStateException("meta has no rdbfilesize:" + meta);
+		logger.info("[initEofType][leneof]{}", meta);
+		return new LenEofType(meta.getRdbFileSize());
 	}
 
 	private void removeUnusedRdbFiles() {
 
-		File currentRdbFile = rdbStoreRef.get() == null ? null : rdbStoreRef.get().getRdbFile();
+		@SuppressWarnings("resource")
+		RdbStore rdbStore = rdbStoreRef.get() == null ? null : rdbStoreRef.get();
 
 		for (File rdbFile : rdbFilesOnFS()) {
-			if (!rdbFile.equals(currentRdbFile)) {
+			if (rdbStore == null || !rdbStore.sameRdbFile(rdbFile)) {
 				logger.info("[removeUnusedRdbFile] {}", rdbFile);
 				rdbFile.delete();
 			}
@@ -360,7 +357,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		public void onEndRdb() {
 			try {
 				logger.info("[onEndRdb]{}, {}", rdbStore, DefaultReplicationStore.this);
-				metaStore.setRdbFileSize(rdbStore.getRdbFile().length());
+				metaStore.setRdbFileSize(rdbStore.rdbFileLength());
 			} catch (Exception e) {
 				logger.error("[onEndRdb]", e);
 			}
@@ -397,9 +394,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		// delete old rdb files
 		for (RdbStore rdbStore : previousRdbStores.keySet()) {
 			if (rdbStore.refCount() == 0) {
-				File rdbFile = rdbStore.getRdbFile();
-				logger.info("[GC] delete rdb file {}", rdbFile);
-				rdbFile.delete();
+				try {
+					rdbStore.destroy();
+				} catch (Exception e) {
+					logger.error("[gc]" + rdbStore, e);
+				}
 				previousRdbStores.remove(rdbStore);
 			}
 		}

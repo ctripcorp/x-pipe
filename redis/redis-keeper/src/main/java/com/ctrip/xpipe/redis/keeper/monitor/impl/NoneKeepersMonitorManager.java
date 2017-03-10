@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
 
 /**
  * @author wenchao.meng
@@ -16,7 +17,8 @@ public class NoneKeepersMonitorManager extends AbstractKeepersMonitorManager imp
 	
 	public static class NoneKeeperMonitor implements KeeperMonitor{
 		
-		private KeeperStats keeperStats = new DefaultKeeperStats(); 
+		private KeeperStats keeperStats = new DefaultKeeperStats();
+		private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats(); 
 
 		@Override
 		public CommandStoreDelay createCommandStoreDelay(CommandStore commandStore) {
@@ -26,6 +28,11 @@ public class NoneKeepersMonitorManager extends AbstractKeepersMonitorManager imp
 		@Override
 		public KeeperStats getKeeperStats() {
 			return keeperStats;
+		}
+
+		@Override
+		public ReplicationStoreStats getReplicationStoreStats() {
+			return replicationStoreStats;
 		}
 	}
 

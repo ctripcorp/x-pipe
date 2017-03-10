@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.server;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
@@ -35,6 +36,7 @@ public class FakeRedisServer extends AbstractLifecycle{
 	private int sleepBeforeSendFullSyncInfo = 0;
 	private int sleepBeforeSendRdb = 0;
 	private boolean sendLFBeforeSendRdb = true;
+	private AtomicInteger sendHalfRdbAndCloseConnectionCount = new AtomicInteger(0);
 	
 	private List<FakeRedisServerAction> commandListeners = new LinkedList<>();
 	
@@ -181,6 +183,14 @@ public class FakeRedisServer extends AbstractLifecycle{
 
 	public void setSendLFBeforeSendRdb(boolean sendLFBeforeSendRdb) {
 		this.sendLFBeforeSendRdb = sendLFBeforeSendRdb;
+	}
+	
+	public void setSendHalfRdbAndCloseConnectionCount(int sendHalfRdbAndCloseConnectionCount) {
+		this.sendHalfRdbAndCloseConnectionCount.set(sendHalfRdbAndCloseConnectionCount);
+	}
+	
+	public int getAndDecreaseSendHalfRdbAndCloseConnectionCount() {
+		return sendHalfRdbAndCloseConnectionCount.getAndDecrement();
 	}
 	
 	public boolean isEof() {

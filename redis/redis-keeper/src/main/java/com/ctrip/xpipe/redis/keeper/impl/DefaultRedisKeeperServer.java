@@ -117,13 +117,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private KeeperMonitor keeperMonitor;
 	
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
-			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeepersMonitorManager keepersMonitorManager){
-		this(currentKeeperMeta, keeperConfig, baseDir, metaService, null, leaderElectorManager, keepersMonitorManager);
-	}
-
-	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
 			MetaServerKeeperService metaService, 
-			ScheduledExecutorService scheduled, 
 			LeaderElectorManager leaderElectorManager,
 			KeepersMonitorManager keepersMonitorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
@@ -136,10 +130,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
-		if(scheduled == null){
-			scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), ClusterShardAwareThreadFactory.create(clusterId, shardId, String.format("keeper:%s-%s", clusterId, shardId)));
-		}
-		this.scheduled = scheduled;
 	}
 	
 	private LeaderElector createLeaderElector(){
@@ -153,6 +143,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
+		scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), ClusterShardAwareThreadFactory.create(clusterId, shardId, String.format("keeper:%s-%s", clusterId, shardId)));
+		
 		replicationStoreManager.initialize();
 		
 		String threadPoolName = String.format("keeper:%s-%s", clusterId, shardId); 
@@ -212,6 +204,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
 		this.leaderElector.start();
+		LifecycleHelper.startIfPossible(keeperRedisMaster);
+		
 	}
 	
 	@Override
@@ -227,12 +221,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doDispose() throws Exception {
 
-		this.scheduled.shutdownNow();
 		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
 		this.leaderElector.dispose();
 		bossGroup.shutdownGracefully();
 		workerGroup.shutdownGracefully();
 		replicationStoreManager.dispose();
+		this.scheduled.shutdownNow();
 		super.doDispose();
 	}
 
@@ -243,7 +237,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		Endpoint target = redisKeeperServerState.getMaster();
 		logger.info("[reconnectMaster]{} -> {}", this, target);
 
-		if(keeperRedisMaster != null && target != null){
+		if(keeperRedisMaster != null && target != null && keeperRedisMaster.getLifecycleState().isStarted()){
 			Endpoint current = keeperRedisMaster.masterEndPoint();
 			if(current != null && current.getHost().equals(target.getHost()) && current.getPort() == target.getPort()){
 				logger.info("[reconnectMaster][master the same]{},{}", current, target);
@@ -435,7 +429,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void onContinue(String requestReplId, String responseReplId) {
 		
-		if(!requestReplId.equals(responseReplId)){
+		if( responseReplId != null && !requestReplId.equals(responseReplId) ){
 			closeSlaves(String.format("replid changed: %s->%s", requestReplId, responseReplId));
 		}
 	}

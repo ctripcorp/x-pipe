@@ -20,13 +20,15 @@ public interface RdbStore extends Destroyable, Closeable{
 	
 	void endRdb() throws IOException;
 	
+	void failRdb(Exception e);
+	
 	void readRdbFile(final RdbFileListener rdbFileListener) throws IOException;
 	
 	int refCount();
 
 	long rdbOffset();
-
-	File getRdbFile();
+	
+	long rdbFileLength();
 
 	void incrementRefCount();
 
@@ -37,5 +39,7 @@ public interface RdbStore extends Destroyable, Closeable{
 	void addListener(RdbStoreListener rdbStoreListener);
 
 	void removeListener(RdbStoreListener rdbStoreListener);
+	
+	boolean sameRdbFile(File file);
 
 }

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
 
 /**
  * @author wenchao.meng
@@ -14,6 +15,8 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 public class DefaultKeeperMonitor implements KeeperMonitor{
 
 	private KeeperStats keeperStats = new DefaultKeeperStats();
+	
+	private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats();
 	
 	private RedisKeeperServer redisKeeperServer;
 	
@@ -29,6 +32,11 @@ public class DefaultKeeperMonitor implements KeeperMonitor{
 	@Override
 	public KeeperStats getKeeperStats() {
 		return keeperStats;
+	}
+
+	@Override
+	public ReplicationStoreStats getReplicationStoreStats() {
+		return replicationStoreStats;
 	}
 
 }

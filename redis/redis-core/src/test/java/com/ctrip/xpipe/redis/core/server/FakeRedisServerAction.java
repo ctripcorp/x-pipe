@@ -73,7 +73,10 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 	private void writeCommands(OutputStream ous) throws IOException, InterruptedException {
 		while(true){
 			
-			String command = writeCommands.take();
+			String command = writeCommands.poll(10, TimeUnit.MILLISECONDS);
+			if(command == null){
+				continue;
+			}
 			String []sps = split(command);
 			for(String sp : sps){
 				logger.debug("[writeCommands]{}, {}", socket, sp);
@@ -120,23 +123,35 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		}
 		
 		byte []rdb = null;
+		int  rdbStartPos = 0;
+		String rdbContent = fakeRedisServer.getRdbContent();
 		if(fakeRedisServer.isEof()){
 			String mark = RunidGenerator.DEFAULT.generateRunid();
-			String content = "$EOF:" + mark + "\r\n" + fakeRedisServer.getRdbContent() + mark;
+			String content = "$EOF:" + mark + "\r\n" ;
+			rdbStartPos = content.length(); 
+			content += rdbContent + mark;
 			rdb = content.getBytes();
 			waitAckToSendCommands = true;
 		}else{
-			BulkStringParser bulkStringParser = new BulkStringParser(fakeRedisServer.getRdbContent());
+			BulkStringParser bulkStringParser = new BulkStringParser(rdbContent);
 			ByteBuf byteBuf = bulkStringParser.format();
 			rdb = ByteBufUtils.readToBytes(byteBuf);
+			rdbStartPos = 3 + String.valueOf(rdbContent.length()).length();
 			waitAckToSendCommands = false;
 		}
 		if(logger.isDebugEnabled()){
 			logger.debug("[handleFullSync]{}, {}", getSocket(), new String(rdb));
 		}
 		
-		ous.write(rdb);
-		ous.flush();
+		if(fakeRedisServer.getAndDecreaseSendHalfRdbAndCloseConnectionCount() > 0){
+			ous.write(rdb, 0, rdbStartPos + rdbContent.length()/2);
+			ous.flush();
+			ous.close();
+		}else{
+			ous.write(rdb);
+			ous.flush();
+		}
+		
 		if(!waitAckToSendCommands){
 			writeCommands(ous);
 		}

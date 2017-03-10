@@ -32,6 +32,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRdbStore.class);
 	
+	public static final long FAIL_RDB_LENGTH = -1; 
+	
 	private RandomAccessFile writeFile;
 
 	protected File file;
@@ -84,7 +86,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	@Override
-	public void endRdb() throws IOException {
+	public void endRdb() {
 		
 		if(status.get() != Status.Writing){
 			logger.info("[endRdb][already ended]{}, {}, {}", this, file, status);
@@ -94,11 +96,46 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		try{
 			checkAndSetRdbState();
 		}finally{
-			for(RdbStoreListener listener : rdbStoreListeners){
-				listener.onEndRdb();
+			notifyListenersEndRdb();
+			try {
+				writeFile.close();
+			} catch (IOException e) {
+				logger.error("[endRdb]" + this, e);
 			}
-			writeFile.close();
 		}
+	}
+
+	private void notifyListenersEndRdb() {
+		
+		for(RdbStoreListener listener : rdbStoreListeners){
+			try{
+				listener.onEndRdb();
+			}catch(Throwable th){
+				logger.error("[notifyListenersEndRdb]" + this, th);
+			}
+		}
+	}
+
+	@Override
+	public void failRdb(Exception e) {
+		
+		logger.info("[failRdb]" + this, e);
+		status.set(Status.Fail);
+		notifyListenersEndRdb();
+		try {
+			writeFile.close();
+		} catch (IOException e1) {
+			logger.error("[failRdb]" + this, e1);
+		}
+	}
+
+	@Override
+	public long rdbFileLength() {
+		
+		if(status.get() == Status.Fail){
+			return FAIL_RDB_LENGTH;
+		}
+		return file.length();
 	}
 
 	private void checkAndSetRdbState() {
@@ -187,11 +224,6 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	@Override
-	public File getRdbFile() {
-		return file;
-	}
-
-	@Override
 	public long rdbOffset() {
 		return rdbOffset;
 	}
@@ -273,6 +305,11 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	@Override
 	public String toString() {
 		return String.format("eofType:%s, rdbOffset:%d,file:%s, exists:%b, status:%s", eofType, rdbOffset, file, file.exists(), status.get());
+	}
+
+	@Override
+	public boolean sameRdbFile(File file) {
+		return this.file.equals(file);
 	}
 
 }

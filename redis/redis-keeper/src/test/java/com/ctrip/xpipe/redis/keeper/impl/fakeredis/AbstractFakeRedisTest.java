@@ -58,7 +58,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 			int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) throws Exception {
 
 		RedisKeeperServer redisKeeperServer = startRedisKeeperServer(replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb, 1000);
-		connectToRedis(redisKeeperServer);
+		connectToFakeRedis(redisKeeperServer);
 		return redisKeeperServer;
 	}
 
@@ -83,7 +83,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		return redisKeeperServer;
 	}
 
-	private void connectToRedis(RedisKeeperServer redisKeeperServer) {
+	protected void connectToFakeRedis(RedisKeeperServer redisKeeperServer) {
 		redisKeeperServer.getRedisKeeperServerState().becomeActive(new InetSocketAddress("localhost", fakeRedisServer.getPort()));
 		
 	}

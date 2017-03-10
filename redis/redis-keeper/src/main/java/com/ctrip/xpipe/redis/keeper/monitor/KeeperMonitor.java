@@ -12,4 +12,7 @@ public interface KeeperMonitor {
 	CommandStoreDelay createCommandStoreDelay(CommandStore commandStore);
 	
 	KeeperStats getKeeperStats();
+	
+	ReplicationStoreStats getReplicationStoreStats();
+	
 }

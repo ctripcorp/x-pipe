@@ -3,8 +3,10 @@ package com.ctrip.xpipe.redis.keeper.store;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
@@ -23,16 +25,36 @@ import io.netty.buffer.Unpooled;
 public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 	
 	private long rdbFileSize = 1024L;
+	
 	private AtomicLong readLen = new AtomicLong();
+	
+	private File rdbFile;
+	private DefaultRdbStore rdbStore;
+	private AtomicReference<Exception> exception = new AtomicReference<Exception>(null);
+	
+	@Before
+	public void beforeDefaultRdbStoreTest() throws IOException{
+		
+		String fileName = String.format("%s/%s.rdb", getTestFileDir(), getTestName());
+		rdbFile = new File(fileName);
+		rdbStore = new DefaultRdbStore(rdbFile, 1L, new LenEofType(rdbFileSize));
+	}
+	
+	@Test
+	public void testFail() throws IOException{
+		
+		readRdbInNewThread(rdbStore);
+		byte[] message = randomString().getBytes();  
+		rdbStore.writeRdb(Unpooled.wrappedBuffer(message));
+		rdbStore.failRdb(new Exception("just fail it"));
+		
+		sleep(200);
+		Assert.assertNotNull(exception.get());
+	}
 
 	@Test
 	public void testNoDataBeginRead() throws IOException{
 		
-		String fileName = String.format("%s/%s.rdb", getTestFileDir(), getTestName());
-		
-		File file = new File(fileName);
-		
-		DefaultRdbStore rdbStore = new DefaultRdbStore(file, 1L, new LenEofType(rdbFileSize));
 
 		readRdbInNewThread(rdbStore);
 		
@@ -55,7 +77,6 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 				
 				try {
 					rdbStore.readRdbFile(new RdbFileListener() {
-						
 						@Override
 						public void setRdbFileInfo(EofType eofType, long rdbFileKeeperOffset) {
 							logger.info("[setRdbFileInfo]{}, {}", eofType, rdbFileKeeperOffset);
@@ -81,6 +102,7 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 						@Override
 						public void exception(Exception e) {
 							logger.info("[exception]", e);
+							exception.set(e);
 						}
 						
 						@Override
@@ -90,6 +112,7 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 					});
 				} catch (IOException e) {
 					logger.error("[run][read rdb error]" + rdbStore, e);
+					exception.set(e);
 				}
 			}
 		}).start();

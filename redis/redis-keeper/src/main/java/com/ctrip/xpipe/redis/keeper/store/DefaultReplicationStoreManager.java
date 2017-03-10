@@ -138,6 +138,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 	
 	@Override
 	public synchronized ReplicationStore create() throws IOException {
+		
+		keeperMonitor.getReplicationStoreStats().increateReplicationStoreCreateCount();
 
 		File storeBaseDir = new File(baseDir, UUID.randomUUID().toString());
 		storeBaseDir.mkdirs();
