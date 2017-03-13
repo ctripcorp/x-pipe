@@ -19,6 +19,7 @@ import com.ctrip.xpipe.simpleserver.Server;
  */
 public class StreamTest extends AbstractTest{
 	
+	@SuppressWarnings("resource")
 	@Test
 	public void testClose() throws Exception{
 		
@@ -53,13 +54,12 @@ public class StreamTest extends AbstractTest{
 	public void testSendBuff() throws Exception{
 		
 		Server server = startEchoServer();
+		@SuppressWarnings("resource")
 		Socket socket = new Socket();
 		socket.connect(new InetSocketAddress("localhost", server.getPort()));
 		
 		System.out.println(socket.getSendBufferSize());
 		System.out.println(socket.getReceiveBufferSize());
-		
-		
 	}
-
+	
 }

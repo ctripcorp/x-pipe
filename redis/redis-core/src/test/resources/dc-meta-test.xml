@@ -1,6 +1,8 @@
 <?xml version='1.0' encoding='utf-8' ?>
 <xpipe>
 	<dc id="jq">
+		<sentinel id="1" address="127.0.0.1:17171,127.0.0.1:17171"/>
+		<sentinel id="2" address="127.0.0.1:17171,127.0.0.1:17171"/>
 		<zkServer address="127.0.0.1:2181"/>
 		<metaServer ip="127.0.0.1" port="9747" master="true"/>
 		<cluster id="cluster1" active-dc="jq" phase ="1">

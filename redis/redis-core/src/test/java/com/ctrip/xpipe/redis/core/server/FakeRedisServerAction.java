@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.server;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
@@ -8,6 +9,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
@@ -72,9 +74,15 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 
 	private void writeCommands(OutputStream ous) throws IOException, InterruptedException {
 		
+		startReadThread();
+		
 		while(true){
 			
 			String command = writeCommands.poll(10, TimeUnit.MILLISECONDS);
+			if(getSocket().isClosed()){
+				logger.info("[writeCommands][closed]");
+				return;
+			}
 			if(command == null){
 				continue;
 			}
@@ -86,6 +94,24 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 				TimeUnit.MILLISECONDS.sleep(fakeRedisServer.getSendBatchIntervalMilli());
 			}
 		}
+	}
+
+	private void startReadThread() {
+		
+		new Thread(new AbstractExceptionLogTask() {
+			
+			@Override
+			protected void doRun() throws Exception {
+				InputStream ins = getSocket().getInputStream();
+				while(true){
+					int data = ins.read();
+					if(data == -1){
+						getSocket().close();
+						return;
+					}
+				}
+			}
+		}).start();
 	}
 
 	private String[] split(String command) {
