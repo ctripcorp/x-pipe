@@ -59,8 +59,8 @@
                             <td ng-bind="redis.redisPort">
                             </td>
                             <td>
-                            <span ng-class="{'glyphicon glyphicon-remove-sign red':(redis.delay == -99 || redis.delay == 99999), 
-                            					'glyphicon glyphicon-ok-sign green':redis.delay != -99 && redis.delay != 99999}"></span>
+                            <span ng-class="{'glyphicon glyphicon-remove-sign red':(redis.delay < 0 || redis.delay == 99999), 
+                            					'glyphicon glyphicon-ok-sign green':redis.delay >= 0 && redis.delay != 99999}"></span>
                             </td>
                             <td><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
                         </tr>

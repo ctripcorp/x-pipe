@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -41,7 +40,7 @@ public class HickwallMetricProxy implements MetricProxy {
 		
 		datas = new ArrayBlockingQueue<>(config.getHickwallQueueSize());
 		
-		Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("HickwallSender", true)).scheduleAtFixedRate(new Runnable() {
+		XpipeThreadFactory.create("HickwallSender", true).newThread(new Runnable() {
 			@Override
 			public void run() {
 				tryUntilConnected();
@@ -62,11 +61,19 @@ public class HickwallMetricProxy implements MetricProxy {
 						data = null;
 					} catch (IOException e) {
 						logger.error("Error write data to hickwall server{}", config.getHickwallHostPort(), e);
+						tryUntilConnected();
+					}catch(Exception e){
+						logger.error("Error write data to hickwall server{}", config.getHickwallHostPort(), e);
+						try {
+							TimeUnit.SECONDS.sleep(5);
+						} catch (InterruptedException e1) {
+							Thread.currentThread().interrupt();
+							break;
+						}
 					}
 				}
 			}
-			
-		}, 0, 5, TimeUnit.SECONDS);
+		}).start();
 	}
 	
 	private void tryUntilConnected() {
