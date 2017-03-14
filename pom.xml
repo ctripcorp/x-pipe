@@ -373,7 +373,17 @@
 				<version>${git-commit-id-plugin.version}</version>
 				<configuration>
 					<verbose>false</verbose>
+					<dateFormat>yyyy-MM-dd'T'HH:mm:ssZ</dateFormat>
+					<generateGitPropertiesFile>true</generateGitPropertiesFile>
+					<failOnNoGitDirectory>false</failOnNoGitDirectory>
 				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>revision</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
