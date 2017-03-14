@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.ctrip.framework.xpipe</groupId>
 		<artifactId>xpipe-parent</artifactId>
-		<version>0.2.1-SNAPSHOT</version>
+		<version>0.2.2-SNAPSHOT</version>
 	</parent>
 
 	<groupId>com.ctrip.framework.xpipe.redis</groupId>
