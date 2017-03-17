@@ -19,7 +19,6 @@ public class AppTest extends AbstractConsoleTest {
 	@Before
 	public void startUp() {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
-		System.setProperty("FXXPIPE_HOME", "src/test/resources");
 		System.setProperty(HealthChecker.ENABLED, "false");
 	}
 

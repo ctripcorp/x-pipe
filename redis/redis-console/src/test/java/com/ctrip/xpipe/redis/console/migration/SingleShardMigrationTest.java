@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.migration;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,7 +18,8 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
-import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -224,7 +224,8 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertEquals(ShardMigrationResultStatus.SUCCESS, migrationShard.getShardMigrationResult().getStatus());
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
-		Assert.assertEquals("Ignore:java.lang.Throwable: mocked prev fail", migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC).getRight());
+		String message = migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC).getRight();
+		Assert.assertTrue(message.indexOf("Ignore:java.lang.Throwable: mocked prev fail") > 0);
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));

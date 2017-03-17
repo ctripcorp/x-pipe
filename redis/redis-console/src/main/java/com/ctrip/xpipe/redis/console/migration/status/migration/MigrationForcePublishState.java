@@ -4,6 +4,7 @@ import java.util.concurrent.CountDownLatch;
 
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 
 /**
  * @author shyin

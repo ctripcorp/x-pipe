@@ -21,6 +21,8 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 	
 	private int metaServerCount = 3;
 	
+	private int waitForMetaServerOkTime = 1500;
+	
 	private RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 	
 	@Test
@@ -28,7 +30,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 
 		createMetaServers(metaServerCount);
 		
-		sleep(1000);
+		sleep(waitForMetaServerOkTime);
 		
 		logger.info(remarkableMessage("[testDoChangePrimaryDc][begin send change primary dc message]"));
 		
@@ -49,7 +51,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 	public void testClusterChanged() throws Exception{
 		
 		createMetaServers(metaServerCount);
-		sleep(1000);
+		sleep(waitForMetaServerOkTime);
 		logger.info(remarkableMessage("[testClusterChanged][begin send cluster change message]"));
 		ClusterMeta clusterMeta = randomCluster();
 		
@@ -68,7 +70,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 	public void testUpdateUpstream() throws Exception{
 		
 		createMetaServers(metaServerCount);
-		sleep(1000);
+		sleep(waitForMetaServerOkTime);
 		logger.info(remarkableMessage("[testUpdateUpstream][begin send upstream update message]"));
 		
 		for(TestMetaServer server : getServers()){
@@ -83,7 +85,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 	public void testGetActiveKeeper() throws Exception{
 		
 		createMetaServers(metaServerCount);
-		sleep(1000);
+		sleep(waitForMetaServerOkTime);
 		logger.info(remarkableMessage("[testUpdateUpstream][begin send upstream update message]"));
 		
 		for(TestMetaServer server : getServers()){
@@ -99,7 +101,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 	public void testChangePrimaryDcCheck() throws Exception{
 
 		createMetaServers(metaServerCount);
-		sleep(1000);
+		sleep(waitForMetaServerOkTime);
 		logger.info(remarkableMessage("[testChangePrimaryDcCheck][begin send primary dc check message]"));
 		
 		for(TestMetaServer server : getServers()){
@@ -115,7 +117,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 	public void testMakeMasterReadOnly() throws Exception{
 		
 		createMetaServers(metaServerCount);
-		sleep(1000);
+		sleep(waitForMetaServerOkTime);
 		logger.info(remarkableMessage("[testMakeMasterReadOnly][begin send make master read only message]"));
 		
 		for(TestMetaServer server : getServers()){

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 
 /**
  * @author shyin
@@ -12,7 +13,10 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
  * Dec 8, 2016
  */
 public abstract class AbstractMigrationState implements MigrationState {
+	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
+
+	protected int migrationWaitTimeSeconds = 120;    
 	
 	private MigrationCluster holder;
 	private MigrationStatus status;

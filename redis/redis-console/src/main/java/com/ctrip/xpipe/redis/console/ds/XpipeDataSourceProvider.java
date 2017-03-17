@@ -4,6 +4,7 @@ import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.ClassUtils;
 import org.unidal.dal.jdbc.datasource.DataSourceProvider;
 import org.unidal.dal.jdbc.datasource.DefaultDataSourceProvider;
@@ -20,6 +21,7 @@ public class XpipeDataSourceProvider implements DataSourceProvider, LogEnabled, 
     private String m_baseDirRef;
     private String m_defaultBaseDir;
     private DataSourceProvider m_delegate;
+    private org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String apolloDataSourceProviderClass =
             "com.ctrip.framework.apollo.ds.ApolloDataSourceProvider";
@@ -41,6 +43,7 @@ public class XpipeDataSourceProvider implements DataSourceProvider, LogEnabled, 
         if (m_delegate instanceof LogEnabled) {
             ((LogEnabled)m_delegate).enableLogging(m_logger);
         }
+        logger.info("[initialize][DataSourceProvider]{}", m_delegate);
     }
 
     private DefaultDataSourceProvider createDefaultDataSourceProvider() {

@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**

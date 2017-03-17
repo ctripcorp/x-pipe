@@ -17,8 +17,8 @@ import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResu
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
-import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationStatus;
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -246,9 +246,9 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals("A", DcAMeta.findCluster("cluster1").getActiveDc());
 		Assert.assertEquals("A", DcBMeta.findCluster("cluster1").getActiveDc());
 		
-		Assert.assertEquals(MigrationStatus.Aborted, migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.RollBack, migrationCluster.getStatus());
 		ClusterTbl currentCluster = clusterService.find(1);
-		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
+		Assert.assertEquals(ClusterStatus.Rollback.toString(), currentCluster.getStatus());
 		Assert.assertEquals(1, currentCluster.getActivedcId());
 	}
 	

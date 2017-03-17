@@ -56,6 +56,6 @@ public interface CurrentMetaManager extends Observable {
 
 	void setKeeperMaster(String clusterId, String shardId, String addr);
 
-	void setKeeperMaster(String cluserId, String shardId, String ip, int port);
+	void setKeeperMaster(String clusterId, String shardId, String ip, int port);
 
 }

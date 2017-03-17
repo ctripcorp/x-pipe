@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+
 /**
  * @author shyin
  *

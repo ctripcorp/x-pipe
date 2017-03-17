@@ -7,6 +7,7 @@ import java.util.List;
 import com.ctrip.xpipe.api.migration.MigrationPublishService;
 import com.ctrip.xpipe.api.migration.MigrationPublishService.MigrationPublishResult;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;

@@ -7,7 +7,7 @@ import java.util.concurrent.Executors;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
@@ -32,11 +32,6 @@ public class MigrationCheckingState extends AbstractMigrationState {
 	public void action() {
 		MigrationCluster migrationCluster = getHolder();
 		
-		// Update db
-		MigrationClusterTbl migrationClusterTbl = migrationCluster.getMigrationCluster();
-		migrationClusterTbl.setStatus(MigrationStatus.Checking.toString());
-		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
-
 		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
 		for (final MigrationShard migrationShard : migrationShards) {
 			fixedThreadPool.submit(new Runnable() {

@@ -17,6 +17,9 @@ import java.util.List;
  * Aug 26, 2016
  */
 public class ComponentsConfigurator extends AbstractResourceConfigurator {
+	
+	public static final String KEY_XPIPE_LOCATION = "FXXPIPE_HOME";
+	
     @Override
     public List<Component> defineComponents() {
         List<Component> all = new ArrayList<Component>();
@@ -25,7 +28,7 @@ public class ComponentsConfigurator extends AbstractResourceConfigurator {
         all.addAll(new FxxpipeDatabaseConfigurator().defineComponents());
         all.add(C(DataSourceProvider.class, XpipeDataSourceProvider.class)
                 .config(E("datasourceFile").value("datasources.xml"),
-                        E("baseDirRef").value("FXXPIPE_HOME")));
+                        E("baseDirRef").value(KEY_XPIPE_LOCATION)));
         all.add(A(XpipeDalTransactionManager.class));
         all.add(A(XpipeDalDataObjectAssembly.class));
         return all;

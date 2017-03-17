@@ -1,15 +1,17 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractObservable;
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -28,7 +30,6 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
  * Dec 8, 2016
  */
 public class DefaultMigrationCluster extends AbstractObservable implements MigrationCluster {
-	private Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private MigrationState currentState;
 	private MigrationClusterTbl migrationCluster;
@@ -100,10 +101,24 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	}
 
 	@Override
+	@DalTransaction
 	public void updateStat(MigrationState stat) {
 		logger.info("[UpdateStat]{}-{}, {} -> {}",
 				migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus(), stat.getStatus());
 		this.currentState = stat;
+
+		MigrationStatus migrationStatus = stat.getStatus();
+		
+		
+		ClusterTbl cluster = getCurrentCluster();
+		cluster.setStatus(migrationStatus.getClusterStatus().toString());
+		getClusterService().update(cluster);
+		
+		MigrationClusterTbl migrationCluster = getMigrationCluster();
+		migrationCluster.setStatus(migrationStatus.toString());
+		migrationCluster.setEndTime(new Date());
+		getMigrationService().updateMigrationCluster(migrationCluster);
+		
 	}
 
 	@Override
@@ -179,39 +194,9 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	}
 
 	private void setStatus() {
+		
 		MigrationStatus status = MigrationStatus.valueOf(migrationCluster.getStatus());
-		switch(status) {
-		case Initiated :
-			currentState = new MigrationInitiatedState(this);
-			break;
-		case Checking:
-			currentState = new MigrationCheckingState(this);
-			break;
-		case Migrating:
-			currentState = new MigrationMigratingState(this);
-			break;
-		case PartialSuccess:
-			currentState = new MigrationPartialSuccessState(this);
-			break;
-		case Publish:
-			currentState = new MigrationPublishState(this);
-			break;
-		case Aborted :
-			currentState = new MigrationAbortedState(this);
-			break;
-		case RollBack:
-			currentState = new MigrationRollBackState(this);
-			break;
-		case ForceEnd:
-			currentState = new MigrationForceEndState(this);
-			break;
-		case Success:
-			currentState = new MigrationSuccessState(this);
-			break;
-		default:
-			currentState = new MigrationInitiatedState(this);
-			break;
-		}
+		currentState = status.createMigrationState(this);
 	}
 	
 	private void loadMetaInfo() {

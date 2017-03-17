@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
+
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
@@ -15,6 +17,7 @@ import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
+import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
 
 import org.junit.runner.RunWith;
 
@@ -25,6 +28,8 @@ import org.junit.runner.RunWith;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+	MigrationStatusTest.class,
+	ClusterMetaServiceImplTest.class,
 	ConcurrentDalTransactionTest.class,
 	DalTransactionManagerTest.class,
 	ClusterMetaModifiedNotifierTest.class,

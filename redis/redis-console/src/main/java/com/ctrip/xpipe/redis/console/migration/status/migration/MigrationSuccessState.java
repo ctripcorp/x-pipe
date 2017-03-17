@@ -1,10 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 
 /**
  * @author shyin
@@ -21,22 +18,9 @@ public class MigrationSuccessState extends AbstractMigrationState {
 
 	@Override
 	public void action() {
-		updateDB();
-		
 		getHolder().update(getHolder(), getHolder());
 	}
 
-	@DalTransaction
-	private void updateDB() {
-		ClusterTbl cluster = getHolder().getCurrentCluster();
-		cluster.setStatus(ClusterStatus.Normal.toString());
-		getHolder().getClusterService().update(cluster);
-
-		MigrationClusterTbl migrationClusterTbl = getHolder().getMigrationCluster();
-		migrationClusterTbl.setStatus(MigrationStatus.Success.toString());
-		getHolder().getMigrationService().updateMigrationCluster(migrationClusterTbl);
-	}
-	
 	@Override
 	public void refresh() {
 		// Nothing to do
