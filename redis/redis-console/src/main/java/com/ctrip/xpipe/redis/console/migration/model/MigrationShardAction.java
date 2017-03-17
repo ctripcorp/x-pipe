@@ -9,5 +9,5 @@ public interface MigrationShardAction {
     void doCheck();
     void doMigrate();
     void doMigrateOtherDc();
-    void doRollBack();
+    void doRollBack() throws Exception;
 }

@@ -13,7 +13,10 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
  * Dec 8, 2016
  */
 public abstract class AbstractMigrationState implements MigrationState {
+	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
+
+	protected int migrationWaitTimeSeconds = 120;    
 	
 	private MigrationCluster holder;
 	private MigrationStatus status;

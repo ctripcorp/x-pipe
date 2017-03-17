@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.observer.Observable;
@@ -21,6 +22,7 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.utils.LogUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author shyin
@@ -38,6 +42,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	private static Codec coder = Codec.DEFAULT;
+	
+	private ExecutorService executors;
 	
 	private MigrationCluster parent;
 	private MigrationShardTbl migrationShard;
@@ -51,6 +57,11 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	private MigrationCommandBuilder commandBuilder;
 	
 	private InetSocketAddress newMasterAddr;
+	
+	private String cluster;
+	private String shard;
+	private String newPrimaryDc;
+	private String prevPrimaryDc;
 
 	public DefaultMigrationShard(MigrationCluster parent, MigrationShardTbl migrationShard, ShardTbl currentShard,Map<Long, DcTbl> dcs,
 			MigrationService migrationService) {
@@ -61,18 +72,20 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 								 MigrationService migrationService, MigrationCommandBuilder commandBuilder) {
 		this.parent = parent;
 		this.migrationShard = migrationShard;
-
 		this.currentShard = currentShard;
 		this.dcs = dcs;
-
 		this.migrationService = migrationService;
-
 		shardMigrationResult = new ShardMigrationResult();
-
 		this.commandBuilder = commandBuilder;
-
 		this.newMasterAddr = null;
 		
+
+		cluster = parent.getCurrentCluster().getClusterName();
+		shard = currentShard.getShardName();
+		newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
+		prevPrimaryDc = dcs.get(parent.getCurrentCluster().getActivedcId()).getDcName();
+
+		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("[migrate]" + cluster+ "," + shard));
 		addObserver(parent);
 		addObserver(this);
 	}
@@ -107,9 +120,6 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	
 	@Override
 	public void doCheck() {
-		String cluster = parent.getCurrentCluster().getClusterName();
-		String shard = currentShard.getShardName();
-		String newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
 		
 		logger.info("[doCheck]{}-{}-{}", cluster, shard, newPrimaryDc);
 		CommandFuture<PrimaryDcCheckMessage> checkResult = commandBuilder.buildDcCheckCommand(cluster, shard, newPrimaryDc, newPrimaryDc).execute();
@@ -136,10 +146,6 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	
 	@Override
 	public void doMigrate() {
-		String cluster = parent.getCurrentCluster().getClusterName();
-		String shard = currentShard.getShardName();
-		String newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
-		String prevPrimaryDc = dcs.get(parent.getCurrentCluster().getActivedcId()).getDcName();
 		
 		logger.info("[doMigrate]{}-{}, {}->{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
 		try {
@@ -159,10 +165,6 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	
 	@Override
 	public void doMigrateOtherDc() {
-		String cluster = parent.getCurrentCluster().getClusterName();
-		String shard = currentShard.getShardName();
-		String newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
-		String prevPrimaryDc = dcs.get(parent.getCurrentCluster().getActivedcId()).getDcName();
 		
 		logger.info("[doMigrateOtherDc]{}-{}, {}->{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
 		if(shardMigrationResult.stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
@@ -184,18 +186,16 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	}
 
 	@Override
-	public void doRollBack() {
-		String cluster = parent.getCurrentCluster().getClusterName();
-		String shard = currentShard.getShardName();
-		String newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
-		String prevPrimaryDc = dcs.get(parent.getCurrentCluster().getActivedcId()).getDcName();
-
+	public void doRollBack() throws Exception{
+		
 		logger.info("[rollback]{}-{}, {}<-{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
-		try {
-			doRollBackPrevPrimaryDc(cluster, shard, prevPrimaryDc).get();
-		} catch (InterruptedException | ExecutionException e1) {
-			logger.error("[rollback][fail]{}-{}, {}<-{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
+		for(DcTbl dc : dcs.values()) {
+			if(!(dc.getDcName().equals(prevPrimaryDc))) {
+				doOtherDcRollback(dc.getDcName(), prevPrimaryDc);
+			}
 		}
+		
+		doRollBackPrevPrimaryDc(cluster, shard, prevPrimaryDc).get();
 	}
 	
 	private CommandFuture<PrimaryDcChangeMessage> doPrevPrimaryDcMigrate(String cluster, String shard, String dc) {
@@ -246,6 +246,31 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		return migrateResult;
 	}
 	
+	private void doOtherDcRollback(String dc, String prevPrimaryDc) {
+
+		 Command<PrimaryDcChangeMessage>  command = commandBuilder.buildOtherDcCommand(cluster, shard, prevPrimaryDc, dc);
+		 if(command == null){
+			 logger.warn("[doOtherDcRollback][fail, command null]{}", this);
+			 return;
+		 }
+		 CommandFuture<PrimaryDcChangeMessage> migrateResult = command.execute(executors);
+		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
+
+			@Override
+			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
+				if(!commandFuture.isSuccess()){
+					logger.error("[doOtherDcRollback]" + cluster + "," + shard, commandFuture.cause());
+				}else{
+					PrimaryDcChangeMessage primaryDcChangeMessage = commandFuture.get();
+					logger.info("[doOtherDcRollback]{}, {}, {}", cluster, shard, primaryDcChangeMessage);
+				}
+			}
+		});
+
+	}
+
+
+	
 	private CommandFuture<PrimaryDcChangeMessage> doOtherDcMigrate(String cluster, String shard, String dc, String newPrimaryDc) {
 		CommandFuture<PrimaryDcChangeMessage> migrateResult = commandBuilder.buildOtherDcCommand(cluster, shard, newPrimaryDc, dc).execute();
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
@@ -288,4 +313,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		return migrateResult;
 	}
 
+	@Override
+	public String toString() {
+		return String.format("[DefaultMigrationShard]%s:%s,%s->%s", cluster, shard, prevPrimaryDc, newPrimaryDc);
+	}
 }

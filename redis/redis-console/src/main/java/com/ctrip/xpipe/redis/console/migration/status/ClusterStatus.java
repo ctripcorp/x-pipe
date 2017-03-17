@@ -10,8 +10,7 @@ public enum ClusterStatus {
 	Lock,
 	Migrating,
 	TmpMigrated,
-	Rollback
-	;
+	Rollback;
 	
 	public static boolean isSameClusterStatus(String source, ClusterStatus target) {
 		return source.toLowerCase().equals(target.toString().toLowerCase());

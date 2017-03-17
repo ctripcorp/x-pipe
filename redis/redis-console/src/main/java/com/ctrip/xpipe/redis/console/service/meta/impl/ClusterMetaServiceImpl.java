@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -159,19 +158,21 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 	}
 	
 	/** Perform differently with migrating cluster **/
-	private long getClusterMetaCurrentPrimaryDc(DcTbl dcInfo, ClusterTbl clusterInfo) {
+	protected long getClusterMetaCurrentPrimaryDc(DcTbl dcInfo, ClusterTbl clusterInfo) {
 		if (ClusterStatus.isSameClusterStatus(clusterInfo.getStatus(), ClusterStatus.Migrating)) {
 			List<MigrationClusterTbl> migrationClusterHistory = migrationService
 					.findAllMigrationCluster(clusterInfo.getId());
 			for (MigrationClusterTbl migrationCluster : migrationClusterHistory) {
-				if (!MigrationStatus.isTerminated(MigrationStatus.valueOf(migrationCluster.getStatus()))) {
-					if(dcInfo.getId() == migrationCluster.getDestinationDcId()) {
-						return migrationCluster.getDestinationDcId();
-					}
+				if(dcInfo.getId() == migrationCluster.getDestinationDcId()) {
+					return migrationCluster.getDestinationDcId();
 				}
 			}
 		}
 		return clusterInfo.getActivedcId();
+	}
+	
+	public void setMigrationService(MigrationService migrationService) {
+		this.migrationService = migrationService;
 	}
 
 }

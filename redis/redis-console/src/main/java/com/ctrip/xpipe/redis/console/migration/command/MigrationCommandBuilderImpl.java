@@ -108,7 +108,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 	}
 
 	@Override
-	public Command<PrimaryDcChangeMessage> buildOtherDcCommand(final String cluster, final String shard, final String newPrimaryDc, final String otherDc) {
+	public Command<PrimaryDcChangeMessage> buildOtherDcCommand(final String cluster, final String shard, final String primaryDc, final String executeDc) {
 		return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 			@Override
@@ -121,8 +121,8 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 				PrimaryDcChangeMessage result = null;
 				try {
 					result = metaServerConsoleServiceManagerWrapper
-							.get(otherDc)
-							.doChangePrimaryDc(cluster, shard, newPrimaryDc);
+							.get(executeDc)
+							.doChangePrimaryDc(cluster, shard, primaryDc);
 
 					future().setSuccess(result);
 				} catch (Exception e) {
