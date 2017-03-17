@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
+
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
@@ -25,6 +27,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+	MigrationStatusTest.class,
 	ConcurrentDalTransactionTest.class,
 	DalTransactionManagerTest.class,
 	ClusterMetaModifiedNotifierTest.class,

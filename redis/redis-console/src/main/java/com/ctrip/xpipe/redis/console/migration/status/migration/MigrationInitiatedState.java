@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 
 /**
  * @author shyin
@@ -20,18 +19,6 @@ public class MigrationInitiatedState extends AbstractMigrationState {
 	@Override
 	public void action() {
 		// Check cluster status
-		ClusterTbl cluster = getHolder().getCurrentCluster();
-		ClusterStatus status = ClusterStatus.valueOf(cluster.getStatus());
-		if(! status.equals(ClusterStatus.Lock)) {
-			if(status.equals(ClusterStatus.Normal)) {
-				logger.info("Cluster:{} Initiated but Unlocked.Lock it now !!!", cluster.getClusterName());
-				cluster.setStatus(ClusterStatus.Lock.toString());
-				getHolder().getClusterService().update(cluster);
-			} else {
-				throw new IllegalStateException(String.format("Invalid: cluster %s with status %s", cluster.getClusterName(), cluster.getStatus()));
-			}
-		}
-		
 		updateAndProcess(nextAfterSuccess(), true);
 	}
 

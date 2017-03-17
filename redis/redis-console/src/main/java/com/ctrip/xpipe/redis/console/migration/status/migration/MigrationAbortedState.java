@@ -1,12 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import java.util.Date;
-
-import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.status.cluster.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 
 /**
  * @author shyin
@@ -23,23 +18,9 @@ public class MigrationAbortedState extends AbstractMigrationState implements Mig
 
 	@Override
 	public void action() {
-		updateDB();
-		
 		getHolder().update(getHolder(), getHolder());
 	}
 	
-	@DalTransaction
-	private void updateDB() {
-		ClusterTbl cluster = getHolder().getCurrentCluster();
-		cluster.setStatus(ClusterStatus.Normal.toString());
-		getHolder().getClusterService().update(cluster);
-		
-		MigrationClusterTbl migrationCluster = getHolder().getMigrationCluster();
-		migrationCluster.setStatus(MigrationStatus.Aborted.toString());
-		migrationCluster.setEndTime(new Date());
-		getHolder().getMigrationService().updateMigrationCluster(migrationCluster);
-	}
-
 	@Override
 	public void refresh() {
 		// Nothing to do

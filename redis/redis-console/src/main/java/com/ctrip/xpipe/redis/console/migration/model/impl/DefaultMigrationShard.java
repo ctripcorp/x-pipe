@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
+import com.ctrip.xpipe.utils.LogUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ import java.util.concurrent.ExecutionException;
  * Dec 8, 2016
  */
 public class DefaultMigrationShard extends AbstractObservable implements MigrationShard {
+	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	private static Codec coder = Codec.DEFAULT;
 	
@@ -118,13 +120,13 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 				try {
 					PrimaryDcCheckMessage res = commandFuture.get();
 					if(PRIMARY_DC_CHECK_RESULT.SUCCESS.equals(res.getErrorType())){
-						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, true, "Check success");
+						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, true, LogUtils.info("Check success"));
 					} else {
-						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, res.getErrorMessage());
+						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, LogUtils.error(res.getErrorMessage()));
 					}
 				} catch (ExecutionException e) {
 					logger.error("[doCheck][fail]",e);
-					shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, e.getMessage());
+					shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, LogUtils.error(e.getMessage()));
 				}
 				
 				notifyObservers(this);
@@ -143,13 +145,13 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		try {
 			doPrevPrimaryDcMigrate(cluster, shard, prevPrimaryDc).get();
 		} catch (InterruptedException | ExecutionException e) {
-			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, "Ignore:" + e.getMessage());
+			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, LogUtils.error("Ignore:" + e.getMessage()));
 		}
 		
 		try {
 			doNewPrimaryDcMigrate(cluster, shard, newPrimaryDc).get();
 		} catch (InterruptedException | ExecutionException e) {
-			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, e.getMessage());
+			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, LogUtils.error(e.getMessage()));
 		}
 		
 		notifyObservers(this);
@@ -172,10 +174,10 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		}
 		
 		if(shardMigrationResult.stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
-			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE, true, "Success");
+			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE, true, LogUtils.info("Success"));
 			shardMigrationResult.setStatus(ShardMigrationResultStatus.SUCCESS);
 		} else {
-			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE, false, "Failed");
+			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE, false, LogUtils.error("Failed"));
 		}
 
 		notifyObservers(this);
@@ -204,10 +206,10 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 				try {
 					commandFuture.get();
 					
-					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, "Ignored : make previous primary dc read only");
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, LogUtils.info("Ignored : make previous primary dc read only"));
 				} catch (Exception e) {
 					logger.error("[doPrevPrimaryDcMigrate][fail]",e);
-					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, "Ignored:" + e.getMessage());
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, LogUtils.error("Ignored:" + e.getMessage()));
 				}
 				
 				notifyObservers(this);
@@ -235,7 +237,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					}
 				} catch (Exception e) {
 					logger.error("[doNewPrimaryDcMigrate][fail]",e);
-					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, e.getMessage());
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, LogUtils.error(e.getMessage()));
 				}
 				
 				notifyObservers(this);
