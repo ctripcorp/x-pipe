@@ -45,6 +45,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	
 	private ExecutorService executors;
 	
+	@SuppressWarnings("unused")
 	private MigrationCluster parent;
 	private MigrationShardTbl migrationShard;
 	private ShardMigrationResult shardMigrationResult;

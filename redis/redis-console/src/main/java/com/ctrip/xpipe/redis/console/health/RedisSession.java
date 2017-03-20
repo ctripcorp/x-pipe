@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.metric.HostPort;
+import com.lambdaworks.redis.RedisChannelHandler;
 import com.lambdaworks.redis.RedisClient;
+import com.lambdaworks.redis.RedisConnectionStateListener;
 import com.lambdaworks.redis.api.StatefulRedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
@@ -39,9 +41,31 @@ public class RedisSession {
 	public synchronized void subscribeIfAbsent(String channel, RedisPubSubListener<String, String> listener) {
 		if (!subscribConns.containsKey(channel)) {
 			try {
+				redis.addListener(new RedisConnectionStateListener() {
+					
+					@Override
+					public void onRedisExceptionCaught(RedisChannelHandler<?, ?> connection, Throwable cause) {
+					}
+					
+					@Override
+					public void onRedisDisconnected(RedisChannelHandler<?, ?> connection) {
+						
+					}
+					
+					@SuppressWarnings("unchecked")
+					@Override
+					public void onRedisConnected(RedisChannelHandler<?, ?> connection) {
+						log.debug("[onRedisConnected]{}", connection);
+						if(connection instanceof StatefulRedisPubSubConnection){
+							log.info("[onRedisConnected][subscribe]{},{}", hostPort, channel);
+							StatefulRedisPubSubConnection<String, String>  pubsubConnection = (StatefulRedisPubSubConnection<String, String>)connection;
+							pubsubConnection.async().subscribe(channel);
+						}
+						
+					}
+				});
 				StatefulRedisPubSubConnection<String, String> pubSub = redis.connectPubSub();
 				pubSub.addListener(listener);
-				pubSub.async().subscribe(channel);
 				subscribConns.put(channel, pubSub);
 			} catch (RuntimeException e) {
 				// connect* will throw exception if zk is down at first connect

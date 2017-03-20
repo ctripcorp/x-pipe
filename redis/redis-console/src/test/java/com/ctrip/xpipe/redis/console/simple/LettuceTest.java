@@ -1,0 +1,141 @@
+package com.ctrip.xpipe.redis.console.simple;
+
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.lambdaworks.redis.RedisChannelHandler;
+import com.lambdaworks.redis.RedisClient;
+import com.lambdaworks.redis.RedisConnectionStateListener;
+import com.lambdaworks.redis.RedisURI;
+import com.lambdaworks.redis.api.StatefulRedisConnection;
+import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
+import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
+import com.lambdaworks.redis.resource.ClientResources;
+import com.lambdaworks.redis.resource.DefaultClientResources;
+import com.lambdaworks.redis.resource.Delay;
+
+/**
+ * @author wenchao.meng
+ *
+ *         Mar 20, 2017
+ */
+public class LettuceTest extends AbstractConsoleTest {
+
+	private String channel = "testChannel";
+	private String host = "localhost";
+	private int port = 6379;
+
+	private ClientResources clientResources;
+	private RedisURI redisURI;
+
+	@Before
+	public void beforeLettuceTest() {
+		clientResources = DefaultClientResources.builder().reconnectDelay(Delay.constant(5, TimeUnit.SECONDS)).build();
+		redisURI = new RedisURI(host, port, 10, TimeUnit.SECONDS);
+
+	}
+
+	@Test
+	public void testLettuce() {
+
+//		publish();
+
+		RedisClient redisClient = RedisClient.create(clientResources, redisURI);
+		
+		redisClient.addListener(new RedisConnectionStateListener() {
+
+			@Override
+			public void onRedisConnected(RedisChannelHandler<?, ?> connection) {
+				logger.info("[onRedisConnected]{}", connection);
+//				@SuppressWarnings("unchecked")
+//				StatefulRedisPubSubConnection<String, String> pubsubConnection = (StatefulRedisPubSubConnection<String, String>)connection;
+//				pubsubConnection.async().subscribe(channel);
+			}
+
+			@Override
+			public void onRedisDisconnected(RedisChannelHandler<?, ?> connection) {
+				logger.info("[onRedisDisconnected]{}", connection);
+			}
+
+			@Override
+			public void onRedisExceptionCaught(RedisChannelHandler<?, ?> connection, Throwable cause) {
+				logger.error("[onRedisExceptionCaught]" + connection, cause);
+			}
+		});
+
+		redisClient.connect();
+
+		try{
+			doConnect(redisClient);
+		}catch(Exception e){
+			logger.error("[testLettuce][fail]", e);
+		}
+//		connectUntilConnected(redisClient);
+	}
+
+	protected void connectUntilConnected(RedisClient redisClient) {
+
+		scheduled.schedule(new AbstractExceptionLogTask() {
+
+			@Override
+			protected void doRun() throws Exception {
+
+				try {
+					doConnect(redisClient);
+				} catch (Exception e) {
+					connectUntilConnected(redisClient);
+					logger.error("[doRun][reconnect]", e);
+				}
+			}
+		}, 5, TimeUnit.SECONDS);
+
+	}
+
+	protected void doConnect(RedisClient redisClient) {
+		StatefulRedisPubSubConnection<String, String> connection = redisClient.connectPubSub();
+		connection.addListener(new RedisPubSubAdapter<String, String>() {
+
+			@Override
+			public void message(String channel, String message) {
+				logger.info("[message]{}, {}", channel, message);
+			}
+		});
+	}
+
+	@SuppressWarnings("unused")
+	private void publish() {
+
+		scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
+
+			StatefulRedisConnection<String, String> redisConnection;
+			private RedisClient redisClient;
+			{
+				redisClient = RedisClient.create(clientResources, redisURI);
+			}
+
+			@Override
+			public void doRun() {
+
+				if (redisConnection == null) {
+					redisConnection = redisClient.connect();
+				}
+
+				logger.info("[run][publish]{}", channel);
+				redisConnection.async().publish(channel, randomString(10));
+
+			}
+		}, 0, 5, TimeUnit.SECONDS);
+	}
+
+	@After
+	public void afterLettuceTest() throws IOException {
+		waitForAnyKeyToExit();
+	}
+
+}
