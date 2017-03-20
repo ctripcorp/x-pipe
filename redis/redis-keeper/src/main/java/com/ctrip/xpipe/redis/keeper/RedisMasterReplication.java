@@ -22,5 +22,7 @@ public interface RedisMasterReplication extends PsyncObserver, Lifecycle{
 	void masterConnected(Channel channel);
 	
 	PARTIAL_STATE partialState();
+	
+	RedisMaster redisMaster();
 
 }

@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,8 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	private Set<CAPA>  capas = new HashSet<CAPA>(); 
 
 	private int slaveListeningPort;
+	
+	private AtomicBoolean isKeeper = new AtomicBoolean(false);
 	
 	protected Channel channel;
 	
@@ -274,5 +277,16 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	@Override
 	public Set<CAPA> getCapas() {
 		return new HashSet<>(capas);
+	}
+
+	@Override
+	public boolean isKeeper() {
+		return isKeeper.get();
+	}
+
+	@Override
+	public void setKeeper() {
+		isKeeper.set(true);
+		logger.info("[setKeeper]{}", this);
 	}
 }

@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
+import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -20,6 +21,11 @@ import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
  * Sep 29, 2016
  */
 public class OneDcKeepers extends AbstractKeeperIntegratedSingleDc{
+
+	@Override
+	protected void doBeforeAbstractTest() throws Exception {
+		System.setProperty(CatConfig.CAT_ENABLED_KEY, "true");
+	}
 	
 	@Test
 	public void startTest() throws IOException{

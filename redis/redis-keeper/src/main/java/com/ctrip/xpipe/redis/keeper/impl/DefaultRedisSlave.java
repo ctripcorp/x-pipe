@@ -394,4 +394,14 @@ public class DefaultRedisSlave implements RedisSlave {
 		return redisClient.capaOf(capa);
 	}
 
+	@Override
+	public boolean isKeeper() {
+		return redisClient.isKeeper();
+	}
+
+	@Override
+	public void setKeeper() {
+		redisClient.setKeeper();
+	}
+
 }

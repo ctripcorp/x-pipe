@@ -18,7 +18,7 @@ import com.ctrip.xpipe.redis.keeper.impl.CreateRdbDumperException;
  *
  * May 20, 2016 3:54:13 PM
  */
-public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, PartialAware{
+public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, PartialAware, Keeperable{
 	
 	Endpoint masterEndPoint();
 	

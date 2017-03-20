@@ -15,7 +15,7 @@ import io.netty.channel.Channel;
  *
  * 2016年4月22日 上午11:25:07
  */
-public interface RedisClient extends Observable, Infoable, Closeable, RedisRole, Releasable{
+public interface RedisClient extends Observable, Infoable, Closeable, RedisRole, Releasable, Keeperable{
 	
 	public static enum CLIENT_ROLE{
 		NORMAL,

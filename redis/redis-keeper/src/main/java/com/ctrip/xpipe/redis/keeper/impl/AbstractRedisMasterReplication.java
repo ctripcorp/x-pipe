@@ -182,6 +182,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		clientPool = new FixedObjectPool<NettyClient>(new DefaultNettyClient(channel));
 
 		checkTimeout(channel);
+		
+		checkKeeper();
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		chain.add(listeningPortCommand());
@@ -202,6 +204,18 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		} catch (Exception e) {
 			logger.error("[masterConnected]" + channel, e);
 		}
+	}
+
+	private void checkKeeper() {
+		executeCommand(new Replconf(clientPool, ReplConfType.KEEPER, scheduled)).addListener(new CommandFutureListener<Object>() {
+
+			@Override
+			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+				if(commandFuture.isSuccess()){
+					redisMaster.setKeeper();
+				}
+			}
+		});
 	}
 
 	private void checkTimeout(final Channel channel) {
@@ -386,5 +400,10 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	public RdbDumper getRdbDumper() {
 		return rdbDumper.get();
+	}
+	
+	@Override
+	public RedisMaster redisMaster() {
+		return redisMaster;
 	}
 }

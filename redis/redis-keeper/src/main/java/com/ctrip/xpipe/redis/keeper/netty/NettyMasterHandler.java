@@ -14,8 +14,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
 
 /**
  * @author wenchao.meng
@@ -28,9 +26,7 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 	
 	private CommandHandlerManager commandHandlerManager;
 	
-	private static final AttributeKey<RedisClient> KEY_CLIENT = AttributeKey.newInstance(NettyMasterHandler.class.getSimpleName() + "_REDIS_CLIENTS");
-	
-	private int slaveListeningPort = -1;
+	private RedisClient redisClient;
 	
 	public NettyMasterHandler(RedisKeeperServer redisKeeperServer, CommandHandlerManager commandHandlerManager, long trafficReportIntervalMillis) {
 		super(trafficReportIntervalMillis);
@@ -42,20 +38,10 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		
-		Channel channel = ctx.channel();
-		RedisClient redisClient = redisKeeperServer.clientConnected(ctx.channel());
+		redisClient = redisKeeperServer.clientConnected(ctx.channel());
 		redisClient.addObserver(this);
-		getChannelRedisClient(channel).set(redisClient);
 		super.channelActive(ctx);
 	}
-
-	private Attribute<RedisClient> getChannelRedisClient(Channel channel) {
-		
-		Attribute<RedisClient> client = channel.attr(KEY_CLIENT);
-		return client;
-		
-	}
-
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
@@ -70,8 +56,6 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 		if(logger.isDebugEnabled()){
 			logger.debug(String.format("0X%X, %s", msg.hashCode(), msg.getClass()));
 		}
-
-		final RedisClient redisClient = getChannelRedisClient(ctx.channel()).get();
 
 		byteBufReadPolicy.read(ctx.channel(), (ByteBuf)msg, new ByteBufReadAction() {
 			
@@ -93,11 +77,10 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 		
 		if(args instanceof RedisSlave){
 		    reportTraffic();
+		    
 		    RedisSlave slave = (RedisSlave)args;
-		    slaveListeningPort = slave.getSlaveListeningPort();
-			logger.info("[update][become redis slave]" + args);
-			Attribute<RedisClient> client = getChannelRedisClient(((RedisClient)observable).channel());
-            client.set(slave);
+		    redisClient = slave;
+			logger.info("[update][become redis slave]{}", args);
 		}
 	}
 	
@@ -105,9 +88,13 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
     protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
         if (writtenBytes > 0) {
             String type = String.format("Keeper.Out.%s", redisKeeperServer.getClusterId());
-            String name = slaveListeningPort == -1
-                    ? String.format("client.%s.%s", redisKeeperServer.getShardId(), remoteIp)
-                    : String.format("slave.%s.%s:%s", redisKeeperServer.getShardId(), remoteIp, slaveListeningPort);
+            String name = null;
+            if(redisClient instanceof RedisSlave){
+            	RedisSlave slave = (RedisSlave)redisClient;
+            	 name = String.format("slave.%s.%s.%s:%s", slave.roleDesc(), redisKeeperServer.getShardId(), remoteIp, slave.getSlaveListeningPort());
+            }else{
+            	name = String.format("client.%s.%s", redisKeeperServer.getShardId(), remoteIp);
+            }
             EventMonitor.DEFAULT.logEvent(type, name, writtenBytes);
         }
     }

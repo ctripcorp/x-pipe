@@ -83,10 +83,13 @@ public class AbstractTest {
 		scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(getTestName()));
 		
 		orginProperties = (Properties) System.getProperties().clone();
+		
 		doBeforeAbstractTest();
 
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
-		System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
+		if(System.getProperty(CatConfig.CAT_ENABLED_KEY) == null){
+			System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
+		}
 
 		logger.info(remarkableMessage("[begin test][{}]"), name.getMethodName());
 

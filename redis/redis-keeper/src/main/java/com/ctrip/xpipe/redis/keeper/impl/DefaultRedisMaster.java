@@ -2,7 +2,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import java.util.concurrent.ScheduledExecutorService;
-
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
@@ -27,6 +27,8 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	private ReplicationStoreManager replicationStoreManager;
 
 	private DefaultEndPoint endpoint;
+	
+	private AtomicBoolean isKeeper = new AtomicBoolean(false);
 	
 	private ScheduledExecutorService scheduled;
 	
@@ -115,5 +117,16 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public String toString() {
 		return String.format("%s", endpoint);
+	}
+
+	@Override
+	public boolean isKeeper() {
+		return isKeeper.get();
+	}
+
+	@Override
+	public void setKeeper() {
+		isKeeper.set(true);
+		logger.info("[setKeeper]{}", this);
 	}
 }
