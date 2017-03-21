@@ -29,6 +29,7 @@ import com.ctrip.xpipe.utils.FileUtilsTest;
 import com.ctrip.xpipe.utils.OffsetNotifierTest;
 import com.ctrip.xpipe.utils.SizeControllableFileTest;
 import com.ctrip.xpipe.utils.StringUtilTest;
+import com.ctrip.xpipe.utils.UrlUtilsTest;
 import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 
 /**
@@ -63,7 +64,8 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	ChannelUtilTest.class,
 	KeyedOneThreadTaskExecutorTest.class,
 	DefaultControllableFileTest.class,
-	SizeControllableFileTest.class
+	SizeControllableFileTest.class,
+	UrlUtilsTest.class
 })
 public class AllTests {
 

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.service.migration;
 
+import com.ctrip.xpipe.utils.UrlUtils;
+
 /**
  * @author shyin
  *
@@ -23,11 +25,11 @@ public enum CREDIS_SERVICE {
 		if (!host.startsWith("http")) {
 			host += "http://";
 		}
-		return String.format("%s/%s/%s", host, PATH.PATH_PREFIX, getPath());
+		return UrlUtils.format(String.format("%s/%s/%s", host, PATH.PATH_PREFIX, getPath()));
 	}
 
 	public static class PATH {
-		public static final String PATH_PREFIX = "/credis";
+		public static final String PATH_PREFIX = "/";
 
 		public static final String PATH_MIGRATION_PUBLISH = "/KeeperApi/primarydc/{clusterName}/{primaryDcName}";
 	}
