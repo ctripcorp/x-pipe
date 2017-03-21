@@ -144,7 +144,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 			buf.writeBytes(cmd.getBytes());
 			store.getCommandStore().appendCommands(buf);
 		}
-		String result = readCommandFileTilEnd(store);
+		String result = readCommandFileTilEnd(store, exp.length());
 		assertEquals(exp.toString(), result);
 		store.close();
 	}

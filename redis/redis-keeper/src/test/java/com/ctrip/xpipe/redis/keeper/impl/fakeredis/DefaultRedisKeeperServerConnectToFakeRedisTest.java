@@ -28,7 +28,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		String rdbContent = readRdbFileTilEnd(replicationStore);
 		Assert.assertEquals(fakeRedisServer.getRdbContent(), rdbContent);
 
-		String commands = readCommandFileTilEnd(replicationStore);
+		String commands = readCommandFileTilEnd(replicationStore, fakeRedisServer.currentCommands().length());
 		Assert.assertEquals(fakeRedisServer.currentCommands(), commands);
 	}
 	

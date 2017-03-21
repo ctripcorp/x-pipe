@@ -134,7 +134,7 @@ public class FakeRedisServer extends AbstractLifecycle{
 	}
 
 
-	public Object currentCommands() {
+	public String currentCommands() {
 		return commands;
 	}
 	

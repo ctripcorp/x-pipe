@@ -255,7 +255,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		replicationStore = (DefaultReplicationStore) replicationStoreManager.getCurrent();
 		
 		String rdbResult = readRdbFileTilEnd(replicationStore);
-		String commandResult = readCommandFileTilEnd(replicationStore);
+		String commandResult = readCommandFileTilEnd(replicationStore, commandContent.length());
 		
 		if(!isPartial){
 			Assert.assertEquals(rdbContent, rdbResult);

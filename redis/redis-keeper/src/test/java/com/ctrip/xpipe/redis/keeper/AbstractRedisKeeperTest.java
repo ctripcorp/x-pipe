@@ -180,13 +180,13 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new String(bachannel.getResult());
 	}
 
-	public String readCommandFileTilEnd(final ReplicationStore replicationStore) throws IOException {
+	public String readCommandFileTilEnd(final ReplicationStore replicationStore, int expectedLen) throws IOException {
 		
-		return readCommandFileTilEnd(0, replicationStore);
+		return readCommandFileTilEnd(0, replicationStore, expectedLen);
 	}
 
 	
-	public String readCommandFileTilEnd(final long beginOffset, final ReplicationStore replicationStore) throws IOException {
+	public String readCommandFileTilEnd(final long beginOffset, final ReplicationStore replicationStore, int expectedLen) throws IOException {
 
 		final ByteArrayOutputStream baous = new ByteArrayOutputStream();
 		new Thread() {
@@ -195,11 +195,11 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 				try {
 					doRun();
 				} catch (Exception e) {
-					e.printStackTrace();
+					logger.error("[run]", e);
 				}
 			}
 			
-			private void doRun() throws IOException {
+			private void doRun() throws IOException{
 				replicationStore.addCommandsListener(replicationStore.beginOffsetWhenCreated() + beginOffset, new CommandsListener() {
 					
 					@Override
@@ -231,13 +231,16 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		long equalCount = 0;
 		while (true) {
 			int currentSize = baous.size();
+			if(expectedLen >= 0 && currentSize >= expectedLen){
+				break;
+			}
 			if (currentSize != lastSize) {
 				lastSize = currentSize;
 				equalCount = 0;
 			} else {
 				equalCount++;
 			}
-			if (equalCount > 10) {
+			if (equalCount > 100) {
 				break;
 			}
 			sleep(10);
