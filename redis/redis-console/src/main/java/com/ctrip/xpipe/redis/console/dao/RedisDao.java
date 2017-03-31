@@ -32,6 +32,7 @@ import java.util.Map;
  */
 @Repository
 public class RedisDao  extends AbstractXpipeConsoleDAO{
+
 	private RunidGenerator idGenerator = RunidGenerator.DEFAULT;
 	private RedisTblDao redisTblDao;
 	private DcClusterShardTblDao dcClusterShardTblDao;
@@ -94,14 +95,17 @@ public class RedisDao  extends AbstractXpipeConsoleDAO{
 	@DalTransaction
 	public void handleUpdate(List<RedisTbl> toCreate, List<RedisTbl> toDelete, List<RedisTbl> left) throws DalException {
 		if(null != toCreate && toCreate.size() > 0) {
+			logger.info("[handleUpdate][create]{}, {}", toCreate.size(), toCreate);
     		createRedisesBatch(toCreate);
     	}
 
 		if(null != toDelete && toDelete.size() > 0) {
+			logger.info("[handleUpdate][delete]{}, {}", toDelete.size(), toDelete);
     		deleteRedisesBatch(toDelete);
     	}
 		
     	if(null != left && left.size() > 0) {
+			logger.info("[handleUpdate][left]{}, {}", left.size(), left);
     		updateBatch(left);
     	}
 	}

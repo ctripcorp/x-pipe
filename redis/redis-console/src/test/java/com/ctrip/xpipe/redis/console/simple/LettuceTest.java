@@ -25,11 +25,12 @@ import com.lambdaworks.redis.resource.Delay;
  *
  *         Mar 20, 2017
  */
+@SuppressWarnings("unchecked")
 public class LettuceTest extends AbstractConsoleTest {
 
 	private String channel = "testChannel";
 	private String host = "localhost";
-	private int port = 6379;
+	private int port = 5000;
 
 	private ClientResources clientResources;
 	private RedisURI redisURI;
@@ -38,6 +39,48 @@ public class LettuceTest extends AbstractConsoleTest {
 	public void beforeLettuceTest() {
 		clientResources = DefaultClientResources.builder().reconnectDelay(Delay.constant(5, TimeUnit.SECONDS)).build();
 		redisURI = new RedisURI(host, port, 10, TimeUnit.SECONDS);
+
+	}
+
+	@Test
+	public void testPubSub(){
+
+		String channel = "+switch-master";
+		RedisClient redisClient = RedisClient.create(clientResources, redisURI);
+
+		redisClient.addListener(new RedisConnectionStateListener() {
+			@Override
+			public void onRedisConnected(RedisChannelHandler<?, ?> connection) {
+
+				logger.info("[onRedisConnected]{}", connection);
+				if(connection instanceof  StatefulRedisPubSubConnection){
+					StatefulRedisPubSubConnection<String, String> pubSubConnection = (StatefulRedisPubSubConnection<String, String>) connection;
+					pubSubConnection.async().subscribe(channel);
+				}
+			}
+
+			@Override
+			public void onRedisDisconnected(RedisChannelHandler<?, ?> connection) {
+
+			}
+
+			@Override
+			public void onRedisExceptionCaught(RedisChannelHandler<?, ?> connection, Throwable cause) {
+
+			}
+		});
+		StatefulRedisPubSubConnection<String, String> redisPubSubConnection = redisClient.connectPubSub();
+
+		//noinspection unchecked
+		redisPubSubConnection.addListener(new RedisPubSubAdapter(){
+
+			@Override
+			public void message(Object channel, Object message) {
+				logger.info("{}, {}", channel, message);
+			}
+		});
+
+
 
 	}
 

@@ -22,7 +22,12 @@ public class ShardModel implements java.io.Serializable{
 	
 	public ShardModel(){
 	}
-	
+
+	public ShardModel(List<RedisTbl> m_redises){
+		this.m_redises = m_redises;
+	}
+
+
 	public ShardModel addKeeper(RedisTbl keeper) {
 		m_keepers.add(keeper);
 		return this;

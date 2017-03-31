@@ -91,7 +91,7 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest{
 		}
 	}
 
-	protected String prepareDatas() {
+	protected String prepareDatas() throws IOException {
 		return "";
 	}
 	
