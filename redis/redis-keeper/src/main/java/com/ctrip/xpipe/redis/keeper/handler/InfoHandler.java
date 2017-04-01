@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 import java.util.Set;
 
+import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
@@ -85,7 +86,8 @@ public class InfoHandler extends AbstractCommandHandler{
 
 
 			sb.append("# Replication" + RedisProtocol.CRLF);
-			sb.append("role:" + redisKeeperServer.role() + RedisProtocol.CRLF);
+			sb.append("role:" + Server.SERVER_ROLE.SLAVE + RedisProtocol.CRLF);
+			sb.append("keeperrole:" + redisKeeperServer.role() + RedisProtocol.CRLF);
 			sb.append("state:" + redisKeeperServer.getRedisKeeperServerState().keeperState() + RedisProtocol.CRLF);
 			RedisMaster redisMaster =  redisKeeperServer.getRedisMaster();
 			String masterHost = redisMaster == null ? null: redisMaster.masterEndPoint().getHost();
