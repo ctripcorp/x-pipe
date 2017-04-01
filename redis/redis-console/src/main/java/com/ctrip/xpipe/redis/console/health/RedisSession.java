@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.sql.Time;
+import java.util.List;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -24,6 +24,8 @@ import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 public class RedisSession {
 
 	private static Logger log = LoggerFactory.getLogger(RedisSession.class);
+
+	private int waitResultSeconds = 2;
 
 	private RedisClient redis;
 
@@ -84,6 +86,7 @@ public class RedisSession {
 	}
 
 	public void ping(final PingCallback callback) {
+
 		final CompletableFuture<String> future = findOrCreateNonSubscribeConnection().async().ping().toCompletableFuture();
 		future.thenRun(new Runnable() {
 
@@ -98,6 +101,36 @@ public class RedisSession {
 		});
 	}
 
+	public  void role(RollCallback callback){
+
+		final CompletableFuture<List<Object>> future = findOrCreateNonSubscribeConnection().async().role().toCompletableFuture();
+		future.thenRun(new Runnable() {
+
+			@Override
+			public void run() {
+
+				try {
+					List<Object> objects = future.get();
+					callback.role((String) objects.get(0));
+				} catch (Exception e) {
+					log.error("[run]" + hostPort, e);
+				}
+			}
+		});
+	}
+
+	public  String roleSync() throws Exception {
+
+		final CompletableFuture<List<Object>> future = findOrCreateNonSubscribeConnection().async().role().toCompletableFuture();
+		return (String) future.get(waitResultSeconds, TimeUnit.SECONDS).get(0);
+
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s", hostPort.toString());
+	}
+
 	private StatefulRedisConnection<String, String> findOrCreateNonSubscribeConnection() {
 		if (nonSubscribeConn.get() == null) {
 			nonSubscribeConn.set(redis.connect());
@@ -106,4 +139,10 @@ public class RedisSession {
 		return nonSubscribeConn.get();
 	}
 
+	public interface  RollCallback{
+
+		void role(String role);
+
+		void fail(Exception e);
+	}
 }

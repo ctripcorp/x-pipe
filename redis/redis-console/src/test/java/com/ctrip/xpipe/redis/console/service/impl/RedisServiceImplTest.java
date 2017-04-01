@@ -5,7 +5,9 @@ import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.core.entity.Redis;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,17 +27,52 @@ public class RedisServiceImplTest extends AbstractServiceImplTest{
     @Autowired
     private RedisService redisService;
 
+    private String dcName;
+    private String shardName;
+
+    @Before
+    public void beforeRedisServiceImplTest(){
+        dcName = dcNames[0];
+        shardName = shardNames[0];
+
+    }
+
+    @Test
+    public void testBatchUpdate(){
+
+        List<RedisTbl> allByDcClusterShard = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
+        checkAllInstances(allByDcClusterShard);
+
+        for (RedisTbl redisTbl : allByDcClusterShard){
+            if(redisTbl.getRedisRole().equalsIgnoreCase(XpipeConsoleConstant.ROLE_REDIS)){
+                redisTbl.setMaster(!redisTbl.isMaster());
+            }
+        }
+
+        redisService.batchUpdate(allByDcClusterShard);
+
+        List<RedisTbl> newAll = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
+        checkAllInstances(newAll);
+
+        for(RedisTbl newRedis : newAll){
+            for(RedisTbl oldRedis : allByDcClusterShard){
+                if(newRedis.getId() == oldRedis.getId()){
+                    logger.info("old:{}", oldRedis);
+                    logger.info("new:{}", newRedis);
+                    Assert.assertEquals(oldRedis.isMaster(), newRedis.isMaster());
+                }
+            }
+        }
+
+    }
+
 
     @Test
     public void testUpdateRedises() throws IOException {
 
-        String dcName = dcNames[0];
-        String shardName = shardNames[0];
 
         List<RedisTbl> allByDcClusterShard = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
-
         checkAllInstances(allByDcClusterShard);
-
         boolean firstSlave = true;
         RedisTbl newMaster = null;
 
@@ -56,7 +93,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest{
         checkAllInstances(allByDcClusterShard);
 
         ShardModel shardModel = new ShardModel(allByDcClusterShard);
-        redisService.updateRedises(clusterName, dcName, shardName, shardModel);
+        redisService.updateRedises(dcName, clusterName, shardName, shardModel);
 
         allByDcClusterShard = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
         checkAllInstances(allByDcClusterShard);
@@ -64,7 +101,6 @@ public class RedisServiceImplTest extends AbstractServiceImplTest{
         Stream<RedisTbl> redisTblStream = allByDcClusterShard.stream().filter(instance -> instance.isMaster());
 
         RedisTbl  currentMaster = redisTblStream.findFirst().get();
-
         Assert.assertEquals(newMaster.getId(), currentMaster.getId());
 
     }

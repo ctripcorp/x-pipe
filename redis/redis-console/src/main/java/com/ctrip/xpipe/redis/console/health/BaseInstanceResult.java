@@ -39,4 +39,9 @@ public class BaseInstanceResult<T> {
 		this.context = context;
 	}
 
+
+	@Override
+	public String toString() {
+		return String.format("context:%s", context);
+	}
 }

@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -112,7 +113,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 	}
 
 	@Override
-	public void updateRedises(String clusterName, String dcName, String shardName, ShardModel shardModel) {
+	public void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel) {
 		final DcClusterShardTbl dcClusterShard = dcClusterShardService.find(dcName, clusterName, shardName);
 		if (null == shardModel) {
 			throw new BadRequestException("RequestBody cannot be null.");
@@ -159,51 +160,46 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 			}
     	});
 	}
-	
+
+	private void addRedisTbl(DcClusterShardTbl dcClusterShard, List<RedisTbl> result, List<RedisTbl> redises, String defaultRole) {
+
+		if(redises == null){
+			return;
+		}
+
+		for(RedisTbl redis : redises) {
+			RedisTbl proto = dao.createLocal();
+			if (null != redis.getRunId()) {
+				proto.setRunId(redis.getRunId());
+			} else {
+				proto.setRunId("unknown");
+			}
+			proto.setId(redis.getId()).setRedisIp(redis.getRedisIp()).setRedisPort(redis.getRedisPort())
+					.setKeeperActive(redis.isKeeperActive()).setKeepercontainerId(redis.getKeepercontainerId());
+
+			proto.setMaster(redis.isMaster()? true : false);
+			if(!StringUtil.isEmpty(redis.getRedisRole())){
+				proto.setRedisRole(redis.getRedisRole());
+			}else {
+				proto.setRedisRole(defaultRole);
+			}
+			if (null != dcClusterShard) {
+				proto.setDcClusterShardId(dcClusterShard.getDcClusterShardId());
+			}
+			result.add(proto);
+		}
+
+	}
+
+
 	private List<RedisTbl> formatRedisesFromShardModel(DcClusterShardTbl dcClusterShard, ShardModel shardModel) {
 		List<RedisTbl> result = new LinkedList<>();
 		if (null == shardModel) {
 			return result;
 		}
 
-		if (null != shardModel.getRedises()) {
-			for(RedisTbl redis : shardModel.getRedises()) {
-				RedisTbl proto = dao.createLocal();
-				if (null != redis.getRunId()) {
-					proto.setRunId(redis.getRunId());
-				} else {
-					proto.setRunId("unknown");
-				}
-				proto.setId(redis.getId()).setRedisIp(redis.getRedisIp()).setRedisPort(redis.getRedisPort())
-						.setRedisRole(XpipeConsoleConstant.ROLE_REDIS);
-				proto.setMaster(redis.isMaster()? true : false);
-				
-				if (null != dcClusterShard) {
-					proto.setDcClusterShardId(dcClusterShard.getDcClusterShardId());
-				}
-				result.add(proto);
-			}
-		}
-
-		if (null != shardModel.getKeepers()) {
-			for (RedisTbl keeper : shardModel.getKeepers()) {
-				RedisTbl proto = dao.createLocal();
-				if (null != keeper.getRunId()) {
-					proto.setRunId(keeper.getRunId());
-				} else {
-					proto.setRunId("unknown");
-				}
-				proto.setId(keeper.getId()).setRedisIp(keeper.getRedisIp()).setRedisPort(keeper.getRedisPort())
-						.setKeeperActive(keeper.isKeeperActive()).setKeepercontainerId(keeper.getKeepercontainerId())
-						.setRedisRole(XpipeConsoleConstant.ROLE_KEEPER);
-				
-				if (null != dcClusterShard) {
-					proto.setDcClusterShardId(dcClusterShard.getDcClusterShardId());
-				}
-				result.add(proto);
-			}
-		}
-
+		addRedisTbl(dcClusterShard, result, shardModel.getRedises(), XpipeConsoleConstant.ROLE_REDIS);
+		addRedisTbl(dcClusterShard, result, shardModel.getKeepers(), XpipeConsoleConstant.ROLE_KEEPER);
 		return result;
 	}
 
@@ -216,7 +212,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 		}
 
 		if (keepers.get(0).getKeepercontainerId() == keepers.get(1).getKeepercontainerId()) {
-			throw new BadRequestException("Keepers should be assigned to different keepercontainer");
+			throw new BadRequestException("Keepers should be assigned to different keepercontainer" + keepers);
 		}
 		
 		List<RedisTbl> originalKeepers = RedisDao.findWithRole(findAllByDcClusterShard(keepers.get(0).getDcClusterShardId()), XpipeConsoleConstant.ROLE_KEEPER);

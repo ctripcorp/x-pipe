@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.spring;
 
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -30,6 +31,12 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 	@Bean
 	public MetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
 		return new DefaultMetaServerConsoleServiceManagerWrapper();
+	}
+
+	@Bean
+	public XpipeNettyClientKeyedObjectPool getClientPool() {
+
+		return new XpipeNettyClientKeyedObjectPool();
 	}
 
 	@Bean

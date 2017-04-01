@@ -80,7 +80,7 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
                 shardModel.addRedis(new RedisTbl().setId(redisId.incrementAndGet()).setRedisIp("127.0.0.1").setRedisPort(redisPort++));
                 shardModel.addKeeper(new RedisTbl().setId(redisId.incrementAndGet()).setKeepercontainerId(1).setRedisIp("127.0.0.1").setRedisPort(keeperPort++));
                 shardModel.addKeeper(new RedisTbl().setId(redisId.incrementAndGet()).setKeepercontainerId(2).setRedisIp("127.0.0.1").setRedisPort(keeperPort++));
-                redisService.updateRedises(clusterName, dcName, shardName, shardModel);
+                redisService.updateRedises(dcName, clusterName, shardName, shardModel);
 
             }
         }

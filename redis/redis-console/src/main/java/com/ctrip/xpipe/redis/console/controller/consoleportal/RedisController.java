@@ -26,7 +26,7 @@ public class RedisController extends AbstractConsoleController{
 		try {
 			if(null != shardModel) {
 				logger.info("[Update Redises][construct]{},{},{},{}",clusterName, dcName, shardName, shardModel);
-				redisService.updateRedises(clusterName,dcName,shardName,shardModel);
+				redisService.updateRedises(dcName, clusterName, shardName,shardModel);
 				logger.info("[Update Redises][success]{},{},{},{}",clusterName, dcName, shardName, shardModel);
 			} else {
 				logger.error("[Update Redises][Null ShardModel]{},{},{},{}",clusterName, dcName, shardName, shardModel);

@@ -12,6 +12,6 @@ public interface RedisService {
 	List<RedisTbl> findAllByDcClusterShard(String dcId, String clusterId, String shardId);
 	void updateByPK(RedisTbl redis);
 	void batchUpdate(List<RedisTbl> redises);
-	void updateRedises(String clusterName, String dcName, String shardName, ShardModel shardModel);
+	void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel);
 	
 }

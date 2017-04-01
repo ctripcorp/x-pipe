@@ -20,9 +20,9 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  *         Dec 6, 2016 5:02:16 PM
  */
 @SuppressWarnings("rawtypes")
-public abstract class BaseSampleMonitor<T extends BaseInstanceResult> {
+public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements SampleMonitor<T>{
 
-	private Logger log = LoggerFactory.getLogger(getClass());
+	protected Logger log = LoggerFactory.getLogger(getClass());
 
 	@Autowired
 	private ConsoleConfig config;
