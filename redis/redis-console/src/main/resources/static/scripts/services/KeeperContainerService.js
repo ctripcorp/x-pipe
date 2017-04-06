@@ -1,16 +1,16 @@
 services.service('KeeperContainerService', ['$resource', '$q', function ($resource, $q) {
 
     var resource = $resource('', {}, {
-        find_keeperContainers_by_dc: {
+        find_activekeepercontainers_by_dc: {
             method: 'GET',
-            url: '/console/dcs/:dcName/keepercontainers',
+            url: '/console/dcs/:dcName/activekeepercontainers',
             isArray : true
         }
     });
 
-    function findKeeperContainersByDc(dcName) {
+    function findActiveKeeperContainersByDc(dcName) {
         var d = $q.defer();
-        resource.find_keeperContainers_by_dc({
+        resource.find_activekeepercontainers_by_dc({
                             dcName: dcName
                         },
                         function (result) {
@@ -21,6 +21,6 @@ services.service('KeeperContainerService', ['$resource', '$q', function ($resour
         return d.promise;
     }
     return {
-        findKeeperContainersByDc : findKeeperContainersByDc
+        findActiveKeeperContainersByDc : findActiveKeeperContainersByDc
     }
 }]);

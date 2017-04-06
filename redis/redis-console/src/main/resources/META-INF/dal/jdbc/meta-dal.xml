@@ -698,6 +698,20 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-active-by-dc-name" type="SELECT" multiple="true">
+				<param name="dc-name"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name="dc-info"/>
+					WHERE <FIELD name='keepercontainer-dc'/> = dt.id
+					AND dt.dc_name = ${dc-name}
+					AND dt.deleted = 0
+					AND <FIELD name='keepercontainer-active'/> = 1
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 

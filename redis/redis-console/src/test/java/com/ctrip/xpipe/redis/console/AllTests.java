@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
 
+import com.ctrip.xpipe.redis.console.service.impl.KeepercontainerServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.impl.RedisServiceImplTest;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -31,6 +32,7 @@ import org.junit.runner.RunWith;
 @SuiteClasses({
 
 	RedisServiceImplTest.class,
+	KeepercontainerServiceImplTest.class,
 	MigrationStatusTest.class,
 	ClusterMetaServiceImplTest.class,
 	ConcurrentDalTransactionTest.class,

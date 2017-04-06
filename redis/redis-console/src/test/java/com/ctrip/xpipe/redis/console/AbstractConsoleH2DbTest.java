@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.h2.tools.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -57,7 +58,7 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest{
 		executeSqlScript(prepareDatas());
 	}
 
-	private void executeSqlScript(String prepareSql) throws ComponentLookupException, SQLException {
+	protected void executeSqlScript(String prepareSql) throws ComponentLookupException, SQLException {
 		
 		DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
 		
@@ -90,6 +91,18 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest{
 			}
 		}
 	}
+
+
+	private Server h2Server;
+	private int    h2Port = 9123;
+
+	protected void startH2Server() throws SQLException {
+
+		h2Server = Server.createTcpServer("-tcpPort", String.valueOf(h2Port), "-tcpAllowOthers");
+		h2Server.start();
+//		new Console().runTool();
+	}
+
 
 	protected String prepareDatas() throws IOException {
 		return "";
