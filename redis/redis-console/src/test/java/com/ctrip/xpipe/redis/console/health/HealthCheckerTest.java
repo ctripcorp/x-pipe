@@ -10,11 +10,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.web.EmbeddedServletContainerAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration;
 
-import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Import;
 
 /**
  * @author marsqing

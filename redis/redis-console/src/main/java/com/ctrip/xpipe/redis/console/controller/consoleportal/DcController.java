@@ -21,7 +21,7 @@ import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
  * Aug 22, 2016
  */
 @RestController
-@RequestMapping("console")
+@RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class DcController extends AbstractConsoleController{
 	@Autowired
 	private DcService dcService;

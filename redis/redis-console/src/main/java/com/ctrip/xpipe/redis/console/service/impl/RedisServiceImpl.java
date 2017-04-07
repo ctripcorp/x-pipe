@@ -89,6 +89,26 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 	}
 
 	@Override
+	public void insert(RedisTbl... redises) {
+		queryHandler.handleQuery(new DalQuery<int[]>() {
+			@Override
+			public int[] doQuery() throws DalException {
+				return dao.insertBatch(redises);
+			}
+		});
+	}
+
+	@Override
+	public void delete(RedisTbl... redises) {
+		queryHandler.handleQuery(new DalQuery<int[]>() {
+			@Override
+			public int[] doQuery() throws DalException {
+				return dao.deleteBatch(redises, RedisTblEntity.UPDATESET_FULL);
+			}
+		});
+	}
+
+	@Override
 	public void updateByPK(final RedisTbl redis) {
 		if (null != redis) {
 			queryHandler.handleQuery(new DalQuery<Integer>() {
@@ -110,6 +130,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 				return 0;
 			}
 		});
+
 	}
 
 	@Override

@@ -24,7 +24,7 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
  * Dec 12, 2016
  */
 @RestController
-@RequestMapping("console")
+@RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class MigrationController extends AbstractConsoleController {
 	
 	@Autowired

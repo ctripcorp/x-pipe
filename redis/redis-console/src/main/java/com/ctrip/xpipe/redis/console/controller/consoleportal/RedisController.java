@@ -15,7 +15,7 @@ import com.ctrip.xpipe.redis.console.service.RedisService;
  * @author zhangle 16/8/24
  */
 @RestController
-@RequestMapping("console")
+@RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class RedisController extends AbstractConsoleController{
 	@Autowired
 	private RedisService redisService;

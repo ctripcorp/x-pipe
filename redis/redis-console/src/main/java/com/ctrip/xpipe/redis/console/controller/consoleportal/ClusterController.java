@@ -28,7 +28,7 @@ import java.util.Map;
  * @author zhangle
  */
 @RestController
-@RequestMapping("console")
+@RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class ClusterController extends AbstractConsoleController{
 	@Autowired
 	private DcService dcService;

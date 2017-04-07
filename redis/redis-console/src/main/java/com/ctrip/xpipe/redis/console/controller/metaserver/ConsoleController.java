@@ -28,7 +28,7 @@ import java.util.List;
  *
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping(AbstractConsoleController.API_PREFIX)
 public class ConsoleController extends AbstractConsoleController {
 	
 	@Autowired
