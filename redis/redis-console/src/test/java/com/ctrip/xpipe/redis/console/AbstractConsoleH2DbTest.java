@@ -38,7 +38,6 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest{
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty("spring.main.show_banner", "false");
 		System.setProperty(ComponentsConfigurator.KEY_XPIPE_LOCATION, "src/test/resources");
-		System.setProperty("cat.client.enabled", "false");
 	}
 	
 	@Before
