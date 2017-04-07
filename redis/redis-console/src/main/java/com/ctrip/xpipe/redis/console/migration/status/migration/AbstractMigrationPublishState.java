@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 
 /**
  * @author shyin
@@ -35,9 +36,14 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 		String newPrimaryDc = getHolder().getClusterDcs().get(getHolder().getMigrationCluster().getDestinationDcId()).getDcName();
 		List<InetSocketAddress> newMasters = new LinkedList<>();
 		for(ShardTbl shard : getHolder().getClusterShards().values()) {
-			InetSocketAddress addr = getMasterAddress(getHolder().getRedisService().findAllByDcClusterShard(newPrimaryDc, cluster, shard.getShardName()));
-			if(null != addr) {
-				newMasters.add(addr);
+			InetSocketAddress addr = null;
+			try {
+				addr = getMasterAddress(getHolder().getRedisService().findAllByDcClusterShard(newPrimaryDc, cluster, shard.getShardName()));
+				if(null != addr) {
+					newMasters.add(addr);
+				}
+			} catch (ResourceNotFoundException e) {
+				throw new IllegalStateException("[publish]", e);
 			}
 		}
 		

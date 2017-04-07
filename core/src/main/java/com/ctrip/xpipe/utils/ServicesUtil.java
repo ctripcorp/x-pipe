@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.ctrip.xpipe.api.migration.DcMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +60,10 @@ public class ServicesUtil {
 	
 	public static MigrationPublishService getMigrationPublishService() {
 		return load(MigrationPublishService.class);
+	}
+
+	public static DcMapper getDcMapperService() {
+		return load(DcMapper.class);
 	}
 
 	@SuppressWarnings("unchecked")

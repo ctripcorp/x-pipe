@@ -2,17 +2,10 @@ package com.ctrip.xpipe.redis.console;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.util.concurrent.TimeUnit;
 
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
-import org.h2.tools.Console;
-import org.h2.tools.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 

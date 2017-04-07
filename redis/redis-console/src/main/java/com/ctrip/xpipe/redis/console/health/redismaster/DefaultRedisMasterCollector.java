@@ -6,9 +6,9 @@ import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.health.Sample;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
@@ -84,12 +84,16 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
                 continue;
             }
             if (isMaster(redisMeta.getIp(), redisMeta.getPort())){
-                changeMasterRoleInDb(plan, redisMeta.getIp(), redisMeta.getPort());
+                try {
+                    changeMasterRoleInDb(plan, redisMeta.getIp(), redisMeta.getPort());
+                } catch (ResourceNotFoundException e) {
+                    logger.error("doCorrection" + plan, e);
+                }
             }
         }
     }
 
-    private void changeMasterRoleInDb(RedisMasterSamplePlan plan, String newMasterIp, Integer newMasterPort) {
+    private void changeMasterRoleInDb(RedisMasterSamplePlan plan, String newMasterIp, Integer newMasterPort) throws ResourceNotFoundException {
         logger.info("[changeMasterRoleInDb]{}, {}:{}", plan, newMasterIp, newMasterPort);
 
         List<RedisTbl> allByDcClusterShard = redisService.findAllByDcClusterShard(plan.getDcName(), plan.getClusterId(), plan.getShardId());

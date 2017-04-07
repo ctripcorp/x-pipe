@@ -14,13 +14,13 @@ import com.ctrip.xpipe.utils.ServicesUtil;
  */
 public interface MigrationPublishService extends Ordered{
 	
-	public static MigrationPublishService DEFAULT = ServicesUtil.getMigrationPublishService();
+	MigrationPublishService DEFAULT = ServicesUtil.getMigrationPublishService();
 	
 	MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters);
 	
 	MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName, InetSocketAddress newMaster);
 	
-	public static class MigrationPublishResult {
+	class MigrationPublishResult {
 		private boolean Success;
 		private String Message;
 		

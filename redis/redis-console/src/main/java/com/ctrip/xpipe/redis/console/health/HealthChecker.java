@@ -45,7 +45,6 @@ public class HealthChecker {
 
 			@Override
 			public void run() {
-				long dcListLastUpdateTime = 0;
 
 				while (!Thread.currentThread().isInterrupted()) {
 

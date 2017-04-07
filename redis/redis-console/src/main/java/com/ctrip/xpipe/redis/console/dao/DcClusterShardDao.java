@@ -50,7 +50,7 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 			List<RedisTbl> relatedRedises = queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
 				@Override
 				public List<RedisTbl> doQuery() throws DalException {
-					return redisTblDao.findAllByDcClusterShardId(dcClusterShard.getDcClusterShardId(), RedisTblEntity.READSET_FULL);
+					return redisTblDao.findAllByDcClusterShardId(dcClusterShard.getDcClusterShardId(), null, RedisTblEntity.READSET_FULL);
 				}
 			});
 			

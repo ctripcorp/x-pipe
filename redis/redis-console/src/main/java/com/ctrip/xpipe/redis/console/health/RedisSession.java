@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.sql.Time;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;

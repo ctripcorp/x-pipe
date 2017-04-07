@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 
 /**
  * @author shyin
@@ -25,8 +26,12 @@ public class MigrationPublishState extends AbstractMigrationPublishState {
 
 	@Override
 	public void action() {
-		updateRedisMaster();
-		
+		try {
+			updateRedisMaster();
+		} catch (ResourceNotFoundException e) {
+			logger.error("[action]", e);
+		}
+
 		updateDB();
 		
 		if(publish()) {
@@ -44,7 +49,7 @@ public class MigrationPublishState extends AbstractMigrationPublishState {
 	}
 	
 
-	private void updateRedisMaster() {
+	private void updateRedisMaster() throws ResourceNotFoundException {
 		List<RedisTbl> toUpdate = new LinkedList<>();
 		
 		MigrationCluster migrationCluster = getHolder();

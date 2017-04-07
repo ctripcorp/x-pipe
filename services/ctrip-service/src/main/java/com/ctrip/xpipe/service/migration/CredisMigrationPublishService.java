@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.ctrip.xpipe.api.migration.DcMapper;
 import org.springframework.web.client.RestOperations;
 
 import com.ctrip.xpipe.migration.AbstractMigrationPublishService;
@@ -51,12 +52,7 @@ public class CredisMigrationPublishService extends AbstractMigrationPublishServi
 	}
 	
 	String convertDcName(String dc) {
-		Map<String, String> idsMappingRules = MigrationPublishServiceConfig.INSTANCE.getCredisIdcMappingRules();
-		if(idsMappingRules.containsKey(dc.toUpperCase())) {
-			return idsMappingRules.get(dc.toUpperCase());
-		} else {
-			return dc;
-		}
+		return DcMapper.INSTANCE.getDc(dc);
 	}
 	
 }

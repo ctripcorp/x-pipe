@@ -491,11 +491,15 @@
 		<query-defs>
 			<query name='find-all-by-dc-cluster-shard-id' type='SELECT' multiple="true">
 				<param name='dc-cluster-shard-id'/>
+				<param name='redis-role'/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-cluster-shard-id' /> = ${dc-cluster-shard-id}
+					<IF field="redis-role" type="NOT_NULL">
+						AND <FIELD name='redis-role'/> = ${redis-role}
+					</IF>
 					AND <FIELD name='deleted'/> = 0
 					ORDER BY <FIELD name='id'/>
 					]]>

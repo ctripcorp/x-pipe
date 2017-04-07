@@ -9,9 +9,25 @@ public class RetMessage {
 
     public static final String SUCCESS = "success";
 
+    public static final int SUCCESS_STATE = 0;
+    public static final int FAIL_STATE = -1;
+
     private int state;
 
     private String message;
+
+
+    public static RetMessage createFailMessage(String message){
+        return new RetMessage(FAIL_STATE, message);
+    }
+
+    public static RetMessage createSuccessMessage(){
+        return createSuccessMessage(SUCCESS);
+    }
+
+    public static RetMessage createSuccessMessage(String message){
+        return new RetMessage(SUCCESS_STATE, message);
+    }
 
     public RetMessage(){
 

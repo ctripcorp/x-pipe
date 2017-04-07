@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status;
 
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,7 +48,7 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 	private MigrationService migrationService;
 
 	@Before
-	public void setUp() {
+	public void setUp() throws ResourceNotFoundException {
 		when(migrationCluster.getCurrentCluster()).thenReturn((new ClusterTbl().setClusterName("test-cluster")));
 		when(migrationCluster.getMigrationCluster()).thenReturn((new MigrationClusterTbl()).setDestinationDcId(1));
 
