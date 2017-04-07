@@ -51,8 +51,7 @@ public class RedisUpdateController extends AbstractConsoleController{
     }
 
     private String transform(String dcId) {
-
-        return dcMapper.getDc(dcId);
+        return dcMapper.reverse(dcId);
     }
 
     @RequestMapping(value = "/redises/{dcId}/{clusterId}/{shardId}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)

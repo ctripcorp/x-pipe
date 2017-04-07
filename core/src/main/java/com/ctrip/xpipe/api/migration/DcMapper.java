@@ -13,4 +13,6 @@ public interface DcMapper extends Ordered{
     DcMapper INSTANCE = ServicesUtil.getDcMapperService();
 
     String getDc(String dcName);
+
+    String reverse(String otherDcName);
 }

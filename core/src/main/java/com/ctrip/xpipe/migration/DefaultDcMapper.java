@@ -16,6 +16,11 @@ public class DefaultDcMapper implements DcMapper{
     }
 
     @Override
+    public String reverse(String otherDcName) {
+        return otherDcName;
+    }
+
+    @Override
     public int getOrder() {
         return Ordered.LOWEST_PRECEDENCE;
     }

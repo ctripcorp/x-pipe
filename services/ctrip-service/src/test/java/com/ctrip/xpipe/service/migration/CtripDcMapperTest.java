@@ -5,6 +5,9 @@ import com.ctrip.xpipe.api.migration.DcMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -20,6 +23,16 @@ public class CtripDcMapperTest extends AbstractServiceTest{
         Assert.assertNotEquals("NGXNH", dcMapper.getDc("NTGXH"));
         String randomDc = randomString(10);
         Assert.assertEquals(randomDc, dcMapper.getDc(randomDc));
+
+
+        CtripDcMapper ctripDcMapper = (CtripDcMapper) dcMapper;
+
+        Map<String, String> rules = new HashMap<>();
+        rules.put("NGXTH", "JQ");
+        rules.put("FAT", "OY");
+
+        Assert.assertEquals("NGXTH", ctripDcMapper.doReverse("JQ", rules));
+        Assert.assertEquals("NGXTH", ctripDcMapper.doReverse("NGXTH", rules));
 
 
     }
