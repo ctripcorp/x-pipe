@@ -31,6 +31,10 @@ public abstract class AbstractObservable implements Observable{
 		this.executors = executors;
 	}
 
+	public void setExecutors(Executor executors) {
+		this.executors = executors;
+	}
+
 	@Override
 	public void addObserver(Observer observer) {
 		
