@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
@@ -22,9 +23,9 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
 	public void action() {
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
 			if(!shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
-				fixedThreadPool.submit(new Runnable() {
+				executors.submit(new AbstractExceptionLogTask() {
 					@Override
-					public void run() {
+					public void doRun() {
 						logger.info("[doMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
 								shard.getCurrentShard().getShardName());
 						shard.doMigrate();

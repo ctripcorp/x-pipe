@@ -48,15 +48,14 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
 			RedisService redisService,MigrationService migrationService) {
 		this.migrationCluster = migrationCluster;
-		setStatus();
-		
+
 		this.clusterService = clusterService;
 		this.shardService = shardService;
 		this.dcService = dcService;
 		this.redisService = redisService;
 		this.migrationService = migrationService;
-		
 		loadMetaInfo();
+		setStatus();
 	}
 
 	@Override

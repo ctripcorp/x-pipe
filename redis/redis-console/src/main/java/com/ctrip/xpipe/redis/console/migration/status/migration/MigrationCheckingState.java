@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
@@ -17,15 +18,14 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  */
 public class MigrationCheckingState extends AbstractMigrationState {
 
-	private ExecutorService fixedThreadPool;
+	private ExecutorService executors;
 
 	public MigrationCheckingState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Checking);
 		this.setNextAfterSuccess(new MigrationMigratingState(holder))
 			.setNextAfterFail(this);
 
-		int threadSize = holder.getMigrationShards().size() == 0 ? 1 : holder.getMigrationShards().size();
-		fixedThreadPool = Executors.newFixedThreadPool(threadSize, XpipeThreadFactory.create("MigrationChecking"));
+		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("MigrationChecking"));
 	}
 
 	@Override
@@ -34,9 +34,9 @@ public class MigrationCheckingState extends AbstractMigrationState {
 		
 		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
 		for (final MigrationShard migrationShard : migrationShards) {
-			fixedThreadPool.submit(new Runnable() {
+			executors.submit(new AbstractExceptionLogTask() {
 				@Override
-				public void run() {
+				public void doRun() {
 					migrationShard.doCheck();
 				}
 			});
