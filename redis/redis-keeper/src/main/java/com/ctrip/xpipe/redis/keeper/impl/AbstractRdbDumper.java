@@ -36,21 +36,20 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		this.rdbDumpState = rdbDumpState;
 
 		switch (rdbDumpState) {
-		case DUMPING:
-			doWhenDumping();
-			break;
-		case FAIL:
-			doWhenDumpFailed();
-			redisKeeperServer.clearRdbDumper(this);
-			;
-			break;
-		case NORMAL:
-			// clear dumper
-			redisKeeperServer.clearRdbDumper(this);
-			;
-			break;
-		case WAIT_DUMPPING:
-			break;
+			case DUMPING:
+				doWhenDumping();
+				break;
+			case FAIL:
+				doWhenDumpFailed();
+				redisKeeperServer.clearRdbDumper(this);
+				break;
+			case NORMAL:
+				// clear dumper
+				redisKeeperServer.clearRdbDumper(this);
+				;
+				break;
+			case WAIT_DUMPPING:
+				break;
 		}
 	}
 
