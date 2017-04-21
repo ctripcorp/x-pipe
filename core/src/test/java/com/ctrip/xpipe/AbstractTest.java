@@ -123,6 +123,11 @@ public class AbstractTest {
 		return name.getMethodName();
 	}
 
+	protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier) throws TimeoutException {
+
+		waitConditionUntilTimeOut(booleanSupplier, 5000, 2);
+	}
+
 	protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier, int waitTimeMilli) throws TimeoutException {
 
 		waitConditionUntilTimeOut(booleanSupplier, waitTimeMilli, 2);

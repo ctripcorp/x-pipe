@@ -17,6 +17,8 @@ import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.retry.RetryNTimes;
 
+import java.util.concurrent.TimeoutException;
+
 /**
  * @author wenchao.meng
  *
@@ -54,7 +56,7 @@ public class OneThreadTaskExecutorTest extends AbstractTest{
 	}
 	
 	@Test
-	public void testRetryTemplate(){
+	public void testRetryTemplate() throws TimeoutException {
 		
 		int retryTimes = 10;
 		CommandFuture<Void> future = new DefaultCommandFuture<>();
@@ -66,9 +68,17 @@ public class OneThreadTaskExecutorTest extends AbstractTest{
 		OneThreadTaskExecutor oneThreadTaskExecutor = new OneThreadTaskExecutor(retryTemplate, getTestName());
 		
 		oneThreadTaskExecutor.executeCommand(command);
-		
-		sleep(100);
-		verify(command, times(retryTimes + 1)).execute();
+
+		waitConditionUntilTimeOut(() -> {
+			try{
+				verify(command, times(retryTimes + 1)).execute();
+				return true;
+			}catch (Throwable e){
+			}
+			return false;
+		} ,2000);
+
+
 	}
 	
 	@Test
