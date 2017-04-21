@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import com.ctrip.xpipe.redis.keeper.handler.SlaveOfCommandHandlerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -55,7 +56,8 @@ import com.ctrip.xpipe.redis.keeper.handler.RoleCommandHandlerTest;
 	FakeRedisExceptionTest.class, 
 	FakeRedisRdbDumperTest.class,
 	FakeRedisRdbDumpLong.class,
-	PsyncHandlerTest.class
+	PsyncHandlerTest.class,
+	SlaveOfCommandHandlerTest.class
 })
 public class AllTests {
 

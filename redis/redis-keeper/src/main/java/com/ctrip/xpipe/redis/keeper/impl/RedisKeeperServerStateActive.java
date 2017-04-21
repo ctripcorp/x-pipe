@@ -124,4 +124,9 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 		return KeeperState.ACTIVE;
 	}
 
+
+	@Override
+	public boolean handleSlaveOf() {
+		return true;
+	}
 }

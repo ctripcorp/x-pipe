@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -68,7 +69,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 		}
 	}
 
-	private void handleSlaveOf(String[] args, RedisClient redisClient) {
+	protected void handleSlaveOf(String[] args, RedisClient redisClient) {
 	    if (args[0].equalsIgnoreCase(NO)) {
 			/**
 			 * if reply OK to slaveof no one, then sentinel is found crash
@@ -77,11 +78,16 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			redisClient.sendMessage(new RedisErrorParser("Keeper not allowed to process slaveof command").format());
 		} else {
 
-	    	String host = args[0];
-	    	int port = Integer.parseInt(args[1]);
-	    	logger.info("[handleSlaveOf]{}:{} {}", host, port, redisClient);
-	    	redisClient.getRedisKeeperServer().getRedisKeeperServerState().setMasterAddress(
-	    			new InetSocketAddress(host, port));
+			RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+			String host = args[0];
+			int port = Integer.parseInt(args[1]);
+	    	if(redisKeeperServer.getRedisKeeperServerState().handleSlaveOf()){
+				logger.info("[handleSlaveOf][slaveof]{}:{} {}", host, port, redisClient);
+				redisClient.getRedisKeeperServer().getRedisKeeperServerState().setMasterAddress(
+						new InetSocketAddress(host, port));
+			}else{
+				logger.info("[handleSlaveOf][slaveof, ignore]{},{}:{} {}", redisKeeperServer.getRedisKeeperServerState(), host, port, redisClient);
+			}
 			redisClient.sendMessage(SimpleStringParser.OK);
 		}
 	}

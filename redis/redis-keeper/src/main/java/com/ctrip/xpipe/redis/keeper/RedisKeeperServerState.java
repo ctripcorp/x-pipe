@@ -37,5 +37,7 @@ public interface RedisKeeperServerState{
 	KeeperState keeperState();
 
 	void setMasterAddress(InetSocketAddress masterAddress);
+
+	boolean handleSlaveOf();
 	
 }

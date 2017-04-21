@@ -46,7 +46,7 @@ public class IpUtils {
 		
 		try{
 			int port = Integer.parseInt(str);
-			if(port > 0 && port <= 65535){
+			if(port >= 0 && port <= 65535){
 				return true;
 			}
 		}catch(Exception e){
