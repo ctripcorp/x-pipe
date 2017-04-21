@@ -10,6 +10,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 
+import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
+
 
 /**
  * @author wenchao.meng
@@ -45,9 +48,8 @@ public class ArrangeTaskExecutorTest extends AbstractMetaServerTest{
 		Assert.assertTrue(arrangeTaskExecutor.getTaskThread().isAlive());
 		
 		arrangeTaskExecutor.stop();
-		
-		sleep(50);
-		Assert.assertNull(arrangeTaskExecutor.getTaskThread());
+
+		waitConditionUntilTimeOut( () -> arrangeTaskExecutor.getTaskThread() == null, 1000);
 
 	}
 

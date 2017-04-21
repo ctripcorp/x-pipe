@@ -15,11 +15,8 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.function.BooleanSupplier;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.LoggerFactory;
@@ -124,6 +121,28 @@ public class AbstractTest {
 
 	protected String getTestName() {
 		return name.getMethodName();
+	}
+
+	protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier, int waitTimeMilli) throws TimeoutException {
+
+		waitConditionUntilTimeOut(booleanSupplier, waitTimeMilli, 2);
+	}
+
+	protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier, int waitTimeMilli, int intervalMilli) throws TimeoutException {
+
+		long maxTime = System.currentTimeMillis() + waitTimeMilli;
+
+
+		while(true){
+			boolean result = booleanSupplier.getAsBoolean();
+			if(result){
+				return;
+			}
+			if(System.currentTimeMillis() >= maxTime){
+				throw new TimeoutException("timtout still false:" + waitTimeMilli);
+			}
+			sleep(intervalMilli);
+		}
 	}
 
 	protected boolean deleteTestDirBeforeTest() {
