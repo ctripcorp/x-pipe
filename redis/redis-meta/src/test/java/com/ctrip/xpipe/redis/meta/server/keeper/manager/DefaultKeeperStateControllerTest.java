@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -80,12 +81,11 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 	}
 
 	@Test
-	public void testDelete(){
+	public void testDelete() throws TimeoutException {
 	
 		Assert.assertFalse(deleteCommand.isBeginExecute());
 		defaultKeeperStateController.removeKeeper(new KeeperTransMeta(getClusterId(), getShardId(), new KeeperMeta()));
-		sleep(10);
-		Assert.assertTrue(deleteCommand.isBeginExecute());
+		waitConditionUntilTimeOut(() -> deleteCommand.isBeginExecute(), 1000);
 	}
 
 }
