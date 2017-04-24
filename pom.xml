@@ -21,7 +21,7 @@
 		<maven-jar-plugin.version>2.6</maven-jar-plugin.version>
 		<maven-assembly-plugin.version>2.6</maven-assembly-plugin.version>
 		<maven-source-plugin.version>3.0.0</maven-source-plugin.version>
-		<coveralls-maven-plugin.version>4.1.0</coveralls-maven-plugin.version>
+		<coveralls-maven-plugin.version>4.3.0</coveralls-maven-plugin.version>
 		<cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
 		<fastjson.version>1.2.12</fastjson.version>
 		<jersey.version>2.19</jersey.version>
@@ -47,6 +47,7 @@
 		<plexus-utils.version>3.0.24</plexus-utils.version>
 		<git-commit-id-plugin.version>2.2.0</git-commit-id-plugin.version>
 		<log4j2.version>2.6.2</log4j2.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
 	<modules>
