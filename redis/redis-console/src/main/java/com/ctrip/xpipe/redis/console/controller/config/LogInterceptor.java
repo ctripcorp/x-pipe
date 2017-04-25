@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.config;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import javax.servlet.http.HttpServletRequest;
@@ -20,21 +21,35 @@ public class LogInterceptor extends HandlerInterceptorAdapter{
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
-        String uri = request.getRequestURI();
-        if(uri.startsWith(AbstractConsoleController.API_PREFIX)){
-            logApiRequest(request);
-        }
 
+        logApiRequest(request, "pre");
         return super.preHandle(request, response, handler);
     }
 
-    private void logApiRequest(HttpServletRequest request) {
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        logApiRequest(request, "post");
+
+    }
+
+    private void logApiRequest(HttpServletRequest request, String desc) {
+
+        String uri = request.getRequestURI();
+        if(uri.startsWith(AbstractConsoleController.API_PREFIX)){
+            String ipAddress = getAddresses(request);
+            logger.info("[logApiRequest][{}]{}, {}", desc, ipAddress, request.getRequestURI());
+        }
+
+    }
+
+    private String getAddresses(HttpServletRequest request) {
 
         // Your header-checking code
-        String ipAddress = request.getHeader("X-FORWARDED-FOR");
-        if (ipAddress == null) {
-            ipAddress = request.getRemoteAddr();
+        String xforwardFor = request.getHeader("X-FORWARDED-FOR");
+        String remoteAddress = request.getRemoteAddr();
+        if(xforwardFor != null){
+            return String.format("%s,%s", xforwardFor, remoteAddress);
         }
-        logger.info("[logApiRequest]{}, {}", ipAddress, request.getRequestURI());
+        return remoteAddress;
     }
 }
