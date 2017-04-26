@@ -95,6 +95,7 @@ public class OneThreadTaskExecutorTest extends AbstractTest{
 		oneThreadTaskExecutor.executeCommand(command);
 		sleep(100);
 		oneThreadTaskExecutor.destroy();
+		sleep(10);
 		verify(command, new AtLeast(1)).execute();
 		verify(command, new AtLeast(1)).reset();
 		
