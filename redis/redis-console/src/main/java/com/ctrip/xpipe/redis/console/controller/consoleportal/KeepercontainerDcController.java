@@ -26,6 +26,8 @@ import java.util.function.Consumer;
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class KeepercontainerDcController extends AbstractConsoleController{
 
+	public final static int DEFAULT_KEEPER_COUNT = 2;
+
 	@Autowired
 	private DcService dcService;
 
@@ -44,8 +46,7 @@ public class KeepercontainerDcController extends AbstractConsoleController{
 	@RequestMapping(value = "/dcs/{dcName}/availablekeepers", method = RequestMethod.POST)
 	public List<RedisTbl> findAvailableKeepers(@PathVariable String dcName,
 											   @RequestBody(required = false) ShardModel shardModel){
-		final int returnCount = 2;
-
+		final int returnCount = DEFAULT_KEEPER_COUNT;
 		logger.debug("[findAvailableKeepers]{}, {}", dcName, shardModel);
 
 		List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCount(dcName);
@@ -56,19 +57,17 @@ public class KeepercontainerDcController extends AbstractConsoleController{
 		List<RedisTbl> result = new LinkedList<>();
 
 		//find available port
-		keeperCount.forEach(new Consumer<KeepercontainerTbl>() {
-			@Override
-			public void accept(KeepercontainerTbl keepercontainerTbl) {
+		for(int i=0;i<returnCount;i++){
 
-				RedisTbl redisTbl = new RedisTbl();
-				redisTbl.setKeepercontainerId(keepercontainerTbl.getKeepercontainerId());
-				redisTbl.setRedisIp(keepercontainerTbl.getKeepercontainerIp());
+			KeepercontainerTbl keepercontainerTbl = keeperCount.get(i);
+			RedisTbl redisTbl = new RedisTbl();
+			redisTbl.setKeepercontainerId(keepercontainerTbl.getKeepercontainerId());
+			redisTbl.setRedisIp(keepercontainerTbl.getKeepercontainerIp());
 
-				int port = findAvailablePort(keepercontainerTbl, shardModel, result);
-				redisTbl.setRedisPort(port);
-				result.add(redisTbl);
-			}
-		});
+			int port = findAvailablePort(keepercontainerTbl, shardModel, result);
+			redisTbl.setRedisPort(port);
+			result.add(redisTbl);
+		}
 		return result;
 	}
 
