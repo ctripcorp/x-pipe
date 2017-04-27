@@ -686,8 +686,18 @@
 	<entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
 		<var name="dc-name" value-type="String"/>
 
-		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
+		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
 
+		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
+		<relation name="keeper-info" entity-name="redis-tbl" entity-alias="kit"/>
+
+		<readsets>
+			<readset name="KEEPER_COUNT">
+				<member name='keepercontainer-id'/>
+				<member name='keepercontainer-ip'/>
+				<member name="count"/>
+			</readset>
+		</readsets>
 		<query-defs>
 			<query name="find-by-dc-name" type="SELECT" multiple="true">
 				<param name="dc-name"/>
@@ -713,6 +723,23 @@
 					AND dt.deleted = 0
 					AND <FIELD name='keepercontainer-active'/> = 1
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-keeper-count" type="SELECT" multiple="true">
+				<param name="dc-name"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='keeper-info'/>, <TABLE name='dc-info'/>
+					WHERE <FIELD name='keepercontainer-dc'/> = dt.id
+					AND dt.dc_name = ${dc-name}
+					AND <FIELD name='keepercontainer-id'/> = kit.keepercontainer_id
+					AND <FIELD name='keepercontainer-active'/> = 1
+					AND kit.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					GROUP BY <FIELD name='keepercontainer-id'/>
+					order by count
 					]]>
 				</statement>
 			</query>

@@ -175,7 +175,7 @@
                             <select class="form-control" ng-model="toCreateFirstKeeper.keepercontainerId">
                                 <option ng-repeat="keeperContainer in keeperContainers"
                                         value="{{keeperContainer.keepercontainerId}}"
-                                ng-bind="keeperContainer.keepercontainerIp"></option>
+                                ng-bind="keeperContainer.keepercontainerIp + ':' + keeperContainer.keepercontainerPort"></option>
                             </select>
                         </div>
                     </div>
@@ -200,7 +200,7 @@
                             <select class="form-control" ng-model="toCreateOtherKeeper.keepercontainerId">
                                 <option ng-repeat="keeperContainer in keeperContainers"
                                         value="{{keeperContainer.keepercontainerId}}"
-                                        ng-bind="keeperContainer.keepercontainerIp"></option>
+                                        ng-bind="keeperContainer.keepercontainerIp + ':' + keeperContainer.keepercontainerPort"></option>
                             </select>
                         </div>
                     </div>

@@ -2,11 +2,9 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterService;
-import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.google.common.collect.Lists;
+import org.junit.Assert;
 import org.junit.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -26,6 +24,9 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
 
     @Autowired
     private DcClusterService dcClusterService;
+
+    @Autowired
+    private KeepercontainerService keepercontainerService;
 
     @Autowired
     private ShardService shardService;
@@ -72,14 +73,20 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
 
         for(String dcName : dcNames){
 
+            List<KeepercontainerTbl> keepercontainerTbls = keepercontainerService.findAllActiveByDcName(dcName);
+
+            Assert.assertTrue(keepercontainerTbls.size() >= 2);
+            long keepercontainerId1 = keepercontainerTbls.get(0).getKeepercontainerId();
+            long keepercontainerId2 = keepercontainerTbls.get(1).getKeepercontainerId();
+
             String clusterName = this.clusterName;
             for(String shardName : shardNames){
 
                 ShardModel shardModel = new ShardModel();
                 shardModel.addRedis(new RedisTbl().setId(redisId.incrementAndGet()).setRedisIp("127.0.0.1").setRedisPort(redisPort++).setMaster(true));
                 shardModel.addRedis(new RedisTbl().setId(redisId.incrementAndGet()).setRedisIp("127.0.0.1").setRedisPort(redisPort++));
-                shardModel.addKeeper(new RedisTbl().setId(redisId.incrementAndGet()).setKeepercontainerId(1).setRedisIp("127.0.0.1").setRedisPort(keeperPort++));
-                shardModel.addKeeper(new RedisTbl().setId(redisId.incrementAndGet()).setKeepercontainerId(2).setRedisIp("127.0.0.1").setRedisPort(keeperPort++));
+                shardModel.addKeeper(new RedisTbl().setId(redisId.incrementAndGet()).setKeepercontainerId(keepercontainerId1).setRedisIp("127.0.0.1").setRedisPort(keeperPort++));
+                shardModel.addKeeper(new RedisTbl().setId(redisId.incrementAndGet()).setKeepercontainerId(keepercontainerId2).setRedisIp("127.0.0.1").setRedisPort(keeperPort++));
                 redisService.updateRedises(dcName, clusterName, shardName, shardModel);
 
             }

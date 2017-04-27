@@ -66,6 +66,16 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 	}
 
 	@Override
+	public RedisTbl findWithIpPort(String ip, int port) {
+		return queryHandler.handleQuery(new DalQuery<RedisTbl>() {
+			@Override
+			public RedisTbl doQuery() throws DalException {
+				return dao.findWithIpPort(ip, port, RedisTblEntity.READSET_FULL);
+			}
+		});
+	}
+
+	@Override
 	public List<RedisTbl> findAllByDcClusterShard(final long dcClusterShardId) {
 		return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
 			@Override

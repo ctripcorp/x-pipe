@@ -48,7 +48,7 @@ public class OneThreadTaskExecutorTest extends AbstractTest{
 		CommandFuture<Void> future = new DefaultCommandFuture<>();
 		when(command.execute()).thenReturn(future);
 		future.setSuccess();
-		for(int i=0;i<times;i++){
+		for(int i=0 ; i < times ; i++){
 			oneThreadTaskExecutor.executeCommand(command);
 			sleep(30);
 			verify(command, times(i + 1)).execute();

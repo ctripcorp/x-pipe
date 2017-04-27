@@ -126,11 +126,31 @@ index_module.controller('ClusterDcShardUpdateCtl',
                              }
 
                              function preCreateKeeper() {
-                                 $scope.toCreateFirstKeeper = {};
 
+                                 $scope.toCreateFirstKeeper = {
+                                 };
                                  // init backup container
                                  $scope.toCreateOtherKeepers = [];
-                                 $scope.toCreateOtherKeepers.push({});
+
+                                 var shard = $scope.dcShards[$scope.currentDcName];
+                                  KeeperContainerService.findAvailableKeepersByDc($scope.currentDcName, shard).then(function(keepers){
+
+                                     var keeper = keepers.shift();
+                                     if(keeper){
+                                         $scope.toCreateFirstKeeper = {
+                                            keepercontainerId : keeper.keepercontainerId.toString(),
+                                            redisPort : keeper.redisPort
+                                         };
+                                     }
+
+                                     while(keeper = keepers.shift()){
+                                        $scope.toCreateOtherKeepers.push({
+                                            keepercontainerId : keeper.keepercontainerId.toString(),
+                                            redisPort : keeper.redisPort
+
+                                         });
+                                     }
+                                  })
 
                                  $('#createKeeperModal').modal('show');
                              }

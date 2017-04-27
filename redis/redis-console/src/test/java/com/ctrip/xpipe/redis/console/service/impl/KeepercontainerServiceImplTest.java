@@ -26,6 +26,17 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
+    public void testKeeperCount(){
+
+        List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCount(dcNames[0]);
+        keeperCount.forEach((keepercontainerTbl) -> {
+            logger.info("{}", keepercontainerTbl);
+        });
+
+    }
+
+
+    @Test
     public  void testFindAllActiveByDcName(){
 
         String dcName = dcNames[0];

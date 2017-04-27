@@ -32,9 +32,4 @@ public class DcController extends AbstractConsoleController{
 	public List<DcTbl> findAllDcs() {
 		return valueOrEmptySet(DcTbl.class, dcService.findAllDcBasic());
 	}
-
-	@RequestMapping(value = "/dcs/{dcName}/activekeepercontainers", method = RequestMethod.GET)
-	public List<KeepercontainerTbl> findKeeperContainer(@PathVariable String dcName){
-		return keepercontainerService.findAllActiveByDcName(dcName);
-	}
 }
