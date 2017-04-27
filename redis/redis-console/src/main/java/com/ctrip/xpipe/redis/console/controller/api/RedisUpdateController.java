@@ -11,8 +11,10 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.unidal.tuple.Pair;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -88,13 +90,14 @@ public class RedisUpdateController extends AbstractConsoleController{
     }
 
     private List<Pair<String,Integer>> getRedisAddresses(List<String> redises) {
-        List<Pair<String,Integer>> result = new LinkedList<>();
+
+        Set<Pair<String,Integer>> set = new HashSet<>();
         redises.forEach(new Consumer<String>() {
             @Override
             public void accept(String addr) {
-                result.add(IpUtils.parseSingleAsPair(addr));
+                set.add(IpUtils.parseSingleAsPair(addr));
             }
         });
-        return result;
+        return new LinkedList<>(set);
     }
 }
