@@ -23,6 +23,8 @@ x-pipe
         - [Redis自身高可用](#redis自身高可用)
     - [测试数据](#测试数据)
         - [延时测试](#延时测试)
+- [技术交流](#技术交流)
+- [License](#license)
 
 <!-- /MarkdownTOC -->
 
@@ -90,3 +92,11 @@ Redis也可能会挂，Redis本身提供哨兵(Sentinel)机制保证集群的高
 首先我们测试Redis master直接复制到slave的延时，为0.2ms。然后在master和slave之间增加一层keeper，整体延时增加0.1ms，到0.3ms。
 
 在携程生产环境进行了测试，生产环境两个机房之间的ping RTT约为0.61ms，经过跨数据中心的两层keeper后，测试得到的平均延时约为0.8ms，延时99.9线为2ms。
+
+<a name="技术交流"></a>
+# 技术交流
+![tech-support-qq](https://raw.github.com/ctripcorp/x-pipe/master/doc/xpipe_qq.png)
+
+<a name="license"></a>
+# License
+The project is licensed under the [Apache 2 license](https://github.com/ctripcorp/x-pipe/blob/master/LICENSE).
