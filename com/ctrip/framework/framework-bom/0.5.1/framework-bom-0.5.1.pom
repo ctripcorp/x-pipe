@@ -345,14 +345,6 @@
                 <scope>test</scope>
             </dependency>
 
-            <!-- Qunar TC -->
-            <dependency>
-                <groupId>qunar.tc</groupId>
-                <artifactId>tcdev</artifactId>
-                <version>${qunar-tcdev.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
