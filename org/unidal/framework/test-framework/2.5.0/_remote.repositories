@@ -1,7 +1,0 @@
-#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
-#Fri Aug 12 18:56:43 CST 2016
-test-framework-2.5.0.jar>=
-test-framework-2.5.0-sources.jar>=
-test-framework-2.5.0.jar>localpublic=
-test-framework-2.5.0.pom>localpublic=
-test-framework-2.5.0-sources.jar>localpublic=

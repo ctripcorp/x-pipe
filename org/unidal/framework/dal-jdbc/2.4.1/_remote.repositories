@@ -1,7 +1,0 @@
-#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
-#Wed Jul 20 13:26:27 CST 2016
-dal-jdbc-2.4.1-sources.jar>localpublic=
-dal-jdbc-2.4.1.jar>localpublic=
-dal-jdbc-2.4.1.jar>=
-dal-jdbc-2.4.1-sources.jar>=
-dal-jdbc-2.4.1.pom>localpublic=
