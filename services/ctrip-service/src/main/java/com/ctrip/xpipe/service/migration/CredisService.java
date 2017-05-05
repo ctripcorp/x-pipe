@@ -48,7 +48,8 @@ public class CredisService extends AbstractOuterClientService {
 
 	private void doMarkInstance(HostPort hostPort, boolean state) throws Exception {
 
-		catTransactionMonitor.logTransaction(TYPE, "doMarkInstance", new Task() {
+		catTransactionMonitor.logTransaction(TYPE, String.format("doMarkInstance-%s-%s", hostPort, state), new Task() {
+
 			@Override
 			public void go() throws Exception {
 
@@ -67,7 +68,7 @@ public class CredisService extends AbstractOuterClientService {
 	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) throws Exception {
 
-		return catTransactionMonitor.logTransaction(TYPE, "doMigrationPublish", new Callable<MigrationPublishResult>() {
+		return catTransactionMonitor.logTransaction(TYPE, String.format("doMigrationPublish-%s-%s", clusterName, primaryDcName), new Callable<MigrationPublishResult>() {
 
 			@Override
 			public MigrationPublishResult call() throws Exception {
@@ -92,6 +93,7 @@ public class CredisService extends AbstractOuterClientService {
 	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
 			InetSocketAddress newMaster) throws Exception {
+
 		return doMigrationPublish(clusterName, primaryDcName, Arrays.asList(newMaster));
 	}
 	

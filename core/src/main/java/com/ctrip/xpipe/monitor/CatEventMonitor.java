@@ -16,4 +16,9 @@ public class CatEventMonitor implements EventMonitor {
         Cat.logEvent(type, name, Event.SUCCESS, "*count=" + count);
     }
 
+    @Override
+    public void logEvent(String type, String name) {
+        Cat.logEvent(type, name);
+    }
+
 }

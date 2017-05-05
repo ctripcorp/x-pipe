@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console;
 import java.io.IOException;
 import java.sql.SQLException;
 
+import com.ctrip.xpipe.monitor.CatConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +24,7 @@ public class AppTest extends AbstractConsoleH2DbTest {
 	public void startUp() throws SQLException {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty(HealthChecker.ENABLED, "true");
+		System.setProperty(CatConfig.CAT_ENABLED_KEY, "true");
 		startH2Server();
 	}
 

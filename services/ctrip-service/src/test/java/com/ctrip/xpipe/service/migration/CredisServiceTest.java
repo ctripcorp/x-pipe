@@ -26,7 +26,10 @@ public class CredisServiceTest extends AbstractServiceTest {
 	@Test
 	public void testMarkStatus() throws Exception {
 
-		outerClientService.markInstanceDown(new HostPort("127.0.0.1", 111111111));
+		outerClientService.markInstanceDown(new HostPort("127.0.0.1", 6379));
+
+		sleep(600000);
+
 	}
 	
 	@Test
