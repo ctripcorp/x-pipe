@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.ctrip.framework</groupId>
+    <artifactId>framework-bom</artifactId>
+    <version>0.5.1</version>
+    <packaging>pom</packaging>
+    <name>Ctrip Framework BOM</name>
+    <description>Ctrip Framework BOM</description>
+    <organization>
+        <name>Ctrip, Inc.</name>
+        <url>http://www.ctrip.com</url>
+    </organization>
+    <properties>
+        <!-- framework -->
+        <cat.version>2.4.0</cat.version>
+        <clogging.version>3.7.3</clogging.version>
+        <credis.version>2.4.11</credis.version>
+        <dal.version>1.2.2</dal.version>
+        <hermes.version>0.8.1</hermes.version>
+        <soa.version>2.3.4</soa.version>
+        <apollo.version>0.4.0</apollo.version>
+        <vi.version>0.9.1</vi.version>
+        <framework-foundation.version>1.5.1</framework-foundation.version>
+
+        <!-- qunar tc -->
+        <qunar-tcdev.version>2.0.0</qunar-tcdev.version>
+
+        <!-- third party -->
+        <commons-beanutils.version>1.9.3</commons-beanutils.version>
+        <commons-codec.version>1.10</commons-codec.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <fastjson.version>1.2.21</fastjson.version>
+        <foundation-service.version>2.5.6</foundation-service.version>
+        <gson.version>2.8.0</gson.version>
+        <guava.version>19.0</guava.version>
+        <hamcrest-core.version>1.3</hamcrest-core.version>
+        <hibernate-validator.version>5.3.3.Final</hibernate-validator.version>
+        <httpasyncclient.version>4.1.2</httpasyncclient.version>
+        <httpclient.version>4.5.2</httpclient.version>
+        <httpcore.version>4.4.5</httpcore.version>
+        <jackson2.version>2.8.5</jackson2.version>
+        <junit.version>4.12</junit.version>
+        <libthrift.version>0.9.3</libthrift.version>
+        <netty4.version>4.0.36.Final</netty4.version>
+        <slf4j.version>1.7.21</slf4j.version>
+        <snappy-java.version>1.1.2.6</snappy-java.version>
+        <validation-api.version>1.1.0.Final</validation-api.version>
+        <!-- in line with the version used by tars -->
+        <tomcat.version>7.0.73</tomcat.version>
+        <starter-tomcat.version>7.0.73.ctrip</starter-tomcat.version>
+
+        <!-- framework bom repository path, only used for framework bom deployment -->
+        <!-- Maven Release Repository URL -->
+        <releases.repo>http://maven.dev.sh.ctripcorp.com:8081/nexus/content/repositories/fxrelease</releases.repo>
+        <!-- Maven Snapshot Repository URL -->
+        <snapshots.repo>http://maven.dev.sh.ctripcorp.com:8081/nexus/content/repositories/fxsnapshot</snapshots.repo>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Framework Foundation -->
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>framework-foundation</artifactId>
+                <version>${framework-foundation.version}</version>
+            </dependency>
+            <!-- Cat -->
+            <dependency>
+                <groupId>com.dianping.cat</groupId>
+                <artifactId>cat-client</artifactId>
+                <version>${cat.version}</version>
+            </dependency>
+            <!-- Clogging -->
+            <dependency>
+                <groupId>com.ctrip.framework.clogging</groupId>
+                <artifactId>clogging-agent</artifactId>
+                <version>${clogging.version}</version>
+            </dependency>
+            <!-- Credis -->
+            <dependency>
+                <groupId>com.ctrip.credis</groupId>
+                <artifactId>credis</artifactId>
+                <version>${credis.version}</version>
+            </dependency>
+            <!-- DAL -->
+            <dependency>
+                <groupId>com.ctrip.platform</groupId>
+                <artifactId>ctrip-dal-client</artifactId>
+                <version>${dal.version}</version>
+            </dependency>
+            <!-- Hermes -->
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-producer</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-consumer</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-kafka</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <!-- SOA -->
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-core</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-common</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-client</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-server</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-mobile-request-filter</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-extensions</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <!-- Apollo -->
+            <dependency>
+                <groupId>com.ctrip.framework.apollo</groupId>
+                <artifactId>apollo-client</artifactId>
+                <version>${apollo.version}</version>
+            </dependency>
+            <!-- VI -->
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>vi</artifactId>
+                <version>${vi.version}</version>
+            </dependency>
+
+            <!-- Third Party-->
+            <!-- json -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>${fastjson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+
+            <!-- guava -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+
+            <!-- commons -->
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>${commons-beanutils.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang.version}</version>
+            </dependency>
+
+            <!-- validator -->
+            <dependency>
+                <groupId>javax.validation</groupId>
+                <artifactId>validation-api</artifactId>
+                <version>${validation-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-validator</artifactId>
+                <version>${hibernate-validator.version}</version>
+            </dependency>
+
+            <!-- httpclient -->
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore-nio</artifactId>
+                <version>${httpcore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpasyncclient</artifactId>
+                <version>${httpasyncclient.version}</version>
+            </dependency>
+
+            <!-- log -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jcl-over-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jul-to-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>log4j-over-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
+            <!-- unidal -->
+            <dependency>
+                <groupId>org.unidal.framework</groupId>
+                <artifactId>foundation-service</artifactId>
+                <version>${foundation-service.version}</version>
+            </dependency>
+
+            <!-- tomcat related, in line with the version used by tars -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-jasper</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-logging-juli</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-jdbc</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-juli</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-jsp-api</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-tomcat</artifactId>
+                <version>${starter-tomcat.version}</version>
+            </dependency>
+
+            <!-- others -->
+            <dependency>
+                <groupId>org.apache.thrift</groupId>
+                <artifactId>libthrift</artifactId>
+                <version>${libthrift.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>${netty4.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.xerial.snappy</groupId>
+                <artifactId>snappy-java</artifactId>
+                <version>${snappy-java.version}</version>
+            </dependency>
+
+            <!-- test -->
+            <!-- Remove test related when credis changes junit scope to test -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>${hamcrest-core.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Qunar TC -->
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>tcdev</artifactId>
+                <version>${qunar-tcdev.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
