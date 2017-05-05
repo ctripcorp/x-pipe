@@ -24,7 +24,10 @@ public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 	
 	private String clusterName1 = "cluster1";
 	private String clusterName2 = "cluster2";
-	
+
+	private String dcA = dcNames[0];
+	private String dcB = dcNames[1];
+
 	@Override
 	public String prepareDatas() {
 		try {
@@ -38,15 +41,15 @@ public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 	@Test
 	@DirtiesContext
 	public void testFindNonMigratingClusterMeta() {
-		ClusterMeta clusterMetaA = clusterMetaService.getClusterMeta("A", clusterName1);
-		ClusterMeta clusterMetaB = clusterMetaService.getClusterMeta("B", clusterName1);
+		ClusterMeta clusterMetaA = clusterMetaService.getClusterMeta(dcA, clusterName1);
+		ClusterMeta clusterMetaB = clusterMetaService.getClusterMeta(dcB, clusterName1);
 		ClusterTbl cluster = clusterService.find(clusterName1);
 		
 		Assert.assertEquals(ClusterStatus.Normal.toString(), cluster.getStatus());
 		Assert.assertNotNull(clusterMetaA);
 		Assert.assertNotNull(clusterMetaB);
-		Assert.assertEquals("A", clusterMetaA.getActiveDc());
-		Assert.assertEquals("A", clusterMetaB.getActiveDc());
+		Assert.assertEquals(dcA, clusterMetaA.getActiveDc());
+		Assert.assertEquals(dcA, clusterMetaB.getActiveDc());
 	}
 	
 	@Test
@@ -55,10 +58,10 @@ public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 		ClusterTbl cluster = clusterService.find(clusterName2);
 		Assert.assertEquals(ClusterStatus.Migrating.toString(), cluster.getStatus());
 		
-		ClusterMeta clusterMetaA = clusterMetaService.getClusterMeta("A", clusterName2);
-		ClusterMeta clusterMetaB = clusterMetaService.getClusterMeta("B", clusterName2);
-		Assert.assertEquals("A", clusterMetaA.getActiveDc());
-		Assert.assertEquals("B", clusterMetaB.getActiveDc());
+		ClusterMeta clusterMetaA = clusterMetaService.getClusterMeta(dcA, clusterName2);
+		ClusterMeta clusterMetaB = clusterMetaService.getClusterMeta(dcB, clusterName2);
+		Assert.assertEquals(dcA, clusterMetaA.getActiveDc());
+		Assert.assertEquals(dcB, clusterMetaB.getActiveDc());
 	}
 	
 	@Test
@@ -69,13 +72,13 @@ public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 		ClusterTbl clusterB = clusterService.find(clusterName2);
 		Assert.assertEquals(ClusterStatus.Migrating.toString(), clusterB.getStatus());
 		
-		DcMeta dcAMeta = dcMetaService.getDcMeta("A");
-		DcMeta dcBMeta = dcMetaService.getDcMeta("B");
+		DcMeta dcAMeta = dcMetaService.getDcMeta(dcA);
+		DcMeta dcBMeta = dcMetaService.getDcMeta(dcB);
 		
-		Assert.assertEquals("A", dcAMeta.findCluster(clusterName1).getActiveDc());
-		Assert.assertEquals("A", dcBMeta.findCluster(clusterName1).getActiveDc());
-		Assert.assertEquals("A", dcAMeta.findCluster(clusterName2).getActiveDc());
-		Assert.assertEquals("B", dcBMeta.findCluster(clusterName2).getActiveDc());
+		Assert.assertEquals(dcA, dcAMeta.findCluster(clusterName1).getActiveDc());
+		Assert.assertEquals(dcA, dcBMeta.findCluster(clusterName1).getActiveDc());
+		Assert.assertEquals(dcA, dcAMeta.findCluster(clusterName2).getActiveDc());
+		Assert.assertEquals(dcB, dcBMeta.findCluster(clusterName2).getActiveDc());
 		
 	}
 }

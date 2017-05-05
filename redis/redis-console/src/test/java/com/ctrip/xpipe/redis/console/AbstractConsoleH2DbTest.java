@@ -31,8 +31,8 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest{
 	
 	public static final String TABLE_STRUCTURE = "sql/h2/xpipedemodbtables.sql";
 	public static final String TABLE_DATA = "sql/h2/xpipedemodbinitdata.sql";
-	
-	
+	protected String []dcNames = new String[]{"jq", "oy"};
+
 	@BeforeClass
 	public static void setUp() {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);

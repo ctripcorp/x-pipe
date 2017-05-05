@@ -34,7 +34,6 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
     @Autowired
     private RedisService redisService;
 
-    protected String []dcNames = new String[]{"A", "B"};
     private Long []dcIds = new Long[]{1L, 2L};
     protected String clusterName = "cluster1";
     protected String []shardNames = new String[]{"shard1", "shard2"};
