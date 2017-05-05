@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console;
 
 
+import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
 import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
@@ -31,6 +32,7 @@ import org.junit.runner.RunWith;
 @RunWith(Suite.class)
 @SuiteClasses({
 
+	HealthStatusTest.class,
 	RedisServiceImplTest.class,
 	KeepercontainerServiceImplTest.class,
 	MigrationStatusTest.class,

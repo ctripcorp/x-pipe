@@ -22,7 +22,7 @@ public class AppTest extends AbstractConsoleH2DbTest {
 	@Before
 	public void startUp() throws SQLException {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
-		System.setProperty(HealthChecker.ENABLED, "false");
+		System.setProperty(HealthChecker.ENABLED, "true");
 		startH2Server();
 	}
 

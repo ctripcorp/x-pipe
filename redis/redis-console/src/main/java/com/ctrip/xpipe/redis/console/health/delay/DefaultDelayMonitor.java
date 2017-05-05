@@ -91,12 +91,12 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 		}
 
 		for (final HostPort hostPort : samplePlan.getHostPort2SampleResult().keySet()) {
-			RedisSession session = findRedisSession(hostPort.getHost(), hostPort.getPort());
-			session.subscribeIfAbsent(CHECK_CHANNEL, new RedisPubSubAdapter<String, String>() {
+				RedisSession session = findRedisSession(hostPort.getHost(), hostPort.getPort());
+				session.subscribeIfAbsent(CHECK_CHANNEL, new RedisPubSubAdapter<String, String>() {
 
-				@Override
-				public void message(String channel, String message) {
-					addInstanceResult(Long.parseLong(message, 16), hostPort.getHost(), hostPort.getPort(), null);
+					@Override
+					public void message(String channel, String message) {
+						addInstanceResult(Long.parseLong(message, 16), hostPort.getHost(), hostPort.getPort(), null);
 				}
 
 			});

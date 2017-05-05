@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.core.entity;
 
+import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.utils.ObjectUtils;
+
 /**
  * @author wenchao.meng
  *
@@ -30,4 +33,20 @@ public interface Redis {
 	   Redis setSurvive(Boolean survive);
 	   
 	   boolean isSurvive();
+
+	   default boolean equalsWithIpPort(HostPort hostPort){
+
+	   		if(!ObjectUtils.equals(getIp(), hostPort.getHost())){
+	   			return false;
+			}
+
+			if(!ObjectUtils.equals(getPort(), hostPort.getPort())) {
+				return false;
+			}
+			return true;
+	   }
+
+	   default String desc(){
+	   	return String.format("%s(%s:%d)", getClass().getSimpleName(), getIp(), getPort());
+	   }
 }

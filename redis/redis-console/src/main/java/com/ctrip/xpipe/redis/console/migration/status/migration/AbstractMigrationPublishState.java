@@ -4,8 +4,8 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.ctrip.xpipe.api.migration.MigrationPublishService;
-import com.ctrip.xpipe.api.migration.MigrationPublishService.MigrationPublishResult;
+import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -20,13 +20,13 @@ import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException
  */
 public abstract class AbstractMigrationPublishState extends AbstractMigrationState {
 
-	protected MigrationPublishService publishService = MigrationPublishService.DEFAULT;
+	protected OuterClientService publishService = OuterClientService.DEFAULT;
 	
 	public AbstractMigrationPublishState(MigrationCluster holder, MigrationStatus status) {
 		super(holder, status);
 	}
 	
-	public MigrationPublishService getMigrationPublishService() {
+	public OuterClientService getMigrationPublishService() {
 		return publishService;
 	}
 

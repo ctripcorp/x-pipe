@@ -26,4 +26,9 @@ public interface ConsoleConfig extends CoreConfig {
 	int getRedisReplicationHealthCheckInterval();
 	
 	String getHickwallAddress();
+
+	int getHealthyDelayMilli();
+
+	int getDownAfterCheckNums();
+
 }

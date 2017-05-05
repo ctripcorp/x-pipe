@@ -13,11 +13,11 @@
 		<entity-ref name="cluster" type="map" />
 		<entity-ref name="sentinel" type="map" />
 	</entity>
-	<entity name="cluster" implements="java.io.Serializable">
+	<entity name="cluster" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Cluster">
 		<attribute name="id" key="true" />
 		<entity-ref name="shard" type="map" />
 	</entity>
-	<entity name="shard" implements="java.io.Serializable">
+	<entity name="shard" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Shard">
 		<attribute name="id" key="true" />
 		<attribute name="sentinelId" value-type="Long"/>
 	</entity>	

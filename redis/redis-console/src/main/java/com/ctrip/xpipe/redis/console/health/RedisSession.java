@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.lambdaworks.redis.RedisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,18 +87,23 @@ public class RedisSession {
 
 	public void ping(final PingCallback callback) {
 
-		final CompletableFuture<String> future = findOrCreateNonSubscribeConnection().async().ping().toCompletableFuture();
-		future.thenRun(new Runnable() {
+		try{
+			final CompletableFuture<String> future = findOrCreateNonSubscribeConnection().async().ping().toCompletableFuture();
+			future.thenRun(new Runnable() {
 
-			@Override
-			public void run() {
-				if (future.isDone()) {
-					callback.pong(true, future.getNow(null));
-				} else {
-					callback.pong(false, null);
+				@Override
+				public void run() {
+					if (future.isDone()) {
+						callback.pong(true, future.getNow(null));
+					} else {
+						callback.pong(false, null);
+					}
 				}
-			}
-		});
+			});
+		}catch (RedisException e){
+			callback.pong(false, e.getMessage());
+			log.error("[ping]" + hostPort, e);
+		}
 	}
 
 	public  void role(RollCallback callback){

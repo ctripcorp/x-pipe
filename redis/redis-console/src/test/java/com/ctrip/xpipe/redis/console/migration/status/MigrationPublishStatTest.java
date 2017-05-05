@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status;
 
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.web.client.ResourceAccessException;
 
-import com.ctrip.xpipe.api.migration.MigrationPublishService;
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
@@ -84,7 +85,7 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 	public void publishFailWithNetworkProblemTest() {
 		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
 		MigrationPublishState spy = spy(stat);
-		doReturn(new MigrationPublishService() {
+		doReturn(new OuterClientService() {
 			
 			@Override
 			public int getOrder() {
@@ -96,7 +97,17 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 					InetSocketAddress newMaster) {
 				throw new ResourceAccessException("test");
 			}
-			
+
+			@Override
+			public void markInstanceUp(HostPort hostPort) throws Exception {
+
+			}
+
+			@Override
+			public void markInstanceDown(HostPort hostPort) throws Exception {
+
+			}
+
 			@Override
 			public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName,
 					List<InetSocketAddress> newMasters) {
@@ -113,7 +124,7 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 	public void publishFailWithReturnFail() {
 		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
 		MigrationPublishState spy = spy(stat);
-		doReturn(new MigrationPublishService() {
+		doReturn(new OuterClientService() {
 			
 			@Override
 			public int getOrder() {
@@ -127,7 +138,17 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 				res.setSuccess(false);
 				return res;
 			}
-			
+
+			@Override
+			public void markInstanceUp(HostPort hostPort) throws Exception {
+
+			}
+
+			@Override
+			public void markInstanceDown(HostPort hostPort) throws Exception {
+
+			}
+
 			@Override
 			public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName,
 					List<InetSocketAddress> newMasters) {

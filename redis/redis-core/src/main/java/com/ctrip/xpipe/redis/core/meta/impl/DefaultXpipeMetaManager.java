@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import com.ctrip.xpipe.metric.HostPort;
 import org.unidal.tuple.Pair;
 import org.xml.sax.SAXException;
 
@@ -45,7 +46,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		
 	}
 	
-	private DefaultXpipeMetaManager(XpipeMeta xpipeMeta){
+	public DefaultXpipeMetaManager(XpipeMeta xpipeMeta){
 		this.xpipeMeta = xpipeMeta;
 	}
 
@@ -239,6 +240,28 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			}
 		}
 		return clone(result);
+	}
+
+	@Override
+	public ShardMeta findShardMeta(HostPort hostPort) {
+
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
+				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+					for(RedisMeta redisMeta : shardMeta.getRedises()){
+						if(redisMeta.equalsWithIpPort(hostPort)){
+							return shardMeta;
+						}
+					}
+					for(KeeperMeta keeperMeta: shardMeta.getKeepers()){
+						if(keeperMeta.equalsWithIpPort(hostPort)){
+							return shardMeta;
+						}
+					}
+				}
+			}
+		}
+		return null;
 	}
 
 	@Override

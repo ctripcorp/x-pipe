@@ -454,7 +454,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		transactionMonitor.logTransactionSwallowException("setRedisKeeperServerState", name, new Task() {
 			
 			@Override
-			public void go() throws Throwable {
+			public void go() throws Exception {
 				
 				RedisKeeperServerState previous = DefaultRedisKeeperServer.this.redisKeeperServerState;
 				logger.info("[setRedisKeeperServerState]{}, {}->{}", this, previous, redisKeeperServerState);

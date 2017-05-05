@@ -7,6 +7,6 @@ package com.ctrip.xpipe.api.monitor;
  */
 public interface Task {
 
-	void go() throws Throwable;
+	void go() throws Exception;
 	
 }

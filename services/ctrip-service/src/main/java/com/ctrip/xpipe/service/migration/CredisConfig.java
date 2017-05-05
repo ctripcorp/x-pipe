@@ -10,7 +10,7 @@ import com.ctrip.xpipe.api.config.Config;
  *
  * Dec 22, 2016
  */
-public enum MigrationPublishServiceConfig {
+public enum CredisConfig {
 	INSTANCE;
 	
 	public static final String KEY_CREDIS_SERVEICE_ADDRESS = "credis.service.address";

@@ -61,17 +61,26 @@ public class DefaultPingMonitor extends BaseSampleMonitor<InstancePingResult> im
 	}
 
 	private void samplePing(final long startNanoTime, BaseSamplePlan<InstancePingResult> plan) {
+
 		for (Entry<HostPort, InstancePingResult> entry : plan.getHostPort2SampleResult().entrySet()) {
+
 			final HostPort hostPort = entry.getKey();
-			RedisSession session = findRedisSession(hostPort.getHost(), hostPort.getPort());
+			log.debug("[ping]{}", hostPort);
 
-			session.ping(new PingCallback() {
+			try{
+				RedisSession session = findRedisSession(hostPort.getHost(), hostPort.getPort());
+				session.ping(new PingCallback() {
 
-				@Override
-				public void pong(boolean pong, String pongMsg) {
-					addInstanceResult(startNanoTime, hostPort.getHost(), hostPort.getPort(), null);
-				}
-			});
+					@Override
+					public void pong(boolean pong, String pongMsg) {
+
+						log.debug("[pong]{}", hostPort);
+						addInstanceResult(startNanoTime, hostPort.getHost(), hostPort.getPort(), null);
+					}
+				});
+			}catch (Exception e){
+				log.error("[samplePing]" + hostPort, e);
+			}
 		}
 	}
 
@@ -91,6 +100,8 @@ public class DefaultPingMonitor extends BaseSampleMonitor<InstancePingResult> im
 					}
 
 					for (RedisMeta redisMeta : shardMeta.getRedises()) {
+
+						log.debug("[generatePlan]{}", redisMeta.desc());
 						plan.addRedis(dcMeta.getId(), redisMeta, new InstancePingResult());
 					}
 				}

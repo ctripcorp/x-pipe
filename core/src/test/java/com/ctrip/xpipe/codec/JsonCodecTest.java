@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.api.migration.MigrationPublishService.MigrationPublishResult;
+import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
 
 /**
  * @author wenchao.meng

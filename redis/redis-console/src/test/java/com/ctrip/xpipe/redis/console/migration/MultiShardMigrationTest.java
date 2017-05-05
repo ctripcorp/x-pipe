@@ -109,6 +109,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
 		Assert.assertEquals(2, currentCluster.getActivedcId());
 		Assert.assertEquals(MigrationStatus.Success.toString(), migrationCluster.getStatus().toString());
+
 		for(MigrationShard migrationShard : migrationCluster.getMigrationShards()) {
 			Assert.assertEquals(ShardMigrationResultStatus.SUCCESS,migrationShard.getShardMigrationResult().getStatus());
 			Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));

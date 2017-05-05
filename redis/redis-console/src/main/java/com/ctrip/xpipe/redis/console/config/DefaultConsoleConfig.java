@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
  *         Oct 19, 2016
  */
 public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleConfig {
+
 	public static final String KEY_DATASOURCE = "datasource";
 	public static final String KEY_CONSOLE_NOTIFY_RETRY_TIMES = "console.notify.retry.times";
 	public static final String KEY_CONSOLE_NOTIFY_THREADS = "console.notify.threads";
@@ -20,6 +21,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	public static final String KEY_USER_ACCESS_WHITE_LIST = "user.access.white.list";
 	public static final String KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL = "redis.replication.health.check.interval";
 	public static final String KEY_HICKWALL_ADDRESS = "console.hickwall.address";
+	public static final String KEY_HEALTHY_DELAY = "console.healthy.delay";
+	public static final String KEY_DOWN_AFTER_CHECK_NUMS = "console.down.after.checknums";
+
 
 	@Override
 	public String getDatasource() {
@@ -54,12 +58,22 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	
 	@Override
 	public int getRedisReplicationHealthCheckInterval() {
-		return getIntProperty(KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL, 10000);
+		return getIntProperty(KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL, 2000);
 	}
 	
 	@Override
 	public String getHickwallAddress() {
 		return getProperty(KEY_HICKWALL_ADDRESS,"");
+	}
+
+	@Override
+	public int getHealthyDelayMilli() {
+		return getIntProperty(KEY_HEALTHY_DELAY, 5000);
+	}
+
+	@Override
+	public int getDownAfterCheckNums() {
+		return getIntProperty(KEY_DOWN_AFTER_CHECK_NUMS, 5);
 	}
 
 }

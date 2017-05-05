@@ -17,7 +17,7 @@ public class CtripDcMapper implements DcMapper{
     @Override
     public String getDc(String dcName) {
 
-        Map<String, String> idsMappingRules = MigrationPublishServiceConfig.INSTANCE.getCredisIdcMappingRules();
+        Map<String, String> idsMappingRules = CredisConfig.INSTANCE.getCredisIdcMappingRules();
         return doMapping(dcName, idsMappingRules);
     }
 
@@ -33,7 +33,7 @@ public class CtripDcMapper implements DcMapper{
     @Override
     public String reverse(String otherDcName) {
 
-        Map<String, String> mappingRules = MigrationPublishServiceConfig.INSTANCE.getCredisIdcMappingRules();
+        Map<String, String> mappingRules = CredisConfig.INSTANCE.getCredisIdcMappingRules();
         return doReverse(otherDcName, mappingRules);
     }
 

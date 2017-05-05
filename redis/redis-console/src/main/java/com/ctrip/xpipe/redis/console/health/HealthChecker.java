@@ -80,7 +80,7 @@ public class HealthChecker {
 				try {
 					sampleMonitor.startSample(plan);
 				} catch (Exception e) {
-					log.error("Error sample {} of cluster:{} shard:{}", sampleMonitor, plan.getClusterId(), plan.getShardId(), e);
+					log.error(String.format("Error sample %s of cluster:%s shard:%s", sampleMonitor, plan.getClusterId(), plan.getShardId()), e);
 				}
 			}
 		}

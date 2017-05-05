@@ -1,13 +1,18 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
+import com.sun.org.apache.bcel.internal.generic.DCMPG;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.unidal.tuple.Pair;
 
 import javax.annotation.PostConstruct;
 import java.util.LinkedList;
@@ -48,23 +53,65 @@ public class DefaultMetaCache implements  MetaCache{
             protected void doRun() throws Exception {
                 loadCache();
             }
-        }, 5, loadIntervalSeconds, TimeUnit.SECONDS);
+        }, 1, loadIntervalSeconds, TimeUnit.SECONDS);
     }
 
     private void loadCache() {
 
         List<DcTbl> dcs = dcService.findAllDcNames();
-
         List<DcMeta> dcMetas = new LinkedList<>();
         for (DcTbl dc : dcs) {
             dcMetas.add(dcMetaService.getDcMeta(dc.getDcName()));
         }
-
-            this.dcMetas = dcMetas;
+        this.dcMetas = dcMetas;
     }
 
     @Override
     public List<DcMeta> getDcMetas() {
         return dcMetas;
     }
+
+    @Override
+    public XpipeMeta getXpipeMeta() {
+
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        for(DcMeta dcMeta : dcMetas){
+            xpipeMeta.addDc(dcMeta);
+        }
+        return xpipeMeta;
+    }
+
+    @Override
+    public boolean inBackupDc(HostPort hostPort) {
+
+        XpipeMeta xpipeMeta = getXpipeMeta();
+
+        XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(xpipeMeta);
+        ShardMeta shardMeta = xpipeMetaManager.findShardMeta(hostPort);
+        if(shardMeta == null){
+            throw new IllegalStateException("unfound shard for instance:" + hostPort);
+        }
+        String instanceInDc = shardMeta.parent().parent().getId();
+        String activeDc = shardMeta.getActiveDc();
+        return !activeDc.equalsIgnoreCase(instanceInDc);
+    }
+
+    @Override
+    public HostPort findMasterInSameShard(HostPort hostPort) {
+
+        XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(getXpipeMeta());
+
+        ShardMeta currentShard = xpipeMetaManager.findShardMeta(hostPort);
+        if(currentShard == null){
+            throw new IllegalStateException("unfound shard for instance:" + hostPort);
+        }
+
+        String clusterName = currentShard.parent().getId();
+        String shardName = currentShard.getId();
+
+        Pair<String, RedisMeta> redisMaster = xpipeMetaManager.getRedisMaster(clusterName, shardName);
+        RedisMeta redisMeta = redisMaster.getValue();
+        return new HostPort(redisMeta.getIp(), redisMeta.getPort());
+    }
+
 }

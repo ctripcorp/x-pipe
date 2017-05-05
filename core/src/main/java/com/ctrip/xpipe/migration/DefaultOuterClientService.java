@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.migration;
 
+import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.utils.DateTimeUtils;
+
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Date;
@@ -10,15 +13,26 @@ import java.util.List;
  *
  *         Dec 22, 2016
  */
-public class DefaultMigrationPublishService extends AbstractMigrationPublishService {
+public class DefaultOuterClientService extends AbstractOuterClientService {
+
+	@Override
+	public void markInstanceUp(HostPort hostPort) throws Exception {
+		logger.info("[markInstanceUp]{}", hostPort);
+	}
+
+	@Override
+	public void markInstanceDown(HostPort hostPort) throws Exception {
+		logger.info("[markInstanceDown]{}", hostPort);
+
+	}
 
 	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) {
 		logger.info("[doMigrationPublish]Cluster:{}, NewPrimaryDc:{}, Masters:{}", clusterName, primaryDcName,
 				newMasters);
-		String startTime = sdf.format(new Date());
+		String startTime = DateTimeUtils.currentTimeAsString();
 		MigrationPublishResult res = new MigrationPublishResult("default-addr", clusterName, primaryDcName, newMasters);
-		String endTime = sdf.format(new Date());
+		String endTime = DateTimeUtils.currentTimeAsString();
 		res.setSuccess(true);res.setMessage("default-success");
 		res.setStartTime(startTime);
 		res.setEndTime(endTime);
@@ -28,11 +42,12 @@ public class DefaultMigrationPublishService extends AbstractMigrationPublishServ
 	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
 			InetSocketAddress newMaster) {
+
 		logger.info("[doMigrationPublish]Cluster:{}, Shard:{}, NewPrimaryDc:{}, NewMaster:{}", clusterName, shardName,
 				primaryDcName, newMaster);
-		String startTime = sdf.format(new Date());
+		String startTime = DateTimeUtils.currentTimeAsString();;
 		MigrationPublishResult res = new MigrationPublishResult("default-addr", clusterName, primaryDcName, Arrays.asList(newMaster));
-		String endTime = sdf.format(new Date());
+		String endTime = DateTimeUtils.currentTimeAsString();;
 		res.setSuccess(true);res.setMessage("default-success");
 		res.setStartTime(startTime);
 		res.setEndTime(endTime);

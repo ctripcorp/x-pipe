@@ -5,21 +5,28 @@ import java.util.List;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.utils.ServicesUtil;
 
 /**
+ * for client router system
  * @author shyin
  *
  * Dec 22, 2016
  */
-public interface MigrationPublishService extends Ordered{
+public interface OuterClientService extends Ordered{
 	
-	MigrationPublishService DEFAULT = ServicesUtil.getMigrationPublishService();
+	OuterClientService DEFAULT = ServicesUtil.getOuterClientService();
+
+	void markInstanceUp(HostPort hostPort) throws Exception;
+
+	void markInstanceDown(HostPort hostPort) throws Exception;
+
+	MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) throws Exception;
 	
-	MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters);
-	
-	MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName, InetSocketAddress newMaster);
-	
+	MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName, InetSocketAddress newMaster) throws Exception;
+
+
 	class MigrationPublishResult {
 		private boolean Success;
 		private String Message;
