@@ -23,6 +23,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	public static final String KEY_HICKWALL_ADDRESS = "console.hickwall.address";
 	public static final String KEY_HEALTHY_DELAY = "console.healthy.delay";
 	public static final String KEY_DOWN_AFTER_CHECK_NUMS = "console.down.after.checknums";
+	public static final String KEY_CACHE_REFERSH_INTERVAL = "console.cache.refresh.interval";
+
 
 
 	@Override
@@ -74,6 +76,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	@Override
 	public int getDownAfterCheckNums() {
 		return getIntProperty(KEY_DOWN_AFTER_CHECK_NUMS, 5);
+	}
+
+	@Override
+	public int getCacheRefreshInterval() {
+		return getIntProperty(KEY_CACHE_REFERSH_INTERVAL, 1000);
 	}
 
 }

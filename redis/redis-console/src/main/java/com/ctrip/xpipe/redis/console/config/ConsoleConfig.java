@@ -31,4 +31,6 @@ public interface ConsoleConfig extends CoreConfig {
 
 	int getDownAfterCheckNums();
 
+	int getCacheRefreshInterval();
+
 }

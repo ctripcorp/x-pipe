@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
@@ -30,13 +33,16 @@ import java.util.concurrent.TimeUnit;
 @Lazy
 public class DefaultMetaCache implements  MetaCache{
 
-    private int loadIntervalSeconds = 30;
+    private int refreshIntervalMilli = 2000;
 
     @Autowired
     private DcMetaService dcMetaService;
 
     @Autowired
     private DcService dcService;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     private List<DcMeta> dcMetas;
 
@@ -48,22 +54,35 @@ public class DefaultMetaCache implements  MetaCache{
     @PostConstruct
     public void postConstruct(){
 
+
+        refreshIntervalMilli = consoleConfig.getCacheRefreshInterval();
+
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
                 loadCache();
             }
-        }, 1, loadIntervalSeconds, TimeUnit.SECONDS);
+        }, 1000, refreshIntervalMilli, TimeUnit.MILLISECONDS);
     }
 
-    private void loadCache() {
+    private void loadCache() throws Exception {
 
-        List<DcTbl> dcs = dcService.findAllDcNames();
-        List<DcMeta> dcMetas = new LinkedList<>();
-        for (DcTbl dc : dcs) {
-            dcMetas.add(dcMetaService.getDcMeta(dc.getDcName()));
-        }
-        this.dcMetas = dcMetas;
+
+        TransactionMonitor.DEFAULT.logTransaction("MetaCache", "load", new Task() {
+
+            @Override
+            public void go() throws Exception {
+
+                List<DcTbl> dcs = dcService.findAllDcNames();
+                List<DcMeta> dcMetas = new LinkedList<>();
+                for (DcTbl dc : dcs) {
+                    dcMetas.add(dcMetaService.getDcMeta(dc.getDcName()));
+                }
+
+                DefaultMetaCache.this.dcMetas = dcMetas;
+            }
+        });
+
     }
 
     @Override
