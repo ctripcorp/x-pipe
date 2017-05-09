@@ -14,8 +14,6 @@ import java.util.List;
  */
 public interface MetaCache {
 
-    List<DcMeta> getDcMetas();
-
     XpipeMeta getXpipeMeta();
 
     boolean inBackupDc(HostPort hostPort);

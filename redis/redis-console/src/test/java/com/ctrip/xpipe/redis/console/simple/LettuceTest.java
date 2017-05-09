@@ -29,7 +29,7 @@ public class LettuceTest extends AbstractConsoleTest {
 
 	private String channel = "testChannel";
 	private String host = "localhost";
-	private int port = 1111;
+	private int port = 6379;
 
 	private ClientResources clientResources;
 	private RedisURI redisURI;
@@ -101,6 +101,8 @@ public class LettuceTest extends AbstractConsoleTest {
 			}
 		});
 
+
+		publish();
 
 
 	}

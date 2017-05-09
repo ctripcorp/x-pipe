@@ -11,6 +11,9 @@ import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import org.springframework.web.client.RestOperations;
 
 import com.ctrip.xpipe.spring.RestTemplateFactory;
@@ -29,7 +32,7 @@ public class CredisService extends AbstractOuterClientService {
 	private CredisConfig credisConfig = CredisConfig.INSTANCE;
 
 	private final String TYPE = "credis";
-	
+
 	@Override
 	public int getOrder() {
 		return HIGHEST_PRECEDENCE;
@@ -38,6 +41,17 @@ public class CredisService extends AbstractOuterClientService {
 	@Override
 	public void markInstanceUp(HostPort hostPort) throws Exception {
 		doMarkInstance(hostPort, true);
+	}
+
+	@Override
+	public boolean isInstanceUp(HostPort hostPort) throws Exception {
+
+		GetInstanceResult instance = getInstance(hostPort);
+
+		if(instance.isSuccess()){
+			return instance.getResult().isCanRead();
+		}
+		throw new IllegalStateException("[isInstanceUp]" + hostPort + "," + instance.getMessage());
 	}
 
 	@Override
@@ -101,6 +115,18 @@ public class CredisService extends AbstractOuterClientService {
 		return DcMapper.INSTANCE.getDc(dc);
 	}
 
+	public GetInstanceResult getInstance(HostPort hostPort) throws Exception {
+
+		return catTransactionMonitor.logTransaction(TYPE, String.format("getInstance"), new Callable<GetInstanceResult>() {
+			@Override
+			public GetInstanceResult call() throws Exception {
+				String address = CREDIS_SERVICE.Query_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
+				GetInstanceResult result = restOperations.getForObject(address + "?ip={ip}&port={port}", GetInstanceResult.class, hostPort.getHost(), hostPort.getPort());
+				return result;
+			}
+		});
+	}
+
 
 	public static class MarkInstanceRequest{
 
@@ -153,5 +179,91 @@ public class CredisService extends AbstractOuterClientService {
 			return String.format("success:%s, message:%s", success, message);
 		}
 	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class GetInstanceResult{
+
+		private boolean success;
+
+		private String message;
+
+		private InstanceStatus result;
+
+		public InstanceStatus getResult() {
+			return result;
+		}
+
+		public void setResult(InstanceStatus result) {
+			this.result = result;
+		}
+		public boolean isSuccess() {
+			return success;
+		}
+
+		public void setSuccess(boolean success) {
+			this.success = success;
+		}
+
+		public String getMessage() {
+			return message;
+		}
+
+		public void setMessage(String message) {
+			this.message = message;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("success:%s, message:%s, result:%s", success, message, result);
+		}
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class InstanceStatus{
+
+		private boolean canRead;
+		private String  env;
+		private String IPAddress;
+		private int port;
+
+		public int getPort() {
+			return port;
+		}
+
+		public void setPort(int port) {
+			this.port = port;
+		}
+
+		public String getIPAddress() {
+
+			return IPAddress;
+		}
+
+		public void setIPAddress(String IPAddress) {
+			this.IPAddress = IPAddress;
+		}
+
+		public String getEnv() {
+			return env;
+		}
+
+		public void setEnv(String env) {
+			this.env = env;
+		}
+
+		public boolean isCanRead() {
+			return canRead;
+		}
+
+		public void setCanRead(boolean canRead) {
+			this.canRead = canRead;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("canRead:%s, env:%s, %s:%d", canRead, env, IPAddress, port);
+		}
+	}
+
 
 }

@@ -24,6 +24,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	public static final String KEY_HEALTHY_DELAY = "console.healthy.delay";
 	public static final String KEY_DOWN_AFTER_CHECK_NUMS = "console.down.after.checknums";
 	public static final String KEY_CACHE_REFERSH_INTERVAL = "console.cache.refresh.interval";
+	public static final String KEY_ALERT_WHITE_LIST = "console.alert.whitelist";
 
 
 
@@ -81,6 +82,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	@Override
 	public int getCacheRefreshInterval() {
 		return getIntProperty(KEY_CACHE_REFERSH_INTERVAL, 1000);
+	}
+
+	@Override
+	public String getAlertWhileList() {
+		return getProperty(KEY_ALERT_WHITE_LIST, "");
 	}
 
 }

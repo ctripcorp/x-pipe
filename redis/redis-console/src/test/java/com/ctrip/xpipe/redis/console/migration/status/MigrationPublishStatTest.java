@@ -86,6 +86,7 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
 		MigrationPublishState spy = spy(stat);
 		doReturn(new OuterClientService() {
+
 			
 			@Override
 			public int getOrder() {
@@ -101,6 +102,11 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 			@Override
 			public void markInstanceUp(HostPort hostPort) throws Exception {
 
+			}
+
+			@Override
+			public boolean isInstanceUp(HostPort hostPort) throws Exception {
+				return true;
 			}
 
 			@Override
@@ -142,6 +148,11 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 			@Override
 			public void markInstanceUp(HostPort hostPort) throws Exception {
 
+			}
+
+			@Override
+			public boolean isInstanceUp(HostPort hostPort) throws Exception {
+				return true;
 			}
 
 			@Override

@@ -11,7 +11,11 @@ public interface EventMonitor {
 
     EventMonitor DEFAULT = new CatEventMonitor();
 
+    String ALERT_TYPE = "alert";
+
     void logEvent(String type, String name, long count);
 
     void logEvent(String type, String name);
+
+    void logAlertEvent(String simpleAlertMessage);
 }

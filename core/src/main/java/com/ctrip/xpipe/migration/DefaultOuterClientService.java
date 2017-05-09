@@ -21,6 +21,11 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	}
 
 	@Override
+	public boolean isInstanceUp(HostPort hostPort) throws Exception {
+		return Boolean.parseBoolean(System.getProperty("InstanceUp", "true"));
+	}
+
+	@Override
 	public void markInstanceDown(HostPort hostPort) throws Exception {
 		logger.info("[markInstanceDown]{}", hostPort);
 

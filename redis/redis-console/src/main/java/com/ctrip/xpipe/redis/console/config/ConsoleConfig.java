@@ -33,4 +33,5 @@ public interface ConsoleConfig extends CoreConfig {
 
 	int getCacheRefreshInterval();
 
+	String getAlertWhileList();
 }

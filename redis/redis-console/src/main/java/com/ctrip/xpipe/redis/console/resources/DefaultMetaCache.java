@@ -12,6 +12,8 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 import com.sun.org.apache.bcel.internal.generic.DCMPG;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -34,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 public class DefaultMetaCache implements  MetaCache{
 
     private int refreshIntervalMilli = 2000;
+
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private DcMetaService dcMetaService;
@@ -82,16 +86,19 @@ public class DefaultMetaCache implements  MetaCache{
                 DefaultMetaCache.this.dcMetas = dcMetas;
             }
         });
-
-    }
-
-    @Override
-    public List<DcMeta> getDcMetas() {
-        return dcMetas;
     }
 
     @Override
     public XpipeMeta getXpipeMeta() {
+
+        if(dcMetas == null){
+            try {
+                loadCache();
+            } catch (Exception e) {
+                logger.error("[getXpipeMeta]", e);
+                return null;
+            }
+        }
 
         XpipeMeta xpipeMeta = new XpipeMeta();
         for(DcMeta dcMeta : dcMetas){

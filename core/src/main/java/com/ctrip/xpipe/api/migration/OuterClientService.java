@@ -20,6 +20,8 @@ public interface OuterClientService extends Ordered{
 
 	void markInstanceUp(HostPort hostPort) throws Exception;
 
+	boolean isInstanceUp(HostPort hostPort) throws Exception;
+
 	void markInstanceDown(HostPort hostPort) throws Exception;
 
 	MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) throws Exception;

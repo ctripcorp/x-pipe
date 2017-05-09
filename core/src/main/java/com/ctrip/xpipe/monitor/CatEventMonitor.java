@@ -11,6 +11,8 @@ import com.dianping.cat.message.Event;
  */
 public class CatEventMonitor implements EventMonitor {
 
+    private final String FAIL = "fail";
+
     @Override
     public void logEvent(String type, String name, long count) {
         Cat.logEvent(type, name, Event.SUCCESS, "*count=" + count);
@@ -19,6 +21,11 @@ public class CatEventMonitor implements EventMonitor {
     @Override
     public void logEvent(String type, String name) {
         Cat.logEvent(type, name);
+    }
+
+    @Override
+    public void logAlertEvent(String simpleAlertMessage) {
+        Cat.logEvent(ALERT_TYPE, simpleAlertMessage, FAIL, "");
     }
 
 }

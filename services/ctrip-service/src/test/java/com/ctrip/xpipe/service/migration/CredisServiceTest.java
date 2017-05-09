@@ -20,7 +20,24 @@ import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
  */
 public class CredisServiceTest extends AbstractServiceTest {
 
-	private OuterClientService outerClientService = OuterClientService.DEFAULT;
+	private CredisService outerClientService = (CredisService) OuterClientService.DEFAULT;
+
+	@Test(expected =  IllegalStateException.class)
+	public void testGet() throws Exception {
+
+		CredisService.GetInstanceResult result = outerClientService.getInstance(new HostPort("127.0.0.1", 6379));
+		logger.info("{}", result);
+
+		result = outerClientService.getInstance(new HostPort("127.0.0.1", 63799));
+		logger.info("{}", result);
+
+		logger.info("{}", outerClientService.isInstanceUp(new HostPort("127.0.0.1", 6379)));
+
+		logger.info("{}", outerClientService.isInstanceUp(new HostPort("10.2.24.216", 6379)));
+
+		outerClientService.isInstanceUp(new HostPort("127.0.0.1", 63799));
+
+	}
 
 
 	@Test
