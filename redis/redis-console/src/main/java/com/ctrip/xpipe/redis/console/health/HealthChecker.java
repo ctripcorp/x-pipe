@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -48,13 +49,12 @@ public class HealthChecker {
 
 				while (!Thread.currentThread().isInterrupted()) {
 
-					List<DcMeta> dcsToCheck = metaCache.getDcMetas();
-
 					try {
+						List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 						if(dcsToCheck != null){
 							sampleAll(dcsToCheck);
 						}
-					} catch (Exception e) {
+					} catch (Throwable e) {
 						log.error("Unexpected error when sample all", e);
 					}
 
