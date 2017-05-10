@@ -30,7 +30,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	public DefaultRedisSessionManager() {
 		// ClientResources better be shared among RedisClients
 		clientResources = DefaultClientResources.builder()//
-				.reconnectDelay(Delay.constant(10, TimeUnit.SECONDS))//
+				.reconnectDelay(Delay.constant(1, TimeUnit.SECONDS))//
 				.build();
 	}
 

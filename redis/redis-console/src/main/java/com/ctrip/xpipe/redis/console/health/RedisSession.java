@@ -5,6 +5,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.lambdaworks.redis.RedisException;
+import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,40 +41,57 @@ public class RedisSession {
 		this.hostPort = hostPort;
 	}
 
-	public synchronized void subscribeIfAbsent(String channel, RedisPubSubListener<String, String> listener) {
+	public synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback) {
+
+		RedisConnectionStateListener connectionListener = channelListener(channel);
+
 		if (!subscribConns.containsKey(channel)) {
+
 			try {
-				redis.addListener(new RedisConnectionStateListener() {
-					
+				redis.addListener(connectionListener);
+				StatefulRedisPubSubConnection<String, String> pubSub = redis.connectPubSub();
+				pubSub.addListener(new RedisPubSubAdapter<String, String>() {
+
 					@Override
-					public void onRedisExceptionCaught(RedisChannelHandler<?, ?> connection, Throwable cause) {
-					}
-					
-					@Override
-					public void onRedisDisconnected(RedisChannelHandler<?, ?> connection) {
-						
-					}
-					
-					@SuppressWarnings("unchecked")
-					@Override
-					public void onRedisConnected(RedisChannelHandler<?, ?> connection) {
-						log.debug("[onRedisConnected]{}", connection);
-						if(connection instanceof StatefulRedisPubSubConnection){
-							log.info("[onRedisConnected][subscribe]{},{}", hostPort, channel);
-							StatefulRedisPubSubConnection<String, String>  pubsubConnection = (StatefulRedisPubSubConnection<String, String>)connection;
-							pubsubConnection.async().subscribe(channel);
-						}
-						
+					public void message(String channel, String message) {
+						callback.message(channel, message);
 					}
 				});
-				StatefulRedisPubSubConnection<String, String> pubSub = redis.connectPubSub();
-				pubSub.addListener(listener);
 				subscribConns.put(channel, pubSub);
 			} catch (RuntimeException e) {
-				// connect* will throw exception if zk is down at first connect
+				callback.fail(e);
 				log.warn("Error subscribe to redis {}", hostPort);
+				redis.removeListener(connectionListener);
 			}
 		}
+	}
+
+	private RedisConnectionStateListener channelListener(String channel) {
+
+		return new RedisConnectionStateListener() {
+
+			@Override
+			public void onRedisExceptionCaught(RedisChannelHandler<?, ?> connection, Throwable cause) {
+				log.info("[onRedisExceptionCaught]{}, {}", hostPort, cause);
+			}
+
+			@Override
+			public void onRedisDisconnected(RedisChannelHandler<?, ?> connection) {
+				log.info("[onRedisDisconnected]{}, {}", hostPort, connection);
+			}
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public void onRedisConnected(RedisChannelHandler<?, ?> connection) {
+				log.info("[onRedisConnected]{}, {}", hostPort, connection);
+				if(connection instanceof StatefulRedisPubSubConnection){
+					log.info("[onRedisConnected][subscribe]{},{}", hostPort, channel);
+					StatefulRedisPubSubConnection<String, String>  pubsubConnection = (StatefulRedisPubSubConnection<String, String>)connection;
+					pubsubConnection.async().subscribe(channel);
+				}
+
+			}
+		};
 	}
 
 	public synchronized void publish(String channel, String message) {
@@ -94,14 +112,14 @@ public class RedisSession {
 				@Override
 				public void run() {
 					if (future.isDone()) {
-						callback.pong(true, future.getNow(null));
+						callback.pong(future.getNow(null));
 					} else {
-						callback.pong(false, null);
+						callback.fail(new Exception(" future not done " + future));
 					}
 				}
 			});
 		}catch (RedisException e){
-			callback.pong(false, e.getMessage());
+			callback.fail(e);
 			log.error("[ping]" + hostPort, e);
 		}
 	}
@@ -147,6 +165,13 @@ public class RedisSession {
 	public interface  RollCallback{
 
 		void role(String role);
+
+		void fail(Exception e);
+	}
+
+	public interface SubscribeCallback{
+
+		void message(String channel, String message);
 
 		void fail(Exception e);
 	}

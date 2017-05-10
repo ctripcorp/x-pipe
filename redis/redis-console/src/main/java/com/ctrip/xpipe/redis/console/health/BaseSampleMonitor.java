@@ -36,7 +36,7 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 
 	protected long recordSample(BaseSamplePlan<T> plan) {
 		long nanoTime = System.nanoTime();
-		samples.put(nanoTime, new Sample<>(System.currentTimeMillis(), nanoTime, plan, 2000));
+		samples.put(nanoTime, new Sample<>(System.currentTimeMillis(), nanoTime, plan, 1500));
 		return nanoTime;
 	}
 
@@ -44,10 +44,17 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 		return redisSessionManager.findOrCreateSession(host, port);
 	}
 
-	protected <C> void addInstanceResult(long nanoTime, String host, int port, C context) {
+	protected <C> void addInstanceSuccess(long nanoTime, String host, int port, C context) {
 		Sample<T> sample = samples.get(nanoTime);
 		if (sample != null) {
-			sample.addInstanceResult(host, port, context);
+			sample.addInstanceSuccess(host, port, context);
+		}
+	}
+
+	protected <C> void addInstanceFail(long nanoTime, String host, int port, Throwable th) {
+		Sample<T> sample = samples.get(nanoTime);
+		if (sample != null) {
+			sample.addInstanceFail(host, port, th);
 		}
 	}
 

@@ -12,8 +12,8 @@ public class InstanceRedisMasterResult extends BaseInstanceResult<String>{
 
 
     @Override
-    public void done(long rcvNanoTime, String role) {
-        super.done(rcvNanoTime, role);
+    public void success(long rcvNanoTime, String role) {
+        super.success(rcvNanoTime, role);
     }
 
     public boolean roleIsMaster(){

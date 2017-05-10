@@ -7,6 +7,8 @@ package com.ctrip.xpipe.redis.console.health;
  */
 public interface PingCallback {
 
-	void pong(boolean pong, String pongMsg);
+	void pong(String pongMsg);
+
+	void fail(Throwable th);
 
 }

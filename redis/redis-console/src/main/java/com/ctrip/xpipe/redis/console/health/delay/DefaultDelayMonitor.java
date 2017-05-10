@@ -92,19 +92,25 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 
 		for (final HostPort hostPort : samplePlan.getHostPort2SampleResult().keySet()) {
 				RedisSession session = findRedisSession(hostPort.getHost(), hostPort.getPort());
-				session.subscribeIfAbsent(CHECK_CHANNEL, new RedisPubSubAdapter<String, String>() {
+				session.subscribeIfAbsent(CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
 
 					@Override
 					public void message(String channel, String message) {
-						addInstanceResult(Long.parseLong(message, 16), hostPort.getHost(), hostPort.getPort(), null);
-				}
+						log.debug("[sampleDelay][message]{}, {}", hostPort, message);
+						addInstanceSuccess(Long.parseLong(message, 16), hostPort.getHost(), hostPort.getPort(), null);
+					}
 
-			});
+					@Override
+					public void fail(Exception e) {
+						//nothing to do
+					}
+				});
 
 		}
 
 		RedisSession masterSession = findRedisSession(samplePlan.getMasterHost(), samplePlan.getMasterPort());
 		long startNanoTime = recordSample(samplePlan);
+		log.debug("[sampleDelay][publish]{}:{}", samplePlan.getMasterHost(), samplePlan.getMasterPort());
 		masterSession.publish(CHECK_CHANNEL, Long.toHexString(startNanoTime));
 	}
 

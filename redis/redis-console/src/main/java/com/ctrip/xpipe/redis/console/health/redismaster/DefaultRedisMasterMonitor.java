@@ -41,7 +41,7 @@ public class DefaultRedisMasterMonitor extends BaseSampleMonitor<InstanceRedisMa
         try{
             sampleRole(startNanoTime, plan);
         }catch (Exception e){
-            addInstanceResult(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), Server.SERVER_ROLE.UNKNOWN.toString());
+            addInstanceSuccess(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), Server.SERVER_ROLE.UNKNOWN.toString());
             log.error("[startSample]" + plan, e);
         }
     }
@@ -54,12 +54,12 @@ public class DefaultRedisMasterMonitor extends BaseSampleMonitor<InstanceRedisMa
 
             @Override
             public void role(String role) {
-                addInstanceResult(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), role);
+                addInstanceSuccess(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), role);
             }
 
             @Override
             public void fail(Exception e) {
-                addInstanceResult(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), Server.SERVER_ROLE.UNKNOWN.toString());
+                addInstanceSuccess(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), Server.SERVER_ROLE.UNKNOWN.toString());
             }
         });
     }

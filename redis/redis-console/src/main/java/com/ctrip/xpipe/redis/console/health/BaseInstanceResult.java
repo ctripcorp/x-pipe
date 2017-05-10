@@ -11,16 +11,40 @@ public class BaseInstanceResult<T> {
 
 	protected AtomicLong rcvNanoTime = new AtomicLong();
 	protected T context;
+	protected Throwable failReason;
 
 	public boolean isDone() {
 		return rcvNanoTime.get() > 0;
 	}
 
-	public void done(long rcvNanoTime, T context) {
+	public void success(long rcvNanoTime, T context) {
+
+		if (rcvNanoTime <= 0) {
+			throw new IllegalArgumentException("argument error:" + rcvNanoTime);
+		}
+
 		if (rcvNanoTime > 0) {
 			this.rcvNanoTime.set(rcvNanoTime);
 			this.context = context;
 		}
+	}
+
+	public void fail(long rcvNanoTime, Throwable th){
+
+		if (rcvNanoTime <= 0 || th == null) {
+			throw new IllegalArgumentException("argument error:" + rcvNanoTime + th);
+		}
+
+		this.rcvNanoTime.set(rcvNanoTime);
+		this.failReason = th;
+	}
+
+	public boolean isSuccess(){
+		return !isFail();
+	}
+
+	public boolean isFail(){
+		return this.failReason != null;
 	}
 
 	public long calculateDelay(long publishNanoTime) {

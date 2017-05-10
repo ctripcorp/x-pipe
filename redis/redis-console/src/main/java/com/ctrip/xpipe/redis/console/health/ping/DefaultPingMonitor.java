@@ -43,6 +43,7 @@ public class DefaultPingMonitor extends BaseSampleMonitor<InstancePingResult> im
 	}
 
 	private PingSampleResult converToSampleResult(Sample<InstancePingResult> sample) {
+
 		BaseSamplePlan<InstancePingResult> plan = sample.getSamplePlan();
 		PingSampleResult result = new PingSampleResult(plan.getClusterId(), plan.getShardId());
 
@@ -72,10 +73,13 @@ public class DefaultPingMonitor extends BaseSampleMonitor<InstancePingResult> im
 				session.ping(new PingCallback() {
 
 					@Override
-					public void pong(boolean pong, String pongMsg) {
+					public void pong(String pongMsg) {
+						addInstanceSuccess(startNanoTime, hostPort.getHost(), hostPort.getPort(), null);
+					}
 
-						log.debug("[pong]{}", hostPort);
-						addInstanceResult(startNanoTime, hostPort.getHost(), hostPort.getPort(), null);
+					@Override
+					public void fail(Throwable th) {
+						addInstanceFail(startNanoTime, hostPort.getHost(), hostPort.getPort(), th);
 					}
 				});
 			}catch (Exception e){
