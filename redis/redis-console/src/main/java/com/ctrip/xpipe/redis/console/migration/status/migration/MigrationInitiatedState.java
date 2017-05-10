@@ -17,7 +17,7 @@ public class MigrationInitiatedState extends AbstractMigrationState {
 	}
 
 	@Override
-	public void action() {
+	public void doAction() {
 		// Check cluster status
 		updateAndProcess(nextAfterSuccess(), true);
 	}

@@ -102,22 +102,34 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	@Override
 	@DalTransaction
 	public void updateStat(MigrationState stat) {
-		logger.info("[UpdateStat]{}-{}, {} -> {}",
-				migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus(), stat.getStatus());
+
+		logger.info("[updateStat]{}-{}, {} -> {}",
+				migrationCluster.getEventId(), clusterName(), this.currentState.getStatus(), stat.getStatus());
 		this.currentState = stat;
 
 		MigrationStatus migrationStatus = stat.getStatus();
-		
-		
+
+		String clusterStatus = migrationStatus.getClusterStatus().toString();
+
 		ClusterTbl cluster = getCurrentCluster();
-		cluster.setStatus(migrationStatus.getClusterStatus().toString());
+		cluster.setStatus(clusterStatus);
+		logger.info("[updateStat][updatedb]{}, {}", clusterName(), clusterStatus);
 		getClusterService().update(cluster);
-		
+
+		ClusterTbl newCluster = getClusterService().find(clusterName());
+		logger.info("[updateStat][getdb]{}, {}", clusterName(), newCluster != null ? newCluster.getStatus() : null);
+
+
 		MigrationClusterTbl migrationCluster = getMigrationCluster();
 		migrationCluster.setStatus(migrationStatus.toString());
 		migrationCluster.setEndTime(new Date());
 		getMigrationService().updateMigrationCluster(migrationCluster);
 		
+	}
+
+	@Override
+	public String clusterName() {
+		return getCurrentCluster().getClusterName();
 	}
 
 	@Override

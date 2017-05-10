@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
  *         May 04, 2017
  */
 @Component
+@Lazy
 public class OuterClientServiceProcessor implements HealthEventProcessor{
 
     private OuterClientService outerClientService = OuterClientService.DEFAULT;

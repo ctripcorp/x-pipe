@@ -28,7 +28,7 @@ public class MigrationRollBackState extends AbstractMigrationState {
     }
 
     @Override
-    public void action() {
+    public void doAction() {
     	
     	CountDownLatch latch = new CountDownLatch(getHolder().getMigrationShards().size());
     	StringBuilder errorMessage = new StringBuilder();

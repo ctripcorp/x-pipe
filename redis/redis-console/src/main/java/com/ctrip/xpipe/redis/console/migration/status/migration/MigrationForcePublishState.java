@@ -22,7 +22,7 @@ public class MigrationForcePublishState extends AbstractMigrationMigratingState 
 
 	
 	@Override
-	public void action() {
+	public void doAction() {
 
 		CountDownLatch latch = new CountDownLatch(getHolder().getMigrationShards().size());
 		for(MigrationShard migrationShard : getHolder().getMigrationShards()) {

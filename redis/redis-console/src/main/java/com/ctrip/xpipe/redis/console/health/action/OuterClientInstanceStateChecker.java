@@ -7,6 +7,7 @@ import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -14,6 +15,7 @@ import org.apache.http.conn.util.InetAddressUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
@@ -33,6 +35,7 @@ import static java.lang.System.in;
  *         May 08, 2017
  */
 @Component
+@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class OuterClientInstanceStateChecker {
 
     private Logger logger = LoggerFactory.getLogger(getClass());

@@ -25,15 +25,18 @@ public class MigrationPublishState extends AbstractMigrationPublishState {
 	}
 
 	@Override
-	public void action() {
+	public void doAction() {
+
 		try {
+			logger.info("[action][updateRedisMaster]{}", this);
 			updateRedisMaster();
 		} catch (ResourceNotFoundException e) {
 			logger.error("[action]", e);
 		}
 
+		logger.info("[action][updateDB]{}", this);
 		updateDB();
-		
+
 		if(publish()) {
 			updateAndProcess(nextAfterSuccess(), true);
 		} else {

@@ -34,10 +34,7 @@
         <logger name="org.apache" level="WARN"/>
 
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
-        <logger name="com.ctrip.xpipe.redis.console.monitor.impl.StandaloneStatMonitor" level="DEBUG"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
-		<logger name="com.mchange.v2.c3p0.impl.AbstractPoolBackedDataSource" level="WARN"/>
-        <logger name="com.ctrip.xpipe.redis.console.health.action" level="DEBUG"/>
 
         <root level="INFO">
         	<appender-ref ref="Console"/>

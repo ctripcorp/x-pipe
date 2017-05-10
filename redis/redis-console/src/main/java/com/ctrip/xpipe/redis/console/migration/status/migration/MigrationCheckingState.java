@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.status.migration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
@@ -29,7 +30,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
 	}
 
 	@Override
-	public void action() {
+	public void doAction() {
 		MigrationCluster migrationCluster = getHolder();
 		
 		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
@@ -45,6 +46,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
 
 	@Override
 	public void refresh() {
+
 		int successCnt = 0;
 		List<MigrationShard> migrationShards = getHolder().getMigrationShards();
 		for (MigrationShard migrationShard : migrationShards) {
@@ -54,7 +56,6 @@ public class MigrationCheckingState extends AbstractMigrationState {
 		}
 
 		if (successCnt == migrationShards.size()) {
-			logger.info("[MigrationChecking][success][continue]{}", getHolder().getCurrentCluster().getClusterName());
 			updateAndProcess(nextAfterSuccess(), true);
 		}
 	}

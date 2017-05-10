@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.command.result;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -14,7 +15,7 @@ import org.apache.commons.lang3.tuple.Pair;
 @SuppressWarnings("serial")
 public class ShardMigrationResult  implements Serializable{
 	private ShardMigrationResultStatus status;
-	private Map<ShardMigrationStep, Pair<Boolean, String>> steps = new HashMap<>(6);
+	private Map<ShardMigrationStep, Pair<Boolean, String>> steps = new ConcurrentHashMap<>(6);
 	
 	public ShardMigrationResult() {
 		status = ShardMigrationResultStatus.FAIL;

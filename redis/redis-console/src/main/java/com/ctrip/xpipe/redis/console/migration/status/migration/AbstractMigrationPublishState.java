@@ -32,6 +32,7 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 
 	
 	protected boolean publish() {
+
 		String cluster = getHolder().getCurrentCluster().getClusterName();
 		String newPrimaryDc = getHolder().getClusterDcs().get(getHolder().getMigrationCluster().getDestinationDcId()).getDcName();
 		List<InetSocketAddress> newMasters = new LinkedList<>();

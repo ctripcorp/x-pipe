@@ -19,7 +19,7 @@ public class MigrationMigratingState extends AbstractMigrationMigratingState {
 	}
 
 	@Override
-	public void action() {
+	public void doAction() {
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
 			executors.submit(new AbstractExceptionLogTask() {
 				@Override

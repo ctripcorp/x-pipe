@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * @author shyin
  *
@@ -16,8 +18,10 @@ public abstract class AbstractMigrationState implements MigrationState {
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 
-	protected int migrationWaitTimeSeconds = 120;    
-	
+	protected int migrationWaitTimeSeconds = 120;
+
+	private AtomicBoolean hasContine = new AtomicBoolean(false);
+
 	private MigrationCluster holder;
 	private MigrationStatus status;
 	
@@ -28,7 +32,15 @@ public abstract class AbstractMigrationState implements MigrationState {
 		this.holder = holder;
 		this.status = status;
 	}
-	
+
+	@Override
+	public void action() {
+		hasContine.set(false);
+		doAction();
+	}
+
+	protected abstract void doAction();
+
 	public MigrationCluster getHolder() {
 		return holder;
 	}
@@ -59,10 +71,20 @@ public abstract class AbstractMigrationState implements MigrationState {
 	}
 	
 	public void updateAndProcess(MigrationState stat, boolean continueProcess) {
-		getHolder().updateStat(stat);
-		if(continueProcess) {
-			getHolder().process();
-		} 
+
+		if(hasContine.compareAndSet(false, true)){
+			logger.info("[MigrationChecking][continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
+			getHolder().updateStat(stat);
+			if(continueProcess) {
+				getHolder().process();
+			}
+		}else{
+			logger.info("[MigrationChecking][already continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
+		}
 	}
-	
+
+	@Override
+	public String toString() {
+		return String.format("%s:%s", getClass().getSimpleName(), getHolder() != null ? getHolder().getCurrentCluster().getClusterName() : "");
+	}
 }

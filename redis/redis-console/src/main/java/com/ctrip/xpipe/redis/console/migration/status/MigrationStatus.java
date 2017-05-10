@@ -56,4 +56,5 @@ public enum MigrationStatus {
 	public static boolean isTerminated(MigrationStatus status) {
 		return status.equals(Aborted) || status.equals(Success) || status.equals(ForceEnd);
 	}
+
 }

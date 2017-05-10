@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.health.delay.DelayCollector;
 import com.ctrip.xpipe.redis.console.health.delay.DelaySampleResult;
 import com.ctrip.xpipe.redis.console.health.ping.PingCollector;
@@ -16,6 +17,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -30,6 +32,7 @@ import java.util.concurrent.*;
  *         May 04, 2017
  */
 @Component
+@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class AllMonitorCollector implements PingCollector, DelayCollector{
 
     protected Logger logger = LoggerFactory.getLogger(getClass());

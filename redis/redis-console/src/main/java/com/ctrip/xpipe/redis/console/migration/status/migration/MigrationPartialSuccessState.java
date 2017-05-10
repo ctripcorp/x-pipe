@@ -20,7 +20,7 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
 	}
 
 	@Override
-	public void action() {
+	public void doAction() {
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
 			if(!shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
 				executors.submit(new AbstractExceptionLogTask() {
