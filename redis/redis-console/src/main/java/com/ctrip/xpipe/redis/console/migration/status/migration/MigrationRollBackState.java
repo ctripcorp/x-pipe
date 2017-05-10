@@ -19,8 +19,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class MigrationRollBackState extends AbstractMigrationState {
 
-    private ExecutorService cachedThreadPool = Executors.newCachedThreadPool(XpipeThreadFactory.create("MigrationRollBack"));
-
     public MigrationRollBackState(MigrationCluster holder) {
         super(holder, MigrationStatus.RollBack);
         this.setNextAfterSuccess(new MigrationAbortedState(holder))
@@ -34,7 +32,7 @@ public class MigrationRollBackState extends AbstractMigrationState {
     	StringBuilder errorMessage = new StringBuilder();
     	
         for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
-            cachedThreadPool.submit(new Runnable() {
+            executors.execute(new Runnable() {
                 @Override
                 public void run() {
                 	try{

@@ -5,7 +5,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 
@@ -44,6 +48,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	private DcService dcService;
 	private RedisService redisService;
 	private MigrationService migrationService;
+	private ExecutorService executors;
 
 	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
 			RedisService redisService,MigrationService migrationService) {
@@ -55,7 +60,18 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 		this.redisService = redisService;
 		this.migrationService = migrationService;
 		loadMetaInfo();
+		executors = DefaultExecutorFactory.createAllowCoreTimeout(
+				"Migration-" + clusterName(), shards.size() * 2
+		).createExecutorService();
+
 		setStatus();
+
+	}
+
+
+	@Override
+	public Executor getMigrationExecutor() {
+		return executors;
 	}
 
 	@Override

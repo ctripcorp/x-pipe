@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,14 +20,10 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  */
 public class MigrationCheckingState extends AbstractMigrationState {
 
-	private ExecutorService executors;
-
 	public MigrationCheckingState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Checking);
 		this.setNextAfterSuccess(new MigrationMigratingState(holder))
 			.setNextAfterFail(this);
-
-		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("MigrationChecking"));
 	}
 
 	@Override
@@ -35,7 +32,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
 		
 		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
 		for (final MigrationShard migrationShard : migrationShards) {
-			executors.submit(new AbstractExceptionLogTask() {
+			executors.execute(new AbstractExceptionLogTask() {
 				@Override
 				public void doRun() {
 					migrationShard.doCheck();

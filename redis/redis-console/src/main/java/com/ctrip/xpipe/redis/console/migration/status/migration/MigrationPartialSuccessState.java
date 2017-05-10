@@ -23,7 +23,7 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
 	public void doAction() {
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
 			if(!shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
-				executors.submit(new AbstractExceptionLogTask() {
+				executors.execute(new AbstractExceptionLogTask() {
 					@Override
 					public void doRun() {
 						logger.info("[doMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 

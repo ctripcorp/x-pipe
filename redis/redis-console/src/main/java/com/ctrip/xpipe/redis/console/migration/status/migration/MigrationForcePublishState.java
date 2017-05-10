@@ -26,7 +26,7 @@ public class MigrationForcePublishState extends AbstractMigrationMigratingState 
 
 		CountDownLatch latch = new CountDownLatch(getHolder().getMigrationShards().size());
 		for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
-			executors.submit(new AbstractExceptionLogTask() {
+			executors.execute(new AbstractExceptionLogTask() {
 				@Override
 				public void doRun() {
 					logger.info("[doOtherDcMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 

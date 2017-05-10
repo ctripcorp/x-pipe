@@ -1,5 +1,6 @@
 package com.ctrip.xpipe;
 
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactoryTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -65,7 +66,8 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	KeyedOneThreadTaskExecutorTest.class,
 	DefaultControllableFileTest.class,
 	SizeControllableFileTest.class,
-	UrlUtilsTest.class
+	UrlUtilsTest.class,
+	DefaultExecutorFactoryTest.class
 })
 public class AllTests {
 

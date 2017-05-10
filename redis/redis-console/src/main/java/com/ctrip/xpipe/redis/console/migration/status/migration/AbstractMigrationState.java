@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -27,10 +28,13 @@ public abstract class AbstractMigrationState implements MigrationState {
 	
 	private MigrationState nextAfterSuccess;
 	private MigrationState nextAfterFail;
+
+	protected Executor executors;
 	
 	public AbstractMigrationState(MigrationCluster holder, MigrationStatus status) {
 		this.holder = holder;
 		this.status = status;
+		executors = holder.getMigrationExecutor();
 	}
 
 	@Override

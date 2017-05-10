@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -17,13 +18,10 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  */
 public abstract class AbstractMigrationMigratingState extends AbstractMigrationState{
 
-	protected ExecutorService executors;
 	private boolean doOtherDcMigrate;
 	
     public AbstractMigrationMigratingState(MigrationCluster holder, MigrationStatus status) {
         super(holder, status);
-        
-        executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(getClass().getSimpleName()));
         doOtherDcMigrate = false;
     }
 
@@ -75,7 +73,7 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
     
     protected void doMigrateOtherDc() {
     	for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
-			executors.submit(new AbstractExceptionLogTask() {
+			executors.execute(new AbstractExceptionLogTask() {
 				@Override
 				public void doRun() {
 					logger.info("[doOtherDcMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
