@@ -31,7 +31,7 @@ public class HealthStatusTest extends AbstractConsoleTest{
 
         AtomicBoolean isDown = new AtomicBoolean();
 
-        HealthStatus healthStatus = new HealthStatus(hostPort, downAfterMilli, healthDelayMilli, scheduled);
+        HealthStatus healthStatus = new HealthStatus(hostPort, () -> downAfterMilli, () -> healthDelayMilli, scheduled);
         healthStatus.addObserver(new Observer() {
             @Override
             public void update(Object args, Observable observable) {

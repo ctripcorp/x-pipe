@@ -5,29 +5,25 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import org.apache.http.conn.util.InetAddressUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
 import javax.annotation.PostConstruct;
-import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static java.lang.System.in;
 
 /**
  * @author wenchao.meng
@@ -35,7 +31,7 @@ import static java.lang.System.in;
  *         May 08, 2017
  */
 @Component
-@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
+@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class OuterClientInstanceStateChecker {
 
     private Logger logger = LoggerFactory.getLogger(getClass());

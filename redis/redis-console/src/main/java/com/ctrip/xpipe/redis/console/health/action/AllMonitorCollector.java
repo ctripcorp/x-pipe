@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.action;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -94,8 +93,11 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
             @Override
             public HealthStatus create() {
 
-                HealthStatus healthStatus = new HealthStatus(key, downAfterCheckNums * consoleConfig.getRedisReplicationHealthCheckInterval(),
-                        healthyDelayMilli, scheduled);
+                HealthStatus healthStatus = new HealthStatus(
+                        key,
+                        () -> downAfterCheckNums * consoleConfig.getRedisReplicationHealthCheckInterval(),
+                        () -> consoleConfig.getHealthyDelayMilli(),
+                        scheduled);
                 healthStatus.addObserver(new Observer() {
                     @Override
                     public void update(Object args, Observable observable) {

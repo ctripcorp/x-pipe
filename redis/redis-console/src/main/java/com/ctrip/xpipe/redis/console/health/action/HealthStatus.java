@@ -10,6 +10,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntSupplier;
 
 /**
  * @author wenchao.meng
@@ -28,12 +29,13 @@ public class HealthStatus extends AbstractObservable{
     private AtomicInteger state = new AtomicInteger(REDIS_UNKNOWN_STATE);
 
     private final HostPort hostPort;
-    private final int downAfterMilli;
-    private final int healthyDelayMilli;
+    private final IntSupplier downAfterMilli;
+    private final IntSupplier healthyDelayMilli;
+
     private final ScheduledExecutorService scheduled;
     private ScheduledFuture<?> future;
 
-    public HealthStatus(HostPort hostPort, int downAfterMilli, int healthyDelayMilli, ScheduledExecutorService scheduled){
+    public HealthStatus(HostPort hostPort, IntSupplier downAfterMilli, IntSupplier healthyDelayMilli, ScheduledExecutorService scheduled){
         this.hostPort = hostPort;
         this.downAfterMilli = downAfterMilli;
         this.healthyDelayMilli = healthyDelayMilli;
@@ -53,11 +55,11 @@ public class HealthStatus extends AbstractObservable{
 
                 long currentTime = System.currentTimeMillis();
                 logger.debug("[checkDown]{} - {} = {} > {}", currentTime, lastHealthDelayTime, currentTime - lastHealthDelayTime.get(), downAfterMilli);
-                if (currentTime - lastHealthDelayTime.get() > downAfterMilli) {
+                if (currentTime - lastHealthDelayTime.get() > downAfterMilli.getAsInt()) {
                     setDown();
                 }
             }
-        }, 0, downAfterMilli/5, TimeUnit.MILLISECONDS);
+        }, 0, downAfterMilli.getAsInt()/5, TimeUnit.MILLISECONDS);
     }
 
     void pong(){
@@ -67,7 +69,7 @@ public class HealthStatus extends AbstractObservable{
     void delay(long delayMilli){
 
         logger.debug("[delay]{}, {}", hostPort, delayMilli);
-        if(delayMilli >=0 && delayMilli <= healthyDelayMilli){
+        if(delayMilli >=0 && delayMilli <= healthyDelayMilli.getAsInt()){
             lastHealthDelayTime.set(System.currentTimeMillis());
             setUp();
         }

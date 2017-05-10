@@ -71,7 +71,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
 	@Override
 	public int getHealthyDelayMilli() {
-		return getIntProperty(KEY_HEALTHY_DELAY, 5000);
+		return getIntProperty(KEY_HEALTHY_DELAY, 2000);
 	}
 
 	@Override
