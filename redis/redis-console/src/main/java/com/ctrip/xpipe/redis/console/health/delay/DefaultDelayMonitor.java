@@ -86,6 +86,7 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 	}
 
 	private void sampleDelay(final DelaySamplePlan samplePlan) throws Exception {
+
 		if (samplePlan.getHostPort2SampleResult().isEmpty()) {
 			return;
 		}
@@ -105,7 +106,6 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 						//nothing to do
 					}
 				});
-
 		}
 
 		RedisSession masterSession = findRedisSession(samplePlan.getMasterHost(), samplePlan.getMasterPort());

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.simple;
 
 import java.io.IOException;
+import java.sql.Time;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -59,38 +60,18 @@ public class LettuceTest extends AbstractConsoleTest {
 				}
 			}
 		});
-
-
 	}
 
 	@Test
 	public void testPubSub(){
 
-		String channel = "+switch-master";
 		RedisClient redisClient = RedisClient.create(clientResources, redisURI);
 
-		redisClient.addListener(new RedisConnectionStateListener() {
-			@Override
-			public void onRedisConnected(RedisChannelHandler<?, ?> connection) {
-
-				logger.info("[onRedisConnected]{}", connection);
-				if(connection instanceof  StatefulRedisPubSubConnection){
-					StatefulRedisPubSubConnection<String, String> pubSubConnection = (StatefulRedisPubSubConnection<String, String>) connection;
-					pubSubConnection.async().subscribe(channel);
-				}
-			}
-
-			@Override
-			public void onRedisDisconnected(RedisChannelHandler<?, ?> connection) {
-
-			}
-
-			@Override
-			public void onRedisExceptionCaught(RedisChannelHandler<?, ?> connection, Throwable cause) {
-
-			}
-		});
 		StatefulRedisPubSubConnection<String, String> redisPubSubConnection = redisClient.connectPubSub();
+
+		redisPubSubConnection.async().subscribe(channel);
+
+//		checkConnectionOpen(redisPubSubConnection);
 
 		//noinspection unchecked
 		redisPubSubConnection.addListener(new RedisPubSubAdapter(){
@@ -101,10 +82,24 @@ public class LettuceTest extends AbstractConsoleTest {
 			}
 		});
 
+//		publish();
 
-		publish();
 
+//		sleep(10000);
+//		logger.info("[close conenction]");
+//		redisPubSubConnection.close();
 
+	}
+
+	private void checkConnectionOpen(StatefulRedisPubSubConnection<String, String> redisPubSubConnection) {
+		scheduled.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+
+				logger.info("[run][connection active]{}", redisPubSubConnection.isOpen());
+
+			}
+		}, 0, 1, TimeUnit.SECONDS);
 	}
 
 	@Test

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -26,13 +27,17 @@ public class RedisSession {
 
 	private static Logger log = LoggerFactory.getLogger(RedisSession.class);
 
+	public static final String KEY_SUBSCRIBE_TIMEOUT_SECONDS = "SUBSCRIBE_TIMEOUT_SECONDS";
+
 	private int waitResultSeconds = 2;
+
+	private int subscribConnsTimeoutSeconds = Integer.parseInt(System.getProperty(KEY_SUBSCRIBE_TIMEOUT_SECONDS, "60"));
 
 	private RedisClient redis;
 
 	private HostPort hostPort;
 
-	private ConcurrentMap<String, StatefulRedisPubSubConnection<String, String>> subscribConns = new ConcurrentHashMap<>();
+	private ConcurrentMap<String, PubSubConnectionWrapper> subscribConns = new ConcurrentHashMap<>();
 
 	private AtomicReference<StatefulRedisConnection<String, String>> nonSubscribeConn = new AtomicReference<>();
 
@@ -41,27 +46,48 @@ public class RedisSession {
 		this.hostPort = hostPort;
 	}
 
-	public synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback) {
+	public void check(){
 
-		RedisConnectionStateListener connectionListener = channelListener(channel);
+		for(Map.Entry<String, PubSubConnectionWrapper> entry : subscribConns.entrySet()){
+
+			String channel = entry.getKey();
+			PubSubConnectionWrapper pubSubConnectionWrapper = entry.getValue();
+
+			if(System.currentTimeMillis() - pubSubConnectionWrapper.getLastActiveTime() > subscribConnsTimeoutSeconds * 1000){
+
+				log.info("[check][connectin inactive for a long time, force reconnect]{}, {}", subscribConns, hostPort);
+				pubSubConnectionWrapper.closeAndClean();
+				subscribConns.remove(channel);
+
+				subscribeIfAbsent(channel, pubSubConnectionWrapper.getCallback());
+			}
+		}
+
+	}
+
+	public synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback) {
 
 		if (!subscribConns.containsKey(channel)) {
 
 			try {
-				redis.addListener(connectionListener);
+
 				StatefulRedisPubSubConnection<String, String> pubSub = redis.connectPubSub();
+				pubSub.async().subscribe(channel);
+				PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(pubSub, callback);
+
 				pubSub.addListener(new RedisPubSubAdapter<String, String>() {
 
 					@Override
 					public void message(String channel, String message) {
+
+						wrapper.setLastActiveTime(System.currentTimeMillis());
 						callback.message(channel, message);
 					}
 				});
-				subscribConns.put(channel, pubSub);
+				subscribConns.put(channel, wrapper);
 			} catch (RuntimeException e) {
 				callback.fail(e);
 				log.warn("Error subscribe to redis {}", hostPort);
-				redis.removeListener(connectionListener);
 			}
 		}
 	}
@@ -174,5 +200,37 @@ public class RedisSession {
 		void message(String channel, String message);
 
 		void fail(Exception e);
+	}
+
+	public class PubSubConnectionWrapper{
+
+		private StatefulRedisPubSubConnection<String, String> connection;
+		private Long lastActiveTime = System.currentTimeMillis();
+		private SubscribeCallback callback;
+
+		public PubSubConnectionWrapper(StatefulRedisPubSubConnection<String, String> connection, SubscribeCallback callback){
+			this.connection = connection;
+			this.callback = callback;
+		}
+
+		public StatefulRedisPubSubConnection<String, String> getConnection() {
+			return connection;
+		}
+
+		public SubscribeCallback getCallback() {
+			return callback;
+		}
+
+		public void setLastActiveTime(Long lastActiveTime) {
+			this.lastActiveTime = lastActiveTime;
+		}
+
+		public Long getLastActiveTime() {
+			return lastActiveTime;
+		}
+
+		public void closeAndClean() {
+			connection.close();
+		}
 	}
 }
