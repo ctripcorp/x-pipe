@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server;
 
+import com.ctrip.xpipe.redis.meta.server.meta.MetaJacksonTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -38,6 +39,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+	MetaJacksonTest.class,
 	ArrangeTaskTriggerTest.class,
 	ArrangeTaskExecutorTest.class,
 	DefaultClusterArrangerTest.class,

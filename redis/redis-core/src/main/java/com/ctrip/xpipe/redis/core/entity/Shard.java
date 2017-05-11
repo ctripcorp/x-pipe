@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -9,10 +11,12 @@ public interface Shard {
 
     Cluster parent();
 
+    @JsonIgnore
     default String getActiveDc(){
         return parent().getActiveDc();
     }
 
+    @JsonIgnore
     default String getBackupDcs(){
         return parent().getBackupDcs();
     }
