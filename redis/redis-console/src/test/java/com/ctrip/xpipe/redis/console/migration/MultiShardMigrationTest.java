@@ -93,7 +93,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 	@Test
 	@DirtiesContext
 	public void testAllSuccess() throws TimeoutException {
-
+		
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++ cnt) {
 			mockSuccessCheckCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcB);
 			mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcA);
