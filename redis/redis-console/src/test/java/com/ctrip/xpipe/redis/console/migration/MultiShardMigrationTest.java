@@ -40,6 +40,10 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 	
 	@Mock
 	private MigrationCommandBuilder migrationCommandBuilder;
+	
+	private String clusterName = "cluster1";
+
+	private long clusterId = 1;
 
 	private String dcA = dcNames[0];
 	private String dcB = dcNames[1];
@@ -58,41 +62,46 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 	public void prepare() {
 
 		MockitoAnnotations.initMocks(this);
-		MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, 1L);
+		MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, clusterId);
 		migrationCluster = new DefaultMigrationCluster(migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
 		
 		Map<Long, DcTbl> dcs = new HashMap<>();
-		for(DcTbl dc : dcService.findClusterRelatedDc("cluster1")) {
+		for(DcTbl dc : dcService.findClusterRelatedDc(clusterName)) {
 			dcs.put(dc.getId(), dc);
 		}
 		
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++cnt) {
+
 			MigrationShardTbl migrationShardTbl = new MigrationShardTbl();
 			migrationShardTbl.setId(cnt).setMigrationClusterId(1).setShardId(cnt).setLog("");
 			
 			ShardTbl shardTbl = new ShardTbl();
-			shardTbl.setId(cnt).setClusterId(1).setShardName(getShardName(cnt)).setSetinelMonitorName("cluster1-" + getShardName(cnt));
+			shardTbl.setId(cnt).setClusterId(clusterId).setShardName(getShardName(cnt)).setSetinelMonitorName("cluster1-" + getShardName(cnt));
+
+			if(cnt != 1) {
+				migrationCluster.getShardService().createShard(clusterName,
+						(new ShardTbl()).setShardName(getShardName(cnt)).setClusterId(clusterId)
+								.setSetinelMonitorName(clusterName + "-" + getShardName(cnt)),new HashMap<>());
+			}
 
 			MigrationShard migrationShard = new DefaultMigrationShard(migrationCluster, migrationShardTbl, shardTbl, dcs, migrationService, migrationCommandBuilder);
 			migrationCluster.addNewMigrationShard(migrationShard);
+
 		}
 	}
 	
 	@Test
 	@DirtiesContext
 	public void testAllSuccess() throws TimeoutException {
+
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++ cnt) {
-			mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB, dcB);
-			mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcA);
-			mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB);
-			mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB, dcA);
+			mockSuccessCheckCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcB);
+			mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcA);
+			mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB);
+			mockSuccessOtherDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcA);
 			
-			if(cnt != 1) {
-				migrationCluster.getShardService().createShard("cluster1", (new ShardTbl()).setShardName(getShardName(cnt)).setClusterId(1)
-						.setSetinelMonitorName("cluster1" + "-" + getShardName(cnt)),new HashMap<Long, SetinelTbl>());
-			}
 		}
-		ClusterTbl originalCluster = clusterService.find(1);
+		ClusterTbl originalCluster = clusterService.find(clusterId);
 		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
@@ -113,7 +122,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		AtomicReference<ClusterTbl> currentCluster = new AtomicReference<>();
 
 		waitConditionUntilTimeOut(() -> {
-			currentCluster.set(clusterService.find(1));
+			currentCluster.set(clusterService.find(clusterId));
 			return ClusterStatus.Normal.toString().equalsIgnoreCase(currentCluster.get().getStatus());
 
 		});
@@ -134,19 +143,20 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 	@Test
 	@DirtiesContext
 	public void testOneFailedOnChecking() {
+
 		int failPos = randomInt(1, TEST_SHARD_CNT);
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++ cnt) {
 			if (cnt == failPos) {
-				mockFailCheckCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB, dcB, new Throwable("mocked check fail"));
+				mockFailCheckCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcB, new Throwable("mocked check fail"));
 			} else {
-				mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB, dcB);
+				mockSuccessCheckCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcB);
 			}
-			mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcA);
-			mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB);
-			mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB, dcA);
+			mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcA);
+			mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB);
+			mockSuccessOtherDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcA);
 		}
 
-		ClusterTbl originalCluster = clusterService.find(1);
+		ClusterTbl originalCluster = clusterService.find(clusterId);
 		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
@@ -165,7 +175,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		migrationCluster.process();
 		sleep(1000);
 		
-		ClusterTbl currentCluster = clusterService.find(1);
+		ClusterTbl currentCluster = clusterService.find(clusterId);
 		Assert.assertEquals(ClusterStatus.Lock.toString(), currentCluster.getStatus());
 		Assert.assertEquals(1, currentCluster.getActivedcId());
 		Assert.assertEquals(MigrationStatus.Checking.toString(), migrationCluster.getStatus().toString());
@@ -187,23 +197,32 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 			Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 			Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		}
+
+		//
+		logger.info("[testOneFailedOnChecking][retry success]");
+		mockSuccessCheckCommand(migrationCommandBuilder,clusterName, getShardName(failPos), dcB, dcB);
+		migrationCluster.process();
+		sleep(1000);
+		currentCluster = clusterService.find(clusterId);
+		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
 	}
 	
 	@Test
 	@DirtiesContext
 	public void testOneFailedOnMigration() {
+
 		int failPos = randomInt(1, TEST_SHARD_CNT);
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++ cnt) {
-			mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB, dcB);
-			mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcA);
+			mockSuccessCheckCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcB);
+			mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcA);
 			if(cnt == failPos) {
-				mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB, new Throwable("mocked new fail"));
+				mockFailNewPrimaryDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, new Throwable("mocked new fail"));
 			} else {
-				mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB);
+				mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB);
 			}
-			mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", getShardName(cnt), dcB, dcA);
+			mockSuccessOtherDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcA);
 		}
-		ClusterTbl originalCluster = clusterService.find(1);
+		ClusterTbl originalCluster = clusterService.find(clusterId);
 		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
 		Assert.assertEquals(1, originalCluster.getActivedcId());
 		Assert.assertEquals(1, migrationCluster.getMigrationCluster().getSourceDcId());
@@ -222,7 +241,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		migrationCluster.process();
 		sleep(1000);
 		
-		ClusterTbl currentCluster = clusterService.find(1);
+		ClusterTbl currentCluster = clusterService.find(clusterId);
 		Assert.assertEquals(ClusterStatus.Migrating.toString(), currentCluster.getStatus());
 		Assert.assertEquals(1, currentCluster.getActivedcId());
 		Assert.assertEquals(MigrationStatus.PartialSuccess.toString(), migrationCluster.getStatus().toString());
@@ -245,6 +264,17 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 			Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		}
 		Assert.assertEquals(MigrationStatus.PartialSuccess, migrationCluster.getStatus());
+
+
+		logger.info("[testOneFailedOnMigration][retry success]");
+		//retry success
+		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,clusterName, getShardName(failPos), dcB);
+		migrationCluster.process();
+		sleep(1000);
+		currentCluster = clusterService.find(clusterId);
+		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
+
+
 	}
 	
 	private String getShardName(int id) {

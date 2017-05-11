@@ -191,6 +191,8 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
 	@Override
 	public void update(Object args, Observable observable) {
+
+		logger.info("[update]{}", args);
 		this.currentState.refresh();
 		notifyObservers(this);
 	}

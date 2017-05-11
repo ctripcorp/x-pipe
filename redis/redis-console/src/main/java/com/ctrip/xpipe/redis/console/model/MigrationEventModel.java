@@ -14,5 +14,9 @@ public class MigrationEventModel implements java.io.Serializable{
 	public void setEvent(MigrationEventTbl event) {
 		this.event = event;
 	}
-	
+
+	@Override
+	public String toString() {
+		return String.format("%s", event);
+	}
 }

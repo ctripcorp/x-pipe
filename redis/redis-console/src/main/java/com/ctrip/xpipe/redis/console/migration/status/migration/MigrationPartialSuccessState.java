@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
@@ -21,16 +22,23 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
 
 	@Override
 	public void doAction() {
+
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
-			if(!shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
+
+			ShardMigrationResult shardMigrationResult = shard.getShardMigrationResult();
+			if(!shardMigrationResult.stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
+				shardMigrationResult.stepRetry(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC);
+
+				String clusterName = getHolder().clusterName();
+				String shardName = shard.shardName();
+				logger.info("[doAction][execute]{}, {}", clusterName, shardName);
 				executors.execute(new AbstractExceptionLogTask() {
+
 					@Override
 					public void doRun() {
-						logger.info("[doMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
-								shard.getCurrentShard().getShardName());
+						logger.info("[doMigrate][start]{},{}",clusterName, shardName);
 						shard.doMigrate();
-						logger.info("[doMigrate][done]{},{}",getHolder().getCurrentCluster().getClusterName(), 
-								shard.getCurrentShard().getShardName());
+						logger.info("[doMigrate][done]{},{}",clusterName, shardName);
 					}
 				});
 			}

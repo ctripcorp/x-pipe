@@ -40,17 +40,21 @@ public class ShardMigrationResult  implements Serializable{
 	public boolean stepSuccess(ShardMigrationStep step) {
 		return stepTerminated(step) ? steps.get(step).getLeft() : false;
 	}
-	
+
+	public void stepRetry(ShardMigrationStep step) {
+		steps.remove(step);
+	}
+
 	public void updateStepResult(ShardMigrationStep step, boolean success, String log) {
 		steps.put(step, Pair.of(success, log));
 	}
 	
-	public static enum ShardMigrationResultStatus {
+	public enum ShardMigrationResultStatus {
 		SUCCESS,
 		FAIL
 	}
 	
-	public static enum ShardMigrationStep {
+	public enum ShardMigrationStep {
 		CHECK,
 		MIGRATE_PREVIOUS_PRIMARY_DC,
 		MIGRATE_NEW_PRIMARY_DC,

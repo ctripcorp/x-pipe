@@ -77,13 +77,13 @@ public abstract class AbstractMigrationState implements MigrationState {
 	public void updateAndProcess(MigrationState stat, boolean continueProcess) {
 
 		if(hasContine.compareAndSet(false, true)){
-			logger.info("[MigrationChecking][continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
+			logger.info("[updateAndProcess][continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
 			getHolder().updateStat(stat);
 			if(continueProcess) {
 				getHolder().process();
 			}
 		}else{
-			logger.info("[MigrationChecking][already continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
+			logger.info("[updateAndProcess][already continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
 		}
 	}
 

@@ -53,12 +53,12 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
     				doMigrateOtherDc();
     				doOtherDcMigrate = true;
     			} else if(finishedCnt == getHolder().getMigrationShards().size()) {
-    				logger.info("[{}][success][continue]{}",getClass().getSimpleName(), getHolder().getCurrentCluster().getClusterName());
+    				logger.info("[success][continue]{}", getHolder().getCurrentCluster().getClusterName());
                     updateAndProcess(nextAfterSuccess(), true);
     			}
     		} else {
     			// any fail
-    			logger.info("[{}][fail]{}",getClass(), getHolder().getCurrentCluster().getClusterName());
+    			logger.info("[fail]{}", getHolder().getCurrentCluster().getClusterName());
     			if(this instanceof MigrationMigratingState) {
     				updateAndProcess(nextAfterFail(), true);
     				return;
