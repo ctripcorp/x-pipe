@@ -22,6 +22,7 @@ public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServer
 	private Codec codec = Codec.DEFAULT;
 
 	private ConsoleConfig config = new DefaultConsoleConfig();
+
 	private MetaServerConsoleServiceManager metaServerConsoleServiceManager = new DefaultMetaServerConsoleServiceManager();
 	
 	

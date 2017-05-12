@@ -58,11 +58,13 @@ public class DefaultExecutorFactory implements ExecutorFactory{
     @Override
     public ExecutorService createExecutorService() {
 
+        int useMaxPoolSize = Math.max(corePoolSize, maxPoolSize);
         ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                        corePoolSize, maxPoolSize, keepAliveTime,
+                        corePoolSize, useMaxPoolSize, keepAliveTime,
                 keepAliveTimeUnit, new LinkedBlockingQueue<>(),
                 threadFactory != null ? threadFactory : XpipeThreadFactory.create(threadNamePrefix),
                 rejectedExecutionHandler);
+
         executor.allowCoreThreadTimeOut(allowCoreThreadTimeOut);
         return executor;
     }

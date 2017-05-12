@@ -54,7 +54,7 @@ public class HealthStatus extends AbstractObservable{
             protected void doRun() throws Exception {
 
                 long currentTime = System.currentTimeMillis();
-                logger.debug("[checkDown]{} - {} = {} > {}", currentTime, lastHealthDelayTime, currentTime - lastHealthDelayTime.get(), downAfterMilli);
+                logger.debug("[checkDown]{} - {} = {} > {}", currentTime, lastHealthDelayTime, currentTime - lastHealthDelayTime.get(), downAfterMilli.getAsInt());
                 if (currentTime - lastHealthDelayTime.get() > downAfterMilli.getAsInt()) {
                     setDown();
                 }

@@ -10,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.annotation.DirtiesContext;
 
@@ -62,38 +63,33 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 	public void prepare() {
 
 		MockitoAnnotations.initMocks(this);
-		MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, clusterId);
-		migrationCluster = new DefaultMigrationCluster(migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
-		
+
 		Map<Long, DcTbl> dcs = new HashMap<>();
 		for(DcTbl dc : dcService.findClusterRelatedDc(clusterName)) {
 			dcs.put(dc.getId(), dc);
 		}
-		
+
+		createShards();
+
+		MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, clusterId);
+		migrationCluster = new DefaultMigrationCluster(migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
+
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++cnt) {
 
 			MigrationShardTbl migrationShardTbl = new MigrationShardTbl();
 			migrationShardTbl.setId(cnt).setMigrationClusterId(1).setShardId(cnt).setLog("");
-			
+
 			ShardTbl shardTbl = new ShardTbl();
 			shardTbl.setId(cnt).setClusterId(clusterId).setShardName(getShardName(cnt)).setSetinelMonitorName("cluster1-" + getShardName(cnt));
-
-			if(cnt != 1) {
-				migrationCluster.getShardService().createShard(clusterName,
-						(new ShardTbl()).setShardName(getShardName(cnt)).setClusterId(clusterId)
-								.setSetinelMonitorName(clusterName + "-" + getShardName(cnt)),new HashMap<>());
-			}
-
 			MigrationShard migrationShard = new DefaultMigrationShard(migrationCluster, migrationShardTbl, shardTbl, dcs, migrationService, migrationCommandBuilder);
 			migrationCluster.addNewMigrationShard(migrationShard);
-
 		}
 	}
-	
+
 	@Test
 	@DirtiesContext
 	public void testAllSuccess() throws TimeoutException {
-		
+
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++ cnt) {
 			mockSuccessCheckCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcB);
 			mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcA);
@@ -280,4 +276,17 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 	private String getShardName(int id) {
 		return "shard" + Integer.toString(id);
 	}
+
+	private void createShards() {
+		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++cnt) {
+			ShardTbl shardTbl = new ShardTbl();
+			shardTbl.setId(cnt).setClusterId(clusterId).setShardName(getShardName(cnt)).setSetinelMonitorName("cluster1-" + getShardName(cnt));
+			if(cnt != 1) {
+				shardService.createShard(clusterName,
+						(new ShardTbl()).setShardName(getShardName(cnt)).setClusterId(clusterId)
+								.setSetinelMonitorName(clusterName + "-" + getShardName(cnt)),new HashMap<>());
+			}
+		}
+	}
+
 }

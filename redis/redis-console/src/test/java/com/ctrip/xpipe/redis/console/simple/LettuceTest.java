@@ -82,7 +82,7 @@ public class LettuceTest extends AbstractConsoleTest {
 			}
 		});
 
-//		publish();
+		publish();
 
 
 //		sleep(10000);
