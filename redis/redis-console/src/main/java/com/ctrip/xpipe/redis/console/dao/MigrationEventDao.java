@@ -16,7 +16,6 @@ import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
@@ -54,8 +53,6 @@ import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	@Autowired
 	private UserInfoHolder userInfo;
-	@Autowired
-	private MigrationEventManager eventManager;
 	@Autowired
 	private DcService dcService;
 	@Autowired
@@ -129,7 +126,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	}
 
 	@DalTransaction
-	public long createMigrationEvnet(MigrationEventModel event) {
+	public MigrationEvent createMigrationEvent(MigrationEventModel event) {
 		if (null != event) {
 			/** Create event **/
 			MigrationEventTbl proto = migrationEventTblDao.createLocal();
@@ -152,9 +149,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 			createMigrationShards(migrationClusters);
 
 			/** Notify event manager **/
-			eventManager.addEvent(buildMigrationEvent(result.getId()));
-			
-			return result.getId();
+			return buildMigrationEvent(result.getId());
 		} else {
 			throw new BadRequestException("Cannot create migration event from nothing!");
 		}

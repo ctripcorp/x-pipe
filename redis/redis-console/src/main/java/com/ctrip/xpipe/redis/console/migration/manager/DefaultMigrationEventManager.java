@@ -56,7 +56,14 @@ public class DefaultMigrationEventManager implements MigrationEventManager {
 
 	private void load() {
 
-		List<MigrationEventTbl> unfinishedTasks = migrationEventDao.findAllUnfinished();
+		List<MigrationEventTbl> unfinishedTasks;
+		try{
+			unfinishedTasks = migrationEventDao.findAllUnfinished();
+		}catch(Exception e){
+			logger.warn("[load]{}", e.getMessage());
+			return;
+		}
+
 		Set<Long> unfinishedIds = new HashSet<>();
 		for(MigrationEventTbl unfinished : unfinishedTasks) {
 			unfinishedIds.add(unfinished.getId());
