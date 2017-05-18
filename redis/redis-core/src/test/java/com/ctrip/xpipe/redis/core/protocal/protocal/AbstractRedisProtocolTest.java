@@ -22,7 +22,7 @@ public class AbstractRedisProtocolTest extends AbstractRedisTest{
 		
 		for(int i = 0; i< contents.length;i++){
 			
-			byteBufs[i] = allocator.buffer();
+			byteBufs[i] = directByteBuf();
 			byteBufs[i].writeBytes(contents[i].getBytes());
 		}
 		

@@ -9,13 +9,13 @@ import com.ctrip.xpipe.api.command.Command;
  */
 public interface Psync extends Command<Object>{
 	
-	public static final String FULL_SYNC = "FULLRESYNC";
-	public static final String PARTIAL_SYNC = "CONTINUE";
+	String FULL_SYNC = "FULLRESYNC";
+	String PARTIAL_SYNC = "CONTINUE";
 	
 	void addPsyncObserver(PsyncObserver observer);
 	
 	
-	public static enum PSYNC_STATE{
+	enum PSYNC_STATE{
 		PSYNC_COMMAND_WAITING_REPONSE,
 		READING_RDB,
 		READING_COMMANDS

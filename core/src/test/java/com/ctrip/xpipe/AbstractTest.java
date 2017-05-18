@@ -20,6 +20,7 @@ import java.util.function.BooleanSupplier;
 
 import com.ctrip.xpipe.testutils.ByteBufReleaseWrapper;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ResourceLeakDetector;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,9 @@ import com.ctrip.xpipe.zk.ZkTestServer;
 public class AbstractTest {
 
 	protected Logger logger = LoggerFactory.getLogger(getClass());
-	
+
+	private ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
+
 	public static String KEY_INCRMENTAL_ZK_PORT = "INCRMENTAL_ZK_PORT";
 
 	protected ExecutorService executors;
@@ -124,10 +127,27 @@ public class AbstractTest {
 		}
 	}
 
-	protected void addReleasable(Object object) throws Exception {
+	protected ByteBuf directByteBuf(){
+
+		return directByteBuf(1 << 10);
+	}
+
+	protected ByteBuf directByteBuf(int size){
+
+		ByteBuf byteBuf = allocator.directBuffer(size);
+		addReleasable(byteBuf);
+
+		return byteBuf;
+	}
+
+	protected void addReleasable(Object object){
 
 		if(object instanceof ByteBuf){
-			add(new ByteBufReleaseWrapper((ByteBuf) object));
+			try {
+				add(new ByteBufReleaseWrapper((ByteBuf) object));
+			} catch (Exception e) {
+				throw new IllegalStateException("add " + object, e);
+			}
 			return;
 		}
 

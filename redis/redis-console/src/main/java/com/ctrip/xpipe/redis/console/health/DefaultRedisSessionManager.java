@@ -97,5 +97,6 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@PreDestroy
 	public void preDestroy(){
 		scheduled.shutdownNow();
+		clientResources.shutdown();
 	}
 }

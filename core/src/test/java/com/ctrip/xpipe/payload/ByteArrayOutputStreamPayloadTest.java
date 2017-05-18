@@ -14,8 +14,6 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.testutils.MemoryPrinter;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
 
 /**
  * @author wenchao.meng
@@ -30,9 +28,7 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		ByteArrayOutputStreamPayload payload = new ByteArrayOutputStreamPayload();
 		String randomStr = randomString();
 		
-		ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer(randomStr.length());
-
-		addReleasable(byteBuf);
+		ByteBuf byteBuf = directByteBuf(randomStr.length());
 
 		byteBuf.writeBytes(randomStr.getBytes());
 		payload.startInput();
@@ -40,8 +36,7 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		payload.endInput();
 		
 		
-		final ByteBuf result = ByteBufAllocator.DEFAULT.buffer(randomStr.length());
-		addReleasable(byteBuf);
+		final ByteBuf result = directByteBuf(randomStr.length());
 
 		payload.startOutput();
 		long wroteLength = payload.out(new WritableByteChannel() {
@@ -86,8 +81,7 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		int concurrentCount = 10;
 		final CountDownLatch latch = new CountDownLatch(concurrentCount);
 		
-		final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer(length);
-		addReleasable(byteBuf);
+		final ByteBuf byteBuf = directByteBuf(length);
 
 		byteBuf.writeBytes(randomString(length).getBytes());
 

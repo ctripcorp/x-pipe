@@ -16,7 +16,7 @@ import io.netty.buffer.UnpooledByteBufAllocator;
  */
 public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	
-	public static enum ARRAY_STATE{
+	public enum ARRAY_STATE{
 		READ_SIZE,
 		READ_CONTENT
 	}
@@ -124,7 +124,7 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	protected ByteBuf getWriteByteBuf() {
 		
 		int length = payload.length;
-		CompositeByteBuf result = UnpooledByteBufAllocator.DEFAULT.compositeHeapBuffer();
+		CompositeByteBuf result = new CompositeByteBuf(UnpooledByteBufAllocator.DEFAULT, false, payload.length + 1);
 		String prefix = String.format("%c%d\r\n", ASTERISK_BYTE, length);
 		result.addComponent(Unpooled.wrappedBuffer(prefix.getBytes()));
 		for(Object o : payload){

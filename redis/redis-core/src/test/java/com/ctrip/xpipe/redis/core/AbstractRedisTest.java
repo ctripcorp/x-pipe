@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.netty.buffer.ByteBuf;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
@@ -55,7 +56,6 @@ import redis.clients.jedis.Jedis;
  */
 public abstract class AbstractRedisTest extends AbstractTest{
 
-	protected ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
 
 	protected static final int runidLength = 40;
 	
