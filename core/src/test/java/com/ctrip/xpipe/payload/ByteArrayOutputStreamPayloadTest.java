@@ -23,15 +23,17 @@ import io.netty.buffer.PooledByteBufAllocator;
  * 2016年4月24日 下午8:58:12
  */
 public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
-	
-	
+
 	@Test
-	public void testInout() throws IOException{
+	public void testInout() throws Exception {
 		
 		ByteArrayOutputStreamPayload payload = new ByteArrayOutputStreamPayload();
 		String randomStr = randomString();
 		
 		ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer(randomStr.length());
+
+		addReleasable(byteBuf);
+
 		byteBuf.writeBytes(randomStr.getBytes());
 		payload.startInput();
 		payload.in(byteBuf);
@@ -39,6 +41,8 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		
 		
 		final ByteBuf result = ByteBufAllocator.DEFAULT.buffer(randomStr.length());
+		addReleasable(byteBuf);
+
 		payload.startOutput();
 		long wroteLength = payload.out(new WritableByteChannel() {
 			
@@ -69,10 +73,10 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		result.readBytes(resultArray);
 		Assert.assertEquals(randomStr, new String(resultArray));
 	}
-	
-	
+
+
 	@Test
-	public void testNewHeap() throws IOException, InterruptedException{
+	public void testNewHeap() throws Exception {
 		
 		final MemoryPrinter memoryPrinter = new MemoryPrinter();
 
@@ -83,6 +87,8 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		final CountDownLatch latch = new CountDownLatch(concurrentCount);
 		
 		final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer(length);
+		addReleasable(byteBuf);
+
 		byteBuf.writeBytes(randomString(length).getBytes());
 
 		byte []dst = new byte[length];

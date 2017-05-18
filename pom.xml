@@ -40,7 +40,7 @@
 		<ctrip-apollo.version>0.2.0</ctrip-apollo.version>
 		<cat.version>2.7.3</cat.version>
 		<apollo.sso.ctrip.version>1.1.0</apollo.sso.ctrip.version>
-		<lettuce.version>4.3.0.Final</lettuce.version>
+		<lettuce.version>4.3.2.Final</lettuce.version>
 		<pyrolite.version>4.9</pyrolite.version>
 		<hickwall.version>1.0</hickwall.version>
 		<hickwall.client.version>1.4</hickwall.client.version>

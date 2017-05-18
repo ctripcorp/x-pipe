@@ -22,8 +22,7 @@
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
             </Policies>
-        </RollingFile>	
-
+        </RollingFile>
     </appenders>
 
     <loggers>
@@ -35,6 +34,7 @@
 
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
+
         <!--
         <logger name="com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor" level="DEBUG"/>
         <logger name="com.ctrip.xpipe.redis.console.health.action.HealthStatus" level="DEBUG"/>

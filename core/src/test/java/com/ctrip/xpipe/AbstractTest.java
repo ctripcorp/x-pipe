@@ -18,6 +18,9 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
 
+import com.ctrip.xpipe.testutils.ByteBufReleaseWrapper;
+import io.netty.buffer.ByteBuf;
+import io.netty.util.ResourceLeakDetector;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -75,7 +78,9 @@ public class AbstractTest {
 	
 	@Before
 	public void beforeAbstractTest() throws Exception {
-		
+
+		ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
+
 		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(getTestName()));
 		scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(getTestName()));
 		
@@ -117,6 +122,16 @@ public class AbstractTest {
 				throw new IllegalStateException("test dir make failed!" + file);
 			}
 		}
+	}
+
+	protected void addReleasable(Object object) throws Exception {
+
+		if(object instanceof ByteBuf){
+			add(new ByteBufReleaseWrapper((ByteBuf) object));
+			return;
+		}
+
+		throw  new IllegalArgumentException("unknown:" + object);
 	}
 
 	protected String getTestName() {

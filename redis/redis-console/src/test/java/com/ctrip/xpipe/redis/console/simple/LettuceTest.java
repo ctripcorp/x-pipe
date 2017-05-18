@@ -196,7 +196,7 @@ public class LettuceTest extends AbstractConsoleTest {
 
 	@After
 	public void afterLettuceTest() throws IOException {
-		waitForAnyKeyToExit();
+//		waitForAnyKeyToExit();
 	}
 
 }
