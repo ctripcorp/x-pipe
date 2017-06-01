@@ -25,11 +25,6 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	private int minTimeMilliToGcAfterCreate = 2000;
 	
 
-	@Override
-	protected String getRedisTemplate() {
-		return "conf/redis_raw.conf";
-	}
-
 	protected KeeperMeta getKeeperActive(RedisMeta redisMeta) {
 		
 		for(KeeperMeta keeper : redisMeta.parent().getKeepers()){

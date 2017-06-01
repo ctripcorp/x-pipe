@@ -46,11 +46,9 @@ public class OneKeeper extends AbstractKeeperIntegratedSingleDc{
 	public void testRedis() throws Exception{
 		
 		RedisMeta redis8000 = new RedisMeta().setIp("localhost").setPort(8000);
-		startRedis(getDcMeta(), redis8000);
+		startRedis(redis8000);
 		
-		startRedis(getDcMeta(), redisMaster);
-		
-		
+		startRedis(redisMaster);
 		
 		waitForAnyKeyToExit();
 	}

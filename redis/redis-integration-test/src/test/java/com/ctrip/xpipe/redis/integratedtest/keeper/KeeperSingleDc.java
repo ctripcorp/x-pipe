@@ -102,7 +102,7 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 		for(int i=0; i < 3 ; i++){
 			
 			logger.info(remarkableMessage("[testReFullSync]{}"), i);
-			startRedis(dcMeta, slave1);
+			startRedis(slave1);
 			sleep(3000);
 			int currentRdbUpdateCount = replicationStore.getRdbUpdateCount();
 			logger.info("[testReFullSync]{},{}", lastRdbUpdateCount, currentRdbUpdateCount);

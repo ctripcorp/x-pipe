@@ -93,7 +93,7 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	protected void startRedises() throws ExecuteException, IOException{
 		
 		for(RedisMeta redisMeta : getDcRedises(dc, getClusterId(), getShardId())){
-			startRedis(getDcMeta(), redisMeta);
+			startRedis(redisMeta);
 		}
 	}
 	

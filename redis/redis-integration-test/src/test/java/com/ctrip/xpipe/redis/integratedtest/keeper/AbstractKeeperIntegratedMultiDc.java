@@ -103,7 +103,7 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		
 		for(DcMeta dcMeta : getDcMetas()){
 			for(RedisMeta redisMeta : getDcRedises(dcMeta.getId(), getClusterId(), getShardId())){
-				startRedis(dcMeta, redisMeta);
+				startRedis(redisMeta);
 			}
 		}
 	}
