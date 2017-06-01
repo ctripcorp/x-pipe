@@ -46,7 +46,7 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 	@Test
 	public void testNoneMaster(){
 		
-		Assert.assertNull(primaryAlgorithm.choose());
+		Assert.assertEquals(new Pair<>(redises.get(0).getIp(), redises.get(0).getPort()) ,primaryAlgorithm.choose());
 		
 	}
 
