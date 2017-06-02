@@ -61,7 +61,16 @@ public class AppTest extends AbstractMetaServerContextTest{
 		start();
 	}
 
-	
+	@Test
+	public void start8747() throws Exception {
+
+		this.serverPort = 8747;
+		System.setProperty(DefaultDcMetaCache.MEMORY_META_SERVER_DAO_KEY, "metaserver--jq.xml");
+		System.setProperty(AbstractCoreConfig.KEY_ZK_NAMESPACE, "xpipe_dc1");
+		start();
+	}
+
+
 	@Test
 	public void start9748() throws Exception {
 		

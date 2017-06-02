@@ -63,6 +63,21 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		clusterMeta = differentCluster(getDc());
 		shardMeta = (ShardMeta) clusterMeta.getShards().values().toArray()[0];
 	}
+
+	@Test
+	public void testObserverShardLeader(){
+
+		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
+		keeperElectorManager.observerShardLeader(clusterMeta.getId(), shardMeta.getId());
+		verify(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
+		verify(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
+
+		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(false);
+		keeperElectorManager.observerShardLeader(clusterMeta.getId(), shardMeta.getId());
+		verify(currentMetaManager, times(2)).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
+		verify(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
+
+	}
 	
 	@SuppressWarnings("unchecked")
 	@Test
@@ -72,7 +87,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		when(currentMetaManager.hasShard(anyString(), anyString())).thenReturn(true);
 		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
 		
-		keeperElectorManager.update(new NodeAdded<ClusterMeta>(clusterMeta), null);
+		keeperElectorManager.update(new NodeAdded<>(clusterMeta), null);
 		
 		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 		
@@ -100,7 +115,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 			}
 		}).when(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
 		
-		keeperElectorManager.update(new NodeAdded<ClusterMeta>(clusterMeta), null);
+		keeperElectorManager.update(new NodeAdded<>(clusterMeta), null);
 		
 		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 

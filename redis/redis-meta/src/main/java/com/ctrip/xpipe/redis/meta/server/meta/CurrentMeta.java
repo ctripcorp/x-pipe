@@ -136,6 +136,7 @@ public class CurrentMeta implements Releasable {
 
 					@Override
 					public CurrentClusterMeta create() {
+						logger.info("[addCluster][create]{}", clusterMeta.getId());
 						return new CurrentClusterMeta(clusterMeta.getId());
 					}
 				});
@@ -174,7 +175,6 @@ public class CurrentMeta implements Releasable {
 			@Override
 			public void visitModified(@SuppressWarnings("rawtypes") MetaComparator comparator) {
 				currentClusterMeta.changeShard((ShardMetaComparator) comparator);
-				;
 			}
 
 			@Override
@@ -220,6 +220,8 @@ public class CurrentMeta implements Releasable {
 					new ObjectFactory<CurrentShardMeta>() {
 						@Override
 						public CurrentShardMeta create() {
+
+							logger.info("[addShard][create]{} , {}", clusterId, shardMeta.getId());
 							return new CurrentShardMeta(clusterId, shardMeta.getId());
 						}
 					});
