@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.concurrent;
 
 import com.ctrip.xpipe.AbstractTest;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 

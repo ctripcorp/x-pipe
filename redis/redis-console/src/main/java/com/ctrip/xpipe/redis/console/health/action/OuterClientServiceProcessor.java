@@ -59,7 +59,7 @@ public class OuterClientServiceProcessor implements HealthEventProcessor{
 
         //master up
         HostPort redisMaster = metaCache.findMasterInSameShard(hostPort);
-        boolean masterUp = allMonitorCollector.getState(redisMaster) == HealthStatus.REDIS_UP_STATE;
+        boolean masterUp = allMonitorCollector.getState(redisMaster) == HEALTH_STATE.UP;
         if(!masterUp){
             logger.info("[masterUp][master down instance:{}, master:{}]", hostPort, redisMaster);
         }

@@ -8,8 +8,8 @@ import com.ctrip.xpipe.utils.DateTimeUtils;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntSupplier;
 
 /**
@@ -19,14 +19,10 @@ import java.util.function.IntSupplier;
  */
 public class HealthStatus extends AbstractObservable{
 
-    public static final int REDIS_UNKNOWN_STATE = -1;
-    public static final int REDIS_DOWN_STATE = 0;
-    public static final int REDIS_UP_STATE = 1;
-
     private AtomicLong lastPongTime = new AtomicLong(System.currentTimeMillis());
     private AtomicLong lastHealthDelayTime = new AtomicLong(System.currentTimeMillis());
 
-    private AtomicInteger state = new AtomicInteger(REDIS_UNKNOWN_STATE);
+    private AtomicReference<HEALTH_STATE> state = new AtomicReference<>(HEALTH_STATE.UNKNOWN);
 
     private final HostPort hostPort;
     private final IntSupplier downAfterMilli;
@@ -55,9 +51,16 @@ public class HealthStatus extends AbstractObservable{
 
                 long currentTime = System.currentTimeMillis();
                 logger.debug("[checkDown]{} - {} = {} > {}", currentTime, lastHealthDelayTime, currentTime - lastHealthDelayTime.get(), downAfterMilli.getAsInt());
-                if (currentTime - lastHealthDelayTime.get() > downAfterMilli.getAsInt()) {
+
+                long downTime = currentTime - lastHealthDelayTime.get();
+                final int  downAfter = downAfterMilli.getAsInt();
+
+                if ( downTime > downAfter) {
                     setDown();
+                }else if(downTime >= downAfter/2){
+                    setUnhealthy();
                 }
+
             }
         }, 0, downAfterMilli.getAsInt()/5, TimeUnit.MILLISECONDS);
     }
@@ -77,21 +80,29 @@ public class HealthStatus extends AbstractObservable{
 
     private void setUp() {
 
-        int preState = state.get();
-        state.set(REDIS_UP_STATE);
+        HEALTH_STATE preState = state.get();
+        state.set(HEALTH_STATE.UP);
 
-        if(preState != REDIS_UP_STATE){
+        if(preState.isToUpNotify()){
             logger.info("[setUp]{}", this);
             notifyObservers(new InstanceUp(hostPort));
         }
     }
 
+    private void setUnhealthy() {
+
+        HEALTH_STATE previous = state.getAndSet(HEALTH_STATE.UNHEALTHY);
+        if(previous != HEALTH_STATE.UNHEALTHY){
+            logger.info("[setUnhealthy]{}, {}", this, previous);
+        }
+    }
+
     private void setDown() {
 
-        int preState = state.get();
-        state.set(REDIS_DOWN_STATE);
+        HEALTH_STATE preState = state.get();
+        state.set(HEALTH_STATE.DOWN);
 
-        if(preState != REDIS_DOWN_STATE){
+        if(preState.isToDownNotify()){
             logger.info("[setDown]{}", this);
             notifyObservers(new InstanceDown(hostPort));
         }
@@ -104,7 +115,7 @@ public class HealthStatus extends AbstractObservable{
                 DateTimeUtils.timeAsString(lastHealthDelayTime.get()));
     }
 
-    public int getState() {
+    public HEALTH_STATE getState() {
         return state.get();
     }
 }
