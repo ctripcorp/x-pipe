@@ -7,6 +7,9 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 
 /**
  * @author shyin
@@ -15,20 +18,29 @@ import java.util.List;
  */
 public class DefaultOuterClientService extends AbstractOuterClientService {
 
+	private Map<HostPort, Boolean> instanceStatus = new ConcurrentHashMap<>();
+
 	@Override
 	public void markInstanceUp(HostPort hostPort) throws Exception {
 		logger.info("[markInstanceUp]{}", hostPort);
+		instanceStatus.put(hostPort, true);
+
 	}
 
 	@Override
 	public boolean isInstanceUp(HostPort hostPort) throws Exception {
-		return Boolean.parseBoolean(System.getProperty("InstanceUp", "true"));
+
+		Boolean result = instanceStatus.get(hostPort);
+		if(result == null){
+			return Boolean.parseBoolean(System.getProperty("InstanceUp", "true"));
+		}
+		return result;
 	}
 
 	@Override
 	public void markInstanceDown(HostPort hostPort) throws Exception {
 		logger.info("[markInstanceDown]{}", hostPort);
-
+		instanceStatus.put(hostPort, false);
 	}
 
 	@Override

@@ -25,7 +25,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	public static final String KEY_DOWN_AFTER_CHECK_NUMS = "console.down.after.checknums";
 	public static final String KEY_CACHE_REFERSH_INTERVAL = "console.cache.refresh.interval";
 	public static final String KEY_ALERT_WHITE_LIST = "console.alert.whitelist";
-
+	public static final String KEY_ALL_CONSOLES = "console.all.addresses";
+	public static final String KEY_QUORUM = "console.quorum";
 
 
 	@Override
@@ -87,6 +88,16 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	@Override
 	public String getAlertWhileList() {
 		return getProperty(KEY_ALERT_WHITE_LIST, "");
+	}
+
+	@Override
+	public String getAllConsoles() {
+		return getProperty(KEY_ALL_CONSOLES, "127.0.0.1:8080");
+	}
+
+	@Override
+	public int getQuorum() {
+		return getIntProperty(KEY_QUORUM, 1);
 	}
 
 }

@@ -59,11 +59,11 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
 
     }
 
-    public int getState(HostPort hostPort){
+    public HEALTH_STATE getState(HostPort hostPort){
 
         HealthStatus healthStatus = allHealthStatus.get(hostPort);
         if(healthStatus == null){
-            return HealthStatus.REDIS_UNKNOWN_STATE;
+            return HEALTH_STATE.UNKNOWN;
         }
         return healthStatus.getState();
     }
