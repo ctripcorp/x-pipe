@@ -1,10 +1,15 @@
 package com.ctrip.xpipe.concurrent;
 
+import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.utils.ObjectUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * @author wenchao.meng
@@ -13,25 +18,97 @@ import java.util.function.Supplier;
  */
 public class FinalStateSetterManager<K, S> {
 
-    private Map<K, S> map = new ConcurrentHashMap<K, S>();
-    private Supplier<S> getter;
-    private Consumer<S> setter;
-    private Executors executors;
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
-    public FinalStateSetterManager(Executors executors, Supplier<S> getter, Consumer<S> setter){
+    private Map<K, S> map = new ConcurrentHashMap<K, S>();
+    private KeyedOneThreadTaskExecutor<K> keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<K>("FinalStateSetter");
+
+    private Function<K, S> getter;
+    private BiConsumer<K, S> setter;
+    private ExecutorService executors;
+
+    public FinalStateSetterManager(Function<K, S> getter, BiConsumer<K, S> setter){
         this.getter = getter;
         this.setter = setter;
-        this.executors = executors;
     }
 
 
     public void set(K k, S s){
 
-        synchronized (map){
-            map.put(k, s);
-        }
+        S previous = map.put(k, s);
 
+        if(!ObjectUtils.equals(previous, s)){
+
+            logger.debug("[set]{},{}->{}", k, previous, s);
+            keyedOneThreadTaskExecutor.execute(k, new CheckAndSetTask(k, s));
+        }
     }
 
+    public class CheckAndSetTask extends AbstractCommand<Void> {
+
+        private int retry = 3;
+        private K k;
+        private S s;
+
+        public CheckAndSetTask(K k, S s){
+            this.k = k;
+            this.s = s;
+        }
+
+        @Override
+        protected void doExecute() throws Exception {
+
+            Exception exception = null;
+
+            S realValue = map.get(k);
+            if(!ObjectUtils.equals(s, realValue)){
+                logger.info("[doRun][current value not as expected, return]{},{},{}", k, s, realValue);
+                future().setSuccess();
+                return;
+            }
+
+            S currentValue = null;
+
+            if(getter != null){
+                try{
+                    currentValue = getter.apply(k);
+                }catch(Exception e){
+                    logger.error("[doRun]" + k, e);
+                }
+            }
+
+            if(!ObjectUtils.equals(s, currentValue)){
+
+                for(int i=0; i < retry ;i++){
+                    try{
+                        logger.debug("[doRun][begin]{}, {}", k, s);
+                        setter.accept(k, s);
+                        logger.debug("[doRun][end]{}, {}", k, s);
+                        break;
+                    }catch (Exception e){
+                        exception = e;
+                        logger.error("[setter error]" + k +","+ s, e);
+                    }
+                }
+            }else{
+                logger.info("[doRun][already current state]{},{},{}", k, s, currentValue);
+            }
+
+            if(exception != null){
+                future().setFailure(exception);
+            }else{
+                future().setSuccess();
+            }
+        }
+
+        @Override
+        public String getName() {
+            return "[CheckAndSetTask]" + k;
+        }
+
+        @Override
+        protected void doReset() {
+        }
+    }
 
 }

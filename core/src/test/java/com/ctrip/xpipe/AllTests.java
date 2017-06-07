@@ -1,6 +1,7 @@
 package com.ctrip.xpipe;
 
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactoryTest;
+import com.ctrip.xpipe.concurrent.FinalStateSetterManagerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -58,6 +59,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	SequenceCommandChainTest.class,
 	ParallelCommandChainTest.class,
 	FileUtilsTest.class,
+	FinalStateSetterManagerTest.class,
 	OneThreadTaskExecutorTest.class,
 	TestZkClientTest.class,
 	StringUtilTest.class,
