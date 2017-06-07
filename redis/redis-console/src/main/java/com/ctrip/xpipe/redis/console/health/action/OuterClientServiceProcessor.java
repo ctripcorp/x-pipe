@@ -41,14 +41,19 @@ public class OuterClientServiceProcessor implements HealthEventProcessor{
         }else if(instanceEvent instanceof InstanceDown){
 
             if(masterUp(instanceEvent.getHostPort())){
-
-                outerClientService.markInstanceDown(instanceEvent.getHostPort());
+                quorumMarkInstanceDown(instanceEvent.getHostPort());
             }else{
                 logger.info("[onEvent][master down, do not call client service]{}", instanceEvent);
             }
         }else{
             throw new IllegalStateException("unknown event:" + instanceEvent);
         }
+    }
+
+    private void quorumMarkInstanceDown(HostPort hostPort) throws Exception {
+
+
+        outerClientService.markInstanceDown(hostPort);
     }
 
     private boolean instanceInBackupDc(HostPort hostPort) {
