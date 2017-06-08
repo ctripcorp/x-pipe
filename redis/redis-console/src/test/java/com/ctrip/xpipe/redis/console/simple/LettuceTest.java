@@ -103,7 +103,7 @@ public class LettuceTest extends AbstractConsoleTest {
 	}
 
 	@Test
-	public void testLettuce() {
+	public void testLettuce() throws IOException {
 
 //		publish();
 
@@ -130,13 +130,13 @@ public class LettuceTest extends AbstractConsoleTest {
 			}
 		});
 
-		redisClient.connect();
-
 		try{
 			doConnect(redisClient);
 		}catch(Exception e){
 			logger.error("[testLettuce][fail]", e);
 		}
+
+		waitForAnyKeyToExit();
 //		connectUntilConnected(redisClient);
 	}
 

@@ -43,6 +43,7 @@ public class RedisSession {
 
 	public RedisSession(RedisClient redisClient, HostPort hostPort) {
 		this.redis = redisClient;
+		redis.addListener(channelListener());
 		this.hostPort = hostPort;
 	}
 
@@ -92,30 +93,24 @@ public class RedisSession {
 		}
 	}
 
-	private RedisConnectionStateListener channelListener(String channel) {
+	private RedisConnectionStateListener channelListener() {
 
 		return new RedisConnectionStateListener() {
 
 			@Override
 			public void onRedisExceptionCaught(RedisChannelHandler<?, ?> connection, Throwable cause) {
-				log.info("[onRedisExceptionCaught]{}, {}", hostPort, cause);
+				log.info("[lettuce][onRedisExceptionCaught]{}, {}", hostPort, cause);
 			}
 
 			@Override
 			public void onRedisDisconnected(RedisChannelHandler<?, ?> connection) {
-				log.info("[onRedisDisconnected]{}, {}", hostPort, connection);
+				log.info("[lettuce][onRedisDisconnected]{}, {}", hostPort, connection);
 			}
 
 			@SuppressWarnings("unchecked")
 			@Override
 			public void onRedisConnected(RedisChannelHandler<?, ?> connection) {
-				log.info("[onRedisConnected]{}, {}", hostPort, connection);
-				if(connection instanceof StatefulRedisPubSubConnection){
-					log.info("[onRedisConnected][subscribe]{},{}", hostPort, channel);
-					StatefulRedisPubSubConnection<String, String>  pubsubConnection = (StatefulRedisPubSubConnection<String, String>)connection;
-					pubsubConnection.async().subscribe(channel);
-				}
-
+				log.info("[lettuce][onRedisConnected]{}, {}", hostPort, connection);
 			}
 		};
 	}
