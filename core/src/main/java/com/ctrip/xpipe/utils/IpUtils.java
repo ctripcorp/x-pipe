@@ -24,6 +24,7 @@ import org.unidal.tuple.Pair;
 public class IpUtils {
 	
 	private static Pattern IP_PATTERN = Pattern.compile("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
+
 	private static Logger logger = LoggerFactory.getLogger(IpUtils.class);
 	
 	public static String getIp(SocketAddress socketAddress){
@@ -53,36 +54,91 @@ public class IpUtils {
 		}
 		return false;
 	}
-	
-	public static InetAddress getFistNonLocalIpv4ServerAddress(){
-		
+
+	public static InetAddress getFistNonLocalIpv4ServerAddress() {
+		return getFistNonLocalIpv4ServerAddress("10");
+	}
+
+	public static InetAddress getFistNonLocalIpv4ServerAddress(String ipPrefixPrefer) {
+
+		InetAddress first = null;
+
 		try {
 			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-			if(interfaces == null){
+			if (interfaces == null) {
 				return null;
 			}
-			while(interfaces.hasMoreElements()){
-				 NetworkInterface current = interfaces.nextElement();
-				 if(current.isLoopback()){
-					 continue;
-				 }
-				 List<InterfaceAddress> addresses = current.getInterfaceAddresses();
-				 if(addresses.size() == 0){
-					 continue;
-				 }
-				 for(InterfaceAddress interfaceAddress : addresses){
+			while (interfaces.hasMoreElements()) {
+				NetworkInterface current = interfaces.nextElement();
+				if (current.isLoopback()) {
+					continue;
+				}
+				List<InterfaceAddress> addresses = current.getInterfaceAddresses();
+				if (addresses.size() == 0) {
+					continue;
+				}
+				for (InterfaceAddress interfaceAddress : addresses) {
 					InetAddress address = interfaceAddress.getAddress();
-					 if(address instanceof Inet4Address){
-						 return address;
-					 }
-				 }
+					if (address instanceof Inet4Address) {
+						if(first == null){
+							first = address;
+						}
+						if(address.getHostAddress().startsWith(ipPrefixPrefer)){
+							return address;
+						}
+					}
+				}
 			}
 		} catch (SocketException e) {
 		}
-		
+
+		if(first != null){
+			return first;
+		}
 		throw new IllegalStateException("[can not find a qualified address]");
 	}
-	
+
+
+	public static boolean isLocal(String host){
+
+		if(host.startsWith("/")){
+			host = host.substring(1);
+		}
+
+		for(InetAddress address : getAllServerAddress()){
+			if(host.equalsIgnoreCase(address.getHostAddress())){
+				return true;
+			}
+		}
+		return  false;
+	}
+
+	protected static List<InetAddress> getAllServerAddress() {
+
+		List<InetAddress> result = new LinkedList<>();
+
+		try {
+			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+			if (interfaces == null) {
+				return null;
+			}
+			while (interfaces.hasMoreElements()) {
+				NetworkInterface current = interfaces.nextElement();
+				List<InterfaceAddress> addresses = current.getInterfaceAddresses();
+				if (addresses.size() == 0) {
+					continue;
+				}
+				for (InterfaceAddress interfaceAddress : addresses) {
+					InetAddress address = interfaceAddress.getAddress();
+					result.add(address);
+				}
+			}
+		} catch (SocketException e) {
+		}
+		return result;
+	}
+
+
 	public static List<InetSocketAddress> parse(String addressDesc){
 		
 		List<InetSocketAddress> result = new LinkedList<>();

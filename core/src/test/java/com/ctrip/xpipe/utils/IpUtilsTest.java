@@ -28,7 +28,15 @@ public class IpUtilsTest extends AbstractTest{
 		logger.info("{}", address.getAddress().getHostAddress());
 	}
 	
-	
+
+	@Test
+	public void testIsLocal(){
+
+		logger.info("{}", IpUtils.isLocal("127.0.0.1"));
+		logger.info("{}", IpUtils.isLocal("10.32.21.2"));
+		logger.info("{}", IpUtils.isLocal("10.32.21.3"));
+
+	}
 
 
 }
