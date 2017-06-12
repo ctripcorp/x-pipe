@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.console.controller;
 
 
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,6 +19,7 @@ import java.util.Map;
  *         Jun 12, 2017
  */
 @RestController
+@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class Health extends AbstractConsoleController {
 
     @Autowired

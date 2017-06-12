@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.sso;
 
+import com.ctrip.xpipe.api.sso.SsoConfig;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 
@@ -10,6 +11,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -80,7 +82,8 @@ public class UserAccessFilter implements Filter {
     }
     
     private boolean isRequestIgnorable(String uri) {
-    	return uri.startsWith("/api") || uri.endsWith(".html")
+
+    	return  Pattern.matches(SsoConfig.excludeRegex, uri) || uri.endsWith(".html")
     			|| uri.endsWith(".css") || uri.endsWith(".js")
     			|| uri.endsWith(".woff") || uri.endsWith(".ttf");
     }

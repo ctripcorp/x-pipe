@@ -1,5 +1,6 @@
 package com.ctrip.xpipe;
 
+import com.ctrip.xpipe.api.sso.SsoConfigTest;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactoryTest;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManagerTest;
 import org.junit.runner.RunWith;
@@ -41,6 +42,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+	SsoConfigTest.class,
 	XpipeNettyClientPoolTest.class,
 	XpipeNettyClientKeyedObjectPoolTest.class,
 	DefaultCommandFutureTest.class,

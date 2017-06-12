@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.service.sso;
 
+import com.ctrip.xpipe.api.sso.SsoConfig;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
@@ -34,7 +35,9 @@ public class SSOConfigurations {
 
     private Config config = Config.DEFAULT;
 
-	@Bean
+    private String excludeRegex = SsoConfig.excludeRegex;
+
+    @Bean
     public ServletListenerRegistrationBean redisAppSettingListener() {
         ServletListenerRegistrationBean redisAppSettingListener = new ServletListenerRegistrationBean();
         redisAppSettingListener.setListener(listener("org.jasig.cas.client.credis.CRedisAppSettingListner"));
@@ -67,7 +70,8 @@ public class SSOConfigurations {
         filterInitParam.put("casServerLoginUrl", config.get(KEY_CAS_SERVER_LOGIN_URL));
         //we don't want to use session to store login information, since we will be deployed to a cluster, not a single instance
         filterInitParam.put("useSession", "false");
-        filterInitParam.put("/api.*", "exclude");
+
+        filterInitParam.put(excludeRegex, "exclude");
 
         casFilter.setInitParameters(filterInitParam);
         casFilter.setFilter(filter("com.ctrip.framework.apollo.sso.filter.ApolloAuthenticationFilter"));
@@ -103,7 +107,7 @@ public class SSOConfigurations {
         FilterRegistrationBean assertionHolderFilter = new FilterRegistrationBean();
 
         Map<String, String> filterInitParam = Maps.newHashMap();
-        filterInitParam.put("/api.*", "exclude");
+        filterInitParam.put(excludeRegex, "exclude");
 
         assertionHolderFilter.setInitParameters(filterInitParam);
 
