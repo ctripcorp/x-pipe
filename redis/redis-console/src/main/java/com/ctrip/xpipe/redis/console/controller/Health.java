@@ -40,6 +40,7 @@ public class Health extends AbstractConsoleController {
 
     protected boolean isFromLocal(HttpServletRequest request){
 
+        logger.debug("[isFromLocal]{}", request.getRemoteHost());
         return IpUtils.isLocal(request.getRemoteHost());
     }
 

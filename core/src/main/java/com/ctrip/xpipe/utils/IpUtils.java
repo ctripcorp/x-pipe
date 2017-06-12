@@ -106,11 +106,22 @@ public class IpUtils {
 		}
 
 		for(InetAddress address : getAllServerAddress()){
-			if(host.equalsIgnoreCase(address.getHostAddress())){
+
+			logger.debug("{}", address.getHostAddress());
+			if(host.equalsIgnoreCase(getAddressString(getAddressString(address.getHostAddress())))){
 				return true;
 			}
 		}
 		return  false;
+	}
+
+	private static String getAddressString(String hostAddress) {
+		//for ipv6
+		int index = hostAddress.indexOf("%");
+		if(index >= 0){
+			hostAddress = hostAddress.substring(0, index);
+		}
+		return hostAddress;
 	}
 
 	protected static List<InetAddress> getAllServerAddress() {
