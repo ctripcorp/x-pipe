@@ -92,11 +92,12 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest{
 	}
 
 
+	protected final String KEY_H2_PORT = "h2Port";
 	private Server h2Server;
-	private int    h2Port = 9123;
 
 	protected void startH2Server() throws SQLException {
 
+		int    h2Port = Integer.parseInt(System.getProperty(KEY_H2_PORT, "9123"));
 		h2Server = Server.createTcpServer("-tcpPort", String.valueOf(h2Port), "-tcpAllowOthers");
 		h2Server.start();
 //		new Console().runTool();

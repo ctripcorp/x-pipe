@@ -38,4 +38,5 @@ public interface ConsoleConfig extends CoreConfig {
 	String getAllConsoles();
 
 	int getQuorum();
+
 }
