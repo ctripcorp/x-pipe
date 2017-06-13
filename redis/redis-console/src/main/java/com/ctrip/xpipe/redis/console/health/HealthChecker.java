@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -74,8 +75,12 @@ public class HealthChecker {
 
 		for(SampleMonitor sampleMonitor : sampleMonitors){
 
-			for(Object objectPlan: sampleMonitor.generatePlan(dcMetas)){
+			Collection collection = sampleMonitor.generatePlan(dcMetas);
+			if(collection == null){
+				continue;
+			}
 
+			for(Object objectPlan : collection){
 				BaseSamplePlan plan = (BaseSamplePlan) objectPlan;
 				try {
 					sampleMonitor.startSample(plan);
