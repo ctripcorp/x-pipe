@@ -47,6 +47,10 @@ public class BaseInstanceResult<T> {
 		return this.failReason != null;
 	}
 
+	public Throwable getFailReason() {
+		return failReason;
+	}
+
 	public long calculateDelay(long publishNanoTime) {
 		return rcvNanoTime.get() - publishNanoTime;
 	}

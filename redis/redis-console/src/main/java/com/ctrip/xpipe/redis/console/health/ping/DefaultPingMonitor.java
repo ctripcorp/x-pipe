@@ -89,30 +89,15 @@ public class DefaultPingMonitor extends BaseSampleMonitor<InstancePingResult> im
 	}
 
 	@Override
-	public Collection<BaseSamplePlan<InstancePingResult>> generatePlan(List<DcMeta> dcMetas) {
+	protected void addRedis(BaseSamplePlan<InstancePingResult> plan, String dcId, RedisMeta redisMeta) {
 
-		Map<Pair<String, String>, BaseSamplePlan<InstancePingResult>> plans = new HashMap<>();
+		plan.addRedis(dcId, redisMeta, new InstancePingResult());
+	}
 
-		for (DcMeta dcMeta : dcMetas) {
-			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
-					Pair<String, String> cs = new Pair<>(clusterMeta.getId(), shardMeta.getId());
-					PingSamplePlan plan = (PingSamplePlan) plans.get(cs);
-					if (plan == null) {
-						plan = new PingSamplePlan(clusterMeta.getId(), shardMeta.getId());
-						plans.put(cs, plan);
-					}
+	@Override
+	protected BaseSamplePlan<InstancePingResult> createPlan(String clusterId, String shardId) {
 
-					for (RedisMeta redisMeta : shardMeta.getRedises()) {
-
-						log.debug("[generatePlan]{}", redisMeta.desc());
-						plan.addRedis(dcMeta.getId(), redisMeta, new InstancePingResult());
-					}
-				}
-			}
-		}
-
-		return plans.values();
+		return new PingSamplePlan(clusterId, shardId);
 	}
 
 }

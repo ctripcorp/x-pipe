@@ -12,7 +12,6 @@ import java.util.List;
  */
 public interface SampleMonitor<T> {
 
-
 	Collection<BaseSamplePlan<T>>  generatePlan(List<DcMeta> dcMetas);
 
 	void startSample(BaseSamplePlan<T> plan) throws Exception;

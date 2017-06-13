@@ -20,6 +20,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	public static final String KEY_METASERVERS = "metaservers";
 	public static final String KEY_USER_ACCESS_WHITE_LIST = "user.access.white.list";
 	public static final String KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL = "redis.replication.health.check.interval";
+	public static final String KEY_REDIS_CONF_CHECK_INTERVAL = "redis.conf.check.interval";
 	public static final String KEY_HICKWALL_ADDRESS = "console.hickwall.address";
 	public static final String KEY_HEALTHY_DELAY = "console.healthy.delay";
 	public static final String KEY_DOWN_AFTER_CHECK_NUMS = "console.down.after.checknums";
@@ -99,5 +100,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	public int getQuorum() {
 		return getIntProperty(KEY_QUORUM, 1);
 	}
+
+	@Override
+	public int getRedisConfCheckIntervalMilli() {
+		return getIntProperty(KEY_REDIS_CONF_CHECK_INTERVAL, 300000);
+	}
+
 
 }

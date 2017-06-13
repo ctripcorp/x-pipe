@@ -4,16 +4,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
-import com.lambdaworks.redis.RedisException;
+import com.lambdaworks.redis.*;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.metric.HostPort;
-import com.lambdaworks.redis.RedisChannelHandler;
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisConnectionStateListener;
 import com.lambdaworks.redis.api.StatefulRedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
@@ -148,8 +146,8 @@ public class RedisSession {
 	public  void role(RollCallback callback){
 
 		final CompletableFuture<List<Object>> future = findOrCreateNonSubscribeConnection().async().role().toCompletableFuture();
-		future.thenRun(new Runnable() {
 
+		future.thenRun(new Runnable() {
 			@Override
 			public void run() {
 
@@ -161,6 +159,13 @@ public class RedisSession {
 				}
 			}
 		});
+	}
+
+	public void configRewrite(BiConsumer<String, Throwable> consumer){
+
+		RedisFuture<String> redisFuture = findOrCreateNonSubscribeConnection().async().configRewrite();
+		redisFuture.whenComplete(consumer);
+
 	}
 
 	public  String roleSync() throws Exception {

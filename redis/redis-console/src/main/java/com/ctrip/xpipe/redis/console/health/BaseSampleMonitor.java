@@ -1,18 +1,27 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.util.Iterator;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.PostConstruct;
 
+import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.redis.console.health.ping.InstancePingResult;
+import com.ctrip.xpipe.redis.console.health.ping.PingSamplePlan;
+import com.ctrip.xpipe.redis.console.health.redisconf.InstanceRedisConfResult;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import org.unidal.tuple.Pair;
 
 /**
  * @author marsqing
@@ -40,8 +49,17 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 		return nanoTime;
 	}
 
+	protected RedisSession findRedisSession(HostPort hostPort) {
+		return redisSessionManager.findOrCreateSession(hostPort.getHost(), hostPort.getPort());
+	}
+
 	protected RedisSession findRedisSession(String host, int port) {
 		return redisSessionManager.findOrCreateSession(host, port);
+	}
+
+
+	protected <C> void addInstanceSuccess(long nanoTime, HostPort hostPort, C context) {
+		addInstanceSuccess(nanoTime, hostPort.getHost(), hostPort.getPort(), context);
 	}
 
 	protected <C> void addInstanceSuccess(long nanoTime, String host, int port, C context) {
@@ -49,6 +67,10 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 		if (sample != null) {
 			sample.addInstanceSuccess(host, port, context);
 		}
+	}
+
+	protected <C> void addInstanceFail(long nanoTime, HostPort hostPort, Throwable th) {
+		addInstanceFail(nanoTime, hostPort.getHost(), hostPort.getPort(), th);
 	}
 
 	protected <C> void addInstanceFail(long nanoTime, String host, int port, Throwable th) {
@@ -99,4 +121,35 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 
 		}).start();
 	}
+
+	@Override
+	public Collection<BaseSamplePlan<T>> generatePlan(List<DcMeta> dcMetas) {
+
+		Map<Pair<String, String>, BaseSamplePlan<T>> plans = new HashMap<>();
+
+		for (DcMeta dcMeta : dcMetas) {
+			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+					Pair<String, String> cs = new Pair<>(clusterMeta.getId(), shardMeta.getId());
+					BaseSamplePlan<T> plan = plans.get(cs);
+					if (plan == null) {
+						plan = createPlan(clusterMeta.getId(), shardMeta.getId());
+						plans.put(cs, plan);
+					}
+
+					for (RedisMeta redisMeta : shardMeta.getRedises()) {
+
+						log.debug("[generatePlan]{}", redisMeta.desc());
+						addRedis(plan, dcMeta.getId(), redisMeta);
+					}
+				}
+			}
+		}
+		return plans.values();
+	}
+
+	protected abstract void addRedis(BaseSamplePlan<T> plan, String dcId, RedisMeta redisMeta);
+
+	protected abstract BaseSamplePlan<T> createPlan(String clusterId, String shardId);
+
 }

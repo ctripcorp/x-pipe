@@ -115,27 +115,15 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 	}
 
 	@Override
-	public Collection<BaseSamplePlan<InstanceDelayResult>> generatePlan(List<DcMeta> dcMetas) {
+	protected void addRedis(BaseSamplePlan<InstanceDelayResult> plan, String dcId, RedisMeta redisMeta) {
 
-		Map<Pair<String, String>, BaseSamplePlan<InstanceDelayResult>> plans = new HashMap<>();
+		DelaySamplePlan delaySamplePlan = (DelaySamplePlan) plan;
+		delaySamplePlan.addRedis(dcId, redisMeta);
+	}
 
-		for (DcMeta dcMeta : dcMetas) {
-			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
-					Pair<String, String> cs = new Pair<>(clusterMeta.getId(), shardMeta.getId());
-					DelaySamplePlan plan = (DelaySamplePlan) plans.get(cs);
-					if (plan == null) {
-						plan = new DelaySamplePlan(clusterMeta.getId(), shardMeta.getId());
-						plans.put(cs, plan);
-					}
-
-					for (RedisMeta redisMeta : shardMeta.getRedises()) {
-						plan.addRedis(dcMeta.getId(), redisMeta);
-					}
-				}
-			}
-		}
-		return plans.values();
+	@Override
+	protected BaseSamplePlan<InstanceDelayResult> createPlan(String clusterId, String shardId) {
+		return new DelaySamplePlan(clusterId, shardId);
 	}
 
 

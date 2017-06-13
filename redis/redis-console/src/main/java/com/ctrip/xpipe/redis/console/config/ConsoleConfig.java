@@ -39,4 +39,5 @@ public interface ConsoleConfig extends CoreConfig {
 
 	int getQuorum();
 
+	int getRedisConfCheckIntervalMilli();
 }

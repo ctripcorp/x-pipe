@@ -93,6 +93,16 @@ public class DefaultRedisMasterMonitor extends BaseSampleMonitor<InstanceRedisMa
         return plans.values();
     }
 
+    @Override
+    protected void addRedis(BaseSamplePlan<InstanceRedisMasterResult> plan, String dcId, RedisMeta redisMeta) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected BaseSamplePlan<InstanceRedisMasterResult> createPlan(String clusterId, String shardId) {
+        throw new UnsupportedOperationException();
+    }
+
     private boolean isActiveDc(String currentDc, String clusterActiveDc) {
 
         if(currentDc.equalsIgnoreCase(clusterActiveDc)){

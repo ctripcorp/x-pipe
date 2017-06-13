@@ -27,7 +27,7 @@ import java.util.concurrent.Executors;
  *         <p>
  *         Jun 12, 2017
  */
-public abstract class AbstractLeaderElector extends AbstractLifecycle implements ApplicationContextAware, LeaderLatchListener {
+public abstract class AbstractLeaderElector extends AbstractLifecycle implements ApplicationContextAware, ClusterServer{
 
     @Autowired
     private ZkClient zkClient;
@@ -38,14 +38,38 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
 
     private LeaderLatch leaderLatch;
 
-
     private volatile boolean isLeader = false;
 
     @Override
     protected void doStart() throws Exception {
 
         leaderLatch = new LeaderLatch(zkClient.get(), getLeaderElectPath(), getServerId());
-        leaderLatch.addListener(this, executors);
+        leaderLatch.addListener(new LeaderLatchListener() {
+
+            @Override
+            public void isLeader() {
+
+                logger.info("[isLeader]({})", getServerId());
+                isLeader = true;
+                Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
+                for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
+                    logger.info("[isLeader][notify]{}", entry.getKey());
+                    entry.getValue().isleader();
+                }
+            }
+
+            @Override
+            public void notLeader() {
+
+                logger.info("[notLeader]{}", getServerId());
+                isLeader = false;
+                Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
+                for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
+                    logger.info("[notLeader][notify]{}", entry.getKey());
+                    entry.getValue().notLeader();
+                }
+            }
+        }, executors);
         leaderLatch.start();
     }
 
@@ -56,6 +80,7 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
         }
     };
 
+    @Override
     public List<String> getAllServers() throws Exception {
 
         String leaderElectPath = getLeaderElectPath();
@@ -73,9 +98,7 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
         return result;
     }
 
-
     protected abstract String getServerId();
-
 
     @Override
     protected void doStop() throws Exception {
@@ -83,34 +106,11 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
     }
 
     @Override
-    public void isLeader() {
-
-        logger.info("[isLeader]({})", getServerId());
-        isLeader = true;
-        Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
-        for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
-            logger.info("[isLeader][notify]{}", entry.getKey());
-            entry.getValue().isleader();
-        }
-    }
-
-    @Override
-    public void notLeader() {
-
-        logger.info("[notLeader]{}", getServerId());
-        isLeader = false;
-        Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
-        for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
-            logger.info("[notLeader][notify]{}", entry.getKey());
-            entry.getValue().notLeader();
-        }
-    }
-
-    @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 
+    @Override
     public boolean amILeader() {
         return isLeader;
     }

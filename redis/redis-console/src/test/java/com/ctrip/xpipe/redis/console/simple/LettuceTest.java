@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.simple;
 import java.io.IOException;
 import java.sql.Time;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -39,7 +40,24 @@ public class LettuceTest extends AbstractConsoleTest {
 	public void beforeLettuceTest() {
 		clientResources = DefaultClientResources.builder().reconnectDelay(Delay.constant(5, TimeUnit.SECONDS)).build();
 		redisURI = new RedisURI(host, port, 10, TimeUnit.SECONDS);
+	}
 
+	@Test
+	public void testConfigRewrite() throws IOException {
+
+		RedisClient redisClient = RedisClient.create(clientResources, redisURI);
+		StatefulRedisConnection<String, String> connect = redisClient.connect();
+		RedisFuture<String> configRewrite = connect.async().configRewrite();
+
+		configRewrite.whenComplete((str, th) -> {
+
+			logger.info("result:{}", str);
+			logger.info("exception:{}", th.getMessage());
+
+
+		});
+
+		sleep(1000);
 	}
 
 	@Test
