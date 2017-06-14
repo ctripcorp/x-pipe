@@ -42,8 +42,8 @@ public class JsonCodecTest extends AbstractTest{
 		logger.info("{}", decode);
 
 		Map<String, String> data = new HashMap();
-		data.put("dns1", "jq");
-		data.put("dns2", "oy");
+		data.put("xpipe.sh3.ctripcorp.com", "SHAOY");
+		data.put("xpipe.sh2.ctripcorp.com", "SHAJQ");
 
 		logger.info("{}", JsonCodec.INSTANCE.encode(data));
 	}

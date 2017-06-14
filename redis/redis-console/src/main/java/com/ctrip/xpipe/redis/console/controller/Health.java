@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller;
 
-
+import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.IpUtils;
@@ -27,6 +27,8 @@ public class Health extends AbstractConsoleController {
     @Autowired
     private ConsoleLeaderElector consoleLeaderElector;
 
+    @Autowired
+    private CrossDcClusterServer crossDcClusterServer;
 
     @RequestMapping(value = "/health", method = RequestMethod.GET)
     public Map<String, Object> getHealthState(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -49,6 +51,7 @@ public class Health extends AbstractConsoleController {
         Map<String, Object> result = new HashMap<>();
         result.put("isLeader", consoleLeaderElector.amILeader());
         result.put("status", consoleLeaderElector.getAllServers());
+        result.put("crossDcLeader", crossDcClusterServer.amILeader());
         return result;
     }
 }

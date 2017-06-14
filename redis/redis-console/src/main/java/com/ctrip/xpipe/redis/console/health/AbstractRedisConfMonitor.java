@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import com.ctrip.xpipe.api.cluster.ClusterServer;
+import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.redisconf.InstanceRedisConfResult;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfCollector;
@@ -23,7 +23,7 @@ public abstract class AbstractRedisConfMonitor extends BaseSampleMonitor<Instanc
     private ConsoleConfig consoleConfig;
 
     @Autowired(required = false)
-    private ClusterServer clusterServer;
+    private CrossDcClusterServer clusterServer;
 
     @Autowired
     private List<RedisConfCollector> collectors;
