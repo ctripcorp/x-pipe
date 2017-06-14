@@ -1,10 +1,9 @@
-package com.ctrip.xpipe.redis.console.health.redisconf;
+package com.ctrip.xpipe.redis.console.health;
 
-import com.ctrip.xpipe.cluster.ClusterServer;
+import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.health.BaseSampleMonitor;
-import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
-import com.ctrip.xpipe.redis.console.health.Sample;
+import com.ctrip.xpipe.redis.console.health.redisconf.InstanceRedisConfResult;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfCollector;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 

@@ -2,8 +2,10 @@ package com.ctrip.xpipe.redis.console.config;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 
 /**
@@ -28,6 +30,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	public static final String KEY_ALERT_WHITE_LIST = "console.alert.whitelist";
 	public static final String KEY_ALL_CONSOLES = "console.all.addresses";
 	public static final String KEY_QUORUM = "console.quorum";
+
+	public static final String KEY_DOMAIN = "console.domain";
+	public static final String KEY_CNAME_TODC = "console.cname.todc";
 
 
 	@Override
@@ -104,6 +109,18 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	@Override
 	public int getRedisConfCheckIntervalMilli() {
 		return getIntProperty(KEY_REDIS_CONF_CHECK_INTERVAL, 300000);
+	}
+
+	@Override
+	public String getConsoleDomain() {
+		return getProperty(KEY_DOMAIN, "127.0.0.1");
+	}
+
+	@Override
+	public Map<String, String> getConsoleCnameToDc() {
+
+		String property = getProperty(KEY_CNAME_TODC, "{}");
+		return JsonCodec.INSTANCE.decode(property, Map.class);
 	}
 
 

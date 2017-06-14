@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.redisconf;
 
 import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.redis.console.health.AbstractRedisConfMonitor;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import io.netty.util.internal.ConcurrentSet;

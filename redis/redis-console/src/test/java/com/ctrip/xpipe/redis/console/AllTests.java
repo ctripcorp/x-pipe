@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console;
 
 
+import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
 import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
@@ -32,6 +33,7 @@ import org.junit.runner.RunWith;
 @RunWith(Suite.class)
 @SuiteClasses({
 
+	ConsoleCrossDcServerTest.class,
 	HealthStatusTest.class,
 	RedisServiceImplTest.class,
 	KeepercontainerServiceImplTest.class,

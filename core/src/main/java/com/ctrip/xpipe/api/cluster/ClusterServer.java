@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.cluster;
+package com.ctrip.xpipe.api.cluster;
 
 import java.util.List;
 

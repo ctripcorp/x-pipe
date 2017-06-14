@@ -75,12 +75,14 @@ public class HealthChecker {
 
 		for(SampleMonitor sampleMonitor : sampleMonitors){
 
+			log.debug("[sampleAll]{}", sampleMonitor);
 			Collection collection = sampleMonitor.generatePlan(dcMetas);
 			if(collection == null){
 				continue;
 			}
 
 			for(Object objectPlan : collection){
+
 				BaseSamplePlan plan = (BaseSamplePlan) objectPlan;
 				try {
 					sampleMonitor.startSample(plan);

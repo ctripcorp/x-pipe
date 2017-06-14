@@ -47,6 +47,7 @@
 		<plexus-utils.version>3.0.24</plexus-utils.version>
 		<git-commit-id-plugin.version>2.2.0</git-commit-id-plugin.version>
 		<log4j2.version>2.6.2</log4j2.version>
+		<dnsjava.version>2.1.6</dnsjava.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
@@ -126,6 +127,11 @@
 			</dependency>
 
 			<!-- xpipe related -->
+			<dependency>
+				<groupId>dnsjava</groupId>
+				<artifactId>dnsjava</artifactId>
+				<version>${dnsjava.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>biz.paluch.redis</groupId>
 				<artifactId>lettuce</artifactId>

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.cluster;
 
+import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
@@ -27,7 +28,7 @@ import java.util.concurrent.Executors;
  *         <p>
  *         Jun 12, 2017
  */
-public abstract class AbstractLeaderElector extends AbstractLifecycle implements ApplicationContextAware, ClusterServer{
+public abstract class AbstractLeaderElector extends AbstractLifecycle implements ApplicationContextAware, ClusterServer {
 
     @Autowired
     private ZkClient zkClient;

@@ -1,15 +1,9 @@
 package com.ctrip.xpipe.redis.console.health.ping;
 
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -20,7 +14,6 @@ import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 import com.ctrip.xpipe.redis.console.health.PingCallback;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.Sample;
-import org.unidal.tuple.Pair;
 
 /**
  * @author marsqing
@@ -36,6 +29,7 @@ public class DefaultPingMonitor extends BaseSampleMonitor<InstancePingResult> im
 
 	@Override
 	protected void notifyCollectors(Sample<InstancePingResult> sample) {
+
 		PingSampleResult sampleResult = converToSampleResult(sample);
 		for (PingCollector collector : collectors) {
 			collector.collect(sampleResult);
@@ -57,6 +51,7 @@ public class DefaultPingMonitor extends BaseSampleMonitor<InstancePingResult> im
 
 	@Override
 	public void startSample(BaseSamplePlan<InstancePingResult> plan) throws Exception {
+
 		long startNanoTime = recordSample(plan);
 		samplePing(startNanoTime, plan);
 	}

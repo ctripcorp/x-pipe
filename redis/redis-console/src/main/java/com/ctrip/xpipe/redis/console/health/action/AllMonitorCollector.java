@@ -98,6 +98,7 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
                         () -> downAfterCheckNums * consoleConfig.getRedisReplicationHealthCheckInterval(),
                         () -> consoleConfig.getHealthyDelayMilli(),
                         scheduled);
+
                 healthStatus.addObserver(new Observer() {
                     @Override
                     public void update(Object args, Observable observable) {

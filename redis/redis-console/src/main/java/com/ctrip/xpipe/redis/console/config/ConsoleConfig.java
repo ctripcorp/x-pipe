@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.config;
 
+import java.util.Map;
 import java.util.Set;
 
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
@@ -40,4 +41,9 @@ public interface ConsoleConfig extends CoreConfig {
 	int getQuorum();
 
 	int getRedisConfCheckIntervalMilli();
+
+	String getConsoleDomain();
+
+	Map<String, String> getConsoleCnameToDc();
+
 }
