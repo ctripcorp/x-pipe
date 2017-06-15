@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console;
 
 
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.dao.ConfigDaoTest;
 import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
 import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
@@ -51,7 +52,8 @@ import org.junit.runner.RunWith;
 	MigrationPublishStatTest.class,
 	SingleShardMigrationTest.class,
 	MultiShardMigrationTest.class,
-	ConfigDaoTest.class
+	ConfigDaoTest.class,
+	DefaultConsoleDbConfigTest.class
 })
 public class AllTests {
 

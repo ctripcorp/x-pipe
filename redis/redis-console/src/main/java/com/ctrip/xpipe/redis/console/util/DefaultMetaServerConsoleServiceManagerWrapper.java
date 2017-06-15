@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.ctrip.xpipe.redis.console.config.DefaultConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;

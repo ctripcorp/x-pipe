@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ public class ConfigDaoTest extends AbstractConsoleIntegrationTest {
     @Autowired
     private ConfigDao configDao;
 
-    private String key = "sentinel.auto.process";
+    private String key = DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS;
 
     @Test
     public void testGetSet() throws DalException, SQLException, IOException {

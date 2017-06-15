@@ -7,7 +7,9 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author wenchao.meng
@@ -46,6 +48,17 @@ public class JsonCodecTest extends AbstractTest{
 		data.put("xpipe.sh2.ctripcorp.com", "SHAJQ");
 
 		logger.info("{}", JsonCodec.INSTANCE.encode(data));
+	}
+
+	@Test
+	public void testSet(){
+
+		Set<String> set = new HashSet<>();
+
+		set.add("1");
+
+		logger.info("{}", JsonCodec.INSTANCE.encode(set));
+
 	}
 
 	
