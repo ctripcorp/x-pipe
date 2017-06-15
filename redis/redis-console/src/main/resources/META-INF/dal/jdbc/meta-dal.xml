@@ -930,4 +930,40 @@
 			</query>
 		</query-defs>
 	</entity>
+
+	<entity name="config-tbl" table="config_tbl" alias="cfgt">
+
+		<readsets>
+			<readset name="value">
+				<member name='value'/>
+			</readset>
+		</readsets>
+
+		<query-defs>
+			<query name="update-by-key" type="UPDATE" batch="false">
+				<param name="key"/>
+				<param name="value"/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='value'/> = ${value}
+					WHERE <FIELD name='key'/> = ${key}
+					]]>
+				</statement>
+			</query>
+
+			<query name="find-by-key" type="SELECT" multiple="false">
+				<param name="key"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='key'/> = ${key}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+
 </entities>

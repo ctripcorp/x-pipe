@@ -109,6 +109,15 @@
 			</configuration>
 		</component>
 		<component>
+			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
+			<role-hint>config-tbl</role-hint>
+			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
+			<configuration>
+				<physical-table-name>config_tbl</physical-table-name>
+				<data-source-name>fxxpipe</data-source-name>
+			</configuration>
+		</component>
+		<component>
 			<role>com.ctrip.xpipe.redis.console.model.ClusterTblDao</role>
 			<implementation>com.ctrip.xpipe.redis.console.model.ClusterTblDao</implementation>
 			<requirements>
@@ -210,6 +219,15 @@
 		<component>
 			<role>com.ctrip.xpipe.redis.console.model.MigrationShardTblDao</role>
 			<implementation>com.ctrip.xpipe.redis.console.model.MigrationShardTblDao</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.QueryEngine</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
+			<role>com.ctrip.xpipe.redis.console.model.ConfigTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.ConfigTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>

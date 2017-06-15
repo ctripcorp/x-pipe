@@ -169,3 +169,17 @@ create table MIGRATION_SHARD_TBL
 	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
+
+
+-- Config Table
+drop table if exists config_tbl;
+CREATE TABLE `config_tbl` (
+  id bigint unsigned NOT NULL AUTO_INCREMENT primary key,
+  key varchar(128) NOT NULL DEFAULT '' unique,
+  value varchar(1024) DEFAULT '' ,
+  desc varchar(1024) NOT NULL DEFAULT '' ,
+  DataChange_LastTime timestamp DEFAULT CURRENT_TIMESTAMP,
+  deleted tinyint(4) NOT NULL DEFAULT 0,
+);
+INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('sentinel.auto.process', 'true', '自动增删哨兵');
+
