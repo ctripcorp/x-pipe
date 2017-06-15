@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.dal.jdbc.DalException;
+import org.unidal.dal.jdbc.DalNotFoundException;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -23,9 +24,24 @@ public class ConfigDaoTest extends AbstractConsoleIntegrationTest {
     private String key = DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS;
 
     @Test
-    public void testGetSet() throws DalException, SQLException, IOException {
+    public void testCreateIfNotExist() throws DalException {
 
-        startH2Server();
+        String key = randomString(10);
+
+        try{
+            configDao.getKey(key);
+            Assert.fail();
+        }catch (DalNotFoundException e){
+
+        }
+
+        configDao.setKey(key, randomString(10));
+
+        configDao.getKey(key);
+    }
+
+    @Test
+    public void testGetSet() throws DalException, SQLException, IOException {
 
         logger.info("{}", configDao.findByKey(1));
 

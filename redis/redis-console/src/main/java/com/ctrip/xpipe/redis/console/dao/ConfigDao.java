@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.model.ConfigTblEntity;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
+import org.unidal.dal.jdbc.DalNotFoundException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
@@ -41,12 +42,25 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
         return configTblDao.findByPK(id, ConfigTblEntity.READSET_FULL);
     }
 
-    public void setKey(String key, String value) throws DalException {
+    public synchronized void setKey(String key, String value) throws DalException {
+
+        boolean insert = false;
+
+        try{
+            getKey(key);
+        }catch (DalNotFoundException e){
+            logger.info("[setKey][not exist, create]{}", e.getMessage());
+            insert = true;
+        }
 
         ConfigTbl configTbl = new ConfigTbl();
         configTbl.setKey(key);
         configTbl.setValue(value);
-        configTblDao.updateByKey(configTbl, ConfigTblEntity.UPDATESET_FULL);
+        if(!insert) {
+            configTblDao.updateByKey(configTbl, ConfigTblEntity.UPDATESET_FULL);
+        }else{
+            configTblDao.insert(new ConfigTbl().setKey(key).setValue(value).setDesc("insert automatically"));
+        }
     }
 
 
