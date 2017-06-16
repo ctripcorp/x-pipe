@@ -9,11 +9,17 @@ import static java.util.regex.Pattern.*;
  *         <p>
  *         Jun 12, 2017
  */
-public interface SsoConfig {
+public class SsoConfig {
 
-    String excludeRegex = "/api/.*|/health";
+    public static final String excludeRegex = "/api/.*|/health";
 
-    static boolean matches(String url){
+    public static boolean stopsso = false;
+
+    public static boolean excludes(String url){
+
+        if(stopsso){
+            return  true;
+        }
         return Pattern.matches(SsoConfig.excludeRegex, url);
     }
 
