@@ -35,8 +35,9 @@ public class MigrationController extends AbstractConsoleController {
 
 		Map<String, Long> res = new HashMap<>();
 		logger.info("[Create Event]{}", event);
-		res.put("value", migrationService.createMigrationEvent(event));
-		logger.info("[Create Event][Done]{}", event);
+		Long migrationEventId = migrationService.createMigrationEvent(event);
+		res.put("value", migrationEventId);
+		logger.info("[Create Event][Done]{}", migrationEventId);
 		return res;
 	}
 	
