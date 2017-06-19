@@ -151,16 +151,16 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.setRedisKeeperServerState(
 				new RedisKeeperServerStateActive(redisKeeperServer, localhostInetAddress(server1.getPort())));
 		redisKeeperServer.reconnectMaster();
-		sleep(100);
-		Assert.assertEquals(1, server1.getConnected());
+
+		waitConditionUntilTimeOut(() -> server1.getConnected() == 1);
 
 		redisKeeperServer.stop();
 
 		redisKeeperServer.setRedisKeeperServerState(
 				new RedisKeeperServerStateActive(redisKeeperServer, localhostInetAddress(server2.getPort())));
 		redisKeeperServer.reconnectMaster();
-		sleep(100);
-		Assert.assertEquals(0, server1.getConnected());
+
+		waitConditionUntilTimeOut(() -> server1.getConnected() == 0);
 		Assert.assertEquals(0, server2.getConnected());
 
 		redisKeeperServer.dispose();
