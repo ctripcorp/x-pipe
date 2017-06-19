@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
+import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
 /**
  * @author shyin
@@ -45,5 +46,7 @@ public interface ConsoleConfig extends CoreConfig {
 	String getConsoleDomain();
 
 	Map<String, String> getConsoleCnameToDc();
+
+	QuorumConfig  getDefaultSentinelQuorumConfig();
 
 }

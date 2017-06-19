@@ -8,6 +8,7 @@ import java.util.Set;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
+import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
 /**
  * @author shyin
@@ -31,9 +32,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 	public static final String KEY_ALERT_WHITE_LIST = "console.alert.whitelist";
 	public static final String KEY_ALL_CONSOLES = "console.all.addresses";
 	public static final String KEY_QUORUM = "console.quorum";
-
 	public static final String KEY_DOMAIN = "console.domain";
 	public static final String KEY_CNAME_TODC = "console.cname.todc";
+
+	public static final String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
+
 
 
 	@Override
@@ -122,6 +125,13 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
 		String property = getProperty(KEY_CNAME_TODC, "{}");
 		return JsonCodec.INSTANCE.decode(property, Map.class);
+	}
+
+	@Override
+	public QuorumConfig getDefaultSentinelQuorumConfig() {
+
+		String config = getProperty(KEY_SENTINEL_QUORUM, "{}");
+		return JsonCodec.INSTANCE.decode(config, QuorumConfig.class);
 	}
 
 
