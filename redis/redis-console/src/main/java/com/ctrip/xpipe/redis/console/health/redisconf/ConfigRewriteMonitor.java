@@ -3,8 +3,10 @@ package com.ctrip.xpipe.redis.console.health.redisconf;
 import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.health.AbstractRedisConfMonitor;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
+import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import io.netty.util.internal.ConcurrentSet;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -17,9 +19,19 @@ import java.util.*;
  */
 @Component
 @Lazy
-public class ConfigRewriteMonitor extends AbstractRedisConfMonitor {
+public class ConfigRewriteMonitor extends AbstractRedisConfMonitor<InstanceRedisConfResult> {
 
     private  Set<HostPort> goodRedises = new ConcurrentSet<>();
+
+    @Autowired
+    private List<RedisConfCollector> collectors;
+
+    @Override
+    protected void notifyCollectors(Sample<InstanceRedisConfResult> sample) {
+
+        collectors.forEach((collector) -> collector.collect(sample));
+    }
+
 
     @Override
     protected void doStartSample(BaseSamplePlan<InstanceRedisConfResult> plan) {

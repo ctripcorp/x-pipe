@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -12,6 +15,8 @@ public class BaseInstanceResult<T> {
 	protected AtomicLong rcvNanoTime = new AtomicLong();
 	protected T context;
 	protected Throwable failReason;
+
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 
 	public boolean isDone() {
 		return rcvNanoTime.get() > 0;

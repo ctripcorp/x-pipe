@@ -14,7 +14,7 @@ public class Sample<T extends BaseInstanceResult> {
 
 	private long startTime;
 	private long expireTime;
-	private BaseSamplePlan<T> samplePlan;
+	protected BaseSamplePlan<T> samplePlan;
 	private long startNanoTime;
 	private AtomicInteger remainingRedisCount;
 

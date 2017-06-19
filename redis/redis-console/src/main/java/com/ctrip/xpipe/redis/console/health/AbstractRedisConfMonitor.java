@@ -15,7 +15,7 @@ import java.util.List;
  *         <p>
  *         Jun 13, 2017
  */
-public abstract class AbstractRedisConfMonitor extends BaseSampleMonitor<InstanceRedisConfResult>{
+public abstract class AbstractRedisConfMonitor<T extends BaseInstanceResult> extends BaseSampleMonitor<T>{
 
     private long lastPlanTime = 0;
 
@@ -25,22 +25,19 @@ public abstract class AbstractRedisConfMonitor extends BaseSampleMonitor<Instanc
     @Autowired(required = false)
     private CrossDcClusterServer clusterServer;
 
-    @Autowired
-    private List<RedisConfCollector> collectors;
 
     @Override
-    protected void notifyCollectors(Sample<InstanceRedisConfResult> sample) {
+    public Collection<BaseSamplePlan<T>> generatePlan(List<DcMeta> dcMetas) {
 
-        collectors.forEach((collector) -> collector.collect(sample));
-    }
+        if(!shouldStart()){
+            return null;
+        }
 
-    @Override
-    public Collection<BaseSamplePlan<InstanceRedisConfResult>> generatePlan(List<DcMeta> dcMetas) {
-
-        if(clusterServer != null && !clusterServer.amILeader()){
+            if(clusterServer != null && !clusterServer.amILeader()){
             log.debug("[generatePlan][not leader quit]");
             return null;
         }
+
 
         long current = System.currentTimeMillis();
         if( current - lastPlanTime < consoleConfig.getRedisConfCheckIntervalMilli()){
@@ -52,8 +49,12 @@ public abstract class AbstractRedisConfMonitor extends BaseSampleMonitor<Instanc
         return super.generatePlan(dcMetas);
     }
 
+    protected boolean shouldStart(){
+        return true;
+    }
+
     @Override
-    public void startSample(BaseSamplePlan<InstanceRedisConfResult> plan) throws Exception {
+    public void startSample(BaseSamplePlan<T> plan) throws Exception {
 
         if(plan == null){
             return;
@@ -61,6 +62,6 @@ public abstract class AbstractRedisConfMonitor extends BaseSampleMonitor<Instanc
         doStartSample(plan);
     }
 
-    protected abstract void doStartSample(BaseSamplePlan<InstanceRedisConfResult> plan);
+    protected abstract void doStartSample(BaseSamplePlan<T> plan);
 
 }

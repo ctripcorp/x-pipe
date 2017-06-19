@@ -64,6 +64,17 @@ public class RedisSession {
 
 	}
 
+	public synchronized void closeSubscribedChannel(String channel){
+
+		PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(channel);
+		if(pubSubConnectionWrapper != null){
+			log.info("[closeSubscribedChannel]{}, {}", hostPort, channel);
+			pubSubConnectionWrapper.closeAndClean();
+			subscribConns.remove(channel);
+		}
+
+	}
+
 	public synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback) {
 
 		if (!subscribConns.containsKey(channel)) {

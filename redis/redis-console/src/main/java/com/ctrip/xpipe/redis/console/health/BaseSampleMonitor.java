@@ -45,8 +45,13 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 
 	protected long recordSample(BaseSamplePlan<T> plan) {
 		long nanoTime = System.nanoTime();
-		samples.put(nanoTime, new Sample<>(System.currentTimeMillis(), nanoTime, plan, 1500));
+		samples.put(nanoTime, createSample(nanoTime, plan));
 		return nanoTime;
+	}
+
+	protected Sample<T> createSample(long nanoTime, BaseSamplePlan<T> plan){
+
+		return new Sample<>(System.currentTimeMillis(), nanoTime, plan, 1500);
 	}
 
 	protected RedisSession findRedisSession(HostPort hostPort) {
@@ -78,6 +83,17 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 		if (sample != null) {
 			sample.addInstanceFail(host, port, th);
 		}
+	}
+
+	protected Long maxSampleTime(){
+
+		Long[] longs = samples.keySet().toArray(new Long[0]);
+		Arrays.sort(longs);
+
+		if(longs.length > 0){
+			return longs[longs.length - 1];
+		}
+		return null;
 	}
 
 	@PostConstruct
