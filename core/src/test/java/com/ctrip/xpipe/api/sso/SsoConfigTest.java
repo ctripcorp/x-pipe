@@ -13,10 +13,11 @@ public class SsoConfigTest extends AbstractTest{
 
     @Test
     public void testSsoConfigTest(){
-        Assert.assertTrue(SsoConfig.matches("/api/"));
-        Assert.assertTrue(SsoConfig.matches("/api/abc"));
-        Assert.assertFalse(SsoConfig.matches( "/api"));
-        Assert.assertTrue(SsoConfig.matches("/health"));
+
+        Assert.assertTrue(SsoConfig.excludes("/api/"));
+        Assert.assertTrue(SsoConfig.excludes("/api/abc"));
+        Assert.assertFalse(SsoConfig.excludes( "/api"));
+        Assert.assertTrue(SsoConfig.excludes("/health"));
 
     }
 }

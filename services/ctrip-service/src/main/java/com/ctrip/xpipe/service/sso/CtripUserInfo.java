@@ -9,6 +9,12 @@ public class CtripUserInfo implements UserInfo {
 
     private String userId;
 
+    public CtripUserInfo(){}
+
+    public CtripUserInfo(String userId){
+        this.userId = userId;
+    }
+
     @Override
     public String getUserId() {
         return userId;
@@ -22,5 +28,11 @@ public class CtripUserInfo implements UserInfo {
     @Override
     public int getOrder() {
         return HIGHEST_PRECEDENCE;
+    }
+
+    public static UserInfo nobody = new CtripUserInfo("nobody");
+
+    public static UserInfo noBody(){
+        return nobody;
     }
 }
