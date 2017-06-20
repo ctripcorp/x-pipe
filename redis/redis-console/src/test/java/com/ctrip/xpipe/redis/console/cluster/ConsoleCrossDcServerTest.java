@@ -82,7 +82,11 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
     }
 
     @Test
-    public void testNotLeader(){
+    public void testNotLeader() throws TimeoutException {
+
+        crossDcClusterServer.isleader();
+
+        waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
 
         crossDcClusterServer.notLeader();
 

@@ -57,7 +57,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     @Override
     protected void doStart() throws Exception {
 
-        scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
             @Override
             protected void doRun() throws Exception {
@@ -134,6 +134,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     protected void doStop() throws Exception {
 
         if (future != null) {
+            logger.info("[doStop][cancel future]{}", future);
             future.cancel(true);
         }
     }
@@ -158,14 +159,19 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     @Override
     public void notLeader() {
         try {
-            setCrossDcLeader(false, "lose cluster leader");
             stop();
+            setCrossDcLeader(false, "lose cluster leader");
         } catch (Exception e) {
             logger.error("[isleader]", e);
         }
     }
 
     public synchronized void setCrossDcLeader(boolean crossDcLeader, String reason) {
+
+        if(!isStarted() && crossDcLeader){
+            logger.info("[setCrossDcLeader][fail, stopped]{}, {}", crossDcLeader, reason);
+            return;
+        }
 
         boolean previous = this.crossDcLeader;
 
