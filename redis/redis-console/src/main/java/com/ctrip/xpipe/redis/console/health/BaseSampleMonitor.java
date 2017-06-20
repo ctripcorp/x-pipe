@@ -85,17 +85,6 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 		}
 	}
 
-	protected Long maxSampleTime(){
-
-		Long[] longs = samples.keySet().toArray(new Long[0]);
-		Arrays.sort(longs);
-
-		if(longs.length > 0){
-			return longs[longs.length - 1];
-		}
-		return null;
-	}
-
 	@PostConstruct
 	public void scanSamples() {
 		XpipeThreadFactory.create("SampleMonitor-" + getClass().getSimpleName(), true).newThread(new Runnable() {

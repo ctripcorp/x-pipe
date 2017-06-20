@@ -35,8 +35,9 @@
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
 
+        <logger name="com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollector" level="DEBUG"/>
+        <logger name="com.ctrip.xpipe.redis.console.health.sentinel.SentinelMonitor" level="DEBUG"/>
         <!--
-        <logger name="com.ctrip.xpipe.redis.console.health.sentinel" level="DEBUG"/>
         <logger name="com.ctrip.xpipe.redis.console.health.HealthChecker" level="DEBUG"/>
         <logger name="com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor" level="DEBUG"/>
         -->

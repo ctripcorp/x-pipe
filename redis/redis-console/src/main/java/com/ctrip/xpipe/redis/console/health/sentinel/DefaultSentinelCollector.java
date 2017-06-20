@@ -69,13 +69,13 @@ public class DefaultSentinelCollector implements SentinelCollector {
             return;
         }
 
-        logger.info("[doAction][delete]{}, [add]{}", toDelete, toAdd);
 
         if (toAdd != null && toAdd.size() > 0) {
-            CatEventMonitor.DEFAULT.logAlertEvent("[sentinel][add]" + toAdd);
+            logger.info("[doAction][add]{}", toAdd);
         }
 
         if (toDelete != null && toDelete.size() > 0) {
+            logger.info("[doAction][del]{}", toDelete);
             CatEventMonitor.DEFAULT.logAlertEvent("[sentinel][delete]" + toDelete);
         }
 
@@ -84,6 +84,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
             HostPort sentinelAddr = hello.getSentinelAddr();
             RedisClient redisConnection = null;
             try {
+                CatEventMonitor.DEFAULT.logAlertEvent("[sentinel][del]" + hello);
                 redisConnection = sessionManager.findRedisConnection(sentinelAddr.getHost(), sentinelAddr.getPort());
                 redisConnection.connectSentinel().sync().remove(hello.getMonitorName());
             } catch (Exception e) {
@@ -114,6 +115,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
                     //ingnore
                 }
                 if (doAdd) {
+                    CatEventMonitor.DEFAULT.logAlertEvent("[sentinel][add]" + hello);
                     redisConnection.connectSentinel().sync().monitor(
                             hello.getMonitorName(),
                             hello.getMasterAddr().getHost(),
@@ -190,13 +192,10 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
         int toRemove = hellos.size() - quorumConfig.getTotal();
         if (toRemove > 0) {
-
             int i = 0;
             for (SentinelHello hello : hellos) {
-
                 i++;
                 toDelete.add(hello);
-
                 if (i >= toRemove) {
                     break;
                 }
@@ -206,7 +205,6 @@ public class DefaultSentinelCollector implements SentinelCollector {
         toDelete.forEach((delete) -> {
             hellos.remove(delete);
         });
-
         return toDelete;
     }
 

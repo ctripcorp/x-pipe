@@ -57,6 +57,7 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
     private void sampleSentinel(long startNanoTime, BaseSamplePlan<InstanceSentinelResult> plan) {
 
+        log.debug("[sampleSentinel]{}, {}", plan.getClusterId(), plan.getShardId());
 
         plan.getHostPort2SampleResult().forEach((hostPort, instanceSentinelResult) -> {
 
@@ -70,20 +71,13 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
                     log.debug("[message]{},{}", hostPort, message);
                     SentinelHello hello = SentinelHello.fromString(message);
-
-                    Long currentSampe = maxSampleTime();
-                    if(currentSampe != null){
-                        addInstanceSuccess(currentSampe , hostPort, hello);
-                    }
+                    addInstanceSuccess(startNanoTime, hostPort, hello);
                 }
 
                 @Override
                 public void fail(Exception e) {
 
-                    Long currentSampe = maxSampleTime();
-                    if(currentSampe != null) {
-                        addInstanceFail(currentSampe, hostPort, e);
-                    }
+                    addInstanceFail(startNanoTime, hostPort, e);
                     log.error("[fail]" + hostPort, e);
                 }
             });

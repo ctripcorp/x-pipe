@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
+import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.redis.console.health.BaseInstanceResult;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 import com.ctrip.xpipe.redis.console.health.Sample;
 
@@ -18,6 +20,19 @@ public class SentinelSample extends Sample<InstanceSentinelResult>{
                           BaseSamplePlan<InstanceSentinelResult> samplePlan,
                           int expireDelayMillis) {
         super(startTime, startNanoTime, samplePlan, expireDelayMillis);
+    }
+
+
+
+    public <C> void addInstanceSuccess(String host, int port, C context) {
+
+        InstanceSentinelResult instanceResult = samplePlan.findInstanceResult(new HostPort(host, port));
+
+        if (instanceResult != null && !instanceResult.isDone()) {
+            instanceResult.success(System.nanoTime(), (SentinelHello) context);
+            //wait until timeout
+            //remainingRedisCount.decrementAndGet();
+        }
     }
 
 

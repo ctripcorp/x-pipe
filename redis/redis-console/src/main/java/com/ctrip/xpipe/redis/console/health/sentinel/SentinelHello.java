@@ -91,7 +91,7 @@ public class SentinelHello {
     @Override
     public String toString() {
 
-        return String.format("sentinel: %s, master: %s, monitorName:%s",
+        return String.format("[sentinel: %s, master: %s, monitorName:%s]",
                 sentinelAddr,
                 masterAddr,
                 monitorName);
