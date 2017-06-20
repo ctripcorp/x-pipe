@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
+import com.ctrip.xpipe.utils.IpUtils;
 import com.sun.org.apache.bcel.internal.generic.DCMPG;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +21,10 @@ import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
 
 import javax.annotation.PostConstruct;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 @Lazy
-public class DefaultMetaCache implements  MetaCache{
+public class DefaultMetaCache implements MetaCache {
 
     private int refreshIntervalMilli = 2000;
 
@@ -52,12 +55,12 @@ public class DefaultMetaCache implements  MetaCache{
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 
-    public DefaultMetaCache(){
+    public DefaultMetaCache() {
 
     }
 
     @PostConstruct
-    public void postConstruct(){
+    public void postConstruct() {
 
 
         refreshIntervalMilli = consoleConfig.getCacheRefreshInterval();
@@ -92,7 +95,7 @@ public class DefaultMetaCache implements  MetaCache{
     @Override
     public XpipeMeta getXpipeMeta() {
 
-        if(dcMetas == null){
+        if (dcMetas == null) {
             try {
                 loadCache();
             } catch (Exception e) {
@@ -102,7 +105,7 @@ public class DefaultMetaCache implements  MetaCache{
         }
 
         XpipeMeta xpipeMeta = new XpipeMeta();
-        for(DcMeta dcMeta : dcMetas){
+        for (DcMeta dcMeta : dcMetas) {
             xpipeMeta.addDc(dcMeta);
         }
         return xpipeMeta;
@@ -115,7 +118,7 @@ public class DefaultMetaCache implements  MetaCache{
 
         XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(xpipeMeta);
         ShardMeta shardMeta = xpipeMetaManager.findShardMeta(hostPort);
-        if(shardMeta == null){
+        if (shardMeta == null) {
             throw new IllegalStateException("unfound shard for instance:" + hostPort);
         }
         String instanceInDc = shardMeta.parent().parent().getId();
@@ -129,7 +132,7 @@ public class DefaultMetaCache implements  MetaCache{
         XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(getXpipeMeta());
 
         ShardMeta currentShard = xpipeMetaManager.findShardMeta(hostPort);
-        if(currentShard == null){
+        if (currentShard == null) {
             throw new IllegalStateException("unfound shard for instance:" + hostPort);
         }
 
@@ -139,6 +142,41 @@ public class DefaultMetaCache implements  MetaCache{
         Pair<String, RedisMeta> redisMaster = xpipeMetaManager.getRedisMaster(clusterName, shardName);
         RedisMeta redisMeta = redisMaster.getValue();
         return new HostPort(redisMeta.getIp(), redisMeta.getPort());
+    }
+
+    @Override
+    public String getSentinelMonitorName(String clusterId, String shardId) {
+
+        XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(getXpipeMeta());
+        Set<String> dcs = xpipeMetaManager.getDcs();
+        for (String dc : dcs) {
+            ShardMeta shardMeta = xpipeMetaManager.getShardMeta(dc, clusterId, shardId);
+            if (shardMeta != null) {
+                return shardMeta.getSentinelMonitorName();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Set<HostPort> getActiveDcSentinels(String clusterId, String shardId) {
+
+        XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(getXpipeMeta());
+        String activeDc = xpipeMetaManager.getActiveDc(clusterId, shardId);
+        SentinelMeta sentinel = xpipeMetaManager.getSentinel(activeDc, clusterId, shardId);
+
+        return new HashSet<>(IpUtils.parseAsHostPorts(sentinel.getAddress()));
+    }
+
+    @Override
+    public HostPort findMaster(String clusterId, String shardId) {
+
+        XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(getXpipeMeta());
+        Pair<String, RedisMeta> redisMaster = xpipeMetaManager.getRedisMaster(clusterId, shardId);
+        if (redisMaster == null) {
+            throw new IllegalStateException(String.format("%s %s no master", clusterId, shardId));
+        }
+        return new HostPort(redisMaster.getValue().getIp(), redisMaster.getValue().getPort());
     }
 
 }

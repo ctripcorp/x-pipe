@@ -278,7 +278,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 					}
 					for(RedisMeta redisMeta : shardMeta.getRedises()){
 						if(redisMeta.isMaster()){
-							return new Pair<String, RedisMeta>(dcMeta.getId(), clone(redisMeta));
+							return new Pair<>(dcMeta.getId(), clone(redisMeta));
 						}
 					}
 				}

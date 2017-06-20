@@ -22,10 +22,12 @@ import java.util.*;
  */
 @Component
 public class DefaultMigrationEventManager implements MigrationEventManager {
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	
 	@Autowired
 	private MigrationEventDao migrationEventDao;
+
 	private boolean initiated = false;
 	
 	private Map<Long, MigrationEvent> currentWorkingEvents = new HashMap<>();

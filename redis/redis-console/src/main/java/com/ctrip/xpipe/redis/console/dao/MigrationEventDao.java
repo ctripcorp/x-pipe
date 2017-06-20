@@ -51,6 +51,7 @@ import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 
 @Repository
 public class MigrationEventDao extends AbstractXpipeConsoleDAO {
+
 	@Autowired
 	private UserInfoHolder userInfo;
 	@Autowired

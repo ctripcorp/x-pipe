@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import com.ctrip.xpipe.metric.HostPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Pair;
@@ -149,20 +150,40 @@ public class IpUtils {
 		return result;
 	}
 
+	public static List<HostPort> parseAsHostPorts(String addressDesc){
 
-	public static List<InetSocketAddress> parse(String addressDesc){
-		
-		List<InetSocketAddress> result = new LinkedList<>();
+		List<HostPort> result = new LinkedList<>();
 		String []addresses = addressDesc.split("\\s*,\\s*");
+
 		for(String address : addresses){
 
 			try {
-				InetSocketAddress inetAddress = parseSingle(address);
-				result.add(inetAddress);
+				HostPort hostPort = parseSingleAsHostPort(address);
+				result.add(hostPort);
 			} catch (Exception e) {
 				logger.warn("[parse][wrong address]" + address);
 			}
 		}
+		return result;
+	}
+
+	private static HostPort parseSingleAsHostPort(String singleAddress) {
+
+		Pair<String, Integer> pair = parseSingleAsPair(singleAddress);
+		return new HostPort(pair.getKey(), pair.getValue());
+	}
+
+
+	public static List<InetSocketAddress> parse(String addressDesc){
+
+		List<HostPort> hostPorts = parseAsHostPorts(addressDesc);
+
+		List<InetSocketAddress> result = new LinkedList<>();
+
+		hostPorts.forEach((hostPort) -> {
+			result.add(new InetSocketAddress(hostPort.getHost(), hostPort.getPort()));
+
+		});
 		return result;
 	}
 	

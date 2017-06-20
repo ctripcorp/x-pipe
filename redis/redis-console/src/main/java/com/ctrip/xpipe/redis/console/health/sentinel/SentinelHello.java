@@ -19,6 +19,15 @@ public class SentinelHello {
     private HostPort masterAddr;
     private String monitorName;
 
+    public SentinelHello(){
+    }
+
+    public SentinelHello(HostPort sentinelAddr, HostPort masterAddr, String monitorName){
+
+        this.sentinelAddr = sentinelAddr;
+        this.masterAddr = masterAddr;
+        this.monitorName = monitorName;
+    }
 
     /**
      * 10.15.95.133,33322,642d5452b3ffd243fdfc31a2ccf5b0b5963c161f,1942,FlightIntlGDSCacheGroup1,10.15.94.178,6379,0
@@ -81,10 +90,6 @@ public class SentinelHello {
 
     @Override
     public String toString() {
-
-        if (helloStr != null) {
-            return helloStr;
-        }
 
         return String.format("sentinel: %s, master: %s, monitorName:%s",
                 sentinelAddr,

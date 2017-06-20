@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author wenchao.meng
@@ -20,4 +21,9 @@ public interface MetaCache {
 
     HostPort findMasterInSameShard(HostPort hostPort);
 
+    String getSentinelMonitorName(String clusterId, String shardId);
+
+    Set<HostPort> getActiveDcSentinels(String clusterId, String shardId);
+
+    HostPort findMaster(String clusterId, String shardId);
 }

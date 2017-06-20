@@ -46,7 +46,6 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
         collectors.forEach((collector) -> collector.collect((SentinelSample) sample));
 
-
     }
 
     @Override

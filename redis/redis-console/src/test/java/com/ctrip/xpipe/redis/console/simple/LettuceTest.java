@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import com.lambdaworks.redis.*;
+import com.lambdaworks.redis.sentinel.api.StatefulRedisSentinelConnection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +32,7 @@ public class LettuceTest extends AbstractConsoleTest {
 
 	private String channel = "testChannel";
 	private String host = "localhost";
-	private int port = 6379;
+	private int port = 5000;
 
 	private ClientResources clientResources;
 	private RedisURI redisURI;
@@ -41,6 +42,18 @@ public class LettuceTest extends AbstractConsoleTest {
 		clientResources = DefaultClientResources.builder().reconnectDelay(Delay.constant(5, TimeUnit.SECONDS)).build();
 		redisURI = new RedisURI(host, port, 10, TimeUnit.SECONDS);
 	}
+
+	@Test
+	public void testSentinel(){
+
+		RedisClient redisClient = RedisClient.create(clientResources, redisURI);
+		StatefulRedisSentinelConnection<String, String> connection = redisClient.connectSentinel();
+		connection.sync().monitor("master", "127.0.0.1", 6379, 2);
+		logger.info("{}", connection.sync().master("shard1"));
+
+
+	}
+
 
 	@Test
 	public void testConfigRewrite() throws IOException {

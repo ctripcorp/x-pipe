@@ -32,6 +32,7 @@ public abstract class AbstractConsoleService<T> {
     private void postConstruct() {
     	
         try {
+        	logger.info("[postConstruct]{}", getClass().getSimpleName());
         	Type superClass = getClass().getGenericSuperclass();
         	 if (superClass instanceof Class<?>) { // sanity check, should never happen
                  throw new IllegalArgumentException("Internal error: TypeReference constructed without actual type information");

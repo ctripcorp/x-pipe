@@ -65,6 +65,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	@Override
 	public RedisSession findOrCreateSession(String host, int port) {
+
 		HostPort hostPort = new HostPort(host, port);
 		RedisSession session = sessions.get(hostPort);
 
@@ -81,7 +82,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		return session;
 	}
 
-	private RedisClient findRedisConnection(String host, int port) {
+	public RedisClient findRedisConnection(String host, int port) {
 		RedisURI redisUri = new RedisURI(host, port, 2, TimeUnit.SECONDS);
 
 		ClientOptions clientOptions = ClientOptions.builder() //
