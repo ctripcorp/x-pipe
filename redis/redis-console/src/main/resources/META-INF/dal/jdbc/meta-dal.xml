@@ -731,12 +731,11 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>, <TABLE name='keeper-info'/>, <TABLE name='dc-info'/>
+					FROM <TABLE/> left join  <TABLE name='keeper-info'/> on <FIELD name='keepercontainer-id'/> = kit.keepercontainer_id , <TABLE name='dc-info'/>
 					WHERE <FIELD name='keepercontainer-dc'/> = dt.id
 					AND dt.dc_name = ${dc-name}
-					AND <FIELD name='keepercontainer-id'/> = kit.keepercontainer_id
 					AND <FIELD name='keepercontainer-active'/> = 1
-					AND kit.deleted = 0
+					AND (kit.deleted = 0 or kit.deleted is null)
 					AND <FIELD name='deleted'/> = 0
 					GROUP BY <FIELD name='keepercontainer-id'/>
 					order by count
