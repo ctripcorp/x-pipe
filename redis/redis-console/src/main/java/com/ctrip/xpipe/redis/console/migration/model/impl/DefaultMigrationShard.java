@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilderImpl;
@@ -22,6 +23,7 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.utils.LogUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import org.slf4j.Logger;
@@ -136,11 +138,11 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, LogUtils.error(res.getErrorMessage()));
 					}
 				} catch (ExecutionException e) {
-					logger.error("[doCheck][fail]",e);
+					logger.error("[doCheck][fail]", e);
 					shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, LogUtils.error(e.getMessage()));
 				}
 				
-				notifyObservers(this);
+				notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.CHECK));
 			}
 		});
 	}
@@ -161,13 +163,14 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, LogUtils.error(e.getMessage()));
 		}
 		
-		notifyObservers(this);
+		notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 	}
 	
 	@Override
 	public void doMigrateOtherDc() {
 		
 		logger.info("[doMigrateOtherDc]{}-{}, {}->{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
+
 		if(shardMigrationResult.stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
 			for(DcTbl dc : dcs.values()) {
 				if(!(dc.getDcName().equals(newPrimaryDc))) {
@@ -183,7 +186,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE, false, LogUtils.error("Failed"));
 		}
 
-		notifyObservers(this);
+		notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE));
 	}
 
 	@Override
@@ -212,8 +215,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					logger.error("[doPrevPrimaryDcMigrate][fail]",e);
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, LogUtils.error("Ignored:" + e.getMessage()));
 				}
-				
-				notifyObservers(this);
+				notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
 			}
 		});
 		return migrateResult;
@@ -228,20 +230,22 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					PrimaryDcChangeMessage res = commandFuture.get();
 					
 					if(PRIMARY_DC_CHANGE_RESULT.SUCCESS.equals(res.getErrorType())) {
+						logger.info("[doNewPrimaryDcMigrate][success]{},{},");
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, true, res.getErrorMessage());
 						
 						if(null != res.getNewMasterIp()) {
 							newMasterAddr = InetSocketAddress.createUnresolved(res.getNewMasterIp(), res.getNewMasterPort());
 						}
 					} else {
+						logger.error("[doNewPrimaryDcMigrate][fail]{},{},");
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, res.getErrorMessage());
 					}
 				} catch (Exception e) {
-					logger.error("[doNewPrimaryDcMigrate][fail]",e);
+					logger.error("[doNewPrimaryDcMigrate][fail]", e);
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, LogUtils.error(e.getMessage()));
 				}
 				
-				notifyObservers(this);
+				notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 			}
 		});
 		return migrateResult;
@@ -273,6 +277,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 
 	
 	private CommandFuture<PrimaryDcChangeMessage> doOtherDcMigrate(String cluster, String shard, String dc, String newPrimaryDc) {
+
 		CommandFuture<PrimaryDcChangeMessage> migrateResult = commandBuilder.buildOtherDcCommand(cluster, shard, newPrimaryDc, dc).execute();
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 			@Override
@@ -289,8 +294,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					logger.error("[doOtherDcMigrate][fail]",e);
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_OTHER_DC, false, e.getMessage());
 				}
-				
-				notifyObservers(this);
+				notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_OTHER_DC));
 			}
 		});
 		return migrateResult;
@@ -307,8 +311,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 				} catch (Exception e) {
 					logger.error("[doPrevPrimaryDcMigrate][fail]",e);
 				}
-
-				notifyObservers(this);
+				notifyObservers(new ShardObserverEvent(shardName(), "doRollBackPrevPrimaryDc"));
 			}
 		});
 		return migrateResult;
@@ -317,5 +320,38 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	@Override
 	public String toString() {
 		return String.format("[DefaultMigrationShard]%s:%s,%s->%s", cluster, shard, prevPrimaryDc, newPrimaryDc);
+	}
+
+	@Override
+	public String shardName() {
+		return currentShard.getShardName();
+	}
+
+
+	public static class ShardObserverEvent{
+
+		private String shardName;
+		private ShardMigrationStep[] step;
+		private String desc;
+
+		public ShardObserverEvent(String shardName, ShardMigrationStep ...step){
+			this.shardName = shardName;
+			this.step = step;
+		}
+
+		public ShardObserverEvent(String shardName, String desc){
+			this.shardName = shardName;
+			this.desc = desc;
+		}
+
+		@Override
+		public String toString() {
+
+			if(step != null){
+				return String.format("%s, step:%s", shardName, StringUtil.join(",", step));
+			}else{
+				return String.format("%s, desc:%s", shardName, desc);
+			}
+		}
 	}
 }

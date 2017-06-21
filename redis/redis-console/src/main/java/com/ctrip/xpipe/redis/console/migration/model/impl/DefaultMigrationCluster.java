@@ -5,7 +5,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 
@@ -44,19 +48,30 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	private DcService dcService;
 	private RedisService redisService;
 	private MigrationService migrationService;
+	private ExecutorService executors;
 
 	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
 			RedisService redisService,MigrationService migrationService) {
 		this.migrationCluster = migrationCluster;
-		setStatus();
-		
+
 		this.clusterService = clusterService;
 		this.shardService = shardService;
 		this.dcService = dcService;
 		this.redisService = redisService;
 		this.migrationService = migrationService;
-		
 		loadMetaInfo();
+		executors = DefaultExecutorFactory.createAllowCoreTimeout(
+				"Migration-" + clusterName(), shards.size() * 2
+		).createExecutorService();
+
+		setStatus();
+
+	}
+
+
+	@Override
+	public Executor getMigrationExecutor() {
+		return executors;
 	}
 
 	@Override
@@ -96,24 +111,31 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
 	@Override
 	public void process() {
-		logger.info("[Process]{}-{}, {}", migrationCluster.getEventId(),getCurrentCluster().getClusterName(), this.currentState.getStatus());
+		logger.info("[Process]{}-{}, {}", migrationCluster.getMigrationEventId(),getCurrentCluster().getClusterName(), this.currentState.getStatus());
 		this.currentState.action();
 	}
 
 	@Override
 	@DalTransaction
 	public void updateStat(MigrationState stat) {
-		logger.info("[UpdateStat]{}-{}, {} -> {}",
-				migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus(), stat.getStatus());
+
+		logger.info("[updateStat]{}-{}, {} -> {}",
+				migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus(), stat.getStatus());
 		this.currentState = stat;
 
 		MigrationStatus migrationStatus = stat.getStatus();
-		
-		
+
+		String clusterStatus = migrationStatus.getClusterStatus().toString();
+
 		ClusterTbl cluster = getCurrentCluster();
-		cluster.setStatus(migrationStatus.getClusterStatus().toString());
+		cluster.setStatus(clusterStatus);
+		logger.info("[updateStat][updatedb]{}, {}", clusterName(), clusterStatus);
 		getClusterService().update(cluster);
-		
+
+		ClusterTbl newCluster = getClusterService().find(clusterName());
+		logger.info("[updateStat][getdb]{}, {}", clusterName(), newCluster != null ? newCluster.getStatus() : null);
+
+
 		MigrationClusterTbl migrationCluster = getMigrationCluster();
 		migrationCluster.setStatus(migrationStatus.toString());
 		migrationCluster.setEndTime(new Date());
@@ -122,8 +144,13 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	}
 
 	@Override
+	public String clusterName() {
+		return getCurrentCluster().getClusterName();
+	}
+
+	@Override
 	public void cancel() {
-		logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+		logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
 		if(!currentState.getStatus().equals(MigrationStatus.Initiated)
 				&& !currentState.getStatus().equals(MigrationStatus.Checking)) {
 			throw new IllegalStateException(String.format("Cannot cancel while %s", this.currentState.getStatus()));
@@ -134,7 +161,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
 	@Override
 	public void rollback() {
-		logger.info("[Rollback]{}-{}, {} -> Rollback", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+		logger.info("[Rollback]{}-{}, {} -> Rollback", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
 		if(!currentState.getStatus().equals(MigrationStatus.PartialSuccess)) {
 			throw new IllegalStateException(String.format("Cannot rollback while %s", this.currentState.getStatus()));
 		}
@@ -144,7 +171,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	
 	@Override
 	public void forcePublish() {
-		logger.info("[ForcePublish]{}-{}, {} -> ForcePublish", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+		logger.info("[ForcePublish]{}-{}, {} -> ForcePublish", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
 		if(!currentState.getStatus().equals(MigrationStatus.PartialSuccess)) {
 			throw new IllegalStateException(String.format("cannot cancel while %s", this.currentState.getStatus()));
 		}
@@ -154,7 +181,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	
 	@Override
 	public void forceEnd() {
-		logger.info("[ForceEnd]{}-{}, {} -> ForceEnd", migrationCluster.getEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+		logger.info("[ForceEnd]{}-{}, {} -> ForceEnd", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
 		if(!currentState.getStatus().equals(MigrationStatus.Publish)) {
 			throw new IllegalStateException(String.format("Cannot force end while %s", this.currentState.getStatus()));
 		}
@@ -164,6 +191,8 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
 	@Override
 	public void update(Object args, Observable observable) {
+
+		logger.info("[update]{}", args);
 		this.currentState.refresh();
 		notifyObservers(this);
 	}

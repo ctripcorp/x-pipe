@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.config;
 
+import java.util.Map;
 import java.util.Set;
 
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
+import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
 /**
  * @author shyin
@@ -26,4 +28,25 @@ public interface ConsoleConfig extends CoreConfig {
 	int getRedisReplicationHealthCheckInterval();
 	
 	String getHickwallAddress();
+
+	int getHealthyDelayMilli();
+
+	int getDownAfterCheckNums();
+
+	int getCacheRefreshInterval();
+
+	String getAlertWhileList();
+
+	String getAllConsoles();
+
+	int getQuorum();
+
+	int getRedisConfCheckIntervalMilli();
+
+	String getConsoleDomain();
+
+	Map<String, String> getConsoleCnameToDc();
+
+	QuorumConfig  getDefaultSentinelQuorumConfig();
+
 }

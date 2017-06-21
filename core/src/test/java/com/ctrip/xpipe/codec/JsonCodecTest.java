@@ -4,7 +4,12 @@ import org.junit.Test;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.api.migration.MigrationPublishService.MigrationPublishResult;
+import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author wenchao.meng
@@ -31,5 +36,30 @@ public class JsonCodecTest extends AbstractTest{
 		System.out.println(Codec.DEFAULT.decode("{\"Success\":true,\"Message\":\"设置成功\"}", MigrationPublishResult.class));
 		System.out.println(Codec.DEFAULT.decode("{\"success\":true,\"message\":\"test\"}", MigrationPublishResult.class));
 	}
+
+	@Test
+	public void testMap(){
+
+		Map decode = JsonCodec.INSTANCE.decode("{\"a\":\"1\"}", Map.class);
+		logger.info("{}", decode);
+
+		Map<String, String> data = new HashMap();
+		data.put("xpipe.sh3.ctripcorp.com", "SHAOY");
+		data.put("xpipe.sh2.ctripcorp.com", "SHAJQ");
+
+		logger.info("{}", JsonCodec.INSTANCE.encode(data));
+	}
+
+	@Test
+	public void testSet(){
+
+		Set<String> set = new HashSet<>();
+
+		set.add("1");
+
+		logger.info("{}", JsonCodec.INSTANCE.encode(set));
+
+	}
+
 	
 }

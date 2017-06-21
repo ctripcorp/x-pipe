@@ -6,6 +6,8 @@ import java.lang.reflect.Type;
 import javax.annotation.PostConstruct;
 
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -18,6 +20,8 @@ import com.ctrip.xpipe.redis.console.util.SetOperationUtil;
  * Aug 29, 2016
  */
 public abstract class AbstractConsoleService<T> {
+
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 	protected DalQueryHandler queryHandler = new DalQueryHandler();
 	protected SetOperationUtil setOperator = new SetOperationUtil();
 
@@ -28,6 +32,7 @@ public abstract class AbstractConsoleService<T> {
     private void postConstruct() {
     	
         try {
+        	logger.info("[postConstruct]{}", getClass().getSimpleName());
         	Type superClass = getClass().getGenericSuperclass();
         	 if (superClass instanceof Class<?>) { // sanity check, should never happen
                  throw new IllegalArgumentException("Internal error: TypeReference constructed without actual type information");

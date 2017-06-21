@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 
+import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,8 +17,8 @@ import javax.servlet.http.HttpServletResponse;
  * @author lepdou 2016-11-08
  */
 @RestController
-@RequestMapping("console")
-public class UserController {
+@RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
+public class UserController extends AbstractConsoleController{
 
   @Autowired
   private UserInfoHolder userInfoHolder;

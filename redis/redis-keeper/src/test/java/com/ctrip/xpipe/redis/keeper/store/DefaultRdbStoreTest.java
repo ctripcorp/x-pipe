@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -41,15 +42,14 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 	}
 	
 	@Test
-	public void testFail() throws IOException{
+	public void testFail() throws IOException, TimeoutException {
 		
 		readRdbInNewThread(rdbStore);
 		byte[] message = randomString().getBytes();  
 		rdbStore.writeRdb(Unpooled.wrappedBuffer(message));
 		rdbStore.failRdb(new Exception("just fail it"));
 		
-		sleep(200);
-		Assert.assertNotNull(exception.get());
+		waitConditionUntilTimeOut(() -> exception.get() != null);
 	}
 
 	@Test

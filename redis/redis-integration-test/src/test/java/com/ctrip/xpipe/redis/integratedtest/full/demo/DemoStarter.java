@@ -98,7 +98,7 @@ public class DemoStarter extends AbstractMultiDcTest{
 		
 		DcMeta dcMeta = getDcMeta(dc);
 		for(RedisMeta redisMeta : getDcMeta(dc).getClusters().get(clusterId).getShards().get(shardId).getRedises()){
-			startRedis(dcMeta, redisMeta);
+			startRedis(redisMeta);
 		}
 	}
 

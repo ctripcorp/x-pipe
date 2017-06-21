@@ -22,7 +22,6 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 
 /**
  * @author wenchao.meng
@@ -31,7 +30,6 @@ import io.netty.buffer.ByteBufAllocator;
  */
 public class PsyncTest extends AbstractRedisKeeperTest{
 	
-	private ByteBufAllocator allocator  = ByteBufAllocator.DEFAULT;
 	private DefaultPsync psync;
 	
 	private ReplicationStoreManager replicationStoreManager;
@@ -237,7 +235,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 			
 			byte []bdata = data[i].getBytes();
 			
-			byteBufs[i] = allocator.buffer(bdata.length); 
+			byteBufs[i] = directByteBuf(bdata.length);
 			byteBufs[i].writeBytes(bdata);
 		}
 		

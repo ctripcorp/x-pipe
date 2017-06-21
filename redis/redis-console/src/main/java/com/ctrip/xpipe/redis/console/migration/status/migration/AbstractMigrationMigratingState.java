@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
@@ -16,15 +18,10 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  */
 public abstract class AbstractMigrationMigratingState extends AbstractMigrationState{
 
-	protected ExecutorService fixedThreadPool;
 	private boolean doOtherDcMigrate;
 	
     public AbstractMigrationMigratingState(MigrationCluster holder, MigrationStatus status) {
         super(holder, status);
-        
-        int threadSize = holder.getMigrationShards().size() == 0 ? 1 : holder.getMigrationShards().size();
-        fixedThreadPool = Executors.newFixedThreadPool(threadSize, XpipeThreadFactory.create(getClass().toString()));
-        
         doOtherDcMigrate = false;
     }
 
@@ -56,12 +53,12 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
     				doMigrateOtherDc();
     				doOtherDcMigrate = true;
     			} else if(finishedCnt == getHolder().getMigrationShards().size()) {
-    				logger.info("[{}][success][continue]{}",getClass(), getHolder().getCurrentCluster().getClusterName());
+    				logger.info("[success][continue]{}", getHolder().getCurrentCluster().getClusterName());
                     updateAndProcess(nextAfterSuccess(), true);
     			}
     		} else {
     			// any fail
-    			logger.info("[{}][fail]{}",getClass(), getHolder().getCurrentCluster().getClusterName());
+    			logger.info("[fail]{}", getHolder().getCurrentCluster().getClusterName());
     			if(this instanceof MigrationMigratingState) {
     				updateAndProcess(nextAfterFail(), true);
     				return;
@@ -76,9 +73,9 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
     
     protected void doMigrateOtherDc() {
     	for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
-			fixedThreadPool.submit(new Runnable() {
+			executors.execute(new AbstractExceptionLogTask() {
 				@Override
-				public void run() {
+				public void doRun() {
 					logger.info("[doOtherDcMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
 							migrationShard.getCurrentShard().getShardName());
 					migrationShard.doMigrateOtherDc();

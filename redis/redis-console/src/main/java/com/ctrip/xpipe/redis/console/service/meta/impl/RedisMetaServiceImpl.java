@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.console.service.meta.AbstractMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -63,7 +64,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 	}
 
 	@Override
-	public void updateKeeperStatus(String dcId, String clusterId, String shardId, KeeperMeta newActiveKeeper) {
+	public void updateKeeperStatus(String dcId, String clusterId, String shardId, KeeperMeta newActiveKeeper) throws ResourceNotFoundException {
 
 		List<RedisTbl> keepers = RedisDao.findWithRole(redisService.findAllByDcClusterShard(dcId, clusterId, shardId), XpipeConsoleConstant.ROLE_KEEPER); 
 		if (CollectionUtils.isEmpty(keepers)){

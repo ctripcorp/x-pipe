@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.health.delay;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -13,7 +14,6 @@ import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.health.ping.PingService;
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
 /**
  * @author marsqing
@@ -35,6 +35,7 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 
 	@Autowired
 	private PingService pingSvc;
+
 
 	@Override
 	public void startSample(BaseSamplePlan<InstanceDelayResult> plan) throws Exception {
@@ -77,26 +78,45 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 	}
 
 	private void sampleDelay(final DelaySamplePlan samplePlan) throws Exception {
+
 		if (samplePlan.getHostPort2SampleResult().isEmpty()) {
 			return;
 		}
 
 		for (final HostPort hostPort : samplePlan.getHostPort2SampleResult().keySet()) {
-			RedisSession session = findRedisSession(hostPort.getHost(), hostPort.getPort());
-			session.subscribeIfAbsent(CHECK_CHANNEL, new RedisPubSubAdapter<String, String>() {
+				RedisSession session = findRedisSession(hostPort.getHost(), hostPort.getPort());
+				session.subscribeIfAbsent(CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
 
-				@Override
-				public void message(String channel, String message) {
-					addInstanceResult(Long.parseLong(message, 16), hostPort.getHost(), hostPort.getPort(), null);
-				}
+					@Override
+					public void message(String channel, String message) {
+						log.debug("[sampleDelay][message]{}, {}", hostPort, message);
+						addInstanceSuccess(Long.parseLong(message, 16), hostPort.getHost(), hostPort.getPort(), null);
+					}
 
-			});
-
+					@Override
+					public void fail(Exception e) {
+						//nothing to do
+					}
+				});
 		}
 
 		RedisSession masterSession = findRedisSession(samplePlan.getMasterHost(), samplePlan.getMasterPort());
 		long startNanoTime = recordSample(samplePlan);
+		log.debug("[sampleDelay][publish]{}:{}", samplePlan.getMasterHost(), samplePlan.getMasterPort());
 		masterSession.publish(CHECK_CHANNEL, Long.toHexString(startNanoTime));
 	}
+
+	@Override
+	protected void addRedis(BaseSamplePlan<InstanceDelayResult> plan, String dcId, RedisMeta redisMeta) {
+
+		DelaySamplePlan delaySamplePlan = (DelaySamplePlan) plan;
+		delaySamplePlan.addRedis(dcId, redisMeta);
+	}
+
+	@Override
+	protected BaseSamplePlan<InstanceDelayResult> createPlan(String clusterId, String shardId) {
+		return new DelaySamplePlan(clusterId, shardId);
+	}
+
 
 }

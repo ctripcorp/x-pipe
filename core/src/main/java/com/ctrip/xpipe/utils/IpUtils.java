@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import com.ctrip.xpipe.metric.HostPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Pair;
@@ -24,6 +25,7 @@ import org.unidal.tuple.Pair;
 public class IpUtils {
 	
 	private static Pattern IP_PATTERN = Pattern.compile("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
+
 	private static Logger logger = LoggerFactory.getLogger(IpUtils.class);
 	
 	public static String getIp(SocketAddress socketAddress){
@@ -46,56 +48,142 @@ public class IpUtils {
 		
 		try{
 			int port = Integer.parseInt(str);
-			if(port > 0 && port <= 65535){
+			if(port >= 0 && port <= 65535){
 				return true;
 			}
 		}catch(Exception e){
 		}
 		return false;
 	}
-	
-	public static InetAddress getFistNonLocalIpv4ServerAddress(){
-		
+
+	public static InetAddress getFistNonLocalIpv4ServerAddress() {
+		return getFistNonLocalIpv4ServerAddress("10");
+	}
+
+	public static InetAddress getFistNonLocalIpv4ServerAddress(String ipPrefixPrefer) {
+
+		InetAddress first = null;
+
 		try {
 			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-			if(interfaces == null){
+			if (interfaces == null) {
 				return null;
 			}
-			while(interfaces.hasMoreElements()){
-				 NetworkInterface current = interfaces.nextElement();
-				 if(current.isLoopback()){
-					 continue;
-				 }
-				 List<InterfaceAddress> addresses = current.getInterfaceAddresses();
-				 if(addresses.size() == 0){
-					 continue;
-				 }
-				 for(InterfaceAddress interfaceAddress : addresses){
+			while (interfaces.hasMoreElements()) {
+				NetworkInterface current = interfaces.nextElement();
+				if (current.isLoopback()) {
+					continue;
+				}
+				List<InterfaceAddress> addresses = current.getInterfaceAddresses();
+				if (addresses.size() == 0) {
+					continue;
+				}
+				for (InterfaceAddress interfaceAddress : addresses) {
 					InetAddress address = interfaceAddress.getAddress();
-					 if(address instanceof Inet4Address){
-						 return address;
-					 }
-				 }
+					if (address instanceof Inet4Address) {
+						if(first == null){
+							first = address;
+						}
+						if(address.getHostAddress().startsWith(ipPrefixPrefer)){
+							return address;
+						}
+					}
+				}
 			}
 		} catch (SocketException e) {
 		}
-		
+
+		if(first != null){
+			return first;
+		}
 		throw new IllegalStateException("[can not find a qualified address]");
 	}
-	
-	public static List<InetSocketAddress> parse(String addressDesc){
-		
-		List<InetSocketAddress> result = new LinkedList<>();
+
+
+	public static boolean isLocal(String host){
+
+		if(host.startsWith("/")){
+			host = host.substring(1);
+		}
+
+		for(InetAddress address : getAllServerAddress()){
+
+			logger.debug("{}", address.getHostAddress());
+			if(host.equalsIgnoreCase(getAddressString(getAddressString(address.getHostAddress())))){
+				return true;
+			}
+		}
+		return  false;
+	}
+
+	private static String getAddressString(String hostAddress) {
+		//for ipv6
+		int index = hostAddress.indexOf("%");
+		if(index >= 0){
+			hostAddress = hostAddress.substring(0, index);
+		}
+		return hostAddress;
+	}
+
+	protected static List<InetAddress> getAllServerAddress() {
+
+		List<InetAddress> result = new LinkedList<>();
+
+		try {
+			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+			if (interfaces == null) {
+				return null;
+			}
+			while (interfaces.hasMoreElements()) {
+				NetworkInterface current = interfaces.nextElement();
+				List<InterfaceAddress> addresses = current.getInterfaceAddresses();
+				if (addresses.size() == 0) {
+					continue;
+				}
+				for (InterfaceAddress interfaceAddress : addresses) {
+					InetAddress address = interfaceAddress.getAddress();
+					result.add(address);
+				}
+			}
+		} catch (SocketException e) {
+		}
+		return result;
+	}
+
+	public static List<HostPort> parseAsHostPorts(String addressDesc){
+
+		List<HostPort> result = new LinkedList<>();
 		String []addresses = addressDesc.split("\\s*,\\s*");
+
 		for(String address : addresses){
 
 			try {
-				InetSocketAddress inetAddress = parseSingle(address);
-				result.add(inetAddress);
+				HostPort hostPort = parseSingleAsHostPort(address);
+				result.add(hostPort);
 			} catch (Exception e) {
 				logger.warn("[parse][wrong address]" + address);
 			}
 		}
+		return result;
+	}
+
+	private static HostPort parseSingleAsHostPort(String singleAddress) {
+
+		Pair<String, Integer> pair = parseSingleAsPair(singleAddress);
+		return new HostPort(pair.getKey(), pair.getValue());
+	}
+
+
+	public static List<InetSocketAddress> parse(String addressDesc){
+
+		List<HostPort> hostPorts = parseAsHostPorts(addressDesc);
+
+		List<InetSocketAddress> result = new LinkedList<>();
+
+		hostPorts.forEach((hostPort) -> {
+			result.add(new InetSocketAddress(hostPort.getHost(), hostPort.getPort()));
+
+		});
 		return result;
 	}
 	

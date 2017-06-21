@@ -22,7 +22,7 @@ public class PingSampleResult {
 	}
 
 	public void addPong(HostPort hostPort, InstancePingResult pingResult) {
-		slaveHostPort2Pong.put(hostPort, pingResult.isDone());
+		slaveHostPort2Pong.put(hostPort, pingResult.isSuccess());
 	}
 
 	public String getClusterId() {

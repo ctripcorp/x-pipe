@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.simple;
 
+import java.io.IOException;
+
 import org.junit.Test;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.monitor.CatConfig;
 import com.dianping.cat.Cat;
 
 /**
@@ -13,9 +16,13 @@ import com.dianping.cat.Cat;
 public class CatTest extends AbstractTest{
 	
 	@Test
-	public void testLog(){
+	public void testLog() throws IOException{
+		
+		System.setProperty(CatConfig.CAT_ENABLED_KEY, "true");
 		
 		Cat.getProducer().logError(new Exception());
+		
+		waitForAnyKeyToExit();
 	}
 	
 	@Test
@@ -25,7 +32,8 @@ public class CatTest extends AbstractTest{
 	
 	@Test
 	public void testDisable() {
-		System.setProperty("cat.client.enabled", "false");
+		
+		System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
 		Cat.newTransaction("test", "test");
 	}
 

@@ -90,8 +90,8 @@ public class MigrationStatTest extends AbstractConsoleTest {
         shards.add((new ShardTbl()).setId(1).setClusterId(1).setShardName("test-shard"));
         when(mockedShardService.findAllByClusterName("test-cluster")).thenReturn(shards);
         List<DcTbl> dcs = new LinkedList<>();
-        dcs.add((new DcTbl()).setId(1).setDcName("A"));
-        dcs.add((new DcTbl()).setId(2).setDcName("B"));
+        dcs.add((new DcTbl()).setId(1).setDcName("ADC"));
+        dcs.add((new DcTbl()).setId(2).setDcName("BDC"));
         when(mockedDcService.findClusterRelatedDc("test-cluster")).thenReturn(dcs);
     }
 

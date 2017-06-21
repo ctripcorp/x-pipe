@@ -16,6 +16,9 @@ import com.ctrip.xpipe.api.codec.Codec;
 public abstract class AbstractConsoleController {
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	protected Codec coder = Codec.DEFAULT;
+
+	public static final String API_PREFIX = "/api";
+	public static final String CONSOLE_PREFIX = "/console";
 	
 	@SuppressWarnings("unchecked")
 	protected <T> T valueOrDefault(Class<T> clazz, T result) {

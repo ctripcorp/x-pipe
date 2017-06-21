@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.h2.tools.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -30,14 +31,13 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest{
 	
 	public static final String TABLE_STRUCTURE = "sql/h2/xpipedemodbtables.sql";
 	public static final String TABLE_DATA = "sql/h2/xpipedemodbinitdata.sql";
-	
-	
+	protected String []dcNames = new String[]{"jq", "oy"};
+
 	@BeforeClass
 	public static void setUp() {
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty("spring.main.show_banner", "false");
 		System.setProperty(ComponentsConfigurator.KEY_XPIPE_LOCATION, "src/test/resources");
-		System.setProperty("cat.client.enabled", "false");
 	}
 	
 	@Before
@@ -57,7 +57,7 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest{
 		executeSqlScript(prepareDatas());
 	}
 
-	private void executeSqlScript(String prepareSql) throws ComponentLookupException, SQLException {
+	protected void executeSqlScript(String prepareSql) throws ComponentLookupException, SQLException {
 		
 		DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
 		
@@ -91,7 +91,20 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest{
 		}
 	}
 
-	protected String prepareDatas() {
+
+	protected final String KEY_H2_PORT = "h2Port";
+	private Server h2Server;
+
+	protected void startH2Server() throws SQLException {
+
+		int    h2Port = Integer.parseInt(System.getProperty(KEY_H2_PORT, "9123"));
+		h2Server = Server.createTcpServer("-tcpPort", String.valueOf(h2Port), "-tcpAllowOthers");
+		h2Server.start();
+//		new Console().runTool();
+	}
+
+
+	protected String prepareDatas() throws IOException {
 		return "";
 	}
 	

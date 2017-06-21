@@ -93,7 +93,14 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	protected void doStop() throws Exception {
 		persistentNode.close();
 	}
-	
+
+
+	@Override
+	protected void doDispose() throws Exception {
+		executors.shutdownNow();
+		super.doDispose();
+	}
+
 	public void setZkClient(ZkClient zkClient) {
 		this.zkClient = zkClient;
 	}

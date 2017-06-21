@@ -6,10 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -66,14 +63,18 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	
 	@Autowired
 	private List<MetaServerStateChangeHandler> stateHandlers;
+
+	private ExecutorService executors;
 	
 	public DefaultCurrentMetaManager() {
-		super(Executors.newCachedThreadPool(XpipeThreadFactory.create("DefaultCurrentMetaManager-observable" )));
 	}
 	
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
+
+		executors = Executors.newCachedThreadPool();
+		setExecutors(executors);
 
 		logger.info("[doInitialize]{}, {}", stateHandlers, currentClusterServer.getServerId());
 		dcMetaCache.addObserver(this);
@@ -151,7 +152,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	
 	@Override
 	protected void doDispose() throws Exception {
-		
+
+		executors.shutdownNow();
 		scheduled.shutdownNow();
 		currentMeta.release();
 		super.doDispose();

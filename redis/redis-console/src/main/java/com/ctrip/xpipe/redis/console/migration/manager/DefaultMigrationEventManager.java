@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 
 /**
@@ -21,18 +22,24 @@ import java.util.*;
  */
 @Component
 public class DefaultMigrationEventManager implements MigrationEventManager {
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	
 	@Autowired
 	private MigrationEventDao migrationEventDao;
+
 	private boolean initiated = false;
 	
 	private Map<Long, MigrationEvent> currentWorkingEvents = new HashMap<>();
 
+	@PostConstruct
+	public void defaultMigrationEventManager(){
+		load();
+	}
+
 
 	@Override
 	public void addEvent(MigrationEvent event) {
-		assureInit();
 		event.addObserver(this);
 		currentWorkingEvents.put(event.getEvent().getId(), event);
 		logger.info("[AddEvent]{}",event.getEvent().getId());
@@ -40,37 +47,36 @@ public class DefaultMigrationEventManager implements MigrationEventManager {
 
 	@Override
 	public MigrationEvent getEvent(long id) {
-		assureInit();
 		return currentWorkingEvents.get(id);
 	}
 
 	@Override
 	public void removeEvent(long id) {
-		assureInit();
 		currentWorkingEvents.remove(id);
 		logger.info("[RemoveEvent]{}", id);
 	}
 
-	private void assureInit() {
-		if(!initiated) {
-			synchronized (this) {
-				if(!initiated) {
-					this.initiated = true;
-					load();
-				}
-			}
-		}
-	}
-	
 	private void load() {
-		List<MigrationEventTbl> unfinishedTasks = migrationEventDao.findAllUnfinished();
+
+		List<MigrationEventTbl> unfinishedTasks;
+		try{
+			unfinishedTasks = migrationEventDao.findAllUnfinished();
+		}catch(Exception e){
+			logger.warn("[load]{}", e.getMessage());
+			return;
+		}
+
 		Set<Long> unfinishedIds = new HashSet<>();
 		for(MigrationEventTbl unfinished : unfinishedTasks) {
 			unfinishedIds.add(unfinished.getId());
 		}
 		
 		for(Long id : unfinishedIds) {
-			addEvent(migrationEventDao.buildMigrationEvent(id));
+			try{
+				addEvent(migrationEventDao.buildMigrationEvent(id));
+			}catch(Throwable th){
+				logger.error("[load][event]" + id, th);
+			}
 		}
 	}
 

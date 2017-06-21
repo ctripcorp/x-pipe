@@ -2,6 +2,7 @@ package com.ctrip.xpipe.utils;
 
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
@@ -42,7 +43,7 @@ public class OffsetNotifierTest extends AbstractTest{
 	}
 	
 	@Test
-	public void testWaitInterrupt() throws IOException{
+	public void testWaitInterrupt() throws IOException, TimeoutException {
 
 		final AtomicBoolean interrupted = new AtomicBoolean(false);
 		
@@ -65,9 +66,7 @@ public class OffsetNotifierTest extends AbstractTest{
 		sleep(10);
 		t.interrupt();
 		
-		sleep(100);
-		
-		Assert.assertTrue(interrupted.get());
+		waitConditionUntilTimeOut(() -> interrupted.get());
 	}
 
 }

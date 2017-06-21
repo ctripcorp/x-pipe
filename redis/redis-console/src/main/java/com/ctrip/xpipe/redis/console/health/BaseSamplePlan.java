@@ -42,4 +42,9 @@ public abstract class BaseSamplePlan<T> {
 		return shardId;
 	}
 
+
+	@Override
+	public String toString() {
+		return String.format("cluster:%s, shard:%s, hosts:%s", clusterId, shardId, hostPort2SampleResult.keySet());
+	}
 }

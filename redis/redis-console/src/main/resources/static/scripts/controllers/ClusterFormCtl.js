@@ -186,7 +186,11 @@ index_module.controller('ClusterFromCtl',
                              function shardNameChanged() {
                             	 if($scope.cluster) {
                             		 if($scope.currentShard) {
-                            			 $scope.currentShard.setinelMonitorName = $scope.cluster.clusterName + '-' + $scope.currentShard.shardName;
+                            		     if($scope.currentShard.shardName.indexOf($scope.cluster.clusterName) >=0 ){
+                            			    $scope.currentShard.setinelMonitorName = $scope.currentShard.shardName;
+                            			 }else{
+                            			    $scope.currentShard.setinelMonitorName = $scope.cluster.clusterName + $scope.currentShard.shardName;
+                            			 }
                             		 }
                             	 }
                              }

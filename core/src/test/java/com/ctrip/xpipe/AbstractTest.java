@@ -15,12 +15,13 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.function.BooleanSupplier;
 
+import com.ctrip.xpipe.testutils.ByteBufReleaseWrapper;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.ResourceLeakDetector;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -56,7 +57,9 @@ import com.ctrip.xpipe.zk.ZkTestServer;
 public class AbstractTest {
 
 	protected Logger logger = LoggerFactory.getLogger(getClass());
-	
+
+	private ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
+
 	public static String KEY_INCRMENTAL_ZK_PORT = "INCRMENTAL_ZK_PORT";
 
 	protected ExecutorService executors;
@@ -78,7 +81,9 @@ public class AbstractTest {
 	
 	@Before
 	public void beforeAbstractTest() throws Exception {
-		
+
+		ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
+
 		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(getTestName()));
 		scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(getTestName()));
 		
@@ -122,8 +127,62 @@ public class AbstractTest {
 		}
 	}
 
+	protected ByteBuf directByteBuf(){
+
+		return directByteBuf(1 << 10);
+	}
+
+	protected ByteBuf directByteBuf(int size){
+
+		ByteBuf byteBuf = allocator.directBuffer(size);
+		addReleasable(byteBuf);
+
+		return byteBuf;
+	}
+
+	protected void addReleasable(Object object){
+
+		if(object instanceof ByteBuf){
+			try {
+				add(new ByteBufReleaseWrapper((ByteBuf) object));
+			} catch (Exception e) {
+				throw new IllegalStateException("add " + object, e);
+			}
+			return;
+		}
+
+		throw  new IllegalArgumentException("unknown:" + object);
+	}
+
 	protected String getTestName() {
 		return name.getMethodName();
+	}
+
+	protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier) throws TimeoutException {
+
+		waitConditionUntilTimeOut(booleanSupplier, 5000, 2);
+	}
+
+	protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier, int waitTimeMilli) throws TimeoutException {
+
+		waitConditionUntilTimeOut(booleanSupplier, waitTimeMilli, 2);
+	}
+
+	protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier, int waitTimeMilli, int intervalMilli) throws TimeoutException {
+
+		long maxTime = System.currentTimeMillis() + waitTimeMilli;
+
+
+		while(true){
+			boolean result = booleanSupplier.getAsBoolean();
+			if(result){
+				return;
+			}
+			if(System.currentTimeMillis() >= maxTime){
+				throw new TimeoutException("timtout still false:" + waitTimeMilli);
+			}
+			sleep(intervalMilli);
+		}
 	}
 
 	protected boolean deleteTestDirBeforeTest() {

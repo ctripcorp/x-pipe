@@ -33,6 +33,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
  *         Dec 20, 2016
  */
 public class SingleShardMigrationTest extends AbstractMigrationTest {
+
 	private MigrationCluster migrationCluster;
 	private MigrationShard migrationShard;
 
@@ -40,7 +41,10 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 	private MigrationCommandBuilder migrationCommandBuilder;
 	@Autowired
 	private ClusterMetaService clusterMetaService;
-	
+
+	private String dcA = dcNames[0];
+	private String dcB = dcNames[1];
+
 	@Override
 	public String prepareDatas() {
 		try {
@@ -71,10 +75,10 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 	@Test
 	@DirtiesContext
 	public void testSuccess() {
-		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
-		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
-		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B");
-		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
+		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
@@ -103,19 +107,19 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		
-		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
-		Assert.assertEquals("B", prevPrimaryDcMeta.getActiveDc());
-		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
-		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta(dcA, "cluster1");
+		Assert.assertEquals(dcB, prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta(dcB, "cluster1");
+		Assert.assertEquals(dcB, newPrimaryDcMeta.getActiveDc());
 	}
 
 	@Test
 	@DirtiesContext
 	public void testCheckFail() {
-		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
-		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
-		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B");
-		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
+		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 		
 		ClusterTbl originalCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
@@ -145,19 +149,19 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.CHECK).equals(""));
 		
-		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
-		Assert.assertEquals("A", prevPrimaryDcMeta.getActiveDc());
-		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
-		Assert.assertEquals("A", newPrimaryDcMeta.getActiveDc());
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta(dcA, "cluster1");
+		Assert.assertEquals(dcA, prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta(dcB, "cluster1");
+		Assert.assertEquals(dcA, newPrimaryDcMeta.getActiveDc());
 	}
 	
 	@Test
 	@DirtiesContext
 	public void testCheckExceptionFail() {
-		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B", new Throwable("mocked check fail"));
-		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
-		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B");
-		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB, new Throwable("mocked check fail"));
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
+		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 		
 		ClusterTbl originalCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
@@ -187,19 +191,19 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.CHECK).equals(""));
 		
-		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
-		Assert.assertEquals("A", prevPrimaryDcMeta.getActiveDc());
-		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
-		Assert.assertEquals("A", newPrimaryDcMeta.getActiveDc());
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta(dcA, "cluster1");
+		Assert.assertEquals(dcA, prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta(dcB, "cluster1");
+		Assert.assertEquals(dcA, newPrimaryDcMeta.getActiveDc());
 	}
 
 	@Test
 	@DirtiesContext
 	public void testMigratePrevExceptionFail() {
-		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
-		mockFailPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A", new Throwable("mocked prev fail"));
-		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B");
-		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
+		mockFailPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA, new Throwable("mocked prev fail"));
+		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
@@ -230,19 +234,19 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		
-		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
-		Assert.assertEquals("B", prevPrimaryDcMeta.getActiveDc());
-		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
-		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta(dcA, "cluster1");
+		Assert.assertEquals(dcB, prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta(dcB, "cluster1");
+		Assert.assertEquals(dcB, newPrimaryDcMeta.getActiveDc());
 	}
 
 	@Test
 	@DirtiesContext
 	public void testMigrateNewFail() {
-		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
-		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
-		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B");
-		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
+		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
@@ -273,19 +277,19 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertNull(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		
-		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
-		Assert.assertEquals("A", prevPrimaryDcMeta.getActiveDc());
-		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
-		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta(dcA, "cluster1");
+		Assert.assertEquals(dcA, prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta(dcB, "cluster1");
+		Assert.assertEquals(dcB, newPrimaryDcMeta.getActiveDc());
 	}
 	
 	@Test
 	@DirtiesContext
 	public void testMigrateNewExceptionFail() {
-		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
-		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
-		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B",new Throwable("mocked new fail"));
-		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
+		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB,new Throwable("mocked new fail"));
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 		
 		ClusterTbl originalCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Lock.toString(), originalCluster.getStatus());
@@ -315,19 +319,19 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertNull(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		
-		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
-		Assert.assertEquals("A", prevPrimaryDcMeta.getActiveDc());
-		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
-		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta(dcA, "cluster1");
+		Assert.assertEquals(dcA, prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta(dcB, "cluster1");
+		Assert.assertEquals(dcB, newPrimaryDcMeta.getActiveDc());
 	}
 
 	@Test
 	@DirtiesContext
 	public void testMigrateOtherDcFail() {
-		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
-		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
-		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B");
-		mockFailOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A");
+		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
+		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
+		mockFailOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
@@ -356,19 +360,19 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		
-		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
-		Assert.assertEquals("B", prevPrimaryDcMeta.getActiveDc());
-		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
-		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta(dcA, "cluster1");
+		Assert.assertEquals(dcB, prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta(dcB, "cluster1");
+		Assert.assertEquals(dcB, newPrimaryDcMeta.getActiveDc());
 	}
 	
 	@Test
 	@DirtiesContext
 	public void testMigrateOtherDcExceptionFail() {
-		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "B");
-		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "A");
-		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B");
-		mockFailOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", "B", "A", new Throwable("mocked other fail"));
+		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
+		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
+		mockFailOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA, new Throwable("mocked other fail"));
 	
 		
 		ClusterTbl originalCluster = clusterService.find(1);
@@ -397,10 +401,10 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		
-		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta("A", "cluster1");
-		Assert.assertEquals("B", prevPrimaryDcMeta.getActiveDc());
-		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta("B", "cluster1");
-		Assert.assertEquals("B", newPrimaryDcMeta.getActiveDc());
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta(dcA, "cluster1");
+		Assert.assertEquals(dcB, prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta(dcB, "cluster1");
+		Assert.assertEquals(dcB, newPrimaryDcMeta.getActiveDc());
 	}
 
 }

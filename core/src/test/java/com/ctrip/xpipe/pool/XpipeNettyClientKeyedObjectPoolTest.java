@@ -101,15 +101,14 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		for(int i=0; i < maxPerKey; i++){
 			
 			pool.borrowObject(key);
-			sleep(100);
-			Assert.assertEquals(i + 1, echoServer.getConnected());
+			int finalI = i;
+			waitConditionUntilTimeOut(() -> echoServer.getConnected() == finalI +1);
 		}
 		
 		LifecycleHelper.stopIfPossible(pool);
 		LifecycleHelper.disposeIfPossible(pool);
 		
-		sleep(100);
-		Assert.assertEquals(0, echoServer.getConnected());
+		waitConditionUntilTimeOut(() -> echoServer.getConnected() == 0);
 	}
 	
 	@Test

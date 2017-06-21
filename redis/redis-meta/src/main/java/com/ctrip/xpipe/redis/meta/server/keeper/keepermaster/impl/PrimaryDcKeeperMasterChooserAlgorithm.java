@@ -49,8 +49,13 @@ public class PrimaryDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterC
 		List<RedisMeta>  redisMasters = getMasters(allRedises);
 		
 		if(redisMasters.size() == 0){
-			logger.info("[chooseKeeperMaster][none redis is master]{}", allRedises);
-			return null;
+
+			logger.info("[chooseKeeperMaster][none redis is master, use first redis]{}", allRedises);
+			if(allRedises.size() == 0){
+				logger.info("[chooseKeeperMaster][no redis]{}", allRedises);
+				return null;
+			}
+			return new Pair<>(allRedises.get(0).getIp(), allRedises.get(0).getPort());
 		}else if(redisMasters.size() == 1){
 			return new Pair<>(redisMasters.get(0).getIp(), redisMasters.get(0).getPort());
 		}else{

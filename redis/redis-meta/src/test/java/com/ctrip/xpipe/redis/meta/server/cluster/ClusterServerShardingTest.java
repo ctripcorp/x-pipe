@@ -15,7 +15,8 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
  */
 public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 	
-	private int serverCount = 3; 
+	private int serverCount = 3;
+	private int sleepForBalance = 1500;
 	
 	@Before
 	public void beforeClusterServerShardingTest(){
@@ -28,7 +29,7 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 		
 		createMetaServers(serverCount);
 		
-		sleep(1000);
+		sleep(sleepForBalance);
 		
 		for(TestMetaServer server : getServers()){
 			ApplicationContext context = server.getContext();
@@ -44,7 +45,7 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 	public void testShutdownOther() throws Exception{
 
 		createMetaServers(serverCount);
-		sleep(1000);
+		sleep(sleepForBalance);
 		for(TestMetaServer server : getServers()){
 			if(!server.isLeader()){
 				logger.info(remarkableMessage("[testShutdownOther][begin]{}"), server);
@@ -63,20 +64,29 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 	}
 
 	private void AssertBalance(SlotManager slotManager) {
-		
+
+		boolean balance = isBalance(slotManager);
+	}
+
+	private boolean isBalance(SlotManager slotManager) {
+
 		int average = SlotManager.TOTAL_SLOTS/slotManager.allServers().size();
 		for(int serverId : slotManager.allServers()){
 			int serverSlotSize = slotManager.getSlotsSizeByServerId(serverId);
 			logger.info("[testInit]{}, {}, {}", serverId, serverSlotSize, average);
-			Assert.assertTrue((serverSlotSize >= (average -1)) && (serverSlotSize <=  average + 1));
-		}			
+			boolean balance = (serverSlotSize >= (average -1)) && (serverSlotSize <=  average + 1);
+			if(!balance){
+				return false;
+			}
+		}
+		return true;
 	}
-	
+
 	@Test
 	public void simpleTest() throws Exception{
 		
 		createMetaServers(1);
-		sleep(1000);
+		sleep(sleepForBalance);
 		TestMetaServer server = getLeader();
 		server.stop();
 	}
@@ -85,7 +95,7 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 	public void testShutdownLeader() throws Exception{
 
 		createMetaServers(serverCount);
-		sleep(1000);
+		sleep(sleepForBalance);
 		TestMetaServer leader = null;
 		for(TestMetaServer server : getServers()){
 			if(server.isLeader()){

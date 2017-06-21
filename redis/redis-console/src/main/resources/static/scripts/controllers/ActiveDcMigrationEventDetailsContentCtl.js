@@ -16,6 +16,7 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
         
         function init() {
         	if($scope.migrationCluster) {
+        		loadDetails();
         		if($scope.migrationCluster.migrationShards) {
                     initStatus();
                 } else {
@@ -57,27 +58,40 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
                 });	
         	}
         }
+
+        var stopInterval;
+
+        function loadDetails(){
+            toastr.success("操作成功");
+            if ( angular.isDefined(stopInterval) ) return;
+
+            stopInterval = $interval(function() {
+            MigrationService.findEventDetails($scope.eventId).then(
+                function(result) {
+                    $scope.$parent.eventDetails = result;
+                    $scope.$parent.eventDetails.forEach(function(migrationCluster) {
+                        if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
+                            $scope.migrationCluster = migrationCluster;
+                            initStatus();
+                            if(migrationCluster.migrationCluster.status == "Success" || 
+                            	migrationCluster.migrationCluster.status == "Aborted" ||
+                            	migrationCluster.migrationCluster.status == "ForceEnd"){
+                            	
+                            	$interval.cancel(stopInterval);
+                            	stopInterval = undefined;
+                            }
+                        }
+                    });
+                },
+                function(result) {
+                });
+            }, 1500);        	
+        }
+        
         
         $scope.continueMigrationCluster = function(eventId, clusterId) {
             MigrationService.continueMigrationCluster(eventId, clusterId).then(
-                function(result) {
-                    toastr.success("操作成功");
-
-                    $interval(function() {
-                    MigrationService.findEventDetails($scope.eventId).then(
-                        function(result) {
-                            $scope.$parent.eventDetails = result;
-                            $scope.$parent.eventDetails.forEach(function(migrationCluster) {
-                                if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
-                                    $scope.migrationCluster = migrationCluster;
-                                    initStatus();
-                                }
-                            });
-                        },
-                        function(result) {
-                        });
-                    }, 1000, 10);
-                },
+            	loadDetails,
                 function(result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
@@ -85,24 +99,7 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
         
         $scope.cancelMigrationCluster = function(eventId, clusterId) {
         	MigrationService.cancelMigrationCluster(eventId, clusterId).then(
-        			function(result) {
-                        toastr.success("操作成功");
-
-                        $interval(function() {
-                        MigrationService.findEventDetails($scope.eventId).then(
-                            function(result) {
-                                $scope.$parent.eventDetails = result;
-                                $scope.$parent.eventDetails.forEach(function(migrationCluster) {
-                                    if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
-                                        $scope.migrationCluster = migrationCluster;
-                                        initStatus();
-                                    }
-                                });
-                            },
-                            function(result) {
-                            });
-                        }, 1000, 5);
-                    },
+        			loadDetails,
                     function(result) {
                     toastr.error(AppUtil.errorMsg(result));
                 });
@@ -110,24 +107,7 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
 
         $scope.rollbackMigrationCluster = function (eventId, clusterId) {
             MigrationService.rollbackMigrationCluster(eventId, clusterId).then(
-                function(result) {
-                    toastr.success("操作成功");
-
-                    $interval(function() {
-                        MigrationService.findEventDetails($scope.eventId).then(
-                            function(result) {
-                                $scope.$parent.eventDetails = result;
-                                $scope.$parent.eventDetails.forEach(function(migrationCluster) {
-                                    if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
-                                        $scope.migrationCluster = migrationCluster;
-                                        initStatus();
-                                    }
-                                });
-                            },
-                            function(result) {
-                            });
-                    }, 1000, 5);
-                },
+            	loadDetails,
                 function(result) {
                     toastr.error(AppUtil.errorMsg(result));
                 });
@@ -135,49 +115,15 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
         
         $scope.forcePublishMigrationCluster = function(eventId, clusterId) {
         	MigrationService.forcePublishMigrationCluster(eventId, clusterId).then(
-                    function(result) {
-                        toastr.success("操作成功");
-
-                        $interval(function() {
-                            MigrationService.findEventDetails($scope.eventId).then(
-                                function(result) {
-                                    $scope.$parent.eventDetails = result;
-                                    $scope.$parent.eventDetails.forEach(function(migrationCluster) {
-                                        if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
-                                            $scope.migrationCluster = migrationCluster;
-                                            initStatus();
-                                        }
-                                    });
-                                },
-                                function(result) {
-                                });
-                        }, 1000, 5);
-                    },
-                    function(result) {
+        			loadDetails,
+        			function(result) {
                         toastr.error(AppUtil.errorMsg(result));
                     });
         }
         
         $scope.forceEndMigrationCluster = function(eventId, clusterId) {
         	MigrationService.forceEndMigrationCluster(eventId, clusterId).then(
-                    function(result) {
-                        toastr.success("操作成功");
-
-                        $interval(function() {
-                            MigrationService.findEventDetails($scope.eventId).then(
-                                function(result) {
-                                    $scope.$parent.eventDetails = result;
-                                    $scope.$parent.eventDetails.forEach(function(migrationCluster) {
-                                        if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
-                                            $scope.migrationCluster = migrationCluster;
-                                            initStatus();
-                                        }
-                                    });
-                                },
-                                function(result) {
-                                });
-                        }, 1000, 5);
-                    },
+        			loadDetails,
                     function(result) {
                         toastr.error(AppUtil.errorMsg(result));
                     });

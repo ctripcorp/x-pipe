@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 
+import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -106,7 +107,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 	
 	@Override
 	public Long createMigrationEvent(MigrationEventModel events) {
-		return migrationEventDao.createMigrationEvnet(events);
+		MigrationEvent event = migrationEventDao.createMigrationEvent(events);
+		migrationEventManager.addEvent(event);
+		return event.getEvent().getId();
 	}
 	
 	@Override

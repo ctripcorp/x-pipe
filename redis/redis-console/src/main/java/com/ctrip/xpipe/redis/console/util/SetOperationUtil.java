@@ -36,15 +36,15 @@ public class SetOperationUtil {
 		return difference;
 	}
 	
-	public <T> Collection<T> intersection(Class<T> clazz, Collection<T> collection1, Collection<T> collection2, Comparator<T> comparator) {
+	public <T> Collection<T> intersection(Class<T> clazz, Collection<T> origin, Collection<T> target, Comparator<T> comparator) {
 		List<T> interesction = new LinkedList<T>();
 		
-		if(null != collection1) {
-			for(T itemInFirst : collection1) {
-				if(null != collection2) {
-					for(T itemInSecond : collection2) {
+		if(null != origin) {
+			for(T itemInFirst : origin) {
+				if(null != target) {
+					for(T itemInSecond : target) {
 						if(0 == comparator.compare(itemInFirst, itemInSecond)) {
-							interesction.add(itemInFirst);
+							interesction.add(itemInSecond);
 							break;
 						}
 					}

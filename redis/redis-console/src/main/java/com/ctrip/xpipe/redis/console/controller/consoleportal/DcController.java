@@ -21,7 +21,7 @@ import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
  * Aug 22, 2016
  */
 @RestController
-@RequestMapping("console")
+@RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class DcController extends AbstractConsoleController{
 	@Autowired
 	private DcService dcService;
@@ -31,10 +31,5 @@ public class DcController extends AbstractConsoleController{
 	@RequestMapping(value = "/dcs/all", method = RequestMethod.GET)
 	public List<DcTbl> findAllDcs() {
 		return valueOrEmptySet(DcTbl.class, dcService.findAllDcBasic());
-	}
-
-	@RequestMapping(value = "/dcs/{dcName}/keepercontainers", method = RequestMethod.GET)
-	public List<KeepercontainerTbl> findKeeperContainer(@PathVariable String dcName){
-		return keepercontainerService.findAllByDcName(dcName);
 	}
 }

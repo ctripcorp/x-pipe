@@ -20,7 +20,7 @@ import java.util.List;
  * @Author zhangle
  */
 @RestController
-@RequestMapping("console")
+@RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class ShardController extends AbstractConsoleController{
 
   @Autowired

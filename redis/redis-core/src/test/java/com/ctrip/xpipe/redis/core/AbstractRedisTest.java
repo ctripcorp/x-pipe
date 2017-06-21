@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.netty.buffer.ByteBuf;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
@@ -55,7 +56,6 @@ import redis.clients.jedis.Jedis;
  */
 public abstract class AbstractRedisTest extends AbstractTest{
 
-	protected ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
 
 	protected static final int runidLength = 40;
 	
@@ -216,26 +216,26 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	protected void sendRandomMessage(RedisMeta redisMeta, int count, int messageLength) {
 		
 		Jedis jedis = createJedis(redisMeta);
-		logger.info("[sendRandomMessage][begin]{}", jedis);
+		logger.info("[sendRandomMessage][begin]{}", redisMeta.desc());
 		for(int i=0; i < count; i++){
 			
 			long currentIndex = totalSendMessageCount.incrementAndGet(); 
 			jedis.set(String.valueOf(currentIndex), randomString(messageLength));
 			jedis.incr("incr");
 		}
-		logger.info("[sendRandomMessage][ end ]{}", jedis);
+		logger.info("[sendRandomMessage][ end ]{}", redisMeta.desc());
 	}
 
 	protected void sendMessage(RedisMeta redisMeta, int count, String message) {
 		
 		Jedis jedis = createJedis(redisMeta);
-		logger.info("[sendMessage][begin]{}", jedis);
+		logger.info("[sendMessage][begin]{}", redisMeta.desc());
 		for(int i=0; i < count; i++){
 			
 			long currentIndex = totalSendMessageCount.incrementAndGet(); 
 			jedis.set(String.valueOf(currentIndex), message);
 		}
-		logger.info("[sendMessage][ end ]{}", jedis);
+		logger.info("[sendMessage][ end ]{}", redisMeta.desc());
 	}
 
 

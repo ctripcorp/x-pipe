@@ -27,6 +27,10 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 		config.addConfigChangeListener(this);
 	}
 
+	protected void setConfig(Config config) {
+		this.config = config;
+	}
+
 	protected String getProperty(String key){
 		return config.get(key);
 	}

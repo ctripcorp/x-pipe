@@ -52,44 +52,47 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		}
 	}
 
-	private void observerShardLeader(final String clusterId, final String shardId) {
-		
-		final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterId, shardId);
-		
-		if(!currentMetaManager.watchIfNotWatched(clusterId, shardId)){
-			logger.warn("[observeLeader][already watched]{}, {}", clusterId, shardId);
-			return;
-		}
+	protected void observerShardLeader(final String clusterId, final String shardId) {
 
 		logger.info("[observerShardLeader]{}, {}", clusterId, shardId);
+
+		final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterId, shardId);
 		final CuratorFramework client = zkClient.get();
-		
-		try {
-			client.createContainers(leaderLatchPath);
 
-			EternalWatcher eternalWatcher = new EternalWatcher(client, new CuratorWatcher() {
-				
-				@Override
-				public void process(WatchedEvent event) throws Exception {
-					
-					logger.info("[process]{}, {}, {}",  event, this.hashCode(), currentClusterServer.getServerId());
-					if(event.getType() != EventType.NodeChildrenChanged){
-						logger.info("[process][event type not children changed, exit]");
-						return;
+		if(currentMetaManager.watchIfNotWatched(clusterId, shardId)){
+
+			try {
+				client.createContainers(leaderLatchPath);
+				EternalWatcher eternalWatcher = new EternalWatcher(client, new CuratorWatcher() {
+
+					@Override
+					public void process(WatchedEvent event) throws Exception {
+
+						logger.info("[process]{}, {}, {}",  event, this.hashCode(), currentClusterServer.getServerId());
+						if(event.getType() != EventType.NodeChildrenChanged){
+							logger.info("[process][event type not children changed, exit]");
+							return;
+						}
+
+						List<String> children = client.getChildren().forPath(leaderLatchPath);
+						updateShardLeader(children, leaderLatchPath, clusterId, shardId);
 					}
-					
-					List<String> children = client.getChildren().forPath(leaderLatchPath);
-					updateShardLeader(children, leaderLatchPath, clusterId, shardId);
-				}
 
-				@Override
-				public String toString() {
-					return String.format("leader watcher %s,%s", clusterId, shardId);
-				}
-			}, leaderLatchPath);
-			eternalWatcher.start();
-			
-			currentMetaManager.addResource(clusterId, shardId, eternalWatcher);
+					@Override
+					public String toString() {
+						return String.format("leader watcher %s,%s", clusterId, shardId);
+					}
+				}, leaderLatchPath);
+				eternalWatcher.start();
+				currentMetaManager.addResource(clusterId, shardId, eternalWatcher);
+			} catch (Exception e) {
+				logger.error("[observerShardLeader]" + clusterId + " " + shardId, e);
+			}
+		}else{
+			logger.warn("[observerShardLeader][already watched]{}, {}", clusterId, shardId);
+		}
+
+		try {
 			List<String> children = client.getChildren().forPath(leaderLatchPath);
 			updateShardLeader(children, leaderLatchPath, clusterId, shardId);
 		} catch (Exception e) {

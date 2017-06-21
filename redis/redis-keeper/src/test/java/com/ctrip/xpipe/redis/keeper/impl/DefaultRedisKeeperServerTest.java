@@ -18,6 +18,12 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * @author wenchao.meng
  *
@@ -62,8 +68,45 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer));
 
 		Assert.assertTrue(backup.psync(redisClient, new String[] {}));
-		;
 	}
+
+
+	@Test
+	public void testConcurrentSetRdbDumper() throws Exception {
+
+
+		int concurrentCount = 5;
+		RdbDumper dump1 = mock(RdbDumper.class);
+
+		Assert.assertTrue(new SetRdbDumperException(dump1).isCancelSlave());
+
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
+		CountDownLatch latch = new CountDownLatch(concurrentCount);
+		CyclicBarrier barrier = new CyclicBarrier(concurrentCount);
+
+		AtomicBoolean success = new AtomicBoolean(true);
+
+		for(int i=0;i<concurrentCount;i++){
+
+			executors.execute(() -> {
+				try {
+					barrier.await();
+					redisKeeperServer.setRdbDumper(dump1);
+				} catch (SetRdbDumperException e) {
+					success.set(false);
+				} catch (Exception e) {
+					logger.error("[run]", e);
+				} finally {
+					latch.countDown();
+				}
+			});
+		}
+
+		latch.await();
+		Assert.assertFalse(success.get());
+	}
+
+
 
 	@Test
 	public void testRdbDumperTooQuick() throws Exception {
@@ -108,16 +151,16 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.setRedisKeeperServerState(
 				new RedisKeeperServerStateActive(redisKeeperServer, localhostInetAddress(server1.getPort())));
 		redisKeeperServer.reconnectMaster();
-		sleep(100);
-		Assert.assertEquals(1, server1.getConnected());
+
+		waitConditionUntilTimeOut(() -> server1.getConnected() == 1);
 
 		redisKeeperServer.stop();
 
 		redisKeeperServer.setRedisKeeperServerState(
 				new RedisKeeperServerStateActive(redisKeeperServer, localhostInetAddress(server2.getPort())));
 		redisKeeperServer.reconnectMaster();
-		sleep(100);
-		Assert.assertEquals(0, server1.getConnected());
+
+		waitConditionUntilTimeOut(() -> server1.getConnected() == 0);
 		Assert.assertEquals(0, server2.getConnected());
 
 		redisKeeperServer.dispose();

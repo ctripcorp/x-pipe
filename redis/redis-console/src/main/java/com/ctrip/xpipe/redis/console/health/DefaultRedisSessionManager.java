@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.metric.HostPort;
@@ -15,6 +17,9 @@ import com.lambdaworks.redis.resource.ClientResources;
 import com.lambdaworks.redis.resource.DefaultClientResources;
 import com.lambdaworks.redis.resource.Delay;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 /**
  * @author marsqing
  *
@@ -23,19 +28,44 @@ import com.lambdaworks.redis.resource.Delay;
 @Component
 public class DefaultRedisSessionManager implements RedisSessionManager {
 
+	private Logger logger = LoggerFactory.getLogger(getClass());
+
 	private ConcurrentMap<HostPort, RedisSession> sessions = new ConcurrentHashMap<>();
 
 	private ClientResources clientResources;
 
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create(getClass().getSimpleName()));
+
 	public DefaultRedisSessionManager() {
-		// ClientResources better be shared among RedisClients
+		this(1);
+	}
+
+	public DefaultRedisSessionManager(int reconnectDelaySeconds) {
 		clientResources = DefaultClientResources.builder()//
-				.reconnectDelay(Delay.constant(10, TimeUnit.SECONDS))//
+				.reconnectDelay(Delay.constant(reconnectDelaySeconds, TimeUnit.SECONDS))//
 				.build();
+	}
+
+	@PostConstruct
+	public void postConstruct(){
+
+		scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
+			@Override
+			protected void doRun() throws Exception {
+				for(RedisSession redisSession : sessions.values()){
+					try{
+						redisSession.check();
+					}catch (Exception e){
+						logger.error("[check]" + redisSession, e);
+					}
+				}
+			}
+		}, 5, 5, TimeUnit.SECONDS);
 	}
 
 	@Override
 	public RedisSession findOrCreateSession(String host, int port) {
+
 		HostPort hostPort = new HostPort(host, port);
 		RedisSession session = sessions.get(hostPort);
 
@@ -52,7 +82,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		return session;
 	}
 
-	private RedisClient findRedisConnection(String host, int port) {
+	public RedisClient findRedisConnection(String host, int port) {
 		RedisURI redisUri = new RedisURI(host, port, 2, TimeUnit.SECONDS);
 
 		ClientOptions clientOptions = ClientOptions.builder() //
@@ -63,5 +93,11 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		redis.setOptions(clientOptions);
 
 		return redis;
+	}
+
+	@PreDestroy
+	public void preDestroy(){
+		scheduled.shutdownNow();
+		clientResources.shutdown();
 	}
 }

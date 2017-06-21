@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -18,11 +19,12 @@ public class MigrationMigratingState extends AbstractMigrationMigratingState {
 	}
 
 	@Override
-	public void action() {
+	public void doAction() {
+
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {
-			fixedThreadPool.submit(new Runnable() {
+			executors.execute(new AbstractExceptionLogTask() {
 				@Override
-				public void run() {
+				public void doRun() {
 					logger.info("[doMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
 							shard.getCurrentShard().getShardName());
 					shard.doMigrate();

@@ -34,5 +34,36 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
 			}
     	});
 	}
-	
+
+	@Override
+	public List<KeepercontainerTbl> findAllActiveByDcName(String dcName) {
+		return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
+			@Override
+			public List<KeepercontainerTbl> doQuery() throws DalException {
+				return dao.findActiveByDcName(dcName, KeepercontainerTblEntity.READSET_FULL);
+			}
+		});
+	}
+
+	@Override
+	public List<KeepercontainerTbl> findKeeperCount(String dcName) {
+		return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
+			@Override
+			public List<KeepercontainerTbl> doQuery() throws DalException {
+				return dao.findKeeperCount(dcName, KeepercontainerTblEntity.READSET_KEEPER_COUNT);
+			}
+		});
+	}
+
+
+	protected Void update(KeepercontainerTbl keepercontainerTbl){
+
+		return queryHandler.handleQuery(new DalQuery<Void>() {
+			@Override
+			public Void doQuery() throws DalException {
+				dao.updateByPK(keepercontainerTbl, KeepercontainerTblEntity.UPDATESET_FULL);
+				return null;
+			}
+		});
+	}
 }

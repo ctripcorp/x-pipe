@@ -7,12 +7,20 @@ package com.ctrip.xpipe.redis.core.protocal;
  */
 public interface RedisProtocol {
 	
-	public static final int REDIS_PORT_DEFAULT = 6379;
-	public static final int RUN_ID_LENGTH = 40;
+	int REDIS_PORT_DEFAULT = 6379;
+	int RUN_ID_LENGTH = 40;
 	
-	public static String CRLF = "\r\n";
+	String CRLF = "\r\n";
 	
-	public static String OK = "OK";
+	String OK = "OK";
+
+	static String booleanToString(boolean yes){
+
+		if(yes){
+			return "yes";
+		}
+		return "no";
+	}
 
 
 

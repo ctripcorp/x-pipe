@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableMap;
  * Jan 5, 2017
  */
 @RestController
-@RequestMapping("console")
+@RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class HealthCheckController extends AbstractConsoleController{
 	
 	@Autowired

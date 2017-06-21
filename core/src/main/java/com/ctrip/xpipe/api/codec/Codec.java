@@ -11,9 +11,9 @@ import com.ctrip.xpipe.codec.JsonCodec;
  */
 public interface Codec {
 
-	public static final Charset defaultCharset = Charset.forName("UTF-8");
+	Charset defaultCharset = Charset.forName("UTF-8");
 	
-	public static final Codec DEFAULT = new JsonCodec();
+	Codec DEFAULT = new JsonCodec();
 	
 	String encode(Object obj);
 

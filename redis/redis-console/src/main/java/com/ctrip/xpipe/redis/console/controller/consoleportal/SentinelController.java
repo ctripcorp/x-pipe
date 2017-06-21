@@ -19,7 +19,7 @@ import com.ctrip.xpipe.redis.console.service.SentinelService;
  * Jan 4, 2017
  */
 @RestController
-@RequestMapping("/console")
+@RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class SentinelController extends AbstractConsoleController{
 	@Autowired
 	private SentinelService sentinelService;

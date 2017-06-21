@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.core.meta;
 import java.util.List;
 import java.util.Set;
 
+import com.ctrip.xpipe.metric.HostPort;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -40,6 +41,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	KeeperMeta getKeeperActive(String dc, String clusterId, String shardId);
 	
 	List<KeeperMeta> getKeeperBackup(String dc, String clusterId, String shardId);
+
+	ShardMeta findShardMeta(HostPort hostPort);
 	
 	/**
 	 * @param clusterId

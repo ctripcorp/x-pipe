@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration status="INFO" shutdownHook="disable" monitorInterval="5"  packages="com.ctrip.xpipe.utils.log">
 
+    <Scripts>
+        <Script name="filter.gv" language="js">
+            java.lang.System.getProperty('log.console.close') == 'true'
+        </Script>
+    </Scripts>
+
     <appenders>
         <console name="console" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
+            <ScriptFilter onMatch="DENY" onMisMatch="ACCEPT">
+                <ScriptRef ref="filter.gv" />
+            </ScriptFilter>
         </console>
 
         <RollingFile name="rollingFileInfo" fileName="target/metaserver.log"

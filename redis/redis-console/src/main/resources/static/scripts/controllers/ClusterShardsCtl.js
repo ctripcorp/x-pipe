@@ -86,7 +86,11 @@ index_module.controller('ClusterShardCtl',
                              }
                              
                              function shardNameChange() {
-                            	 $scope.shard.setinelMonitorName = $scope.clusterName + '-' + $scope.shard.shardName;
+                                 if($scope.shard.shardName.indexOf($scope.clusterName) >= 0 ){
+                                    $scope.shard.setinelMonitorName = $scope.shard.shardName;
+                                 }else{
+                                    $scope.shard.setinelMonitorName = $scope.clusterName + $scope.shard.shardName;
+                                 }
                              }
 
                          }]);

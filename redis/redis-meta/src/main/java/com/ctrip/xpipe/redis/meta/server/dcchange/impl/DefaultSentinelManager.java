@@ -37,7 +37,8 @@ import com.ctrip.xpipe.utils.StringUtil;
 public class DefaultSentinelManager implements SentinelManager{
 	
 	private static int DEFAULT_SENTINEL_QUORUM = Integer.parseInt(System.getProperty("DEFAULT_SENTINEL_QUORUM", "3"));
-	
+	private static int DEFAULT_SENTINEL_ADD_SIZE = Integer.parseInt(System.getProperty("DEFAULT_SENTINEL_ADD_SIZE", "5"));
+
 	private static Logger logger = LoggerFactory.getLogger(DefaultSentinelManager.class);
 	
 	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
@@ -78,7 +79,8 @@ public class DefaultSentinelManager implements SentinelManager{
 			throw new IllegalStateException(String.format("sentinel size < quorum, %d < %d", sentinels.size(), quorum));
 		}
 		
-		int addSize = Math.min(sentinels.size(), quorum + 1);
+		int addSize = Math.min(sentinels.size(), DEFAULT_SENTINEL_ADD_SIZE);
+
 		for(int i=0; i < addSize; i++){
 			
 			InetSocketAddress sentinelAddress =  sentinels.get(i);

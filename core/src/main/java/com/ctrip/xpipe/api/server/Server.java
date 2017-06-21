@@ -20,6 +20,14 @@ public interface Server extends Lifecycle, Observable{
 			return super.toString().toLowerCase();
 			
 		};
+
+		public  boolean sameRole(String roleDesc){
+
+			if(toString().equalsIgnoreCase(roleDesc)){
+				return true;
+			}
+			return false;
+		}
 		
 		public static SERVER_ROLE of(String roleDesc){
 			

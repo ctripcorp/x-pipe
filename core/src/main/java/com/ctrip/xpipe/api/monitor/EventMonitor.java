@@ -8,7 +8,14 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
  *         2017年3月1日
  */
 public interface EventMonitor {
-    public static EventMonitor DEFAULT = new CatEventMonitor();
+
+    EventMonitor DEFAULT = new CatEventMonitor();
+
+    String ALERT_TYPE = "alert";
 
     void logEvent(String type, String name, long count);
+
+    void logEvent(String type, String name);
+
+    void logAlertEvent(String simpleAlertMessage);
 }

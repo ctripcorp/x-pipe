@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.cluster;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
 
@@ -39,8 +40,8 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 		
 		ZkClient client = new DefaultZkClient();
 		client.setZkAddress(String.format("localhost:%d", zkPort));
-		client.initialize();
-		client.start();
+		LifecycleHelper.initializeIfPossible(client);
+		LifecycleHelper.startIfPossible(client);
 		return client.get();
 	}
 

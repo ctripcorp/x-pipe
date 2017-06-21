@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 
 public interface ClusterService {
+
 	ClusterTbl find(String clusterName);
 	ClusterTbl find(long clusterId);
 	List<ClusterTbl> findAllClusters();

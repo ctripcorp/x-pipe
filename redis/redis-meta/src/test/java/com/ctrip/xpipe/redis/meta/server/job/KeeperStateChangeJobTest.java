@@ -55,7 +55,8 @@ public class KeeperStateChangeJobTest extends AbstractMetaServerTest{
 		startServer(keepers.get(1).getPort(), "+OK\r\n");
 		
 		job.setActiveSuccessCommand(activeSuccessCommand);
-		job.execute().get(100, TimeUnit.MILLISECONDS);
+
+		job.execute().get(2000, TimeUnit.MILLISECONDS);
 		
 		verify(activeSuccessCommand).execute();
 		

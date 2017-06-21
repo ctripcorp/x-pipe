@@ -2,6 +2,7 @@ package com.ctrip.xpipe.zk.impl;
 
 
 
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import org.apache.curator.framework.CuratorFramework;
 
 import com.ctrip.xpipe.api.lifecycle.Ordered;
@@ -15,7 +16,7 @@ import com.ctrip.xpipe.zk.ZkConfig;
  *
  *         Jun 16, 2016 12:05:57 PM
  */
-public class DefaultZkClient extends AbstractLifecycle implements ZkClient, TopElement {
+public class DefaultZkClient extends AbstractLifecycle implements ZkClient, TopElement, Lifecycle {
 
 	private ZkConfig zkConfig = new DefaultZkConfig();
 

@@ -36,8 +36,6 @@ import com.ctrip.xpipe.utils.IpUtils;
  */
 public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 
-	private String redis_template = "conf/redis_ctrip.conf";
-	
 	private Map<String, DcInfo>  dcs = new ConcurrentHashMap<>();
 	
 	private int consolePort = 8080;
@@ -169,7 +167,7 @@ public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 					startKeeper(keeperMeta, metaService, leaderElectorManager);
 				}
 				for (RedisMeta redisMeta : shardMeta.getRedises()) {
-					startRedis(dcMeta, redisMeta);
+					startRedis(redisMeta);
 				}
 			}
 		}
@@ -250,12 +248,7 @@ public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 	public int getConsolePort() {
 		return consolePort;
 	}
-	
-	@Override
-	protected String getRedisTemplate() {
-		return redis_template;
-	}
-	
+
 	@After
 	public void afterAbstractIntegratedTest(){
 		

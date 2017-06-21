@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.dao;
 import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.query.DalQueryHandler;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -11,6 +13,8 @@ import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
  * Aug 29, 2016
  */
 public abstract class AbstractXpipeConsoleDAO {
+
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 	public static String DELETED_NAME_SPLIT_TAG = "-";
 	
 	protected DalQueryHandler queryHandler = new DalQueryHandler();

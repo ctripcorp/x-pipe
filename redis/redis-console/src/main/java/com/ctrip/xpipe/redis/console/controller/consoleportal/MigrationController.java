@@ -24,7 +24,7 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
  * Dec 12, 2016
  */
 @RestController
-@RequestMapping("console")
+@RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class MigrationController extends AbstractConsoleController {
 	
 	@Autowired
@@ -32,10 +32,12 @@ public class MigrationController extends AbstractConsoleController {
 	
 	@RequestMapping(value = "/migration/events", method = RequestMethod.POST)
 	public Map<String, Long> createEvent(@RequestBody MigrationEventModel event) {
+
 		Map<String, Long> res = new HashMap<>();
 		logger.info("[Create Event]{}", event);
-		res.put("value", migrationService.createMigrationEvent(event));
-		logger.info("[Create Event][Done]{}", event);
+		Long migrationEventId = migrationService.createMigrationEvent(event);
+		res.put("value", migrationEventId);
+		logger.info("[Create Event][Done]{}", migrationEventId);
 		return res;
 	}
 	
@@ -57,26 +59,31 @@ public class MigrationController extends AbstractConsoleController {
 	
 	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}", method = RequestMethod.POST)
 	public void continueMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		logger.info("[continueMigrationCluster]{}, {}", eventId, clusterId);
 		migrationService.continueMigrationCluster(eventId, clusterId);
 	}
 	
 	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/cancel", method = RequestMethod.POST)
 	public void cancelMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		logger.info("[cancelMigrationCluster]{}, {}", eventId, clusterId);
 		migrationService.cancelMigrationCluster(eventId, clusterId);
 	}
 
 	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/rollback", method = RequestMethod.POST)
 	public void rollbackMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		logger.info("[rollbackMigrationCluster]{}, {}", eventId, clusterId);
 		migrationService.rollbackMigrationCluster(eventId, clusterId);
 	}
 	
 	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forcePublish", method = RequestMethod.POST)
 	public void forcePublishMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		logger.info("[forcePublishMigrationCluster]{}, {}", eventId, clusterId);
 		migrationService.forcePublishMigrationCluster(eventId, clusterId);
 	}
 	
 	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forceEnd", method = RequestMethod.POST)
 	public void forceEndMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+		logger.info("[forceEndMigrationCluster]{}, {}", eventId, clusterId);
 		migrationService.forceEndMigrationClsuter(eventId, clusterId);
 	}
 	

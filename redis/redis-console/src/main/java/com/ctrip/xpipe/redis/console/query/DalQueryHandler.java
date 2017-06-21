@@ -18,7 +18,7 @@ public class DalQueryHandler {
 			if(e instanceof DalNotFoundException) {
 				return null;
 			}
-			throw new ServerException("Load data failed.", e);
+			throw new ServerException("Load data failed." + e.getMessage(), e);
 		}
 	}
 

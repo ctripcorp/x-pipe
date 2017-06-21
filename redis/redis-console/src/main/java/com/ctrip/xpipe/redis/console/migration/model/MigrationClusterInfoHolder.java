@@ -20,6 +20,7 @@ public interface MigrationClusterInfoHolder {
     List<MigrationShard> getMigrationShards();
 
     ClusterTbl getCurrentCluster();
+    String clusterName();
     Map<Long, ShardTbl> getClusterShards();
     Map<Long, DcTbl> getClusterDcs();
 }

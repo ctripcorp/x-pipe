@@ -127,10 +127,10 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 	}
 
 	@Override
-	protected void startRedis(DcMeta dcMeta, RedisMeta redisMeta) throws ExecuteException, IOException {
+	protected void startRedis(RedisMeta redisMeta) throws IOException {
 
 		if (redisMeta.equals(getRedisMaster())) {
-			super.startRedis(dcMeta, redisMeta);
+			super.startRedis(redisMeta);
 		} else {
 			logger.info("[startRedis][do not start it]{}", redisMeta);
 		}

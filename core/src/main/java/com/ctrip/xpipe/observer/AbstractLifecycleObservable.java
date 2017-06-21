@@ -44,8 +44,11 @@ public abstract class AbstractLifecycleObservable extends AbstractLifecycle impl
 		
 		observers.remove(observer);
 	}
-	
-	
+
+	public void setExecutors(Executor executors) {
+		this.executors = executors;
+	}
+
 	protected void notifyObservers(final Object arg){
 		
 		Object []tmpObservers;

@@ -17,8 +17,12 @@ public class DateTimeUtils {
 		return FastDateFormat.getInstance(format).format(new Date());
 	}
 
-	public static String currentTimeAsString(Date date) {
+	public static String timeAsString(Date date) {
 		return FastDateFormat.getInstance(format).format(date);
+	}
+
+	public static String timeAsString(long timeMilli) {
+		return FastDateFormat.getInstance(format).format(new Date(timeMilli));
 	}
 
 }

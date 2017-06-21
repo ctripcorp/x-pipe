@@ -30,9 +30,11 @@ public class FakeRedisRdbDumpLong extends AbstractFakeRedisTest {
 
 		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis();
 
-		sleep(replicationTimeout * 3000);
+		waitConditionUntilTimeOut(
+				() -> MASTER_STATE.REDIS_REPL_CONNECTED == redisKeeperServer.getRedisMaster().getMasterState(),
+				replicationTimeout * 5000
+		);
 
-		Assert.assertEquals(MASTER_STATE.REDIS_REPL_CONNECTED, redisKeeperServer.getRedisMaster().getMasterState());
 	}
 
 	@Test

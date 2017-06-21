@@ -153,4 +153,8 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		reconnectMaster();
 	}
 
+	@Override
+	public boolean handleSlaveOf() {
+		return false;
+	}
 }

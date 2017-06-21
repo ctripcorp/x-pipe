@@ -81,7 +81,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 				DcClusterShardTbl dcClusterShardProto = dcClusterShardTblDao.createLocal();
 				dcClusterShardProto.setDcClusterId(dcCluster.getDcClusterId())
 					.setShardId(result.getId());
-				if(null != sentinels.get(dcCluster.getDcId())) {
+				if(sentinels != null && null != sentinels.get(dcCluster.getDcId())) {
 					dcClusterShardProto.setSetinelId(sentinels.get(dcCluster.getDcId()).getSetinelId());
 				}
 				dcClusterShards.add(dcClusterShardProto);

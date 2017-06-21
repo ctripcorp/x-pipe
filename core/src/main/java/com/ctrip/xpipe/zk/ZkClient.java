@@ -9,7 +9,7 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
  *
  *         Jun 16, 2016 12:05:46 PM
  */
-public interface ZkClient extends Lifecycle {
+public interface ZkClient{
 
 	CuratorFramework get();
 

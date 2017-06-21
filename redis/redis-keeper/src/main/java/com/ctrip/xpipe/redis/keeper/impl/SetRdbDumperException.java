@@ -15,7 +15,7 @@ public class SetRdbDumperException extends AbstractRdbDumperException{
 	private static final long serialVersionUID = 1L;
 
 	public SetRdbDumperException(RdbDumper oldDumper) {
-		super(String.format("already exist, old dumper:%s", oldDumper), false);
+		super(String.format("already exist, old dumper:%s", oldDumper), true);
 	}
 
 	public SetRdbDumperException(long lastTime, long minInterval) {

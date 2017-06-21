@@ -17,7 +17,7 @@ public class MigrationSuccessState extends AbstractMigrationState {
 	}
 
 	@Override
-	public void action() {
+	public void doAction() {
 		getHolder().update(getHolder(), getHolder());
 	}
 

@@ -26,7 +26,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 	
 	private String sentinelMonitorName = "mymaster";
 	
-	private String allSentinels = "127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002";
+	private String allSentinels = "127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003,127.0.0.1:5004";
 	
 	private ExecutionLog executionLog;
 	

@@ -1,12 +1,19 @@
 package com.ctrip.xpipe.service.migration;
 
+import com.ctrip.xpipe.utils.UrlUtils;
+
+import javax.management.Query;
+
 /**
  * @author shyin
  *
  *         Dec 22, 2016
  */
 public enum CREDIS_SERVICE {
-	MIGRATION_PUBLISH(PATH.PATH_MIGRATION_PUBLISH);
+
+	MIGRATION_PUBLISH(PATH.PATH_MIGRATION_PUBLISH),
+	SWITCH_STATUS(PATH.PATH_SWITCH_STATUS),
+	Query_STATUS(PATH.PATH_QUERY_STATUS);
 
 	private String path;
 
@@ -23,12 +30,14 @@ public enum CREDIS_SERVICE {
 		if (!host.startsWith("http")) {
 			host += "http://";
 		}
-		return String.format("%s/%s/%s", host, PATH.PATH_PREFIX, getPath());
+		return UrlUtils.format(String.format("%s/%s/%s", host, PATH.PATH_PREFIX, getPath()));
 	}
 
 	public static class PATH {
-		public static final String PATH_PREFIX = "/credis";
 
+		public static final String PATH_PREFIX = "/";
 		public static final String PATH_MIGRATION_PUBLISH = "/KeeperApi/primarydc/{clusterName}/{primaryDcName}";
+		public static final String PATH_SWITCH_STATUS  = "/KeeperApi/SwitchReadStatus";
+		public static final String PATH_QUERY_STATUS = "KeeperApi/QueryReadStatus";
 	}
 }

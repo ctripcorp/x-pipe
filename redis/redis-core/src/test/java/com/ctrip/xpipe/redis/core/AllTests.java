@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core;
 
+import com.ctrip.xpipe.redis.core.meta.QuorumConfigTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -28,6 +29,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+	QuorumConfigTest.class,
 	DefaultRunIdGeneratorTest.class,
 	ArrayParserTest.class,
 	BulkStringParserTest.class,

@@ -36,6 +36,7 @@ public class OneThreadTaskExecutor implements Destroyable{
 	}
 		
 	public void executeCommand(Command<?> command){
+		logger.debug("[executeCommand]{}", command);
 		executors.execute(new Task(command));
 	}
 	
@@ -50,6 +51,7 @@ public class OneThreadTaskExecutor implements Destroyable{
 		@Override
 		@SuppressWarnings({ "unchecked" })
 		protected void doRun() throws Exception {
+			logger.debug("[doRun]{}", command);
 			retryTemplate.execute(command);
 		}
 		

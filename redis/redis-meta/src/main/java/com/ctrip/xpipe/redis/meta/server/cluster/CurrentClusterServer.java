@@ -11,7 +11,7 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
  */
 public interface CurrentClusterServer extends ClusterServer, Lifecycle{
 	
-	public static final int ORDER = SlotManager.ORDER + 1;
+	int ORDER = SlotManager.ORDER + 1;
 	
 	Set<Integer>  slots();
 	

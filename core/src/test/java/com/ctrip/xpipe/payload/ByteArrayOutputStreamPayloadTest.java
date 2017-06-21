@@ -14,8 +14,6 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.testutils.MemoryPrinter;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
 
 /**
  * @author wenchao.meng
@@ -23,22 +21,23 @@ import io.netty.buffer.PooledByteBufAllocator;
  * 2016年4月24日 下午8:58:12
  */
 public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
-	
-	
+
 	@Test
-	public void testInout() throws IOException{
+	public void testInout() throws Exception {
 		
 		ByteArrayOutputStreamPayload payload = new ByteArrayOutputStreamPayload();
 		String randomStr = randomString();
 		
-		ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer(randomStr.length());
+		ByteBuf byteBuf = directByteBuf(randomStr.length());
+
 		byteBuf.writeBytes(randomStr.getBytes());
 		payload.startInput();
 		payload.in(byteBuf);
 		payload.endInput();
 		
 		
-		final ByteBuf result = ByteBufAllocator.DEFAULT.buffer(randomStr.length());
+		final ByteBuf result = directByteBuf(randomStr.length());
+
 		payload.startOutput();
 		long wroteLength = payload.out(new WritableByteChannel() {
 			
@@ -69,10 +68,10 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		result.readBytes(resultArray);
 		Assert.assertEquals(randomStr, new String(resultArray));
 	}
-	
-	
+
+
 	@Test
-	public void testNewHeap() throws IOException, InterruptedException{
+	public void testNewHeap() throws Exception {
 		
 		final MemoryPrinter memoryPrinter = new MemoryPrinter();
 
@@ -82,7 +81,8 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		int concurrentCount = 10;
 		final CountDownLatch latch = new CountDownLatch(concurrentCount);
 		
-		final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer(length);
+		final ByteBuf byteBuf = directByteBuf(length);
+
 		byteBuf.writeBytes(randomString(length).getBytes());
 
 		byte []dst = new byte[length];

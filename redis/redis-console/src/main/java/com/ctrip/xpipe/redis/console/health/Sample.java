@@ -14,7 +14,7 @@ public class Sample<T extends BaseInstanceResult> {
 
 	private long startTime;
 	private long expireTime;
-	private BaseSamplePlan<T> samplePlan;
+	protected BaseSamplePlan<T> samplePlan;
 	private long startNanoTime;
 	private AtomicInteger remainingRedisCount;
 
@@ -27,11 +27,20 @@ public class Sample<T extends BaseInstanceResult> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <C> void addInstanceResult(String host, int port, C context) {
+	public <C> void addInstanceSuccess(String host, int port, C context) {
 		BaseInstanceResult<C> instanceResult = samplePlan.findInstanceResult(new HostPort(host, port));
 
 		if (instanceResult != null && !instanceResult.isDone()) {
-			instanceResult.done(System.nanoTime(), context);
+			instanceResult.success(System.nanoTime(), context);
+			remainingRedisCount.decrementAndGet();
+		}
+	}
+
+	public <C> void addInstanceFail(String host, int port, Throwable th) {
+		BaseInstanceResult<C> instanceResult = samplePlan.findInstanceResult(new HostPort(host, port));
+
+		if (instanceResult != null && !instanceResult.isDone()) {
+			instanceResult.fail(System.nanoTime(), th);
 			remainingRedisCount.decrementAndGet();
 		}
 	}

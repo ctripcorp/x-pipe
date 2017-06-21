@@ -1,6 +1,12 @@
 package com.ctrip.xpipe.redis.console;
 
 
+import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
+import com.ctrip.xpipe.redis.console.dao.ConfigDaoTest;
+import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
+import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
+import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
 import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
@@ -9,6 +15,8 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
 
+import com.ctrip.xpipe.redis.console.service.impl.KeepercontainerServiceImplTest;
+import com.ctrip.xpipe.redis.console.service.impl.RedisServiceImplTest;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
@@ -28,6 +36,12 @@ import org.junit.runner.RunWith;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+	SentinelHelloTest.class,
+	DefaultSentinelCollectorTest.class,
+	ConsoleCrossDcServerTest.class,
+	HealthStatusTest.class,
+	RedisServiceImplTest.class,
+	KeepercontainerServiceImplTest.class,
 	MigrationStatusTest.class,
 	ClusterMetaServiceImplTest.class,
 	ConcurrentDalTransactionTest.class,
@@ -41,7 +55,9 @@ import org.junit.runner.RunWith;
 	MigrationStatTest.class,
 	MigrationPublishStatTest.class,
 	SingleShardMigrationTest.class,
-	MultiShardMigrationTest.class
+	MultiShardMigrationTest.class,
+	ConfigDaoTest.class,
+	DefaultConsoleDbConfigTest.class
 })
 public class AllTests {
 

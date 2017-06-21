@@ -60,13 +60,13 @@ public class Server extends AbstractLifecycle{
 				try {
 					try{
 						ss = new ServerSocket(port);
+						if(logger.isInfoEnabled()){
+							logger.info("[run][listening]" + port);
+						}
 					}finally{
 						latch.countDown();
 					}
 					
-					if(logger.isInfoEnabled()){
-						logger.info("[run][listening]" + port);
-					}
 					while(true){
 						
 						Socket socket = ss.accept();

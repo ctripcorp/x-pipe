@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.command.result;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -14,7 +15,7 @@ import org.apache.commons.lang3.tuple.Pair;
 @SuppressWarnings("serial")
 public class ShardMigrationResult  implements Serializable{
 	private ShardMigrationResultStatus status;
-	private Map<ShardMigrationStep, Pair<Boolean, String>> steps = new HashMap<>(6);
+	private Map<ShardMigrationStep, Pair<Boolean, String>> steps = new ConcurrentHashMap<>(6);
 	
 	public ShardMigrationResult() {
 		status = ShardMigrationResultStatus.FAIL;
@@ -39,17 +40,21 @@ public class ShardMigrationResult  implements Serializable{
 	public boolean stepSuccess(ShardMigrationStep step) {
 		return stepTerminated(step) ? steps.get(step).getLeft() : false;
 	}
-	
+
+	public void stepRetry(ShardMigrationStep step) {
+		steps.remove(step);
+	}
+
 	public void updateStepResult(ShardMigrationStep step, boolean success, String log) {
 		steps.put(step, Pair.of(success, log));
 	}
 	
-	public static enum ShardMigrationResultStatus {
+	public enum ShardMigrationResultStatus {
 		SUCCESS,
 		FAIL
 	}
 	
-	public static enum ShardMigrationStep {
+	public enum ShardMigrationStep {
 		CHECK,
 		MIGRATE_PREVIOUS_PRIMARY_DC,
 		MIGRATE_NEW_PRIMARY_DC,

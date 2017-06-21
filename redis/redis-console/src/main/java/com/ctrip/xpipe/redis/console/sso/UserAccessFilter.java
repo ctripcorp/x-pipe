@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.sso;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 
+import com.ctrip.xpipe.sso.AbstractFilter;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * @author lepdou 2016-11-08
  */
-public class UserAccessFilter implements Filter {
+public class UserAccessFilter extends AbstractFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(UserAccessFilter.class);
 
@@ -80,7 +81,8 @@ public class UserAccessFilter implements Filter {
     }
     
     private boolean isRequestIgnorable(String uri) {
-    	return uri.startsWith("/api") || uri.endsWith(".html")
+
+    	return  exclude(uri) || uri.endsWith(".html")
     			|| uri.endsWith(".css") || uri.endsWith(".js")
     			|| uri.endsWith(".woff") || uri.endsWith(".ttf");
     }
