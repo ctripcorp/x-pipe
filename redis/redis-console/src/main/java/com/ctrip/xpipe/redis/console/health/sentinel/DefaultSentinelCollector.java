@@ -76,7 +76,6 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
         if (toDelete != null && toDelete.size() > 0) {
             logger.info("[doAction][del]{}", toDelete);
-            CatEventMonitor.DEFAULT.logAlertEvent("[sentinel][delete]" + toDelete);
         }
 
         toDelete.forEach((hello -> {
@@ -84,7 +83,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
             HostPort sentinelAddr = hello.getSentinelAddr();
             RedisClient redisConnection = null;
             try {
-                CatEventMonitor.DEFAULT.logAlertEvent("[sentinel][del]" + hello);
+                CatEventMonitor.DEFAULT.logAlertEvent("[stl][del]" + hello);
                 redisConnection = sessionManager.findRedisConnection(sentinelAddr.getHost(), sentinelAddr.getPort());
                 redisConnection.connectSentinel().sync().remove(hello.getMonitorName());
             } catch (Exception e) {
@@ -115,7 +114,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
                     //ingnore
                 }
                 if (doAdd) {
-                    CatEventMonitor.DEFAULT.logAlertEvent("[sentinel][add]" + hello);
+                    CatEventMonitor.DEFAULT.logAlertEvent("[stl][add]" + hello);
                     redisConnection.connectSentinel().sync().monitor(
                             hello.getMonitorName(),
                             hello.getMasterAddr().getHost(),
