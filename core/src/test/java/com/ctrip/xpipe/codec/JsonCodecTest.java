@@ -54,12 +54,45 @@ public class JsonCodecTest extends AbstractTest{
 	public void testSet(){
 
 		Set<String> set = new HashSet<>();
-
 		set.add("1");
 
 		logger.info("{}", JsonCodec.INSTANCE.encode(set));
-
 	}
 
+	@Test
+	public void testEnum(){
+
+		Person person = new Person(SEX.FEMALE);
+
+		logger.info("{}", JsonCodec.INSTANCE.encode(person));
+	}
+
+
+	public static class Person{
+
+		private SEX sex;
+
+		public Person(){
+
+		}
+
+		public Person(SEX sex){
+			this.sex = sex;
+		}
+
+		public SEX getSex() {
+			return sex;
+		}
+
+		public void setSex(SEX sex) {
+			this.sex = sex;
+		}
+	}
+
+
+	public enum SEX{
+		MALE,
+		FEMALE
+	}
 	
 }

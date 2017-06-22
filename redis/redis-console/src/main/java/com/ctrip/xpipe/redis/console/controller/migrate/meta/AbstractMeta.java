@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.controller.pub;
+package com.ctrip.xpipe.redis.console.controller.migrate.meta;
 
 import com.ctrip.xpipe.api.codec.Codec;
 

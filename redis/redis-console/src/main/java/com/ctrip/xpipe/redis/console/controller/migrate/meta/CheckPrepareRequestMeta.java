@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.controller.pub;
+package com.ctrip.xpipe.redis.console.controller.migrate.meta;
 
 import java.util.List;
 
@@ -7,7 +7,7 @@ import java.util.List;
  *
  * Mar 21, 2017
  */
-public class CheckMeta extends AbstractMeta{
+public class CheckPrepareRequestMeta extends AbstractRequestMeta{
 	
 	private boolean isForce;
 	private String fromIdc;

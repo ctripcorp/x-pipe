@@ -215,6 +215,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	}
 	
 	private void updateClusterStatus(final long clusterId, ClusterStatus status) {
+
 		ClusterTbl cluster = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
 			public ClusterTbl doQuery() throws DalException {
