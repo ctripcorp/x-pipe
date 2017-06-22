@@ -8,26 +8,26 @@ import java.util.List;
  *
  * Mar 21, 2017
  */
-public class CheckPrepareResponseMeta extends AbstractMeta{
+public class CheckPrepareResponse extends AbstractMeta{
 
-	private int ticketId;
+	private long ticketId;
 	
 	private List<CheckPrepareClusterResponse>  results = new LinkedList<>();
 	
-	public CheckPrepareResponseMeta(){
+	public CheckPrepareResponse(){
 		
 	}
 
-	public CheckPrepareResponseMeta(int ticketId, List<CheckPrepareClusterResponse>  results){
+	public CheckPrepareResponse(int ticketId, List<CheckPrepareClusterResponse>  results){
 		this.ticketId = ticketId;
 		this.results = results;
 	}
 
-	public int getTicketId() {
+	public long getTicketId() {
 		return ticketId;
 	}
 
-	public void setTicketId(int ticketId) {
+	public void setTicketId(long ticketId) {
 		this.ticketId = ticketId;
 	}
 

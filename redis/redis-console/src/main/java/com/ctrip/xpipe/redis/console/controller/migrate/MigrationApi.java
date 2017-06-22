@@ -3,15 +3,9 @@ package com.ctrip.xpipe.redis.console.controller.migrate;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.ctrip.xpipe.redis.console.controller.migrate.meta.CHECK_FAIL_STATUS;
-import com.ctrip.xpipe.redis.console.controller.migrate.meta.CheckPrepareClusterResponse;
-import com.ctrip.xpipe.redis.console.controller.migrate.meta.CheckPrepareRequestMeta;
-import com.ctrip.xpipe.redis.console.controller.migrate.meta.CheckPrepareResponseMeta;
+import com.ctrip.xpipe.redis.console.controller.migrate.meta.*;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 
@@ -27,11 +21,11 @@ public class MigrationApi extends AbstractConsoleController {
     private int ticketId = 1;
 
     @RequestMapping(value = "/checkandprepare", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
-    public CheckPrepareResponseMeta checkAndPrepare(@RequestBody(required = true) CheckPrepareRequestMeta checkMeta) {
+    public CheckPrepareResponse checkAndPrepare(@RequestBody(required = true) CheckPrepareRequest checkMeta) {
 
         logger.info("[checkAndPrepare]{}", checkMeta);
 
-        CheckPrepareResponseMeta checkRetMeta = new CheckPrepareResponseMeta();
+        CheckPrepareResponse checkRetMeta = new CheckPrepareResponse();
 
         checkRetMeta.setTicketId(ticketId);
 
@@ -41,6 +35,38 @@ public class MigrationApi extends AbstractConsoleController {
                 CHECK_FAIL_STATUS.ALREADY_MIGRATING, "0"));
         checkRetMeta.addCheckPrepareClusterResponse(results);
         return checkRetMeta;
+    }
+
+    @RequestMapping(value = "/domigration", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
+    public DoResponse doMigrate(@RequestBody(required = true) DoRequest request) {
+
+        logger.info("[doMigrate]{}", request);
+        return new DoResponse(true, "success!");
+    }
+
+    @RequestMapping(value = "/checkstatus/{ticketId}", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
+    public CheckStatusResponse checkStatus(@PathVariable int ticketId) {
+
+        logger.info("[checkStatus]{}", ticketId);
+
+        CheckStatusResponse response = new CheckStatusResponse();
+
+        response.addResult(
+                new CheckStatusClusterResponse("cluster1", DO_STATUS.INITED, 0, "inited")
+        );
+        response.addResult(
+                new CheckStatusClusterResponse("cluster2", DO_STATUS.SUCCESS, 0, "")
+        );
+        return response;
+    }
+
+    @RequestMapping(value = "/rollback", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
+    public RollbackResponse rollback(@RequestBody(required = true) RollbackRequest request) {
+
+        logger.info("[rollback]{}", request);
+
+        RollbackResponse response = new RollbackResponse();
+        return new RollbackResponse(true, "success");
     }
 
 }

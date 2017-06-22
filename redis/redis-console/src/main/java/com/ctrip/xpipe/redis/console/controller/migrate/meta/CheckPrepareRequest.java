@@ -7,7 +7,7 @@ import java.util.List;
  *
  * Mar 21, 2017
  */
-public class CheckPrepareRequestMeta extends AbstractRequestMeta{
+public class CheckPrepareRequest extends AbstractRequestMeta{
 	
 	private boolean isForce;
 	private String fromIdc;

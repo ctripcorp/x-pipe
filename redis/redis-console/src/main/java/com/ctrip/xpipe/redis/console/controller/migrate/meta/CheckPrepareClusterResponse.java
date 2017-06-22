@@ -10,7 +10,6 @@ public class CheckPrepareClusterResponse extends AbstractClusterMeta{
     private String clusterName;
     private CHECK_FAIL_STATUS failReason;
     private boolean success;
-    private String msg;
 
     public CheckPrepareClusterResponse() {
 
@@ -24,10 +23,9 @@ public class CheckPrepareClusterResponse extends AbstractClusterMeta{
     }
 
     private CheckPrepareClusterResponse(String clusterName, CHECK_FAIL_STATUS failReason, String msg) {
-        super(clusterName);
+        super(clusterName, msg);
         this.success = false;
         this.failReason = failReason;
-        this.msg = msg;
     }
 
     public boolean isSuccess() {
@@ -44,14 +42,6 @@ public class CheckPrepareClusterResponse extends AbstractClusterMeta{
 
     public void setFailReason(CHECK_FAIL_STATUS failReason) {
         this.failReason = failReason;
-    }
-
-    public String getMsg() {
-        return msg;
-    }
-
-    public void setMsg(String msg) {
-        this.msg = msg;
     }
 
     public static CheckPrepareClusterResponse createSuccessResponse(String clusterName) {
