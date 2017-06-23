@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.spring.AbstractController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,13 +14,12 @@ import com.ctrip.xpipe.api.codec.Codec;
  *
  * Sep 2, 2016
  */
-public abstract class AbstractConsoleController {
-	protected Logger logger = LoggerFactory.getLogger(getClass());
+public abstract class AbstractConsoleController extends AbstractController{
+
 	protected Codec coder = Codec.DEFAULT;
 
-	public static final String API_PREFIX = "/api";
 	public static final String CONSOLE_PREFIX = "/console";
-	
+
 	@SuppressWarnings("unchecked")
 	protected <T> T valueOrDefault(Class<T> clazz, T result) {
 		try {

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,38 +22,38 @@ import java.util.List;
  */
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
-public class ShardController extends AbstractConsoleController{
+public class ShardController extends AbstractConsoleController {
 
-  @Autowired
-  private ShardModelService shardModelService;
-  @Autowired
-  private ShardService shardService;
+    @Autowired
+    private ShardModelService shardModelService;
+    @Autowired
+    private ShardService shardService;
 
-  @RequestMapping("/clusters/{clusterName}/dcs/{dcName}/shards")
-  public List<ShardModel> findShardModels(@PathVariable String clusterName, @PathVariable String dcName){
-    return new ArrayList<ShardModel>(shardModelService.getAllShardModel(dcName, clusterName));
-  }
+    @RequestMapping("/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}/shards")
+    public List<ShardModel> findShardModels(@PathVariable String clusterName, @PathVariable String dcName) {
+        return new ArrayList<>(shardModelService.getAllShardModel(dcName, clusterName));
+    }
 
-  @RequestMapping("/clusters/{clusterName}/shards")
-  public List<ShardTbl> findShards(@PathVariable String clusterName) {
-	return valueOrEmptySet(ShardTbl.class, shardService.findAllByClusterName(clusterName));
-  }
-  
-  @RequestMapping("/clusters/{clusterName}/dcs/{dcName}/shards/{shardName}")
-  public ShardModel findShardModel(@PathVariable String clusterName, @PathVariable String dcName, @PathVariable String shardName) {
-	  return shardModelService.getShardModel(dcName, clusterName, shardName);
-  }
+    @RequestMapping("/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards")
+    public List<ShardTbl> findShards(@PathVariable String clusterName) {
+        return valueOrEmptySet(ShardTbl.class, shardService.findAllByClusterName(clusterName));
+    }
 
-  @RequestMapping(value = "/clusters/{clusterName}/shards", method = RequestMethod.POST)
-  public ShardTbl createShard(@PathVariable String clusterName, @RequestBody ShardModel shard) {
-	logger.info("[Create Shard]{},{}",clusterName, shard);
-    return shardService.createShard(clusterName, shard.getShardTbl(), shard.getSentinels());
-  }
+    @RequestMapping("/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}/shards/" + SHARD_NAME_PATH_VARIABLE)
+    public ShardModel findShardModel(@PathVariable String clusterName, @PathVariable String dcName, @PathVariable String shardName) {
+        return shardModelService.getShardModel(dcName, clusterName, shardName);
+    }
 
-  @RequestMapping(value = "/clusters/{clusterName}/shards/{shardName}", method = RequestMethod.DELETE)
-  public void deleteShard(@PathVariable String clusterName, @PathVariable String shardName) {
-	  logger.info("[Delete Shard]{},{}",clusterName, shardName);
-	  shardService.deleteShard(clusterName, shardName);
-  }
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards", method = RequestMethod.POST)
+    public ShardTbl createShard(@PathVariable String clusterName, @RequestBody ShardModel shard) {
+        logger.info("[Create Shard]{},{}", clusterName, shard);
+        return shardService.createShard(clusterName, shard.getShardTbl(), shard.getSentinels());
+    }
+
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
+    public void deleteShard(@PathVariable String clusterName, @PathVariable String shardName) {
+        logger.info("[Delete Shard]{},{}", clusterName, shardName);
+        shardService.deleteShard(clusterName, shardName);
+    }
 
 }
