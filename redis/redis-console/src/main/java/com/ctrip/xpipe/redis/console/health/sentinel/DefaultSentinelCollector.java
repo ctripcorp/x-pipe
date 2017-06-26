@@ -30,6 +30,8 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
+    private static final String SENTINEL_TYPE = "sentinel";
+
     @Autowired
     private MetaCache metaCache;
 
@@ -83,7 +85,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
             HostPort sentinelAddr = hello.getSentinelAddr();
             RedisClient redisConnection = null;
             try {
-                CatEventMonitor.DEFAULT.logAlertEvent("[stl][del]" + hello);
+                CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[del]" + hello);
                 redisConnection = sessionManager.findRedisConnection(sentinelAddr.getHost(), sentinelAddr.getPort());
                 redisConnection.connectSentinel().sync().remove(hello.getMonitorName());
             } catch (Exception e) {
@@ -114,7 +116,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
                     //ingnore
                 }
                 if (doAdd) {
-                    CatEventMonitor.DEFAULT.logAlertEvent("[stl][add]" + hello);
+                    CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);
                     redisConnection.connectSentinel().sync().monitor(
                             hello.getMonitorName(),
                             hello.getMasterAddr().getHost(),
