@@ -145,6 +145,22 @@ public class DefaultMetaCache implements MetaCache {
     }
 
     @Override
+    public Pair<String, String> findClusterShard(HostPort hostPort) {
+
+        XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(getXpipeMeta());
+
+        ShardMeta currentShard = xpipeMetaManager.findShardMeta(hostPort);
+        if (currentShard == null) {
+            return null;
+        }
+
+        String clusterName = currentShard.parent().getId();
+        String shardName = currentShard.getId();
+
+        return new Pair<>(clusterName, shardName);
+    }
+
+    @Override
     public String getSentinelMonitorName(String clusterId, String shardId) {
 
         XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(getXpipeMeta());
