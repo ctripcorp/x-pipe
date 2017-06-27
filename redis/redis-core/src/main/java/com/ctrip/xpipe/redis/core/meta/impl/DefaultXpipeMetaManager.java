@@ -585,7 +585,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		Long sentinelId = shardMeta.getSentinelId();
 		SentinelMeta sentinelMeta = dcMeta.getSentinels().get(sentinelId);
 		if(sentinelMeta == null){
-			throw new RedisRuntimeException(String.format("sentinelMeta not found:%s %s %s %d", dc, clusterId, shardId, sentinelId));
+			return new SentinelMeta().setAddress("");
 		}
 		return MetaClone.clone(sentinelMeta);
 	}

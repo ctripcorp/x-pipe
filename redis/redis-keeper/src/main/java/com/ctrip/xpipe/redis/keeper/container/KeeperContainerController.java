@@ -16,26 +16,27 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/keepers")
-public class KeeperContainerController extends AbstractController{
+public class KeeperContainerController extends AbstractController {
     @Autowired
     private KeeperContainerService keeperContainerService;
 
     @RequestMapping(method = RequestMethod.POST)
     public void add(@RequestBody KeeperTransMeta keeperTransMeta) {
-    	
-    	logger.info("[add]{}", keeperTransMeta);
+
+        logger.info("[add]{}", keeperTransMeta);
         keeperContainerService.add(keeperTransMeta);
     }
 
-    @RequestMapping(value = "/clusters/{cluster}/shards/{shard}", method = RequestMethod.POST)
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE, method = RequestMethod.POST)
     public void addOrStart(@RequestBody KeeperTransMeta keeperTransMeta) {
-    	logger.info("[addOrStart]{}", keeperTransMeta);
+
+        logger.info("[addOrStart]{}", keeperTransMeta);
         keeperContainerService.addOrStart(keeperTransMeta);
     }
 
     @RequestMapping(method = RequestMethod.GET)
     public List<KeeperInstanceMeta> list() {
-    	logger.info("[list]");
+        logger.info("[list]");
         List<KeeperInstanceMeta> keepers = FluentIterable.from(keeperContainerService.list()).transform(
                 new Function<RedisKeeperServer, KeeperInstanceMeta>() {
                     @Override
@@ -46,24 +47,24 @@ public class KeeperContainerController extends AbstractController{
         return keepers;
     }
 
-    @RequestMapping(value = "/clusters/{cluster}/shards/{shard}", method = RequestMethod.DELETE)
-    public void remove(@PathVariable String cluster, @PathVariable String shard) {
-    	
-    	logger.info("[remove]{},{}", cluster, shard);
-        keeperContainerService.remove(cluster, shard);
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
+    public void remove(@PathVariable String clusterName, @PathVariable String shardName) {
+
+        logger.info("[remove]{},{}", clusterName, shardName);
+        keeperContainerService.remove(clusterName, shardName);
     }
 
-    @RequestMapping(value = "/clusters/{cluster}/shards/{shard}/start", method = RequestMethod.PUT)
-    public void start(@PathVariable String cluster, @PathVariable String shard) {
-    	
-    	logger.info("[start]{},{}", cluster, shard);
-        keeperContainerService.start(cluster, shard);
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE + "/start", method = RequestMethod.PUT)
+    public void start(@PathVariable String clusterName, @PathVariable String shardName) {
+
+        logger.info("[start]{},{}", clusterName, shardName);
+        keeperContainerService.start(clusterName, shardName);
     }
 
-    @RequestMapping(value = "/clusters/{cluster}/shards/{shard}/stop", method = RequestMethod.PUT)
-    public void stop(@PathVariable String cluster, @PathVariable String shard) {
-    	
-    	logger.info("[stop]{},{}", cluster, shard);
-        keeperContainerService.stop(cluster, shard);
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE + "/stop", method = RequestMethod.PUT)
+    public void stop(@PathVariable String clusterName, @PathVariable String shardName) {
+
+        logger.info("[stop]{},{}", clusterName, shardName);
+        keeperContainerService.stop(clusterName, shardName);
     }
 }

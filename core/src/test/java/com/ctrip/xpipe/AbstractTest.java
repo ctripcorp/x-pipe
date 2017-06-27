@@ -253,18 +253,28 @@ public class AbstractTest {
 		}
 
 		return sb.toString();
+	}
 
+	protected String getRealDir(final String dir){
+
+		String userHome = getUserHome();
+
+		String newDir = dir;
+		if (dir != null) {
+			newDir = dir.replace("~", userHome);
+		}
+
+		return newDir;
 	}
 
 	protected String getTestFileDir() {
 
-		String userHome = getUserHome();
-		String result = userHome + "/test";
-
+		String result = getUserHome() + "/test";
 		String testDir = properties.getProperty("test.file.dir");
 		if (testDir != null) {
-			result = testDir.replace("~", userHome);
+			result = getRealDir(testDir);
 		}
+
 		return result + "/" + getClass().getSimpleName() + "-" + currentTestName();
 	}
 

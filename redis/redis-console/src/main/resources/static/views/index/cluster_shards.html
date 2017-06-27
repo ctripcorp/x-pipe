@@ -59,7 +59,7 @@
                         <apollorequiredfiled></apollorequiredfiled>
                         shard 名称</label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="shard.shardName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9_-]+$"
+                        <input type="text" class="form-control" ng-model="shard.shardName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9._-]+$"
                         	ng-change="shardNameChange()">
                     </div>
                 </div>
@@ -68,7 +68,7 @@
                         sentinel 监控名称
                     </label>
                     <div class="col-sm-6">
-                        <input type="text" class="form-control" ng-model="shard.setinelMonitorName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9_-]+$">
+                        <input type="text" class="form-control" ng-model="shard.setinelMonitorName" ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9._-]+$">
                     </div>
                 </div>
 				<div class="form-group" valdr-form-group>

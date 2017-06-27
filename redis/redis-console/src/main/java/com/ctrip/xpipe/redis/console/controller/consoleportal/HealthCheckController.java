@@ -17,36 +17,36 @@ import com.google.common.collect.ImmutableMap;
 
 /**
  * @author shyin
- *
- * Jan 5, 2017
+ *         <p>
+ *         Jan 5, 2017
  */
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
-public class HealthCheckController extends AbstractConsoleController{
-	
-	@Autowired
-	private PingService pingService;
-	@Autowired
-	private DelayService delayService;
-	@Autowired
-	private ConsoleConfig config;
-	
-	@RequestMapping(value = "/redis/health/{redisIp}/{redisPort}", method = RequestMethod.GET)
-	public Map<String, Boolean> isRedisHealth(@PathVariable String redisIp, @PathVariable int redisPort) {
-		return ImmutableMap.of("isHealth", pingService.isRedisAlive(new HostPort(redisIp, redisPort)));
-	}
-	
-	@RequestMapping(value = "/redis/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
-	public Map<String, Long> getReplDelayMillis(@PathVariable String redisIp, @PathVariable int redisPort) {
-		return ImmutableMap.of("delay", delayService.getDelay(new HostPort(redisIp, redisPort)));
-	}
-	
-	@RequestMapping(value = "/redis/health/hickwall/{cluster}/{shard}/{redisIp}/{redisPort}", method = RequestMethod.GET)
-	public Map<String, String> getHickwallAddress(@PathVariable String cluster, @PathVariable String shard, @PathVariable String redisIp, @PathVariable int redisPort) {
-		String addr = config.getHickwallAddress();
-		if(Strings.isEmpty(addr)) {
-			return ImmutableMap.of("addr", "");
-		}
-		return ImmutableMap.of("addr", String.format("%s.%s.%s.%s.%s", addr, cluster, shard, redisIp, redisPort));
-	}
+public class HealthCheckController extends AbstractConsoleController {
+
+    @Autowired
+    private PingService pingService;
+    @Autowired
+    private DelayService delayService;
+    @Autowired
+    private ConsoleConfig config;
+
+    @RequestMapping(value = "/redis/health/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, Boolean> isRedisHealth(@PathVariable String redisIp, @PathVariable int redisPort) {
+        return ImmutableMap.of("isHealth", pingService.isRedisAlive(new HostPort(redisIp, redisPort)));
+    }
+
+    @RequestMapping(value = "/redis/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, Long> getReplDelayMillis(@PathVariable String redisIp, @PathVariable int redisPort) {
+        return ImmutableMap.of("delay", delayService.getDelay(new HostPort(redisIp, redisPort)));
+    }
+
+    @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
+        String addr = config.getHickwallAddress();
+        if (Strings.isEmpty(addr)) {
+            return ImmutableMap.of("addr", "");
+        }
+        return ImmutableMap.of("addr", String.format("%s.%s.%s.%s.%s", addr, clusterName, shardName, redisIp, redisPort));
+    }
 }

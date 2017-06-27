@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.simple;
 import java.io.IOException;
 import java.sql.Time;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -48,9 +49,10 @@ public class LettuceTest extends AbstractConsoleTest {
 
 		RedisClient redisClient = RedisClient.create(clientResources, redisURI);
 		StatefulRedisSentinelConnection<String, String> connection = redisClient.connectSentinel();
-		connection.sync().monitor("master", "127.0.0.1", 6379, 2);
-		logger.info("{}", connection.sync().master("shard1"));
-
+//		connection.sync().monitor("mymaster", "127.0.0.1", 6379, 2);
+		logger.info("{}", connection.sync().master("mymaster"));
+		List<Map<String, String>> mymaster = connection.sync().slaves("mymaster");
+		logger.info("{}", mymaster);
 
 	}
 

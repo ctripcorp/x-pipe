@@ -4,6 +4,7 @@ import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import org.unidal.tuple.Pair;
 
 import java.util.List;
 import java.util.Set;
@@ -20,6 +21,8 @@ public interface MetaCache {
     boolean inBackupDc(HostPort hostPort);
 
     HostPort findMasterInSameShard(HostPort hostPort);
+
+    Pair<String, String> findClusterShard(HostPort hostPort);
 
     String getSentinelMonitorName(String clusterId, String shardId);
 
