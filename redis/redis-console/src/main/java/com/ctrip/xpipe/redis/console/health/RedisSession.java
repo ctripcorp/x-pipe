@@ -163,16 +163,11 @@ public class RedisSession {
 
         final CompletableFuture<List<Object>> future = findOrCreateNonSubscribeConnection().async().role().toCompletableFuture();
 
-        future.thenRun(new Runnable() {
-            @Override
-            public void run() {
-
-                try {
-                    List<Object> objects = future.get();
-                    callback.role((String) objects.get(0));
-                } catch (Exception e) {
-                    log.error("[run]" + hostPort, e);
-                }
+        future.whenComplete((role, th) -> {
+            if (th != null) {
+                callback.fail(th);
+            } else {
+                callback.role((String) role.get(0));
             }
         });
     }
@@ -208,7 +203,7 @@ public class RedisSession {
 
         void role(String role);
 
-        void fail(Exception e);
+        void fail(Throwable e);
     }
 
     public interface SubscribeCallback {
@@ -237,7 +232,7 @@ public class RedisSession {
             return callback.get();
         }
 
-        public void replace(SubscribeCallback callback){
+        public void replace(SubscribeCallback callback) {
             this.callback.set(callback);
         }
 

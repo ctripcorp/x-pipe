@@ -33,7 +33,7 @@ public class LettuceTest extends AbstractConsoleTest {
 
 	private String channel = "testChannel";
 	private String host = "localhost";
-	private int port = 5000;
+	private int port = 6001;
 
 	private ClientResources clientResources;
 	private RedisURI redisURI;
@@ -80,19 +80,16 @@ public class LettuceTest extends AbstractConsoleTest {
 
 		RedisClient redisClient = RedisClient.create(clientResources, redisURI);
 		StatefulRedisConnection<String, String> connect = redisClient.connect();
+
+		logger.info("{}", connect.sync().role());
+
 		RedisFuture<List<Object>> role = connect.async().role();
-		role.thenRun(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					logger.info("{}", role.get());
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				} catch (ExecutionException e) {
-					e.printStackTrace();
-				}
-			}
+
+		role.whenComplete((result, th) -> {
+			logger.info("{}, ex:{}", result, th);
 		});
+
+		sleep(1000);
 	}
 
 	@Test

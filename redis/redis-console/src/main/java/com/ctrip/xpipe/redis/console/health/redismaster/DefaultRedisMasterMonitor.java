@@ -58,7 +58,7 @@ public class DefaultRedisMasterMonitor extends BaseSampleMonitor<InstanceRedisMa
             }
 
             @Override
-            public void fail(Exception e) {
+            public void fail(Throwable e) {
                 addInstanceSuccess(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), Server.SERVER_ROLE.UNKNOWN.toString());
             }
         });
