@@ -19,6 +19,11 @@ public class MigrationMigratingState extends AbstractMigrationMigratingState {
 	}
 
 	@Override
+	protected void doRollback() {
+		throw new UnsupportedOperationException("migrating, please do rollback when partial success");
+	}
+
+	@Override
 	public void doAction() {
 
 		for(final MigrationShard shard : getHolder().getMigrationShards()) {

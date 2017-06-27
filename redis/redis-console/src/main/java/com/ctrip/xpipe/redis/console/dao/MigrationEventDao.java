@@ -176,7 +176,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 					continue;
 				}
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {
-					event.addMigrationCluster(new DefaultMigrationCluster(detail.getRedundantClusters(),
+					event.addMigrationCluster(new DefaultMigrationCluster(event, detail.getRedundantClusters(),
 							dcService, clusterService, shardService, redisService, migrationService));
 				}
 				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId()); 

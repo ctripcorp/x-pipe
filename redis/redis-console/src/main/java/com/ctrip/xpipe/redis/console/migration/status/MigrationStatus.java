@@ -10,8 +10,7 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiat
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationMigratingState;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessState;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationRollBackState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationState;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessRollBackState;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationSuccessState;
 
 /**
@@ -29,7 +28,7 @@ public enum MigrationStatus {
 	Aborted(MigrationAbortedState.class, ClusterStatus.Normal),
 	Success(MigrationSuccessState.class, ClusterStatus.Normal),
 	ForceEnd(MigrationForceEndState.class, ClusterStatus.Normal),
-	RollBack(MigrationRollBackState.class, ClusterStatus.Rollback);
+	RollBack(MigrationPartialSuccessRollBackState.class, ClusterStatus.Rollback);
 	
 	private final  Class<MigrationState> classMigrationState;
 	private final ClusterStatus clusterStatus;

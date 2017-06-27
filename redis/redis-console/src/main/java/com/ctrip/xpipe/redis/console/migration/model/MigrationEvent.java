@@ -7,14 +7,19 @@ import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 
 /**
  * @author shyin
- *
- * Dec 8, 2016
+ *         <p>
+ *         Dec 8, 2016
  */
-public interface MigrationEvent extends Observable{
-	MigrationEventTbl getEvent();
-	MigrationCluster getMigrationCluster(long clusterId);
-	List<MigrationCluster> getMigrationClusters();
-	
-	void addMigrationCluster(MigrationCluster migrationCluster);
-	
+public interface MigrationEvent extends Observable {
+
+    MigrationEventTbl getEvent();
+
+    long getMigrationEventId();
+
+    MigrationCluster getMigrationCluster(long clusterId);
+
+    List<MigrationCluster> getMigrationClusters();
+
+    void addMigrationCluster(MigrationCluster migrationCluster);
+
 }

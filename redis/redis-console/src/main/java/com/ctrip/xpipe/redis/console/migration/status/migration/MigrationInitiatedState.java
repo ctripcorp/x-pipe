@@ -5,27 +5,33 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 
 /**
  * @author shyin
- *
- * Dec 8, 2016
+ *         <p>
+ *         Dec 8, 2016
  */
 public class MigrationInitiatedState extends AbstractMigrationState {
-	
-	public MigrationInitiatedState(MigrationCluster holder) {
-		super(holder, MigrationStatus.Initiated);
-		this.setNextAfterSuccess(new MigrationCheckingState(holder))
-			.setNextAfterFail(this);
-	}
 
-	@Override
-	public void doAction() {
-		// Check cluster status
-		updateAndProcess(nextAfterSuccess(), true);
-	}
+    public MigrationInitiatedState(MigrationCluster holder) {
+        super(holder, MigrationStatus.Initiated);
+        this.setNextAfterSuccess(new MigrationCheckingState(holder))
+                .setNextAfterFail(this);
+    }
 
-	@Override
-	public void refresh() {
-		// nothing to do
-		logger.debug("[MigrationInitiatedStat]{}", getHolder().getCurrentCluster().getClusterName());
-	}
-	
+    @Override
+    public void doAction() {
+        // Check cluster status
+        updateAndProcess(nextAfterSuccess());
+    }
+
+    @Override
+    protected void doRollback() {
+
+        updateAndProcess(new MigrationAbortedState(getHolder()));
+    }
+
+    @Override
+    public void refresh() {
+        // nothing to do
+        logger.debug("[MigrationInitiatedStat]{}", getHolder().getCurrentCluster().getClusterName());
+    }
+
 }

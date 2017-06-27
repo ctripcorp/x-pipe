@@ -1,6 +1,7 @@
-package com.ctrip.xpipe.redis.console.migration.status;
+package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,7 +14,6 @@ import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationState;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;

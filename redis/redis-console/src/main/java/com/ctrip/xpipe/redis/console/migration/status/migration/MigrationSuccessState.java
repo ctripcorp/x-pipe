@@ -17,6 +17,11 @@ public class MigrationSuccessState extends AbstractMigrationState {
 	}
 
 	@Override
+	protected void doRollback() {
+		throw new  UnsupportedOperationException("already success, can not rollback");
+	}
+
+	@Override
 	public void doAction() {
 		getHolder().update(getHolder(), getHolder());
 	}

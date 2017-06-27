@@ -1,15 +1,10 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
  * @author shyin
@@ -54,17 +49,17 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
     				doOtherDcMigrate = true;
     			} else if(finishedCnt == getHolder().getMigrationShards().size()) {
     				logger.info("[success][continue]{}", getHolder().getCurrentCluster().getClusterName());
-                    updateAndProcess(nextAfterSuccess(), true);
+                    updateAndProcess(nextAfterSuccess());
     			}
     		} else {
     			// any fail
     			logger.info("[fail]{}", getHolder().getCurrentCluster().getClusterName());
     			if(this instanceof MigrationMigratingState) {
-    				updateAndProcess(nextAfterFail(), true);
+    				updateAndProcess(nextAfterFail());
     				return;
     			} 
     			if(this instanceof MigrationPartialSuccessState){
-    				updateAndProcess(nextAfterFail(), false);
+    				updateAndStop(nextAfterFail());
     				return;
     			}
     		}

@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+import com.ctrip.xpipe.redis.console.migration.status.PublishState;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -16,12 +17,18 @@ import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException
  *
  * Dec 8, 2016
  */
-public class MigrationPublishState extends AbstractMigrationPublishState {
+public class MigrationPublishState extends AbstractMigrationPublishState implements PublishState{
 	
 	public MigrationPublishState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Publish);
 		this.setNextAfterSuccess(new MigrationSuccessState(getHolder()))
 			.setNextAfterFail(this);
+	}
+
+	@Override
+	protected void doRollback() {
+		throw new UnsupportedOperationException("[doRollback]" +
+				"[xpipe succeed, publish results to redis client fail, can not rollback, find DBA to manually solve this problem]eventId:" + getHolder().getMigrationEvent().getMigrationEventId());
 	}
 
 	@Override
@@ -38,9 +45,9 @@ public class MigrationPublishState extends AbstractMigrationPublishState {
 		updateDB();
 
 		if(publish()) {
-			updateAndProcess(nextAfterSuccess(), true);
+			updateAndProcess(nextAfterSuccess());
 		} else {
-			updateAndProcess(nextAfterFail(), false);
+			updateAndStop(nextAfterFail());
 		}
 	}
 
@@ -85,7 +92,10 @@ public class MigrationPublishState extends AbstractMigrationPublishState {
 		
 		logger.info("[UpdateMaster]");
 		migrationCluster.getRedisService().batchUpdate(toUpdate);
-		
 	}
-	
+
+	@Override
+	public void forceEnd() {
+		updateAndProcess(new MigrationForceEndState(getHolder()));
+	}
 }

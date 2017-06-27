@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-
+import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,83 +12,101 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author shyin
- *
- * Dec 8, 2016
+ *         <p>
+ *         Dec 8, 2016
  */
 public abstract class AbstractMigrationState implements MigrationState {
-	
-	protected Logger logger = LoggerFactory.getLogger(getClass());
 
-	protected int migrationWaitTimeSeconds = 120;
+    protected Logger logger = LoggerFactory.getLogger(getClass());
 
-	private AtomicBoolean hasContine = new AtomicBoolean(false);
+    protected int migrationWaitTimeSeconds = 120;
 
-	private MigrationCluster holder;
-	private MigrationStatus status;
-	
-	private MigrationState nextAfterSuccess;
-	private MigrationState nextAfterFail;
+    private AtomicBoolean hasContine = new AtomicBoolean(false);
 
-	protected Executor executors;
-	
-	public AbstractMigrationState(MigrationCluster holder, MigrationStatus status) {
-		this.holder = holder;
-		this.status = status;
-		executors = holder.getMigrationExecutor();
-	}
+    private MigrationCluster holder;
+    private MigrationStatus status;
 
-	@Override
-	public void action() {
-		hasContine.set(false);
-		doAction();
-	}
+    private MigrationState nextAfterSuccess;
+    private MigrationState nextAfterFail;
 
-	protected abstract void doAction();
+    protected Executor executors;
 
-	public MigrationCluster getHolder() {
-		return holder;
-	}
-	
-	@Override
-	public MigrationStatus getStatus() {
-		return status;
-	}
-	
-	@Override
-	public MigrationState nextAfterSuccess() {
-		return nextAfterSuccess;
-	}
-	
-	public AbstractMigrationState setNextAfterSuccess(MigrationState nextAfterSuccess) {
-		this.nextAfterSuccess = nextAfterSuccess;
-		return this;
-	}
-	
-	@Override
-	public MigrationState nextAfterFail() {
-		return nextAfterFail;
-	}
-	
-	public AbstractMigrationState setNextAfterFail(MigrationState nextAfterFail) {
-		this.nextAfterFail = nextAfterFail;
-		return this;
-	}
-	
-	public void updateAndProcess(MigrationState stat, boolean continueProcess) {
+    public AbstractMigrationState(MigrationCluster holder, MigrationStatus status) {
+        this.holder = holder;
+        this.status = status;
+        executors = holder.getMigrationExecutor();
+    }
 
-		if(hasContine.compareAndSet(false, true)){
-			logger.info("[updateAndProcess][continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
-			getHolder().updateStat(stat);
-			if(continueProcess) {
-				getHolder().process();
-			}
-		}else{
-			logger.info("[updateAndProcess][already continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
-		}
-	}
+    @Override
+    public void action() {
+        hasContine.set(false);
+        doAction();
+    }
 
-	@Override
-	public String toString() {
-		return String.format("%s:%s", getClass().getSimpleName(), getHolder() != null ? getHolder().getCurrentCluster().getClusterName() : "");
-	}
+    @Override
+    public void rollback() {
+        logger.info("[rollback]{}", this);
+        doRollback();
+    }
+
+    protected abstract void doRollback();
+
+    protected abstract void doAction();
+
+    public MigrationCluster getHolder() {
+        return holder;
+    }
+
+    @Override
+    public MigrationStatus getStatus() {
+        return status;
+    }
+
+    @Override
+    public MigrationState nextAfterSuccess() {
+        return nextAfterSuccess;
+    }
+
+    public AbstractMigrationState setNextAfterSuccess(MigrationState nextAfterSuccess) {
+        this.nextAfterSuccess = nextAfterSuccess;
+        return this;
+    }
+
+    @Override
+    public MigrationState nextAfterFail() {
+        return nextAfterFail;
+    }
+
+    public AbstractMigrationState setNextAfterFail(MigrationState nextAfterFail) {
+        this.nextAfterFail = nextAfterFail;
+        return this;
+    }
+
+    protected void updateAndProcess(MigrationState state) {
+
+        updateAndProcess(state, true);
+    }
+
+    protected void updateAndStop(MigrationState state) {
+
+        updateAndProcess(state, false);
+    }
+
+    private void updateAndProcess(MigrationState stat, boolean continueProcess) {
+
+        if (hasContine.compareAndSet(false, true)) {
+            logger.info("[updateAndProcess][continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
+            getHolder().updateStat(stat);
+            if (continueProcess) {
+                getHolder().process();
+            }
+        } else {
+            logger.info("[updateAndProcess][already continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s:%s", getClass().getSimpleName(), getHolder() != null ? getHolder().getCurrentCluster().getClusterName() : "");
+    }
 }

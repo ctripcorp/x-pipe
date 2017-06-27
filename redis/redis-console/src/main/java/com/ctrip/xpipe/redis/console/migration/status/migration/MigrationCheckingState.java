@@ -42,6 +42,12 @@ public class MigrationCheckingState extends AbstractMigrationState {
 	}
 
 	@Override
+	protected void doRollback() {
+
+		updateAndProcess(new MigrationAbortedState(getHolder()));
+	}
+
+	@Override
 	public void refresh() {
 
 		int successCnt = 0;
@@ -53,7 +59,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
 		}
 
 		if (successCnt == migrationShards.size()) {
-			updateAndProcess(nextAfterSuccess(), true);
+			updateAndProcess(nextAfterSuccess());
 		}
 	}
 

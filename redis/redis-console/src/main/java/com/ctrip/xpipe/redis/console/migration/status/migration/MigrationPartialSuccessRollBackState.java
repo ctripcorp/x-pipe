@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -17,12 +18,17 @@ import java.util.concurrent.TimeUnit;
  *
  * Dec 8, 2016
  */
-public class MigrationRollBackState extends AbstractMigrationState {
+public class MigrationPartialSuccessRollBackState extends AbstractMigrationState {
 
-    public MigrationRollBackState(MigrationCluster holder) {
+    public MigrationPartialSuccessRollBackState(MigrationCluster holder) {
         super(holder, MigrationStatus.RollBack);
         this.setNextAfterSuccess(new MigrationAbortedState(holder))
                 .setNextAfterFail(this);
+    }
+
+    @Override
+    protected void doRollback() {
+        throw new UnsupportedOperationException("already rollbacking, can not rollback rollback");
     }
 
     @Override
@@ -32,20 +38,22 @@ public class MigrationRollBackState extends AbstractMigrationState {
     	StringBuilder errorMessage = new StringBuilder();
     	
         for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
-            executors.execute(new Runnable() {
+
+            executors.execute(new AbstractExceptionLogTask() {
                 @Override
-                public void run() {
-                	try{
-                		migrationShard.doRollBack();
-                	}catch(Exception e){
-                		logger.error("[run]" + migrationShard, e);
-                		errorMessage.append(LogUtils.error(String.format("%s", migrationShard, e.toString())));
-                	}finally{
-                       latch.countDown();
-                	}
+                protected void doRun() throws Exception {
+                    try{
+                        migrationShard.doRollBack();
+                    }catch(Exception e){
+                        logger.error("[run]" + migrationShard, e);
+                        errorMessage.append(LogUtils.error(String.format("%s", migrationShard, e.toString())));
+                    }finally{
+                        latch.countDown();
+                    }
                 }
             });
         }
+
         try {
 			latch.await(migrationWaitTimeSeconds, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
@@ -55,9 +63,9 @@ public class MigrationRollBackState extends AbstractMigrationState {
         
         String error = errorMessage.toString();
         if(StringUtil.isEmpty(error)){
-        	updateAndProcess(nextAfterSuccess(), true);
+        	updateAndProcess(nextAfterSuccess());
         }else{
-        	updateAndProcess(nextAfterFail(), false);
+        	updateAndStop(nextAfterFail());
         }
     }
 

@@ -37,6 +37,8 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 
 	@Mock
 	private MigrationCommandBuilder migrationCommandBuilder;
+	@Mock
+	private MigrationEvent migrationEvent;
 	@Autowired
 	private MigrationService migrationService;
 	@Autowired
@@ -63,7 +65,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		dcB = dcNames[1];
 
 		MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, 1L);
-		migrationCluster = new DefaultMigrationCluster(migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
+		migrationCluster = new DefaultMigrationCluster(migrationEvent, migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
 		
 		Map<Long, DcTbl> dcs = new HashMap<>();
 		for (DcTbl dc : dcService.findClusterRelatedDc("cluster1")) {

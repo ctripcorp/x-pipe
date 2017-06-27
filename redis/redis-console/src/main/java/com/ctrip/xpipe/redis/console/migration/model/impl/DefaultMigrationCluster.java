@@ -7,9 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 
@@ -35,7 +36,9 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
  */
 public class DefaultMigrationCluster extends AbstractObservable implements MigrationCluster {
 	
-	private MigrationState currentState;
+	private volatile MigrationState currentState;
+
+	private MigrationEvent event;
 	private MigrationClusterTbl migrationCluster;
 	private List<MigrationShard> migrationShards = new LinkedList<>();
 
@@ -50,8 +53,9 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	private MigrationService migrationService;
 	private ExecutorService executors;
 
-	public DefaultMigrationCluster(MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
-			RedisService redisService,MigrationService migrationService) {
+	public DefaultMigrationCluster(MigrationEvent event, MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
+								   RedisService redisService, MigrationService migrationService) {
+		this.event = event;
 		this.migrationCluster = migrationCluster;
 
 		this.clusterService = clusterService;
@@ -72,6 +76,11 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 	@Override
 	public Executor getMigrationExecutor() {
 		return executors;
+	}
+
+	@Override
+	public MigrationEvent getMigrationEvent() {
+		return this.event;
 	}
 
 	@Override
@@ -121,26 +130,34 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
 		logger.info("[updateStat]{}-{}, {} -> {}",
 				migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus(), stat.getStatus());
+
 		this.currentState = stat;
 
-		MigrationStatus migrationStatus = stat.getStatus();
+		updateClusterStatus();
 
-		String clusterStatus = migrationStatus.getClusterStatus().toString();
+		updateMigrationClusterStatus();
 
-		ClusterTbl cluster = getCurrentCluster();
-		cluster.setStatus(clusterStatus);
-		logger.info("[updateStat][updatedb]{}, {}", clusterName(), clusterStatus);
-		getClusterService().update(cluster);
+	}
 
-		ClusterTbl newCluster = getClusterService().find(clusterName());
-		logger.info("[updateStat][getdb]{}, {}", clusterName(), newCluster != null ? newCluster.getStatus() : null);
+	private void updateMigrationClusterStatus() {
 
-
+		MigrationStatus migrationStatus = this.currentState.getStatus();
 		MigrationClusterTbl migrationCluster = getMigrationCluster();
 		migrationCluster.setStatus(migrationStatus.toString());
 		migrationCluster.setEndTime(new Date());
 		getMigrationService().updateMigrationCluster(migrationCluster);
-		
+	}
+
+	private void updateClusterStatus() {
+
+		MigrationStatus migrationStatus = this.currentState.getStatus();
+		String clusterStatus = migrationStatus.getClusterStatus().toString();
+		ClusterTbl cluster = getCurrentCluster();
+		cluster.setStatus(clusterStatus);
+		logger.info("[updateStat][updatedb]{}, {}", clusterName(), clusterStatus);
+		getClusterService().update(cluster);
+		ClusterTbl newCluster = getClusterService().find(clusterName());
+		logger.info("[updateStat][getdb]{}, {}", clusterName(), newCluster != null ? newCluster.getStatus() : null);
 	}
 
 	@Override
@@ -165,7 +182,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 		if(!currentState.getStatus().equals(MigrationStatus.PartialSuccess)) {
 			throw new IllegalStateException(String.format("Cannot rollback while %s", this.currentState.getStatus()));
 		}
-		updateStat(new MigrationRollBackState(this));
+		updateStat(new MigrationPartialSuccessRollBackState(this));
 		process();
 	}
 	

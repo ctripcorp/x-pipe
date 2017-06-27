@@ -32,6 +32,11 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
 	}
 
 	@Override
+	public long getMigrationEventId() {
+		return event.getId();
+	}
+
+	@Override
 	public MigrationCluster getMigrationCluster(long clusterId) {
 		return migrationClusters.get(clusterId);
 	}

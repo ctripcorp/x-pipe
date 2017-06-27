@@ -14,4 +14,6 @@ public interface MigrationCluster extends Observer, Observable, MigrationCluster
 
     Executor getMigrationExecutor();
 
+    MigrationEvent getMigrationEvent();
+
 }

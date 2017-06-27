@@ -20,7 +20,12 @@ public class MigrationForcePublishState extends AbstractMigrationMigratingState 
 			.setNextAfterFail(this);
 	}
 
-	
+
+	@Override
+	protected void doRollback() {
+		throw new  UnsupportedOperationException("already force publish, can not rollback");
+	}
+
 	@Override
 	public void doAction() {
 
@@ -41,10 +46,10 @@ public class MigrationForcePublishState extends AbstractMigrationMigratingState 
 		
 		try {
 			latch.await();
-			updateAndProcess(nextAfterSuccess(), true);
+			updateAndProcess(nextAfterSuccess());
 		} catch (InterruptedException e) {
 			logger.error("[MigrationForcePublishState][action][Interrupted][will retry]",e);
-			updateAndProcess(nextAfterFail(), true);
+			updateAndProcess(nextAfterFail());
 		}
 	}
 }

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.migration;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +40,10 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 
 	@Mock
 	private MigrationCommandBuilder migrationCommandBuilder;
+
+	@Mock
+	private MigrationEvent migrationEvent;
+
 	@Autowired
 	private ClusterMetaService clusterMetaService;
 
@@ -60,7 +65,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		MockitoAnnotations.initMocks(this);
 		
 		MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, 1L);
-		migrationCluster = new DefaultMigrationCluster(migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
+		migrationCluster = new DefaultMigrationCluster(migrationEvent, migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
 		
 		Map<Long, DcTbl> dcs = new HashMap<>();
 		for (DcTbl dc : dcService.findClusterRelatedDc("cluster1")) {

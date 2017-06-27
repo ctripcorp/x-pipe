@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,6 +39,9 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 	
 	@Mock
 	private MigrationCommandBuilder migrationCommandBuilder;
+
+	@Mock
+	private MigrationEvent migrationEvent;
 	
 	private String clusterName = "cluster1";
 
@@ -69,7 +73,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		createShards();
 
 		MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, clusterId);
-		migrationCluster = new DefaultMigrationCluster(migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
+		migrationCluster = new DefaultMigrationCluster(migrationEvent, migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
 
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++cnt) {
 
