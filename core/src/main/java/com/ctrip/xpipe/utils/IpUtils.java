@@ -152,6 +152,14 @@ public class IpUtils {
 
 	public static List<HostPort> parseAsHostPorts(String addressDesc){
 
+		if(addressDesc == null){
+			throw new IllegalArgumentException("addressDesc null");
+		}
+
+		if(StringUtil.isEmpty(addressDesc)){
+			return new LinkedList<>();
+		}
+
 		List<HostPort> result = new LinkedList<>();
 		String []addresses = addressDesc.split("\\s*,\\s*");
 

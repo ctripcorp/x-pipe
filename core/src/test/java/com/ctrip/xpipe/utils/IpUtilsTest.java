@@ -2,7 +2,12 @@ package com.ctrip.xpipe.utils;
 
 import java.net.Inet6Address;
 import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 
+import com.ctrip.xpipe.metric.HostPort;
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.ctrip.xpipe.AbstractTest;
@@ -27,6 +32,13 @@ public class IpUtilsTest extends AbstractTest{
 		InetSocketAddress address = new InetSocketAddress("localhost", 6379);
 		logger.info("{}", IpUtils.getIp(address));
 		logger.info("{}", address.getAddress().getHostAddress());
+	}
+
+	@Test
+	public void testParseAsHostPorts(){
+
+		Assert.assertEquals(new LinkedList<>(), IpUtils.parseAsHostPorts(""));
+
 	}
 	
 
