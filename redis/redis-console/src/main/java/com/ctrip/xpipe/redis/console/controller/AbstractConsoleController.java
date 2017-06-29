@@ -3,11 +3,14 @@ package com.ctrip.xpipe.redis.console.controller;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.api.sso.UserInfo;
+import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.spring.AbstractController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author shyin
@@ -15,6 +18,9 @@ import com.ctrip.xpipe.api.codec.Codec;
  * Sep 2, 2016
  */
 public abstract class AbstractConsoleController extends AbstractController{
+
+	@Autowired
+	protected UserInfoHolder userInfoHolder;
 
 	protected Codec coder = Codec.DEFAULT;
 

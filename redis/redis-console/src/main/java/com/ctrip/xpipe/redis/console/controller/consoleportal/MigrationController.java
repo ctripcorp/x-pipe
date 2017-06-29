@@ -5,6 +5,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.ctrip.xpipe.api.sso.UserInfo;
+import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,12 +37,26 @@ public class MigrationController extends AbstractConsoleController {
 
 		Map<String, Long> res = new HashMap<>();
 		logger.info("[Create Event]{}", event);
-		Long migrationEventId = migrationService.createMigrationEvent(event);
+
+		String user = userInfoHolder.getUser().getUserId();
+		String tag = generateUniqueEventTag(user);
+
+		Long migrationEventId = migrationService.createMigrationEvent(event.createMigrationRequest(user, tag));
+
 		res.put("value", migrationEventId);
 		logger.info("[Create Event][Done]{}", migrationEventId);
 		return res;
 	}
-	
+
+	private String generateUniqueEventTag(String user) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(DataModifiedTimeGenerator.generateModifiedTime());
+		sb.append("-");
+		sb.append(user);
+		return sb.toString();
+	}
+
+
 	@RequestMapping(value = "/migration/events/all", method = RequestMethod.GET) 
 	public List<MigrationEventTbl> getAllEvents() {
 		return migrationService.findAll();

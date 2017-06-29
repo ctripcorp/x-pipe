@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationEventModel;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 
 public interface MigrationService {
 	MigrationEventTbl find(long id);
@@ -20,7 +21,7 @@ public interface MigrationService {
 	void updateMigrationShard(MigrationShardTbl shard);
 	void updateMigrationCluster(MigrationClusterTbl cluster);
 	
-	Long createMigrationEvent(MigrationEventModel events);
+	Long createMigrationEvent(MigrationRequest request);
 	void continueMigrationCluster(long eventId, long clusterId);
 	void continueMigrationEvent(long id);
 	void cancelMigrationCluster(long eventId, long clusterId);

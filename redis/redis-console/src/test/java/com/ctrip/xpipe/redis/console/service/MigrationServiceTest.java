@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service;
 
 import java.util.List;
 
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.junit.Assert;
 import org.junit.Test;
@@ -34,15 +35,16 @@ public class MigrationServiceTest extends AbstractConsoleIntegrationTest {
 		return "";
 	}
 	
-	private MigrationEventModel createEventDemo(long clusterId, long destDcId) {
-		MigrationEventModel model = new MigrationEventModel();
-		MigrationEventTbl event = new MigrationEventTbl();
-		MigrationClusterTbl migrationClsuter = new MigrationClusterTbl();
-		migrationClsuter.setClusterId(clusterId).setDestinationDcId(destDcId);
-		
-		event.getMigrationClusters().add(migrationClsuter);
-		model.setEvent(event);
-		return model;
+	private MigrationRequest createEventDemo(long clusterId, long destDcId) {
+
+		MigrationRequest migrationRequest = new MigrationRequest("unit test");
+		migrationRequest.setTag("unit test-" + getTestName());
+
+		MigrationRequest.ClusterInfo clusterInfo = new MigrationRequest.ClusterInfo();
+		clusterInfo.setClusterId(clusterId);
+		clusterInfo.setToDcId(destDcId);
+		migrationRequest.addClusterInfo(clusterInfo);
+		return migrationRequest;
 	}
 	
 	@Test

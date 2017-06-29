@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.annotation.PostConstruct;
 
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -127,30 +128,30 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	}
 
 	@DalTransaction
-	public MigrationEvent createMigrationEvent(MigrationEventModel event) {
-		if (null != event) {
+	public MigrationEvent createMigrationEvent(MigrationRequest migrationRequest) {
+
+		if (null != migrationRequest) {
 			/** Create event **/
-			MigrationEventTbl proto = migrationEventTblDao.createLocal();
-			final String eventTag = generateUniqueEventTag(userInfo.getUser().getUserId());
-			proto.setOperator(userInfo.getUser().getUserId()).setEventTag(eventTag);
-			final MigrationEventTbl forCreate = proto;
-			final MigrationEventTbl result = queryHandler.handleQuery(new DalQuery<MigrationEventTbl>() {
+			MigrationEventTbl migrationEvent = migrationEventTblDao.createLocal();
+			migrationEvent.setOperator(migrationRequest.getUser()).setEventTag(migrationRequest.getTag());
+
+			queryHandler.handleQuery(new DalQuery<MigrationEventTbl>() {
 				@Override
 				public MigrationEventTbl doQuery() throws DalException {
-					migrationEventTblDao.insert(forCreate);
-					return migrationEventTblDao.findByTag(eventTag, MigrationEventTblEntity.READSET_FULL);
+					migrationEventTblDao.insert(migrationEvent);
+					return migrationEvent;
 				}
 			});
 
 			/** Create migration clusters task **/
-			final List<MigrationClusterTbl> migrationClusters = createMigrationClusters(result.getId(),
-					event.getEvent().getMigrationClusters());
+			final List<MigrationClusterTbl> migrationClusters = createMigrationClusters(migrationEvent.getId(),
+					migrationRequest.getRequestClusters());
 
 			/** Create migration shards task **/
 			createMigrationShards(migrationClusters);
 
 			/** Notify event manager **/
-			return buildMigrationEvent(result.getId());
+			return buildMigrationEvent(migrationEvent.getId());
 		} else {
 			throw new BadRequestException("Cannot create migration event from nothing!");
 		}
@@ -191,16 +192,19 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		throw new BadRequestException("Cannot load migration event from null.");
 	}
 
-	private List<MigrationClusterTbl> createMigrationClusters(final long eventId, List<MigrationClusterTbl> migrationClusters) {
+	private List<MigrationClusterTbl> createMigrationClusters(final long eventId, List<MigrationRequest.ClusterInfo> migrationClusters) {
 		final List<MigrationClusterTbl> toCreateMigrationCluster = new LinkedList<>();
 
 		if (null != migrationClusters) {
-			for (MigrationClusterTbl migrationCluster : migrationClusters) {
+			for (MigrationRequest.ClusterInfo migrationCluster : migrationClusters) {
+
 				updateClusterStatus(migrationCluster.getClusterId(), ClusterStatus.Lock);
-				
 				MigrationClusterTbl proto = migrationClusterTblDao.createLocal();
-				proto.setMigrationEventId(eventId).setClusterId(migrationCluster.getClusterId()).setSourceDcId(migrationCluster.getSourceDcId())
-						.setDestinationDcId(migrationCluster.getDestinationDcId()).setStatus(MigrationStatus.Initiated.toString()).setPublishInfo("");
+				proto.setMigrationEventId(eventId).
+						setClusterId(migrationCluster.getClusterId()).
+						setSourceDcId(migrationCluster.getFromDcId())
+						.setDestinationDcId(migrationCluster.getToDcId())
+						.setStatus(MigrationStatus.Initiated.toString()).setPublishInfo("");
 				toCreateMigrationCluster.add(proto);
 			}
 		}
@@ -272,13 +276,5 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				return null;
 			}
 		});
-	}
-
-	private String generateUniqueEventTag(String user) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(DataModifiedTimeGenerator.generateModifiedTime());
-		sb.append("-");
-		sb.append(user);
-		return sb.toString();
 	}
 }
