@@ -5,15 +5,10 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.observer.Observable;
-import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilderImpl;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationResultStatus;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
+import com.ctrip.xpipe.redis.console.migration.model.*;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
@@ -78,7 +73,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		this.currentShard = currentShard;
 		this.dcs = dcs;
 		this.migrationService = migrationService;
-		shardMigrationResult = new ShardMigrationResult();
+		shardMigrationResult = new DefaultShardMigrationResult();
 		this.commandBuilder = commandBuilder;
 		this.newMasterAddr = null;
 		

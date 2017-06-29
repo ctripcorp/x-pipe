@@ -1,17 +1,12 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.PartialSuccessState;
-import com.ctrip.xpipe.utils.LogUtils;
-import com.ctrip.xpipe.utils.StringUtil;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author shyin
@@ -54,11 +49,11 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
 
     @Override
     protected void doRollback() {
-        updateAndProcess(new MigrationPartialSuccessRollBackState(getHolder()));
+        updateAndForceProcess(new MigrationPartialSuccessRollBackState(getHolder()));
     }
 
     @Override
     public void forcePublish() {
-        updateAndProcess(new MigrationForcePublishState(getHolder()));
+        updateAndForceProcess(new MigrationForcePublishState(getHolder()));
     }
 }

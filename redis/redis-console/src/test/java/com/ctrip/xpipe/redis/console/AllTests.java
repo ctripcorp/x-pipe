@@ -11,7 +11,9 @@ import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStateTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
@@ -51,6 +53,8 @@ import org.junit.runner.RunWith;
         MetaServiceTest.class,
         ClusterMetaModifiedNotifierTest.class,
         MetaNotifyTaskTest.class,
+        MigrationCheckingStateTest.class,
+        MigrationPartialSuccessStateTest.class,
         DefaultMigrationClusterTest.class,
         DefaultMigrationShardTest.class,
         MigrationStatTest.class,

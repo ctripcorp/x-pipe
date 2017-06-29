@@ -3,8 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.model;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.RedisService;
@@ -71,11 +70,11 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                     }
                 });
 
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.CHECK));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
         migrationShard.doCheck();
         verify(mockedCommandBuilder, times(1)).buildDcCheckCommand("test-cluster", "test-shard", "dc-b", "dc-b");
         verify(mockedMigrationService, times(1)).updateMigrationShard((MigrationShardTbl) anyObject());
-        Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.CHECK));
+        Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
     }
 
     @Test
@@ -98,11 +97,11 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                     }
                 });
 
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.CHECK));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
         migrationShard.doCheck();
         verify(mockedCommandBuilder, times(1)).buildDcCheckCommand("test-cluster", "test-shard", "dc-b", "dc-b");
         verify(mockedMigrationService, times(1)).updateMigrationShard((MigrationShardTbl) anyObject());
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.CHECK));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
     }
 
     @Test
@@ -159,16 +158,16 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
             }
         });
 
-        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE));
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_OTHER_DC));
+        Assert.assertEquals(ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 
         migrationShard.doMigrate();
         verify(mockedMigrationService, times(5)).updateMigrationShard((MigrationShardTbl) anyObject());
-        Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE));
-        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.SUCCESS, migrationShard.getShardMigrationResult().getStatus());
+        Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+        Assert.assertEquals(ShardMigrationResultStatus.SUCCESS, migrationShard.getShardMigrationResult().getStatus());
     }
 
     @Test
@@ -225,18 +224,18 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
             }
         });
 
-        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE));
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_OTHER_DC));
+        Assert.assertEquals(ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 
         migrationShard.doMigrate();
         verify(mockedMigrationService, times(3)).updateMigrationShard((MigrationShardTbl) anyObject());
-        Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
-        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE));
-        Assert.assertEquals(ShardMigrationResult.ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
+        Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
+        Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+        Assert.assertEquals(ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
     }
 
 

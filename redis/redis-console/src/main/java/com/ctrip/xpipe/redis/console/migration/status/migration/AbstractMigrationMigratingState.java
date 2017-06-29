@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -25,8 +25,8 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
     	int setUpNewSuccessCnt = 0;
     	int currentlyWorkingCnt = 0;
     	for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
-    		if(migrationShard.getShardMigrationResult().stepTerminated(ShardMigrationResult.ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
-    			if(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationResult.ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
+    		if(migrationShard.getShardMigrationResult().stepTerminated(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
+    			if(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
 					++setUpNewSuccessCnt;
 				}
     		} else {
@@ -39,7 +39,7 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
     			// all success
     			int finishedCnt = 0;
     			for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
-    				if(migrationShard.getShardMigrationResult().stepTerminated(ShardMigrationResult.ShardMigrationStep.MIGRATE)) {
+    				if(migrationShard.getShardMigrationResult().stepTerminated(ShardMigrationStep.MIGRATE)) {
     					++finishedCnt;
     				}
     			}
@@ -48,12 +48,12 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
     				doMigrateOtherDc();
     				doOtherDcMigrate = true;
     			} else if(finishedCnt == getHolder().getMigrationShards().size()) {
-    				logger.info("[success][continue]{}", getHolder().getCurrentCluster().getClusterName());
+    				logger.info("[success][continue]{}", getHolder().clusterName());
                     updateAndProcess(nextAfterSuccess());
     			}
     		} else {
     			// any fail
-    			logger.info("[fail]{}", getHolder().getCurrentCluster().getClusterName());
+    			logger.info("[fail]{}", getHolder().clusterName());
     			if(this instanceof MigrationMigratingState) {
     				updateAndProcess(nextAfterFail());
     				return;

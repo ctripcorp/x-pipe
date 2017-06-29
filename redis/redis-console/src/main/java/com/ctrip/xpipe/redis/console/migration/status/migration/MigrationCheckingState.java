@@ -1,17 +1,12 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.console.migration.command.result.ShardMigrationResult.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
  * @author shyin
@@ -44,7 +39,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
 	@Override
 	protected void doRollback() {
 
-		updateAndProcess(new MigrationAbortedState(getHolder()));
+		updateAndForceProcess(new MigrationAbortedState(getHolder()));
 	}
 
 	@Override

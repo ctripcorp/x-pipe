@@ -84,29 +84,34 @@ public abstract class AbstractMigrationState implements MigrationState {
 
     protected void updateAndProcess(MigrationState state) {
 
-        updateAndProcess(state, true);
+        updateAndProcess(state, true, false);
+    }
+
+    protected void updateAndForceProcess(MigrationState state) {
+
+        updateAndProcess(state, true, true);
     }
 
     protected void updateAndStop(MigrationState state) {
 
-        updateAndProcess(state, false);
+        updateAndProcess(state, false, true);
     }
 
-    private void updateAndProcess(MigrationState stat, boolean continueProcess) {
+    private void updateAndProcess(MigrationState stat, boolean process, boolean forceContinue) {
 
-        if (hasContine.compareAndSet(false, true)) {
-            logger.info("[updateAndProcess][continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
+        if (forceContinue || hasContine.compareAndSet(false, true)) {
+            logger.info("[updateAndProcess][continue]{}, {}, {}", getHolder().clusterName(), stat, process);
             getHolder().updateStat(stat);
-            if (continueProcess) {
+            if (process) {
                 getHolder().process();
             }
         } else {
-            logger.info("[updateAndProcess][already continue]{}, {}, {}", getHolder().clusterName(), stat, continueProcess);
+            logger.info("[updateAndProcess][already continue]{}, {}, {}", getHolder().clusterName(), stat, process);
         }
     }
 
     @Override
     public String toString() {
-        return String.format("%s:%s", getClass().getSimpleName(), getHolder() != null ? getHolder().getCurrentCluster().getClusterName() : "");
+        return String.format("%s:%s", getClass().getSimpleName(), getHolder() != null ? getHolder().clusterName() : "");
     }
 }

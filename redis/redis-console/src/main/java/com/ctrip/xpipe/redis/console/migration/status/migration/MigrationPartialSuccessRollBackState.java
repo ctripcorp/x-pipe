@@ -6,11 +6,8 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.utils.LogUtils;
 import com.ctrip.xpipe.utils.StringUtil;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**

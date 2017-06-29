@@ -126,7 +126,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
 	@Override
 	@DalTransaction
-	public void updateStat(MigrationState stat) {
+	public synchronized void updateStat(MigrationState stat) {
 
 		logger.info("[updateStat]{}-{}, {} -> {}",
 				migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus(), stat.getStatus());
