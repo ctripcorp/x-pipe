@@ -4,6 +4,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.ctrip.xpipe.redis.console.controller.migrate.meta.*;
+import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
+import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratingNow;
+import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.TryMigrateResult;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +25,9 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 @RequestMapping("/api/migration")
 public class MigrationApi extends AbstractConsoleController {
 
+    @Autowired
+    private MigrationService migrationService;
+
     private int ticketId = 1;
 
     @RequestMapping(value = "/checkandprepare", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
@@ -27,13 +37,41 @@ public class MigrationApi extends AbstractConsoleController {
 
         CheckPrepareResponse checkRetMeta = new CheckPrepareResponse();
 
-        checkRetMeta.setTicketId(ticketId);
+        List<TryMigrateResult> maySuccessClusters = new LinkedList<>();
+        List<CheckPrepareClusterResponse> failClusters = new LinkedList<>();
 
-        List<CheckPrepareClusterResponse> results = new LinkedList<>();
-        results.add(CheckPrepareClusterResponse.createSuccessResponse("cluster1"));
-        results.add(CheckPrepareClusterResponse.createFailResponse("cluster2",
-                CHECK_FAIL_STATUS.ALREADY_MIGRATING, "0"));
-        checkRetMeta.addCheckPrepareClusterResponse(results);
+        String fromIdc = checkMeta.getFromIdc();
+        for(String clusterName : checkMeta.getClusters()){
+            try {
+                TryMigrateResult tryMigrateResult = migrationService.tryMigrate(clusterName, fromIdc);
+                maySuccessClusters.add(tryMigrateResult);
+                logger.info("[checkAndPrepare]{}", tryMigrateResult);
+            } catch (ClusterNotFoundException e) {
+                failClusters.add(CheckPrepareClusterResponse.createFailResponse(clusterName, fromIdc, CHECK_FAIL_STATUS.CLUSTER_NOT_FOUND, e.getMessage()));
+                logger.error("[checkAndPrepare]" + clusterName, e);
+            } catch (ClusterActiveDcNotRequest e) {
+                failClusters.add(CheckPrepareClusterResponse.createFailResponse(clusterName, fromIdc, CHECK_FAIL_STATUS.ACTIVE_DC_ALREADY_NOT_REQUESTED, e.getMessage()));
+                logger.error("[checkAndPrepare]" + clusterName, e);
+            } catch (ClusterMigratingNow e) {
+                failClusters.add(CheckPrepareClusterResponse.createFailResponse(clusterName, fromIdc, CHECK_FAIL_STATUS.ALREADY_MIGRATING, String.valueOf(e.getEventId())));
+                logger.error("[checkAndPrepare]" + clusterName, e);
+            }catch (Exception e){
+                logger.error("[checkAndPrepare]" + clusterName, e);
+                failClusters.add(CheckPrepareClusterResponse.createFailResponse(clusterName, fromIdc, CHECK_FAIL_STATUS.OTHERS, e.getMessage()));
+            }
+        }
+
+        Long eventId = -1L;
+        if(maySuccessClusters.size() > 0){
+            MigrationRequest request = new MigrationRequest("api_call");
+            request.setTag("api_call");
+            maySuccessClusters.forEach((tryMigrateResult) -> request.addClusterInfo(new MigrationRequest.ClusterInfo(tryMigrateResult)));
+            eventId = migrationService.createMigrationEvent(request);
+        }
+
+        checkRetMeta.setTicketId(eventId);
+        failClusters.forEach((failCluster) -> checkRetMeta.addCheckPrepareClusterResponse(failCluster));
+        maySuccessClusters.forEach((successCluster) -> checkRetMeta.addCheckPrepareClusterResponse(CheckPrepareClusterResponse.createSuccessResponse(successCluster.getClusterName(), successCluster.getFromDcName(), successCluster.getToDcName())));
         return checkRetMeta;
     }
 

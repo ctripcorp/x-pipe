@@ -36,6 +36,15 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	}
 
 	@Override
+	public String getDcName(long dcId) {
+		DcTbl dcTbl = find(dcId);
+		if(dcTbl == null){
+			throw new IllegalArgumentException("dc for dcid not found:" + dcId);
+		}
+		return dcTbl.getDcName();
+	}
+
+	@Override
 	public List<DcTbl> findAllDcs() {
 		return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
 			@Override

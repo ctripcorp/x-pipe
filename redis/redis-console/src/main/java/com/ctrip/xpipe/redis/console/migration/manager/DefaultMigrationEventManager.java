@@ -85,7 +85,7 @@ public class DefaultMigrationEventManager implements MigrationEventManager {
 		MigrationEvent event = (MigrationEvent) args;
 		int successCnt = 0;
 		for(MigrationCluster cluster : event.getMigrationClusters()) {
-			if(MigrationStatus.isTerminated(cluster.getStatus())) {
+			if(cluster.getStatus().isTerminated()) {
 				++successCnt;
 			}
 		}

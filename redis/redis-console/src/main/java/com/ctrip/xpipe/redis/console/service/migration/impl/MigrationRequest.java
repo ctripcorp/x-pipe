@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
-import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 
 import java.util.LinkedList;
@@ -63,6 +62,24 @@ public class MigrationRequest {
 
         public ClusterInfo(){
 
+        }
+
+        public ClusterInfo(long clusterId, String clusterName, long fromDcId, String fromDcName, long toDcId, String toDcName){
+            this.clusterId = clusterId;
+            this.clusterName = clusterName;
+            this.fromDcId = fromDcId;
+            this.fromDcName = fromDcName;
+            this.toDcId = toDcId;
+            this.toDcName = toDcName;
+        }
+
+        public ClusterInfo(TryMigrateResult tryMigrateResult){
+            this.clusterId = tryMigrateResult.getClusterId();
+            this.clusterName = tryMigrateResult.getClusterName();
+            this.fromDcId = tryMigrateResult.getFromDcId();
+            this.fromDcName = tryMigrateResult.getFromDcName();
+            this.toDcId = tryMigrateResult.getToDcId();
+            this.toDcName = tryMigrateResult.getToDcName();
         }
 
         public ClusterInfo(MigrationClusterTbl migrationCluster){

@@ -160,12 +160,9 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 	/** Perform differently with migrating cluster **/
 	protected long getClusterMetaCurrentPrimaryDc(DcTbl dcInfo, ClusterTbl clusterInfo) {
 		if (ClusterStatus.isSameClusterStatus(clusterInfo.getStatus(), ClusterStatus.Migrating)) {
-			List<MigrationClusterTbl> migrationClusterHistory = migrationService
-					.findAllMigrationCluster(clusterInfo.getId());
-			for (MigrationClusterTbl migrationCluster : migrationClusterHistory) {
-				if(dcInfo.getId() == migrationCluster.getDestinationDcId()) {
-					return migrationCluster.getDestinationDcId();
-				}
+			MigrationClusterTbl migrationCluster = migrationService.findLatestUnfinishedMigrationCluster(clusterInfo.getId());
+			if(migrationCluster != null && dcInfo.getId() == migrationCluster.getDestinationDcId()) {
+				return migrationCluster.getDestinationDcId();
 			}
 		}
 		return clusterInfo.getActivedcId();

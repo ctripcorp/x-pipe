@@ -15,18 +15,27 @@ public class CheckPrepareClusterResponse extends AbstractClusterMeta{
 
     }
 
-    private CheckPrepareClusterResponse(String clusterName) {
-        super(clusterName);
+    private CheckPrepareClusterResponse(String clusterName, String fromIdc, String toIdc) {
+        super(clusterName, fromIdc, toIdc);
         this.success = true;
-
 
     }
 
-    private CheckPrepareClusterResponse(String clusterName, CHECK_FAIL_STATUS failReason, String msg) {
+    private CheckPrepareClusterResponse(String clusterName, String fromIdc, CHECK_FAIL_STATUS failReason, String msg) {
         super(clusterName, msg);
+        setFromIdc(fromIdc);
         this.success = false;
         this.failReason = failReason;
     }
+
+    private CheckPrepareClusterResponse(String clusterName, String fromIdc,String toIdc, CHECK_FAIL_STATUS failReason, String msg) {
+        super(clusterName, msg);
+        setFromIdc(fromIdc);
+        this.setToIdc(toIdc);
+        this.success = false;
+        this.failReason = failReason;
+    }
+
 
     public boolean isSuccess() {
         return success;
@@ -44,11 +53,16 @@ public class CheckPrepareClusterResponse extends AbstractClusterMeta{
         this.failReason = failReason;
     }
 
-    public static CheckPrepareClusterResponse createSuccessResponse(String clusterName) {
-        return new CheckPrepareClusterResponse(clusterName);
+    public static CheckPrepareClusterResponse createSuccessResponse(String clusterName, String fromIdc, String toIdc) {
+        return new CheckPrepareClusterResponse(clusterName, fromIdc, toIdc);
     }
 
-    public static CheckPrepareClusterResponse createFailResponse(String clusterName, CHECK_FAIL_STATUS failReason, String msg) {
-        return new CheckPrepareClusterResponse(clusterName, failReason, msg);
+    public static CheckPrepareClusterResponse createFailResponse(String clusterName, String fromIdc, CHECK_FAIL_STATUS failReason, String msg) {
+        return new CheckPrepareClusterResponse(clusterName, fromIdc, failReason, msg);
     }
+
+    public static CheckPrepareClusterResponse createFailResponse(String clusterName, String fromIdc, String toIdc, CHECK_FAIL_STATUS failReason, String msg) {
+        return new CheckPrepareClusterResponse(clusterName, fromIdc, toIdc, failReason, msg);
+    }
+
 }

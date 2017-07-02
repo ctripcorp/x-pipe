@@ -10,12 +10,22 @@ public class AbstractClusterMeta extends AbstractMeta {
     private String clusterName;
     private String msg;
 
+    private String fromIdc;
+    private String toIdc;
+
 
     public AbstractClusterMeta(){
     }
 
     public AbstractClusterMeta(String clusterName){
         this.clusterName = clusterName;
+    }
+
+    public AbstractClusterMeta(String clusterName, String fromIdc, String toIdc){
+        this.clusterName = clusterName;
+        this.fromIdc = fromIdc;
+        this.toIdc = toIdc;
+
     }
 
     public AbstractClusterMeta(String clusterName, String msg){
@@ -39,5 +49,19 @@ public class AbstractClusterMeta extends AbstractMeta {
         this.msg = msg;
     }
 
+    public String getFromIdc() {
+        return fromIdc;
+    }
 
+    public void setFromIdc(String fromIdc) {
+        this.fromIdc = fromIdc;
+    }
+
+    public String getToIdc() {
+        return toIdc;
+    }
+
+    public void setToIdc(String toIdc) {
+        this.toIdc = toIdc;
+    }
 }

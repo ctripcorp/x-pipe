@@ -882,7 +882,24 @@
 					]]>
 				</statement>
 			</query>
-			
+
+			<query name="find-unfinished-by-cluster-id" type="SELECT" multiple="true">
+				<param name="cluster-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name="cluster-id"/> = ${cluster-id}
+					AND mct.status != 'Success'
+					AND mct.status != 'ForceEnd'
+					AND mct.status != 'Aborted'
+					AND <FIELD name='deleted'/> = 0
+					ORDER BY id asc
+					]]>
+				</statement>
+			</query>
+
+
 			<query name='insert-batch' type='INSERT' batch='true'>
 				<statement>
 					<![CDATA[

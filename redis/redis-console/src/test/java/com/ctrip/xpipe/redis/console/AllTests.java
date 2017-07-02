@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.console;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.dao.ConfigDaoTest;
+import com.ctrip.xpipe.redis.console.dao.MigrationClusterDaoTest;
 import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
@@ -63,6 +64,7 @@ import org.junit.runner.RunWith;
         SingleShardMigrationTest.class,
         MultiShardMigrationTest.class,
         ConfigDaoTest.class,
+        MigrationClusterDaoTest.class,
         DefaultConsoleDbConfigTest.class
 })
 public class AllTests {

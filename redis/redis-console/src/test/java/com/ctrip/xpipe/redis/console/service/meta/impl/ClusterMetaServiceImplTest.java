@@ -56,9 +56,7 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleTest{
 		clusterTbl.setStatus(ClusterStatus.Migrating.toString());
 		
 		
-		List<MigrationClusterTbl> migrationClusters = new LinkedList<>();
-		migrationClusters.add(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
-		when(migrationService.findAllMigrationCluster(clusterId)).thenReturn(migrationClusters);
+		when(migrationService.findLatestUnfinishedMigrationCluster(clusterId)).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
 		
 		dcTbl.setId(destinationDcId);
 		Assert.assertEquals(destinationDcId, clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl));
@@ -84,9 +82,7 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleTest{
 		clusterTbl.setActivedcId(currentActiveDcId);
 		
 		
-		List<MigrationClusterTbl> migrationClusters = new LinkedList<>();
-		migrationClusters.add(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
-		when(migrationService.findAllMigrationCluster(clusterId)).thenReturn(migrationClusters);
+		when(migrationService.findLatestUnfinishedMigrationCluster(clusterId)).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
 
 		dcTbl.setId(destinationDcId);
 		for(ClusterStatus clusterStatus : ClusterStatus.values()){

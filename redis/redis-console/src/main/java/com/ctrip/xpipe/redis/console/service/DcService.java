@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.model.DcTbl;
 public interface DcService {
 	DcTbl find(String dcName);
 	DcTbl find(long dcId);
+	String getDcName(long dcId);
 	List<DcTbl> findAllDcs();
 	List<DcTbl> findAllDcNames();
 	List<DcTbl> findAllDcBasic();

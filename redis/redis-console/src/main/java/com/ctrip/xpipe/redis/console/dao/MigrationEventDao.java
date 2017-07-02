@@ -173,7 +173,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				MigrationClusterTbl cluster = detail.getRedundantClusters();
 				MigrationShardTbl shard = detail.getRedundantShards();
 				
-				if(MigrationStatus.isTerminated(MigrationStatus.valueOf(cluster.getStatus()))) {
+				if(MigrationStatus.valueOf(cluster.getStatus()).isTerminated()) {
 					continue;
 				}
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {
@@ -198,7 +198,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		if (null != migrationClusters) {
 			for (MigrationRequest.ClusterInfo migrationCluster : migrationClusters) {
 
-				updateClusterStatus(migrationCluster.getClusterId(), ClusterStatus.Lock);
+				lockCluster(migrationCluster.getClusterId());
 				MigrationClusterTbl proto = migrationClusterTblDao.createLocal();
 				proto.setMigrationEventId(eventId).
 						setClusterId(migrationCluster.getClusterId()).
@@ -218,7 +218,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		});
 	}
 	
-	private void updateClusterStatus(final long clusterId, ClusterStatus status) {
+	private void lockCluster(final long clusterId) {
 
 		ClusterTbl cluster = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override

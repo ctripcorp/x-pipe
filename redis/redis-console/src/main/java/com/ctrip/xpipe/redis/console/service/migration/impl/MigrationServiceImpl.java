@@ -5,7 +5,15 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
+import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratingNow;
+import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,17 +22,6 @@ import org.unidal.lookup.ContainerLoader;
 
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTblDao;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTblEntity;
-import com.ctrip.xpipe.redis.console.model.MigrationEventModel;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTblDao;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTblEntity;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTblDao;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
@@ -34,16 +31,23 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
 	@Autowired
 	private MigrationEventDao migrationEventDao;
+
 	@Autowired
 	private MigrationEventManager migrationEventManager;
-	
-	private MigrationClusterTblDao migrationClusterDao;
+
+	@Autowired
+	private ClusterService clusterService;
+
+	@Autowired
+	private DcService dcService;
+
+	@Autowired
+	private MigrationClusterDao migrationClusterDao;
 	private MigrationShardTblDao migrationShardTblDao;
 	
 	@PostConstruct
 	private void postConstruct() throws ServerException {
 		try {
-			migrationClusterDao = ContainerLoader.getDefaultContainer().lookup(MigrationClusterTblDao.class);
 			migrationShardTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationShardTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.");
@@ -72,22 +76,24 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
 	@Override
 	public MigrationClusterTbl findMigrationCluster(final long eventId, final long clusterId) {
-		return queryHandler.handleQuery(new DalQuery<MigrationClusterTbl>() {
-			@Override
-			public MigrationClusterTbl doQuery() throws DalException {
-				return migrationClusterDao.findByEventIdAndClusterId(eventId, clusterId, MigrationClusterTblEntity.READSET_FULL);
-			}
-		});
+
+		return migrationClusterDao.findByEventIdAndClusterId(eventId, clusterId);
 	}
 	
 	@Override
-	public List<MigrationClusterTbl> findAllMigrationCluster(final long clusterId) {
-		return queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
-			@Override
-			public List<MigrationClusterTbl> doQuery() throws DalException {
-				return migrationClusterDao.findAllByClusterId(clusterId, MigrationClusterTblEntity.READSET_FULL);
-			}
-		});
+	public MigrationClusterTbl findLatestUnfinishedMigrationCluster(final long clusterId) {
+
+
+		List<MigrationClusterTbl> unfinishedByClusterId = migrationClusterDao.findUnfinishedByClusterId(clusterId);
+
+		if(unfinishedByClusterId.size() == 0){
+			return null;
+		}
+
+		if(unfinishedByClusterId.size() > 1){
+			EventMonitor.DEFAULT.logAlertEvent(String.format("[unfinished > 1]%d : %d", unfinishedByClusterId.size(), clusterId));
+		}
+		return unfinishedByClusterId.get(unfinishedByClusterId.size() - 1);
 	}
 
 	@Override
@@ -125,13 +131,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 	
 	@Override
 	public void updateMigrationCluster(final MigrationClusterTbl cluster) {
-		queryHandler.handleQuery(new DalQuery<Void>() {
-			@Override
-			public Void doQuery() throws DalException {
-				migrationClusterDao.updateByPK(cluster, MigrationClusterTblEntity.UPDATESET_FULL);
-				return null;
-			}
-		});
+		migrationClusterDao.updateByPK(cluster);
 	}
 
 	@Override
@@ -183,6 +183,45 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 			}
 		}
 		return ret;
+	}
+
+	@Override
+	public TryMigrateResult tryMigrate(String clusterName, String fromIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow {
+
+		ClusterTbl clusterTbl  = clusterService.find(clusterName);
+		if(clusterTbl == null){
+			throw new ClusterNotFoundException(clusterName);
+		}
+
+		MigrationClusterTbl unfinished = findLatestUnfinishedMigrationCluster(clusterTbl.getId());
+		if(unfinished != null){
+			long fromDcId = unfinished.getSourceDcId();
+			long toDcId = unfinished.getDestinationDcId();
+			throw new ClusterMigratingNow(clusterName, dcService.getDcName(fromDcId), dcService.getDcName(toDcId), unfinished.getMigrationEventId());
+		}
+
+		long activedcId = clusterTbl.getActivedcId();
+		DcTbl activeDc = dcService.find(activedcId);
+		if(fromIdc != null && !fromIdc.equalsIgnoreCase(activeDc.getDcName())){
+			throw new ClusterActiveDcNotRequest(clusterName, fromIdc, activeDc.getDcName());
+		}
+
+		List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterName);
+		logger.debug("[tryMigrate][clusterRelatedDc]", clusterRelatedDc);
+
+		DcTbl toDc = findToDc(fromIdc, clusterRelatedDc);
+		return new TryMigrateResult(clusterTbl, activeDc, toDc);
+	}
+
+	private DcTbl findToDc(String fromIdc, List<DcTbl> clusterRelatedDc) {
+
+		//simple
+		for(DcTbl dcTbl : clusterRelatedDc){
+			if(!dcTbl.getDcName().equalsIgnoreCase(fromIdc)){
+				return dcTbl;
+			}
+		}
+		throw new IllegalStateException("can not find target dc " + fromIdc + "," + clusterRelatedDc);
 	}
 
 }

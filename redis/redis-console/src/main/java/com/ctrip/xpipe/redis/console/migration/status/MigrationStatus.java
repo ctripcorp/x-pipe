@@ -20,23 +20,25 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationSuccess
  */
 public enum MigrationStatus {
 	
-	Initiated(MigrationInitiatedState.class, ClusterStatus.Lock),
-	Checking(MigrationCheckingState.class, ClusterStatus.Lock),
-	Migrating(MigrationMigratingState.class, ClusterStatus.Migrating),
-	PartialSuccess(MigrationPartialSuccessState.class, ClusterStatus.Migrating),
-	Publish(MigrationPublishState.class, ClusterStatus.TmpMigrated),
-	Aborted(MigrationAbortedState.class, ClusterStatus.Normal),
-	Success(MigrationSuccessState.class, ClusterStatus.Normal),
-	ForceEnd(MigrationForceEndState.class, ClusterStatus.Normal),
-	RollBack(MigrationPartialSuccessRollBackState.class, ClusterStatus.Rollback);
+	Initiated(MigrationInitiatedState.class, ClusterStatus.Lock, false),
+	Checking(MigrationCheckingState.class, ClusterStatus.Lock, false),
+	Migrating(MigrationMigratingState.class, ClusterStatus.Migrating, false),
+	PartialSuccess(MigrationPartialSuccessState.class, ClusterStatus.Migrating, false),
+	Publish(MigrationPublishState.class, ClusterStatus.TmpMigrated, false),
+	Aborted(MigrationAbortedState.class, ClusterStatus.Normal, true),
+	Success(MigrationSuccessState.class, ClusterStatus.Normal, true),
+	ForceEnd(MigrationForceEndState.class, ClusterStatus.Normal, true),
+	RollBack(MigrationPartialSuccessRollBackState.class, ClusterStatus.Rollback, false);
 	
 	private final  Class<MigrationState> classMigrationState;
 	private final ClusterStatus clusterStatus;
+	private boolean terminated;
 	
 	@SuppressWarnings("unchecked")
-	MigrationStatus(Class<?> classMigrationState, ClusterStatus clusterStatus){
+	MigrationStatus(Class<?> classMigrationState, ClusterStatus clusterStatus, boolean terminated){
 		this.classMigrationState = (Class<MigrationState>) classMigrationState;
 		this.clusterStatus = clusterStatus;
+		this.terminated = terminated;
 	}
 	
 	public ClusterStatus getClusterStatus(){
@@ -52,8 +54,8 @@ public enum MigrationStatus {
 		}
 	}
 
-	public static boolean isTerminated(MigrationStatus status) {
-		return status.equals(Aborted) || status.equals(Success) || status.equals(ForceEnd);
+	public boolean isTerminated(){
+		return terminated;
 	}
 
 }

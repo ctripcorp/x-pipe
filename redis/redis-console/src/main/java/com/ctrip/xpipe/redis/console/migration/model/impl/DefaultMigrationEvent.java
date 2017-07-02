@@ -55,14 +55,14 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
 	@Override
 	public void update(Object args, Observable observable) {
 		if(args instanceof MigrationCluster) {
-			if(MigrationStatus.isTerminated(((MigrationCluster) args).getStatus())) {
+			if(((MigrationCluster) args).getStatus().isTerminated()) {
 				// Submit next task according to policy
 				processNext();
 			}
 		}
 		int finishedCnt = 0;
 		for(MigrationCluster cluster : migrationClusters.values()) {
-			if(MigrationStatus.isTerminated(cluster.getStatus())) {
+			if(cluster.getStatus().isTerminated()) {
 				++finishedCnt;
 			}
 		}
@@ -73,7 +73,7 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
 
 	private void processNext() {
 		for(MigrationCluster migrationCluster : migrationClusters.values()) {
-			if(! MigrationStatus.isTerminated(migrationCluster.getStatus())) {
+			if(!migrationCluster.getStatus().isTerminated()) {
 				migrationCluster.process();
 			}
 		}
