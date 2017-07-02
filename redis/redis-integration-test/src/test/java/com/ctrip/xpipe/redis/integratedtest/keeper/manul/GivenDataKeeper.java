@@ -30,12 +30,11 @@ public class GivenDataKeeper extends AbstractKeeperIntegratedSingleDc {
 
     private volatile boolean done = false;
 
-    private String commandFile = "~/Documents/tmp/casClientPrincipalGroup1/6b3e2252-3960-4d8c-b0a1-b2a987a2aff7/cmd_92282f74-4d4b-4035-bcc2-c6cd3840b548_0";
+    private String commandFile = "~/Documents/tmp/casClientPrincipalGroup1/31b19523-70cb-4754-b206-10d45cc15be2/cmd_cc237d76-0fc7-4b1b-8985-42e1c9027e6a_0";
 
-    @Before
-    public void beforeGivenDataKeeper(){
+    @Override
+    protected void doBeforeIntegratedTest() throws Exception {
         commandFile = getRealDir(commandFile);
-
     }
 
     @Test
@@ -58,13 +57,13 @@ public class GivenDataKeeper extends AbstractKeeperIntegratedSingleDc {
             public void endWriteRdb() {
                 super.endWriteRdb();
 
-                addendCommands(getReplicationStore());
+                appendCommands(getReplicationStore());
 
             }
         };
     }
 
-    private void addendCommands(ReplicationStore replicationStore) {
+    private void appendCommands(ReplicationStore replicationStore) {
 
         logger.info("[addendCommands][begin]{}", replicationStore);
         RandomAccessFile file = null;
