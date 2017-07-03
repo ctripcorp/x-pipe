@@ -9,8 +9,9 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
  * Dec 8, 2016
  */
 public interface MigrationEventManager extends Observer{
+
 	void addEvent(MigrationEvent event);
+
 	MigrationEvent getEvent(long id);
-	void removeEvent(long id);
 
 }

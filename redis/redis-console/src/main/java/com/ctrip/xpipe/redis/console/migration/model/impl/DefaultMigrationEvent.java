@@ -9,74 +9,107 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.google.common.collect.Lists;
 
 /**
  * @author shyin
- *
- * Dec 8, 2016
+ *         <p>
+ *         Dec 8, 2016
  */
 public class DefaultMigrationEvent extends AbstractObservable implements MigrationEvent, Observer {
-	private MigrationEventTbl event;
-	private Map<Long, MigrationCluster> migrationClusters = new HashMap<>();
+    private MigrationEventTbl event;
+    private Map<Long, MigrationCluster> migrationClusters = new HashMap<>();
 
-	public DefaultMigrationEvent(MigrationEventTbl event) {
-		this.event = event;
-	}
-	
-	@Override
-	public MigrationEventTbl getEvent() {
-		return event;
-	}
+    public DefaultMigrationEvent(MigrationEventTbl event) {
+        this.event = event;
+    }
 
-	@Override
-	public long getMigrationEventId() {
-		return event.getId();
-	}
+    @Override
+    public MigrationEventTbl getEvent() {
+        return event;
+    }
 
-	@Override
-	public MigrationCluster getMigrationCluster(long clusterId) {
-		return migrationClusters.get(clusterId);
-	}
-	
-	@Override
-	public List<MigrationCluster> getMigrationClusters() {
-		return Lists.newLinkedList(migrationClusters.values());
-	}
+    @Override
+    public void process() {
 
-	@Override
-	public void addMigrationCluster(MigrationCluster migrationClsuter) {
-		migrationClsuter.addObserver(this);
-		migrationClusters.put(migrationClsuter.getMigrationCluster().getClusterId(), migrationClsuter);
-	}
+        List<MigrationCluster> migrationClusters = getMigrationClusters();
+        if (migrationClusters.size() == 0) {
+            logger.info("[process][no cluster]{}", migrationClusters);
+            return;
+        }
 
-	@Override
-	public void update(Object args, Observable observable) {
-		if(args instanceof MigrationCluster) {
-			if(((MigrationCluster) args).getStatus().isTerminated()) {
-				// Submit next task according to policy
-				processNext();
-			}
-		}
-		int finishedCnt = 0;
-		for(MigrationCluster cluster : migrationClusters.values()) {
-			if(cluster.getStatus().isTerminated()) {
-				++finishedCnt;
-			}
-		}
-		if(finishedCnt == migrationClusters.size()) {
-			notifyObservers(this);
-		}
-	}
+        MigrationCluster migrationCluster = migrationClusters.get(0);
+        migrationCluster.process();
+    }
 
-	private void processNext() {
-		for(MigrationCluster migrationCluster : migrationClusters.values()) {
-			if(!migrationCluster.getStatus().isTerminated()) {
-				migrationCluster.process();
-			}
-		}
-	}
+    @Override
+    public long getMigrationEventId() {
+        return event.getId();
+    }
+
+    @Override
+    public MigrationCluster getMigrationCluster(long clusterId) {
+        return migrationClusters.get(clusterId);
+    }
+
+    @Override
+    public List<MigrationCluster> getMigrationClusters() {
+        return Lists.newLinkedList(migrationClusters.values());
+    }
+
+    @Override
+    public void addMigrationCluster(MigrationCluster migrationClsuter) {
+        migrationClsuter.addObserver(this);
+        migrationClusters.put(migrationClsuter.getMigrationCluster().getClusterId(), migrationClsuter);
+    }
+
+    @Override
+    public void update(Object args, Observable observable) {
+        if (args instanceof MigrationCluster) {
+            if (((MigrationCluster) args).getStatus().isTerminated()) {
+                // Submit next task according to policy
+                processNext();
+            }
+        }
+        int finishedCnt = 0;
+        for (MigrationCluster cluster : migrationClusters.values()) {
+            if (cluster.getStatus().isTerminated()) {
+                ++finishedCnt;
+            }
+        }
+        if (finishedCnt == migrationClusters.size()) {
+            notifyObservers(this);
+        }
+    }
+
+    private void processNext() {
+
+        for (MigrationCluster migrationCluster : migrationClusters.values()) {
+            if (!migrationCluster.getStatus().isTerminated()) {
+                migrationCluster.process();
+            }
+        }
+    }
+
+
+    @Override
+    public boolean isDone() {
+
+        int successCnt = 0;
+        List<MigrationCluster> migrationClusters = getMigrationClusters();
+        for (MigrationCluster cluster : migrationClusters) {
+            if (cluster.getStatus().isTerminated()) {
+                ++successCnt;
+            }
+        }
+
+        if (successCnt == migrationClusters.size()) {
+            logger.info("[isDone][true]{}, success:{}", getMigrationEventId(), successCnt);
+            return true;
+        }
+        return false;
+    }
+
 
 }

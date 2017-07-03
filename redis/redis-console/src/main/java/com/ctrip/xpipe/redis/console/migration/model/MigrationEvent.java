@@ -14,6 +14,8 @@ public interface MigrationEvent extends Observable {
 
     MigrationEventTbl getEvent();
 
+    void process();
+
     long getMigrationEventId();
 
     MigrationCluster getMigrationCluster(long clusterId);
@@ -21,5 +23,7 @@ public interface MigrationEvent extends Observable {
     List<MigrationCluster> getMigrationClusters();
 
     void addMigrationCluster(MigrationCluster migrationCluster);
+
+    boolean isDone();
 
 }

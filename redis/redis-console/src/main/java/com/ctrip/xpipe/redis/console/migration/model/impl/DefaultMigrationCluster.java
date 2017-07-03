@@ -14,7 +14,6 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.PartialSuccessState;
 import com.ctrip.xpipe.redis.console.migration.status.PublishState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractObservable;
@@ -122,7 +121,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     @Override
     public void process() {
-        logger.info("[Process]{}-{}, {}", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+        logger.info("[process]{}-{}, {}", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
         this.currentState.action();
     }
 
@@ -135,13 +134,11 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
         this.currentState = stat;
 
-        updateClusterStatus();
-
-        updateMigrationClusterStatus();
-
+        updateStorageClusterStatus();
+        updateStorageMigrationClusterStatus();
     }
 
-    private void updateMigrationClusterStatus() {
+    private void updateStorageMigrationClusterStatus() {
 
         MigrationStatus migrationStatus = this.currentState.getStatus();
         MigrationClusterTbl migrationCluster = getMigrationCluster();
@@ -150,7 +147,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         getMigrationService().updateMigrationCluster(migrationCluster);
     }
 
-    private void updateClusterStatus() {
+    private void updateStorageClusterStatus() {
 
         MigrationStatus migrationStatus = this.currentState.getStatus();
         String clusterStatus = migrationStatus.getClusterStatus().toString();
@@ -263,5 +260,10 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         }
 
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("[cluster:%s, state:%s]", clusterName(), currentState);
     }
 }

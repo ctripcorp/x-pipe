@@ -79,7 +79,14 @@ public class MigrationApi extends AbstractConsoleController {
     public DoResponse doMigrate(@RequestBody(required = true) DoRequest request) {
 
         logger.info("[doMigrate]{}", request);
-        return new DoResponse(true, "success!");
+
+        try{
+            migrationService.continueMigrationEvent(request.getTicketId());
+            return new DoResponse(true, "success!");
+        }catch (Exception e){
+            logger.error("[doMigrate]" + request, e);
+            return new DoResponse(false, e.getMessage());
+        }
     }
 
     @RequestMapping(value = "/checkstatus/{ticketId}", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
