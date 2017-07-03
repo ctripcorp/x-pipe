@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.ctrip.xpipe.api.sso.UserInfo;
+import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -86,7 +87,7 @@ public class MigrationController extends AbstractConsoleController {
 	}
 
 	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/rollback", method = RequestMethod.POST)
-	public void rollbackMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+	public void rollbackMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) throws ClusterNotFoundException {
 		logger.info("[rollbackMigrationCluster]{}, {}", eventId, clusterId);
 		migrationService.rollbackMigrationCluster(eventId, clusterId);
 	}

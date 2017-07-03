@@ -12,4 +12,9 @@ public class ClusterNotFoundException extends RedisConsoleException{
     public ClusterNotFoundException(String clusterName) {
         super(String.format("cluster not found:%s", clusterName));
     }
+
+    public ClusterNotFoundException(long clusterId) {
+        super(String.format("cluster not found:%s", clusterId));
+    }
+
 }

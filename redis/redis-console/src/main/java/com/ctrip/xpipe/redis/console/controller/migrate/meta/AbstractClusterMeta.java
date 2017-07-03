@@ -25,8 +25,16 @@ public class AbstractClusterMeta extends AbstractMeta {
         this.clusterName = clusterName;
         this.fromIdc = fromIdc;
         this.toIdc = toIdc;
+    }
+
+    public AbstractClusterMeta(String clusterName, String fromIdc, String toIdc, String msg){
+        this.clusterName = clusterName;
+        this.fromIdc = fromIdc;
+        this.toIdc = toIdc;
+        this.msg = msg;
 
     }
+
 
     public AbstractClusterMeta(String clusterName, String msg){
         this.clusterName = clusterName;

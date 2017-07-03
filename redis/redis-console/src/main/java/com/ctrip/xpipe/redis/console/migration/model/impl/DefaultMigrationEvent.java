@@ -10,6 +10,7 @@ import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
+import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.google.common.collect.Lists;
 
 /**
@@ -51,6 +52,41 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
     @Override
     public MigrationCluster getMigrationCluster(long clusterId) {
         return migrationClusters.get(clusterId);
+    }
+
+    @Override
+    public MigrationCluster getMigrationCluster(String clusterName) {
+
+        for(MigrationCluster migrationCluster : getMigrationClusters()){
+            if(migrationCluster.clusterName().equals(clusterName)){
+                return migrationCluster;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public MigrationCluster rollbackCluster(long clusterId) throws ClusterNotFoundException {
+
+        MigrationCluster migrationCluster = getMigrationCluster(clusterId);
+        if(migrationCluster == null){
+            throw new ClusterNotFoundException(clusterId);
+        }
+        migrationCluster.rollback();
+
+        return migrationCluster;
+    }
+
+    @Override
+    public MigrationCluster rollbackCluster(String clusterName) throws ClusterNotFoundException {
+
+        MigrationCluster cluster = getMigrationCluster(clusterName);
+        if(cluster == null){
+            throw new ClusterNotFoundException(clusterName);
+        }
+        cluster.rollback();
+
+        return cluster;
     }
 
     @Override
@@ -111,5 +147,8 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
         return false;
     }
 
-
+    @Override
+    public String toString() {
+        return String.format("[eventId:%d]", getMigrationEventId());
+    }
 }

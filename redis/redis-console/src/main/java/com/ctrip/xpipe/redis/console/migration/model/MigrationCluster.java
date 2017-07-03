@@ -16,4 +16,6 @@ public interface MigrationCluster extends Observer, Observable, MigrationCluster
 
     MigrationEvent getMigrationEvent();
 
+    String fromDc();
+    String destDc();
 }

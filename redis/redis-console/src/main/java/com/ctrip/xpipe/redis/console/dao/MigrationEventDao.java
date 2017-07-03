@@ -167,15 +167,14 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	}
 	
 	private MigrationEvent loadMigrationEvent(List<MigrationEventTbl> details) {
-		if(! CollectionUtils.isEmpty(details)) {
+
+		if(!CollectionUtils.isEmpty(details)) {
+
 			MigrationEvent event = new DefaultMigrationEvent(details.get(0));
 			for(MigrationEventTbl detail : details) {
 				MigrationClusterTbl cluster = detail.getRedundantClusters();
 				MigrationShardTbl shard = detail.getRedundantShards();
 				
-				if(MigrationStatus.valueOf(cluster.getStatus()).isTerminated()) {
-					continue;
-				}
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {
 					event.addMigrationCluster(new DefaultMigrationCluster(event, detail.getRedundantClusters(),
 							dcService, clusterService, shardService, redisService, migrationService));

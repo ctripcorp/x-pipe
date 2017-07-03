@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.console.controller.migrate.meta;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -7,33 +10,25 @@ package com.ctrip.xpipe.redis.console.controller.migrate.meta;
  */
 public class RollbackResponse extends AbstractResponseMeta{
 
-    private boolean success;
-
-    private String msg;
+    private List<RollbackClusterResponse> results = new LinkedList<>();
 
     public RollbackResponse(){
 
     }
 
-    public RollbackResponse(boolean success, String msg){
-        this.success = success;
-        this.msg = msg;
+    public synchronized void addResult(RollbackClusterResponse rollbackClusterResponse){
+
+        results.forEach(rollbackResponse -> {
+            if(rollbackResponse.getClusterName().equals(rollbackClusterResponse.getClusterName())){
+                throw new IllegalArgumentException("cluster already exist:" + rollbackClusterResponse.getClusterName());
+            }
+        });
+
+        results.add(rollbackClusterResponse);
+
     }
 
-    public boolean isSuccess() {
-        return success;
+    public List<RollbackClusterResponse> getResults() {
+        return results;
     }
-
-    public void setSuccess(boolean success) {
-        this.success = success;
-    }
-
-    public String getMsg() {
-        return msg;
-    }
-
-    public void setMsg(String msg) {
-        this.msg = msg;
-    }
-
 }

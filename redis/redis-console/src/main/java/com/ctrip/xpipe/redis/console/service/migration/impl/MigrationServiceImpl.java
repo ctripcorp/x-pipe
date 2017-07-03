@@ -7,6 +7,7 @@ import javax.annotation.PostConstruct;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -149,12 +150,35 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     public void continueMigrationEvent(long id) {
 
         logger.info("[continueMigrationEvent]{}", id);
-        MigrationEvent event = migrationEventManager.getEvent(id);
+        MigrationEvent event = getEvent(id);
         if (event == null) {
             throw new IllegalArgumentException("event not found:" + id);
         }
         event.process();
     }
+
+
+    @Override
+    public MigrationCluster rollbackMigrationCluster(long eventId, long clusterId) throws ClusterNotFoundException {
+
+        MigrationEvent event = getEvent(eventId);
+        if (event == null) {
+            throw new IllegalArgumentException("event not found:" + eventId);
+        }
+        return event.rollbackCluster(clusterId);
+    }
+
+    @Override
+    public MigrationCluster rollbackMigrationCluster(long eventId, String clusterName) throws ClusterNotFoundException {
+
+        MigrationEvent event = getEvent(eventId);
+        if (event == null) {
+            throw new IllegalArgumentException("event not found:" + eventId);
+        }
+
+        return event.rollbackCluster(clusterName);
+    }
+
 
     @Override
     public void cancelMigrationCluster(long eventId, long clusterId) {
@@ -163,11 +187,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         }
     }
 
-    @Override
-    public void rollbackMigrationCluster(long eventId, long clusterId) {
-        if (isMigrationClusterExist(eventId, clusterId)) {
-            migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).rollback();
-        }
+
+    private MigrationEvent getEvent(long eventId) {
+        return migrationEventManager.getEvent(eventId);
     }
 
     @Override

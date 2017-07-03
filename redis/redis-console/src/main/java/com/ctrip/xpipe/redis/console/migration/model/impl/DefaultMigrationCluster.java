@@ -85,6 +85,19 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     }
 
     @Override
+    public String fromDc() {
+
+        long fromDcId = migrationCluster.getSourceDcId();
+        return dcs.get(fromDcId).getDcName();
+    }
+
+    @Override
+    public String destDc() {
+        long destDcId = migrationCluster.getDestinationDcId();
+        return dcs.get(destDcId).getDcName();
+    }
+
+    @Override
     public MigrationStatus getStatus() {
         return currentState.getStatus();
     }

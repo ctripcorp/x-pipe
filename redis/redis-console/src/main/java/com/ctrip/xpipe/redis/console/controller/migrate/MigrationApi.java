@@ -4,12 +4,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.ctrip.xpipe.redis.console.controller.migrate.meta.*;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratingNow;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.TryMigrateResult;
+import com.google.common.base.Joiner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -110,8 +112,35 @@ public class MigrationApi extends AbstractConsoleController {
 
         logger.info("[rollback]{}", request);
 
-        RollbackResponse response = new RollbackResponse();
-        return new RollbackResponse(true, "success");
-    }
+        long tickedId = request.getTicketId();
 
+        if(request.getClusters() == null || request.getClusters().size() == 0){
+            return new RollbackResponse();
+        }
+
+        RollbackResponse rollbackResponse = new RollbackResponse();
+
+        List<String> success = new LinkedList<>();
+        List<String> errors = new LinkedList<>();
+
+        for(String clusterName : request.getClusters()){
+
+            MigrationCluster migrationCluster = null;
+            try {
+                migrationCluster = migrationService.rollbackMigrationCluster(tickedId, clusterName);
+                rollbackResponse.addResult(new RollbackClusterResponse(true, clusterName, migrationCluster.fromDc(), migrationCluster.destDc(), "success"));
+            } catch (ClusterNotFoundException e) {
+                logger.error("[rollback]" + clusterName, e);
+                rollbackResponse.addResult(new RollbackClusterResponse(false, clusterName, e.getMessage()));
+            }catch (Exception e){
+                logger.error("[rollback]" + clusterName, e);
+                if(migrationCluster == null){
+                    rollbackResponse.addResult(new RollbackClusterResponse(false, clusterName, e.getMessage()));
+                }else{
+                    rollbackResponse.addResult(new RollbackClusterResponse(false, clusterName, migrationCluster.fromDc(), migrationCluster.destDc(), e.getMessage()));
+                }
+            }
+        }
+        return rollbackResponse;
+    }
 }

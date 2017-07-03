@@ -125,7 +125,7 @@ public class DefaultMigrationEventManager implements MigrationEventManager {
 
 		MigrationEvent event = (MigrationEvent) args;
 		if(event.isDone()){
-			removeEvent(event.getMigrationEventId());
+			logger.info("[update][done]", event);
 		}
 	}
 }
