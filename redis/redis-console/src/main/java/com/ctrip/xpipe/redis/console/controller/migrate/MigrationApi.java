@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.ctrip.xpipe.redis.console.controller.migrate.meta.*;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratingNow;
@@ -43,7 +45,7 @@ public class MigrationApi extends AbstractConsoleController {
         List<CheckPrepareClusterResponse> failClusters = new LinkedList<>();
 
         String fromIdc = checkMeta.getFromIdc();
-        for(String clusterName : checkMeta.getClusters()){
+        for (String clusterName : checkMeta.getClusters()) {
             try {
                 TryMigrateResult tryMigrateResult = migrationService.tryMigrate(clusterName, fromIdc);
                 maySuccessClusters.add(tryMigrateResult);
@@ -57,14 +59,14 @@ public class MigrationApi extends AbstractConsoleController {
             } catch (ClusterMigratingNow e) {
                 failClusters.add(CheckPrepareClusterResponse.createFailResponse(clusterName, fromIdc, CHECK_FAIL_STATUS.ALREADY_MIGRATING, String.valueOf(e.getEventId())));
                 logger.error("[checkAndPrepare]" + clusterName, e);
-            }catch (Exception e){
+            } catch (Exception e) {
                 logger.error("[checkAndPrepare]" + clusterName, e);
                 failClusters.add(CheckPrepareClusterResponse.createFailResponse(clusterName, fromIdc, CHECK_FAIL_STATUS.OTHERS, e.getMessage()));
             }
         }
 
         Long eventId = -1L;
-        if(maySuccessClusters.size() > 0){
+        if (maySuccessClusters.size() > 0) {
             MigrationRequest request = new MigrationRequest("api_call");
             request.setTag("api_call");
             maySuccessClusters.forEach((tryMigrateResult) -> request.addClusterInfo(new MigrationRequest.ClusterInfo(tryMigrateResult)));
@@ -82,10 +84,10 @@ public class MigrationApi extends AbstractConsoleController {
 
         logger.info("[doMigrate]{}", request);
 
-        try{
+        try {
             migrationService.continueMigrationEvent(request.getTicketId());
             return new DoResponse(true, "success!");
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.error("[doMigrate]" + request, e);
             return new DoResponse(false, e.getMessage());
         }
@@ -95,14 +97,23 @@ public class MigrationApi extends AbstractConsoleController {
     public CheckStatusResponse checkStatus(@PathVariable int ticketId) {
 
         logger.info("[checkStatus]{}", ticketId);
-
         CheckStatusResponse response = new CheckStatusResponse();
 
-        response.addResult(
-                new CheckStatusClusterResponse("cluster1", DO_STATUS.INITED, 0, "inited")
-        );
-        response.addResult(
-                new CheckStatusClusterResponse("cluster2", DO_STATUS.SUCCESS, 0, "")
+        MigrationEvent migrationEvent = migrationService.getMigrationEvent(ticketId);
+        if (migrationEvent == null) {
+            logger.error("[checkStatus][can not find eventId]{}", ticketId);
+            return response;
+        }
+
+        migrationEvent.getMigrationClusters().forEach(migrationCluster -> {
+
+                    String clusterName = migrationCluster.clusterName();
+                    MigrationStatus migrationStatus = migrationCluster.getStatus();
+                    CheckStatusClusterResponse checkResponse = new CheckStatusClusterResponse(clusterName, DO_STATUS.fromMigrationStatus(migrationStatus), migrationStatus.getPercent(), migrationStatus.toString());
+                    checkResponse.setFromIdc(migrationCluster.fromDc());
+                    checkResponse.setToIdc(migrationCluster.destDc());
+                    response.addResult(checkResponse);
+                }
         );
         return response;
     }
@@ -114,7 +125,7 @@ public class MigrationApi extends AbstractConsoleController {
 
         long tickedId = request.getTicketId();
 
-        if(request.getClusters() == null || request.getClusters().size() == 0){
+        if (request.getClusters() == null || request.getClusters().size() == 0) {
             return new RollbackResponse();
         }
 
@@ -123,7 +134,7 @@ public class MigrationApi extends AbstractConsoleController {
         List<String> success = new LinkedList<>();
         List<String> errors = new LinkedList<>();
 
-        for(String clusterName : request.getClusters()){
+        for (String clusterName : request.getClusters()) {
 
             MigrationCluster migrationCluster = null;
             try {
@@ -132,11 +143,11 @@ public class MigrationApi extends AbstractConsoleController {
             } catch (ClusterNotFoundException e) {
                 logger.error("[rollback]" + clusterName, e);
                 rollbackResponse.addResult(new RollbackClusterResponse(false, clusterName, e.getMessage()));
-            }catch (Exception e){
+            } catch (Exception e) {
                 logger.error("[rollback]" + clusterName, e);
-                if(migrationCluster == null){
+                if (migrationCluster == null) {
                     rollbackResponse.addResult(new RollbackClusterResponse(false, clusterName, e.getMessage()));
-                }else{
+                } else {
                     rollbackResponse.addResult(new RollbackClusterResponse(false, clusterName, migrationCluster.fromDc(), migrationCluster.destDc(), e.getMessage()));
                 }
             }

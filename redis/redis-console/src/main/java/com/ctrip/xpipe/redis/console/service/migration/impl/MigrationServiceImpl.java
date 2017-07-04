@@ -157,6 +157,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         event.process();
     }
 
+    @Override
+    public MigrationEvent getMigrationEvent(long eventId) {
+        return getEvent(eventId);
+    }
+
 
     @Override
     public MigrationCluster rollbackMigrationCluster(long eventId, long clusterId) throws ClusterNotFoundException {

@@ -20,25 +20,28 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationSuccess
  */
 public enum MigrationStatus {
 	
-	Initiated(MigrationInitiatedState.class, ClusterStatus.Lock, false),
-	Checking(MigrationCheckingState.class, ClusterStatus.Lock, false),
-	Migrating(MigrationMigratingState.class, ClusterStatus.Migrating, false),
-	PartialSuccess(MigrationPartialSuccessState.class, ClusterStatus.Migrating, false),
-	Publish(MigrationPublishState.class, ClusterStatus.TmpMigrated, false),
-	Aborted(MigrationAbortedState.class, ClusterStatus.Normal, true),
-	Success(MigrationSuccessState.class, ClusterStatus.Normal, true),
-	ForceEnd(MigrationForceEndState.class, ClusterStatus.Normal, true),
-	RollBack(MigrationPartialSuccessRollBackState.class, ClusterStatus.Rollback, false);
-	
+	Initiated(MigrationInitiatedState.class, ClusterStatus.Lock, false, 0),
+	Checking(MigrationCheckingState.class, ClusterStatus.Lock, false, 10),
+	Migrating(MigrationMigratingState.class, ClusterStatus.Migrating, false, 30),
+	PartialSuccess(MigrationPartialSuccessState.class, ClusterStatus.Migrating, false, 40),
+	Publish(MigrationPublishState.class, ClusterStatus.TmpMigrated, false, 80),
+
+	RollBack(MigrationPartialSuccessRollBackState.class, ClusterStatus.Rollback, false, 30),
+	Aborted(MigrationAbortedState.class, ClusterStatus.Normal, true, 100),
+	Success(MigrationSuccessState.class, ClusterStatus.Normal, true, 100),
+	ForceEnd(MigrationForceEndState.class, ClusterStatus.Normal, true, 100);
+
 	private final  Class<MigrationState> classMigrationState;
 	private final ClusterStatus clusterStatus;
-	private boolean terminated;
+	private boolean isTerminated;
+	private int  	percent;
 	
 	@SuppressWarnings("unchecked")
-	MigrationStatus(Class<?> classMigrationState, ClusterStatus clusterStatus, boolean terminated){
+	MigrationStatus(Class<?> classMigrationState, ClusterStatus clusterStatus, boolean isTerminated, int percent){
 		this.classMigrationState = (Class<MigrationState>) classMigrationState;
 		this.clusterStatus = clusterStatus;
-		this.terminated = terminated;
+		this.isTerminated = isTerminated;
+		this.percent = percent;
 	}
 	
 	public ClusterStatus getClusterStatus(){
@@ -55,7 +58,11 @@ public enum MigrationStatus {
 	}
 
 	public boolean isTerminated(){
-		return terminated;
+		return isTerminated;
+	}
+
+	public int getPercent(){
+		return percent;
 	}
 
 }
