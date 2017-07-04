@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ResourceLeakDetector;
 import org.apache.commons.io.FileUtils;
+import org.junit.BeforeClass;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.slf4j.Logger;
@@ -78,6 +79,13 @@ public class AbstractTest {
 	private ComponentRegistry startedComponentRegistry;
 
 	protected void doBeforeAbstractTest() throws Exception {}
+
+	@BeforeClass
+	public static void beforeAbstractTestClass(){
+		if(System.getProperty(CatConfig.CAT_ENABLED_KEY) == null){
+			System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
+		}
+	}
 	
 	@Before
 	public void beforeAbstractTest() throws Exception {
@@ -92,9 +100,6 @@ public class AbstractTest {
 		doBeforeAbstractTest();
 
 		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
-		if(System.getProperty(CatConfig.CAT_ENABLED_KEY) == null){
-			System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
-		}
 
 		logger.info(remarkableMessage("[begin test][{}]"), name.getMethodName());
 

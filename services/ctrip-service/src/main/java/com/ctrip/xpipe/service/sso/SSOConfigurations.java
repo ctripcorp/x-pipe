@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.service.sso;
 
-import com.ctrip.xpipe.api.sso.SsoConfig;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 

@@ -147,7 +147,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals(MigrationStatus.Aborted.toString(), migrationCluster.getStatus());
 	}
 	
-	@Test(expected = IllegalStateException.class)
+	@Test
 	@DirtiesContext
 	public void testCancelOnMigrating() {
 		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
@@ -258,7 +258,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals(1, currentCluster.getActivedcId());
 	}
 	
-	@Test(expected = IllegalStateException.class)
+	@Test
 	@DirtiesContext
 	public void testRollBackOnChecking() {
 		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
