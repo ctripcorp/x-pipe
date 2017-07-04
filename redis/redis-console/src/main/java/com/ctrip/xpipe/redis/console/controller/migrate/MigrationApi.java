@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.migrate;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.redis.console.controller.migrate.meta.*;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
@@ -29,6 +30,8 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 @RequestMapping("/api/migration")
 public class MigrationApi extends AbstractConsoleController {
 
+    private DcMapper dcMapper = DcMapper.INSTANCE;
+
     @Autowired
     private MigrationService migrationService;
 
@@ -37,8 +40,9 @@ public class MigrationApi extends AbstractConsoleController {
     @RequestMapping(value = "/checkandprepare", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
     public CheckPrepareResponse checkAndPrepare(@RequestBody(required = true) CheckPrepareRequest checkMeta) {
 
-        logger.info("[checkAndPrepare]{}", checkMeta);
+        mapRequestIdc(checkMeta);
 
+        logger.info("[checkAndPrepare]{}", checkMeta);
         CheckPrepareResponse checkRetMeta = new CheckPrepareResponse();
 
         List<TryMigrateResult> maySuccessClusters = new LinkedList<>();
@@ -76,6 +80,9 @@ public class MigrationApi extends AbstractConsoleController {
         checkRetMeta.setTicketId(eventId);
         failClusters.forEach((failCluster) -> checkRetMeta.addCheckPrepareClusterResponse(failCluster));
         maySuccessClusters.forEach((successCluster) -> checkRetMeta.addCheckPrepareClusterResponse(CheckPrepareClusterResponse.createSuccessResponse(successCluster.getClusterName(), successCluster.getFromDcName(), successCluster.getToDcName())));
+
+        mapResponseIdc(checkRetMeta.getResults());
+
         return checkRetMeta;
     }
 
@@ -106,7 +113,6 @@ public class MigrationApi extends AbstractConsoleController {
         }
 
         migrationEvent.getMigrationClusters().forEach(migrationCluster -> {
-
                     String clusterName = migrationCluster.clusterName();
                     MigrationStatus migrationStatus = migrationCluster.getStatus();
                     CheckStatusClusterResponse checkResponse = new CheckStatusClusterResponse(clusterName, DO_STATUS.fromMigrationStatus(migrationStatus), migrationStatus.getPercent(), migrationStatus.toString());
@@ -115,6 +121,8 @@ public class MigrationApi extends AbstractConsoleController {
                     response.addResult(checkResponse);
                 }
         );
+
+        mapResponseIdc(response.getResults());
         return response;
     }
 
@@ -152,6 +160,40 @@ public class MigrationApi extends AbstractConsoleController {
                 }
             }
         }
+
+        mapResponseIdc(rollbackResponse.getResults());
         return rollbackResponse;
+    }
+
+
+    private void mapResponseIdc(List<? extends AbstractClusterMeta> results) {
+
+        results.forEach(clusterMeta -> {
+
+            String fromIdc = clusterMeta.getFromIdc();
+            String toIdc = clusterMeta.getToIdc();
+
+            String mappingFrom = dcMapper.getDc(fromIdc);
+            String mappingTo = dcMapper.getDc(toIdc);
+
+            if(mappingFrom != null){
+                clusterMeta.setFromIdc(mappingFrom);
+                logger.debug("[mapResponseIdc]{} -> {}", fromIdc, mappingFrom);
+            }
+
+            if(mappingTo != null){
+                clusterMeta.setToIdc(mappingTo);
+                logger.debug("[mapResponseIdc]{} -> {}", toIdc, mappingTo);
+            }
+
+        });
+    }
+
+    private void mapRequestIdc(CheckPrepareRequest checkMeta) {
+        String reverse = dcMapper.reverse(checkMeta.getFromIdc());
+        if(reverse != null){
+            logger.debug("[checkRequestIdc][reverse dc]{} -> {}", checkMeta.getFromIdc(), reverse);
+            checkMeta.setFromIdc(reverse);
+        }
     }
 }
