@@ -32,6 +32,7 @@ public class AtLeastOneChecker implements HealthChecker{
 	public AtLeastOneChecker(List<RedisMeta> list, XpipeNettyClientKeyedObjectPool pool, ScheduledExecutorService scheduled) {
 		this.redises = list;
 		this.pool = pool;
+		this.scheduled = scheduled;
 	}
 
 	@Override

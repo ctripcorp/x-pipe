@@ -25,4 +25,20 @@ public class PingCommandTest extends AbstractRedisTest{
 		Assert.assertEquals(PingCommand.PONG, result);
 	}
 
+	@Test
+	public void testTimeout() throws Exception {
+
+		PingCommand command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("10.2.55.174", 6379)), scheduled);
+		String result = command.execute().get();
+		Assert.assertEquals(PingCommand.PONG, result);
+
+		sleep(30000);
+
+		logger.info("[testTimeout][begin]");
+		command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("10.2.55.174", 6379)), scheduled);
+		result = command.execute().get();
+		logger.info("[testTimeout][end]{}", result);
+
+	}
+
 }
