@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
 
+import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -25,19 +28,20 @@ public class PingCommandTest extends AbstractRedisTest{
 		Assert.assertEquals(PingCommand.PONG, result);
 	}
 
-	@Test
-	public void testTimeout() throws Exception {
+	@Test(expected = CommandTimeoutException.class)
+	public void testTimeout() throws Throwable {
 
-		PingCommand command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("10.2.55.174", 6379)), scheduled);
-		String result = command.execute().get();
-		Assert.assertEquals(PingCommand.PONG, result);
+		Server server = startServer((String) null);
 
-		sleep(30000);
+		PingCommand command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("127.0.0.1",
+				server.getPort())), scheduled);
 
-		logger.info("[testTimeout][begin]");
-		command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("10.2.55.174", 6379)), scheduled);
-		result = command.execute().get();
-		logger.info("[testTimeout][end]{}", result);
+		try{
+			String result = command.execute().get();
+		}catch (ExecutionException e){
+			throw e.getCause();
+		}
+
 
 	}
 

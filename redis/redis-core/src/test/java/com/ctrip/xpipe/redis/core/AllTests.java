@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core;
 
 import com.ctrip.xpipe.redis.core.meta.QuorumConfigTest;
+import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommandTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -47,7 +48,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	META_SERVER_SERVICETest.class,
 	BulkStringEofJudgerTest.class,
 	BulkStringEofJuderManagerTest.class,
-	RoleCommandTest.class
+	RoleCommandTest.class,
+	PingCommandTest.class
 })
 public class AllTests {
 

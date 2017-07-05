@@ -627,7 +627,10 @@ public class AbstractTest {
 					@Override
 					protected void doWrite(OutputStream ous) throws IOException {
 						try {
-							ous.write(function.call().getBytes());
+							String call = function.call();
+							if(call != null){
+								ous.write(call.getBytes());
+							}
 						} catch (Exception e) {
 							throw new IllegalStateException("[doWrite]", e);
 						}

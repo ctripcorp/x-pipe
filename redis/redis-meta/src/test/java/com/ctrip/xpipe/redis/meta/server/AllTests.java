@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server;
 
+import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
 import com.ctrip.xpipe.redis.meta.server.meta.MetaJacksonTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -51,6 +52,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 	ForwardInfoEditorTest.class,
 	DefaultCurrentMetaManagerTest.class,
 	ForwardInfoTest.class,
+	AtLeastOneCheckerTest.class,
 	CurrentMetaTest.class,
 	UserDefinedPriorityKeeperActiveElectAlgorithmTest.class,
 	DefaultKeeperActiveElectAlgorithmManagerTest.class,
