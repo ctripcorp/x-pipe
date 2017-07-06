@@ -3,6 +3,7 @@ package com.ctrip.xpipe;
 import com.ctrip.xpipe.api.sso.SsoConfigTest;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactoryTest;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManagerTest;
+import com.ctrip.xpipe.tuple.PairTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -71,7 +72,8 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	DefaultControllableFileTest.class,
 	SizeControllableFileTest.class,
 	UrlUtilsTest.class,
-	DefaultExecutorFactoryTest.class
+	DefaultExecutorFactoryTest.class,
+	PairTest.class,
 })
 public class AllTests {
 
