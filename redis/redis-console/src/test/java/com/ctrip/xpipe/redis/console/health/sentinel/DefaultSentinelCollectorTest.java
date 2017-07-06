@@ -44,7 +44,7 @@ public class DefaultSentinelCollectorTest extends AbstractConsoleTest{
                 new SentinelHello(new HostPort("127.0.0.1", 5000), master, monitorName)
         );
 
-        Set<SentinelHello> toAdd = sentinelCollector.checkToAdd(monitorName, masterSentinels, hellos, master, quorumConfig);
+        Set<SentinelHello> toAdd = sentinelCollector.checkToAdd("cluster1", "shard1", monitorName, masterSentinels, hellos, master, quorumConfig);
 
         Assert.assertEquals(4, toAdd.size());
     }

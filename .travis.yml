@@ -15,6 +15,9 @@ before_script:
   
 before_install:
 
+install:
+    mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+
 after_success:
   - mvn -Dlog.console.close=true  clean generate-resources cobertura:cobertura coveralls:report
 
