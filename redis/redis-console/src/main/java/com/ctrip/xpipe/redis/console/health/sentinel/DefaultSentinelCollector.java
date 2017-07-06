@@ -6,6 +6,7 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
+import com.ctrip.xpipe.redis.console.resources.MasterNotFoundException;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -61,7 +62,12 @@ public class DefaultSentinelCollector implements SentinelCollector {
         String sentinelMonitorName = metaCache.getSentinelMonitorName(clusterId, shardId);
         Set<HostPort> masterDcSentinels = metaCache.getActiveDcSentinels(clusterId, shardId);
         QuorumConfig quorumConfig = consoleConfig.getDefaultSentinelQuorumConfig();
-        HostPort masterAddr = metaCache.findMaster(clusterId, shardId);
+        HostPort masterAddr = null;
+        try{
+            masterAddr = metaCache.findMaster(clusterId, shardId);
+        } catch (MasterNotFoundException e) {
+            logger.error("[collect]" + e.getMessage(), e);
+        }
 
         logger.debug("[collect]{},{},{}", clusterId, shardId, hellos);
 
@@ -70,7 +76,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
         //checkReset
         checkReset(clusterId, shardId, sentinelMonitorName, hellos);
         //check add
-        Set<SentinelHello> toAdd = checkToAdd(sentinelMonitorName, masterDcSentinels, hellos, masterAddr, quorumConfig);
+        Set<SentinelHello> toAdd = checkToAdd(clusterId, shardId, sentinelMonitorName, masterDcSentinels, hellos, masterAddr, quorumConfig);
 
         doAction(toDelete, toAdd, quorumConfig);
     }
@@ -190,6 +196,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
         }));
 
         toAdd.forEach((hello) -> {
+
             HostPort sentinelAddr = hello.getSentinelAddr();
             RedisClient redisConnection = null;
             try {
@@ -297,9 +304,15 @@ public class DefaultSentinelCollector implements SentinelCollector {
         return toDelete;
     }
 
-    protected Set<SentinelHello> checkToAdd(String sentinelMonitorName, Set<HostPort> masterDcSentinels, Set<SentinelHello> hellos, HostPort masterAddr, QuorumConfig quorumConfig) {
+    protected Set<SentinelHello> checkToAdd(String clusterId, String shardId, String sentinelMonitorName, Set<HostPort> masterDcSentinels, Set<SentinelHello> hellos, HostPort masterAddr, QuorumConfig quorumConfig) {
+
+        if(masterAddr == null){
+            logger.warn("[checkToAdd][no monitor name]{}, {}", clusterId, shardId);
+            return Sets.newHashSet();
+        }
 
         if (StringUtil.isEmpty(sentinelMonitorName)) {
+            logger.warn("[checkToAdd][no monitor name]{}, {}", clusterId, shardId);
             return Sets.newHashSet();
         }
 

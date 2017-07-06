@@ -185,12 +185,12 @@ public class DefaultMetaCache implements MetaCache {
     }
 
     @Override
-    public HostPort findMaster(String clusterId, String shardId) {
+    public HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException {
 
         XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(getXpipeMeta());
         Pair<String, RedisMeta> redisMaster = xpipeMetaManager.getRedisMaster(clusterId, shardId);
         if (redisMaster == null) {
-            throw new IllegalStateException(String.format("%s %s no master", clusterId, shardId));
+            throw new MasterNotFoundException(clusterId, shardId);
         }
         return new HostPort(redisMaster.getValue().getIp(), redisMaster.getValue().getPort());
     }
