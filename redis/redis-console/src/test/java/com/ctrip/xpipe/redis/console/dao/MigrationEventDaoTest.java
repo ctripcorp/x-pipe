@@ -26,6 +26,7 @@ public class MigrationEventDaoTest extends AbstractConsoleIntegrationTest {
 	@Test
 	@DirtiesContext
 	public void testBuildMigrationEvent() {
+
 		MigrationEvent event = migrationEventDao.buildMigrationEvent(2);
 		
 		Assert.assertNotNull(event);
