@@ -38,8 +38,7 @@ import java.util.concurrent.Executors;
 public class DefaultMigrationShard extends AbstractObservable implements MigrationShard {
 	
 	private Logger logger = LoggerFactory.getLogger(getClass());
-	private static Codec coder = Codec.DEFAULT;
-	
+
 	private ExecutorService executors;
 	
 	@SuppressWarnings("unused")
@@ -73,7 +72,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		this.currentShard = currentShard;
 		this.dcs = dcs;
 		this.migrationService = migrationService;
-		shardMigrationResult = new DefaultShardMigrationResult();
+		this.shardMigrationResult = DefaultShardMigrationResult.fromEncodeStr(migrationShard.getLog());
 		this.commandBuilder = commandBuilder;
 		this.newMasterAddr = null;
 		
@@ -111,7 +110,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	@Override
 	public void update(Object args, Observable observable) {
 		MigrationShardTbl toUpdate = getMigrationShard();
-		toUpdate.setLog(coder.encode(getShardMigrationResult()));
+		toUpdate.setLog(getShardMigrationResult().encode());
 		migrationService.updateMigrationShard(toUpdate);
 		
 	}

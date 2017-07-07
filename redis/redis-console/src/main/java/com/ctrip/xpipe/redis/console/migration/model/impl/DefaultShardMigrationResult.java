@@ -4,11 +4,15 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResultStatus;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author shyin
@@ -17,6 +21,9 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 @SuppressWarnings("serial")
 public class DefaultShardMigrationResult implements Serializable, ShardMigrationResult{
+
+	@JsonIgnore
+	protected static Logger logger = LoggerFactory.getLogger(DefaultShardMigrationResult.class);
 
 	private ShardMigrationResultStatus status;
 	private Map<ShardMigrationStep, Pair<Boolean, String>> steps = new ConcurrentHashMap<>(6);
@@ -82,6 +89,27 @@ public class DefaultShardMigrationResult implements Serializable, ShardMigration
 			return false;
 		}
 		return true;
+	}
+
+	@Override
+	public String encode(){
+		return JsonCodec.INSTANCE.encode(this);
+	}
+
+	public static ShardMigrationResult fromEncodeStr(String encodeStr){
+
+		ShardMigrationResult result = new DefaultShardMigrationResult();
+
+		if(encodeStr == null){
+			return result;
+		}
+
+		try{
+			result = JsonCodec.INSTANCE.decode(encodeStr, DefaultShardMigrationResult.class);
+		}catch (Exception e){
+			logger.error("[fromEncodeStr]" + encodeStr, e);
+		}
+		return result;
 	}
 
 	@Override

@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
-import org.apache.commons.lang3.tuple.Pair;
+import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.Map;
 
@@ -26,5 +26,7 @@ public interface ShardMigrationResult {
     void updateStepResult(ShardMigrationStep step, boolean success, String log);
 
     void setSteps(Map<ShardMigrationStep, Pair<Boolean, String>> steps);
+
+    String encode();
 
 }

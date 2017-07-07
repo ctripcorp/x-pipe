@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResultTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStateTest;
@@ -64,6 +65,7 @@ import org.junit.runner.RunWith;
         MigrationPublishStatTest.class,
         SingleShardMigrationTest.class,
         MultiShardMigrationTest.class,
+        DefaultShardMigrationResultTest.class,
         ConfigDaoTest.class,
         MigrationClusterDaoTest.class,
         MigrationEventDaoTest.class,

@@ -31,7 +31,6 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblEntity;
-import com.ctrip.xpipe.redis.console.model.MigrationEventModel;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTblDao;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTblEntity;
@@ -48,7 +47,6 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
-import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 
 @Repository
 public class MigrationEventDao extends AbstractXpipeConsoleDAO {

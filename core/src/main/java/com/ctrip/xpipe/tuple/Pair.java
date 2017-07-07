@@ -29,6 +29,10 @@ public class Pair<K, V> implements Map.Entry<K, V>{
 
     public Pair(){}
 
+    public static <K1, V1>  Pair<K1, V1> of(K1 key, V1 value){
+        return new Pair<>(key, value);
+    }
+
     @Override
     public K getKey() {
         return key;
@@ -72,4 +76,10 @@ public class Pair<K, V> implements Map.Entry<K, V>{
         }
         return true;
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s, %s", key, value);
+    }
 }
+
