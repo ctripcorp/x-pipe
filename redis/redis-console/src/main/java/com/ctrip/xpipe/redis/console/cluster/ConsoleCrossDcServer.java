@@ -151,7 +151,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
             //become dc leader
             start();
         } catch (Exception e) {
-            logger.error("[isleader]", e);
+            logger.error("[isCrossDcLeader]", e);
         }
 
     }
@@ -162,7 +162,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
             stop();
             setCrossDcLeader(false, "lose cluster leader");
         } catch (Exception e) {
-            logger.error("[isleader]", e);
+            logger.error("[isCrossDcLeader]", e);
         }
     }
 
@@ -192,10 +192,14 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
         if(applicationContext != null){
             Map<String, CrossDcLeaderAware> beansOfType = applicationContext.getBeansOfType(CrossDcLeaderAware.class);
-            beansOfType.forEach((name, dcLeaderAware) -> {
 
-                logger.info("[loseLeader]{}", name);
-                dcLeaderAware.notLeader();
+            beansOfType.forEach((name, dcLeaderAware) -> {
+                try{
+                    logger.info("[loseLeader]{}", name);
+                    dcLeaderAware.notCrossDcLeader();
+                }catch (Exception e){
+                    logger.error("[loseLeader]" + dcLeaderAware, e);
+                }
             });
         }
 
@@ -204,13 +208,16 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     private void becomeLeader() {
 
         logger.info("[becomeLeader]");
-
         if(applicationContext != null){
+
             Map<String, CrossDcLeaderAware> beansOfType = applicationContext.getBeansOfType(CrossDcLeaderAware.class);
             beansOfType.forEach((name, dcLeaderAware) -> {
-
-                logger.info("[becomeLeader]{}", name);
-                dcLeaderAware.isleader();
+                try {
+                    logger.info("[becomeLeader]{}", name);
+                    dcLeaderAware.isCrossDcLeader();
+                }catch (Exception e){
+                    logger.error("[becomeLeader]" + dcLeaderAware, e);
+                }
             });
         }
     }

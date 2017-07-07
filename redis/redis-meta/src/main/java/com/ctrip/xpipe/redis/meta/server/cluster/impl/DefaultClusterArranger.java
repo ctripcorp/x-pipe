@@ -167,7 +167,7 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 
 	@Override
 	public void notLeader() {
-		logger.info("[notLeader]");
+		logger.info("[notCrossDcLeader]");
 		if(leader.compareAndSet(true, false)){
 			clusterServers.removeObserver(this);
 			if(future != null){

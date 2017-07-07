@@ -54,20 +54,28 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
                 isLeader = true;
                 Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
                 for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
-                    logger.info("[isLeader][notify]{}", entry.getKey());
-                    entry.getValue().isleader();
+                    try{
+                        logger.info("[isLeader][notify]{}", entry.getKey());
+                        entry.getValue().isleader();
+                    }catch (Exception e){
+                        logger.error("[isLeader]" + entry, e);
+                    }
                 }
             }
 
             @Override
             public void notLeader() {
 
-                logger.info("[notLeader]{}", getServerId());
+                logger.info("[notCrossDcLeader]{}", getServerId());
                 isLeader = false;
                 Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
                 for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
-                    logger.info("[notLeader][notify]{}", entry.getKey());
-                    entry.getValue().notLeader();
+                    try{
+                        logger.info("[notCrossDcLeader][notify]{}", entry.getKey());
+                        entry.getValue().notLeader();
+                    }catch (Exception e){
+                        logger.error("[notLeader]" + entry, e);
+                    }
                 }
             }
         }, executors);

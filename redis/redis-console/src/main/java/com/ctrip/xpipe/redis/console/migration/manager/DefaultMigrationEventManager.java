@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.manager;
 
+import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
@@ -25,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  * Dec 8, 2016
  */
 @Component
-public class DefaultMigrationEventManager implements MigrationEventManager {
+public class DefaultMigrationEventManager implements MigrationEventManager, CrossDcLeaderAware{
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -57,8 +58,6 @@ public class DefaultMigrationEventManager implements MigrationEventManager {
 				finished.forEach((id) -> removeEvent(id));
 			}
 		}, 60, 60, TimeUnit.SECONDS);
-
-		load();
 	}
 
 
@@ -127,5 +126,21 @@ public class DefaultMigrationEventManager implements MigrationEventManager {
 		if(event.isDone()){
 			logger.info("[update][done]", event);
 		}
+	}
+
+	@Override
+	public void isCrossDcLeader() {
+		logger.info("[isCrossDcLeader][load]");
+		load();
+	}
+
+	@Override
+	public void notCrossDcLeader() {
+		logger.info("[notCrossDcLeader][clear]");
+		clear();
+	}
+
+	private void clear() {
+		currentWorkingEvents.clear();
 	}
 }

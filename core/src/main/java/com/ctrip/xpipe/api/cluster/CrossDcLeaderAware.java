@@ -7,8 +7,8 @@ package com.ctrip.xpipe.api.cluster;
  */
 public interface CrossDcLeaderAware {
 
-    void isleader();
+    void isCrossDcLeader();
 
-    void notLeader();
+    void notCrossDcLeader();
 
 }
