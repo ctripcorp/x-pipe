@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
@@ -95,6 +94,11 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	@Override
 	public ShardMigrationResult getShardMigrationResult() {
 		return shardMigrationResult;
+	}
+
+	//for unit test
+	public void updateShardMigrationResult(ShardMigrationResult result){
+		this.shardMigrationResult = result;
 	}
 	
 	@Override

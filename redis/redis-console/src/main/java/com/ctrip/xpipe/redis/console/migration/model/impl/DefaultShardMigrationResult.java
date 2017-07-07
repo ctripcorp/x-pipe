@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResultStatus;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +101,7 @@ public class DefaultShardMigrationResult implements Serializable, ShardMigration
 
 		ShardMigrationResult result = new DefaultShardMigrationResult();
 
-		if(encodeStr == null){
+		if(StringUtil.isEmpty(encodeStr)){
 			return result;
 		}
 
