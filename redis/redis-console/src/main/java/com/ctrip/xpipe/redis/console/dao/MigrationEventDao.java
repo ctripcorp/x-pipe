@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.dao;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.PostConstruct;
 
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
@@ -155,13 +157,28 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		}
 	}
 	
-	public List<MigrationEventTbl> findAllUnfinished() {
-		return queryHandler.handleQuery(new DalQuery<List<MigrationEventTbl>>() {
+	public List<Long> findAllUnfinished() {
+
+		List<MigrationEventTbl> migrationEventTbls = queryHandler.handleQuery(new DalQuery<List<MigrationEventTbl>>() {
 			@Override
 			public List<MigrationEventTbl> doQuery() throws DalException {
 				return migrationEventTblDao.findUnfinishedEvents(MigrationEventTblEntity.READSET_FULL);
 			}
 		});
+
+		List<Long> result = new LinkedList<>();
+		Set<Long> distinct = new HashSet<>();
+
+		for(MigrationEventTbl migrationEventTbl : migrationEventTbls){
+
+			Long id = migrationEventTbl.getId();
+			if(distinct.add(id)){
+				result.add(id);
+			}else{
+				logger.info("[findAllUnfinished][already exist]{}", id);
+			}
+		}
+		return result;
 	}
 	
 	private MigrationEvent loadMigrationEvent(List<MigrationEventTbl> details) {

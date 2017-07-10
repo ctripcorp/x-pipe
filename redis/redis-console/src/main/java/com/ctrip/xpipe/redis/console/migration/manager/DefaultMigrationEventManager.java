@@ -101,7 +101,7 @@ public class DefaultMigrationEventManager implements MigrationEventManager, Cros
 
 	private void load() {
 
-		List<MigrationEventTbl> unfinishedTasks;
+		List<Long> unfinishedTasks;
 		try{
 			unfinishedTasks = migrationEventDao.findAllUnfinished();
 		}catch(Exception e){
@@ -109,12 +109,13 @@ public class DefaultMigrationEventManager implements MigrationEventManager, Cros
 			return;
 		}
 
-		for(MigrationEventTbl unfinished : unfinishedTasks) {
+		for(Long unfinishedId : unfinishedTasks) {
 
 			try{
-				loadAndAdd(unfinished.getId());
+				logger.info("[load]{}", unfinishedId);
+				loadAndAdd(unfinishedId);
 			}catch(Exception e){
-				logger.error("[load][fail]{}", unfinished.getId());
+				logger.error("[load][fail]" + unfinishedId, e);
 			}
 		}
 	}

@@ -10,12 +10,14 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class MigrationEventDaoTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
-    MigrationEventDao migrationEventDao;
+    private MigrationEventDao migrationEventDao;
 
     @Override
     public String prepareDatas() {
@@ -25,6 +27,20 @@ public class MigrationEventDaoTest extends AbstractConsoleIntegrationTest {
             logger.error("Prepare data from file failed", ex);
         }
         return "";
+    }
+
+    @Test
+    public void findUnfinishedEvents(){
+
+        List<Long> allUnfinished = migrationEventDao.findAllUnfinished();
+
+        logger.info("{}", allUnfinished.size());
+        Set<Long> all = new HashSet<>();
+
+        allUnfinished.forEach(id -> {
+                Assert.assertTrue(all.add(id));
+            }
+        );
     }
 
     @Test
