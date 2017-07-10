@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.status.migration;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
@@ -77,12 +78,13 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 			}
 			
 			if(null != shard.getNewMasterAddress()) {
+				HostPort newMasterAddress = shard.getNewMasterAddress();
 				List<RedisTbl> newDcRedises = migrationCluster.getRedisService().findAllByDcClusterShard(
 						migrationCluster.getClusterDcs().get(migrationCluster.getMigrationCluster().getDestinationDcId()).getDcName(),
 						cluster.getClusterName(),
 						shard.getCurrentShard().getShardName());
 				for(RedisTbl redis : newDcRedises) {
-					if(redis.getRedisIp().equals(shard.getNewMasterAddress().getHostName()) && redis.getRedisPort() == shard.getNewMasterAddress().getPort()) {
+					if(redis.getRedisIp().equals(newMasterAddress.getHost()) && redis.getRedisPort() == newMasterAddress.getPort()) {
 						redis.setMaster(true);
 						toUpdate.add(redis);
 					}
@@ -90,7 +92,7 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 			}
 		}
 		
-		logger.info("[UpdateMaster]");
+		logger.info("[UpdateMaster]{}", toUpdate);
 		migrationCluster.getRedisService().batchUpdate(toUpdate);
 	}
 

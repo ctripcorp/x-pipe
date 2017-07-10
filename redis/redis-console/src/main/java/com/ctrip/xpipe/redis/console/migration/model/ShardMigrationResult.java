@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.Map;
@@ -28,5 +29,9 @@ public interface ShardMigrationResult {
     void setSteps(Map<ShardMigrationStep, Pair<Boolean, String>> steps);
 
     String encode();
+
+    void setNewMaster(HostPort newMaster);
+
+    HostPort getNewMaster();
 
 }

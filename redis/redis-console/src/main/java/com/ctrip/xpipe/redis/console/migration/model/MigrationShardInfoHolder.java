@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
-import java.net.InetSocketAddress;
-
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResult;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 
@@ -19,5 +17,5 @@ public interface MigrationShardInfoHolder {
 
     ShardTbl getCurrentShard();
 
-    InetSocketAddress getNewMasterAddress();
+    HostPort getNewMasterAddress();
 }

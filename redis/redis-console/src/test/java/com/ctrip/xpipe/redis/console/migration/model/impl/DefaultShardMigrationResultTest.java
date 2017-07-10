@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResultStatus;
@@ -24,9 +25,13 @@ public class DefaultShardMigrationResultTest extends AbstractConsoleTest {
             result.updateStepResult(step, true, randomString(10));
         }
 
+        result.setNewMaster(new HostPort("127.0.0.1", randomPort()));
+
         String encode = result.encode();
 
         ShardMigrationResult decode = DefaultShardMigrationResult.fromEncodeStr(encode);
+
+        logger.info("{}", decode);
         Assert.assertEquals(result, decode);
 
     }

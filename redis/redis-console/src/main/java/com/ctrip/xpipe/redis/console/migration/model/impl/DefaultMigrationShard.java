@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilderImpl;
@@ -23,7 +24,6 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -51,9 +51,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	private Map<Long, DcTbl> dcs;
 
 	private MigrationCommandBuilder commandBuilder;
-	
-	private InetSocketAddress newMasterAddr;
-	
+
 	private String cluster;
 	private String shard;
 	private String newPrimaryDc;
@@ -73,8 +71,6 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		this.migrationService = migrationService;
 		this.shardMigrationResult = DefaultShardMigrationResult.fromEncodeStr(migrationShard.getLog());
 		this.commandBuilder = commandBuilder;
-		this.newMasterAddr = null;
-		
 
 		cluster = parent.getCurrentCluster().getClusterName();
 		shard = currentShard.getShardName();
@@ -107,8 +103,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	}
 	
 	@Override
-	public InetSocketAddress getNewMasterAddress() {
-		return newMasterAddr;
+	public HostPort getNewMasterAddress() {
+		return shardMigrationResult.getNewMaster();
 	}
 
 	@Override
@@ -230,10 +226,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					if(PRIMARY_DC_CHANGE_RESULT.SUCCESS.equals(res.getErrorType())) {
 						logger.info("[doNewPrimaryDcMigrate][success]{},{},");
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, true, res.getErrorMessage());
-						
-						if(null != res.getNewMasterIp()) {
-							newMasterAddr = InetSocketAddress.createUnresolved(res.getNewMasterIp(), res.getNewMasterPort());
-						}
+						shardMigrationResult.setNewMaster(new HostPort(res.getNewMasterIp(), res.getNewMasterPort()));
 					} else {
 						logger.error("[doNewPrimaryDcMigrate][fail]{},{},");
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, res.getErrorMessage());
