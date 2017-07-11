@@ -3,6 +3,7 @@ package com.ctrip.xpipe.spring;
 
 
 
+import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +16,8 @@ import org.slf4j.LoggerFactory;
 public class AbstractController {
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
+
+	protected Joiner joiner = Joiner.on(",");
 
 	public static final String API_PREFIX = "/api";
 

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
 import com.ctrip.xpipe.redis.console.dao.ConfigDaoTest;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDaoTest;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDaoTest;
@@ -23,6 +24,7 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
 
 import com.ctrip.xpipe.redis.console.service.impl.KeepercontainerServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.impl.RedisServiceImplTest;
+import com.ctrip.xpipe.redis.console.service.impl.SentinelServiceImplTest;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
@@ -49,6 +51,7 @@ import org.junit.runner.RunWith;
         RedisServiceImplTest.class,
         KeepercontainerServiceImplTest.class,
         MigrationStatusTest.class,
+        SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,
         ConcurrentDalTransactionTest.class,
         DalTransactionManagerTest.class,
@@ -66,6 +69,7 @@ import org.junit.runner.RunWith;
         SingleShardMigrationTest.class,
         MultiShardMigrationTest.class,
         DefaultShardMigrationResultTest.class,
+        ClusterCreateInfoTest.class,
         ConfigDaoTest.class,
         MigrationClusterDaoTest.class,
         MigrationEventDaoTest.class,

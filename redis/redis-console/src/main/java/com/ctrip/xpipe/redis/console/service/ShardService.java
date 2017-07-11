@@ -11,6 +11,6 @@ public interface ShardService {
 	ShardTbl find(String clusterName, String shardName);
 	List<ShardTbl> findAllByClusterName(String clusterName);
 	List<ShardTbl> findAllShardNamesByClusterName(String clusterName);
-	ShardTbl createShard(String clusterName, ShardTbl shard, Map<Long,SetinelTbl> sentinels);
+	ShardTbl createShard(String clusterName, ShardTbl shard, Map<Long, SetinelTbl> sentinels);
 	void deleteShard(String clusterName, String shardName);
 }

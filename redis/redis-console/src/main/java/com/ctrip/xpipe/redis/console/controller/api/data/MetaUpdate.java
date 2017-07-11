@@ -2,19 +2,21 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
-import com.ctrip.xpipe.redis.console.model.ClusterModel;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.SentinelService;
+import com.ctrip.xpipe.redis.console.service.ShardService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -30,6 +32,12 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private DcService dcService;
+
+    @Autowired
+    private SentinelService sentinelService;
+
+    @Autowired
+    private ShardService shardService;
 
 
     @RequestMapping(value = "/clusters", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -86,9 +94,9 @@ public class MetaUpdate extends AbstractConsoleController {
             List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterTbl.getClusterName());
             clusterRelatedDc.forEach(dcTbl -> {
 
-                if(dcTbl.getId() == clusterTbl.getActivedcId()){
+                if (dcTbl.getId() == clusterTbl.getActivedcId()) {
                     clusterCreateInfo.addFirstDc(dcTbl.getDcName());
-                }else{
+                } else {
                     clusterCreateInfo.addDc(dcTbl.getDcName());
                 }
             });
@@ -100,10 +108,45 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage createShards(List<ShardCreateInfo> shards) {
+    public RetMessage createShards(@PathVariable String clusterName, @RequestBody List<ShardCreateInfo> shards) {
 
+        logger.info("[createShards]{}, {}", clusterName, shards);
 
-        return RetMessage.createSuccessMessage();
+        ClusterTbl clusterTbl  = null;
+
+        try {
+            clusterTbl = clusterService.find(clusterName);
+            if (clusterTbl == null) {
+                return RetMessage.createFailMessage("cluster not exist");
+            }
+            for (ShardCreateInfo shardCreateInfo : shards) {
+                shardCreateInfo.check();
+            }
+        } catch (CheckFailException e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+
+        Map<Long, SetinelTbl> randomSentinelByDc = sentinelService.eachRandomSentinelByDc();
+        List<String> successShards = new LinkedList<>();
+        List<String> failShards = new LinkedList<>();
+
+        for(ShardCreateInfo shardCreateInfo : shards){
+
+            try{
+                ShardTbl shardTbl = new ShardTbl()
+                        .setSetinelMonitorName(shardCreateInfo.getShardMonitorName())
+                        .setShardName(shardCreateInfo.getShardName());
+                shardService.createShard(clusterName, shardTbl, randomSentinelByDc);
+                successShards.add(shardCreateInfo.getShardName());
+            }catch (Exception e){
+                failShards.add(shardCreateInfo.getShardName());
+            }
+        }
+        if(failShards.size() == 0){
+            return RetMessage.createSuccessMessage();
+        }else{
+            return RetMessage.createFailMessage(String.format("success shards:%s, fail shards:", joiner.join(successShards), joiner.join(failShards)));
+        }
     }
 
     @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)

@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.annotation.PostConstruct;
 
+import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.utils.MapUtils;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -45,7 +45,63 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 			}
     	});
 	}
-	
+
+	@Override
+	public Map<Long, List<SetinelTbl>> allSentinelsByDc() {
+
+		Map<Long, List<SetinelTbl>> result = new HashMap<>();
+
+		List<SetinelTbl> setinelTbls = queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
+			@Override
+			public List<SetinelTbl> doQuery() throws DalException {
+				return dao.findAll(SetinelTblEntity.READSET_FULL);
+			}
+		});
+
+		setinelTbls.forEach( setinelTbl -> {
+
+			List<SetinelTbl> setinels = MapUtils.getOrCreate(result, setinelTbl.getDcId(), new ObjectFactory<List<SetinelTbl>>() {
+				@Override
+				public List<SetinelTbl> create() {
+					return new LinkedList<>();
+				}
+			});
+			setinels.add(setinelTbl);
+		});
+
+		return result;
+	}
+
+	@Override
+	public Map<Long, SetinelTbl> eachRandomSentinelByDc() {
+
+		Map<Long, List<SetinelTbl>> allSentinelsByDc = allSentinelsByDc();
+		
+		Map<Long, SetinelTbl>  result = randomChose(allSentinelsByDc);
+
+		return result;
+	}
+
+	private Map<Long,SetinelTbl> randomChose(Map<Long, List<SetinelTbl>> allSentinelsByDc) {
+
+		Map<Long, SetinelTbl>  result = new HashMap<>();
+
+		allSentinelsByDc.forEach((dcId, setinels) -> {
+			result.put(dcId, random(setinels));
+		});
+
+		return result;
+	}
+
+	protected SetinelTbl random(List<SetinelTbl> setinels) {
+
+		Random random = new Random();
+
+		int index = random.nextInt(setinels.size());
+
+		return setinels.get(index);
+	}
+
 	@Override
 	public SetinelTbl find(final long id) {
 		return queryHandler.handleQuery(new DalQuery<SetinelTbl>() {
@@ -78,6 +134,19 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 			}
 		}
 		return res;
+	}
+
+	@Override
+	public SetinelTbl insert(SetinelTbl setinelTbl) {
+
+		queryHandler.handleQuery(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.insert(setinelTbl);
+			}
+		});
+
+		return setinelTbl;
 	}
 
 

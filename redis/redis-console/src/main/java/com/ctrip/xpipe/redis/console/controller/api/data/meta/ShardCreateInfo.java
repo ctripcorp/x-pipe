@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.utils.StringUtil;
 
 /**
@@ -39,5 +40,10 @@ public class ShardCreateInfo extends AbstractCreateInfo{
         if(StringUtil.isEmpty(shardMonitorName)){
             throw new CheckFailException("shardMonitorName empty");
         }
+    }
+
+    @Override
+    public String toString() {
+        return JsonCodec.INSTANCE.encode(this);
     }
 }
