@@ -1,10 +1,10 @@
-package com.ctrip.xpipe.redis.console.controller.migrate;
+package com.ctrip.xpipe.redis.console.controller.api.migrate;
 
 import java.util.LinkedList;
 import java.util.List;
 
 import com.ctrip.xpipe.api.migration.DcMapper;
-import com.ctrip.xpipe.redis.console.controller.migrate.meta.*;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.*;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -14,7 +14,6 @@ import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratin
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.TryMigrateResult;
-import com.google.common.base.Joiner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;

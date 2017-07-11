@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.controller.migrate.meta;
+package com.ctrip.xpipe.redis.console.controller.api.migrate.meta;
 
 import java.util.LinkedList;
 import java.util.List;

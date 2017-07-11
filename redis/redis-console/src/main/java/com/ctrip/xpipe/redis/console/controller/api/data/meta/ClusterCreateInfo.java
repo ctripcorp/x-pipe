@@ -1,0 +1,73 @@
+package com.ctrip.xpipe.redis.console.controller.api.data.meta;
+
+import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.utils.StringUtil;
+
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * @author wenchao.meng
+ *         <p>
+ *         Jul 11, 2017
+ */
+public class ClusterCreateInfo extends AbstractCreateInfo{
+
+    private String clusterName;
+
+    private List<String> dcs = new LinkedList<>();
+
+    private String desc;
+
+    public ClusterCreateInfo(){
+    }
+
+    public List<String> getDcs() {
+        return dcs;
+    }
+
+    public void setDcs(List<String> dcs) {
+        this.dcs = dcs;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    @Override
+    public void check() throws CheckFailException{
+
+        if(StringUtil.isEmpty(clusterName)){
+            throw new CheckFailException("clusterName empty");
+        }
+
+        if(StringUtil.isEmpty(desc)){
+            throw new CheckFailException("desc empty");
+        }
+
+        if(dcs == null || dcs.size() == 0){
+            throw new CheckFailException("dcs empty");
+        }
+
+        if(dcs == null || dcs.size() <= 1){
+            throw new CheckFailException("dcs size should be at least two, first active!");
+        }
+    }
+
+    @Override
+    public String toString() {
+        return JsonCodec.INSTANCE.encode(this);
+    }
+}

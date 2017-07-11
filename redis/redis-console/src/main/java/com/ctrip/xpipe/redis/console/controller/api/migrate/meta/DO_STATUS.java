@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.controller.migrate.meta;
+package com.ctrip.xpipe.redis.console.controller.api.migrate.meta;
 
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 

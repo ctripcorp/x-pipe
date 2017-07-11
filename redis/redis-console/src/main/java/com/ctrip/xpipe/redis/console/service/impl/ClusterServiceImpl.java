@@ -130,9 +130,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	for(DcTbl dc : slaveDcs) {
     		bindDc(cluster.getClusterName(), dc.getDcName());
     	}
-    	
-    	for (ShardModel shard : shards) {
-			shardService.createShard(cluster.getClusterName(), shard.getShardTbl(), shard.getSentinels());
+
+    	if(shards != null){
+			for (ShardModel shard : shards) {
+				shardService.createShard(cluster.getClusterName(), shard.getShardTbl(), shard.getSentinels());
+			}
 		}
     	
     	return result;
