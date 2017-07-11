@@ -30,8 +30,6 @@ public class RedisMasterSamplePlan extends BaseSamplePlan<InstanceRedisMasterRes
             masterHost = redisMeta.getIp();
             masterPort = redisMeta.getPort();
             super.addRedis(dcId, redisMeta, result);
-        }else{
-            //ignore slaves
         }
 
     }

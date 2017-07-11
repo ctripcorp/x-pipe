@@ -46,9 +46,7 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	   public void closeConnection() {
 	      TransactionInfo trxInfo = m_threadLocalData.get();
 
-	      if (trxInfo.isInTransaction()) {
-	         // do nothing when in transaction
-	      } else {
+	      if (!trxInfo.isInTransaction()) {
 	         try {
 	            trxInfo.reset();
 	         } catch (SQLException e) {
@@ -63,6 +61,7 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	            connection.close();
 	         } catch (SQLException e) {
 	            // ignore it
+				 m_logger.warn("Error when closing Connection, message: " + e, e);
 	         }
 	      }
 	   }
@@ -90,7 +89,7 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	 	         try {
 	 	            trxInfo.reset();
 	 	         } catch (SQLException e) {
-	 	            e.printStackTrace();
+					 m_logger.warn("Error when commitTransaction, message: " + e, e);
 	 	         }
 	 	      }
 	      } else {

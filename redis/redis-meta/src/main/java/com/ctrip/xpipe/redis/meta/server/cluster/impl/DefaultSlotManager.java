@@ -179,7 +179,7 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 		
 	}
 
-	private void doRefresh() throws NumberFormatException, Exception {
+	private void doRefresh() throws Exception {
 		
 		logger.debug("[doRefresh]");
 		
@@ -325,8 +325,12 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 
 	@Override
 	public int getSlotIdByKey(Object key) {
-		
-		return Math.abs(key.hashCode())%TOTAL_SLOTS;
+
+		int hash = key.hashCode();
+		if(hash == Integer.MIN_VALUE){
+			return 0;
+		}
+		return Math.abs(hash)%TOTAL_SLOTS;
 	}
 
 	@Override

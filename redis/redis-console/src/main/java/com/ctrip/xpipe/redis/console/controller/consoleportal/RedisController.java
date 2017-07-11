@@ -29,7 +29,7 @@ public class RedisController extends AbstractConsoleController {
                 redisService.updateRedises(dcName, clusterName, shardName, shardModel);
                 logger.info("[Update Redises][success]{},{},{},{}", clusterName, dcName, shardName, shardModel);
             } else {
-                logger.error("[Update Redises][Null ShardModel]{},{},{},{}", clusterName, dcName, shardName, shardModel);
+                logger.error("[Update Redises][Null ShardModel]{},{},{}", clusterName, dcName, shardName);
             }
         } catch (Exception e) {
             logger.error("[Update Redises][failed]{},{},{},{}", clusterName, dcName, shardName, shardModel);

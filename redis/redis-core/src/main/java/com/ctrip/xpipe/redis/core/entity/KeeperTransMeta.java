@@ -55,7 +55,8 @@ public class KeeperTransMeta implements ClusterAware{
 
 	@Override
 	public boolean equals(Object obj) {
-		if(obj == null){
+
+		if(!(obj instanceof KeeperTransMeta)){
 			return false;
 		}
 		

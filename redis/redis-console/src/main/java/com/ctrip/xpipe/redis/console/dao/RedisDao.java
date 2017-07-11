@@ -83,8 +83,10 @@ public class RedisDao  extends AbstractXpipeConsoleDAO{
 			for(RedisTbl redis : redises) {
 				redis.setRunId(generateDeletedName(redis.getRunId()));
 			}
+			redisTblDao.deleteBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
+		}else{
+			logger.info("[deleteRedisesBatch][null]");
 		}
-		redisTblDao.deleteBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
 	}
 
 	@DalTransaction
@@ -179,7 +181,7 @@ public class RedisDao  extends AbstractXpipeConsoleDAO{
 						return dcClusterShardTblDao.findByPK(tmpRedis.getDcClusterShardId(), DcClusterShardTblEntity.READSET_FULL);
 					}
 				});
-				if(null != tmpDcClusterShard && targetDcClusterShard != tmpDcClusterShard 
+				if(null != tmpDcClusterShard
 						&& targetDcClusterShard.getShardId() == tmpDcClusterShard.getShardId()) {
 					throw new ServerException("Cannot generate unque keeper id, please retry.");
 				}

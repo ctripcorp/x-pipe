@@ -56,18 +56,16 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 		ClusterMeta clusterMeta = new ClusterMeta();
 		clusterTbl.setActivedcId(getClusterMetaCurrentPrimaryDc(dcMetaQueryVO.getCurrentDc(), clusterTbl));
 		
-		if (null != clusterTbl) {
-			clusterMeta.setId(clusterTbl.getClusterName());
-			for (DcClusterTbl dcCluster : dcMetaQueryVO.getAllDcClusterMap().get(clusterTbl.getId())) {
-				if (dcCluster.getDcId() == clusterTbl.getActivedcId()) {
-					clusterMeta.setActiveDc(dcMetaQueryVO.getAllDcs().get(dcCluster.getDcId()).getDcName());
+		clusterMeta.setId(clusterTbl.getClusterName());
+		for (DcClusterTbl dcCluster : dcMetaQueryVO.getAllDcClusterMap().get(clusterTbl.getId())) {
+			if (dcCluster.getDcId() == clusterTbl.getActivedcId()) {
+				clusterMeta.setActiveDc(dcMetaQueryVO.getAllDcs().get(dcCluster.getDcId()).getDcName());
+			} else {
+				if (Strings.isNullOrEmpty(clusterMeta.getBackupDcs())) {
+					clusterMeta.setBackupDcs(dcMetaQueryVO.getAllDcs().get(dcCluster.getDcId()).getDcName());
 				} else {
-					if (Strings.isNullOrEmpty(clusterMeta.getBackupDcs())) {
-						clusterMeta.setBackupDcs(dcMetaQueryVO.getAllDcs().get(dcCluster.getDcId()).getDcName());
-					} else {
-						clusterMeta.setBackupDcs(clusterMeta.getBackupDcs() + ","
-								+ dcMetaQueryVO.getAllDcs().get(dcCluster.getDcId()).getDcName());
-					}
+					clusterMeta.setBackupDcs(clusterMeta.getBackupDcs() + ","
+							+ dcMetaQueryVO.getAllDcs().get(dcCluster.getDcId()).getDcName());
 				}
 			}
 		}

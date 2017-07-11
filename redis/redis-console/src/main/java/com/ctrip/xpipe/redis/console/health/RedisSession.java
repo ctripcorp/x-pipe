@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.metric.HostPort;
 import com.lambdaworks.redis.api.StatefulRedisConnection;
-import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 
 /**
@@ -142,15 +141,12 @@ public class RedisSession {
 
         try {
             final CompletableFuture<String> future = findOrCreateNonSubscribeConnection().async().ping().toCompletableFuture();
-            future.thenRun(new Runnable() {
 
-                @Override
-                public void run() {
-                    if (future.isDone()) {
-                        callback.pong(future.getNow(null));
-                    } else {
-                        callback.fail(new Exception(" future not done " + future));
-                    }
+            future.whenComplete((pong, th) -> {
+                if(th != null){
+                    callback.fail(th);
+                }else{
+                    callback.pong(pong);
                 }
             });
         } catch (RedisException e) {
@@ -179,7 +175,7 @@ public class RedisSession {
 
     }
 
-    public String roleSync() throws Exception {
+    public String roleSync() throws InterruptedException, ExecutionException, TimeoutException {
 
         final CompletableFuture<List<Object>> future = findOrCreateNonSubscribeConnection().async().role().toCompletableFuture();
         return (String) future.get(waitResultSeconds, TimeUnit.SECONDS).get(0);

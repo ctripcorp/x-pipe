@@ -45,8 +45,13 @@ public class DefaultSentinelCollectorTest extends AbstractConsoleTest{
         );
 
         Set<SentinelHello> toAdd = sentinelCollector.checkToAdd("cluster1", "shard1", monitorName, masterSentinels, hellos, master, quorumConfig);
-
         Assert.assertEquals(4, toAdd.size());
+
+
+        quorumConfig.setTotal(3);
+        toAdd = sentinelCollector.checkToAdd("cluster1", "shard1", monitorName, masterSentinels, hellos, master, quorumConfig);
+        Assert.assertEquals(2, toAdd.size());
+
     }
 
     @Test
