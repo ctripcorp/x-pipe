@@ -11,7 +11,7 @@ public interface ClusterService {
 	ClusterTbl find(long clusterId);
 	List<ClusterTbl> findAllClusters();
 	List<ClusterTbl> findClustersByActiveDcId(long activeDc);
-	List<ClusterTbl> findAllClusterNames();
+	List<String> findAllClusterNames();
 	Long getAllCount();
 	ClusterTbl createCluster(ClusterModel clusterModel);
 	void updateCluster(String clusterName, ClusterTbl cluster);

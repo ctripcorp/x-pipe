@@ -30,6 +30,23 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
         this.dcs = dcs;
     }
 
+    public void addDc(String dcName){
+        if(dcs.contains(dcName)){
+            logger.info("[addDc][already exist]{}", dcName);
+            return;
+        }
+        dcs.add(dcName);
+    }
+
+    public void addFirstDc(String dcName){
+        boolean remove = dcs.remove(dcName);
+        if(remove){
+            logger.info("[addFirstDc][already exist, remove]", clusterName);
+        }
+        dcs.add(0, dcName);
+    }
+
+
     public String getDesc() {
         return desc;
     }

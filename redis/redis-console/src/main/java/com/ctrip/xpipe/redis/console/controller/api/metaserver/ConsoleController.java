@@ -80,15 +80,8 @@ public class ConsoleController extends AbstractConsoleController {
 	
 	@RequestMapping(value = "/clusterids", method = RequestMethod.GET)
 	public List<String> getAllClusters() {
-		List<String> result = new LinkedList<String>();
-		
-		if(null != clusterService.findAllClusterNames()) {
-			for(ClusterTbl cluster : clusterService.findAllClusterNames()) {
-				result.add(cluster.getClusterName());
-			}
-		}
-		
-		return result;
+
+		return clusterService.findAllClusterNames();
 	}
 	
 	@RequestMapping(value = "/cluster/{clusterId}/shardids", method = RequestMethod.GET)

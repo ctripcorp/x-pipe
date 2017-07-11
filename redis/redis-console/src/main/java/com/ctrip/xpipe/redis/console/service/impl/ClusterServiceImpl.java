@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,13 +83,20 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 
 	@Override
-	public List<ClusterTbl> findAllClusterNames() {
-		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+	public List<String> findAllClusterNames() {
+
+		List<ClusterTbl> clusterTbls = queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
 			@Override
 			public List<ClusterTbl> doQuery() throws DalException {
 				return dao.findAllClusters(ClusterTblEntity.READSET_NAME);
 			}
-    	});
+		});
+
+		List<String> clusterNames = new LinkedList<>();
+
+		clusterTbls.forEach( clusterTbl -> clusterNames.add(clusterTbl.getClusterName()));
+
+		return clusterNames;
 	}
 
 	@Override

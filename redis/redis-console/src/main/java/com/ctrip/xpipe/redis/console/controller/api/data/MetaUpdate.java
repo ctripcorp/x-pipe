@@ -13,10 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -74,7 +72,31 @@ public class MetaUpdate extends AbstractConsoleController {
     @RequestMapping(value = "/clusters", method = RequestMethod.GET)
     public List<ClusterCreateInfo> getClusters() {
 
-        return null;
+        logger.info("[getClusters]");
+
+        List<ClusterTbl> allClusters = clusterService.findAllClusters();
+
+        List<ClusterCreateInfo> result = new LinkedList<>();
+        allClusters.forEach(clusterTbl -> {
+
+            ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
+            clusterCreateInfo.setDesc(clusterTbl.getClusterDescription());
+            clusterCreateInfo.setClusterName(clusterTbl.getClusterName());
+
+            List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterTbl.getClusterName());
+            clusterRelatedDc.forEach(dcTbl -> {
+
+                if(dcTbl.getId() == clusterTbl.getActivedcId()){
+                    clusterCreateInfo.addFirstDc(dcTbl.getDcName());
+                }else{
+                    clusterCreateInfo.addDc(dcTbl.getDcName());
+                }
+            });
+
+            result.add(clusterCreateInfo);
+        });
+
+        return result;
     }
 
     @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
