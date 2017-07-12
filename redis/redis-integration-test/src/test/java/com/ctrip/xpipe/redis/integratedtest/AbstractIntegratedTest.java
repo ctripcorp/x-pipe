@@ -17,6 +17,7 @@ import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +65,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	private Set<RedisMeta> allRedisStarted = new HashSet<>();
 
-	static {
+	@BeforeClass
+	public static void beforereAbstractIntegratedTestClass(){
 		List<File> result = new LinkedList<>();
 		cleanLog(new File(logDir), result);
 		Logger logger = LoggerFactory.getLogger(AbstractIntegratedTest.class);

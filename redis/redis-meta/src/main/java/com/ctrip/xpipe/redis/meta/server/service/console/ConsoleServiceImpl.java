@@ -99,5 +99,7 @@ public class ConsoleServiceImpl implements ConsoleService {
 
 	}
 
-
+	public void setHost(String host) {
+		this.host = host;
+	}
 }
