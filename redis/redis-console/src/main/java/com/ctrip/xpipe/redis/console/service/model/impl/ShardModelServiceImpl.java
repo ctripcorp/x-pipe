@@ -11,7 +11,7 @@ import java.util.concurrent.Future;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -122,7 +122,7 @@ public class ShardModelServiceImpl implements ShardModelService{
 		List<RedisTbl> shard_redises = redisService.findAllByDcClusterShard(dcClusterShardInfo.getDcClusterShardId());
 		if(null != shard_redises) {
 			for(RedisTbl redis : shard_redises) {
-				if(redis.getRedisRole().equals(XpipeConsoleConstant.ROLE_REDIS)) {
+				if(redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_REDIS)) {
 					shardModel.addRedis(redis);
 				} else {
 					shardModel.addKeeper(redis);

@@ -29,36 +29,39 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     private RedisService redisService;
 
     @Override
-    public List<RedisTbl> findBestKeepers(String dcName, int beginPort, BiPredicate keeperGood) {
+    public List<KeeperSelected> findBestKeepers(String dcName, int beginPort, BiPredicate keeperGood) {
         return findBestKeepers(dcName, beginPort, keeperGood, 2);
     }
 
-    public List<RedisTbl> findBestKeepers(String dcName, int beginPort, BiPredicate<String, Integer> keeperGood, int returnCount) {
+    public List<KeeperSelected> findBestKeepers(String dcName, int beginPort, BiPredicate<String, Integer> keeperGood, int returnCount) {
 
         List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCount(dcName);
         if (keeperCount.size() < returnCount) {
             throw new IllegalStateException("all keepers size:" + keeperCount + ", but we need:" + returnCount);
         }
 
-        List<RedisTbl> result = new LinkedList<>();
+        List<KeeperSelected> result = new LinkedList<>();
 
         //find available port
         for (int i = 0; i < returnCount; i++) {
 
             KeepercontainerTbl keepercontainerTbl = keeperCount.get(i);
-            RedisTbl redisTbl = new RedisTbl();
-            redisTbl.setKeepercontainerId(keepercontainerTbl.getKeepercontainerId());
-            redisTbl.setRedisIp(keepercontainerTbl.getKeepercontainerIp());
+
+            KeeperSelected keeperSelected = new KeeperSelected();
+
+            keeperSelected.setKeeperContainerId(keepercontainerTbl.getKeepercontainerId());
+            keeperSelected.setHost(keepercontainerTbl.getKeepercontainerIp());
 
             int port = findAvailablePort(keepercontainerTbl, beginPort, keeperGood, result);
-            redisTbl.setRedisPort(port);
-            result.add(redisTbl);
+
+            keeperSelected.setPort(port);
+            result.add(keeperSelected);
         }
         return result;
 
     }
 
-    private int findAvailablePort(KeepercontainerTbl keepercontainerTbl, int beginPort, BiPredicate<String, Integer> keeperGood, List<RedisTbl> result) {
+    private int findAvailablePort(KeepercontainerTbl keepercontainerTbl, int beginPort, BiPredicate<String, Integer> keeperGood, List<KeeperSelected> result) {
 
         int port = beginPort;
         String ip = keepercontainerTbl.getKeepercontainerIp();
@@ -82,10 +85,10 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
         return port;
     }
 
-    private boolean alreadySelected(String ip, int port, List<RedisTbl> result) {
+    private boolean alreadySelected(String ip, int port, List<KeeperSelected> result) {
 
-        for (RedisTbl redisTbl : result) {
-            if (redisTbl.getRedisIp().equalsIgnoreCase(ip) && redisTbl.getRedisPort() == port) {
+        for (KeeperSelected keeperSelected : result) {
+            if (keeperSelected.getHost().equalsIgnoreCase(ip) && keeperSelected.getPort() == port) {
                 return true;
             }
         }
@@ -93,7 +96,6 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     }
 
     private boolean existInDb(String keepercontainerIp, int port) {
-
         return redisService.findWithIpPort(keepercontainerIp, port) != null;
     }
 }

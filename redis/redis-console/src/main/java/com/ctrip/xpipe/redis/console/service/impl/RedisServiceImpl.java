@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -93,12 +93,12 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
 	@Override
 	public List<RedisTbl> findRedisesByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException {
-		return doFindAllByDcClusterShard(dcId, clusterId, shardId, XpipeConsoleConstant.ROLE_REDIS);
+		return doFindAllByDcClusterShard(dcId, clusterId, shardId, XPipeConsoleConstant.ROLE_REDIS);
 	}
 
 	@Override
 	public List<RedisTbl> findKeepersByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException {
-		return doFindAllByDcClusterShard(dcId, clusterId, shardId, XpipeConsoleConstant.ROLE_KEEPER);
+		return doFindAllByDcClusterShard(dcId, clusterId, shardId, XPipeConsoleConstant.ROLE_KEEPER);
 	}
 
 
@@ -136,18 +136,47 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 	@Override
 	public void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> redisAddresses) throws DalException, ResourceNotFoundException {
 
+		doInsertInstances(XPipeConsoleConstant.ROLE_REDIS, dcId, clusterId, shardId, redisAddresses);
+
+		notifier.notifyClusterUpdate(dcId, clusterId);
+	}
+
+	@Override
+	public void insertKeepers(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws DalException, ResourceNotFoundException {
+
+		doInsertInstances(XPipeConsoleConstant.ROLE_KEEPER, dcId, clusterId, shardId, addrs);
+
+		notifier.notifyClusterUpdate(dcId, clusterId);
+	}
+
+	@Override
+	public List<RedisTbl> deleteKeepers(String dcId, String clusterId, String shardId) throws DalException, ResourceNotFoundException {
+
+		List<RedisTbl> keepersByDcClusterShard = findKeepersByDcClusterShard(dcId, clusterId, shardId);
+
+		queryHandler.handleQuery(new DalQuery<int[]>() {
+			@Override
+			public int[] doQuery() throws DalException {
+				return dao.deleteBatch(keepersByDcClusterShard.toArray(new RedisTbl[0]), RedisTblEntity.UPDATESET_FULL);
+			}
+		});
+		return keepersByDcClusterShard;
+	}
+
+
+	private void doInsertInstances(String role, String dcId, String clusterId, String shardId, List<Pair<String, Integer>> redisAddresses) throws ResourceNotFoundException, DalException {
+
 		DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcId, clusterId, shardId);
 		if(dcClusterShardTbl == null){
 			throw new ResourceNotFoundException(dcId, clusterId, shardId);
 		}
-		List<RedisTbl> redisTbls = doFindAllByDcClusterShardId(dcClusterShardTbl.getDcClusterShardId(), XpipeConsoleConstant.ROLE_REDIS);
-
+		List<RedisTbl> redisTbls = doFindAllByDcClusterShardId(dcClusterShardTbl.getDcClusterShardId(), XPipeConsoleConstant.ROLE_REDIS);
 
 		List<Pair<String, Integer>> toAdd = sub(redisAddresses, redisTbls);
-		logger.info("[addRedises]{}", toAdd);
-		insertRedises(dcClusterShardTbl.getDcClusterShardId(), toAdd.toArray(new Pair[0]));
 
-		notifier.notifyClusterUpdate(dcId, clusterId);
+		logger.info("[doInsertInstances]{}", toAdd);
+
+		insertInstances(dcClusterShardTbl.getDcClusterShardId(), role, toAdd.toArray(new Pair[0]));
 	}
 
 	@Override
@@ -161,11 +190,11 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 		notifier.notifyClusterUpdate(dcId, clusterId);
 	}
 
-	private RedisTbl createRedisTbl(Pair<String, Integer> addr) {
+	private RedisTbl createRedisTbl(Pair<String, Integer> addr, String role) {
 		return dao.createLocal()
 				.setRedisIp(addr.getKey())
 				.setRedisPort(addr.getValue())
-				.setRedisRole(XpipeConsoleConstant.ROLE_REDIS)
+				.setRedisRole(role)
 				.setRunId("unknown");
 	}
 
@@ -231,7 +260,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 	}
 
 	private void updateRedises(List<RedisTbl> origin, List<RedisTbl> target) {
-		validateKeeperContainers(RedisDao.findWithRole(target, XpipeConsoleConstant.ROLE_KEEPER));
+		validateKeeperContainers(RedisDao.findWithRole(target, XPipeConsoleConstant.ROLE_KEEPER));
 
 		List<RedisTbl> toCreate = (List<RedisTbl>) setOperator.difference(RedisTbl.class, target, origin,
 				redisComparator);
@@ -290,8 +319,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 			return result;
 		}
 
-		addRedisTbl(dcClusterShard, result, shardModel.getRedises(), XpipeConsoleConstant.ROLE_REDIS);
-		addRedisTbl(dcClusterShard, result, shardModel.getKeepers(), XpipeConsoleConstant.ROLE_KEEPER);
+		addRedisTbl(dcClusterShard, result, shardModel.getRedises(), XPipeConsoleConstant.ROLE_REDIS);
+		addRedisTbl(dcClusterShard, result, shardModel.getKeepers(), XPipeConsoleConstant.ROLE_KEEPER);
 		return result;
 	}
 
@@ -307,7 +336,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 			throw new BadRequestException("Keepers should be assigned to different keepercontainer" + keepers);
 		}
 		
-		List<RedisTbl> originalKeepers = RedisDao.findWithRole(findAllByDcClusterShard(keepers.get(0).getDcClusterShardId()), XpipeConsoleConstant.ROLE_KEEPER);
+		List<RedisTbl> originalKeepers = RedisDao.findWithRole(findAllByDcClusterShard(keepers.get(0).getDcClusterShardId()), XPipeConsoleConstant.ROLE_KEEPER);
 		for (int cnt = 0; cnt != 2; ++cnt) {
 			final RedisTbl keeper = keepers.get(cnt);
 			KeepercontainerTbl keepercontainer = keepercontainerService.find(keeper.getKeepercontainerId());
@@ -393,10 +422,10 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 		return result;
 	}
 
-	public void insertRedises(long dcClusterShardId, Pair<String, Integer> ...addrs) throws DalException {
+	public void insertInstances(long dcClusterShardId, String role, Pair<String, Integer> ...addrs) throws DalException {
 
 		for(Pair<String, Integer> addr : addrs){
-			insert(createRedisTbl(addr).setDcClusterShardId(dcClusterShardId));
+			insert(createRedisTbl(addr, role).setDcClusterShardId(dcClusterShardId));
 		}
 
 	}

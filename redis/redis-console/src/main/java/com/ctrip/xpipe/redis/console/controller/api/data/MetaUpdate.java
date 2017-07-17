@@ -53,9 +53,8 @@ public class MetaUpdate extends AbstractConsoleController {
 
             ClusterTbl clusterTbl = clusterService.find(clusterCreateInfo.getClusterName());
             if (clusterTbl != null) {
-                return RetMessage.createFailMessage("cluster already exist");
+                return RetMessage.createFailMessage(String.format("cluster:%s already exist", clusterCreateInfo.getClusterName()));
             }
-
             for (String dcName : clusterCreateInfo.getDcs()) {
                 DcTbl dcTbl = dcService.find(dcName);
                 if (dcTbl == null) {
@@ -159,13 +158,20 @@ public class MetaUpdate extends AbstractConsoleController {
                 shardService.createShard(clusterName, shardTbl, randomSentinelByDc);
                 successShards.add(shardCreateInfo.getShardName());
             }catch (Exception e){
+                logger.error("[createShards]" + clusterName + "," + shardCreateInfo.getShardName(), e);
                 failShards.add(shardCreateInfo.getShardName());
             }
         }
+
         if(failShards.size() == 0){
             return RetMessage.createSuccessMessage();
         }else{
-            return RetMessage.createFailMessage(String.format("success shards:%s, fail shards:", joiner.join(successShards), joiner.join(failShards)));
+            StringBuilder sb = new StringBuilder();
+            if(successShards.size() > 0){
+                sb.append(String.format("success shards:%s", joiner.join(successShards)));
+            }
+            sb.append(String.format("fail shards:%s", joiner.join(failShards)));
+            return RetMessage.createFailMessage(sb.toString());
         }
     }
 

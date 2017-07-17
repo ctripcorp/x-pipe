@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -39,16 +39,41 @@ public class RedisServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
-    public void testInsert() throws ResourceNotFoundException, DalException {
+    public void testInsertRedises() throws ResourceNotFoundException, DalException {
 
         List<RedisTbl> redises = redisService.findRedisesByDcClusterShard(dcName, clusterName, shardName);
 
-        redisService.insertRedises(redises.get(0).getDcClusterShardId(), new Pair<>("127.0.0.1", randomInt()), new Pair<>("127.0.0.1", randomInt()));
+        redisService.insertInstances(redises.get(0).getDcClusterShardId(), XPipeConsoleConstant.ROLE_REDIS, new Pair<>("127.0.0.1", randomInt()), new Pair<>("127.0.0.1", randomInt()));
 
         List<RedisTbl> newRedises = redisService.findRedisesByDcClusterShard(dcName, clusterName, shardName);
 
         Assert.assertEquals(redises.size() + 2, newRedises.size());
 
+    }
+
+    @Test
+    public void testInsertKeepers() throws ResourceNotFoundException, DalException {
+
+        List<RedisTbl> keepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
+
+        redisService.insertInstances(keepers.get(0).getDcClusterShardId(), XPipeConsoleConstant.ROLE_KEEPER, new Pair<>("127.0.0.1", randomInt()), new Pair<>("127.0.0.1", randomInt()));
+
+        List<RedisTbl> newKeepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
+
+        Assert.assertEquals(keepers.size() + 2, newKeepers.size());
+
+    }
+
+    @Test
+    public void testDeleteKeepers() throws ResourceNotFoundException, DalException {
+
+        List<RedisTbl> keepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
+        Assert.assertTrue(keepers.size() > 0);
+
+        redisService.deleteKeepers(dcName, clusterName, shardName);
+
+        keepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
+        Assert.assertEquals(0, keepers.size());
     }
 
     @Test
@@ -79,7 +104,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest{
             @Override
             public void accept(RedisTbl redisTbl) {
                 logger.debug("[keeper]{}", redisTbl);
-                Assert.assertEquals(XpipeConsoleConstant.ROLE_KEEPER, redisTbl.getRedisRole());
+                Assert.assertEquals(XPipeConsoleConstant.ROLE_KEEPER, redisTbl.getRedisRole());
             }
         });
 
@@ -87,7 +112,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest{
             @Override
             public void accept(RedisTbl redisTbl) {
                 logger.debug("[redis]{}", redisTbl);
-                Assert.assertEquals(XpipeConsoleConstant.ROLE_REDIS, redisTbl.getRedisRole());
+                Assert.assertEquals(XPipeConsoleConstant.ROLE_REDIS, redisTbl.getRedisRole());
             }
         });
 
@@ -100,7 +125,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest{
         checkAllInstances(allByDcClusterShard);
 
         for (RedisTbl redisTbl : allByDcClusterShard){
-            if(redisTbl.getRedisRole().equalsIgnoreCase(XpipeConsoleConstant.ROLE_REDIS)){
+            if(redisTbl.getRedisRole().equalsIgnoreCase(XPipeConsoleConstant.ROLE_REDIS)){
                 redisTbl.setMaster(!redisTbl.isMaster());
             }
         }
@@ -133,7 +158,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest{
         RedisTbl newMaster = null;
 
         for(RedisTbl redisTbl : allByDcClusterShard){
-            if(redisTbl.getRedisRole().equals(XpipeConsoleConstant.ROLE_REDIS)){
+            if(redisTbl.getRedisRole().equals(XPipeConsoleConstant.ROLE_REDIS)){
 
                 if(redisTbl.isMaster()){
                     redisTbl.setMaster(false);

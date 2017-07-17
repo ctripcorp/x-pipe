@@ -5,7 +5,6 @@ import java.util.List;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
-import com.ctrip.xpipe.redis.core.entity.Redis;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.tuple.Pair;
 
@@ -18,8 +17,12 @@ public interface RedisService {
 	List<RedisTbl> findRedisesByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException;
 	List<RedisTbl> findKeepersByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException;
 
-	void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addr) throws DalException, ResourceNotFoundException;
-	void deleteRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addr) throws ResourceNotFoundException;
+	void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws DalException, ResourceNotFoundException;
+	void deleteRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws ResourceNotFoundException;
+
+	void insertKeepers(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws DalException, ResourceNotFoundException;
+	List<RedisTbl> deleteKeepers(String dcId, String clusterId, String shardId) throws DalException, ResourceNotFoundException;
+
 
 	void updateByPK(RedisTbl redis);
 	void batchUpdate(List<RedisTbl> redises);

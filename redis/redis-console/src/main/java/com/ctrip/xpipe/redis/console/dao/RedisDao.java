@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
@@ -52,7 +52,7 @@ public class RedisDao  extends AbstractXpipeConsoleDAO{
 		if(null != redises) {
 			Map<Long,String> cache = new HashMap<Long,String>();
 			for(RedisTbl redis : redises) {
-				if(redis.getRedisRole().equals(XpipeConsoleConstant.ROLE_KEEPER)) {
+				if(redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)) {
 					if(null == cache.get(redis.getDcClusterShardId())) {
 						String newKeeperId = getToCreateKeeperId(redis);
 						redis.setRunId(newKeeperId);
@@ -70,7 +70,7 @@ public class RedisDao  extends AbstractXpipeConsoleDAO{
 	public RedisTbl createRedisesBatch(RedisTbl redis) throws DalException {
 		if(null == redis) throw new BadRequestException("Null redis cannot be created");
 		
-		if(redis.getRedisRole().equals(XpipeConsoleConstant.ROLE_KEEPER)) {
+		if(redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)) {
 			redis.setRunId(getToCreateKeeperId(redis));
 		}
 		redisTblDao.insertBatch(redis);
@@ -136,7 +136,7 @@ public class RedisDao  extends AbstractXpipeConsoleDAO{
 		if(null == dcClusterShardRedises) {
 			return generateUniqueKeeperId(redis);
 		} else {
-			List<RedisTbl> keepers = findWithRole(dcClusterShardRedises, XpipeConsoleConstant.ROLE_KEEPER);
+			List<RedisTbl> keepers = findWithRole(dcClusterShardRedises, XPipeConsoleConstant.ROLE_KEEPER);
 			if(null != keepers && keepers.size() > 0) {
 				RedisTbl historyKeeper = keepers.get(0);
 				if(historyKeeper.isDeleted() == true) {

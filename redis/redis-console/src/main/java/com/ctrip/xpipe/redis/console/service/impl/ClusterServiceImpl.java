@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
@@ -117,7 +117,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	List<ShardModel> shards = clusterModel.getShards();
     	
     	// ensure active dc assigned
-    	if(XpipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
+    	if(XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
     		throw new BadRequestException("No active dc assigned.");
     	}
     	ClusterTbl proto = dao.createLocal();

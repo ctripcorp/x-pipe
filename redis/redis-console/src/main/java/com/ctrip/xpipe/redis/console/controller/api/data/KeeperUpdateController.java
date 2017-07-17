@@ -1,0 +1,113 @@
+package com.ctrip.xpipe.redis.console.controller.api.data;
+
+import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.utils.IpUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import org.unidal.tuple.Pair;
+
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
+
+/**
+ * @author wenchao.meng
+ *         <p>
+ *         Apr 06, 2017
+ */
+@RestController
+@RequestMapping(AbstractConsoleController.API_PREFIX)
+public class KeeperUpdateController extends AbstractConsoleController {
+
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private KeeperAdvancedService keeperAdvancedService;
+
+    @RequestMapping(value = "/keepers/{dcId}/{clusterId}/{shardId}", method = RequestMethod.GET)
+    public List<String> getKeepers(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
+
+        logger.info("[getRedises]{},{},{}", dcId, clusterId, shardId);
+        dcId = outerDcToInnerDc(dcId);
+
+        List<String> result = new LinkedList<>();
+        List<RedisTbl> keeperTbls = null;
+        try {
+            keeperTbls = redisService.findKeepersByDcClusterShard(dcId, clusterId, shardId);
+            result = formatToIpPort(keeperTbls);
+        } catch (ResourceNotFoundException e) {
+            logger.error("[getKeepers]", e);
+        }
+        return result;
+    }
+
+    private List<String> formatToIpPort(List<RedisTbl> keeperTbls) {
+
+        List<String> result = new LinkedList<>();
+        keeperTbls.forEach(redisTbl -> result.add(String.format("%s:%d", redisTbl.getRedisIp(), redisTbl.getRedisPort())));
+        return result;
+    }
+
+    @RequestMapping(value = "/keepers/{dcId}/{clusterId}/{shardId}", method = RequestMethod.POST)
+    public RetMessage addKeepers(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
+
+        logger.info("[addKeepers]{},{},{}, {}", dcId, clusterId, shardId);
+        dcId = outerDcToInnerDc(dcId);
+
+        try {
+            List<RedisTbl> keepers = redisService.findKeepersByDcClusterShard(dcId, clusterId, shardId);
+            if(keepers.size() > 0){
+                return RetMessage.createSuccessMessage("alread has keepers:" + formatToIpPort(keepers));
+            }
+        } catch (ResourceNotFoundException e) {
+            logger.info("[addKeepers][not found]{}, {}, {}", dcId, clusterId, shardId);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+
+        try {
+            List<KeeperAdvancedService.KeeperSelected> bestKeepers = keeperAdvancedService.findBestKeepers(dcId, RedisProtocol.REDIS_PORT_DEFAULT, (ip, port) -> true);
+            logger.info("[addKeepers]{},{},{},{}, {}", dcId, clusterId, shardId, bestKeepers);
+            List<Pair<String, Integer>> keepers = new LinkedList<>();
+            bestKeepers.forEach(keeperSelected -> keepers.add(new Pair(keeperSelected.getHost(), keeperSelected.getPort())));
+            redisService.insertKeepers(dcId, clusterId, shardId, keepers);
+            return RetMessage.createSuccessMessage("insert success:" + keepers);
+        }catch (Exception e){
+            logger.error("[addKeepers]" + dcId + "," + clusterId + "," + shardId, e);
+            return RetMessage.createFailMessage("insert fail:" + e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/keepers/{dcId}/{clusterId}/{shardId}", method = RequestMethod.DELETE)
+    public RetMessage deleteKeepers(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
+
+        logger.info("[deleteKeepers]{},{},{}, {}", dcId, clusterId, shardId);
+
+        dcId = outerDcToInnerDc(dcId);
+
+        List<Pair<String, Integer>> redisAddresses = null;
+        try {
+            List<RedisTbl> redisTbls = redisService.deleteKeepers(dcId, clusterId, shardId);
+
+            String message = null;
+            if(redisTbls.size() > 0){
+                message = String.format("deleted:%s", formatToIpPort(redisTbls).toString());
+            }else{
+                message = "success, but already no keepers";
+            }
+            return RetMessage.createSuccessMessage(message);
+        } catch (Exception e) {
+            logger.error("[deleteKeepers]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+}

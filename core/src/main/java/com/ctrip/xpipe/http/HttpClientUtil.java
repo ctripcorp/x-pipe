@@ -41,7 +41,7 @@ public class HttpClientUtil {
         return httpclient;
 	}
 	
-	public String getResultAsString(String address) throws ClientProtocolException, IOException{
+	public String getResultAsString(String address) throws IOException{
 		
 		HttpGet get = new HttpGet(address);
 		CloseableHttpResponse response = null;

@@ -5,7 +5,7 @@ package com.ctrip.xpipe.redis.console.constant;
  *
  * Aug 26, 2016
  */
-public class XpipeConsoleConstant {
+public class XPipeConsoleConstant {
 	public static int DEFAULT_DC_CLUSTER_PHASE = 1;
 	public static int NO_ACTIVE_DC_TAG = 0;
 	
@@ -23,7 +23,7 @@ public class XpipeConsoleConstant {
 
 	public static final String DEFAULT_XPIPE_USER = "xpipe";
 	
-	private XpipeConsoleConstant(){
+	private XPipeConsoleConstant(){
 		
 	}
 }

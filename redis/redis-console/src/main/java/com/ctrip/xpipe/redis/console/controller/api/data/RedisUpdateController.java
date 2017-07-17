@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 @RequestMapping(AbstractConsoleController.API_PREFIX)
 public class RedisUpdateController extends AbstractConsoleController{
 
-
     @Autowired
     private RedisService redisService;
 

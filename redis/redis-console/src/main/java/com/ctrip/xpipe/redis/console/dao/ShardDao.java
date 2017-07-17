@@ -65,8 +65,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 		final ClusterTbl cluster = clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
 		shard.setClusterId(cluster.getId());
 		shardTblDao.insert(shard);
-		ShardTbl result = shardTblDao.findShard(clusterName, shard.getShardName(), ShardTblEntity.READSET_FULL);
-		
+
 		// dc-cluster-shards
 		List<DcClusterTbl> dcClusters = queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
 			@Override
@@ -80,7 +79,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			for(DcClusterTbl dcCluster : dcClusters) {
 				DcClusterShardTbl dcClusterShardProto = dcClusterShardTblDao.createLocal();
 				dcClusterShardProto.setDcClusterId(dcCluster.getDcClusterId())
-					.setShardId(result.getId());
+					.setShardId(shard.getId());
 				if(sentinels != null && null != sentinels.get(dcCluster.getDcId())) {
 					dcClusterShardProto.setSetinelId(sentinels.get(dcCluster.getDcId()).getSetinelId());
 				}
@@ -89,7 +88,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
 			
 		}
-		return result;
+		return shard;
 	}
 	
 	@DalTransaction

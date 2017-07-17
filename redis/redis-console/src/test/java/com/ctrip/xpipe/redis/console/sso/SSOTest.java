@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.sso;
 
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.AppTest;
-import com.ctrip.xpipe.redis.console.constant.XpipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -18,7 +18,7 @@ public class SSOTest extends AppTest {
 
     @Test
     public void test() {
-        Assert.assertEquals(XpipeConsoleConstant.DEFAULT_XPIPE_USER,
+        Assert.assertEquals(XPipeConsoleConstant.DEFAULT_XPIPE_USER,
                             userInfoHolder.getUser().getUserId());
     }
 
