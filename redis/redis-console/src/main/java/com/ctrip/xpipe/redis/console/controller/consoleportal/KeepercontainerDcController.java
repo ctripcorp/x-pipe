@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
@@ -19,105 +20,63 @@ import java.util.function.Consumer;
 
 /**
  * @author shyin
- *
- * Aug 22, 2016
+ *         <p>
+ *         Aug 22, 2016
  */
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
-public class KeepercontainerDcController extends AbstractConsoleController{
+public class KeepercontainerDcController extends AbstractConsoleController {
 
-	public final static int DEFAULT_KEEPER_COUNT = 2;
+    @Autowired
+    private DcService dcService;
 
-	@Autowired
-	private DcService dcService;
+    @Autowired
+    private KeepercontainerService keepercontainerService;
 
-	@Autowired
-	private KeepercontainerService keepercontainerService;
-
-	@Autowired
-	private RedisService redisService;
-
-	@RequestMapping(value = "/dcs/{dcName}/activekeepercontainers", method = RequestMethod.GET)
-	public List<KeepercontainerTbl> findKeeperContainer(@PathVariable String dcName){
-		return keepercontainerService.findAllActiveByDcName(dcName);
-	}
+    @Autowired
+    private KeeperAdvancedService keeperAdvancedService;
 
 
-	@RequestMapping(value = "/dcs/{dcName}/availablekeepers", method = RequestMethod.POST)
-	public List<RedisTbl> findAvailableKeepers(@PathVariable String dcName,
-											   @RequestBody(required = false) ShardModel shardModel){
-		final int returnCount = DEFAULT_KEEPER_COUNT;
-		logger.debug("[findAvailableKeepers]{}, {}", dcName, shardModel);
+    @RequestMapping(value = "/dcs/{dcName}/activekeepercontainers", method = RequestMethod.GET)
+    public List<KeepercontainerTbl> findKeeperContainer(@PathVariable String dcName) {
+        return keepercontainerService.findAllActiveByDcName(dcName);
+    }
 
-		List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCount(dcName);
-		if(keeperCount.size() < returnCount){
-			throw new IllegalStateException("all keepers size:" + keeperCount + ", but we need:" + returnCount);
-		}
 
-		List<RedisTbl> result = new LinkedList<>();
+    @RequestMapping(value = "/dcs/{dcName}/availablekeepers", method = RequestMethod.POST)
+    public List<RedisTbl> findAvailableKeepers(@PathVariable String dcName,
+                                               @RequestBody(required = false) ShardModel shardModel) {
 
-		//find available port
-		for(int i=0;i<returnCount;i++){
+        logger.debug("[findAvailableKeepers]{}, {}", dcName, shardModel);
 
-			KeepercontainerTbl keepercontainerTbl = keeperCount.get(i);
-			RedisTbl redisTbl = new RedisTbl();
-			redisTbl.setKeepercontainerId(keepercontainerTbl.getKeepercontainerId());
-			redisTbl.setRedisIp(keepercontainerTbl.getKeepercontainerIp());
+        int beginPort = findBeginPort(shardModel);
 
-			int port = findAvailablePort(keepercontainerTbl, shardModel, result);
-			redisTbl.setRedisPort(port);
-			result.add(redisTbl);
-		}
-		return result;
-	}
+        return keeperAdvancedService.findBestKeepers(dcName, beginPort, (ip, port) -> {
 
-	private int findAvailablePort(KeepercontainerTbl keepercontainerTbl, ShardModel shardModel, List<RedisTbl> result) {
+            if (shardModel != null && existOnConsole(ip, port, shardModel.getKeepers())) {
+                return false;
+            }
+            return true;
+        });
+    }
 
-		int port = RedisProtocol.REDIS_PORT_DEFAULT;
-		if(shardModel != null && shardModel.getRedises().size() > 0){
-			port = shardModel.getRedises().get(0).getRedisPort();
-		}
+    private boolean existOnConsole(String keepercontainerIp, int port, List<RedisTbl> keepers) {
 
-		String ip = keepercontainerTbl.getKeepercontainerIp();
-		for(;;port++){
+        for (RedisTbl redisTbl : keepers) {
+            if (redisTbl.getRedisIp().equalsIgnoreCase(keepercontainerIp)
+                    && redisTbl.getRedisPort() == port) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-			if(alreadySelected(ip, port, result)){
-				continue;
-			}
-			if(shardModel != null && existOnConsole(ip, port, shardModel.getKeepers())){
-				continue;
-			}
-			if(existInDb(ip, port)){
-				continue;
-			}
-			break;
-		}
-		return port;
-	}
+    private int findBeginPort(ShardModel shardModel) {
 
-	private boolean alreadySelected(String ip, int port, List<RedisTbl> result) {
-
-		for(RedisTbl redisTbl : result){
-			if(redisTbl.getRedisIp().equalsIgnoreCase(ip) && redisTbl.getRedisPort() == port){
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private boolean existInDb(String keepercontainerIp, int port) {
-
-		return redisService.findWithIpPort(keepercontainerIp, port) != null;
-	}
-
-	private boolean existOnConsole(String keepercontainerIp, int port, List<RedisTbl> keepers) {
-
-		for(RedisTbl redisTbl : keepers){
-			if(redisTbl.getRedisIp().equalsIgnoreCase(keepercontainerIp)
-					&& redisTbl.getRedisPort() == port){
-				return true;
-			}
-		}
-		return false;
-	}
+        int port = RedisProtocol.REDIS_PORT_DEFAULT;
+        if (shardModel != null && shardModel.getRedises().size() > 0) {
+            port = shardModel.getRedises().get(0).getRedisPort();
+        }
+        return port;
+    }
 }

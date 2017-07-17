@@ -205,10 +205,11 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
 	@Override
 	public void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel) {
-		final DcClusterShardTbl dcClusterShard = dcClusterShardService.find(dcName, clusterName, shardName);
+
 		if (null == shardModel) {
 			throw new BadRequestException("RequestBody cannot be null.");
 		}
+		final DcClusterShardTbl dcClusterShard = dcClusterShardService.find(dcName, clusterName, shardName);
 		if (null == dcClusterShard) {
 			throw new BadRequestException("Cannot find related dc-cluster-shard.");
 		}
