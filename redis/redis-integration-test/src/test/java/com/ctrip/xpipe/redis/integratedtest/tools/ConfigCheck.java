@@ -385,7 +385,7 @@ public class ConfigCheck extends AbstractIntegratedTest {
         }
 
         public void check() {
-            if(instances != null){
+            if (instances != null) {
                 instances.forEach(instanceMeta -> instanceMeta.check());
             }
         }
@@ -400,13 +400,13 @@ public class ConfigCheck extends AbstractIntegratedTest {
         private int port;
         private boolean status;
 
-        public void check(){
+        public void check() {
 
             String addr = String.format("%s:%d", IPAddress, port);
-            if(!canRead){
+            if (!canRead) {
                 throw new IllegalStateException("instance can not read:" + addr);
             }
-            if(!status){
+            if (!status) {
                 throw new IllegalStateException("instance not valid:" + addr);
             }
 

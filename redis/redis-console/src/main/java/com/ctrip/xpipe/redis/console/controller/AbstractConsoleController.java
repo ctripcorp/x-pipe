@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.spring.AbstractController;
@@ -18,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  * Sep 2, 2016
  */
 public abstract class AbstractConsoleController extends AbstractController{
+
+	private DcMapper dcMapper = DcMapper.INSTANCE;
 
 	@Autowired
 	protected UserInfoHolder userInfoHolder;
@@ -40,4 +43,9 @@ public abstract class AbstractConsoleController extends AbstractController{
 	protected <T> List<T> valueOrEmptySet(Class<T> clazz, List<T> result) {
 		return (null == result) ? new LinkedList<T>() : result;
 	}
+
+	protected String outerDcToInnerDc(String dcId) {
+		return dcMapper.reverse(dcId);
+	}
+
 }

@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
 import com.ctrip.xpipe.redis.console.service.impl.KeepercontainerServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.impl.RedisServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.impl.SentinelServiceImplTest;
+import com.ctrip.xpipe.redis.console.service.impl.ShardServiceImplTest;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
@@ -50,6 +51,7 @@ import org.junit.runner.RunWith;
         HealthStatusTest.class,
         RedisServiceImplTest.class,
         KeepercontainerServiceImplTest.class,
+        ShardServiceImplTest.class,
         MigrationStatusTest.class,
         SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,

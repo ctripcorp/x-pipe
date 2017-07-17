@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author wenchao.meng
@@ -41,7 +42,9 @@ public class MetaUpdate extends AbstractConsoleController {
 
 
     @RequestMapping(value = "/clusters", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage createCluster(@RequestBody ClusterCreateInfo clusterCreateInfo) {
+    public RetMessage createCluster(@RequestBody ClusterCreateInfo outerClusterCreateInfo) {
+
+        ClusterCreateInfo clusterCreateInfo = transform(outerClusterCreateInfo);
 
         logger.info("[createCluster]{}", clusterCreateInfo);
         List<DcTbl> dcs = new LinkedList<>();
@@ -75,6 +78,23 @@ public class MetaUpdate extends AbstractConsoleController {
         clusterModel.setSlaveDcs(dcs.subList(1, dcs.size()));
         clusterService.createCluster(clusterModel);
         return RetMessage.createSuccessMessage();
+    }
+
+    private ClusterCreateInfo transform(ClusterCreateInfo outerClusterCreateInfo) {
+        List<String> dcs = outerClusterCreateInfo.getDcs();
+
+        List<String> trans = new LinkedList<>();
+
+        for(String dc : dcs){
+            String inner = outerDcToInnerDc(dc);
+            if(!Objects.equals(inner, dc)){
+                logger.info("[transform]{}->{}", dc, inner);
+            }
+            trans.add(inner);
+        }
+
+        outerClusterCreateInfo.setDcs(trans);
+        return outerClusterCreateInfo;
     }
 
     @RequestMapping(value = "/clusters", method = RequestMethod.GET)
@@ -152,7 +172,11 @@ public class MetaUpdate extends AbstractConsoleController {
     @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public List<ShardCreateInfo> getShards(@PathVariable String clusterName) {
 
-        return null;
+        List<ShardTbl> allByClusterName = shardService.findAllByClusterName(clusterName);
+        List<ShardCreateInfo> result = new LinkedList<>();
+
+        allByClusterName.forEach(shardTbl -> result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName())));
+        return result;
     }
 
 }

@@ -14,6 +14,15 @@ public class ShardCreateInfo extends AbstractCreateInfo{
 
     private String shardMonitorName;
 
+    public ShardCreateInfo(){
+
+    }
+
+    public ShardCreateInfo(String shardName, String shardMonitorName){
+        this.shardName = shardName;
+        this.shardMonitorName = shardMonitorName;
+    }
+
     public String getShardName() {
         return shardName;
     }

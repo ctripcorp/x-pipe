@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 @RequestMapping(AbstractConsoleController.API_PREFIX)
 public class RedisUpdateController extends AbstractConsoleController{
 
-    private DcMapper dcMapper = DcMapper.INSTANCE;
 
     @Autowired
     private RedisService redisService;
@@ -40,7 +39,7 @@ public class RedisUpdateController extends AbstractConsoleController{
         List<String> result = new LinkedList<>();
         List<RedisTbl> redisTbls = null;
         try {
-            redisTbls = redisService.findRedisesByDcClusterShard(transform(dcId), clusterId, shardId);
+            redisTbls = redisService.findRedisesByDcClusterShard(outerDcToInnerDc(dcId), clusterId, shardId);
             redisTbls.forEach(new Consumer<RedisTbl>() {
                 @Override
                 public void accept(RedisTbl redisTbl) {
@@ -53,9 +52,6 @@ public class RedisUpdateController extends AbstractConsoleController{
         return result;
     }
 
-    private String transform(String dcId) {
-        return dcMapper.reverse(dcId);
-    }
 
     @RequestMapping(value = "/redises/{dcId}/{clusterId}/{shardId}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public RetMessage addRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId, @RequestBody List<String> redises) {
@@ -65,7 +61,7 @@ public class RedisUpdateController extends AbstractConsoleController{
         List<Pair<String, Integer>> redisAddresses = null;
         try {
             redisAddresses = getRedisAddresses(redises);
-            redisService.insertRedises(transform(dcId), clusterId, shardId, redisAddresses);
+            redisService.insertRedises(outerDcToInnerDc(dcId), clusterId, shardId, redisAddresses);
             return RetMessage.createSuccessMessage();
         } catch (Exception e){
             logger.error("[addRedises]", e);
@@ -82,7 +78,7 @@ public class RedisUpdateController extends AbstractConsoleController{
         List<Pair<String, Integer>> redisAddresses = null;
         try {
             redisAddresses = getRedisAddresses(redises);
-            redisService.deleteRedises(transform(dcId), clusterId, shardId, redisAddresses);
+            redisService.deleteRedises(outerDcToInnerDc(dcId), clusterId, shardId, redisAddresses);
             return RetMessage.createSuccessMessage();
         } catch (Exception e){
             logger.error("[deleteRedises]", e);
