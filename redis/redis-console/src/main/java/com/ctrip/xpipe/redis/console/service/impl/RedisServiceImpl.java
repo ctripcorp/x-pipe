@@ -5,7 +5,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.utils.MathUtil;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,11 +25,6 @@ import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
-import com.ctrip.xpipe.redis.console.service.RedisService;
 import org.unidal.tuple.Pair;
 
 
@@ -121,9 +118,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 		return redisTbls;
 	}
 
-	protected void insert(RedisTbl... redises) {
+	protected int[] insert(RedisTbl... redises) {
 
-		queryHandler.handleQuery(new DalQuery<int[]>() {
+		return queryHandler.handleQuery(new DalQuery<int[]>() {
 			@Override
 			public int[] doQuery() throws DalException {
 				return dao.insertBatch(redises);
@@ -142,11 +139,29 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 	}
 
 	@Override
-	public void insertKeepers(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws DalException, ResourceNotFoundException {
+	public int insertKeepers(String dcId, String clusterId, String shardId, List<KeeperBasicInfo> keepers) throws DalException, ResourceNotFoundException {
 
-		doInsertInstances(XPipeConsoleConstant.ROLE_KEEPER, dcId, clusterId, shardId, addrs);
+		logger.info("[insertKeepers]{}, {}, {}, {}", dcId, clusterId, shardId, keepers);
 
+		DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcId, clusterId, shardId);
+		if(dcClusterShardTbl == null){
+			throw new ResourceNotFoundException(dcId, clusterId, shardId);
+		}
+
+		List<RedisTbl> insertKeepers = new LinkedList<>();
+
+		keepers.forEach(keeperBasicInfo -> {
+			RedisTbl keeper = createRedisTbl(new Pair<>(keeperBasicInfo.getHost(), keeperBasicInfo.getPort()), XPipeConsoleConstant.ROLE_KEEPER);
+			keeper.setKeepercontainerId(keeperBasicInfo.getKeeperContainerId());
+			keeper.setDcClusterShardId(dcClusterShardTbl.getDcClusterShardId());
+			insertKeepers.add(keeper);
+		});
+
+		validateKeepers(insertKeepers);
+
+		int[] insert = insert(insertKeepers.toArray(new RedisTbl[0]));
 		notifier.notifyClusterUpdate(dcId, clusterId);
+		return MathUtil.sum(insert);
 	}
 
 	@Override
@@ -176,7 +191,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
 		logger.info("[doInsertInstances]{}", toAdd);
 
-		insertInstances(dcClusterShardTbl.getDcClusterShardId(), role, toAdd.toArray(new Pair[0]));
+		insertInstancesToDb(dcClusterShardTbl.getDcClusterShardId(), role, toAdd.toArray(new Pair[0]));
 	}
 
 	@Override
@@ -260,7 +275,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 	}
 
 	private void updateRedises(List<RedisTbl> origin, List<RedisTbl> target) {
-		validateKeeperContainers(RedisDao.findWithRole(target, XPipeConsoleConstant.ROLE_KEEPER));
+
+		validateKeepers(RedisDao.findWithRole(target, XPipeConsoleConstant.ROLE_KEEPER));
 
 		List<RedisTbl> toCreate = (List<RedisTbl>) setOperator.difference(RedisTbl.class, target, origin,
 				redisComparator);
@@ -324,7 +340,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 		return result;
 	}
 
-	private void validateKeeperContainers(List<RedisTbl> keepers) {
+	private void validateKeepers(List<RedisTbl> keepers) {
 		if (2 != keepers.size()) {
 			if(0 == keepers.size()) {
 				return;
@@ -398,13 +414,10 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 	protected List<RedisTbl> inter(List<Pair<String, Integer>> userGiven, List<RedisTbl> redisTbls) {
 
 		List<RedisTbl> result = new LinkedList<>();
-
 		redisTbls.forEach(new Consumer<RedisTbl>() {
 			@Override
 			public void accept(RedisTbl redisTbl) {
-
 				boolean exist = false;
-
 				for(Pair<String, Integer> addr : userGiven){
 					if(addr.getKey().equalsIgnoreCase(redisTbl.getRedisIp())
 							&& addr.getValue().equals(redisTbl.getRedisPort())){
@@ -412,17 +425,15 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 						break;
 					}
 				}
-
 				if(exist){
 					result.add(redisTbl);
 				}
-
 			}
 		});
 		return result;
 	}
 
-	public void insertInstances(long dcClusterShardId, String role, Pair<String, Integer> ...addrs) throws DalException {
+	public void insertInstancesToDb(long dcClusterShardId, String role, Pair<String, Integer> ...addrs) throws DalException {
 
 		for(Pair<String, Integer> addr : addrs){
 			insert(createRedisTbl(addr, role).setDcClusterShardId(dcClusterShardId));

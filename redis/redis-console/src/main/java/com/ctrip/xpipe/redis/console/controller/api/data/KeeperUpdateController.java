@@ -4,20 +4,16 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
+import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
-import com.ctrip.xpipe.utils.IpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.unidal.tuple.Pair;
 
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
 
 /**
  * @author wenchao.meng
@@ -75,12 +71,10 @@ public class KeeperUpdateController extends AbstractConsoleController {
         }
 
         try {
-            List<KeeperAdvancedService.KeeperSelected> bestKeepers = keeperAdvancedService.findBestKeepers(dcId, RedisProtocol.REDIS_PORT_DEFAULT, (ip, port) -> true);
+            List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(dcId, RedisProtocol.REDIS_PORT_DEFAULT, (ip, port) -> true);
             logger.info("[addKeepers]{},{},{},{}, {}", dcId, clusterId, shardId, bestKeepers);
-            List<Pair<String, Integer>> keepers = new LinkedList<>();
-            bestKeepers.forEach(keeperSelected -> keepers.add(new Pair(keeperSelected.getHost(), keeperSelected.getPort())));
-            redisService.insertKeepers(dcId, clusterId, shardId, keepers);
-            return RetMessage.createSuccessMessage("insert success:" + keepers);
+            redisService.insertKeepers(dcId, clusterId, shardId, bestKeepers);
+            return RetMessage.createSuccessMessage("insert success:" + bestKeepers);
         }catch (Exception e){
             logger.error("[addKeepers]" + dcId + "," + clusterId + "," + shardId, e);
             return RetMessage.createFailMessage("insert fail:" + e.getMessage());

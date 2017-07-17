@@ -20,12 +20,13 @@ public interface RedisService {
 	void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws DalException, ResourceNotFoundException;
 	void deleteRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws ResourceNotFoundException;
 
-	void insertKeepers(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws DalException, ResourceNotFoundException;
+	int insertKeepers(String dcId, String clusterId, String shardId, List<KeeperBasicInfo> keepers) throws DalException, ResourceNotFoundException;
 	List<RedisTbl> deleteKeepers(String dcId, String clusterId, String shardId) throws DalException, ResourceNotFoundException;
 
 
 	void updateByPK(RedisTbl redis);
 	void batchUpdate(List<RedisTbl> redises);
 	void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel);
+
 
 }

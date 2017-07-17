@@ -1,12 +1,9 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
-import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
-import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -29,25 +26,30 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     private RedisService redisService;
 
     @Override
-    public List<KeeperSelected> findBestKeepers(String dcName, int beginPort, BiPredicate keeperGood) {
+    public List<KeeperBasicInfo> findBestKeepers(String dcName) {
+        return findBestKeepers(dcName, RedisProtocol.REDIS_PORT_DEFAULT, (host, port) -> true);
+    }
+
+    @Override
+    public List<KeeperBasicInfo> findBestKeepers(String dcName, int beginPort, BiPredicate keeperGood) {
         return findBestKeepers(dcName, beginPort, keeperGood, 2);
     }
 
-    public List<KeeperSelected> findBestKeepers(String dcName, int beginPort, BiPredicate<String, Integer> keeperGood, int returnCount) {
+    public List<KeeperBasicInfo> findBestKeepers(String dcName, int beginPort, BiPredicate<String, Integer> keeperGood, int returnCount) {
 
         List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCount(dcName);
         if (keeperCount.size() < returnCount) {
             throw new IllegalStateException("all keepers size:" + keeperCount + ", but we need:" + returnCount);
         }
 
-        List<KeeperSelected> result = new LinkedList<>();
+        List<KeeperBasicInfo> result = new LinkedList<>();
 
         //find available port
         for (int i = 0; i < returnCount; i++) {
 
             KeepercontainerTbl keepercontainerTbl = keeperCount.get(i);
 
-            KeeperSelected keeperSelected = new KeeperSelected();
+            KeeperBasicInfo keeperSelected = new KeeperBasicInfo();
 
             keeperSelected.setKeeperContainerId(keepercontainerTbl.getKeepercontainerId());
             keeperSelected.setHost(keepercontainerTbl.getKeepercontainerIp());
@@ -61,7 +63,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
     }
 
-    private int findAvailablePort(KeepercontainerTbl keepercontainerTbl, int beginPort, BiPredicate<String, Integer> keeperGood, List<KeeperSelected> result) {
+    private int findAvailablePort(KeepercontainerTbl keepercontainerTbl, int beginPort, BiPredicate<String, Integer> keeperGood, List<KeeperBasicInfo> result) {
 
         int port = beginPort;
         String ip = keepercontainerTbl.getKeepercontainerIp();
@@ -85,9 +87,9 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
         return port;
     }
 
-    private boolean alreadySelected(String ip, int port, List<KeeperSelected> result) {
+    private boolean alreadySelected(String ip, int port, List<KeeperBasicInfo> result) {
 
-        for (KeeperSelected keeperSelected : result) {
+        for (KeeperBasicInfo keeperSelected : result) {
             if (keeperSelected.getHost().equalsIgnoreCase(ip) && keeperSelected.getPort() == port) {
                 return true;
             }
@@ -98,4 +100,5 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     private boolean existInDb(String keepercontainerIp, int port) {
         return redisService.findWithIpPort(keepercontainerIp, port) != null;
     }
+
 }
