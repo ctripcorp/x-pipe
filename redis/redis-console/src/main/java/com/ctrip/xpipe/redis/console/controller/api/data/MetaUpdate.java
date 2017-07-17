@@ -44,7 +44,7 @@ public class MetaUpdate extends AbstractConsoleController {
     @RequestMapping(value = "/clusters", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public RetMessage createCluster(@RequestBody ClusterCreateInfo outerClusterCreateInfo) {
 
-        ClusterCreateInfo clusterCreateInfo = transform(outerClusterCreateInfo);
+        ClusterCreateInfo clusterCreateInfo = transform(outerClusterCreateInfo, DC_TRANSFORM_DIRECTION.OUTER_TO_INNER);
 
         logger.info("[createCluster]{}", clusterCreateInfo);
         List<DcTbl> dcs = new LinkedList<>();
@@ -79,21 +79,21 @@ public class MetaUpdate extends AbstractConsoleController {
         return RetMessage.createSuccessMessage();
     }
 
-    private ClusterCreateInfo transform(ClusterCreateInfo outerClusterCreateInfo) {
-        List<String> dcs = outerClusterCreateInfo.getDcs();
+    private ClusterCreateInfo transform(ClusterCreateInfo clusterCreateInfo, DC_TRANSFORM_DIRECTION direction) {
 
+        List<String> dcs = clusterCreateInfo.getDcs();
         List<String> trans = new LinkedList<>();
 
         for(String dc : dcs){
-            String inner = outerDcToInnerDc(dc);
-            if(!Objects.equals(inner, dc)){
-                logger.info("[transform]{}->{}", dc, inner);
-            }
-            trans.add(inner);
-        }
 
-        outerClusterCreateInfo.setDcs(trans);
-        return outerClusterCreateInfo;
+            String transfer = direction.transform(dc);
+            if(!Objects.equals(transfer, dc)){
+                logger.info("[transform]{}->{}", dc, transfer);
+            }
+            trans.add(transfer);
+        }
+        clusterCreateInfo.setDcs(trans);
+        return clusterCreateInfo;
     }
 
     @RequestMapping(value = "/clusters", method = RequestMethod.GET)
@@ -119,11 +119,17 @@ public class MetaUpdate extends AbstractConsoleController {
                     clusterCreateInfo.addDc(dcTbl.getDcName());
                 }
             });
-
             result.add(clusterCreateInfo);
         });
 
-        return result;
+        return transformFromInner(result);
+    }
+
+    private List<ClusterCreateInfo> transformFromInner(List<ClusterCreateInfo> source) {
+
+        List<ClusterCreateInfo> results = new LinkedList<>();
+        source.forEach(clusterCreateInfo -> results.add(transform(clusterCreateInfo, DC_TRANSFORM_DIRECTION.INNER_TO_OUTER)));
+        return results;
     }
 
     @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)

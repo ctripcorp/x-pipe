@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public abstract class AbstractConsoleController extends AbstractController{
 
-	private DcMapper dcMapper = DcMapper.INSTANCE;
 
 	@Autowired
 	protected UserInfoHolder userInfoHolder;
@@ -45,7 +44,32 @@ public abstract class AbstractConsoleController extends AbstractController{
 	}
 
 	protected String outerDcToInnerDc(String dcId) {
-		return dcMapper.reverse(dcId);
+		return DC_TRANSFORM_DIRECTION.OUTER_TO_INNER.transform(dcId);
+	}
+
+	protected String innerDcToOuterDc(String dcId) {
+		return DC_TRANSFORM_DIRECTION.INNER_TO_OUTER.transform(dcId);
+	}
+
+	public static enum DC_TRANSFORM_DIRECTION{
+
+		OUTER_TO_INNER,
+		INNER_TO_OUTER;
+
+		private static DcMapper dcMapper = DcMapper.INSTANCE;
+
+		public String transform(String dc){
+
+			if(this == OUTER_TO_INNER){
+				return dcMapper.reverse(dc);
+			}
+
+			if(this == INNER_TO_OUTER){
+				return dcMapper.getDc(dc);
+			}
+
+			throw new IllegalStateException("unknown diection:" + this);
+		}
 	}
 
 }
