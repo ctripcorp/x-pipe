@@ -69,6 +69,6 @@ public class MigrationPartialSuccessRollBackState extends AbstractMigrationState
     @Override
     public void refresh() {
         // Nothing to do
-        logger.debug("[MigrationRollBack]{}", getHolder().getCurrentCluster().getClusterName());
+        logger.debug("[MigrationRollBack]{}", getHolder().clusterName());
     }
 }

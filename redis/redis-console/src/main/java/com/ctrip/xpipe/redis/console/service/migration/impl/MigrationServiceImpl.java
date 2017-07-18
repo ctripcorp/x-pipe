@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
 import java.rmi.ServerException;
+import java.util.Date;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -81,6 +82,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     public MigrationClusterTbl findMigrationCluster(final long eventId, final long clusterId) {
 
         return migrationClusterDao.findByEventIdAndClusterId(eventId, clusterId);
+    }
+
+    @Override
+    public void updateMigrationClusterStartTime(long migrationClusterId, Date startTime) {
+        migrationClusterDao.updateStartTime(migrationClusterId, startTime);
     }
 
     @Override

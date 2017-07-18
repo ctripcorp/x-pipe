@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration;
 
+import java.util.Date;
 import java.util.List;
 
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
@@ -21,6 +22,8 @@ public interface MigrationService {
     List<MigrationEventTbl> findAll();
 
     MigrationClusterTbl findMigrationCluster(long eventId, long clusterId);
+
+    void updateMigrationClusterStartTime(long migrationClusterId, Date startTime);
 
     MigrationClusterTbl findLatestUnfinishedMigrationCluster(long clusterId);
 

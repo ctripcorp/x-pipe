@@ -30,6 +30,6 @@ public class MigrationForceEndState extends AbstractMigrationState {
 	@Override
 	public void refresh() {
 		// Nothing to do
-		logger.debug("[MigrationForceEnd]{}", getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[MigrationForceEnd]{}", getHolder().clusterName());
 	}
 }

@@ -134,7 +134,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     @Override
     public void process() {
-        logger.info("[process]{}-{}, {}", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+        logger.info("[process]{}-{}, {}", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
         this.currentState.action();
     }
 
@@ -147,8 +147,20 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
         this.currentState = stat;
 
+        tryUpdateStartTime(stat.getStatus());
         updateStorageClusterStatus();
         updateStorageMigrationClusterStatus();
+    }
+
+    private void tryUpdateStartTime(MigrationStatus migrationStatus) {
+        try{
+            if(MigrationStatus.updateStartTime(migrationStatus)){
+                logger.info("[tryUpdateStartTime][doUpdate]{}, {}", clusterName(), migrationStatus);
+                getMigrationService().updateMigrationClusterStartTime(migrationCluster.getId(), new Date());
+            }
+        }catch (Exception e){
+            logger.error("[tryUpdateStartTime]" + clusterName(), e);
+        }
     }
 
     private void updateStorageMigrationClusterStatus() {
@@ -179,19 +191,19 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     @Override
     public void cancel() {
-        logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+        logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
         this.currentState.rollback();
     }
 
     @Override
     public void rollback() {
-        logger.info("[Rollback]{}-{}, {} -> Rollback", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+        logger.info("[Rollback]{}-{}, {} -> Rollback", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
         this.currentState.rollback();
     }
 
     @Override
     public void forcePublish() {
-        logger.info("[ForcePublish]{}-{}, {} -> ForcePublish", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+        logger.info("[ForcePublish]{}-{}, {} -> ForcePublish", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
         if (!(currentState instanceof PartialSuccessState)) {
             throw new IllegalStateException(String.format("cannot cancel while %s", this.currentState.getStatus()));
         }
@@ -201,7 +213,8 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     @Override
     public void forceEnd() {
-        logger.info("[ForceEnd]{}-{}, {} -> ForceEnd", migrationCluster.getMigrationEventId(), getCurrentCluster().getClusterName(), this.currentState.getStatus());
+
+        logger.info("[ForceEnd]{}-{}, {} -> ForceEnd", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
         if (!(currentState instanceof PublishState)) {
             throw new IllegalStateException(String.format("Cannot force end while %s", this.currentState.getStatus()));
         }

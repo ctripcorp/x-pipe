@@ -31,7 +31,7 @@ public class MigrationInitiatedState extends AbstractMigrationState {
     @Override
     public void refresh() {
         // nothing to do
-        logger.debug("[MigrationInitiatedStat]{}", getHolder().getCurrentCluster().getClusterName());
+        logger.debug("[MigrationInitiatedStat]{}", getHolder().clusterName());
     }
 
 }

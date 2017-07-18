@@ -71,10 +71,10 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
 			executors.execute(new AbstractExceptionLogTask() {
 				@Override
 				public void doRun() {
-					logger.info("[doOtherDcMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
+					logger.info("[doOtherDcMigrate][start]{},{}",getHolder().clusterName(),
 							migrationShard.getCurrentShard().getShardName());
 					migrationShard.doMigrateOtherDc();
-					logger.info("[doOtherDcMigrate][done]{},{}",getHolder().getCurrentCluster().getClusterName(), 
+					logger.info("[doOtherDcMigrate][done]{},{}",getHolder().clusterName(),
 							migrationShard.getCurrentShard().getShardName());
 				}
 			});

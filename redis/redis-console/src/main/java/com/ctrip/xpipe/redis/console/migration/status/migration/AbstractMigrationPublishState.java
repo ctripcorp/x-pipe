@@ -33,7 +33,7 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 	
 	protected boolean publish() {
 
-		String cluster = getHolder().getCurrentCluster().getClusterName();
+		String cluster = getHolder().clusterName();
 		String newPrimaryDc = getHolder().getClusterDcs().get(getHolder().getMigrationCluster().getDestinationDcId()).getDcName();
 		List<InetSocketAddress> newMasters = new LinkedList<>();
 		for(ShardTbl shard : getHolder().getClusterShards().values()) {
@@ -88,6 +88,6 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 	@Override
 	public void refresh() {
 		// Nothing to do
-		logger.debug("[]{}",getClass().toString(), getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[]{}",getClass().toString(), getHolder().clusterName());
 	}
 }

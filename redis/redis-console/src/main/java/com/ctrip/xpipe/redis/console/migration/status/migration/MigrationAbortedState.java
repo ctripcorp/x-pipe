@@ -30,6 +30,6 @@ public class MigrationAbortedState extends AbstractMigrationState implements Mig
 	@Override
 	public void refresh() {
 		// Nothing to do
-		logger.debug("[MigrationCancelled]{}", getHolder().getCurrentCluster().getClusterName());
+		logger.debug("[MigrationCancelled]{}", getHolder().clusterName());
 	}
 }

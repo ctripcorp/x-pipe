@@ -239,8 +239,11 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
 
 
     private void prepareMockData() {
+
+        String clusterName = "test-cluster";
         when(mockedMigrationCluster.getCurrentCluster()).thenReturn((new ClusterTbl()).setId(1)
-                .setClusterName("test-cluster").setActivedcId(1L));
+                .setClusterName(clusterName).setActivedcId(1L));
+        when(mockedMigrationCluster.clusterName()).thenReturn(clusterName);
         when(mockedMigrationCluster.getMigrationCluster()).thenReturn((new MigrationClusterTbl()).setClusterId(1)
                 .setDestinationDcId(2L));
         when(mockedMigrationCluster.getRedisService()).thenReturn(mockedRedisService);

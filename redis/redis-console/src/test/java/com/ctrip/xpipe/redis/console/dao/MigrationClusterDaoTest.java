@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -21,11 +22,35 @@ public class MigrationClusterDaoTest extends AbstractConsoleIntegrationTest{
     @Autowired
     private MigrationClusterDao migrationClusterDao;
 
+    private long clusterId = 100;
+
+    @Test
+    public void testUpdateStartTime(){
+
+        MigrationStatus migrationStatus = MigrationStatus.Publish;
+
+        MigrationClusterTbl tbl = createMigrationClusterTbl(migrationStatus);
+        tbl.setClusterId(clusterId);
+        migrationClusterDao.insert(tbl);
+
+        long id = tbl.getId();
+        Date startTime = new Date();
+
+        migrationClusterDao.updateStartTime(id, startTime);
+
+        sleep(2);
+
+        MigrationClusterTbl byId = migrationClusterDao.getById(id);
+        logger.debug("{}", byId);
+        Assert.assertEquals(startTime, byId.getStartTime());
+        Assert.assertEquals(migrationStatus.toString(), byId.getStatus());
+
+
+    }
 
     @Test
     public void testFindUnfinishedByClusterId() throws SQLException, IOException {
 
-        long clusterId = 100;
         int count = 0;
 
         for(MigrationStatus migrationStatus : MigrationStatus.values()){

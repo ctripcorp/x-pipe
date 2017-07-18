@@ -34,11 +34,11 @@ public class MigrationForcePublishState extends AbstractMigrationMigratingState 
 			executors.execute(new AbstractExceptionLogTask() {
 				@Override
 				public void doRun() {
-					logger.info("[doOtherDcMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
+					logger.info("[doOtherDcMigrate][start]{},{}",getHolder().clusterName(),
 							migrationShard.getCurrentShard().getShardName());
 					migrationShard.doMigrateOtherDc();
 					latch.countDown();
-					logger.info("[doOtherDcMigrate][done]{},{}",getHolder().getCurrentCluster().getClusterName(), 
+					logger.info("[doOtherDcMigrate][done]{},{}",getHolder().clusterName(),
 							migrationShard.getCurrentShard().getShardName());
 				}
 			});

@@ -10,6 +10,7 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -39,6 +40,16 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
         });
     }
 
+    public MigrationClusterTbl getById(long id){
+
+        return queryHandler.handleQuery(new DalQuery<MigrationClusterTbl>() {
+            @Override
+            public MigrationClusterTbl doQuery() throws DalException {
+                return migrationClusterTblDao.findByPK(id, MigrationClusterTblEntity.READSET_FULL);
+            }
+        });
+    }
+
     public Integer insert(MigrationClusterTbl migrationCluster){
 
         return queryHandler.handleQuery(new DalQuery<Integer>() {
@@ -47,7 +58,20 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
                 return migrationClusterTblDao.insert(migrationCluster);
             }
         });
+    }
 
+    public Integer updateStartTime(long id, Date date){
+
+        MigrationClusterTbl migrationClusterTbl = new MigrationClusterTbl();
+        migrationClusterTbl.setId(id);
+        migrationClusterTbl.setStartTime(date);
+
+        return queryHandler.handleQuery(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return migrationClusterTblDao.updateStartTimeById(migrationClusterTbl, MigrationClusterTblEntity.UPDATESET_FULL);
+            }
+        });
     }
 
 

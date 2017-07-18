@@ -30,10 +30,10 @@ public class MigrationMigratingState extends AbstractMigrationMigratingState {
 			executors.execute(new AbstractExceptionLogTask() {
 				@Override
 				public void doRun() {
-					logger.info("[doMigrate][start]{},{}",getHolder().getCurrentCluster().getClusterName(), 
+					logger.info("[doMigrate][start]{},{}",getHolder().clusterName(),
 							shard.getCurrentShard().getShardName());
 					shard.doMigrate();
-					logger.info("[doMigrate][done]{},{}",getHolder().getCurrentCluster().getClusterName(), 
+					logger.info("[doMigrate][done]{},{}",getHolder().clusterName(),
 							shard.getCurrentShard().getShardName());
 				}
 			});

@@ -65,4 +65,11 @@ public enum MigrationStatus {
 		return percent;
 	}
 
+	public static boolean updateStartTime(MigrationStatus migrationStatus){
+		if(migrationStatus == Checking){
+			return true;
+		}
+		return false;
+	}
+
 }

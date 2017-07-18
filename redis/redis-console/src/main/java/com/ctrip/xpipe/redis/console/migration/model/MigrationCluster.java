@@ -13,7 +13,6 @@ import java.util.concurrent.Executor;
 public interface MigrationCluster extends Observer, Observable, MigrationClusterInfoHolder, MigrationClusterAction, MigrationClusterServiceHolder {
 
     Executor getMigrationExecutor();
-
     MigrationEvent getMigrationEvent();
 
     String fromDc();

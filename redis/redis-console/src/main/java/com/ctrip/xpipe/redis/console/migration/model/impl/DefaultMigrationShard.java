@@ -72,7 +72,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		this.shardMigrationResult = DefaultShardMigrationResult.fromEncodeStr(migrationShard.getLog());
 		this.commandBuilder = commandBuilder;
 
-		cluster = parent.getCurrentCluster().getClusterName();
+		cluster = parent.clusterName();
 		shard = currentShard.getShardName();
 		newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
 		prevPrimaryDc = dcs.get(parent.getCurrentCluster().getActivedcId()).getDcName();

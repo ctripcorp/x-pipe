@@ -824,7 +824,7 @@
 	
 	<entity name="migration-cluster-tbl" table="migration_cluster_tbl" alias="mct">
 		<var name="event-id" value-type="long"/>
-	
+
 		<relation name="cluster" entity-name="cluster-tbl" entity-alias="ct"/>
 		<relation name="migration-event" entity-name="migration-event-tbl" entity-alias="met"/>
 		<relation name="migration-shards" entity-name="migration-shard-tbl" entity-alias="mst" multiple="true"/>
@@ -897,7 +897,15 @@
 				</statement>
 			</query>
 
-
+			<query name="update-start-time-by-id" type="UPDATE" batch="false">
+				<statement>
+						<![CDATA[
+						UPDATE <TABLE/>
+						SET <FIELD name='start-time'/> = ${start-time}
+						WHERE <FIELD name='id'/> = ${id}
+						]]>
+				</statement>
+			</query>
 			<query name='insert-batch' type='INSERT' batch='true'>
 				<statement>
 					<![CDATA[
