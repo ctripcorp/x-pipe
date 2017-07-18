@@ -79,9 +79,7 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 	
 	private void updateMigrationPublishResult(MigrationPublishResult res) {
 		if(null != res) {
-			MigrationClusterTbl migrationCluster = getHolder().getMigrationCluster();
-			migrationCluster.setPublishInfo(res.toString());
-			getHolder().getMigrationService().updateMigrationCluster(migrationCluster);
+			getHolder().updatePublishInfo(res.toString());
 		}
 	}
 	

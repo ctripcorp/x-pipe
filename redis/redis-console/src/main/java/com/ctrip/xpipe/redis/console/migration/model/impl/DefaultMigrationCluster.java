@@ -155,7 +155,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     private void tryUpdateStartTime(MigrationStatus migrationStatus) {
         try{
             if(MigrationStatus.updateStartTime(migrationStatus)){
-                logger.info("[tryUpdateStartTime][doUpdate]{}, {}", clusterName(), migrationStatus);
+                logger.info("[tryUpdateStartTime][doUpdate]{}, {}, {}", migrationCluster.getId(), clusterName(), migrationStatus);
                 getMigrationService().updateMigrationClusterStartTime(migrationCluster.getId(), new Date());
             }
         }catch (Exception e){
@@ -163,13 +163,14 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         }
     }
 
-    private void updateStorageMigrationClusterStatus() {
+    @Override
+    public void updatePublishInfo(String desc) {
+        migrationService.updatePublishInfoById(migrationCluster.getId(), desc);
+    }
 
+    private void updateStorageMigrationClusterStatus() {
         MigrationStatus migrationStatus = this.currentState.getStatus();
-        MigrationClusterTbl migrationCluster = getMigrationCluster();
-        migrationCluster.setStatus(migrationStatus.toString());
-        migrationCluster.setEndTime(new Date());
-        getMigrationService().updateMigrationCluster(migrationCluster);
+        getMigrationService().updateStatusAndEndTimeById(migrationCluster.getId(), migrationStatus, new Date());
     }
 
     private void updateStorageClusterStatus() {

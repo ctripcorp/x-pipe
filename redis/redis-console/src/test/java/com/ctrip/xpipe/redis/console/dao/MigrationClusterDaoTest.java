@@ -25,27 +25,52 @@ public class MigrationClusterDaoTest extends AbstractConsoleIntegrationTest{
     private long clusterId = 100;
 
     @Test
-    public void testUpdateStartTime(){
+    public void testUpdatePublishInfoById(){
 
-        MigrationStatus migrationStatus = MigrationStatus.Publish;
+        long id = randomInsert();
 
-        MigrationClusterTbl tbl = createMigrationClusterTbl(migrationStatus);
-        tbl.setClusterId(clusterId);
-        migrationClusterDao.insert(tbl);
-
-        long id = tbl.getId();
-        Date startTime = new Date();
-
-        migrationClusterDao.updateStartTime(id, startTime);
-
-        sleep(2);
+        String random = randomString();
+        migrationClusterDao.updatePublishInfoById(id, random);
 
         MigrationClusterTbl byId = migrationClusterDao.getById(id);
-        logger.debug("{}", byId);
-        Assert.assertEquals(startTime, byId.getStartTime());
-        Assert.assertEquals(migrationStatus.toString(), byId.getStatus());
+
+        Assert.assertEquals(random, byId.getPublishInfo());
+    }
+
+    @Test
+    public void testUpdateStatusAndEndTimeById(){
+
+        long id = randomInsert();
+        MigrationClusterTbl before = migrationClusterDao.getById(id);
+
+        sleep(5);
+
+        Date endTime = new Date();
+        migrationClusterDao.updateStatusAndEndTimeById(id, MigrationStatus.Checking, endTime);
+
+        MigrationClusterTbl current = migrationClusterDao.getById(id);
+        Assert.assertNotEquals(before.getEndTime(), current.getEndTime());
+        Assert.assertEquals(MigrationStatus.Checking.toString(), current.getStatus());
+    }
 
 
+    @Test
+    public void testUpdateStartTime(){
+
+        long id = randomInsert();
+
+        MigrationClusterTbl before = migrationClusterDao.getById(id);
+        logger.debug("[before]{}", before);
+
+        sleep(5);
+
+        Date startTime = new Date();
+        logger.debug("{}", startTime);
+        migrationClusterDao.updateStartTime(id, startTime);
+        MigrationClusterTbl current = migrationClusterDao.getById(id);
+        logger.debug("{}", current);
+        Assert.assertNotEquals(before.getStartTime(), current.getStartTime());
+        Assert.assertEquals(before.getStatus(), current.getStatus());
     }
 
     @Test
@@ -78,8 +103,8 @@ public class MigrationClusterDaoTest extends AbstractConsoleIntegrationTest{
     private MigrationClusterTbl createMigrationClusterTbl(MigrationStatus migrationStatus) {
 
         MigrationClusterTbl migrationClusterTbl = new MigrationClusterTbl();
-        long clusterId = randomInt();
-        long eventId = randomInt();
+        long clusterId = randomInt(100, 10000);
+        long eventId = randomInt(100, 100000);
         migrationClusterTbl.setClusterId(clusterId)
                 .setMigrationEventId(eventId)
                 .setStatus(migrationStatus.toString())
@@ -88,4 +113,12 @@ public class MigrationClusterDaoTest extends AbstractConsoleIntegrationTest{
         return migrationClusterTbl;
     }
 
+    private long randomInsert() {
+
+        MigrationStatus migrationStatus = MigrationStatus.Publish;
+        MigrationClusterTbl tbl = createMigrationClusterTbl(migrationStatus);
+        tbl.setClusterId(clusterId);
+        migrationClusterDao.insert(tbl);
+        return tbl.getId();
+    }
 }

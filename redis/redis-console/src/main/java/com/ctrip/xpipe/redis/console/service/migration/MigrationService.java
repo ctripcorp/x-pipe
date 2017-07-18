@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
@@ -25,6 +26,10 @@ public interface MigrationService {
 
     void updateMigrationClusterStartTime(long migrationClusterId, Date startTime);
 
+    void updateStatusAndEndTimeById(long migrationClusterId, MigrationStatus status, Date endTime);
+
+    void updatePublishInfoById(long migrationClusterId, String publishInfo);
+
     MigrationClusterTbl findLatestUnfinishedMigrationCluster(long clusterId);
 
     List<MigrationShardTbl> findMigrationShards(long migrationClusterId);
@@ -32,8 +37,6 @@ public interface MigrationService {
     List<MigrationClusterModel> getMigrationClusterModel(long eventId);
 
     void updateMigrationShard(MigrationShardTbl shard);
-
-    void updateMigrationCluster(MigrationClusterTbl cluster);
 
     TryMigrateResult tryMigrate(String clusterName, String fromIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow;
 

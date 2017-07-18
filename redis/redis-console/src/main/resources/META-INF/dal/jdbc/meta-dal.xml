@@ -906,6 +906,25 @@
 						]]>
 				</statement>
 			</query>
+			<query name="update-status-and-end-time-by-id" type="UPDATE" batch="false">
+				<statement>
+					<![CDATA[
+						UPDATE <TABLE/>
+						SET <FIELD name='end-time'/> = ${end-time},
+						<FIELD name='status'/> = ${status}
+						WHERE <FIELD name='id'/> = ${id}
+						]]>
+				</statement>
+			</query>
+			<query name="update-publish-info-by-id" type="UPDATE" batch="false">
+				<statement>
+					<![CDATA[
+						UPDATE <TABLE/>
+						SET <FIELD name='publish-info'/> = ${publish-info}
+						WHERE <FIELD name='id'/> = ${id}
+					]]>
+				</statement>
+			</query>
 			<query name='insert-batch' type='INSERT' batch='true'>
 				<statement>
 					<![CDATA[

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.dao;
 
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblEntity;
@@ -75,6 +76,35 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
     }
 
 
+    public Integer updateStatusAndEndTimeById(long id, MigrationStatus status, Date endTime){
+
+        MigrationClusterTbl migrationClusterTbl = new MigrationClusterTbl();
+        migrationClusterTbl.setId(id);
+        migrationClusterTbl.setEndTime(endTime);
+        migrationClusterTbl.setStatus(status.toString());
+        return queryHandler.handleQuery(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return migrationClusterTblDao.updateStatusAndEndTimeById(migrationClusterTbl, MigrationClusterTblEntity.UPDATESET_FULL);
+            }
+        });
+    }
+
+    public Integer updatePublishInfoById(long id, String publishInfo){
+
+        MigrationClusterTbl migrationClusterTbl = new MigrationClusterTbl();
+        migrationClusterTbl.setId(id);
+        migrationClusterTbl.setPublishInfo(publishInfo);
+
+        return queryHandler.handleQuery(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return migrationClusterTblDao.updatePublishInfoById(migrationClusterTbl, MigrationClusterTblEntity.UPDATESET_FULL);
+            }
+        });
+    }
+
+
     public MigrationClusterTbl findByEventIdAndClusterId(final long eventId, final long clusterId){
 
         return queryHandler.handleQuery(new DalQuery<MigrationClusterTbl>() {
@@ -95,7 +125,8 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
         });
     }
 
-    public void updateByPK(final MigrationClusterTbl cluster) {
+    protected void updateByPK(final MigrationClusterTbl cluster) {
+
         queryHandler.handleQuery(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {

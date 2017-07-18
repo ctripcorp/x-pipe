@@ -10,6 +10,7 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -90,6 +91,16 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
+    public void updateStatusAndEndTimeById(long migrationClusterId, MigrationStatus status, Date endTime) {
+        migrationClusterDao.updateStatusAndEndTimeById(migrationClusterId, status, endTime);
+    }
+
+    @Override
+    public void updatePublishInfoById(long migrationClusterId, String publishInfo) {
+        migrationClusterDao.updatePublishInfoById(migrationClusterId, publishInfo);
+    }
+
+    @Override
     public MigrationClusterTbl findLatestUnfinishedMigrationCluster(final long clusterId) {
 
         List<MigrationClusterTbl> unfinishedByClusterId = migrationClusterDao.findUnfinishedByClusterId(clusterId);
@@ -135,11 +146,6 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
                 return null;
             }
         });
-    }
-
-    @Override
-    public void updateMigrationCluster(final MigrationClusterTbl cluster) {
-        migrationClusterDao.updateByPK(cluster);
     }
 
     @Override
