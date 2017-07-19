@@ -10,7 +10,16 @@ import io.netty.channel.Channel;
  */
 public interface ByteBufReceiver {
 
-	boolean receive(Channel channel, ByteBuf byteBuf);
+	RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf);
 	
 	void clientClosed(NettyClient nettyClient);
+
+
+	public static enum RECEIVER_RESULT{
+
+		SUCCESS,
+		FAIL,
+		CONTINUE,
+		ALREADY_FINISH
+	}
 }

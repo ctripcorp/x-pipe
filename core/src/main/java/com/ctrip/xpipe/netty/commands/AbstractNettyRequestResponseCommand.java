@@ -94,11 +94,11 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	}
 
 	@Override
-	public boolean receive(Channel channel, ByteBuf byteBuf) {
+	public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
 		
 		if(future().isDone()){
 			logger.debug("[receive][done, return]{}", channel);
-			return true;
+			return RECEIVER_RESULT.ALREADY_FINISH;
 		}
 		
 		try{
@@ -109,11 +109,15 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 				 }
 				 future().setSuccess(result);
 			 }
-			 return result != null;
+
+			 if(result == null){
+			 	return RECEIVER_RESULT.CONTINUE;
+			 }
+			 return RECEIVER_RESULT.SUCCESS;
 		}catch(Exception e){
 			future().setFailure(e);
 		}
-		return true;
+		return RECEIVER_RESULT.FAIL;
 	}
 	
 

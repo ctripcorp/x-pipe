@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -9,6 +10,17 @@ import java.util.List;
  *         2016年3月28日 下午6:46:26
  */
 public class StringUtil {
+
+	public static String toString(Object obj){
+		if(obj == null){
+			return "null";
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		deepToString(obj, sb);
+		return sb.toString();
+	}
 
 	public static String randomString(int length) {
 
@@ -107,4 +119,42 @@ public class StringUtil {
 		return result;
 	}
 
+	private static void deepToString(Object obj, StringBuilder sb) {
+
+		Class<?> oClass = obj.getClass();
+
+		if (obj.getClass().isArray()) {
+			if (oClass == byte[].class) {
+				sb.append(Arrays.toString((byte[]) obj));
+			} else if (oClass == short[].class) {
+				sb.append(Arrays.toString((short[]) obj));
+			} else if (oClass == int[].class) {
+				sb.append(Arrays.toString((int[]) obj));
+			} else if (oClass == long[].class) {
+				sb.append(Arrays.toString((long[]) obj));
+			} else if (oClass == float[].class) {
+				sb.append(Arrays.toString((float[]) obj));
+			} else if (oClass == double[].class) {
+				sb.append(Arrays.toString((double[]) obj));
+			} else if (oClass == boolean[].class) {
+				sb.append(Arrays.toString((boolean[]) obj));
+			} else if (oClass == char[].class) {
+				sb.append(Arrays.toString((char[]) obj));
+			}else {
+				Object[] array = (Object[]) obj;
+				sb.append("[");
+				int index = 0;
+				for(Object ele : array){
+					deepToString(ele, sb);
+					index++;
+					if(index < array.length){
+						sb.append(", ");
+					}
+				}
+				sb.append("]");
+			}
+		}else {
+			sb.append(obj.toString());
+		}
+	}
 }

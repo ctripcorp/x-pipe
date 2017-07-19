@@ -66,11 +66,28 @@ public class DefaultNettyClient implements NettyClient{
 	public void handleResponse(Channel channel, ByteBuf byteBuf) {
 		
 		ByteBufReceiver byteBufReceiver = receivers.peek();
+
 		if(byteBufReceiver != null){
-			boolean result = byteBufReceiver.receive(channel, byteBuf);
-			if(result){
-				logger.debug("[handleResponse][remove receiver]");
-				receivers.poll();
+
+			ByteBufReceiver.RECEIVER_RESULT result = byteBufReceiver.receive(channel, byteBuf);
+			switch (result){
+				case SUCCESS:
+					logger.debug("[handleResponse][remove receiver]");
+					receivers.poll();
+					break;
+				case CONTINUE:
+					//nothing need to be done
+					break;
+				case FAIL:
+					logger.info("[handleResponse][fail, close channel]{}, {}", byteBufReceiver, channel);
+					channel.close();
+					break;
+				case ALREADY_FINISH:
+					logger.info("[handleResponse][already finish, close channel]{}, {}", byteBufReceiver, channel);
+					channel.close();
+					break;
+				default:
+					throw new IllegalStateException("unknown result:" + result);
 			}
 		}else{
 			logger.error("[handleResponse][no receiver][close client]{}, {}", channel, byteBuf.readableBytes());

@@ -41,8 +41,6 @@ public class PingCommandTest extends AbstractRedisTest{
 		}catch (ExecutionException e){
 			throw e.getCause();
 		}
-
-
 	}
 
 }

@@ -12,6 +12,19 @@ import com.ctrip.xpipe.AbstractTest;
  * Nov 1, 2016
  */
 public class StringUtilTest extends AbstractTest{
+
+	@Test
+	public void testToString(){
+
+		Assert.assertEquals(String.valueOf(Integer.MAX_VALUE), StringUtil.toString(Integer.MAX_VALUE));
+
+		int []intArr = new int[]{1, 2, 3};
+		Assert.assertEquals("[1, 2, 3]", StringUtil.toString(intArr));
+
+		Object [] arrInArr = new Object[]{"a", intArr, "b"};
+		Assert.assertEquals("[a, [1, 2, 3], b]", StringUtil.toString(arrInArr));
+
+	}
 	
 	@Test
 	public void test(){
