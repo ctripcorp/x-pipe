@@ -31,7 +31,7 @@ public class RedisCommandTest extends AbstractRedisTest{
 
         SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("127.0.0.1", server.getPort()));
 
-        int sleepTime = 50;
+        int sleepTime = timeoutMilli + 50;
         String str1 = String.format("sleep %d %s\r\n", sleepTime, randomString(10));
         String str2 = randomString(10) + "\r\n";
 

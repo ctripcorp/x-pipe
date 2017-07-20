@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.core;
 
 import com.ctrip.xpipe.redis.core.meta.QuorumConfigTest;
-import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommandTest;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RedisCommandTest;
+import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -14,8 +13,6 @@ import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICETest;
-import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsyncTest;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommandTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJuderManagerTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJudgerTest;
@@ -51,7 +48,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	BulkStringEofJuderManagerTest.class,
 	RoleCommandTest.class,
 	PingCommandTest.class,
-	RedisCommandTest.class
+	RedisCommandTest.class,
+	DefaultSlaveOfCommandTest.class
 })
 public class AllTests {
 

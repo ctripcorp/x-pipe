@@ -116,6 +116,9 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 			 return RECEIVER_RESULT.SUCCESS;
 		}catch(Exception e){
 			future().setFailure(e);
+			if(e instanceof ProtocalErrorResponse){
+				return RECEIVER_RESULT.SUCCESS;
+			}
 		}
 		return RECEIVER_RESULT.FAIL;
 	}
