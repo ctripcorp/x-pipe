@@ -25,7 +25,9 @@ public interface RedisService {
 
 
 	void updateByPK(RedisTbl redis);
-	void batchUpdate(List<RedisTbl> redises);
+	void updateBatchMaster(List<RedisTbl> redises);
+	void updateBatchKeeperActive(List<RedisTbl> redises);
+
 	void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel);
 
 

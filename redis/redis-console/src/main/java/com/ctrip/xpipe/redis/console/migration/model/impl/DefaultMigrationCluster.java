@@ -10,10 +10,7 @@ import java.util.concurrent.ExecutorService;
 
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.redis.console.migration.status.PartialSuccessState;
-import com.ctrip.xpipe.redis.console.migration.status.PublishState;
+import com.ctrip.xpipe.redis.console.migration.status.*;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractObservable;
@@ -98,6 +95,16 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     }
 
     @Override
+    public long fromDcId() {
+        return migrationCluster.getSourceDcId();
+    }
+
+    @Override
+    public long destDcId() {
+        return migrationCluster.getDestinationDcId();
+    }
+
+    @Override
     public MigrationStatus getStatus() {
         return currentState.getStatus();
     }
@@ -168,6 +175,16 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         migrationService.updatePublishInfoById(migrationCluster.getId(), desc);
     }
 
+    @Override
+    public void updateActiveDcIdToDestDcId() {
+
+        long destDcId = destDcId();
+        ClusterTbl cluster = getCurrentCluster();
+        cluster.setActivedcId(destDcId);
+        clusterService.updateActivedcId(clusterId(), destDcId);
+
+    }
+
     private void updateStorageMigrationClusterStatus() {
         MigrationStatus migrationStatus = this.currentState.getStatus();
         getMigrationService().updateStatusAndEndTimeById(migrationCluster.getId(), migrationStatus, new Date());
@@ -176,13 +193,17 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     private void updateStorageClusterStatus() {
 
         MigrationStatus migrationStatus = this.currentState.getStatus();
-        String clusterStatus = migrationStatus.getClusterStatus().toString();
-        ClusterTbl cluster = getCurrentCluster();
-        cluster.setStatus(clusterStatus);
+        ClusterStatus clusterStatus = migrationStatus.getClusterStatus();
+
         logger.info("[updateStat][updatedb]{}, {}", clusterName(), clusterStatus);
-        getClusterService().update(cluster);
+        getClusterService().updateStatusById(clusterId(), clusterStatus);
         ClusterTbl newCluster = getClusterService().find(clusterName());
         logger.info("[updateStat][getdb]{}, {}", clusterName(), newCluster != null ? newCluster.getStatus() : null);
+    }
+
+
+    private long clusterId() {
+        return getCurrentCluster().getId();
     }
 
     @Override

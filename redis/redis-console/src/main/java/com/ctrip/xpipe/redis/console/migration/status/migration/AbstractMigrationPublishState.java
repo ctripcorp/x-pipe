@@ -6,7 +6,9 @@ import java.util.List;
 
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
@@ -34,20 +36,10 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 	protected boolean publish() {
 
 		String cluster = getHolder().clusterName();
-		String newPrimaryDc = getHolder().getClusterDcs().get(getHolder().getMigrationCluster().getDestinationDcId()).getDcName();
-		List<InetSocketAddress> newMasters = new LinkedList<>();
-		for(ShardTbl shard : getHolder().getClusterShards().values()) {
-			InetSocketAddress addr = null;
-			try {
-				addr = getMasterAddress(getHolder().getRedisService().findAllByDcClusterShard(newPrimaryDc, cluster, shard.getShardName()));
-				if(null != addr) {
-					newMasters.add(addr);
-				}
-			} catch (ResourceNotFoundException e) {
-				throw new IllegalStateException("[publish]", e);
-			}
-		}
-		
+		String newPrimaryDc = getHolder().destDc();
+
+		List<InetSocketAddress> newMasters = getNewMasters();
+
 		boolean ret = false;
 		MigrationPublishResult res = null;
 		try {
@@ -67,16 +59,6 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 		return ret;
  	}
 	
-	private InetSocketAddress getMasterAddress(List<RedisTbl> redises) {
-		InetSocketAddress res = null;
-		for(RedisTbl redis : redises) {
-			if(redis.isMaster()) {
-				res = InetSocketAddress.createUnresolved(redis.getRedisIp(), redis.getRedisPort());
-			}
-		}
-		return res;
-	}
-	
 	private void updateMigrationPublishResult(MigrationPublishResult res) {
 		if(null != res) {
 			getHolder().updatePublishInfo(res.toString());
@@ -87,5 +69,15 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 	public void refresh() {
 		// Nothing to do
 		logger.debug("[]{}",getClass().toString(), getHolder().clusterName());
+	}
+
+	public List<InetSocketAddress> getNewMasters() {
+
+		List<InetSocketAddress> result = new LinkedList<>();
+		for(MigrationShard migrationShard : getHolder().getMigrationShards()){
+			HostPort newMasterAddress = migrationShard.getNewMasterAddress();
+			result.add(InetSocketAddress.createUnresolved(newMasterAddress.getHost(), newMasterAddress.getPort()));
+		}
+		return result;
 	}
 }

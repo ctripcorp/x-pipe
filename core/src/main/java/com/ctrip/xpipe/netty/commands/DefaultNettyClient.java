@@ -2,6 +2,7 @@ package com.ctrip.xpipe.netty.commands;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.ctrip.xpipe.netty.ByteBufUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,7 @@ public class DefaultNettyClient implements NettyClient{
 					throw new IllegalStateException("unknown result:" + result);
 			}
 		}else{
-			logger.error("[handleResponse][no receiver][close client]{}, {}", channel, byteBuf.readableBytes());
+			logger.error("[handleResponse][no receiver][close client]{}, {}, {}", channel, byteBuf.readableBytes(), ByteBufUtils.readToString(byteBuf));
 			channel.close();
 		}
 	}

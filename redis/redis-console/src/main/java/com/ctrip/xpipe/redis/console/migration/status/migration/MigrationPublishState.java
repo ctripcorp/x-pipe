@@ -35,15 +35,14 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 	@Override
 	public void doAction() {
 
+		updateActiveDcIdToDestDcId();
+
 		try {
 			logger.info("[action][updateRedisMaster]{}", this);
 			updateRedisMaster();
 		} catch (ResourceNotFoundException e) {
 			logger.error("[action]", e);
 		}
-
-		logger.info("[action][updateDB]{}", this);
-		updateDB();
 
 		if(publish()) {
 			updateAndProcess(nextAfterSuccess());
@@ -52,11 +51,9 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 		}
 	}
 
-	@DalTransaction
-	private void updateDB() {
-		ClusterTbl cluster = getHolder().getCurrentCluster();
-		cluster.setActivedcId(getHolder().getMigrationCluster().getDestinationDcId());
-		
+	private void updateActiveDcIdToDestDcId() {
+		logger.info("[updateActiveDcIdToDestDcId]{}", this);
+		getHolder().updateActiveDcIdToDestDcId();
 	}
 	
 
@@ -64,12 +61,18 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 		List<RedisTbl> toUpdate = new LinkedList<>();
 		
 		MigrationCluster migrationCluster = getHolder();
-		ClusterTbl cluster = migrationCluster.getCurrentCluster();
+
+		String fromDc = migrationCluster.fromDc();
+		String destDc = migrationCluster.destDc();
+		String clusterName = migrationCluster.clusterName();
+
 		for(MigrationShard shard : migrationCluster.getMigrationShards()) {
+
+			String shardName = shard.shardName();
 			List<RedisTbl> prevDcRedises = migrationCluster.getRedisService().findAllByDcClusterShard(
-					migrationCluster.getClusterDcs().get(cluster.getActivedcId()).getDcName(),
-					cluster.getClusterName(),
-					shard.getCurrentShard().getShardName());
+					fromDc,
+					clusterName,
+					shard.shardName());
 			for(RedisTbl redis : prevDcRedises) {
 				if(redis.isMaster()) {
 					redis.setMaster(false);
@@ -80,9 +83,9 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 			if(null != shard.getNewMasterAddress()) {
 				HostPort newMasterAddress = shard.getNewMasterAddress();
 				List<RedisTbl> newDcRedises = migrationCluster.getRedisService().findAllByDcClusterShard(
-						migrationCluster.getClusterDcs().get(migrationCluster.getMigrationCluster().getDestinationDcId()).getDcName(),
-						cluster.getClusterName(),
-						shard.getCurrentShard().getShardName());
+						destDc,
+						clusterName,
+						shardName);
 				for(RedisTbl redis : newDcRedises) {
 					if(redis.getRedisIp().equals(newMasterAddress.getHost()) && redis.getRedisPort() == newMasterAddress.getPort()) {
 						redis.setMaster(true);
@@ -93,7 +96,7 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 		}
 		
 		logger.info("[UpdateMaster]{}", toUpdate);
-		migrationCluster.getRedisService().batchUpdate(toUpdate);
+		migrationCluster.getRedisService().updateBatchMaster(toUpdate);
 	}
 
 	@Override

@@ -16,9 +16,10 @@ import java.util.Map;
  */
 public interface MigrationClusterInfoHolder {
     MigrationStatus getStatus();
-    MigrationClusterTbl getMigrationCluster();
-    List<MigrationShard> getMigrationShards();
 
+    MigrationClusterTbl getMigrationCluster();
+    
+    List<MigrationShard> getMigrationShards();
     ClusterTbl getCurrentCluster();
     String clusterName();
     Map<Long, ShardTbl> getClusterShards();

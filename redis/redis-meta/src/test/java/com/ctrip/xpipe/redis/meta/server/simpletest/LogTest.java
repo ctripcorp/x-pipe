@@ -26,7 +26,11 @@ public class LogTest extends AbstractMetaServerTest{
 	
 	@Test
 	public void testHash(){
-		
+
+		Class<?> clazz = getClass();
+
+		System.out.println(clazz);
+
 		System.out.println("cluster_ly".hashCode()%256);
 		
 	}

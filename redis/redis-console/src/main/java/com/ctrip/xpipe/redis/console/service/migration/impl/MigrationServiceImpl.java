@@ -139,11 +139,10 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Override
     public void updateMigrationShard(final MigrationShardTbl shard) {
-        queryHandler.handleQuery(new DalQuery<Void>() {
+        queryHandler.handleQuery(new DalQuery<Integer>() {
             @Override
-            public Void doQuery() throws DalException {
-                migrationShardTblDao.updateByPK(shard, MigrationShardTblEntity.UPDATESET_FULL);
-                return null;
+            public Integer doQuery() throws DalException {
+                return migrationShardTblDao.updateByPK(shard, MigrationShardTblEntity.UPDATESET_FULL);
             }
         });
     }

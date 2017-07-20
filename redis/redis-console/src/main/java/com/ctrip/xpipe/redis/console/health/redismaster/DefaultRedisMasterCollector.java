@@ -113,7 +113,7 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
 
         logger.info("[changeMasterRoleInDb]{}", changed);
         if(changed){
-            redisService.batchUpdate(allByDcClusterShard);
+            redisService.updateBatchMaster(allByDcClusterShard);
         }
     }
 

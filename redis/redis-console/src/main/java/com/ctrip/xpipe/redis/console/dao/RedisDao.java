@@ -16,9 +16,11 @@ import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
+import org.unidal.dal.jdbc.Updateset;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.security.DenyAll;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -27,167 +29,219 @@ import java.util.Map;
 
 /**
  * @author shyin
- *
- * Aug 31, 2016
+ *         <p>
+ *         Aug 31, 2016
  */
 @Repository
-public class RedisDao  extends AbstractXpipeConsoleDAO{
+public class RedisDao extends AbstractXpipeConsoleDAO {
 
-	private RunidGenerator idGenerator = RunidGenerator.DEFAULT;
-	private RedisTblDao redisTblDao;
-	private DcClusterShardTblDao dcClusterShardTblDao;
-	
-	@PostConstruct
-	private void postConstruct() {
-		try {
-			redisTblDao = ContainerLoader.getDefaultContainer().lookup(RedisTblDao.class);
-			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
-		} catch (ComponentLookupException e) {
-			throw new ServerException("Cannot construct dao.", e);
-		}
-	}
-	
-	@DalTransaction
-	public void createRedisesBatch(List<RedisTbl> redises) throws DalException {
-		if(null != redises) {
-			Map<Long,String> cache = new HashMap<Long,String>();
-			for(RedisTbl redis : redises) {
-				if(redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)) {
-					if(null == cache.get(redis.getDcClusterShardId())) {
-						String newKeeperId = getToCreateKeeperId(redis);
-						redis.setRunId(newKeeperId);
-						cache.put(redis.getDcClusterShardId(), newKeeperId);
-					} else {
-						redis.setRunId(cache.get(redis.getDcClusterShardId()));
-					}
-				}
-			}
-			redisTblDao.insertBatch(redises.toArray(new RedisTbl[redises.size()]));
-		}
-	}
-	
-	@DalTransaction
-	public RedisTbl createRedisesBatch(RedisTbl redis) throws DalException {
-		if(null == redis) throw new BadRequestException("Null redis cannot be created");
-		
-		if(redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)) {
-			redis.setRunId(getToCreateKeeperId(redis));
-		}
-		redisTblDao.insertBatch(redis);
-		return redisTblDao.findWithBasicConfigurations(redis.getRunId(), redis.getDcClusterShardId(), redis.getRedisIp(), redis.getRedisPort(), RedisTblEntity.READSET_FULL);
-	}
-	
-	@DalTransaction
-	public void deleteRedisesBatch(List<RedisTbl> redises) throws DalException {
-		if(null != redises) {
-			for(RedisTbl redis : redises) {
-				redis.setRunId(generateDeletedName(redis.getRunId()));
-			}
-			redisTblDao.deleteBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
-		}else{
-			logger.info("[deleteRedisesBatch][null]");
-		}
-	}
+    private RunidGenerator idGenerator = RunidGenerator.DEFAULT;
+    private RedisTblDao redisTblDao;
+    private DcClusterShardTblDao dcClusterShardTblDao;
 
-	@DalTransaction
-	public void updateBatch(List<RedisTbl> redises) throws DalException {
-		redisTblDao.updateBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
-	}
-	
-	@DalTransaction
-	public void handleUpdate(List<RedisTbl> toCreate, List<RedisTbl> toDelete, List<RedisTbl> left) throws DalException {
-		if(null != toCreate && toCreate.size() > 0) {
-			logger.info("[handleUpdate][create]{}, {}", toCreate.size(), toCreate);
-    		createRedisesBatch(toCreate);
-    	}
+    @PostConstruct
+    private void postConstruct() {
+        try {
+            redisTblDao = ContainerLoader.getDefaultContainer().lookup(RedisTblDao.class);
+            dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
+        } catch (ComponentLookupException e) {
+            throw new ServerException("Cannot construct dao.", e);
+        }
+    }
 
-		if(null != toDelete && toDelete.size() > 0) {
-			logger.info("[handleUpdate][delete]{}, {}", toDelete.size(), toDelete);
-    		deleteRedisesBatch(toDelete);
-    	}
-		
-    	if(null != left && left.size() > 0) {
-			logger.info("[handleUpdate][left]{}, {}", left.size(), left);
-    		updateBatch(left);
-    	}
-	}
 
-	public static List<RedisTbl> findWithRole(List<RedisTbl> redises, String role) {
-		List<RedisTbl> results = new LinkedList<>();
-		if(null != redises) {
-			for(RedisTbl redis : redises) {
-				if(redis.getRedisRole().equals(role)) {
-					results.add(redis);
-				}
-			}
-		}
-		return results;
-	}
-	
-	private String getToCreateKeeperId(final RedisTbl redis) {
-		if(null == redis) throw new BadRequestException("Cannot obtain keeper-id from null.");
-		List<RedisTbl> dcClusterShardRedises = queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
-			@Override
-			public List<RedisTbl> doQuery() throws DalException {
-				return redisTblDao.findAllWithHistoryByDcClusterShardId(redis.getDcClusterShardId(), RedisTblEntity.READSET_FULL);
-			}
-		});
-		
-		if(null == dcClusterShardRedises) {
-			return generateUniqueKeeperId(redis);
-		} else {
-			List<RedisTbl> keepers = findWithRole(dcClusterShardRedises, XPipeConsoleConstant.ROLE_KEEPER);
-			if(null != keepers && keepers.size() > 0) {
-				RedisTbl historyKeeper = keepers.get(0);
-				if(historyKeeper.isDeleted() == true) {
-					int index = historyKeeper.getRunId().indexOf(DELETED_NAME_SPLIT_TAG);
-					if(index > 0) {
-						return historyKeeper.getRunId().substring(index + 1);
-					}
-					return historyKeeper.getRunId();
-				} else {
-					return historyKeeper.getRunId();
-				}
-			} else {
-				return generateUniqueKeeperId(redis);
-			}
-		}
-	}
-	
-	private String generateUniqueKeeperId(final RedisTbl redis) {
-		final String runId = idGenerator.generateRunid();
-		
-		// check for unique runId
-		DcClusterShardTbl targetDcClusterShard = queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>() {
-			@Override
-			public DcClusterShardTbl doQuery() throws DalException {
-				return dcClusterShardTblDao.findByPK(redis.getDcClusterShardId(), DcClusterShardTblEntity.READSET_FULL);
-			}
-		});
-		if(null == targetDcClusterShard) throw new BadRequestException("Cannot find related dc-cluster-shard");
-		
-		List<RedisTbl> redisWithSameRunId = queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
-			@Override
-			public List<RedisTbl> doQuery() throws DalException {
-				return redisTblDao.findByRunid(runId, RedisTblEntity.READSET_FULL);
-			}
-		});
-	
-		if(null != redisWithSameRunId && redisWithSameRunId.size() > 0) {
-			for(final RedisTbl tmpRedis : redisWithSameRunId) {
-				DcClusterShardTbl tmpDcClusterShard = queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>() {
-					@Override
-					public DcClusterShardTbl doQuery() throws DalException {
-						return dcClusterShardTblDao.findByPK(tmpRedis.getDcClusterShardId(), DcClusterShardTblEntity.READSET_FULL);
-					}
-				});
-				if(null != tmpDcClusterShard
-						&& targetDcClusterShard.getShardId() == tmpDcClusterShard.getShardId()) {
-					throw new ServerException("Cannot generate unque keeper id, please retry.");
-				}
-			}
-		}
-		
-		return runId;
-	}
+    public RedisTbl findByPK(long id){
+        return queryHandler.handleQuery(new DalQuery<RedisTbl>() {
+
+            @Override
+            public RedisTbl doQuery() throws DalException {
+                return redisTblDao.findByPK(id, RedisTblEntity.READSET_FULL);
+            }
+        });
+    }
+
+    public List<RedisTbl> findAllByDcClusterShard(final long dcClusterShardId) {
+
+        return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                return redisTblDao.findAllByDcClusterShardId(dcClusterShardId, null, RedisTblEntity.READSET_FULL);
+            }
+        });
+    }
+
+    @DalTransaction
+    public void createRedisesBatch(List<RedisTbl> redises) throws DalException {
+        if (null != redises) {
+            Map<Long, String> cache = new HashMap<Long, String>();
+            for (RedisTbl redis : redises) {
+                if (redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)) {
+                    if (null == cache.get(redis.getDcClusterShardId())) {
+                        String newKeeperId = getToCreateKeeperId(redis);
+                        redis.setRunId(newKeeperId);
+                        cache.put(redis.getDcClusterShardId(), newKeeperId);
+                    } else {
+                        redis.setRunId(cache.get(redis.getDcClusterShardId()));
+                    }
+                }
+            }
+            redisTblDao.insertBatch(redises.toArray(new RedisTbl[redises.size()]));
+        }
+    }
+
+    @DalTransaction
+    public RedisTbl createRedisesBatch(RedisTbl redis) throws DalException {
+        if (null == redis) throw new BadRequestException("Null redis cannot be created");
+
+        if (redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)) {
+            redis.setRunId(getToCreateKeeperId(redis));
+        }
+        redisTblDao.insertBatch(redis);
+        return redisTblDao.findWithBasicConfigurations(redis.getRunId(), redis.getDcClusterShardId(), redis.getRedisIp(), redis.getRedisPort(), RedisTblEntity.READSET_FULL);
+    }
+
+    @DalTransaction
+    public void deleteRedisesBatch(List<RedisTbl> redises) throws DalException {
+        if (null != redises) {
+            for (RedisTbl redis : redises) {
+                redis.setRunId(generateDeletedName(redis.getRunId()));
+            }
+            redisTblDao.deleteBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
+        } else {
+            logger.info("[deleteRedisesBatch][null]");
+        }
+    }
+
+    @DalTransaction
+    public int[] updateBatch(List<RedisTbl> redises) {
+
+        return queryHandler.handleQuery(new DalQuery<int[]>() {
+            @Override
+            public int[] doQuery() throws DalException {
+                return redisTblDao.updateBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
+            }
+        });
+    }
+
+
+    @DalTransaction
+    public int[] updateBatchMaster(List<RedisTbl> redises) {
+
+        return queryHandler.handleQuery(new DalQuery<int[]>() {
+            @Override
+            public int[] doQuery() throws DalException {
+                return redisTblDao.updateBatchMaster(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
+            }
+        });
+
+    }
+
+    @DalTransaction
+    public int[] updateBatchKeeperActive(List<RedisTbl> redises) {
+
+        return queryHandler.handleQuery(new DalQuery<int[]>() {
+            @Override
+            public int[] doQuery() throws DalException {
+                return redisTblDao.updateBatchKeeperActive(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
+            }
+        });
+    }
+
+    @DalTransaction
+    public void handleUpdate(List<RedisTbl> toCreate, List<RedisTbl> toDelete, List<RedisTbl> left) throws DalException {
+        if (null != toCreate && toCreate.size() > 0) {
+            logger.info("[handleUpdate][create]{}, {}", toCreate.size(), toCreate);
+            createRedisesBatch(toCreate);
+        }
+
+        if (null != toDelete && toDelete.size() > 0) {
+            logger.info("[handleUpdate][delete]{}, {}", toDelete.size(), toDelete);
+            deleteRedisesBatch(toDelete);
+        }
+
+        if (null != left && left.size() > 0) {
+            logger.info("[handleUpdate][left]{}, {}", left.size(), left);
+            updateBatch(left);
+        }
+    }
+
+    public static List<RedisTbl> findWithRole(List<RedisTbl> redises, String role) {
+        List<RedisTbl> results = new LinkedList<>();
+        if (null != redises) {
+            for (RedisTbl redis : redises) {
+                if (redis.getRedisRole().equals(role)) {
+                    results.add(redis);
+                }
+            }
+        }
+        return results;
+    }
+
+    private String getToCreateKeeperId(final RedisTbl redis) {
+        if (null == redis) throw new BadRequestException("Cannot obtain keeper-id from null.");
+        List<RedisTbl> dcClusterShardRedises = queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                return redisTblDao.findAllWithHistoryByDcClusterShardId(redis.getDcClusterShardId(), RedisTblEntity.READSET_FULL);
+            }
+        });
+
+        if (null == dcClusterShardRedises) {
+            return generateUniqueKeeperId(redis);
+        } else {
+            List<RedisTbl> keepers = findWithRole(dcClusterShardRedises, XPipeConsoleConstant.ROLE_KEEPER);
+            if (null != keepers && keepers.size() > 0) {
+                RedisTbl historyKeeper = keepers.get(0);
+                if (historyKeeper.isDeleted() == true) {
+                    int index = historyKeeper.getRunId().indexOf(DELETED_NAME_SPLIT_TAG);
+                    if (index > 0) {
+                        return historyKeeper.getRunId().substring(index + 1);
+                    }
+                    return historyKeeper.getRunId();
+                } else {
+                    return historyKeeper.getRunId();
+                }
+            } else {
+                return generateUniqueKeeperId(redis);
+            }
+        }
+    }
+
+    private String generateUniqueKeeperId(final RedisTbl redis) {
+        final String runId = idGenerator.generateRunid();
+
+        // check for unique runId
+        DcClusterShardTbl targetDcClusterShard = queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>() {
+            @Override
+            public DcClusterShardTbl doQuery() throws DalException {
+                return dcClusterShardTblDao.findByPK(redis.getDcClusterShardId(), DcClusterShardTblEntity.READSET_FULL);
+            }
+        });
+        if (null == targetDcClusterShard) throw new BadRequestException("Cannot find related dc-cluster-shard");
+
+        List<RedisTbl> redisWithSameRunId = queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                return redisTblDao.findByRunid(runId, RedisTblEntity.READSET_FULL);
+            }
+        });
+
+        if (null != redisWithSameRunId && redisWithSameRunId.size() > 0) {
+            for (final RedisTbl tmpRedis : redisWithSameRunId) {
+                DcClusterShardTbl tmpDcClusterShard = queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>() {
+                    @Override
+                    public DcClusterShardTbl doQuery() throws DalException {
+                        return dcClusterShardTblDao.findByPK(tmpRedis.getDcClusterShardId(), DcClusterShardTblEntity.READSET_FULL);
+                    }
+                });
+                if (null != tmpDcClusterShard
+                        && targetDcClusterShard.getShardId() == tmpDcClusterShard.getShardId()) {
+                    throw new ServerException("Cannot generate unque keeper id, please retry.");
+                }
+            }
+        }
+
+        return runId;
+    }
 }

@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.LongParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 
+import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
@@ -139,15 +140,17 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 			
 			logger.debug("[payloadToString]{}", payload);
 			return (String)payload;
-		}if(payload instanceof ByteArrayOutputStreamPayload){
+		}
+		if(payload instanceof ByteArrayOutputStreamPayload){
 			
 			ByteArrayOutputStreamPayload baous = (ByteArrayOutputStreamPayload) payload;
 			String result = new String(baous.getBytes(), Codec.defaultCharset); 
 			logger.debug("[payloadToString]{}", result);
 			return result;
 		}
-		
-		throw new IllegalStateException("unknown payload:" + payload);
+
+		String clazz = payload == null ? "null" : payload.getClass().getSimpleName();
+		throw new IllegalStateException(String.format("unknown payload %s:%s", clazz, StringUtil.toString(payload)));
 	}
 	
 	

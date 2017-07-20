@@ -78,8 +78,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 				keeper.setKeeperActive(false);
 			}
 		}
-		
-		redisService.batchUpdate(keepers);
+		redisService.updateBatchKeeperActive(keepers);
 	}
 
 }

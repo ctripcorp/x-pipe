@@ -201,6 +201,26 @@
 					]]>
 				</statement>
 			</query>
+			<query name='update-activedc-id' type='UPDATE' batch='false'>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='activedc-id'/> = ${activedc-id}
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='update-status-by-id' type='UPDATE' batch='false'>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='status'/> = ${status}
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -585,6 +605,28 @@
         			SET <FIELD name='run-id'/> = ${run-id}, <FIELD name='redis-ip'/> = ${redis-ip}, <FIELD name='redis-port'/> = ${redis-port},
         				<FIELD name='keeper-active'/> = ${keeper-active}, <FIELD name='redis-master'/> = ${redis-master}, <FIELD name='keepercontainer-id'/> = ${keepercontainer-id},
         				<FIELD name='master'/> = ${master}
+       				WHERE <FIELD name='id'/> = ${id}
+        			AND <FIELD name='deleted'/> = 0
+        			]]>
+				</statement>
+			</query>
+			<query name='update-batch-master' type='UPDATE' batch='true'>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+        			SET <FIELD name='master'/> = ${master}
+       				WHERE <FIELD name='id'/> = ${id}
+        			AND <FIELD name='deleted'/> = 0
+        			]]>
+				</statement>
+			</query>
+			<query name='update-batch-keeper-active' type='UPDATE' batch='true'>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+        			SET <FIELD name='keeper-active'/> = ${keeper-active}
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>

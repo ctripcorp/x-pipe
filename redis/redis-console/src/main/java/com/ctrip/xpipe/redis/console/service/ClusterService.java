@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service;
 
 import java.util.List;
 
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 
@@ -15,6 +16,9 @@ public interface ClusterService {
 	Long getAllCount();
 	ClusterTbl createCluster(ClusterModel clusterModel);
 	void updateCluster(String clusterName, ClusterTbl cluster);
+
+	void updateActivedcId(long id, long activeDcId);
+	void updateStatusById(long id, ClusterStatus clusterStatus);
 	void deleteCluster(String clusterName);
 	void bindDc(String clusterName, String dcName);
 	void unbindDc(String clusterName, String dcName);

@@ -19,15 +19,12 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.utils.LogUtils;
 import com.ctrip.xpipe.utils.StringUtil;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * @author shyin
@@ -38,8 +35,6 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	private ExecutorService executors;
-	
 	@SuppressWarnings("unused")
 	private MigrationCluster parent;
 	private MigrationShardTbl migrationShard;
@@ -77,7 +72,6 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		newPrimaryDc = dcs.get(parent.getMigrationCluster().getDestinationDcId()).getDcName();
 		prevPrimaryDc = dcs.get(parent.getCurrentCluster().getActivedcId()).getDcName();
 
-		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("[migrate]" + cluster+ "," + shard));
 		addObserver(parent);
 		addObserver(this);
 	}
@@ -124,8 +118,10 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcCheckMessage> commandFuture)
 					throws Exception {
+
 				try {
 					PrimaryDcCheckMessage res = commandFuture.get();
+					logger.info("[doCheck]{}, {}, {}, {}", cluster, shard, newPrimaryDc, res);
 					if(PRIMARY_DC_CHECK_RESULT.SUCCESS.equals(res.getErrorType())){
 						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, true, LogUtils.info("Check success"));
 					} else {
@@ -201,9 +197,10 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
+
 				try {
-					commandFuture.get();
-					
+					PrimaryDcChangeMessage primaryDcChangeMessage = commandFuture.get();
+					logger.info("[doPrevPrimaryDcMigrate]{},{},{},{}", cluster, shard, dc, primaryDcChangeMessage);
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, LogUtils.info("Ignored : make previous primary dc read only"));
 				} catch (Exception e) {
 					logger.error("[doPrevPrimaryDcMigrate][fail]",e);
@@ -222,9 +219,9 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
 				try {
 					PrimaryDcChangeMessage res = commandFuture.get();
-					
+
+					logger.info("[doNewPrimaryDcMigrate]{},{},{},{}", cluster, shard, newPrimaryDc, res);
 					if(PRIMARY_DC_CHANGE_RESULT.SUCCESS.equals(res.getErrorType())) {
-						logger.info("[doNewPrimaryDcMigrate][success]{},{},");
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, true, res.getErrorMessage());
 						shardMigrationResult.setNewMaster(new HostPort(res.getNewMasterIp(), res.getNewMasterPort()));
 					} else {
@@ -249,7 +246,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			 logger.warn("[doOtherDcRollback][fail, command null]{}", this);
 			 return;
 		 }
-		 CommandFuture<PrimaryDcChangeMessage> migrateResult = command.execute(executors);
+		 CommandFuture<PrimaryDcChangeMessage> migrateResult = command.execute();
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 
 			@Override
@@ -265,8 +262,6 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 
 	}
 
-
-	
 	private CommandFuture<PrimaryDcChangeMessage> doOtherDcMigrate(String cluster, String shard, String dc, String newPrimaryDc) {
 
 		CommandFuture<PrimaryDcChangeMessage> migrateResult = commandBuilder.buildOtherDcCommand(cluster, shard, newPrimaryDc, dc).execute();
@@ -275,7 +270,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
 				try {
 					PrimaryDcChangeMessage res = commandFuture.get();
-					
+					logger.info("[doOtherDcMigrate]{},{},{}->{}, {}", cluster, shard, dc, newPrimaryDc, res);
 					if(PRIMARY_DC_CHANGE_RESULT.SUCCESS.equals(res.getErrorType())) {
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_OTHER_DC, true, res.getErrorMessage());
 					} else {
@@ -297,8 +292,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {
 				try {
-					commandFuture.get();
-					logger.info("[doPrevPrimaryDcMigrate][success]");
+					PrimaryDcChangeMessage primaryDcChangeMessage = commandFuture.get();
+					logger.info("[doPrevPrimaryDcMigrate]{},{},{}, {}", cluster, shard, dc, primaryDcChangeMessage);
 				} catch (Exception e) {
 					logger.error("[doPrevPrimaryDcMigrate][fail]",e);
 				}

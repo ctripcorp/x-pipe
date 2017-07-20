@@ -38,7 +38,13 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(metaServerAddress);
 		changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(metaServerAddress);
 		
-		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(10, 100, CONNECT_TIMEOUT, SO_TIMEOUT, RETRY_TIMES, RetryPolicyFactories.newRestOperationsRetryPolicyFactory(5)); 
+		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(
+				100
+				,1000,
+				CONNECT_TIMEOUT,
+				SO_TIMEOUT,
+				RETRY_TIMES,
+				RetryPolicyFactories.newRestOperationsRetryPolicyFactory(5));
 	}
 
 	@Override

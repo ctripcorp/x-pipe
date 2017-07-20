@@ -169,6 +169,36 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public void updateActivedcId(long id, long activeDcId) {
+
+		ClusterTbl clusterTbl = new ClusterTbl();
+		clusterTbl.setId(id);
+		clusterTbl.setActivedcId(activeDcId);
+
+		queryHandler.handleQuery(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateActivedcId(clusterTbl, ClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+	}
+
+	@Override
+	public void updateStatusById(long id, ClusterStatus clusterStatus) {
+
+		ClusterTbl clusterTbl = new ClusterTbl();
+		clusterTbl.setId(id);
+		clusterTbl.setStatus(clusterStatus.toString());
+
+		queryHandler.handleQuery(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateStatusById(clusterTbl, ClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+	}
+
+	@Override
 	public void deleteCluster(String clusterName) {
 		ClusterTbl proto = find(clusterName);
     	if(null == proto) throw new BadRequestException("Cannot find cluster");

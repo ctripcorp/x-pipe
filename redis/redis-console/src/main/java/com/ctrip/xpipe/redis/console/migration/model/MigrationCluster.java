@@ -18,5 +18,10 @@ public interface MigrationCluster extends Observer, Observable, MigrationCluster
     String fromDc();
     String destDc();
 
+    long fromDcId();
+    long destDcId();
+
     void updatePublishInfo(String desc);
+
+    void updateActiveDcIdToDestDcId();
 }

@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoT
 import com.ctrip.xpipe.redis.console.dao.ConfigDaoTest;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDaoTest;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDaoTest;
+import com.ctrip.xpipe.redis.console.dao.RedisDaoTest;
 import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
@@ -22,10 +23,7 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublish
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
 
-import com.ctrip.xpipe.redis.console.service.impl.KeepercontainerServiceImplTest;
-import com.ctrip.xpipe.redis.console.service.impl.RedisServiceImplTest;
-import com.ctrip.xpipe.redis.console.service.impl.SentinelServiceImplTest;
-import com.ctrip.xpipe.redis.console.service.impl.ShardServiceImplTest;
+import com.ctrip.xpipe.redis.console.service.impl.*;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
@@ -49,12 +47,15 @@ import org.junit.runner.RunWith;
         DefaultSentinelCollectorTest.class,
         ConsoleCrossDcServerTest.class,
         HealthStatusTest.class,
+
+        ClusterServiceImplTest.class,
         RedisServiceImplTest.class,
         KeepercontainerServiceImplTest.class,
         ShardServiceImplTest.class,
-        MigrationStatusTest.class,
         SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,
+
+        MigrationStatusTest.class,
         ConcurrentDalTransactionTest.class,
         DalTransactionManagerTest.class,
         ClusterMetaModifiedNotifierTest.class,
@@ -72,10 +73,12 @@ import org.junit.runner.RunWith;
         MultiShardMigrationTest.class,
         DefaultShardMigrationResultTest.class,
         ClusterCreateInfoTest.class,
+
         ConfigDaoTest.class,
         MigrationClusterDaoTest.class,
         MigrationEventDaoTest.class,
-        DefaultConsoleDbConfigTest.class
+        DefaultConsoleDbConfigTest.class,
+        RedisDaoTest.class
 })
 public class AllTests {
 

@@ -130,38 +130,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
     }
 
     @Test
-    public void testBatchUpdate() throws ResourceNotFoundException {
-
-        List<RedisTbl> allByDcClusterShard = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
-        checkAllInstances(allByDcClusterShard);
-
-        for (RedisTbl redisTbl : allByDcClusterShard) {
-            if (redisTbl.getRedisRole().equalsIgnoreCase(XPipeConsoleConstant.ROLE_REDIS)) {
-                redisTbl.setMaster(!redisTbl.isMaster());
-            }
-        }
-
-        redisService.batchUpdate(allByDcClusterShard);
-
-        List<RedisTbl> newAll = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
-        checkAllInstances(newAll);
-
-        for (RedisTbl newRedis : newAll) {
-            for (RedisTbl oldRedis : allByDcClusterShard) {
-                if (newRedis.getId() == oldRedis.getId()) {
-                    logger.info("old:{}", oldRedis);
-                    logger.info("new:{}", newRedis);
-                    Assert.assertEquals(oldRedis.isMaster(), newRedis.isMaster());
-                }
-            }
-        }
-
-    }
-
-
-    @Test
     public void testUpdateRedises() throws IOException, ResourceNotFoundException {
-
 
         List<RedisTbl> allByDcClusterShard = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
         checkAllInstances(allByDcClusterShard);
