@@ -87,16 +87,17 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 		try {
 			String result = command.execute().get();
 			executionLog.info("[make redis master]" + result);
-			
-			RedisReadonly redisReadOnly = RedisReadonly.create(newMaster.getKey(), newMaster.getValue(), keyedObjectPool, scheduled); 
-			redisReadOnly.makeWritable();
+			RedisReadonly redisReadOnly = RedisReadonly.create(newMaster.getKey(), newMaster.getValue(), keyedObjectPool, scheduled);
+			if(!(redisReadOnly instanceof SlaveOfRedisReadOnly)){
+				redisReadOnly.makeWritable();
+			}
 		} catch (Exception e) {
 			logger.error("[makeRedisesOk]" + newMaster, e);
 			executionLog.error("[make redis master fail]" + e.getMessage());
 			throw new MakeRedisMasterFailException("make redis master:" + newMaster, e);
 		}
 		
-		executionLog.info("[make slaves slaveof]" + newMaster + "," + slaves);
+		executionLog.info("[make slaves slaveof][begin]" + newMaster + "," + slaves);
 		Command<Void> slavesJob = new DefaultSlaveOfJob(slaves, newMaster.getKey(), newMaster.getValue(), keyedObjectPool, scheduled);
 		try {
 			slavesJob.execute().get(waitTimeoutSeconds, TimeUnit.SECONDS);

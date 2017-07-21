@@ -104,12 +104,18 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	@Override
 	public void update(Object args, Observable observable) {
 
-		logger.info("[update][begin]{}", this);
+		logger.debug("[update][begin]{}", this);
+		long begin = System.currentTimeMillis();
+
 		MigrationShardTbl toUpdate = getMigrationShard();
 		String log = getShardMigrationResult().encode();
 		migrationService.updateMigrationShardLogById(toUpdate.getId(), log);
 
-		logger.info("[update][end]{}", this);
+		logger.debug("[debug][end]{}", this);
+		long end = System.currentTimeMillis();
+		if((end - begin) > 3){
+			logger.info("[update][time long]{}, {}", end - begin, this);
+		}
 	}
 	
 	@Override

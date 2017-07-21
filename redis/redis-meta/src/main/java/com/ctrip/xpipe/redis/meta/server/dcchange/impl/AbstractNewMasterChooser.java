@@ -3,11 +3,10 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,71 +21,100 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.NewMasterChooser;
 
 /**
  * @author wenchao.meng
- *
- * Dec 9, 2016
+ *         <p>
+ *         Dec 9, 2016
  */
-public abstract class AbstractNewMasterChooser implements NewMasterChooser{
-	
-	protected Logger logger = LoggerFactory.getLogger(getClass());
-	
-	public static final int CHECK_NEW_MASTER_TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("CHECK_NEW_MASTER_TIMEOUT_SECONDS", "2")); 
-	
-	protected XpipeNettyClientKeyedObjectPool keyedObjectPool;
-	
-	protected RedisMeta newMaster = null;
-	
-	protected ScheduledExecutorService scheduled;
+public abstract class AbstractNewMasterChooser implements NewMasterChooser {
 
-	public AbstractNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled) {
-		this.keyedObjectPool = keyedObjectPool;
-		this.scheduled = scheduled;
-	}
+    protected Logger logger = LoggerFactory.getLogger(getClass());
 
-	
-	public RedisMeta getLastChoosenMaster(){
-		return newMaster;
-	}
+    public static final int CHECK_NEW_MASTER_TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("CHECK_NEW_MASTER_TIMEOUT_SECONDS", "2"));
 
-	@Override
-	public RedisMeta choose(List<RedisMeta> redises) {
-		
-		List<RedisMeta> masters = getMasters(redises);
-		if(masters.size() == 0){
-			newMaster = doChoose(redises);
-		}else if(masters.size() == 1){
-			logger.info("[choose][already has master]{}", masters);
-			newMaster = masters.get(0);
-		}else{
-			throw new IllegalStateException("multi master there, can not choose a new master " + masters);
-		}
-		return newMaster;
-	}
+    protected XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
-	protected List<RedisMeta> getMasters(List<RedisMeta> allRedises) {
-		
-		List<RedisMeta> result = new LinkedList<>();
-		
-		for(RedisMeta redisMeta : allRedises){
-			if(isMaster(redisMeta)){
-				result.add(redisMeta);
-			}
-		}
-		
-		return result;
-	}
+    protected RedisMeta newMaster = null;
 
-	protected boolean isMaster(RedisMeta redisMeta) {
-		
-		try {
-			SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort()));
-			Role role = new RoleCommand(clientPool, true, scheduled).execute().get(CHECK_NEW_MASTER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-			return SERVER_ROLE.MASTER == role.getServerRole();
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			logger.error("[isMaster]" + redisMeta, e);
-		}
-		return false;
-	}
+    protected ScheduledExecutorService scheduled;
 
-	protected abstract RedisMeta doChoose(List<RedisMeta> redises);
+    protected ExecutorService executors;
+
+    public AbstractNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled, ExecutorService executors) {
+        this.keyedObjectPool = keyedObjectPool;
+        this.scheduled = scheduled;
+        this.executors = executors;
+    }
+
+    public RedisMeta getLastChoosenMaster() {
+        return newMaster;
+    }
+
+    @Override
+    public RedisMeta choose(List<RedisMeta> redises) {
+
+        Pair<List<RedisMeta>, List<RedisMeta>> pair = getMasters(redises);
+
+        List<RedisMeta> masters = pair.getKey();
+        List<RedisMeta> aliveServers = pair.getValue();
+
+        if (masters.size() == 0) {
+            newMaster = doChooseFromAliveServers(aliveServers);
+        } else if (masters.size() == 1) {
+            logger.info("[choose][already has master]{}", masters);
+            newMaster = masters.get(0);
+        } else {
+            throw new IllegalStateException("multi master there, can not choose a new master " + masters);
+        }
+        return newMaster;
+    }
+
+    protected Pair<List<RedisMeta>, List<RedisMeta>> getMasters(List<RedisMeta> allRedises) {
+
+        List<RedisMeta> masters = new LinkedList<>();
+        List<RedisMeta> aliveServers = new LinkedList<>();
+
+        CountDownLatch latch = new CountDownLatch(allRedises.size());
+
+        for (RedisMeta redisMeta : allRedises) {
+
+            executors.execute(new AbstractExceptionLogTask() {
+
+                @Override
+                protected void doRun() throws Exception {
+                    try {
+                        SERVER_ROLE role = serverRole(redisMeta);
+                        if (role == SERVER_ROLE.MASTER) {
+                            masters.add(redisMeta);
+                        }
+                        if (role != SERVER_ROLE.UNKNOWN) {
+                            aliveServers.add(redisMeta);
+                        }
+                    } finally {
+                        latch.countDown();
+                    }
+                }
+            });
+        }
+
+        try {
+            latch.await(CHECK_NEW_MASTER_TIMEOUT_SECONDS * 2, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            logger.error("[getMasters]" + allRedises, e);
+        }
+        return new Pair<>(masters, aliveServers);
+    }
+
+    protected SERVER_ROLE serverRole(RedisMeta redisMeta) {
+
+        try {
+            SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort()));
+            Role role = new RoleCommand(clientPool, true, scheduled).execute().get(CHECK_NEW_MASTER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            return role.getServerRole();
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            logger.error("[isMaster]" + redisMeta, e);
+        }
+        return SERVER_ROLE.UNKNOWN;
+    }
+
+    protected abstract RedisMeta doChooseFromAliveServers(List<RedisMeta> aliveServers);
 
 }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
@@ -35,7 +36,10 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 
 	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
-	
+
+	@Resource(name = MetaServerContextConfig.GLOBAL_EXECUTOR)
+	private ExecutorService executorService;
+
 	@Autowired
 	private DcMetaCache  dcMetaCache;
 	
@@ -68,7 +72,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	}
 
 	private NewMasterChooser createNewMasterChooser() {
-		return new FirstNewMasterChooser(keyedObjectPool, scheduled);
+		return new FirstNewMasterChooser(keyedObjectPool, scheduled, executorService);
 	}
 
 }

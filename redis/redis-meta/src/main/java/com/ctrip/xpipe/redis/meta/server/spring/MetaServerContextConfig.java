@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.*;
 
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -16,36 +16,48 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 /**
  * @author marsqing
- *
+ *         <p>
  *         May 26, 2016 6:23:55 PM
  */
 @Configuration
-@ComponentScan(basePackages = { "com.ctrip.xpipe.redis.meta.server" })
-public class MetaServerContextConfig extends AbstractRedisConfigContext{
-	
-	public static final String CLIENT_POOL = "clientPool";
-	public static final String SCHEDULED_EXECUTOR = "scheduledExecutor";
-	public static final int maxScheduledCorePoolSize = 8; 
-	
-	@Bean(name = CLIENT_POOL)
-	public XpipeNettyClientKeyedObjectPool getClientPool() {
+@ComponentScan(basePackages = {"com.ctrip.xpipe.redis.meta.server"})
+public class MetaServerContextConfig extends AbstractRedisConfigContext {
 
-		return new XpipeNettyClientKeyedObjectPool();
-	}
-	
-	@Bean(name = SCHEDULED_EXECUTOR)
-	public ScheduledExecutorService getScheduledExecutorService(){
-		
-		int corePoolSize = OsUtils.getCpuCount();
-		if(corePoolSize > maxScheduledCorePoolSize){
-			corePoolSize = maxScheduledCorePoolSize;
-		}
-		return MoreExecutors.getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(corePoolSize));
-	}
+    public static final String CLIENT_POOL = "clientPool";
+    public static final String SCHEDULED_EXECUTOR = "scheduledExecutor";
+    public static final String GLOBAL_EXECUTOR = "globalExecutor";
 
-	@Bean
-	public MetaServerMultiDcServiceManager getMetaServerMultiDcServiceManager(){
-		
-		return new DefaultMetaServerMultiDcServiceManager();
-	}
+    public static final int maxScheduledCorePoolSize = 8;
+
+    @Bean(name = CLIENT_POOL)
+    public XpipeNettyClientKeyedObjectPool getClientPool() {
+
+        return new XpipeNettyClientKeyedObjectPool();
+    }
+
+    @Bean(name = SCHEDULED_EXECUTOR)
+    public ScheduledExecutorService getScheduledExecutorService() {
+
+        int corePoolSize = OsUtils.getCpuCount();
+        if (corePoolSize > maxScheduledCorePoolSize) {
+            corePoolSize = maxScheduledCorePoolSize;
+        }
+        return MoreExecutors.getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(corePoolSize));
+    }
+
+    @Bean(name = GLOBAL_EXECUTOR)
+    public ExecutorService getGlobalExecutor() {
+
+        return new ThreadPoolExecutor(10,
+                Integer.MAX_VALUE,
+                60L, TimeUnit.SECONDS,
+                new SynchronousQueue<>(),
+                XpipeThreadFactory.create(GLOBAL_EXECUTOR));
+    }
+
+    @Bean
+    public MetaServerMultiDcServiceManager getMetaServerMultiDcServiceManager() {
+
+        return new DefaultMetaServerMultiDcServiceManager();
+    }
 }
