@@ -15,8 +15,10 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.tuple.Pair;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -41,6 +43,22 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         dcName = dcNames[0];
         shardName = shardNames[0];
 
+    }
+
+    @Test
+    public void testFindAllRedisesByDcClusterName(){
+
+        List<RedisTbl> dc1 = redisService.findAllRedisesByDcClusterName(dcNames[0], clusterName);
+
+        Assert.assertTrue(dc1.size() > 0);
+
+        Set<Long> dc1Ids = new HashSet<>();
+        dc1.forEach(redisTbl -> dc1Ids.add(redisTbl.getId()));
+
+        List<RedisTbl> dc2 = redisService.findAllRedisesByDcClusterName(dcNames[1], clusterName);
+        Assert.assertTrue(dc2.size() > 0);
+
+        dc2.forEach(redisTbl -> Assert.assertFalse(dc1Ids.contains(redisTbl.getId())));
     }
 
     @Test

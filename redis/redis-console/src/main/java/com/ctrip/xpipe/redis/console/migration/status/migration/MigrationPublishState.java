@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -11,6 +12,7 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.PublishState;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 
 /**
@@ -62,35 +64,26 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 		
 		MigrationCluster migrationCluster = getHolder();
 
+		RedisService redisService = migrationCluster.getRedisService();
 		String fromDc = migrationCluster.fromDc();
 		String destDc = migrationCluster.destDc();
 		String clusterName = migrationCluster.clusterName();
 
-		for(MigrationShard shard : migrationCluster.getMigrationShards()) {
-
-			String shardName = shard.shardName();
-			List<RedisTbl> prevDcRedises = migrationCluster.getRedisService().findAllByDcClusterShard(
-					fromDc,
-					clusterName,
-					shard.shardName());
-			for(RedisTbl redis : prevDcRedises) {
-				if(redis.isMaster()) {
-					redis.setMaster(false);
-					toUpdate.add(redis);
-				}
+		List<RedisTbl> prevDcRedises = redisService.findAllRedisesByDcClusterName(fromDc, clusterName);
+		for(RedisTbl redis : prevDcRedises) {
+			if(redis.isMaster()) {
+				redis.setMaster(false);
+				toUpdate.add(redis);
 			}
-			
-			if(null != shard.getNewMasterAddress()) {
-				HostPort newMasterAddress = shard.getNewMasterAddress();
-				List<RedisTbl> newDcRedises = migrationCluster.getRedisService().findAllByDcClusterShard(
-						destDc,
-						clusterName,
-						shardName);
-				for(RedisTbl redis : newDcRedises) {
-					if(redis.getRedisIp().equals(newMasterAddress.getHost()) && redis.getRedisPort() == newMasterAddress.getPort()) {
-						redis.setMaster(true);
-						toUpdate.add(redis);
-					}
+		}
+
+		List<RedisTbl> newDcRedises = redisService.findAllRedisesByDcClusterName(destDc, clusterName);
+
+		for(InetSocketAddress newMasterAddress : getNewMasters()){
+			for(RedisTbl redis : newDcRedises) {
+				if(redis.getRedisIp().equals(newMasterAddress.getHostString()) && redis.getRedisPort() == newMasterAddress.getPort()) {
+					redis.setMaster(true);
+					toUpdate.add(redis);
 				}
 			}
 		}

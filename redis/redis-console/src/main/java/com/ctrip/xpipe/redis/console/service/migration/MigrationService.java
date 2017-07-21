@@ -36,7 +36,7 @@ public interface MigrationService {
 
     List<MigrationClusterModel> getMigrationClusterModel(long eventId);
 
-    void updateMigrationShard(MigrationShardTbl shard);
+    void updateMigrationShardLogById(long id, String log);
 
     TryMigrateResult tryMigrate(String clusterName, String fromIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow;
 

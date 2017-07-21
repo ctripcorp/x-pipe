@@ -103,10 +103,13 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 
 	@Override
 	public void update(Object args, Observable observable) {
+
+		logger.info("[update][begin]{}", this);
 		MigrationShardTbl toUpdate = getMigrationShard();
-		toUpdate.setLog(getShardMigrationResult().encode());
-		migrationService.updateMigrationShard(toUpdate);
-		
+		String log = getShardMigrationResult().encode();
+		migrationService.updateMigrationShardLogById(toUpdate.getId(), log);
+
+		logger.info("[update][end]{}", this);
 	}
 	
 	@Override
@@ -140,13 +143,14 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	@Override
 	public void doMigrate() {
 		
-		logger.info("[doMigrate]{}-{}, {}->{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
+		logger.info("[doMigrate][doPrevPrimaryDcMigrate]{}, {}, {}->{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
 		try {
 			doPrevPrimaryDcMigrate(cluster, shard, prevPrimaryDc).get();
 		} catch (InterruptedException | ExecutionException e) {
 			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, LogUtils.error("Ignore:" + e.getMessage()));
 		}
-		
+
+		logger.info("[doMigrate][doNewPrimaryDcMigrate]{}, {}, {}->{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
 		try {
 			doNewPrimaryDcMigrate(cluster, shard, newPrimaryDc).get();
 		} catch (InterruptedException | ExecutionException e) {
@@ -200,7 +204,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 
 				try {
 					PrimaryDcChangeMessage primaryDcChangeMessage = commandFuture.get();
-					logger.info("[doPrevPrimaryDcMigrate]{},{},{},{}", cluster, shard, dc, primaryDcChangeMessage);
+					logger.info("[doPrevPrimaryDcMigrate][result]{},{},{},{}", cluster, shard, dc, primaryDcChangeMessage);
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, LogUtils.info("Ignored : make previous primary dc read only"));
 				} catch (Exception e) {
 					logger.error("[doPrevPrimaryDcMigrate][fail]",e);

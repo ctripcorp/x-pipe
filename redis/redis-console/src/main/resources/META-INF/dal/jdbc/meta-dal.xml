@@ -508,7 +508,40 @@
 	</entity>
 
 	<entity name="redis-tbl" table="REDIS_TBL" alias="rt">
+		<var name="dc-name" value-type="String"/>
+		<var name="cluster-name" value-type="String"/>
+
+		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
+		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
+		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct"/>
+		<relation name="dc-cluster-shard-info" entity-name="dc-cluster-shard-tbl" entity-alias="dcst"/>
+
 		<query-defs>
+
+			<query name="find-all-by-dc-cluster-name" type="SELECT" multiple="true">
+				<param name="dc-name"/>
+				<param name="cluster-name"/>
+				<param name="redis-role"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='dc-info'/>, <TABLE name='cluster-info'/>, <TABLE name='dc-cluster-info'/>, <TABLE name='dc-cluster-shard-info'/>
+					WHERE dt.dc_name = ${dc-name}
+					AND ct.cluster_name = ${cluster-name}
+					AND dct.dc_id = dt.id
+					AND dct.cluster_id = ct.id
+					AND dct.dc_cluster_id = dcst.dc_cluster_id
+					AND dcst.dc_cluster_shard_id = <FIELD name='dc-cluster-shard-id' />
+					AND <FIELD name='redis-role'/> = ${redis-role}
+					AND dt.deleted = 0
+					AND ct.deleted = 0
+					AND dct.deleted = 0
+					AND dcst.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+
 			<query name='find-all-by-dc-cluster-shard-id' type='SELECT' multiple="true">
 				<param name='dc-cluster-shard-id'/>
 				<param name='redis-role'/>
@@ -1010,6 +1043,15 @@
         			VALUES(<VALUES/>)
         			]]>
         		</statement>
+			</query>
+			<query name='update-log-by-id' type='UPDATE' batch='false'>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='log'/> = ${log}
+					WHERE <FIELD name='id'/> = ${id}
+					]]>
+				</statement>
 			</query>
 		</query-defs>
 	</entity>
