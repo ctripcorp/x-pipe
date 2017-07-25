@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,8 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
+import javax.annotation.Resource;
+
 /**
  * @author wenchao.meng
  *
@@ -32,7 +35,8 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 	@Autowired
 	private MetaServerConfig metaServerConfig;
 
-	private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("MultiDcNotifier"));
+	@Resource( name = MetaServerContextConfig.GLOBAL_EXECUTOR )
+	private ExecutorService executors;
 
 	@Autowired
 	private MetaServerMultiDcServiceManager metaServerMultiDcServiceManager;

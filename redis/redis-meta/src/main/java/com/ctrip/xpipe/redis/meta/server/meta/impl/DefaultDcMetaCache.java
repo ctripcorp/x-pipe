@@ -51,8 +51,8 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 	private String currentDc = FoundationService.DEFAULT.getDataCenter();
 
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
-			XpipeThreadFactory.create("Meta-Refresher"));
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("Meta-Refresher"));
+
 	private ScheduledFuture<?> future;
 
 	private AtomicReference<DcMetaManager> dcMetaManager = new AtomicReference<DcMetaManager>(null);

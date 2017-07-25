@@ -38,7 +38,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	private ScheduledExecutorService scheduled;
 
 	@Resource(name = MetaServerContextConfig.GLOBAL_EXECUTOR)
-	private ExecutorService executorService;
+	private ExecutorService executors;
 
 	@Autowired
 	private DcMetaCache  dcMetaCache;
@@ -63,16 +63,16 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 		ChangePrimaryDcAction changePrimaryDcAction = null;
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
 			logger.info("[doChangePrimaryDc][become primary]{}, {}", clusterId, shardId, newPrimaryDc);
-			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, createNewMasterChooser(), scheduled);
+			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
 		}else{
 			logger.info("[doChangePrimaryDc][become backup]{}, {}", clusterId, shardId, newPrimaryDc);
-			changePrimaryDcAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, multiDcService, scheduled);
+			changePrimaryDcAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, multiDcService, scheduled, executors);
 		}
 		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc);
 	}
 
 	private NewMasterChooser createNewMasterChooser() {
-		return new FirstNewMasterChooser(keyedObjectPool, scheduled, executorService);
+		return new FirstNewMasterChooser(keyedObjectPool, scheduled, executors);
 	}
 
 }

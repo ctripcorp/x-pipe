@@ -10,6 +10,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -33,6 +34,8 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
 
+import javax.annotation.Resource;
+
 
 /**
  * @author wenchao.meng
@@ -53,8 +56,9 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 	
 	@Autowired
 	private RemoteClusterServerFactory<?> remoteClusterServerFactory;
-	
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2, XpipeThreadFactory.create("Slot_Arranger"));
+
+	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	private ScheduledExecutorService scheduled;
 
 	@Autowired
 	private SlotManager slotManager;
@@ -97,7 +101,6 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 	@Override
 	protected void doDispose() throws Exception {
 		
-		scheduled.shutdownNow();
 		super.doDispose();
 	}
 	

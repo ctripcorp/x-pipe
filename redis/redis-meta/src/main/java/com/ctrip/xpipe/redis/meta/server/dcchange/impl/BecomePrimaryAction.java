@@ -5,10 +5,7 @@ import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 import org.unidal.tuple.Pair;
 
@@ -38,8 +35,8 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 
 	private NewMasterChooser newMasterChooser;
 
-	public BecomePrimaryAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser, ScheduledExecutorService scheduled) {
-		super(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, scheduled);
+	public BecomePrimaryAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser, ScheduledExecutorService scheduled, Executor executors) {
+		super(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, scheduled, executors);
 		this.newMasterChooser = newMasterChooser;
 	}
 
@@ -98,7 +95,7 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 		}
 		
 		executionLog.info("[make slaves slaveof][begin]" + newMaster + "," + slaves);
-		Command<Void> slavesJob = new DefaultSlaveOfJob(slaves, newMaster.getKey(), newMaster.getValue(), keyedObjectPool, scheduled);
+		Command<Void> slavesJob = new DefaultSlaveOfJob(slaves, newMaster.getKey(), newMaster.getValue(), keyedObjectPool, scheduled, executors);
 		try {
 			slavesJob.execute().get(waitTimeoutSeconds, TimeUnit.SECONDS);
 			executionLog.info("[make slaves slaveof]success");

@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.apache.curator.framework.CuratorFramework;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -49,7 +50,7 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 	
 	private Map<Integer, Set<Integer>> serverMap = new ConcurrentHashMap<>();
 	
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create(getClass().getSimpleName()));
 	
 	private ScheduledFuture<?> future;
 	

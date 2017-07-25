@@ -2,6 +2,7 @@ package com.ctrip.xpipe.command;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -17,13 +18,16 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  */
 public class ParallelCommandChain extends AbstractCommandChain{
 	
-	private ExecutorService executors;
+	private Executor executors;
 	private List<CommandFuture<?>> completed = new LinkedList<>();
 
-	public ParallelCommandChain(){
-		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("ParallelCommandChain"));
+	public ParallelCommandChain(Executor executors){
+		this.executors = executors;
+		if(this.executors == null){
+			this.executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("ParallelCommandChain"));
+		}
 	}
-	
+
 	public ParallelCommandChain(Command<?> ...commands) {
 		this(null, commands);
 	}

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.redis.impl;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
@@ -33,11 +34,14 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 	private XpipeNettyClientKeyedObjectPool pool;
 	
 	private ScheduledExecutorService scheduled;
+
+	private Executor executors;
 	
-	public BackupDcClusterRedisStateAjust(String clusterId, CurrentMetaManager currentMetaManager, XpipeNettyClientKeyedObjectPool pool, ScheduledExecutorService scheduled) {
+	public BackupDcClusterRedisStateAjust(String clusterId, CurrentMetaManager currentMetaManager, XpipeNettyClientKeyedObjectPool pool, ScheduledExecutorService scheduled, Executor executors) {
 		this.clusterId = clusterId;
 		this.currentMetaManager = currentMetaManager;
 		this.pool = pool;
+		this.executors = executors;
 	}
 	
 
@@ -65,7 +69,7 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 			}
 			
 			logger.info("[doRun][change state]{}, {}", keeperActive, redisesNeedChange);
-			new DefaultSlaveOfJob(redisesNeedChange, keeperActive.getIp(), keeperActive.getPort(), pool, scheduled).
+			new DefaultSlaveOfJob(redisesNeedChange, keeperActive.getIp(), keeperActive.getPort(), pool, scheduled, executors).
 			execute().addListener(new CommandFutureListener<Void>() {
 				
 				@Override

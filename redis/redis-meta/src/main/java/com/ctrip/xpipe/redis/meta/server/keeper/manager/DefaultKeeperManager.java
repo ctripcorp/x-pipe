@@ -2,11 +2,11 @@ package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -25,7 +25,8 @@ import com.ctrip.xpipe.redis.meta.server.keeper.KeeperManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
 import com.ctrip.xpipe.utils.ObjectUtils;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
+
+import javax.annotation.Resource;
 
 /**
  * @author wenchao.meng
@@ -41,17 +42,10 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	@Autowired
 	private KeeperStateController keeperStateController;
 
+	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 
 	private ScheduledFuture<?> deadCheckFuture;
-
-	@Override
-	protected void doInitialize() throws Exception {
-		super.doInitialize();
-
-		scheduled = Executors.newScheduledThreadPool(2,
-				XpipeThreadFactory.create(String.format("KEEPER_MANAGER(%d)", currentClusterServer.getServerId())));
-	}
 
 	@Override
 	protected void doStart() throws Exception {
@@ -67,13 +61,6 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		super.doStop();
 		deadCheckFuture.cancel(true);
 
-	}
-
-	@Override
-	protected void doDispose() throws Exception {
-
-		scheduled.shutdownNow();
-		super.doDispose();
 	}
 
 	@Override

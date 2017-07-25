@@ -32,10 +32,10 @@ public class MigrationMigratingState extends AbstractMigrationMigratingState {
 				@Override
 				public void doRun() {
 					logger.info("[doMigrate][start]{},{}",getHolder().clusterName(),
-							shard.getCurrentShard().getShardName());
+							shard.shardName());
 					shard.doMigrate();
 					logger.info("[doMigrate][done]{},{}",getHolder().clusterName(),
-							shard.getCurrentShard().getShardName());
+							shard.shardName());
 				}
 			});
 		}

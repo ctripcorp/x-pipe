@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.WatchedEvent;
@@ -56,7 +57,8 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 	@Autowired
 	private RemoteClusterServerFactory<T> remoteClusterServerFactory;
 	
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create(getClass().getSimpleName()));
+
 	private ScheduledFuture<?> future;
 		
 	@Override

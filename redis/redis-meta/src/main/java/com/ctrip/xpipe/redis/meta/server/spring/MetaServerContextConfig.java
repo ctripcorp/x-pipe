@@ -28,6 +28,8 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext {
     public static final String GLOBAL_EXECUTOR = "globalExecutor";
 
     public static final int maxScheduledCorePoolSize = 8;
+    public static final int maxGlobalThreads = 512;
+
 
     @Bean(name = CLIENT_POOL)
     public XpipeNettyClientKeyedObjectPool getClientPool() {
@@ -42,17 +44,19 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext {
         if (corePoolSize > maxScheduledCorePoolSize) {
             corePoolSize = maxScheduledCorePoolSize;
         }
-        return MoreExecutors.getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(corePoolSize));
+        return MoreExecutors.getExitingScheduledExecutorService(
+                new ScheduledThreadPoolExecutor(corePoolSize, XpipeThreadFactory.create(SCHEDULED_EXECUTOR))
+        );
     }
 
     @Bean(name = GLOBAL_EXECUTOR)
     public ExecutorService getGlobalExecutor() {
-
         return new ThreadPoolExecutor(10,
-                Integer.MAX_VALUE,
-                60L, TimeUnit.SECONDS,
+                maxGlobalThreads,
+                120L, TimeUnit.SECONDS,
                 new SynchronousQueue<>(),
-                XpipeThreadFactory.create(GLOBAL_EXECUTOR));
+                XpipeThreadFactory.create(GLOBAL_EXECUTOR),
+                new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     @Bean

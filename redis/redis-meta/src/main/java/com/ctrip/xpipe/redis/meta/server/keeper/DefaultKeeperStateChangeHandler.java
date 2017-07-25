@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.keeper;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
@@ -42,7 +43,10 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
-	
+
+	@Resource(name = MetaServerContextConfig.GLOBAL_EXECUTOR)
+	private Executor executors;
+
 	private KeyedOneThreadTaskExecutor<Pair<String, String>> keyedOneThreadTaskExecutor;
 
 	@Autowired
@@ -76,7 +80,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		List<KeeperMeta> keepers = new LinkedList<>();
 		keepers.add(activeKeeper);
 		
-		keyedOneThreadTaskExecutor.execute(new Pair<String, String>(clusterId, shardId), new KeeperStateChangeJob(keepers, newMaster, clientPool, scheduled));
+		keyedOneThreadTaskExecutor.execute(new Pair<String, String>(clusterId, shardId), new KeeperStateChangeJob(keepers, newMaster, clientPool, scheduled, executors));
 	}
 
 	@Override
@@ -90,13 +94,13 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 			return;
 		}
 		Pair<String, Integer> activeKeeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
-		KeeperStateChangeJob keeperStateChangeJob = new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool, scheduled);
+		KeeperStateChangeJob keeperStateChangeJob = new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool, scheduled, executors);
 
 		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
 			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterId, shardId);
 			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{}", clusterId, shardId,
 					slaves);
-			keeperStateChangeJob.setActiveSuccessCommand(new DefaultSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled));
+			keeperStateChangeJob.setActiveSuccessCommand(new DefaultSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled, executors));
 		}
 		
 		keyedOneThreadTaskExecutor.execute(new Pair<String, String>(clusterId, shardId), keeperStateChangeJob);

@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 
+import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 
 /**
@@ -49,7 +50,7 @@ public abstract class AbstractSlaveOfCommand extends AbstractRedisCommand<String
 	@Override
 	public String toString() {
 		
-		if(ip == null){
+		if(StringUtil.isEmpty(ip)){
 			return String.format("%s no one", getName());
 		}else{
 			return String.format("%s %s %d %s", getName(), ip, port, param);

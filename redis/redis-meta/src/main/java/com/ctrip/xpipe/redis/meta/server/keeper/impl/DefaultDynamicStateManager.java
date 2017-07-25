@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,8 @@ import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
+import javax.annotation.Resource;
+
 /**
  * @author wenchao.meng
  *
@@ -39,8 +42,9 @@ public class DefaultDynamicStateManager implements DynamicStateManager{
 		
 	@Autowired
 	private SlotManager slotManager;
-	
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create("HEART_BEAT_TIMEOUT_CHECK")); 
+
+	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	private ScheduledExecutorService scheduled;
 	
 	private ConcurrentHashMap<KeeperKey, KeeperHeartBeatManager> keepers = new ConcurrentHashMap<>();
 	

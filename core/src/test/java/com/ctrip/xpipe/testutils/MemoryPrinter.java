@@ -5,6 +5,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
  * @author wenchao.meng
@@ -13,13 +14,16 @@ import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
  */
 public class MemoryPrinter extends AbstractStartStoppable {
 
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2);
+	private ScheduledExecutorService scheduled;
+
 	private int printIntervalMilli = 1000;
 	
-	public MemoryPrinter() {
+	public MemoryPrinter(ScheduledExecutorService scheduled) {
+		this.scheduled = scheduled;
 	}
 
-	public MemoryPrinter(int printIntervalMilli) {
+	public MemoryPrinter(ScheduledExecutorService scheduled, int printIntervalMilli) {
+		this.scheduled = scheduled;
 		this.printIntervalMilli = printIntervalMilli;
 	}
 
@@ -65,8 +69,10 @@ public class MemoryPrinter extends AbstractStartStoppable {
 	}
 	
 	public static void main(String []argc) throws Exception{
-		
-		MemoryPrinter memoryPrinter = new MemoryPrinter();
+
+		ScheduledExecutorService scheduled= Executors.newScheduledThreadPool(2, XpipeThreadFactory.create("MemoryPrinter"));
+
+		MemoryPrinter memoryPrinter = new MemoryPrinter(scheduled);
 		
 		memoryPrinter.start();
 		

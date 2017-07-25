@@ -38,6 +38,7 @@ public class ArrangeTaskTriggerTest extends AbstractMetaServerTest{
 		add(arrangeTaskTrigger);
 		
 		arrangeTaskTrigger.setArrangeTaskExecutor(arrangeTaskExecutor);
+		arrangeTaskTrigger.setScheduled(scheduled);
 		
 	}
 	

@@ -29,7 +29,7 @@ public class SlaveofJobTest extends AbstractMetaServerTest {
 
 		List<RedisMeta> slaves = getRedisSlaves(redises);
 
-		SlaveofJob slaveofJob = new SlaveofJob(slaves, "10.2.58.242", 6379, clientPool, scheduled);
+		SlaveofJob slaveofJob = new SlaveofJob(slaves, "10.2.58.242", 6379, clientPool, scheduled, executors);
 		slaveofJob.execute().get();
 
 	}

@@ -22,11 +22,12 @@ public class AbstractMetaServerTest extends AbstractRedisTest{
 	
 	protected MetaServerConfig  config = new DefaultMetaServerConfig();
 	
-	private MemoryPrinter memoryPrinter = new MemoryPrinter(500);
+	private MemoryPrinter memoryPrinter;
 	
 	@Before
 	public void beforeAbstractMetaServerTest() throws Exception{
-		
+
+		memoryPrinter = new MemoryPrinter(scheduled, 500);
 		memoryPrinter.start();
 	}
 

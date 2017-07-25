@@ -1,15 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.redis.impl;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import javax.annotation.Resource;
 
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.concurrent.ExecutorService;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -26,9 +21,7 @@ import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
  * Dec 26, 2016
  */
 public class DefaultRedisStateManager extends AbstractLifecycle implements RedisStateManager, TopElement{
-	
-	private ExecutorService executors;
-	
+
 	private int redisStateManagerIntervalSeconds = Integer.parseInt(System.getProperty("REDIS_STATE_MANAGR_INTERVAL_SECONDS", "5")); 
 	
 	@Autowired
@@ -42,13 +35,15 @@ public class DefaultRedisStateManager extends AbstractLifecycle implements Redis
 
 	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
-	
+
+	@Resource(name = MetaServerContextConfig.GLOBAL_EXECUTOR)
+	private Executor executors;
+
 	private ScheduledFuture<?> future;
 
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
-		executors = Executors.newCachedThreadPool();
 
 	}
 	
@@ -71,8 +66,6 @@ public class DefaultRedisStateManager extends AbstractLifecycle implements Redis
 	@Override
 	protected void doDispose() throws Exception {
 		super.doDispose();
-		
-		executors.shutdownNow();
 	}
 
 	class RedisesStateChangeTask extends AbstractExceptionLogTask{
@@ -84,7 +77,7 @@ public class DefaultRedisStateManager extends AbstractLifecycle implements Redis
 				if(dcMetaCache.isCurrentDcPrimary(clusterId)){
 					executors.execute(new PrimaryDcClusterRedisStateAjust());
 				}else{
-					executors.execute(new BackupDcClusterRedisStateAjust(clusterId, currentMetaManager, keyedObjectPool, scheduled));
+					executors.execute(new BackupDcClusterRedisStateAjust(clusterId, currentMetaManager, keyedObjectPool, scheduled, executors));
 				}
 			}
 		}

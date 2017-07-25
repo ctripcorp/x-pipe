@@ -114,7 +114,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		logger.debug("[debug][end]{}", this);
 		long end = System.currentTimeMillis();
 		if((end - begin) > 3){
-			logger.info("[update][time long]{}, {}", end - begin, this);
+			logger.warn("[update][time long]{}, {}", end - begin, this);
 		}
 	}
 	

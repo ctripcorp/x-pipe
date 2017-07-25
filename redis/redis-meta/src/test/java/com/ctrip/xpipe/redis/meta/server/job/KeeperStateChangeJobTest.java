@@ -44,7 +44,7 @@ public class KeeperStateChangeJobTest extends AbstractMetaServerTest{
 		keepers = createRandomKeepers(2);
 		
 		
-		job = new KeeperStateChangeJob(keepers, new Pair<>("localhost", randomPort()), getXpipeNettyClientKeyedObjectPool(), scheduled);
+		job = new KeeperStateChangeJob(keepers, new Pair<>("localhost", randomPort()), getXpipeNettyClientKeyedObjectPool(), scheduled, executors);
 	}
 	
 	

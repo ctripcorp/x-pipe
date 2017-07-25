@@ -73,7 +73,7 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 	@Test
 	public void testNewHeap() throws Exception {
 		
-		final MemoryPrinter memoryPrinter = new MemoryPrinter();
+		final MemoryPrinter memoryPrinter = new MemoryPrinter(scheduled);
 
 		memoryPrinter.printMemory();
 

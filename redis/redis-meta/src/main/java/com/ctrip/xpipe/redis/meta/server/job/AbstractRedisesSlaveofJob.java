@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.job;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.api.command.Command;
@@ -35,13 +36,15 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	private int delayBaseMilli = 100;
 	private int retryTimes = 2;
 	protected ScheduledExecutorService scheduled;
-	
-	public AbstractRedisesSlaveofJob(List<RedisMeta> slaves, String masterHost, int masterPort, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool, ScheduledExecutorService scheduled){
+	protected Executor executors;
+
+	public AbstractRedisesSlaveofJob(List<RedisMeta> slaves, String masterHost, int masterPort, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool, ScheduledExecutorService scheduled, Executor executors){
 		this.redises = new LinkedList<>(slaves);
 		this.masterHost = masterHost;
 		this.masterPort = masterPort;
 		this.clientPool = clientPool;
 		this.scheduled = scheduled;
+		this.executors = executors;
 	}
 
 	@Override
@@ -52,8 +55,7 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	@Override
 	protected void doExecute() throws CommandExecutionException {
 
-		ParallelCommandChain commandChain = new ParallelCommandChain();
-		
+		ParallelCommandChain commandChain = new ParallelCommandChain(executors);
 		for(RedisMeta redisMeta : redises){
 			Command<?> backupCommand = createSlaveofCommand(redisMeta, masterHost, masterPort);
 			commandChain.add(backupCommand);

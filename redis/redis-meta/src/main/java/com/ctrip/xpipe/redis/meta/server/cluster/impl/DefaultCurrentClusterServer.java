@@ -4,9 +4,9 @@ package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 import java.util.HashSet;
 import java.util.Set;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Executor;
 
+import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.nodes.PersistentNode;
 import org.apache.zookeeper.CreateMode;
@@ -23,8 +23,9 @@ import com.ctrip.xpipe.redis.meta.server.cluster.SLOT_STATE;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
+
+import javax.annotation.Resource;
 
 /**
  * @author wenchao.meng
@@ -48,8 +49,9 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	private int currentServerId;
 	
 	private String serverPath;
-		
-	private ExecutorService executors;
+
+	@Resource(name = MetaServerContextConfig.GLOBAL_EXECUTOR)
+	private Executor executors;
 	
 	private PersistentNode persistentNode;
 	
@@ -60,8 +62,6 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	@Override
 	protected void doInitialize() throws Exception {
 
-		executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("DEFAULT_CURRENT_CLUSTER_SERVER"));
-		
 		this.currentServerId = config.getMetaServerId();
 		serverPath = MetaZkConfig.getMetaServerRegisterPath() + "/" + currentServerId;
 		
@@ -97,7 +97,6 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 
 	@Override
 	protected void doDispose() throws Exception {
-		executors.shutdownNow();
 		super.doDispose();
 	}
 

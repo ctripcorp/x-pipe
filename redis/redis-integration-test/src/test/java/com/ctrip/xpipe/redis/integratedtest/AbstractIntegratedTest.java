@@ -402,12 +402,12 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	protected void xslaveof(String masterIp, Integer masterPort, RedisMeta ... slaves) throws Exception {
 		
-		new XSlaveofJob(Lists.newArrayList(slaves), masterIp, masterPort, getXpipeNettyClientKeyedObjectPool(), scheduled).execute().sync();
+		new XSlaveofJob(Lists.newArrayList(slaves), masterIp, masterPort, getXpipeNettyClientKeyedObjectPool(), scheduled, executors).execute().sync();
 	}
 
 	protected void xslaveof(String masterIp, Integer masterPort, List<RedisMeta> slaves) throws Exception {
 		
-		new XSlaveofJob(slaves, masterIp, masterPort, getXpipeNettyClientKeyedObjectPool(), scheduled).execute().sync();
+		new XSlaveofJob(slaves, masterIp, masterPort, getXpipeNettyClientKeyedObjectPool(), scheduled, executors).execute().sync();
 	}
 
 

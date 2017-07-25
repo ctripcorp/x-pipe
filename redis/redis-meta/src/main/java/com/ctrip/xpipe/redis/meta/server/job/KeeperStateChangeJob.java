@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.job;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.unidal.tuple.Pair;
@@ -37,21 +38,23 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	private int delayBaseMilli = 1000;
 	private int retryTimes = 5;
 	private ScheduledExecutorService scheduled;
+	private Executor executors;
 	private Command<?> activeSuccessCommand;
 
 	public KeeperStateChangeJob(List<KeeperMeta> keepers, Pair<String, Integer> activeKeeperMaster, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool
-			, ScheduledExecutorService scheduled){
-		this(keepers, activeKeeperMaster, clientPool, 1000, 5, scheduled);
+			, ScheduledExecutorService scheduled, Executor executors){
+		this(keepers, activeKeeperMaster, clientPool, 1000, 5, scheduled, executors);
 	}
 	
 	public KeeperStateChangeJob(List<KeeperMeta> keepers, Pair<String, Integer> activeKeeperMaster, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool
-			, int delayBaseMilli, int retryTimes, ScheduledExecutorService scheduled){
+			, int delayBaseMilli, int retryTimes, ScheduledExecutorService scheduled, Executor executors){
 		this.keepers = new LinkedList<>(keepers);
 		this.activeKeeperMaster = activeKeeperMaster;
 		this.clientPool = clientPool;
 		this.delayBaseMilli = delayBaseMilli;
 		this.retryTimes = retryTimes;
 		this.scheduled = scheduled;
+		this.executors = executors;
 	}
 
 	@Override
@@ -81,7 +84,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 			chain.add(setActiveCommand);
 		}
 
-		ParallelCommandChain backupChain = new ParallelCommandChain();
+		ParallelCommandChain backupChain = new ParallelCommandChain(executors);
 		
 		for(KeeperMeta keeperMeta : keepers){
 			if(!keeperMeta.isActive()){

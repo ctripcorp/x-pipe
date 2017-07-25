@@ -1,10 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,12 +44,20 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 	
 	protected ScheduledExecutorService scheduled;
 
-	public AbstractChangePrimaryDcAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled) {
+	protected Executor executors;
+
+	public AbstractChangePrimaryDcAction(DcMetaCache dcMetaCache,
+										 CurrentMetaManager currentMetaManager,
+										 SentinelManager sentinelManager,
+										 XpipeNettyClientKeyedObjectPool keyedObjectPool,
+										 ScheduledExecutorService scheduled,
+										 Executor executors) {
 		this.dcMetaCache = dcMetaCache;
 		this.currentMetaManager = currentMetaManager;
 		this.sentinelManager = sentinelManager;
 		this.keyedObjectPool = keyedObjectPool;
 		this.scheduled = scheduled;
+		this.executors = executors;
 	}
 
 	@Override
@@ -78,7 +83,7 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 		
 		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, 
 				new Pair<String, Integer>(newMaster.getKey(), newMaster.getValue()), 
-				keyedObjectPool, 1000, 1, scheduled);
+				keyedObjectPool, 1000, 1, scheduled, executors);
 		try {
 			job.execute().get(waitTimeoutSeconds/2, TimeUnit.SECONDS);
 			executionLog.info("[makeKeepersOk]success");
