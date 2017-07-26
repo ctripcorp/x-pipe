@@ -76,6 +76,11 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 		List<InetSocketAddress> result = new LinkedList<>();
 		for(MigrationShard migrationShard : getHolder().getMigrationShards()){
 			HostPort newMasterAddress = migrationShard.getNewMasterAddress();
+			if(newMasterAddress == null){
+				//may force publish
+				logger.warn("[getNewMasters][null master]{}", migrationShard.shardName());
+				continue;
+			}
 			result.add(InetSocketAddress.createUnresolved(newMasterAddress.getHost(), newMasterAddress.getPort()));
 		}
 		return result;

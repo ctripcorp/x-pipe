@@ -19,6 +19,7 @@ public class ChooseNewMasterFailException extends MetaServerRuntimeException{
 	
 	public ChooseNewMasterFailException(List<RedisMeta> redises) {
 		super("can not choose master from redises:" + redises);
+		this.redises = redises;
 	}
 
 	public List<RedisMeta> getRedises() {

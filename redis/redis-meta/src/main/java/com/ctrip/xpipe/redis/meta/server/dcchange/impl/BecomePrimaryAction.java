@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.*;
 
+import com.ctrip.xpipe.utils.StringUtil;
 import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.command.Command;
@@ -110,6 +111,8 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 	protected Pair<String, Integer> chooseNewMaster(String clusterId, String shardId) {
 
 		List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterId, shardId);
+		String desc = StringUtil.join(",", (redis) -> redis.desc(), redises);
+		executionLog.info("[chooseNewMaster][from]" + desc);
 		RedisMeta newMaster = newMasterChooser.choose(redises);
 		if(newMaster == null){
 			throw new ChooseNewMasterFailException(redises);

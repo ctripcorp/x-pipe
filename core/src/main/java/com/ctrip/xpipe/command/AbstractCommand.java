@@ -60,6 +60,8 @@ public abstract class AbstractCommand<V> implements Command<V>{
 				}catch(Exception e){
 					if(!future().isDone()){
 						future().setFailure(e);
+					}else {
+						logger.error("[execute][done, but exception]" + this, e);
 					}
 				}
 			}

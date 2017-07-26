@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core;
 
 import com.ctrip.xpipe.redis.core.meta.QuorumConfigTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRoleTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -41,6 +42,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	ClusterMetaComparatorTest.class,
 	ShardMetaComparatorTest.class,
 	RoleCommandTest.class,
+	MasterRoleTest.class,
 	DcInfoTest.class,
 	DefaultPsyncTest.class,
 	META_SERVER_SERVICETest.class,

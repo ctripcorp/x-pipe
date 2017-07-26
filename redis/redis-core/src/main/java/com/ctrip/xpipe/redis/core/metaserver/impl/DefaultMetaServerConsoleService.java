@@ -20,6 +20,9 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
  * Sep 5, 2016
  */
 public class DefaultMetaServerConsoleService extends AbstractMetaService implements MetaServerConsoleService{
+
+	private int MAX_PER_ROUTE = Integer.parseInt(System.getProperty("max-per-route", "1000"));
+	private int MAX_TOTAL = Integer.parseInt(System.getProperty("max-per-route", "10000"));
 	private int RETRY_TIMES = Integer.parseInt(System.getProperty("retry-times", "8"));
 	private int CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("connect-timeout", "8000"));
 	private int SO_TIMEOUT = Integer.parseInt(System.getProperty("so-timeout", "8000"));
@@ -39,8 +42,8 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(metaServerAddress);
 		
 		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(
-				100
-				,1000,
+				MAX_PER_ROUTE,
+				MAX_TOTAL,
 				CONNECT_TIMEOUT,
 				SO_TIMEOUT,
 				RETRY_TIMES,

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.meta.server.dcchange.exception.ChooseNewMasterFailException;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,13 +57,14 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
         List<RedisMeta> masters = pair.getKey();
         List<RedisMeta> aliveServers = pair.getValue();
 
+        logger.debug("[choose]{}, {}", masters, aliveServers);
         if (masters.size() == 0) {
             newMaster = doChooseFromAliveServers(aliveServers);
         } else if (masters.size() == 1) {
             logger.info("[choose][already has master]{}", masters);
             newMaster = masters.get(0);
         } else {
-            throw new IllegalStateException("multi master there, can not choose a new master " + masters);
+            throw new ChooseNewMasterFailException(masters);
         }
         return newMaster;
     }
@@ -70,7 +72,7 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
     protected Pair<List<RedisMeta>, List<RedisMeta>> getMasters(List<RedisMeta> allRedises) {
 
         List<RedisMeta> masters = new LinkedList<>();
-        List<RedisMeta> aliveServers = new LinkedList<>();
+        List<RedisMeta> tmpAliveServers = new LinkedList<>();
 
         CountDownLatch latch = new CountDownLatch(allRedises.size());
 
@@ -83,10 +85,14 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
                     try {
                         SERVER_ROLE role = serverRole(redisMeta);
                         if (role == SERVER_ROLE.MASTER) {
-                            masters.add(redisMeta);
+                            synchronized (masters){
+                                masters.add(redisMeta);
+                            }
                         }
                         if (role != SERVER_ROLE.UNKNOWN) {
-                            aliveServers.add(redisMeta);
+                            synchronized (tmpAliveServers){
+                                tmpAliveServers.add(redisMeta);
+                            }
                         }
                     } finally {
                         latch.countDown();
@@ -100,7 +106,28 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
         } catch (InterruptedException e) {
             logger.error("[getMasters]" + allRedises, e);
         }
+
+        List<RedisMeta> aliveServers = sortAccording(allRedises, tmpAliveServers);
         return new Pair<>(masters, aliveServers);
+    }
+
+    public List<RedisMeta> sortAccording(List<RedisMeta> according, List<RedisMeta> tmpResult){
+
+        List<RedisMeta> result = new LinkedList<>();
+        for(RedisMeta seq : according){
+
+            boolean exists = false;
+            for(RedisMeta real : tmpResult){
+                if(seq.equalsWithIpPort(real)){
+                    exists = true;
+                    break;
+                }
+            }
+            if(exists){
+                result.add(seq);
+            }
+        }
+        return result;
     }
 
     protected SERVER_ROLE serverRole(RedisMeta redisMeta) {

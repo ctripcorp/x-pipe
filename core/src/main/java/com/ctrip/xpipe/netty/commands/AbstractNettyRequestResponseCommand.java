@@ -11,6 +11,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.utils.ChannelUtil;
 
@@ -40,9 +41,9 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	protected void doSendRequest(final NettyClient nettyClient, ByteBuf byteBuf) {
 		
 		if(logRequest()){
-			logger.info("[doSendRequest]{} ,{}", nettyClient, ByteBufUtils.readToString(byteBuf.slice()).trim());
+			logger.info("[doSendRequest]{}, {}", nettyClient, ByteBufUtils.readToString(byteBuf.slice()));
 		}
-		
+
 		if(hasResponse()){
 			nettyClient.sendRequest(byteBuf, this);
 		}else{
@@ -55,10 +56,10 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 		if(getCommandTimeoutMilli() > 0 && scheduled != null){
 			
 			logger.debug("[doSendRequest][schedule timeout]{}, {}", this, getCommandTimeoutMilli());
-			final ScheduledFuture<?> timeoutFuture = scheduled.schedule(new Runnable() {
+			final ScheduledFuture<?> timeoutFuture = scheduled.schedule(new AbstractExceptionLogTask() {
 				
 				@Override
-				public void run() {
+				public void doRun() {
 					logger.info("[run][timeout]{}", nettyClient);
 					future().setFailure(new CommandTimeoutException("timeout " +  + getCommandTimeoutMilli()));
 				}

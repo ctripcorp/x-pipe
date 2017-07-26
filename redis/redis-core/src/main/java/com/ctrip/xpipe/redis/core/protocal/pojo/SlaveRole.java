@@ -54,6 +54,7 @@ public class SlaveRole extends AbstractRole {
 		return masterOffset;
 	}
 
+	@Override
 	public ByteBuf format() {
 		Object[] tmp = new Object[] { serverRole.toString(), masterHost, masterPort, masterState.getDesc(),
 				masterOffset };

@@ -20,7 +20,7 @@
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="100 MB"/>
+                <SizeBasedTriggeringPolicy size="512 MB"/>
             </Policies>
         </RollingFile>
     </appenders>
@@ -36,7 +36,6 @@
 		<logger name="com.ctrip.xpipe.lifecycle.SpringComponentRegistry" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
-
 		
         <root level="INFO">
             <appender-ref ref="Console"/>

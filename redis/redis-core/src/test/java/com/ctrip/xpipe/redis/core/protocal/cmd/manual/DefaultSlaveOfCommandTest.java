@@ -1,17 +1,16 @@
-package com.ctrip.xpipe.redis.core.protocal.cmd;
+package com.ctrip.xpipe.redis.core.protocal.cmd.manual;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-
-import com.ctrip.xpipe.simpleserver.IoAction;
-import com.ctrip.xpipe.simpleserver.IoActionFactory;
-import com.ctrip.xpipe.simpleserver.Server;
-import org.junit.Before;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultSlaveOfCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
 import org.junit.Test;
 
-import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import java.net.InetSocketAddress;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author wenchao.meng
@@ -20,82 +19,42 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
  */
 public class DefaultSlaveOfCommandTest extends AbstractRedisTest {
 
-    private Server server;
-
-    @Before
-    public void beforeDefaultSlaveOfCommandTest() throws Exception {
-        server = startXSlaveNotSupportServer();
-    }
-
     @Test
-    public void testSuccess() throws Exception {
+    public void testMultiServer() throws Exception {
 
-        executeSlaveOf("127.0.0.1", server.getPort());
-    }
+        int begin = 10000;
+        int count = 32;
 
-    private Server startXSlaveNotSupportServer() throws Exception {
-
-        return startServer(new IoActionFactory() {
-
-            @Override
-            public IoAction createIoAction(Socket socket) {
-
-                return new IoAction() {
-
-                    private String currentLine = null;
-
-                    @Override
-                    public Object read() throws IOException {
-
-                        String line = readLine(socket.getInputStream());
-                        currentLine = line;
-                        return line;
-                    }
-
-                    @Override
-                    public void write() throws IOException {
-
-                        String result = "+OK\r\n";
-                        if (currentLine.indexOf("xslaveof") >= 0) {
-                            result = "-unsupport xslaveof command\r\n";
-                        }
-                        socket.getOutputStream().write(result.getBytes());
-                        socket.getOutputStream().flush();
-                    }
-
-                    @Override
-                    public Socket getSocket() {
-                        return null;
-                    }
-                };
-            }
-        });
-    }
-
-    private void executeSlaveOf(String host, int port) throws Exception {
-
-        executeSlaveOf(host, port, null, 0);
-    }
-
-    private void executeSlaveOf(String host, int port, String slaveofHost, int slaveOfPort) throws Exception {
-
-        Command<String> command = new DefaultSlaveOfCommand(
-                getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(host, port)),
-                slaveofHost, slaveOfPort,
-                scheduled);
-        String result = command.execute().get();
-        logger.info("{}", result);
-    }
-
-    @Test
-    public void testMulti() throws Exception {
-
-        for (int i = 0; i < 5; i++) {
-
-            logger.info("round:{}", i);
-            executeSlaveOf("127.0.0.1", server.getPort());
+        //make connection active
+        for(int i = 0; i < count ;i++){
+            int port = begin + i;
+            SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("127.0.0.1", port));
+            new PingCommand(keyPool, scheduled).execute().get();
         }
 
+        CountDownLatch latch = new CountDownLatch(count);
+
+        for(int i = 0; i < count ;i++){
+            int port = begin + i;
+            SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("127.0.0.1", port));
+            long beginTime = System.currentTimeMillis();
+            new DefaultSlaveOfCommand(keyPool, "127.0.0.1", 0, scheduled).execute(executors).addListener(new CommandFutureListener<String>() {
+                @Override
+                public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+
+                    long endTime = System.currentTimeMillis();
+                    long duration = endTime - beginTime;
+                    if( duration > 50){
+                        logger.warn("[timeout]127.0.0.1:{}, {}", port, duration);
+                    }
+                    latch.countDown();
+                }
+            });
+        }
+        latch.await();
+        sleep(1000);
+        logger.info("[testMultiServer][end]");
     }
+
 
 }

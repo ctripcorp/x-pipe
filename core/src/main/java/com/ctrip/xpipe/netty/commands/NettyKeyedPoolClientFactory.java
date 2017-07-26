@@ -31,7 +31,7 @@ import io.netty.handler.logging.LoggingHandler;
  */
 public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implements KeyedPooledObjectFactory<InetSocketAddress, NettyClient> {
 
-	public static final int DEFAULT_KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD = Integer.parseInt(System.getProperty("KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD", "4"));
+	public static final int DEFAULT_KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD = Integer.parseInt(System.getProperty("KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD", "8"));
 	private int eventLoopThreads;
 	private NioEventLoopGroup eventLoopGroup;
 	private Bootstrap b = new Bootstrap();

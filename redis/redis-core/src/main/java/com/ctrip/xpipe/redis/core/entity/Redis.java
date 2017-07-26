@@ -5,48 +5,65 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**
  * @author wenchao.meng
- *
- * Jul 17, 2016
+ *         <p>
+ *         Jul 17, 2016
  */
 public interface Redis {
 
-	   String getId();
+    String getId();
 
-	   String getIp();
+    String getIp();
 
-	   String getMaster();
+    String getMaster();
 
-	   Long getOffset();
+    Long getOffset();
 
-	   Integer getPort();
+    Integer getPort();
 
-	   Redis setId(String id);
+    Redis setId(String id);
 
-	   Redis setIp(String ip);
+    Redis setIp(String ip);
 
-	   Redis setMaster(String master);
+    Redis setMaster(String master);
 
-	   Redis setOffset(Long offset);
+    Redis setOffset(Long offset);
 
-	   Redis setPort(Integer port);
+    Redis setPort(Integer port);
 
-	   Redis setSurvive(Boolean survive);
-	   
-	   boolean isSurvive();
+    Redis setSurvive(Boolean survive);
 
-	   default boolean equalsWithIpPort(HostPort hostPort){
+    boolean isSurvive();
 
-	   		if(!ObjectUtils.equals(getIp(), hostPort.getHost())){
-	   			return false;
-			}
+    default boolean equalsWithIpPort(HostPort hostPort) {
 
-			if(!ObjectUtils.equals(getPort(), hostPort.getPort())) {
-				return false;
-			}
-			return true;
-	   }
+        if (!ObjectUtils.equals(getIp(), hostPort.getHost())) {
+            return false;
+        }
 
-	   default String desc(){
-	   	return String.format("%s(%s:%d)", getClass().getSimpleName(), getIp(), getPort());
-	   }
+        if (!ObjectUtils.equals(getPort(), hostPort.getPort())) {
+            return false;
+        }
+        return true;
+    }
+
+    default boolean equalsWithIpPort(Redis redis) {
+
+        if (redis == null) {
+            return false;
+        }
+
+        if (!ObjectUtils.equals(getIp(), redis.getIp())) {
+            return false;
+        }
+
+        if (!ObjectUtils.equals(getPort(), redis.getPort())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    default String desc() {
+        return String.format("%s(%s:%d)", getClass().getSimpleName(), getIp(), getPort());
+    }
 }

@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.monitor;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +28,10 @@ public class DefaultDelayMonitor extends AbstractStartStoppable implements Delay
 
 	private long infoDelta = 1000;
 
+	private boolean consolePrint = false;
+
+	private long max, maxTime;
+
 	public DefaultDelayMonitor(String delayType) {
 		this(delayType, 1000);
 	}
@@ -37,12 +40,27 @@ public class DefaultDelayMonitor extends AbstractStartStoppable implements Delay
 		this.delayType = delayType;
 		this.infoDelta = infoDelta;
 	}
-	
+
+	@Override
+	public void setConsolePrint(boolean consolePrint) {
+		this.consolePrint = consolePrint;
+	}
+
 	@Override
 	protected void doStart() throws Exception {
 		
 		scheduled = Executors.newScheduledThreadPool(4);
-		scheduled.scheduleAtFixedRate(this, 0, 5, TimeUnit.SECONDS);
+		ScheduledFuture<?> future = scheduled.scheduleAtFixedRate(this, 0, 5, TimeUnit.SECONDS);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					future.get();
+				} catch (Exception e) {
+					logger.error("[doStart]", e);
+				}
+			}
+		}).start();
 	}
 	
 	
@@ -67,6 +85,11 @@ public class DefaultDelayMonitor extends AbstractStartStoppable implements Delay
 			totalDelay.addAndGet(delta);
 			totalNum.incrementAndGet();
 		}
+
+		if(delta > max){
+			max = delta;
+			maxTime = System.currentTimeMillis();
+		}
 	}
 		
 	@Override
@@ -80,12 +103,24 @@ public class DefaultDelayMonitor extends AbstractStartStoppable implements Delay
 			
 			if(deltaNum  > 0 ){
 				double avgDelay =  (double)(currentDelay - previousDelay)/deltaNum;
+
 				logger.info(String.format("%d - %d = %d, %d - %d = %d", currentDelay,previousDelay, currentDelay - previousDelay, currentNum, previousNum, currentNum - previousNum));
-				logger.info("[delay]{}-{} {}", getDelayType(), delayInfo == null ? "" :delayInfo, String.format("%.2f", avgDelay));
+				String info = String.format("[delay]%s, %s, %s", getDelayType(), delayInfo == null ? "" :delayInfo, String.format("%.2f", avgDelay));
+				if(consolePrint){
+					System.out.println(info);
+				}
+				logger.info(info);
 			}
-			
+
+			String maxInfo = String.format("[max]%d, %s", max, DateTimeUtils.timeAsString(maxTime));
+			logger.info(maxInfo);
+			if(consolePrint){
+				System.out.println(maxInfo);
+			}
+
 			previousDelay = currentDelay;
 			previousNum = currentNum;
+			max = 0;
 		}catch(Throwable th){
 			logger.error("[run]", th);
 		}
