@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -99,18 +100,19 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 				throw new ResourceAccessException("test");
 			}
 
+
 			@Override
-			public void markInstanceUp(HostPort hostPort) throws Exception {
+			public void markInstanceUp(HostPort hostPort) throws OuterClientException {
 
 			}
 
 			@Override
-			public boolean isInstanceUp(HostPort hostPort) throws Exception {
-				return true;
+			public boolean isInstanceUp(HostPort hostPort) throws OuterClientException {
+				return false;
 			}
 
 			@Override
-			public void markInstanceDown(HostPort hostPort) throws Exception {
+			public void markInstanceDown(HostPort hostPort) throws OuterClientException {
 
 			}
 
@@ -146,17 +148,17 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 			}
 
 			@Override
-			public void markInstanceUp(HostPort hostPort) throws Exception {
+			public void markInstanceUp(HostPort hostPort) throws OuterClientException {
 
 			}
 
 			@Override
-			public boolean isInstanceUp(HostPort hostPort) throws Exception {
+			public boolean isInstanceUp(HostPort hostPort) throws OuterClientException {
 				return true;
 			}
 
 			@Override
-			public void markInstanceDown(HostPort hostPort) throws Exception {
+			public void markInstanceDown(HostPort hostPort) throws OuterClientException {
 
 			}
 

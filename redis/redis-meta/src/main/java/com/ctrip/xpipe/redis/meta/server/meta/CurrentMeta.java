@@ -169,7 +169,6 @@ public class CurrentMeta implements Releasable {
 			@Override
 			public void visitRemoved(ShardMeta removed) {
 				currentClusterMeta.removeShard(removed);
-				;
 			}
 
 			@Override

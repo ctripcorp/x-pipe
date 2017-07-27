@@ -89,11 +89,11 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 				
 				try{
 					for(int i=0;i<runTimes;i++){
-						write.acquire();;
+						write.acquire();
 						int randomLength = randomInt(0, 1 << 8);
 						commandStore.appendCommands(Unpooled.wrappedBuffer(randomString(randomLength).getBytes()));
 						realLength.addAndGet(randomLength);
-						read.release();;
+						read.release();
 					}
 				}finally{
 					finished.set(true);
@@ -117,7 +117,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 						if(len != realLength.get()){
 							result.set(false);
 						}
-						write.release();;
+						write.release();
 					}
 				}finally{
 					latch.countDown();

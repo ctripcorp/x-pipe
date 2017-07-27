@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.ctrip.xpipe.redis.meta.server.cluster.*;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -26,10 +27,6 @@ import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.observer.NodeModified;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
-import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.zk.EternalWatcher;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -125,54 +122,58 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 		childrenChanged();
 	}
 
-	private synchronized void childrenChanged() throws Exception {
+	private synchronized void childrenChanged() throws ClusterException {
 
 		logger.info("[childrenChanged][start][{}]{}", currentServerId(), servers);
 		
 		CuratorFramework client = zkClient.get();
-		List<String> children = client.getChildren().forPath(MetaZkConfig.getMetaServerRegisterPath());
-		
-		Set<Integer> currentServers = new HashSet<>();
-		for(String child : children){
-			
-			int serverId = Integer.parseInt(child);
-			byte []data = client.getData().forPath(MetaZkConfig.getMetaServerRegisterPath() + "/" + child);
-			ClusterServerInfo  info = Codec.DEFAULT.decode(data, ClusterServerInfo.class);
-			
-			logger.debug("[childrenChanged][{}]{},{}", currentServerId(), serverId, info);
-			currentServers.add(serverId);
 
-			ClusterServer server = servers.get(serverId);
-			if(server == null){
-				logger.info("[childrenChanged][{}][createNew]{}{}", currentServerId(), child, info);
-				T remoteServer = remoteClusterServerFactory.createClusterServer(serverId, info);
-				servers.put(serverId, remoteServer);
-				logger.info("[childrenChanged][{}][createNew]{}", currentServerId(), servers);
-				serverAdded(remoteServer);
-			}else{
-				if(!info.equals(server.getClusterInfo())){
-					
-					logger.info("[childrenChanged][{}][clusterInfoChanged]{}{}", currentServerId(), child, info, server.getClusterInfo());
-					T newServer = remoteClusterServerFactory.createClusterServer(serverId, info);
-					servers.put(serverId, newServer);
-					serverChanged(server, newServer);
-					
+		try {
+			List<String> children = client.getChildren().forPath(MetaZkConfig.getMetaServerRegisterPath());
+			Set<Integer> currentServers = new HashSet<>();
+			for(String child : children){
+
+				int serverId = Integer.parseInt(child);
+				byte []data = client.getData().forPath(MetaZkConfig.getMetaServerRegisterPath() + "/" + child);
+				ClusterServerInfo  info = Codec.DEFAULT.decode(data, ClusterServerInfo.class);
+
+				logger.debug("[childrenChanged][{}]{},{}", currentServerId(), serverId, info);
+				currentServers.add(serverId);
+
+				ClusterServer server = servers.get(serverId);
+				if(server == null){
+					logger.info("[childrenChanged][{}][createNew]{}{}", currentServerId(), child, info);
+					T remoteServer = remoteClusterServerFactory.createClusterServer(serverId, info);
+					servers.put(serverId, remoteServer);
+					logger.info("[childrenChanged][{}][createNew]{}", currentServerId(), servers);
+					serverAdded(remoteServer);
+				}else{
+					if(!info.equals(server.getClusterInfo())){
+
+						logger.info("[childrenChanged][{}][clusterInfoChanged]{}{}", currentServerId(), child, info, server.getClusterInfo());
+						T newServer = remoteClusterServerFactory.createClusterServer(serverId, info);
+						servers.put(serverId, newServer);
+						serverChanged(server, newServer);
+
+					}
 				}
 			}
-		}
 
-		
-		for(Integer old : servers.keySet()){
-			if(!currentServers.contains(old)){
-				
-				ClusterServer serverInfo = servers.remove(old);
-				logger.info("[childrenChanged][remote not exist][{}]{}, {}, current:{}", currentServerId(), old, serverInfo);
-				remoteDelted(serverInfo);
-				
+
+			for(Integer old : servers.keySet()){
+				if(!currentServers.contains(old)){
+
+					ClusterServer serverInfo = servers.remove(old);
+					logger.info("[childrenChanged][remote not exist][{}]{}, {}, current:{}", currentServerId(), old, serverInfo);
+					remoteDelted(serverInfo);
+
+				}
 			}
-		}
 
-		logger.info("[childrenChanged][ end ][{}]{}", currentServerId(), servers);
+			logger.info("[childrenChanged][ end ][{}]{}", currentServerId(), servers);
+		} catch (Exception e) {
+			throw new ClusterException("[childrenChanged]", e);
+		}
 	}
 
 	
@@ -226,7 +227,7 @@ public class AbstractClusterServers<T extends ClusterServer> extends AbstractLif
 	}
 	
 	@Override
-	public void refresh() throws Exception {
+	public void refresh() throws ClusterException {
 		childrenChanged();
 	}
 

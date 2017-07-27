@@ -60,7 +60,7 @@ public class MoveSlotFromLiving extends AbstractSlotMoveTask{
 		}
 	}
 
-	private void setSuccess() throws Exception {
+	private void setSuccess() throws ShardingException {
 		
 		logger.info("[setSuccess]{},{},{}", getSlot(), getFrom(), getTo());
 		
@@ -71,7 +71,7 @@ public class MoveSlotFromLiving extends AbstractSlotMoveTask{
 	}
 
 
-	private void setFailAndlRollback(Throwable th) throws Exception {
+	private void setFailAndlRollback(Throwable th) throws ShardingException {
 		
 		setSlotInfo(new SlotInfo(from.getServerId()));
 		getFrom().addSlot(slot);

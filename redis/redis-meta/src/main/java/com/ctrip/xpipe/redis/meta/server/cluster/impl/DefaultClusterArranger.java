@@ -10,6 +10,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.ctrip.xpipe.redis.meta.server.cluster.*;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,12 +23,6 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.observer.NodeModified;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterArranger;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
-import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.ContinueResharding;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.InitResharding;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
@@ -104,19 +99,19 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 		super.doDispose();
 	}
 	
-	private void refresh() throws Exception {
+	private void refresh() throws ClusterException {
 		slotManager.refresh();
 		clusterServers.refresh();
 		
 	}
 
-	protected void periodCheck() throws Exception {
+	protected void periodCheck() {
 		
 		checkDeadServer();
 		arrangeTaskTrigger.rebalance();
 	}
 
-	private void initCheck() throws Exception {
+	private void initCheck() throws ClusterException {
 		refresh();
 		
 		checkNotExist();

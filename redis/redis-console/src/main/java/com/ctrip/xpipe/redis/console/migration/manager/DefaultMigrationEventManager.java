@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
@@ -35,8 +34,6 @@ public class DefaultMigrationEventManager implements MigrationEventManager, Cros
 
 	private ScheduledExecutorService scheduled;
 
-	private boolean initiated = false;
-	
 	private Map<Long, MigrationEvent> currentWorkingEvents = new ConcurrentHashMap<>();
 
 	@PostConstruct

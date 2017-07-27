@@ -29,8 +29,8 @@ public class StringUtilTest extends AbstractTest{
 	@Test
 	public void test(){
 		
-		Assert.assertEquals("a,null,b,c", StringUtil.join(",", "a", null, "b", "c"));;
-		Assert.assertEquals("a,null,b,c,null", StringUtil.join(",", "a", null, "b", "c", null));;
+		Assert.assertEquals("a,null,b,c", StringUtil.join(",", "a", null, "b", "c"));
+		Assert.assertEquals("a,null,b,c,null", StringUtil.join(",", "a", null, "b", "c", null));
 
 	}
 	

@@ -9,6 +9,6 @@ import com.ctrip.xpipe.api.lifecycle.Ordered;
  */
 public interface MetricProxy extends Ordered {
 
-	void writeBinMultiDataPoint(MetricBinMultiDataPoint bmp) throws Exception;
+	void writeBinMultiDataPoint(MetricBinMultiDataPoint bmp) throws MetricProxyException;
 
 }

@@ -28,7 +28,7 @@ public class RollbackMovingTask extends AbstractSlotMoveTask{
 		if( to != null ){
 			to.deleteSlot(slot);
 		}
-		future().setSuccess();;
+		future().setSuccess();
 	}
 
 	@Override

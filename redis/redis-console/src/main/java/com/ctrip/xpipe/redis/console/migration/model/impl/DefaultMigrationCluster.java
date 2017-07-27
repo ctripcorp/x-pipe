@@ -63,7 +63,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         this.migrationService = migrationService;
         loadMetaInfo();
         executors = DefaultExecutorFactory.createAllowCoreTimeout(
-                "Migration-" + clusterName(), shards.size() * 2
+                "Migration-" + currentCluster.getClusterName(), shards.size() * 2
         ).createExecutorService();
 
         setStatus();

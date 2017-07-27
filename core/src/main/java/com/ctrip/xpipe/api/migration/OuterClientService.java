@@ -18,16 +18,15 @@ public interface OuterClientService extends Ordered{
 	
 	OuterClientService DEFAULT = ServicesUtil.getOuterClientService();
 
-	void markInstanceUp(HostPort hostPort) throws Exception;
+	void markInstanceUp(HostPort hostPort) throws OuterClientException;
 
-	boolean isInstanceUp(HostPort hostPort) throws Exception;
+	boolean isInstanceUp(HostPort hostPort) throws OuterClientException;
 
-	void markInstanceDown(HostPort hostPort) throws Exception;
+	void markInstanceDown(HostPort hostPort) throws OuterClientException;
 
-	MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) throws Exception;
+	MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) throws OuterClientException;
 	
-	MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName, InetSocketAddress newMaster) throws Exception;
-
+	MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName, InetSocketAddress newMaster) throws OuterClientException;
 
 	class MigrationPublishResult {
 		private boolean Success;

@@ -14,7 +14,7 @@ public class CatHealthEventProcessor implements HealthEventProcessor{
     private static final String TYPE = "HealthEvent";
 
     @Override
-    public void onEvent(AbstractInstanceEvent instanceEvent) throws Exception {
+    public void onEvent(AbstractInstanceEvent instanceEvent) throws HealthEventProcessorException {
         EventMonitor.DEFAULT.logEvent(TYPE, String.format("%s-%s", instanceEvent.getClass().getSimpleName(), instanceEvent.getHostPort()));
     }
 }

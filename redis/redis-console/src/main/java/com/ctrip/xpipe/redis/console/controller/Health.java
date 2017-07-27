@@ -31,7 +31,7 @@ public class Health extends AbstractConsoleController {
     private CrossDcClusterServer crossDcClusterServer;
 
     @RequestMapping(value = "/health", method = RequestMethod.GET)
-    public Map<String, Object> getHealthState(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    public Map<String, Object> getHealthState(HttpServletRequest request, HttpServletResponse response) {
 
         if (!consoleLeaderElector.amILeader() && !isFromLocal(request)) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -46,7 +46,7 @@ public class Health extends AbstractConsoleController {
         return IpUtils.isLocal(request.getRemoteHost());
     }
 
-    public Map<String, Object> getHealthState() throws Exception {
+    public Map<String, Object> getHealthState() {
 
         Map<String, Object> result = new HashMap<>();
         result.put("isLeader", consoleLeaderElector.amILeader());

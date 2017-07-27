@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.spring;
 
 
+import com.ctrip.xpipe.exception.DefaultExceptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -10,8 +11,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.HandlerInterceptor;
-
-import com.ctrip.xpipe.exception.GlobalExceptionHandler;
 
 /**
  * @author wenchao.meng
@@ -26,7 +25,7 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 	public static ApplicationContext applicationContext;
 	
 	static{
-		Thread.setDefaultUncaughtExceptionHandler(new GlobalExceptionHandler());
+		Thread.setDefaultUncaughtExceptionHandler(new DefaultExceptionHandler());
 	}
 
 	@Bean

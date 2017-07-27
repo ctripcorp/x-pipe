@@ -38,8 +38,6 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
 
     private final int  THREAD_COUNT = 4;
 
-    private int healthyDelayMilli = 5000;
-
     private int downAfterCheckNums = 5;
 
     private Map<HostPort, HealthStatus> allHealthStatus = new ConcurrentHashMap<>();

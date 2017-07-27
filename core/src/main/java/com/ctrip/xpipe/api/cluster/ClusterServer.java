@@ -11,6 +11,6 @@ public interface ClusterServer {
 
     boolean amILeader();
 
-    List<String> getAllServers() throws Exception;
+    List<String> getAllServers();
 
 }

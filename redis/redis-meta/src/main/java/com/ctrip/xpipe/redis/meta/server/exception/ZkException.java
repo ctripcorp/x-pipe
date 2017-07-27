@@ -10,7 +10,7 @@ public class ZkException extends MetaServerRuntimeException{
 	private static final long serialVersionUID = 1L;
 
 	public ZkException(String message, Exception e) {
-		super(message);
+		super(message, e);
 	}
 
 }

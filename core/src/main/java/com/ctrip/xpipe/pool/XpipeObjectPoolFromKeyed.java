@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.pool;
 
+import com.ctrip.xpipe.api.pool.ObjectPoolException;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 
@@ -33,7 +34,7 @@ public class XpipeObjectPoolFromKeyed<K, V> implements SimpleObjectPool<V>{
 	}
 
 	@Override
-	public void clear() throws Exception {
+	public void clear() throws ObjectPoolException {
 	}
 
 	@Override

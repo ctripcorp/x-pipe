@@ -89,7 +89,7 @@ public class DeleteKeeperCommandTest extends AbstractMetaServerTest{
 			@Override
 			protected void doRun() throws Exception {
 				LifecycleHelper.stopIfPossible(server);
-				LifecycleHelper.disposeIfPossible(server);;
+				LifecycleHelper.disposeIfPossible(server);
 				
 			}
 		}, checkIntervalMili/2, TimeUnit.MILLISECONDS);

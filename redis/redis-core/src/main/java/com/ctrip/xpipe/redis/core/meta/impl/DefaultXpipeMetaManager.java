@@ -314,7 +314,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	@Override
 	public void setSurviveKeepers(String dcId, String clusterId, String shardId, List<KeeperMeta> surviveKeepers) {
 		
-		List<KeeperMeta> keepers = getDirectKeepers(dcId, clusterId, shardId);;
+		List<KeeperMeta> keepers = getDirectKeepers(dcId, clusterId, shardId);
 		
 		List<KeeperMeta> unfoundKeepers = new LinkedList<>();
 		

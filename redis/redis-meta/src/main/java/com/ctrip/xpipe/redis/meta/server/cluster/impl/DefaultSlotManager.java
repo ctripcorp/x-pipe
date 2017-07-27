@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.ctrip.xpipe.redis.meta.server.cluster.ClusterException;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.apache.curator.framework.CuratorFramework;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -138,21 +139,25 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 	}
 
 	@Override
-	public void refresh() throws Exception {
+	public void refresh() throws ClusterException {
 		
 		doRefresh();
 	}
 	
 	@Override
-	public void refresh(int... slotIds) throws Exception {
+	public void refresh(int... slotIds) throws ClusterException {
 		
 		String slotsPath = MetaZkConfig.getMetaServerSlotsPath();
 		CuratorFramework client = zkClient.get();
 
 		Map<Integer, SlotInfo> slotsInfo = new HashMap<>();
 		for(int slotId : slotIds){
-
-			byte[] slotContent = client.getData().forPath(slotsPath + "/" + String.valueOf(slotId));
+			byte[] slotContent = new byte[0];
+			try {
+				slotContent = client.getData().forPath(slotsPath + "/" + String.valueOf(slotId));
+			} catch (Exception e) {
+				throw new ClusterException("get data for:" + slotId, e);
+			}
 			SlotInfo slotInfo = Codec.DEFAULT.decode(slotContent, SlotInfo.class);
 			slotsInfo.put(slotId, slotInfo);
 		}
@@ -180,26 +185,30 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 		
 	}
 
-	private void doRefresh() throws Exception {
+	private void doRefresh() throws ClusterException {
 		
 		logger.debug("[doRefresh]");
 		
 		Map<Integer, SlotInfo> slotsMap = new ConcurrentHashMap<>();
 		Map<Integer, Set<Integer>> serverMap = new ConcurrentHashMap<>();
-		
-		CuratorFramework client = zkClient.get();
-		String slotsPath = MetaZkConfig.getMetaServerSlotsPath();
-		for(String slotPath : client.getChildren().forPath(slotsPath)){
-			int slot = Integer.parseInt(slotPath);
-			byte[] slotContent = client.getData().forPath(slotsPath + "/" + slotPath);
-			SlotInfo slotInfo = Codec.DEFAULT.decode(slotContent, SlotInfo.class);
 
-			
-			Set<Integer> serverSlots = getOrCreateServerMap(serverMap, slotInfo.getServerId());			
-			serverSlots.add(slot);
-			slotsMap.put(slot, slotInfo);
+		try{
+			CuratorFramework client = zkClient.get();
+			String slotsPath = MetaZkConfig.getMetaServerSlotsPath();
+			for(String slotPath : client.getChildren().forPath(slotsPath)){
+				int slot = Integer.parseInt(slotPath);
+				byte[] slotContent = client.getData().forPath(slotsPath + "/" + slotPath);
+				SlotInfo slotInfo = Codec.DEFAULT.decode(slotContent, SlotInfo.class);
+
+
+				Set<Integer> serverSlots = getOrCreateServerMap(serverMap, slotInfo.getServerId());
+				serverSlots.add(slot);
+				slotsMap.put(slot, slotInfo);
+			}
+		}catch (Exception e){
+			throw new ClusterException("doRefersh", e);
 		}
-		
+
 		try{
 			lock.writeLock().lock();
 			this.slotsMap = slotsMap;

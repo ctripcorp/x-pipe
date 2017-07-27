@@ -51,7 +51,7 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_UPSTREAM_CHANGE, method = RequestMethod.PUT)
 	public void upstreamChange(@PathVariable String clusterId, @PathVariable String shardId, 
-			@PathVariable String ip, @PathVariable int port,@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) throws Exception {
+			@PathVariable String ip, @PathVariable int port,@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 		
 		logger.info("[upstreamChange]{},{},{},{}", clusterId, shardId, ip, port);
 		metaServer.updateUpstream(clusterId, shardId, ip, port, forwardInfo);
@@ -59,7 +59,7 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.GET_ACTIVE_KEEPER, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public KeeperMeta getActiveKeeper(@PathVariable String clusterId, @PathVariable String shardId, 
-			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) throws Exception {
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 		
 		logger.info("[getActiveKeeper]{},{},{},{}", clusterId, shardId);
 		return metaServer.getActiveKeeper(clusterId, shardId, forwardInfo);

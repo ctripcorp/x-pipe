@@ -40,7 +40,7 @@ public class DefaultKeeperActiveElectAlgorithmManagerTest extends AbstractMetaSe
 		when(dcMetaCache.isCurrentDcPrimary(getClusterId(), getShardId())).thenReturn(true);
 		
 
-		Assert.assertTrue(kaem.get(clusterId, shardId) instanceof DefaultKeeperActiveElectAlgorithm);;
+		Assert.assertTrue(kaem.get(clusterId, shardId) instanceof DefaultKeeperActiveElectAlgorithm);
 	}
 	
 	@Test

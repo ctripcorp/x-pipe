@@ -26,24 +26,27 @@ public class RetryByteBufReadPolicy implements ByteBufReadPolicy{
 	
 	
 	@Override
-	public void read(Channel channel, ByteBuf byteBuf, ByteBufReadAction byteBufReadAction) throws Exception {
+	public void read(Channel channel, ByteBuf byteBuf, ByteBufReadAction byteBufReadAction) throws ByteBufReadPolicyException {
 
 		for(int i = 0; i < retry ; ){
-			
-			int before = byteBuf.readableBytes();
-			byteBufReadAction.read(channel, byteBuf);
-			int after = byteBuf.readableBytes();
-			if( after <= 0 ){
-				break;
-			}
-			if(after < before){
-				//go on
-				continue;
-			}else if(after == before){
-				i++;
-			}else{
-				logger.error("[channelRead][size increased after read!]{} < {}", before, after);
-				break;
+			try {
+				int before = byteBuf.readableBytes();
+				byteBufReadAction.read(channel, byteBuf);
+				int after = byteBuf.readableBytes();
+				if( after <= 0 ){
+					break;
+				}
+				if(after < before){
+					//go on
+					continue;
+				}else if(after == before){
+					i++;
+				}else{
+					logger.error("[channelRead][size increased after read!]{} < {}", before, after);
+					break;
+				}
+			} catch (ByteBufReadActionException e) {
+				throw new ByteBufReadPolicyException(String.format("netty:%s, i:%d, bytebuf:%s", channel, i, ByteBufUtils.readToString(byteBuf)), e);
 			}
 		}
 	}

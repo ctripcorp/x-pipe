@@ -15,7 +15,6 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.helper.Lists;
 import org.unidal.lookup.ContainerLoader;
 
-import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -53,8 +52,6 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 @Repository
 public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 
-	@Autowired
-	private UserInfoHolder userInfo;
 	@Autowired
 	private DcService dcService;
 	@Autowired

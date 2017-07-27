@@ -19,11 +19,11 @@ public class TcpPortCheckTest extends AbstractTest{
 		
 		int port = randomPort();
 		
-		Assert.assertFalse(new TcpPortCheck("localhost", port).checkOpen());;
+		Assert.assertFalse(new TcpPortCheck("localhost", port).checkOpen());
 		
 		Server server = startEchoServer(port);
 		
-		Assert.assertTrue(new TcpPortCheck("localhost", port).checkOpen());;
+		Assert.assertTrue(new TcpPortCheck("localhost", port).checkOpen());
 		sleep(100);
 		Assert.assertEquals(0, server.getConnected());
 		

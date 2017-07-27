@@ -31,7 +31,7 @@ public class ContinueResharding extends AbstractResharding{
 	}
 
 	@Override
-	protected void doShardingTask() throws Exception {
+	protected void doShardingTask() throws ShardingException {
 		
 		logger.info("[doShardingTask]{}", slotInfos);
 		

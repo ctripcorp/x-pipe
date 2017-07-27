@@ -85,7 +85,7 @@ public class DefaultLifecycleState extends DefaultLifecycleController implements
 		
 		String phaseName = getPhaseName();
 		return phaseName == null || 
-				(phaseName != null && phaseNameIn(phaseName, 
+					(	phaseNameIn(phaseName,
 						Initializable.PHASE_NAME_END, 
 						Stoppable.PHASE_NAME_END, 
 						Disposable.PHASE_NAME_BEGIN, 
@@ -120,7 +120,7 @@ public class DefaultLifecycleState extends DefaultLifecycleController implements
 	public boolean isDisposed() {
 		
 		String phaseName = getPhaseName();
-		return phaseName == null  || (phaseName != null && phaseName.equals(Disposable.PHASE_NAME_END));
+		return phaseName == null  || (phaseName.equals(Disposable.PHASE_NAME_END));
 	}
 
 	@Override

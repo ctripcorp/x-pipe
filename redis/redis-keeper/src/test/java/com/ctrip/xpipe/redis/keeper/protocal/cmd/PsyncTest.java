@@ -72,7 +72,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		};
 		//create store
 		replicationStore.beginRdb(masterId, masterOffset, new LenEofType(0));
-		replicationStore.getRdbStore().endRdb();;
+		replicationStore.getRdbStore().endRdb();
 		
 		runData(data);
 	}
@@ -136,7 +136,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		};
 		//create store
 		replicationStore.beginRdb(masterId, masterOffset, new LenEofType(0));
-		replicationStore.getRdbStore().endRdb();;
+		replicationStore.getRdbStore().endRdb();
 		
 		Long secondReplIdOffset = replicationStore.getEndOffset() + 1;
 

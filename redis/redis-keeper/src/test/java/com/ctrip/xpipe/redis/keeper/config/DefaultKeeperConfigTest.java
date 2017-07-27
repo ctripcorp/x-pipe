@@ -31,7 +31,7 @@ public class DefaultKeeperConfigTest extends AbstractRedisKeeperTest{
 		System.setProperty(DefaultKeeperConfig.KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB, String.valueOf(value));
 
 		logger.info("[testReplicationStoreMaxCommandsToTransferBeforeCreateRdb]{}", value);
-		Assert.assertEquals(value, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());;		
+		Assert.assertEquals(value, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());
 	}
 
 }

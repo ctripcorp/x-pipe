@@ -4,6 +4,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.ctrip.xpipe.metric.*;
 import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;
 import org.apache.thrift.protocol.TCompactProtocol;
@@ -19,10 +20,6 @@ import com.ctrip.hickwall.protocol.BinDataPoint;
 import com.ctrip.hickwall.protocol.BinMultiDataPoint;
 import com.ctrip.hickwall.protocol.DataPoint;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
-import com.ctrip.xpipe.metric.HostPort;
-import com.ctrip.xpipe.metric.MetricBinMultiDataPoint;
-import com.ctrip.xpipe.metric.MetricDataPoint;
-import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
@@ -120,12 +117,18 @@ public class ThriftHickwallProxy implements MetricProxy {
 	}
 
 	@Override
-	public void writeBinMultiDataPoint(MetricBinMultiDataPoint mbmp) throws TException {
-		BinMultiDataPoint bmp = convertToThriftFormat(mbmp);
+	public void writeBinMultiDataPoint(MetricBinMultiDataPoint mbmp) throws MetricProxyException {
 
-		if (!datas.offer(bmp)) {
-			log.error("Hickwall queue overflow, will drop data");
+		BinMultiDataPoint bmp = null;
+		try {
+			bmp = convertToThriftFormat(mbmp);
+			if (!datas.offer(bmp)) {
+				log.error("Hickwall queue overflow, will drop data");
+			}
+		} catch (TException e) {
+			throw new MetricProxyException("data error:" + mbmp, e);
 		}
+
 	}
 
 	private BinMultiDataPoint convertToThriftFormat(MetricBinMultiDataPoint mbmp) throws TException {

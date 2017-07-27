@@ -91,19 +91,22 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
     };
 
     @Override
-    public List<String> getAllServers() throws Exception {
+    public List<String> getAllServers() {
 
         String leaderElectPath = getLeaderElectPath();
         CuratorFramework curatorFramework = zkClient.get();
-        List<String> children = curatorFramework.getChildren().forPath(leaderElectPath);
-
-        children = LockInternals.getSortedChildren("latch-", sorter, children);
-
+        List<String> children = null;
         List<String> result = new LinkedList<>();
+        try {
+            children = curatorFramework.getChildren().forPath(leaderElectPath);
+            children = LockInternals.getSortedChildren("latch-", sorter, children);
 
-        for (String child : children) {
-            String currentPath = leaderElectPath + "/" + child;
-            result.add(new String(curatorFramework.getData().forPath(currentPath)));
+            for (String child : children) {
+                String currentPath = leaderElectPath + "/" + child;
+                result.add(new String(curatorFramework.getData().forPath(currentPath)));
+            }
+        } catch (Exception e) {
+            logger.error("[getAllServers]", e);
         }
         return result;
     }

@@ -159,7 +159,7 @@ public class PsyncHandler extends AbstractCommandHandler{
 		redisSlave.beginWriteCommands(offset);
 		redisSlave.partialSync();
 		
-		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();;
+		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();
 	}
 
 	protected void doFullSync(RedisSlave redisSlave) {

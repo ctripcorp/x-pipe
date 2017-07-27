@@ -84,7 +84,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	}
 
 	@Override
-	public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) throws Exception {
+	public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {
 
 		logger.info("[keeperActiveElected]{},{},{}", clusterId, shardId, activeKeeper);
 
@@ -109,7 +109,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	@Override
 	protected void doDispose() throws Exception {
 		
-		keyedOneThreadTaskExecutor.destroy();;
+		keyedOneThreadTaskExecutor.destroy();
 		super.doDispose();
 	}
 	

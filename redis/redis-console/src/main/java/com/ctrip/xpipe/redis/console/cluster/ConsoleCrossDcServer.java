@@ -141,7 +141,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
 
     @Override
-    public List<String> getAllServers() throws Exception {
+    public List<String> getAllServers() {
         return new LinkedList<>();
     }
 

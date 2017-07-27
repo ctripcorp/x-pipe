@@ -2,6 +2,7 @@ package com.ctrip.xpipe.pool;
 
 import java.net.InetSocketAddress;
 
+import com.ctrip.xpipe.api.pool.ObjectPoolException;
 import org.apache.commons.pool2.KeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
@@ -101,13 +102,21 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 	}
 
 	@Override
-	public void clear() throws Exception {
-		this.objectPool.clear();
+	public void clear() throws ObjectPoolException {
+		try {
+			this.objectPool.clear();
+		} catch (Exception e) {
+			throw new ObjectPoolException("clear " + objectPool, e);
+		}
 	}
 
 	@Override
-	public void clear(InetSocketAddress key) throws Exception {
-		this.objectPool.clear(key);
+	public void clear(InetSocketAddress key) throws ObjectPoolException {
+		try {
+			this.objectPool.clear(key);
+		} catch (Exception e) {
+			throw new ObjectPoolException("object pool:" + objectPool + ",key:" + key, e);
+		}
 	}
 
 	@Override

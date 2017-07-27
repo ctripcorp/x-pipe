@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -25,7 +24,6 @@ public class FinalStateSetterManager<K, S> {
 
     private Function<K, S> getter;
     private BiConsumer<K, S> setter;
-    private ExecutorService executors;
 
     public FinalStateSetterManager(Function<K, S> getter, BiConsumer<K, S> setter){
         this.getter = getter;

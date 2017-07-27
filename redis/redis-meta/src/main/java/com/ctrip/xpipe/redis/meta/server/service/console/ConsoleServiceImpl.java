@@ -87,15 +87,13 @@ public class ConsoleServiceImpl implements ConsoleService {
 	}
 
 	@Override
-	public void keeperActiveChanged(String dc, String clusterId, String shardId, KeeperMeta newActiveKeeper)
-		throws Exception {
+	public void keeperActiveChanged(String dc, String clusterId, String shardId, KeeperMeta newActiveKeeper) {
 		restTemplate.put(host + "/api/dc/{dcId}/cluster/{clusterId}/shard/{shardId}/keepers/adjustment", newActiveKeeper, dc, clusterId, shardId);
 
 	}
 
 	@Override
-	public void redisMasterChanged(String dc, String clusterId, String shardId, RedisMeta newRedisMaster)
-		throws Exception {
+	public void redisMasterChanged(String dc, String clusterId, String shardId, RedisMeta newRedisMaster) {
 
 	}
 

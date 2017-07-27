@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.netty;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.netty.ByteBufReadAction;
+import com.ctrip.xpipe.netty.ByteBufReadActionException;
 import com.ctrip.xpipe.netty.ChannelTrafficStatisticsHandler;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
@@ -56,8 +57,12 @@ public class NettySlaveHandler extends ChannelTrafficStatisticsHandler{
 		ByteBuf byteBuf = (ByteBuf) msg;
 		byteBufReadPolicy.read(ctx.channel(), byteBuf, new ByteBufReadAction() {
 			@Override
-			public void read(Channel channel, ByteBuf byteBuf) throws XpipeException {
-				redisMasterReplication.handleResponse(channel, byteBuf);
+			public void read(Channel channel, ByteBuf byteBuf) throws ByteBufReadActionException {
+				try {
+					redisMasterReplication.handleResponse(channel, byteBuf);
+				} catch (XpipeException e) {
+					throw new ByteBufReadActionException("handle:" + channel ,e);
+				}
 			}
 		});
 	}

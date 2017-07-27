@@ -14,7 +14,7 @@ public interface SimpleObjectPool<T> {
 	
 	void returnObject(T obj) throws ReturnObjectException;
 
-	void clear() throws Exception;
+	void clear() throws ObjectPoolException;
 	
 	String desc();
 

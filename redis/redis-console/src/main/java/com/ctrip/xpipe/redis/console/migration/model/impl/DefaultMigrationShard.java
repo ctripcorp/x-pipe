@@ -190,7 +190,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	}
 
 	@Override
-	public void doRollBack() throws Exception{
+	public void doRollBack() throws ShardMigrationException{
 		
 		logger.info("[rollback]{}-{}, {}<-{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
 		for(DcTbl dc : dcs.values()) {
@@ -198,8 +198,12 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 				doOtherDcRollback(dc.getDcName(), prevPrimaryDc);
 			}
 		}
-		
-		doRollBackPrevPrimaryDc(cluster, shard, prevPrimaryDc).get();
+
+		try {
+			doRollBackPrevPrimaryDc(cluster, shard, prevPrimaryDc).get();
+		} catch (Exception e) {
+			throw new ShardMigrationException(String.format("%s,%s doRollBackPrevPrimaryDc:%s", cluster, shard, prevPrimaryDc), e);
+		}
 	}
 	
 	private CommandFuture<PrimaryDcChangeMessage> doPrevPrimaryDcMigrate(String cluster, String shard, String dc) {

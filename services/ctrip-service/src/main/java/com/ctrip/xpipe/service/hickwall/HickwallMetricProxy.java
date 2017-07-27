@@ -6,6 +6,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.ctrip.xpipe.metric.MetricProxyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +95,7 @@ public class HickwallMetricProxy implements MetricProxy {
 	}
 	
 	@Override
-	public void writeBinMultiDataPoint(MetricBinMultiDataPoint mbmp) throws Exception {
+	public void writeBinMultiDataPoint(MetricBinMultiDataPoint mbmp) throws MetricProxyException {
 		ArrayList<DataPoint> bmp = convertToHickwallFormat(mbmp);
 
 		if (!datas.offer(bmp)) {

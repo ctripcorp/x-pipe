@@ -26,13 +26,13 @@ import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
  *
  * Jul 7, 2016
  */
-public class DefaultDcMetaManager implements DcMetaManager{
+public final class DefaultDcMetaManager implements DcMetaManager{
 	
 	protected XpipeMetaManager metaManager;
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
-	protected String currentDc;;
+	protected String currentDc;
 	
 	private DefaultDcMetaManager(String currentDc, XpipeMetaManager xpipeMetaManager){
 		this.metaManager = xpipeMetaManager;

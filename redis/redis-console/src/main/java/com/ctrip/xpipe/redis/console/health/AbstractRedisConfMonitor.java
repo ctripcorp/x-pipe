@@ -2,8 +2,6 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.health.redisconf.InstanceRedisConfResult;
-import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfCollector;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -54,7 +52,7 @@ public abstract class AbstractRedisConfMonitor<T extends BaseInstanceResult> ext
     }
 
     @Override
-    public void startSample(BaseSamplePlan<T> plan) throws Exception {
+    public void startSample(BaseSamplePlan<T> plan) throws SampleException{
 
         if(plan == null){
             return;

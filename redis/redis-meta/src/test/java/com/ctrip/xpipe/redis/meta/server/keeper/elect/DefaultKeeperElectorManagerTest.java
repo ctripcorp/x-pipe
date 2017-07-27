@@ -110,7 +110,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 
 			@Override
 			public Void answer(InvocationOnMock invocation) throws Throwable {
-				release.set((Releasable) invocation.getArguments()[2]);;
+				release.set((Releasable) invocation.getArguments()[2]);
 				return null;
 			}
 		}).when(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));

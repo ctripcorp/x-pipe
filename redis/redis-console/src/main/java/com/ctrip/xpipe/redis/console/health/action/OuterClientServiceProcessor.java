@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.action;
 
+import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.metric.HostPort;
@@ -23,7 +24,7 @@ import java.util.List;
  */
 @Component
 @Lazy
-public class OuterClientServiceProcessor implements HealthEventProcessor{
+public class OuterClientServiceProcessor implements HealthEventProcessor {
 
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
 
@@ -42,53 +43,53 @@ public class OuterClientServiceProcessor implements HealthEventProcessor{
 
 
     @PostConstruct
-    public void postConstruct(){
+    public void postConstruct() {
 
         finalStateSetterManager = new FinalStateSetterManager<>((hostPort) -> {
 
             try {
-                    return outerClientService.isInstanceUp(hostPort);
-                } catch (Exception e) {
-                    throw new IllegalStateException("get error:" + hostPort, e);
+                return outerClientService.isInstanceUp(hostPort);
+            } catch (OuterClientException e) {
+                throw new IllegalStateException("get error:" + hostPort, e);
+            }
+        }, ((hostPort, result) -> {
+            try {
+                if (result) {
+                    outerClientService.markInstanceUp(hostPort);
+                } else {
+                    outerClientService.markInstanceDown(hostPort);
                 }
-            }, ((hostPort, result) -> {
-                try {
-                    if(result){
-                            outerClientService.markInstanceUp(hostPort);
-                    }else{
-                        outerClientService.markInstanceDown(hostPort);
-                    }
-                } catch (Exception e) {
-                    throw new IllegalStateException("set error:" + hostPort + "," + result, e);
-                }
-            })
+            } catch (OuterClientException e) {
+                throw new IllegalStateException("set error:" + hostPort + "," + result, e);
+            }
+        })
         );
 
     }
 
     @Override
-    public void onEvent(AbstractInstanceEvent instanceEvent) throws Exception {
+    public void onEvent(AbstractInstanceEvent instanceEvent) throws HealthEventProcessorException {
 
-        if(!instanceInBackupDc(instanceEvent.getHostPort())){
+        if (!instanceInBackupDc(instanceEvent.getHostPort())) {
             logger.info("[onEvent][instance not in backupDc]{}", instanceEvent.getHostPort());
             return;
         }
 
-        if(instanceEvent instanceof InstanceUp){
+        if (instanceEvent instanceof InstanceUp) {
             finalStateSetterManager.set(instanceEvent.getHostPort(), true);
-        }else if(instanceEvent instanceof InstanceDown){
+        } else if (instanceEvent instanceof InstanceDown) {
 
-            if(masterUp(instanceEvent.getHostPort())){
+            if (masterUp(instanceEvent.getHostPort())) {
                 quorumMarkInstanceDown(instanceEvent.getHostPort());
-            }else{
+            } else {
                 logger.info("[onEvent][master down, do not call client service]{}", instanceEvent);
             }
-        }else{
+        } else {
             throw new IllegalStateException("unknown event:" + instanceEvent);
         }
     }
 
-    private void quorumMarkInstanceDown(HostPort hostPort) throws Exception {
+    private void quorumMarkInstanceDown(HostPort hostPort) {
 
         List<HEALTH_STATE> health_states = consoleServiceManager.allHealthStatus(hostPort.getHost(), hostPort.getPort());
 
@@ -97,9 +98,9 @@ public class OuterClientServiceProcessor implements HealthEventProcessor{
         boolean quorum = consoleServiceManager.quorumSatisfy(health_states,
                 (state) -> state == HEALTH_STATE.UNHEALTHY || state == HEALTH_STATE.DOWN);
 
-        if(quorum){
+        if (quorum) {
             finalStateSetterManager.set(hostPort, false);
-        }else{
+        } else {
             logger.info("[quorumMarkInstanceDown][quorum fail]{}, {}", hostPort, quorum);
             CatEventMonitor.DEFAULT.logAlertEvent("quorum_fail:" + hostPort);
         }
@@ -114,7 +115,7 @@ public class OuterClientServiceProcessor implements HealthEventProcessor{
         //master up
         HostPort redisMaster = metaCache.findMasterInSameShard(hostPort);
         boolean masterUp = allMonitorCollector.getState(redisMaster) == HEALTH_STATE.UP;
-        if(!masterUp){
+        if (!masterUp) {
             logger.info("[masterUp][master down instance:{}, master:{}]", hostPort, redisMaster);
         }
         return masterUp;

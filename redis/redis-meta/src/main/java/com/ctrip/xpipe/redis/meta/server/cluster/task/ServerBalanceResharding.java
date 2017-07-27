@@ -19,7 +19,7 @@ public class ServerBalanceResharding extends AbstractResharding{
 	}
 
 	@Override
-	protected void doShardingTask() throws Exception {
+	protected void doShardingTask() throws ShardingException {
 		
 		Set<? extends ClusterServer> aliveServers = servers.allClusterServers();
 		if(aliveServers.size() == 0){

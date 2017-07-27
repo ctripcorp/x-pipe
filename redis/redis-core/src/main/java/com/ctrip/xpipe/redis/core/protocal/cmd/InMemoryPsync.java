@@ -26,14 +26,14 @@ public class InMemoryPsync extends AbstractPsync{
 	private ByteArrayOutputStream commands = new ByteArrayOutputStream();
 	private ByteArrayOutputStreamPayload rdb = new ByteArrayOutputStreamPayload();
 
-	public InMemoryPsync(String masterHost, int masterPort, String requestMasterId, long   requestMasterOffset, ScheduledExecutorService scheduled) throws Exception {
+	public InMemoryPsync(String masterHost, int masterPort, String requestMasterId, long   requestMasterOffset, ScheduledExecutorService scheduled) {
 		super(masterHost, masterPort, true, scheduled);
 		this.requestMasterId = requestMasterId;
 		this.requestMasterOffset = requestMasterOffset;
 		
 	}
 
-	public InMemoryPsync(SimpleObjectPool<NettyClient> clientPool, String requestMasterId, long   requestMasterOffset, ScheduledExecutorService scheduled) throws Exception {
+	public InMemoryPsync(SimpleObjectPool<NettyClient> clientPool, String requestMasterId, long   requestMasterOffset, ScheduledExecutorService scheduled) {
 		super(clientPool, true, scheduled);
 		this.requestMasterId = requestMasterId;
 		this.requestMasterOffset = requestMasterOffset;

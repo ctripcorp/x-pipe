@@ -41,6 +41,7 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 		this.clusterId = clusterId;
 		this.currentMetaManager = currentMetaManager;
 		this.pool = pool;
+		this.scheduled = scheduled;
 		this.executors = executors;
 	}
 	
@@ -78,7 +79,7 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 						logger.error("[operationComplete][fail]" + commandFuture.command(), commandFuture.cause());
 					}
 				}
-			});;
+			});
 		}
 	}
 

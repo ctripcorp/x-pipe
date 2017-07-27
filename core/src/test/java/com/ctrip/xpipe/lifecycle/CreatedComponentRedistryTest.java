@@ -41,7 +41,7 @@ public class CreatedComponentRedistryTest extends AbstractTest{
 		Assert.assertTrue(lifecycle2.getLifecycleState().isDisposed());
 
 		
-		Assert.assertEquals(2, registry.allComponents().size());;
+		Assert.assertEquals(2, registry.allComponents().size());
 		
 	}
 

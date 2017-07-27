@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.api.command;
 
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
 /**
@@ -21,8 +20,6 @@ public interface Command<V> {
 	
 	/**
 	 * 重置，可以重新执行
-	 * @throws ExecutionException 
-	 * @throws InterruptedException 
 	 */
 	void reset();
 

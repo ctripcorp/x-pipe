@@ -7,5 +7,5 @@ package com.ctrip.xpipe.redis.console.health.action;
  */
 public interface HealthEventProcessor {
 
-    void onEvent(AbstractInstanceEvent instanceEvent) throws Exception;
+    void onEvent(AbstractInstanceEvent instanceEvent) throws HealthEventProcessorException;
 }

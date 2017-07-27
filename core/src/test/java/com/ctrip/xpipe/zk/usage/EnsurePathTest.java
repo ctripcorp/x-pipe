@@ -20,7 +20,7 @@ public class EnsurePathTest extends AbstractZkUsageTest{
 		long begin = System.currentTimeMillis();
 		
 		for(int i=0;i<count;i++){
-//			client.newNamespaceAwareEnsurePath("/" + getTestName()).ensure(client.getZookeeperClient());;
+//			client.newNamespaceAwareEnsurePath("/" + getTestName()).ensure(client.getZookeeperClient());
 			client.createContainers(path);
 		}
 		

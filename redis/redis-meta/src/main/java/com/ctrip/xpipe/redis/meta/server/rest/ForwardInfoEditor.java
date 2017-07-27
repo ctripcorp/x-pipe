@@ -13,7 +13,7 @@ public class ForwardInfoEditor extends PropertyEditorSupport{
 	
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
-		setValue(Codec.DEFAULT.decode(text, ForwardInfo.class));;
+		setValue(Codec.DEFAULT.decode(text, ForwardInfo.class));
 	}
 	
 	@Override

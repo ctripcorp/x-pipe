@@ -27,7 +27,7 @@ public class CommandRetryWrapperTest extends AbstractTest{
 		TestCommand command = new TestCommand(message);
 		CommandRetryWrapper<String> wrapper = (CommandRetryWrapper<String>) CommandRetryWrapper.buildCountRetry(retryCount, new RetryDelay(sleepBase), command, scheduled);
 		
-		Assert.assertEquals(message, wrapper.execute().get());;
+		Assert.assertEquals(message, wrapper.execute().get());
 	}
 	
 	@Test

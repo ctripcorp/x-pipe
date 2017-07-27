@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import org.unidal.tuple.Pair;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -88,7 +87,6 @@ public class KeeperUpdateController extends AbstractConsoleController {
 
         dcId = outerDcToInnerDc(dcId);
 
-        List<Pair<String, Integer>> redisAddresses = null;
         try {
             List<RedisTbl> redisTbls = redisService.deleteKeepers(dcId, clusterId, shardId);
 

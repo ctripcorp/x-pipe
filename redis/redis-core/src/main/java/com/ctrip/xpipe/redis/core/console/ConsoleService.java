@@ -30,8 +30,8 @@ public interface ConsoleService {
 	ShardMeta getShardMeta(String dcId, String clusterId, String shardId);
 
 	/***********************POST***********************/
-	void keeperActiveChanged(String dc, String clusterId, String shardId, KeeperMeta newActiveKeeper) throws Exception;
+	void keeperActiveChanged(String dc, String clusterId, String shardId, KeeperMeta newActiveKeeper);
 	
-	void redisMasterChanged(String dc, String clusterId, String shardId, RedisMeta newRedisMaster) throws Exception;
+	void redisMasterChanged(String dc, String clusterId, String shardId, RedisMeta newRedisMaster);
 	
 }

@@ -3,17 +3,13 @@ package com.ctrip.xpipe.redis.console.health.ping;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.metric.HostPort;
-import com.ctrip.xpipe.redis.console.health.BaseSampleMonitor;
-import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
-import com.ctrip.xpipe.redis.console.health.PingCallback;
-import com.ctrip.xpipe.redis.console.health.RedisSession;
-import com.ctrip.xpipe.redis.console.health.Sample;
 
 /**
  * @author marsqing
@@ -50,7 +46,7 @@ public class DefaultPingMonitor extends BaseSampleMonitor<InstancePingResult> im
 	}
 
 	@Override
-	public void startSample(BaseSamplePlan<InstancePingResult> plan) throws Exception {
+	public void startSample(BaseSamplePlan<InstancePingResult> plan) throws SampleException {
 
 		long startNanoTime = recordSample(plan);
 		samplePing(startNanoTime, plan);

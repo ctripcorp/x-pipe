@@ -34,7 +34,7 @@ public class DefaultRedisMasterMonitor extends BaseSampleMonitor<InstanceRedisMa
     }
 
     @Override
-    public void startSample(BaseSamplePlan<InstanceRedisMasterResult> rawPlan) throws Exception {
+    public void startSample(BaseSamplePlan<InstanceRedisMasterResult> rawPlan) throws SampleException {
 
         RedisMasterSamplePlan plan = (RedisMasterSamplePlan) rawPlan;
         long startNanoTime = recordSample(plan);

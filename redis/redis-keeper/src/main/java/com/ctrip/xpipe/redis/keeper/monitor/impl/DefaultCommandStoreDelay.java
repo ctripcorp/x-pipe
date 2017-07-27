@@ -278,7 +278,7 @@ public class DefaultCommandStoreDelay implements CommandStoreDelay{
 					}
 				}finally{
 					beginSendTime.set(0);
-					endSendTime.set(0);;
+					endSendTime.set(0);
 					this.commandsListener = null;
 				}
 			}

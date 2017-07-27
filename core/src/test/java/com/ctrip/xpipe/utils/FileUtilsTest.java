@@ -21,7 +21,7 @@ public class FileUtilsTest extends AbstractTest{
 	@Test
 	public void test() throws FileNotFoundException{
 		
-		Assert.assertNotNull(FileUtils.getFileInputStream("fileutiltest.txt"));;
+		Assert.assertNotNull(FileUtils.getFileInputStream("fileutiltest.txt"));
 
 		try{
 			FileUtils.getFileInputStream("fileutiltest_not_exist.txt");

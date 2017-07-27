@@ -9,7 +9,7 @@ import com.ctrip.xpipe.utils.log.MDCUtil;
  *
  *         Dec 20, 2016 1:47:35 PM
  */
-public class ClusterShardAwareThreadFactory extends XpipeThreadFactory {
+public final class ClusterShardAwareThreadFactory extends XpipeThreadFactory {
 
 	private String cluster;
 	private String shard;

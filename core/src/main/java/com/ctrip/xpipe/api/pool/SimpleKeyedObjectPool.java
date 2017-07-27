@@ -16,8 +16,8 @@ public interface SimpleKeyedObjectPool<K, V> {
 	
 	SimpleObjectPool<V> getKeyPool(K key);
 	
-	void clear() throws Exception;
+	void clear() throws ObjectPoolException;
 	
-	void clear(K key) throws Exception;
+	void clear(K key) throws ObjectPoolException;
 
 }

@@ -59,7 +59,7 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 		SlotManager slotManager = leader.getContext().getBean(SlotManager.class);
 		slotManager.refresh();
 		
-		Assert.assertEquals(serverCount - 1, slotManager.allServers().size());;
+		Assert.assertEquals(serverCount - 1, slotManager.allServers().size());
 		AssertBalance(slotManager);
 	}
 
@@ -115,7 +115,7 @@ public class ClusterServerShardingTest extends AbstractMetaServerClusterTest{
 		
 		SlotManager slotManager = newLeader.getContext().getBean(SlotManager.class);
 		slotManager.refresh();
-		Assert.assertEquals(serverCount - 1, slotManager.allServers().size());;
+		Assert.assertEquals(serverCount - 1, slotManager.allServers().size());
 		AssertBalance(slotManager);
 	}
 

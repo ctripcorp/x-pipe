@@ -22,11 +22,11 @@ public abstract class AbstractLifecycle implements Lifecycle, LifecycleStateAwar
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private LifecycleState lifecycleState;
-	private LifecycleController LifecycleController;
+	private LifecycleController lifecycleController;
 	
 	public AbstractLifecycle() {
-		this.LifecycleController  = new DefaultLifecycleController();
-		this.lifecycleState = new DefaultLifecycleState(this, LifecycleController);
+		this.lifecycleController = new DefaultLifecycleController();
+		this.lifecycleState = new DefaultLifecycleState(this, lifecycleController);
 	}
 	
 	
@@ -35,7 +35,7 @@ public abstract class AbstractLifecycle implements Lifecycle, LifecycleStateAwar
 	public void initialize() throws Exception {
 
 		String phaseName = lifecycleState.getPhaseName();
-		if(!LifecycleController.canInitialize(phaseName)){
+		if(!lifecycleController.canInitialize(phaseName)){
 			logger.error("[initialize][can not init]{}, {}", phaseName, this);
 			throw new IllegalStateException("can not initialize:" + phaseName + "," + this);
 		}
@@ -58,7 +58,7 @@ public abstract class AbstractLifecycle implements Lifecycle, LifecycleStateAwar
 	public void start() throws Exception {
 
 		String phaseName = lifecycleState.getPhaseName();
-		if(!LifecycleController.canStart(phaseName)){
+		if(!lifecycleController.canStart(phaseName)){
 			logger.error("[initialize][can not start]{},{}", phaseName, this);
 			throw new IllegalStateException("can not start:" + phaseName + ", " + this);
 		}
@@ -80,7 +80,7 @@ public abstract class AbstractLifecycle implements Lifecycle, LifecycleStateAwar
 	public void stop() throws Exception {
 
 		String phaseName = lifecycleState.getPhaseName();
-		if(!LifecycleController.canStop(phaseName)){
+		if(!lifecycleController.canStop(phaseName)){
 			logger.error("[initialize][can not stop]{}, {}" , phaseName, this);
 			throw new IllegalStateException("can not stop:" + phaseName + "," + this);
 		}
@@ -103,7 +103,7 @@ public abstract class AbstractLifecycle implements Lifecycle, LifecycleStateAwar
 	public void dispose() throws Exception {
 
 		String phaseName = lifecycleState.getPhaseName();
-		if(!LifecycleController.canDispose(phaseName)){
+		if(!lifecycleController.canDispose(phaseName)){
 			logger.error("[initialize][can not stop]{}, {}" , phaseName, this);
 			throw new IllegalStateException("can not dispose:" + phaseName + "," + this);
 		}

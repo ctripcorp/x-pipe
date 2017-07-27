@@ -63,7 +63,7 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 	}
 	
 
-	protected abstract void doShardingTask() throws Exception;
+	protected abstract void doShardingTask() throws ShardingException;
 
 	protected void notifyAliveServers(int slotId) {
 		

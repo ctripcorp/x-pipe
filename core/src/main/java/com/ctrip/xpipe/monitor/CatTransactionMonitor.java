@@ -9,7 +9,6 @@ import com.dianping.cat.Cat;
 import com.dianping.cat.message.Transaction;
 
 import java.util.concurrent.Callable;
-import java.util.function.Supplier;
 
 /**
  * @author wenchao.meng

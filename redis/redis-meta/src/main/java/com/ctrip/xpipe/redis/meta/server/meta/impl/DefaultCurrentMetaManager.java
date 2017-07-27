@@ -57,7 +57,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	@Autowired
 	private DcMetaCache dcMetaCache;
 	
-	private CurrentMeta currentMeta = new CurrentMeta();;
+	private CurrentMeta currentMeta = new CurrentMeta();
 	
 	private Set<Integer>   currentSlots = new HashSet<>();
 

@@ -28,7 +28,7 @@ public abstract class AbstractDirectMoveSharding extends AbstractResharding{
 
 	
 	@Override
-	protected void doShardingTask() throws Exception {
+	protected void doShardingTask() throws ShardingException {
 		
 		List<Integer> slots = getSlotsToArrange();
 		

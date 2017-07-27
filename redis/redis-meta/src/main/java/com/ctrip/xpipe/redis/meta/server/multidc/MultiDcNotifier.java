@@ -45,7 +45,7 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 	public DcMetaCache dcMetaCache;
 
 	@Override
-	public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) throws Exception {
+	public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {
 
 		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
 			logger.info("[keeperActiveElected][current dc backup, do nothing]{}, {}", clusterId, shardId, activeKeeper);

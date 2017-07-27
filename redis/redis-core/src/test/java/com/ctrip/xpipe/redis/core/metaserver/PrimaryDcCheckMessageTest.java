@@ -18,7 +18,7 @@ public class PrimaryDcCheckMessageTest extends AbstractRedisTest{
 	@Test
 	public void testEncodeDecode(){
 		
-		PrimaryDcCheckMessage message = new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS, "hello");;
+		PrimaryDcCheckMessage message = new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS, "hello");
 		String encode = Codec.DEFAULT.encode(message);
 		
 		logger.info("{}", encode);

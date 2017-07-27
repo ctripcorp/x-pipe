@@ -419,9 +419,8 @@ public class AbstractTest {
         Random random = new Random();
 
         for (int i = min; i <= max; i++) {
-
             int port = min + random.nextInt(max - min + 1);
-            if (different == null || !different.contains(new Integer(port)) && isUsable(port)) {
+            if ((different == null || !different.contains(new Integer(port))) && isUsable(port)) {
                 return port;
             }
         }

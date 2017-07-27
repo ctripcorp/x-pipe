@@ -10,6 +10,6 @@ import io.netty.channel.Channel;
  */
 public interface ByteBufReadAction {
 	
-	void read(Channel channel, ByteBuf byteBuf) throws Exception;
+	void read(Channel channel, ByteBuf byteBuf) throws ByteBufReadActionException;
 
 }

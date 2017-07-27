@@ -58,6 +58,6 @@ public class KeyedOneThreadTaskExecutorTest extends AbstractTest{
 
 	@After
 	public void afterKeyedOneThreadTaskExecutorTest() throws Exception{
-		 keyed.destroy();;
+		 keyed.destroy();
 	}
 }

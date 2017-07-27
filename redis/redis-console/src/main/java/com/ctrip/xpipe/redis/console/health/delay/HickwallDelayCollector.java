@@ -47,7 +47,7 @@ public class HickwallDelayCollector implements DelayCollector {
 		}
 	}
 
-	private void addPoint(MetricBinMultiDataPoint bmp, String metricName, long value, DelaySampleResult result) throws Exception {
+	private void addPoint(MetricBinMultiDataPoint bmp, String metricName, long value, DelaySampleResult result) {
 		MetricDataPoint dataPoint = new MetricDataPoint();
 		dataPoint.setMetric(metricName);
 		dataPoint.setValue(value / 1000);

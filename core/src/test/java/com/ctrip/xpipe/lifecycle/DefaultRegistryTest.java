@@ -48,7 +48,7 @@ public class DefaultRegistryTest extends AbstractTest{
 		defaultRegistry.stop();
 		defaultRegistry.dispose();
 		defaultRegistry.destroy();
-		Assert.assertTrue(lifecycle1.getLifecycleState().isDisposed());;
+		Assert.assertTrue(lifecycle1.getLifecycleState().isDisposed());
 		Assert.assertFalse(applicationContext.isActive());
 	}
 	
@@ -56,7 +56,7 @@ public class DefaultRegistryTest extends AbstractTest{
 	public void testDestroy() throws Exception{
 
 		defaultRegistry.destroy();
-		Assert.assertTrue(lifecycle1.getLifecycleState().isDisposed());;
+		Assert.assertTrue(lifecycle1.getLifecycleState().isDisposed());
 		Assert.assertFalse(applicationContext.isActive());
 	}
 

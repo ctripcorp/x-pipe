@@ -3,16 +3,13 @@ package com.ctrip.xpipe.redis.console.health.delay;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import com.ctrip.xpipe.metric.HostPort;
-import com.ctrip.xpipe.redis.console.health.BaseSampleMonitor;
-import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
-import com.ctrip.xpipe.redis.console.health.RedisSession;
-import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.health.ping.PingService;
 
 /**
@@ -38,7 +35,7 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 
 
 	@Override
-	public void startSample(BaseSamplePlan<InstanceDelayResult> plan) throws Exception {
+	public void startSample(BaseSamplePlan<InstanceDelayResult> plan) throws SampleException {
 		sampleDelay((DelaySamplePlan) plan);
 	}
 
@@ -77,7 +74,7 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 		return sampleResult;
 	}
 
-	private void sampleDelay(final DelaySamplePlan samplePlan) throws Exception {
+	private void sampleDelay(final DelaySamplePlan samplePlan) {
 
 		if (samplePlan.getHostPort2SampleResult().isEmpty()) {
 			return;

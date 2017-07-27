@@ -18,7 +18,7 @@ import com.ctrip.xpipe.retry.NoWaitRetry;
  *
  * Jul 14, 2016
  */
-public class CommandRetryWrapper<V> extends AbstractCommand<V>{
+public final class CommandRetryWrapper<V> extends AbstractCommand<V>{
 	
 	protected Logger logger = LoggerFactory.getLogger(CommandRetryWrapper.class);
 	

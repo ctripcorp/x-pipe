@@ -45,7 +45,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 		}
 	}
 	
-	private void checkOrSaveKeeperRunid(String keeperRunid) throws IOException {
+	private final void checkOrSaveKeeperRunid(String keeperRunid) throws IOException {
 		synchronized (metaRef) {
 			String oldRunId = metaRef.get().getKeeperRunid(); 
 			if(oldRunId != null){
@@ -90,18 +90,18 @@ public abstract class AbstractMetaStore implements MetaStore{
 			if(metaDup.getKeeperRunid() != null && !metaDup.getKeeperRunid().equals(keeperRunid)){
 				logger.warn("[keeperRunIdChanged]{}->{}", metaDup.getKeeperRunid(), keeperRunid);
 			}
-			metaDup.setKeeperRunid(keeperRunid);;
+			metaDup.setKeeperRunid(keeperRunid);
 			saveMeta(metaDup);
 		}
 	}
 
 	@Override
-	public ReplicationStoreMeta dupReplicationStoreMeta() {
+	public final ReplicationStoreMeta dupReplicationStoreMeta() {
 		return new ReplicationStoreMeta(metaRef.get());
 	}
 
 
-	protected void saveMeta(ReplicationStoreMeta newMeta) throws IOException {
+	protected final void saveMeta(ReplicationStoreMeta newMeta) throws IOException {
 		
 		logger.info("[Metasaved]\nold:{}\nnew:{}", metaRef.get(), newMeta);
 		metaRef.set(newMeta);
@@ -111,7 +111,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 
 	@Override
-	public void loadMeta() throws IOException {
+	public final void loadMeta() throws IOException {
 		
 		synchronized (metaRef) {
 			
@@ -149,7 +149,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 
-			metaDup.setKeeperState(keeperState);;
+			metaDup.setKeeperState(keeperState);
 
 			saveMeta(metaDup);
 		}

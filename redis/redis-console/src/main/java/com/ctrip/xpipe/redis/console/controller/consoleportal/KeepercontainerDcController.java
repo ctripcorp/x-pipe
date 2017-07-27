@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
-import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
@@ -24,9 +23,6 @@ import java.util.List;
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class KeepercontainerDcController extends AbstractConsoleController {
-
-    @Autowired
-    private DcService dcService;
 
     @Autowired
     private KeepercontainerService keepercontainerService;

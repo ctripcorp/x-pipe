@@ -19,7 +19,7 @@ public interface ClusterServers<T extends ClusterServer> extends Observable, Lif
 	
 	Set<T> allClusterServers();
 	
-	void refresh() throws Exception;
+	void refresh() throws ClusterException;
 	
 	boolean exist(int serverId);
 

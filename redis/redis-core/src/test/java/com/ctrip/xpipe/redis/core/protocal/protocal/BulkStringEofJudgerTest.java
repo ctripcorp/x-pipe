@@ -60,7 +60,7 @@ public class BulkStringEofJudgerTest extends AbstractRedisTest {
 		result = judger.end(Unpooled.wrappedBuffer(real.getBytes()));
 		
 		Assert.assertTrue(result.isEnd());
-		Assert.assertEquals(real.length(), result.getReadLen());;
+		Assert.assertEquals(real.length(), result.getReadLen());
 	}
 	
 	@Test

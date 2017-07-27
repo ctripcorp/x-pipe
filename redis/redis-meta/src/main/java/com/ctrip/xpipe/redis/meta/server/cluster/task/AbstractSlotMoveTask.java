@@ -40,13 +40,17 @@ public abstract class AbstractSlotMoveTask extends AbstractCommand<Void> impleme
 		return from;
 	}
 
-	protected void setSlotInfo(SlotInfo slotInfo) throws Exception {
+	protected void setSlotInfo(SlotInfo slotInfo) throws ShardingException {
 		
 		CuratorFramework client = zkClient.get();
 
 		String path = getSlotZkPath();
-		client.createContainers(path);
-		client.setData().forPath(path, slotInfo.encode());
+		try {
+			client.createContainers(path);
+			client.setData().forPath(path, slotInfo.encode());
+		} catch (Exception e) {
+			throw new ShardingException(String.format("path:%s, slotInfo:%s", path, slotInfo), e);
+		}
 	}
 
 	

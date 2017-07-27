@@ -29,7 +29,7 @@ public class ByteArrayOutputStreamPayload extends AbstractInOutPayload{
 	@Override
 	public void doStartInput() {
 		 data = new byte[INIT_SIZE];
-		 pos.set(0);;
+		 pos.set(0);
 	}
 
 	@Override

@@ -44,12 +44,12 @@ public class StandaloneStatMonitor extends AbstractStatMonitor implements StatMo
 	}
 
 	public StandaloneStatMonitor(String configFile, long period, TimeUnit timeUnit)
-			throws UnsupportedEncodingException, IOException {
+			throws IOException {
 		standaloneStat = loadStatModel(configFile);
 		scheduled.scheduleAtFixedRate(this, 0, period, timeUnit);
 	}
 
-	protected StandaloneStatModel loadStatModel(String configFile) throws UnsupportedEncodingException, IOException {
+	private StandaloneStatModel loadStatModel(String configFile) throws IOException {
 		InputStream ins = FileUtils.getFileInputStream(configFile);
 		return Codec.DEFAULT.decode(CharStreams.toString(new InputStreamReader(ins, "UTF-8")),
 				StandaloneStatModel.class);

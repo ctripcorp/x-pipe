@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.concurrent.ExecutorFactory;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
-import java.sql.Time;
 import java.util.concurrent.*;
 
 /**
@@ -61,7 +60,7 @@ public class DefaultExecutorFactory implements ExecutorFactory{
         int useMaxPoolSize = Math.max(corePoolSize, maxPoolSize);
         ThreadPoolExecutor executor = new ThreadPoolExecutor(
                         corePoolSize, useMaxPoolSize, keepAliveTime,
-                keepAliveTimeUnit, new LinkedBlockingQueue<>(),
+                keepAliveTimeUnit, workQueue,
                 threadFactory != null ? threadFactory : XpipeThreadFactory.create(threadNamePrefix),
                 rejectedExecutionHandler);
 

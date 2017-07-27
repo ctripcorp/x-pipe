@@ -54,7 +54,7 @@ public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 						future().setSuccess(commandFuture.get());
 					}
 				}
-			});;
+			});
 		}catch(Exception e){
 			failXslaveof(e);
 		}

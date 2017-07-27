@@ -26,7 +26,7 @@ public interface MetaServer extends ClusterServer, TopElement{
 
 	RedisMeta getRedisMaster(String clusterId, String shardId);
 
-	void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo) throws Exception;
+	void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo);
 
 	void clusterAdded(ClusterMeta clusterMeta, ForwardInfo forwardInfo);
 

@@ -57,7 +57,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 		
 		for(TestMetaServer server : getServers()){
 			
-			String path = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(server.getAddress());;
+			String path = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(server.getAddress());
 			logger.info("[testClusterChanged]{}", path);
 			restTemplate.postForEntity(path, clusterMeta, String.class, clusterMeta.getId());
 			restTemplate.put(path, clusterMeta, String.class, clusterMeta.getId());

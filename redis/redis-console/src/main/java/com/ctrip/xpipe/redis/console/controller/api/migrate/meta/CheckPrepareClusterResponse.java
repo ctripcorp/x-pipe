@@ -7,7 +7,6 @@ package com.ctrip.xpipe.redis.console.controller.api.migrate.meta;
  */
 public class CheckPrepareClusterResponse extends AbstractClusterMeta{
 
-    private String clusterName;
     private CHECK_FAIL_STATUS failReason;
     private boolean success;
 

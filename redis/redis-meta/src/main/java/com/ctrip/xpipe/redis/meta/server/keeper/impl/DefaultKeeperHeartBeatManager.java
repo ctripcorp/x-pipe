@@ -80,7 +80,7 @@ public class DefaultKeeperHeartBeatManager extends AbstractObservable implements
 
 	public void keeperDead() {
 
-		isAlive.set(false);;
+		isAlive.set(false);
 		logger.info("[keeperDead]{}", keeperKey);
 		notifyObservers(new NodeDeleted<KeeperKey>(keeperKey));
 		scheduleTimeout();

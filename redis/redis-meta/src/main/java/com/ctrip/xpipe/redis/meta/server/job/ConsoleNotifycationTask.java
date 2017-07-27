@@ -53,7 +53,7 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	}
 	
 	@Override
-	public void keeperActiveElected(final String clusterId, final String shardId, final KeeperMeta activeKeeper) throws Exception {
+	public void keeperActiveElected(final String clusterId, final String shardId, final KeeperMeta activeKeeper) {
 		logger.info("[keeperActiveElected][called]{},{},{}",clusterId,shardId,activeKeeper);
 		Command<Void> command = new AbstractCommand<Void>() {
 

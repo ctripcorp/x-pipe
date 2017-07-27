@@ -9,12 +9,12 @@ import com.ctrip.xpipe.AbstractTest;
  *
  * Aug 16, 2016
  */
-public class GlobalExceptionHandlerTest extends AbstractTest{
+public class DefaultExceptionHandlerTest extends AbstractTest{
 	
 	@Test
 	public void test(){
 		
-		Thread.setDefaultUncaughtExceptionHandler(new GlobalExceptionHandler());
+		Thread.setDefaultUncaughtExceptionHandler(new DefaultExceptionHandler());
 		
 		Thread t = new Thread(new Runnable() {
 			

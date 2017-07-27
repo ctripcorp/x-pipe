@@ -34,8 +34,6 @@ public class MigrationApi extends AbstractConsoleController {
     @Autowired
     private MigrationService migrationService;
 
-    private int ticketId = 1;
-
     @RequestMapping(value = "/checkandprepare", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
     public CheckPrepareResponse checkAndPrepare(@RequestBody(required = true) CheckPrepareRequest checkMeta) {
 
@@ -137,9 +135,6 @@ public class MigrationApi extends AbstractConsoleController {
         }
 
         RollbackResponse rollbackResponse = new RollbackResponse();
-
-        List<String> success = new LinkedList<>();
-        List<String> errors = new LinkedList<>();
 
         for (String clusterName : request.getClusters()) {
 

@@ -230,7 +230,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 
         migrationShard.doMigrate();
-        verify(mockedMigrationService, times(3)).updateMigrationShardLogById(anyLong(), anyString());;
+        verify(mockedMigrationService, times(3)).updateMigrationShardLogById(anyLong(), anyString());
         Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));

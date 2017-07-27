@@ -79,7 +79,7 @@ public class MetaInfoChange extends AbstractMetaServerClusterTest{
 	public void testRemoveCluster() throws IOException{
 		
 		try{
-			metaServerConsoleService.clusterDeleted(clusterId);;
+			metaServerConsoleService.clusterDeleted(clusterId);
 		}catch(Exception e){
 			logger.error("[testRemoveCluster]", e);
 		}
@@ -98,7 +98,7 @@ public class MetaInfoChange extends AbstractMetaServerClusterTest{
 			
 			clusterMeta.removeShard(shardId);
 			clusterMeta.addShard(shardMeta);
-			metaServerConsoleService.clusterModified(clusterMeta.getId(), clusterMeta);;
+			metaServerConsoleService.clusterModified(clusterMeta.getId(), clusterMeta);
 		}catch(Exception e){
 			logger.error("[testChangeClusterKeeper]", e);
 		}
@@ -114,7 +114,7 @@ public class MetaInfoChange extends AbstractMetaServerClusterTest{
 		try{
 			ClusterMeta clusterMeta = getCluster(dc, clusterId);
 			changeClusterKeeper(clusterMeta);
-			metaServerConsoleService.clusterModified(clusterMeta.getId(), clusterMeta);;
+			metaServerConsoleService.clusterModified(clusterMeta.getId(), clusterMeta);
 		}catch(Exception e){
 			logger.error("[testChangeClusterKeeper]", e);
 		}

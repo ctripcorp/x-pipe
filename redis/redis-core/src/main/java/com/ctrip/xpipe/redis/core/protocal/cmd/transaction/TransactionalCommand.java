@@ -81,7 +81,7 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 					doWork(clientPool);
 				}
 			}
-		});;
+		});
 	}
 
 	@SuppressWarnings("unchecked")

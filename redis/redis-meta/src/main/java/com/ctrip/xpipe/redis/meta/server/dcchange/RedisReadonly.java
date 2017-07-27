@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.dcchange;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.meta.server.dcchange.exception.RedisReadonlyException;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.SlaveOfRedisReadOnly;
 
 /**
@@ -12,9 +13,9 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.impl.SlaveOfRedisReadOnly;
  */
 public interface RedisReadonly {
 	
-	void makeReadOnly() throws Exception;
+	void makeReadOnly() throws RedisReadonlyException;
 	
-	void makeWritable() throws Exception;
+	void makeWritable() throws RedisReadonlyException;
 	
 	static RedisReadonly  create(String ip, int port, XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled){
 		return new SlaveOfRedisReadOnly(ip, port, keyedObjectPool, scheduled);

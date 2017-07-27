@@ -18,7 +18,7 @@ import com.ctrip.xpipe.exception.ExceptionUtils;
  */
 @Plugin(name = "XpipeThrowablePatternConverter", category = PatternConverter.CATEGORY)
 @ConverterKeys({ "xpEx", "xpThrowable", "xpException" })
-public class XPipeThrowablePatternConverter extends ThrowablePatternConverter{
+public final class XPipeThrowablePatternConverter extends ThrowablePatternConverter{
 	
     /**
      * Private constructor.

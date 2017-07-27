@@ -109,7 +109,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 		return files;
 	}
 
-	public long extractStartOffset(File file) {
+	private long extractStartOffset(File file) {
 		return Long.parseLong(file.getName().substring(fileNamePrefix.length()));
 	}
 
@@ -176,7 +176,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 		}
 		long fileStartOffset = extractStartOffset(targetFile);
 		long channelPosition = startOffset - fileStartOffset;
-		DefaultCommandReader reader = new DefaultCommandReader(targetFile, channelPosition, offsetNotifier);
+		DefaultCommandReader reader = new DefaultCommandReader(targetFile, channelPosition);
 		readers.put(reader, Boolean.TRUE);
 		return reader;
 	}
@@ -222,7 +222,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 
 		private ReferenceFileChannel referenceFileChannel;
 
-		public DefaultCommandReader(File curFile, long initChannelPosition, OffsetNotifier notifier)
+		public DefaultCommandReader(File curFile, long initChannelPosition)
 				throws IOException {
 			this.curFile = curFile;
 
@@ -339,7 +339,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 						@Override
 						public void operationComplete(ChannelFuture future) throws Exception {
 							
-							commandStoreDelay.flushSucceed(listener, referenceFileRegion.getTotalPos());;
+							commandStoreDelay.flushSucceed(listener, referenceFileRegion.getTotalPos());
 							delayTraceLogger.debug("[write][ end ]{}, {}", listener, referenceFileRegion.getTotalPos());
 						}
 					});

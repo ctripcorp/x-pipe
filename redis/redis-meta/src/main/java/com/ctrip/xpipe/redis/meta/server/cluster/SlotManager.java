@@ -27,9 +27,9 @@ public interface SlotManager extends Lifecycle{
 
 	int getSlotsSizeByServerId(int serverId);
 
-	void refresh() throws Exception;
+	void refresh() throws ClusterException;
 	
-	void refresh(int ...slotIds) throws Exception;
+	void refresh(int ...slotIds) throws ClusterException;
 	
 	void move(int slotId, int fromServer, int toServer);
 	

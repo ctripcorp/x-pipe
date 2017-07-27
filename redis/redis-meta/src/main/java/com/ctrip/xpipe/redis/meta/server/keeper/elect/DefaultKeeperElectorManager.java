@@ -43,7 +43,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	private KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager;
 	
 	
-	private void observeLeader(final ClusterMeta cluster) throws Exception {
+	private void observeLeader(final ClusterMeta cluster) {
 
 		logger.info("[observeLeader]{}", cluster.getId());
 		

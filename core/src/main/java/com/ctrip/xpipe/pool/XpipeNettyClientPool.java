@@ -2,6 +2,7 @@ package com.ctrip.xpipe.pool;
 
 import java.net.InetSocketAddress;
 
+import com.ctrip.xpipe.api.pool.ObjectPoolException;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -71,8 +72,12 @@ public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObj
 	}
 
 	@Override
-	public void clear() throws Exception {
-		this.objectPool.clear();
+	public void clear() throws ObjectPoolException {
+		try {
+			this.objectPool.clear();
+		} catch (Exception e) {
+			throw new ObjectPoolException("clear:" + objectPool, e);
+		}
 	}
 
 	@Override

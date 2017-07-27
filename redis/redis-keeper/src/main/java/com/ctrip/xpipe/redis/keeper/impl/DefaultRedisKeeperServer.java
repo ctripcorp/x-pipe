@@ -202,7 +202,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
-		replicationStoreManager.start();;		
+		replicationStoreManager.start();
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
 		this.leaderElector.start();

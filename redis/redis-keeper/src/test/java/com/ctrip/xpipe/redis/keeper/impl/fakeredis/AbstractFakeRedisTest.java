@@ -154,7 +154,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 				public void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
 					this.masterRdbOffset = masterRdbOffset;
 				}
-			});;
+			});
 			
 			chain.execute();
 			return psync;

@@ -4,12 +4,14 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.netty.ByteBufReadAction;
+import com.ctrip.xpipe.netty.ByteBufReadActionException;
 import com.ctrip.xpipe.netty.ChannelTrafficStatisticsHandler;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 
+import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -60,11 +62,15 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 		byteBufReadPolicy.read(ctx.channel(), (ByteBuf)msg, new ByteBufReadAction() {
 			
 			@Override
-			public void read(Channel channel, ByteBuf byteBuf) throws Exception {
+			public void read(Channel channel, ByteBuf byteBuf) throws ByteBufReadActionException {
 				
 				String []args= redisClient.readCommands(byteBuf);
 				if(args != null){
-					commandHandlerManager.handle(args, redisClient);;
+					try {
+						commandHandlerManager.handle(args, redisClient);
+					} catch (Exception e) {
+						throw new ByteBufReadActionException(String.format("netty:%s, handle:%s", channel, StringUtil.join(",", args)), e);
+					}
 				}
 				
 			}

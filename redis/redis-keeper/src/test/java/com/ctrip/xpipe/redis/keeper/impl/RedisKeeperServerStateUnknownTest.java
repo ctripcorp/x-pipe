@@ -54,7 +54,7 @@ public class RedisKeeperServerStateUnknownTest extends AbstractRedisKeeperServer
 	public void testBackup() throws IOException{
 				
 		//active
-		KeeperMeta keeperMeta = SerializationUtils.clone(redisKeeperServer.getCurrentKeeperMeta());;
+		KeeperMeta keeperMeta = SerializationUtils.clone(redisKeeperServer.getCurrentKeeperMeta());
 		keeperMeta.setPort(keeperMeta.getPort() + 1);
 		ShardStatus shardStatus = createShardStatus(keeperMeta, null, redisMasterMeta);
 		unknown.setShardStatus(shardStatus);

@@ -52,7 +52,7 @@ public class ScheduleCommandWrapper<V> extends AbstractCommand<V>{
 								future().setFailure(ExceptionUtils.getRootCause(commandFuture.cause()));
 							}
 						}
-					});;
+					});
 				}catch(Exception e){
 					future().setFailure(ExceptionUtils.getRootCause(e));
 				}

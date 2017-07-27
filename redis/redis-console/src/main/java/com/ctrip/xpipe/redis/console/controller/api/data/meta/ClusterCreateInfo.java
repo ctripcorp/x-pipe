@@ -78,7 +78,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
             throw new CheckFailException("dcs empty");
         }
 
-        if(dcs == null || dcs.size() <= 1){
+        if(dcs.size() <= 1){
             throw new CheckFailException("dcs size should be at least two, first active!");
         }
     }

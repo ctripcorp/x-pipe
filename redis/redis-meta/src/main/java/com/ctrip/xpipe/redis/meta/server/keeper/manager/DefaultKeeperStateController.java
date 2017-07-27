@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
@@ -12,10 +11,8 @@ import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
-import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
@@ -41,9 +38,6 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 	
 	@Autowired
 	private DcMetaCache dcMetaCache;
-	
-	@Resource( name = MetaServerContextConfig.CLIENT_POOL )
-	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 	
 	@Resource( name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;

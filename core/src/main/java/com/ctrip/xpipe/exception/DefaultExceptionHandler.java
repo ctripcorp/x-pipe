@@ -16,9 +16,10 @@ public class DefaultExceptionHandler implements UncaughtExceptionHandler{
 
 	@Override
 	public void uncaughtException(Thread t, Throwable e) {
-		
-		System.out.println("Thread:" + t);
+
+		System.err.println(String.format("currentThread:%s, thread:%s" , Thread.currentThread(), t));
 		e.printStackTrace();
-		logger.error("[uncaughtException]" + t, e);
+
+		logger.error(String.format("currentThread:%s, thread:%s" , Thread.currentThread(), t), e);
 	}
 }
