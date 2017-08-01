@@ -15,9 +15,9 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
  *
  *         Jun 15, 2016 7:27:34 PM
  */
-public class FakeFoundationService implements FoundationService {
+public class DefaultFoundationService implements FoundationService {
 
-	private static Logger logger = LoggerFactory.getLogger(FakeFoundationService.class);
+	private static Logger logger = LoggerFactory.getLogger(DefaultFoundationService.class);
 
 	private static AtomicBoolean logged = new AtomicBoolean(false);
 
@@ -26,10 +26,10 @@ public class FakeFoundationService implements FoundationService {
 	private String appId = System.getProperty("appId", "appid_xpipe");
 
 	public static void setDataCenter(String dataCenter) {
-		FakeFoundationService.dataCenter = dataCenter;
+		DefaultFoundationService.dataCenter = dataCenter;
 	}
 
-	public FakeFoundationService() {
+	public DefaultFoundationService() {
 		if (logged.compareAndSet(false, true)) {
 			logger.info("data center is {}", dataCenter);
 		}

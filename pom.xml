@@ -55,6 +55,7 @@
     <modules>
         <module>core</module>
         <module>redis</module>
+        <module>services</module>
     </modules>
 
     <dependencyManagement>
@@ -124,6 +125,11 @@
             <dependency>
                 <groupId>com.ctrip.framework.xpipe</groupId>
                 <artifactId>ctrip-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.xpipe</groupId>
+                <artifactId>local-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -439,18 +445,6 @@
     </dependencies>
 
     <profiles>
-        <profile>
-            <id>services</id>
-            <activation>
-                <property>
-                    <name>buildServices</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <modules>
-                <module>services</module>
-            </modules>
-        </profile>
         <profile>
             <id>travis</id>
             <activation>

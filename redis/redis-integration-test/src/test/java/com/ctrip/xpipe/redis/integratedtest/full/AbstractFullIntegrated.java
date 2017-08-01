@@ -13,7 +13,7 @@ import org.junit.After;
 import org.junit.Before;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
-import com.ctrip.xpipe.foundation.FakeFoundationService;
+import com.ctrip.xpipe.foundation.DefaultFoundationService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -145,7 +145,7 @@ public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 			throw new IllegalStateException("dc not found:" + dc);
 		}
 
-		FakeFoundationService.setDataCenter(dc);
+		DefaultFoundationService.setDataCenter(dc);
 
 		
 		startZkServer(dcMeta.getZkServer());

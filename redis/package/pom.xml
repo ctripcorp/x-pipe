@@ -18,7 +18,7 @@
 
 	<profiles>
 		<profile>
-			<id>services</id>
+			<id>ctrip</id>
 			<dependencies>
 				<dependency>
 					<groupId>com.ctrip.framework.xpipe</groupId>
@@ -33,6 +33,15 @@
 							<artifactId>spring-boot-starter-logging</artifactId>
 						</exclusion>
 					</exclusions>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>local</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.ctrip.framework.xpipe</groupId>
+					<artifactId>local-service</artifactId>
 				</dependency>
 			</dependencies>
 		</profile>

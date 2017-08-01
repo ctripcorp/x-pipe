@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.core.foundation;
 
 
-import com.ctrip.xpipe.foundation.FakeFoundationService;
+import com.ctrip.xpipe.foundation.DefaultFoundationService;
 
 /**
  * @author marsqing
@@ -17,13 +17,13 @@ public class IdcUtil {
 	public final static int OY_METASERVER_PORT = 9748;
 
 	public static void setToJQ() {
-		FakeFoundationService.setDataCenter("jq");
+		DefaultFoundationService.setDataCenter("jq");
 		System.setProperty("metaServerPort", JQ_METASERVER_PORT + "");
 		System.setProperty("zkPort", JQ_ZK_PORT + "");
 	}
 
 	public static void setToOY() {
-		FakeFoundationService.setDataCenter("oy");
+		DefaultFoundationService.setDataCenter("oy");
 		System.setProperty("metaServerPort", OY_METASERVER_PORT + "");
 		System.setProperty("zkPort", OY_ZK_PORT + "");
 	}

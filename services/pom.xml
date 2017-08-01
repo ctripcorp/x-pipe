@@ -1,14 +1,27 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>com.ctrip.framework.xpipe</groupId>
-		<artifactId>xpipe-parent</artifactId>
-		<version>0.2.2-SNAPSHOT</version>
-	</parent>
-	<artifactId>services</artifactId>
-	<packaging>pom</packaging>
-	<modules>
-		<module>ctrip-service</module>
-	</modules>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ctrip.framework.xpipe</groupId>
+        <artifactId>xpipe-parent</artifactId>
+        <version>0.2.2-SNAPSHOT</version>
+    </parent>
+    <artifactId>services</artifactId>
+    <packaging>pom</packaging>
+
+    <profiles>
+        <profile>
+            <id>local</id>
+            <modules>
+                <module>local-service</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>ctrip</id>
+            <modules>
+                <module>ctrip-service</module>
+            </modules>
+        </profile>
+    </profiles>
+
 </project>

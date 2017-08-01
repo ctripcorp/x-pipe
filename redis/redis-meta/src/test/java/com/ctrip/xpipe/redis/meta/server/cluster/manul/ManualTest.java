@@ -4,7 +4,7 @@ package com.ctrip.xpipe.redis.meta.server.cluster.manul;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.foundation.FakeFoundationService;
+import com.ctrip.xpipe.foundation.DefaultFoundationService;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.AbstractMetaServerClusterTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
@@ -35,7 +35,7 @@ public class ManualTest extends AbstractMetaServerClusterTest {
 	public void startServersOy() throws Exception {
 		
 		System.setProperty(TestMetaServer.KEY_CONFIG_FILE, "metaserver--oy.xml");
-		FakeFoundationService.setDataCenter("oy");
+		DefaultFoundationService.setDataCenter("oy");
 		createMetaServers(1);
 
 		waitForAnyKeyToExit();

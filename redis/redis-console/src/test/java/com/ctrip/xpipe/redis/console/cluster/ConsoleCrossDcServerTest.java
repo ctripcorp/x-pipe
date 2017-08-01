@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.cluster;
 
-import com.ctrip.xpipe.foundation.FakeFoundationService;
+import com.ctrip.xpipe.foundation.DefaultFoundationService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import org.junit.Assert;
@@ -54,7 +54,7 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
         HashMap<String, String> cnameToDc = new HashMap<>();
         cnameToDc.put("cname1", "jq");
         cnameToDc.put("cname2", "oy");
-        FakeFoundationService.setDataCenter("jq");
+        DefaultFoundationService.setDataCenter("jq");
 
         when(consoleConfig.getConsoleDomain()).thenReturn("xpipe");
         when(consoleConfig.getConsoleCnameToDc()).thenReturn(cnameToDc);
@@ -103,7 +103,7 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
 
         waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
 
-        FakeFoundationService.setDataCenter("oy");
+        DefaultFoundationService.setDataCenter("oy");
 
         waitConditionUntilTimeOut(() -> !crossDcClusterServer.amILeader());
     }

@@ -20,7 +20,7 @@
 
 	<profiles>
 		<profile>
-			<id>services</id>
+			<id>package</id>
 			<modules>
 				<module>package</module>
 			</modules>

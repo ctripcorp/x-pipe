@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
-import io.netty.buffer.ByteBuf;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
@@ -29,7 +28,7 @@ import org.xml.sax.SAXException;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
-import com.ctrip.xpipe.foundation.FakeFoundationService;
+import com.ctrip.xpipe.foundation.DefaultFoundationService;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -46,7 +45,6 @@ import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 
-import io.netty.buffer.ByteBufAllocator;
 import redis.clients.jedis.Jedis;
 
 /**
@@ -432,7 +430,7 @@ public abstract class AbstractRedisTest extends AbstractTest{
 	protected String getAndSetDc(int index) {
 		
 		String dc = getDcMetas().get(index).getId(); 
-		FakeFoundationService.setDataCenter(dc);
+		DefaultFoundationService.setDataCenter(dc);
 		return dc;
 	}
 	
