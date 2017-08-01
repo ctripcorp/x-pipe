@@ -4,8 +4,11 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 
+import com.ctrip.xpipe.redis.console.migration.MigrationResources;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +65,9 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private RedisService redisService;
 	@Autowired
 	private MigrationService migrationService;
+	@Resource( name = MigrationResources.MIGRATION_EXECUTOR )
+	private Executor executors;
+
 
 	private MigrationEventTblDao migrationEventTblDao;
 	private MigrationClusterTblDao migrationClusterTblDao;
@@ -188,7 +194,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				MigrationShardTbl shard = detail.getRedundantShards();
 				
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {
-					event.addMigrationCluster(new DefaultMigrationCluster(event, detail.getRedundantClusters(),
+					event.addMigrationCluster(new DefaultMigrationCluster(executors, event, detail.getRedundantClusters(),
 							dcService, clusterService, shardService, redisService, migrationService));
 				}
 				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId()); 

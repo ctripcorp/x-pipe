@@ -49,9 +49,9 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     private DcService dcService;
     private RedisService redisService;
     private MigrationService migrationService;
-    private ExecutorService executors;
+    private Executor executors;
 
-    public DefaultMigrationCluster(MigrationEvent event, MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
+    public DefaultMigrationCluster(Executor executors, MigrationEvent event, MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
                                    RedisService redisService, MigrationService migrationService) {
         this.event = event;
         this.migrationCluster = migrationCluster;
@@ -62,10 +62,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         this.redisService = redisService;
         this.migrationService = migrationService;
         loadMetaInfo();
-        executors = DefaultExecutorFactory.createAllowCoreTimeout(
-                "Migration-" + currentCluster.getClusterName(), shards.size() * 2
-        ).createExecutorService();
-
+        this.executors = executors;
         setStatus();
 
     }
