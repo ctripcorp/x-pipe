@@ -28,7 +28,7 @@ public class FinalStateSetterManagerTest extends AbstractTest{
 
         String testKey = randomString(10);
 
-        finalStateSetterManager = new FinalStateSetterManager<>(
+        finalStateSetterManager = new FinalStateSetterManager<>(executors,
                 (String key) -> randomString(10),
                 (key, value) -> count.incrementAndGet());
 
@@ -46,7 +46,7 @@ public class FinalStateSetterManagerTest extends AbstractTest{
 
         String testKey = randomString(10);
 
-        finalStateSetterManager = new FinalStateSetterManager<>(
+        finalStateSetterManager = new FinalStateSetterManager<>(executors,
                 (String key) -> randomString(10),
                 (key, value) -> {
 

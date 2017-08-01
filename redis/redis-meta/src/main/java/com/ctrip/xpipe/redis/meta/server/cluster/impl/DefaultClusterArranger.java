@@ -1,17 +1,15 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctrip.xpipe.redis.meta.server.cluster.*;
-import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -26,7 +24,6 @@ import com.ctrip.xpipe.observer.NodeModified;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.ContinueResharding;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.InitResharding;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
 
 import javax.annotation.Resource;
@@ -52,7 +49,7 @@ public class DefaultClusterArranger extends AbstractLifecycle implements Cluster
 	@Autowired
 	private RemoteClusterServerFactory<?> remoteClusterServerFactory;
 
-	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 
 	@Autowired

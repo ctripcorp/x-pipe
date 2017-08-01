@@ -8,6 +8,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,10 +42,10 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 
-	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 
-	@Resource(name = MetaServerContextConfig.GLOBAL_EXECUTOR)
+	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
 	private Executor executors;
 
 	private KeyedOneThreadTaskExecutor<Pair<String, String>> keyedOneThreadTaskExecutor;
@@ -58,7 +59,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
-		keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<>("KeeperStateChangeHandler");
+		keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<>(executors);
 	}
 	
 	@Override
@@ -127,5 +128,9 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	
 	public void setScheduled(ScheduledExecutorService scheduled) {
 		this.scheduled = scheduled;
+	}
+
+	public void setExecutors(Executor executors) {
+		this.executors = executors;
 	}
 }

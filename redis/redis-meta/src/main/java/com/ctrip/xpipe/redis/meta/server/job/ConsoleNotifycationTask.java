@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.tuple.Pair;
 
@@ -16,6 +17,9 @@ import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.retry.RetryNTimes;
 
+import javax.annotation.Resource;
+import java.util.concurrent.Executor;
+
 /**
  * @author wenchao.meng
  *
@@ -27,6 +31,9 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	
 	@Autowired
 	private ConsoleService consoleService;
+
+	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
+	private Executor executors;
 	
 	private String dc = FoundationService.DEFAULT.getDataCenter();
 	
@@ -43,7 +50,7 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
-		oneThreadTaskExecutor = new OneThreadTaskExecutor(getRetryTemplate(), "ConsoleNotify");
+		oneThreadTaskExecutor = new OneThreadTaskExecutor(getRetryTemplate(), executors);
 	}
 	
 	@Override

@@ -3,8 +3,11 @@ package com.ctrip.xpipe.retry;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.api.retry.RetryTemplate;
 
@@ -17,6 +20,7 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V> {
 
 	private int n;
 	private RetryPolicy retryPolicy;
+	private AtomicBoolean destroyed = new AtomicBoolean(false);
 
 	public RetryNTimes(int n, int delayBaseMilli) {
 		this(n, new RetryDelay(delayBaseMilli));
@@ -44,14 +48,28 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V> {
 
 		for (int i = 0; n == -1 || i <= n; i++) {
 
+			if(destroyed.get()){
+				logger.info("[execute][destroyed return null]{}", this);
+				return null;
+			}
+
 			if (i >= 1) {
 				logger.info("[execute][retry]{}, {}", i, command);
 				retryPolicy.retryWaitMilli(true);
 			}
 
+			if(destroyed.get()){
+				logger.info("[execute][destroyed return null]{}", this);
+				return null;
+			}
+
 			try {
 				logger.debug("[execute]{}, {}", i, command);
-				return command.execute().get(retryPolicy.waitTimeoutMilli(), TimeUnit.MILLISECONDS);
+				CommandFuture<V> future = command.execute();
+				if(future == null){
+					return null;
+				}
+				return future.get(retryPolicy.waitTimeoutMilli(), TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				logger.error(String.format("cmd:%s, message:%s", command, e.getMessage()), e);
 				Exception originalException = getOriginalException(e);
@@ -73,5 +91,11 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V> {
 		}
 		return (Exception) e;
 
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		logger.info("[destroy]{}", this);
+		destroyed.set(true);
 	}
 }

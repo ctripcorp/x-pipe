@@ -4,6 +4,7 @@ import java.util.concurrent.*;
 
 import javax.annotation.Resource;
 
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
@@ -33,10 +34,10 @@ public class DefaultRedisStateManager extends AbstractLifecycle implements Redis
 	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
-	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 
-	@Resource(name = MetaServerContextConfig.GLOBAL_EXECUTOR)
+	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
 	private Executor executors;
 
 	private ScheduledFuture<?> future;

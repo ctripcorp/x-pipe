@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -8,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 
-import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.tuple.Pair;
@@ -34,7 +33,6 @@ import com.ctrip.xpipe.redis.meta.server.meta.CurrentMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.utils.IpUtils;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import javax.annotation.Resource;
 
@@ -61,7 +59,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	
 	private Set<Integer>   currentSlots = new HashSet<>();
 
-	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 
 	private ScheduledFuture<?> 		slotCheckFuture;
@@ -69,7 +67,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	@Autowired
 	private List<MetaServerStateChangeHandler> stateHandlers;
 
-	@Resource(name = MetaServerContextConfig.GLOBAL_EXECUTOR)
+	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
 	private Executor executors;
 
 	public DefaultCurrentMetaManager() {

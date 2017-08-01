@@ -55,6 +55,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		handler.setcurrentMetaManager(currentMetaManager);
 		handler.setDcMetaCache(dcMetaCache);
 		handler.setScheduled(scheduled);
+		handler.setExecutors(executors);
 		
 		clusterId = getClusterId();
 		shardId = getShardId();

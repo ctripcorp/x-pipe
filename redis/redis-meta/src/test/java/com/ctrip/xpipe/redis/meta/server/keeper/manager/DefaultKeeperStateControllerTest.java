@@ -61,6 +61,8 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 			}
 			
 		};
+
+		defaultKeeperStateController.setExecutors(executors);
 		LifecycleHelper.initializeIfPossible(defaultKeeperStateController);
 		LifecycleHelper.startIfPossible(defaultKeeperStateController);
 		

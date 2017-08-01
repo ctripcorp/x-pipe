@@ -9,4 +9,5 @@ import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
  */
 public class AbstractRedisConfigContext extends AbstractSpringConfigContext {
 
+
 }

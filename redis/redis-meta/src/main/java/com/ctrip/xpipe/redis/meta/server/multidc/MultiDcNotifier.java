@@ -3,9 +3,8 @@ package com.ctrip.xpipe.redis.meta.server.multidc;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 import javax.annotation.Resource;
 
@@ -35,7 +33,7 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 	@Autowired
 	private MetaServerConfig metaServerConfig;
 
-	@Resource( name = MetaServerContextConfig.GLOBAL_EXECUTOR )
+	@Resource( name = AbstractSpringConfigContext.GLOBAL_EXECUTOR )
 	private ExecutorService executors;
 
 	@Autowired

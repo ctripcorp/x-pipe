@@ -2,6 +2,7 @@ package com.ctrip.xpipe.concurrent;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Executor;
 
 import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.slf4j.Logger;
@@ -24,9 +25,11 @@ public class KeyedOneThreadTaskExecutor<K> implements Destroyable{
 	private Map<K, OneThreadTaskExecutor> keyedExecutor = new ConcurrentHashMap<>();
 	
 	private String taskDesc;
+
+	private Executor executors;
 	
-	public KeyedOneThreadTaskExecutor(String taskDesc){
-		this.taskDesc = taskDesc;
+	public KeyedOneThreadTaskExecutor(Executor executors){
+		this.executors = executors;
 	}
 	
 	public void execute(K key, Command<?> command){
@@ -42,7 +45,7 @@ public class KeyedOneThreadTaskExecutor<K> implements Destroyable{
 			
 			@Override
 			public OneThreadTaskExecutor create() {
-				return new OneThreadTaskExecutor(taskDesc);
+				return new OneThreadTaskExecutor(executors);
 			}
 		});
 	}

@@ -5,6 +5,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,10 +35,10 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
-	@Resource(name = MetaServerContextConfig.SCHEDULED_EXECUTOR)
+	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 
-	@Resource(name = MetaServerContextConfig.GLOBAL_EXECUTOR)
+	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
 	private ExecutorService executors;
 
 	@Autowired

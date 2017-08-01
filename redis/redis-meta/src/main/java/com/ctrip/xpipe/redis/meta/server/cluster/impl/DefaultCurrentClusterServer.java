@@ -6,7 +6,7 @@ import java.util.Set;
 
 import java.util.concurrent.Executor;
 
-import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.nodes.PersistentNode;
 import org.apache.zookeeper.CreateMode;
@@ -50,7 +50,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	
 	private String serverPath;
 
-	@Resource(name = MetaServerContextConfig.GLOBAL_EXECUTOR)
+	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
 	private Executor executors;
 	
 	private PersistentNode persistentNode;
