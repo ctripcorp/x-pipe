@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import java.util.List;
+import java.util.Map;
 
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 
@@ -15,5 +16,6 @@ public interface DcService {
 	List<DcTbl> findAllDetails(String dcName);
 	List<DcTbl> findAllActiveKeepers();
 	DcTbl findByDcName(String activeDcName);
+	Map<Long, String> dcNameMap();
 	
 }

@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.dao;
 import com.ctrip.xpipe.redis.console.migration.model.*;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResult;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterInfo;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,25 @@ public class MigrationEventDaoTest extends AbstractConsoleIntegrationTest {
             logger.error("Prepare data from file failed", ex);
         }
         return "";
+    }
+
+    @Test
+    public void testGetMigrationCluster(){
+
+        List<MigrationClusterModel> migrationCluster = migrationEventDao.getMigrationCluster(2);
+        Assert.assertEquals(1, migrationCluster.size());
+
+        MigrationClusterInfo clusterInfo = migrationCluster.iterator().next().getMigrationCluster();
+
+        logger.info("{}", clusterInfo);
+        Assert.assertEquals("cluster2", clusterInfo.getClusterName());
+        Assert.assertEquals(dcNames[0], clusterInfo.getSourceDcName());
+        Assert.assertEquals(dcNames[1], clusterInfo.getDestinationDcName());
+        Assert.assertEquals("Checking", clusterInfo.getStatus());
+        Assert.assertEquals(2, clusterInfo.getClusterId());
+        Assert.assertEquals(2, clusterInfo.getMigrationEventId());
+        Assert.assertEquals("", clusterInfo.getPublishInfo());
+
     }
 
     @Test

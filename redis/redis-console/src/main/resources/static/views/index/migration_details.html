@@ -2,16 +2,14 @@
 	<ul class="nav nav-list">
 		<li ng-repeat="migrationCluster in eventDetails">
 			<a ui-sref=".details({migrationCluster: migrationCluster})" class="dropdown-toggle"> 
-				<i class="menu-icon fa fa-caret-right"></i> {{ migrationCluster.migrationCluster.cluster.clusterName }}
+				<i class="menu-icon fa fa-caret-right"></i> {{ migrationCluster.migrationCluster.clusterName }}
 				<div>
-					<span class="label label-sm" ng-class="{'label-default':migrationCluster.migrationCluster.status == 'Initiated',
-						'label-info':migrationCluster.migrationCluster.status == 'Checking' || 
-						migrationCluster.migrationCluster.status == 'Migrating' ||
-						migrationCluster.migrationCluster.status == 'PartialSuccess' ||
-						migrationCluster.migrationCluster.status == 'Publishing',
-						'label-success':migrationCluster.migrationCluster.status == 'Success',
-						'label-danger':migrationCluster.migrationCluster.status == 'Aborted' ||
-						migrationCluster.migrationCluster.status == 'ForceEnd'}">{{migrationCluster.migrationCluster.status}}</span>
+					<span class="label label-sm" ng-class="{
+						'label-default':migrationCluster.migrationCluster.statusType == 'Init',
+						'label-info':migrationCluster.migrationCluster.statusType == 'Processing',
+						'label-success':migrationCluster.migrationCluster.statusType == 'Success',
+						'label-danger':migrationCluster.migrationCluster.statusType == 'Fail'
+						}">{{migrationCluster.migrationCluster.status}}</span>
 				</div>
 			</a> 
 		</li>

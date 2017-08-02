@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -113,5 +115,15 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 			}
 		});
 	}
-	
+
+	@Override
+	public Map<Long, String> dcNameMap() {
+
+		List<DcTbl> allDcs = findAllDcs();
+		Map<Long, String> result = new HashMap<>();
+
+		allDcs.forEach(dcTbl -> result.put(dcTbl.getId(), dcTbl.getDcName()));
+		return result;
+	}
+
 }

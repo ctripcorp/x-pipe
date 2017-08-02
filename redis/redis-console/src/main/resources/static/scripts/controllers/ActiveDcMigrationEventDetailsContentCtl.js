@@ -35,17 +35,6 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
         }
         
         function initStatus() {
-        	$scope.dcs.forEach(function(dc) {
-        		if($scope.migrationCluster) {
-        			if(dc.id == $scope.migrationCluster.migrationCluster.sourceDcId) {
-            			$scope.migrationCluster.migrationCluster.sourceDcName = dc.dcName;
-            		}
-            		if(dc.id == $scope.migrationCluster.migrationCluster.destinationDcId) {
-            			$scope.migrationCluster.migrationCluster.destinationDcName = dc.dcName;
-            		}
-        		}
-        	});
-        	
         	if($scope.migrationCluster) {
         		$scope.migrationCluster.migrationShards.forEach(function(migrationShard) {
                 	if(migrationShard.migrationShard) {
@@ -73,10 +62,7 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
                         if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
                             $scope.migrationCluster = migrationCluster;
                             initStatus();
-                            if(migrationCluster.migrationCluster.status == "Success" || 
-                            	migrationCluster.migrationCluster.status == "Aborted" ||
-                            	migrationCluster.migrationCluster.status == "ForceEnd"){
-                            	
+                            if(migrationCluster.migrationCluster.end){
                             	$interval.cancel(stopInterval);
                             	stopInterval = undefined;
                             }

@@ -1,16 +1,14 @@
 <div class="col-xs-12">
 	<div class="header lighter black">
 		<div class="row" style="font-size:22px">
-			<div class="col-md-2"><strong>{{migrationCluster.migrationCluster.cluster.clusterName}}</strong><strong ng-if="!migrationCluster.migrationCluster">Cluster deleted!!!</strong></div>
+			<div class="col-md-2"><strong>{{migrationCluster.migrationCluster.clusterName}}</strong><strong ng-if="!migrationCluster.migrationCluster">Cluster deleted!!!</strong></div>
 			<div class="col-md-2" ng-if="migrationCluster.migrationCluster">状态: 
-			<span class="label label-sm" ng-class="{'label-default':migrationCluster.migrationCluster.status == 'Initiated',
-						'label-info':migrationCluster.migrationCluster.status == 'Checking' || 
-						migrationCluster.migrationCluster.status == 'Migrating' ||
-						migrationCluster.migrationCluster.status == 'PartialSuccess' ||
-						migrationCluster.migrationCluster.status == 'Publishing',
-						'label-success':migrationCluster.migrationCluster.status == 'Success',
-						'label-danger':migrationCluster.migrationCluster.status == 'Aborted' ||
-						migrationCluster.migrationCluster.status == 'ForceEnd'}">
+			<span class="label label-sm" ng-class="{
+						'label-default':migrationCluster.migrationCluster.statusType == 'Init',
+						'label-info':migrationCluster.migrationCluster.statusType == 'Processing',
+						'label-success':migrationCluster.migrationCluster.statusType == 'Success',
+						'label-danger':migrationCluster.migrationCluster.statusType == 'Fail'
+						}">
 						{{migrationCluster.migrationCluster.status}}
 			</span>
 			</div>
@@ -23,35 +21,23 @@
 			</div>
 			<div class="col-md-4">
 					<a type="button" class="btn btn-primary radius-border-fat"
-						ng-click="continueMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)"
+						ng-click="continueMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.clusterId)"
 						ng-if=" migrationCluster.migrationCluster && 
-								migrationCluster.migrationCluster.status != 'Success' &&
-								migrationCluster.migrationCluster.status != 'Aborted' &&
-								migrationCluster.migrationCluster.status != 'ForceEnd'">
-						<span ng-if="migrationCluster.migrationCluster.status == 'Initiated'">执行</span>
-						<span ng-if="migrationCluster.migrationCluster.status != 'Initiated' && 
-							migrationCluster.migrationCluster.status != 'Aborted' &&
-							migrationCluster.migrationCluster.status != 'Success' &&
-							migrationCluster.migrationCluster.status != 'ForceEnd'">重试</span>
+								!migrationCluster.migrationCluster.end">
+						<span ng-if="!migrationCluster.migrationCluster.end">执行</span>
 					</a>
 					<a type="button" class="btn btn-danger radius-border-fat" 
-						ng-click="cancelMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)"
-						ng-if="migrationCluster.migrationCluster.status == 'Checking' ||
-								migrationCluster.migrationCluster.status == 'Initiated' ">
-						<span>取消</span>
-					</a>
-					<a type="button" class="btn btn-danger radius-border-fat"
-					   ng-click="rollbackMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)"
-					   ng-if="migrationCluster.migrationCluster.status == 'PartialSuccess'">
+						ng-click="cancelMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.clusterId)"
+						ng-if="!migrationCluster.migrationCluster.end">
 						<span>回滚</span>
 					</a>
 					<a type="button" class="btn btn-danger radius-border-fat"
-					   ng-click="forcePublishMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)"
+					   ng-click="forcePublishMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.clusterId)"
 					   ng-if="migrationCluster.migrationCluster.status == 'PartialSuccess'">
 						<span>强制发布</span>
 					</a>
 					<a type="button" class="btn btn-danger radius-border-fat"
-					   ng-click="forceEndMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.cluster.id)"
+					   ng-click="forceEndMigrationCluster( migrationCluster.migrationCluster.migrationEventId,migrationCluster.migrationCluster.clusterId)"
 					   ng-if="migrationCluster.migrationCluster.status == 'Publish'">
 						<span>强制结束</span>
 					</a>

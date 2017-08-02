@@ -19,29 +19,36 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationSuccess
  * Dec 8, 2016
  */
 public enum MigrationStatus {
-	
-	Initiated(MigrationInitiatedState.class, ClusterStatus.Lock, false, 0),
-	Checking(MigrationCheckingState.class, ClusterStatus.Lock, false, 10),
-	Migrating(MigrationMigratingState.class, ClusterStatus.Migrating, false, 30),
-	PartialSuccess(MigrationPartialSuccessState.class, ClusterStatus.Migrating, false, 40),
-	Publish(MigrationPublishState.class, ClusterStatus.TmpMigrated, false, 80),
 
-	RollBack(MigrationPartialSuccessRollBackState.class, ClusterStatus.Rollback, false, 30),
-	Aborted(MigrationAbortedState.class, ClusterStatus.Normal, true, 100),
-	Success(MigrationSuccessState.class, ClusterStatus.Normal, true, 100),
-	ForceEnd(MigrationForceEndState.class, ClusterStatus.Normal, true, 100);
+	Initiated(MigrationInitiatedState.class, ClusterStatus.Lock, false, 0, MigrationStatus.TYPE_INIT),
+	Checking(MigrationCheckingState.class, ClusterStatus.Lock, false, 10, MigrationStatus.TYPE_PROCESSING),
+	Migrating(MigrationMigratingState.class, ClusterStatus.Migrating, false, 30, MigrationStatus.TYPE_PROCESSING),
+	PartialSuccess(MigrationPartialSuccessState.class, ClusterStatus.Migrating, false, 40, MigrationStatus.TYPE_PROCESSING),
+	Publish(MigrationPublishState.class, ClusterStatus.TmpMigrated, false, 80, MigrationStatus.TYPE_PROCESSING),
+	RollBack(MigrationPartialSuccessRollBackState.class, ClusterStatus.Rollback, false, 30, MigrationStatus.TYPE_PROCESSING),
+
+	Aborted(MigrationAbortedState.class, ClusterStatus.Normal, true, 100, MigrationStatus.TYPE_FAIL),
+	Success(MigrationSuccessState.class, ClusterStatus.Normal, true, 100, MigrationStatus.TYPE_SUCCESS),
+	ForceEnd(MigrationForceEndState.class, ClusterStatus.Normal, true, 100, MigrationStatus.TYPE_FAIL);
+
+	public static final String TYPE_INIT = "Init";
+	public static final String TYPE_PROCESSING = "Processing";
+	public static final String TYPE_SUCCESS = "Success";
+	public static final String TYPE_FAIL = "Fail";
 
 	private final  Class<MigrationState> classMigrationState;
 	private final ClusterStatus clusterStatus;
 	private boolean isTerminated;
 	private int  	percent;
-	
+	private String 	type;
+
 	@SuppressWarnings("unchecked")
-	MigrationStatus(Class<?> classMigrationState, ClusterStatus clusterStatus, boolean isTerminated, int percent){
+	MigrationStatus(Class<?> classMigrationState, ClusterStatus clusterStatus, boolean isTerminated, int percent, String type){
 		this.classMigrationState = (Class<MigrationState>) classMigrationState;
 		this.clusterStatus = clusterStatus;
 		this.isTerminated = isTerminated;
 		this.percent = percent;
+		this.type = type;
 	}
 	
 	public ClusterStatus getClusterStatus(){
@@ -72,4 +79,7 @@ public enum MigrationStatus {
 		return false;
 	}
 
+	public String getType() {
+		return type;
+	}
 }

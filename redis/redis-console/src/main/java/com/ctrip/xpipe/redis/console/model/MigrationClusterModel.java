@@ -12,18 +12,18 @@ import java.util.List;
 public class MigrationClusterModel implements Serializable{
 	private static final long serialVersionUID = 1L;
 	
-	private MigrationClusterTbl migrationCluster;
+	private MigrationClusterInfo migrationCluster;
 	
 	private List<MigrationShardModel> migrationShards = new LinkedList<>();
 	
 	public MigrationClusterModel(){
 	}
 	
-	public MigrationClusterTbl getMigrationCluster() {
+	public MigrationClusterInfo getMigrationCluster() {
 		return migrationCluster;
 	}
 	
-	public void setMigrationCluster(MigrationClusterTbl migrationCluster) {
+	public void setMigrationCluster(MigrationClusterInfo migrationCluster) {
 		this.migrationCluster = migrationCluster;
 	}
 	

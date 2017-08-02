@@ -112,7 +112,10 @@ public class MigrationApi extends AbstractConsoleController {
         migrationEvent.getMigrationClusters().forEach(migrationCluster -> {
                     String clusterName = migrationCluster.clusterName();
                     MigrationStatus migrationStatus = migrationCluster.getStatus();
-                    CheckStatusClusterResponse checkResponse = new CheckStatusClusterResponse(clusterName, DO_STATUS.fromMigrationStatus(migrationStatus), migrationStatus.getPercent(), migrationStatus.toString());
+                    CheckStatusClusterResponse checkResponse = new CheckStatusClusterResponse(clusterName,
+                            DO_STATUS.fromMigrationStatus(migrationStatus),
+                            migrationStatus.getPercent(),
+                            migrationStatus.toString());
                     checkResponse.setFromIdc(migrationCluster.fromDc());
                     checkResponse.setToIdc(migrationCluster.destDc());
                     response.addResult(checkResponse);

@@ -1,14 +1,12 @@
 package com.ctrip.xpipe.redis.console.dao;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executor;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,23 +26,6 @@ import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
-import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTblDao;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTblEntity;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTblDao;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTblEntity;
-import com.ctrip.xpipe.redis.console.model.MigrationShardModel;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTblDao;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTblEntity;
-import com.ctrip.xpipe.redis.console.model.ShardTbl;
-import com.ctrip.xpipe.redis.console.model.ShardTblDao;
-import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -89,17 +70,24 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	}
 	
 	public List<MigrationClusterModel> getMigrationCluster(final long eventId) {
+
 		List<MigrationClusterModel> res = new LinkedList<>();
-		
+
+		Map<Long, String> dcMap = dcService.dcNameMap();
+
 		List<MigrationClusterTbl> migrationClusterTbls = queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
 			@Override
 			public List<MigrationClusterTbl> doQuery() throws DalException {
 				return migrationClusterTblDao.findByEventId(eventId, MigrationClusterTblEntity.READSET_FULL_ALL);
 			}
 		});
+
 		for(MigrationClusterTbl migrationClusterTbl : migrationClusterTbls) {
+
 			MigrationClusterModel model = new MigrationClusterModel();
-			model.setMigrationCluster(migrationClusterTbl);
+			ClusterTbl cluster = migrationClusterTbl.getCluster();
+
+			model.setMigrationCluster(new MigrationClusterInfo(cluster.getClusterName(), dcMap, migrationClusterTbl));
 			
 			List<MigrationShardTbl> migrationShardTbls = queryHandler.handleQuery(new DalQuery<List<MigrationShardTbl>>() {
 				@Override
