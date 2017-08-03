@@ -16,6 +16,10 @@ public class ClusterMigratingNow extends RedisConsoleException {
 
     public ClusterMigratingNow(String clusterName, String fromIdc, String toIdc, long eventId) {
         super(String.format("cluster:%s, from:%s, to:%s, id:%s", clusterName, fromIdc, toIdc, eventId));
+        this.clusterName = clusterName;
+        this.fromIdc = fromIdc;
+        this.toIdc = toIdc;
+        this.eventId = eventId;
     }
 
     public String getClusterName() {
