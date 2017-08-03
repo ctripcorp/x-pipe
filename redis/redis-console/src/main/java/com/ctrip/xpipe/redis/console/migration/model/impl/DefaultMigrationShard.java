@@ -114,7 +114,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		logger.debug("[debug][end]{}", this);
 		long end = System.currentTimeMillis();
 		if((end - begin) > 3){
-			logger.warn("[update][time long]{}, {}", end - begin, this);
+			logger.debug("[update][time long]{}, {}", end - begin, this);
 		}
 	}
 	
@@ -325,6 +325,16 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	@Override
 	public String shardName() {
 		return currentShard.getShardName();
+	}
+
+	@Override
+	public ShardMigrationStepResult stepResult(ShardMigrationStep step) {
+		return shardMigrationResult.stepResult(step);
+	}
+
+	@Override
+	public void retry(ShardMigrationStep step) {
+		shardMigrationResult.stepRetry(step);
 	}
 
 

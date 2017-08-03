@@ -47,6 +47,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 
 					@Override
 					protected void doExecute() throws Exception {
+						logger.info("[doExecute][set result]{}, {}, {}", cluster, shard, future());
 						future().setSuccess(
 								new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS, "Check success"));
 					}

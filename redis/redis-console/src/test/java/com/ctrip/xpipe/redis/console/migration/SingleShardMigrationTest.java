@@ -140,6 +140,8 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		sleep(1000);
 		
 		ClusterTbl currentCluster = clusterService.find(1);
+		Assert.assertEquals(MigrationStatus.CheckingFail, migrationCluster.getStatus());;
+
 		Assert.assertEquals(ClusterStatus.Lock.toString(), currentCluster.getStatus());
 		Assert.assertEquals(1, currentCluster.getActivedcId());
 		Assert.assertEquals(ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());

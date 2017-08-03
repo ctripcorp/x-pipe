@@ -9,6 +9,7 @@ import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResultStatus;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStepResult;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -55,6 +56,19 @@ public class DefaultShardMigrationResult implements Serializable, ShardMigration
 	@Override
 	public boolean stepTerminated(ShardMigrationStep step) {
 		return steps.containsKey(step);
+	}
+
+	@Override
+	public ShardMigrationStepResult stepResult(ShardMigrationStep step){
+
+		if(stepTerminated(step)){
+			if(stepSuccess(step)){
+				return ShardMigrationStepResult.SUCCESS;
+			}
+			return ShardMigrationStepResult.FAIL;
+		}
+
+		return ShardMigrationStepResult.UNKNOWN;
 	}
 
 	@Override

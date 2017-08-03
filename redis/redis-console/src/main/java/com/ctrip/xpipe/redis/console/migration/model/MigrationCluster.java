@@ -24,4 +24,7 @@ public interface MigrationCluster extends Observer, Observable, MigrationCluster
     void updatePublishInfo(String desc);
 
     void updateActiveDcIdToDestDcId();
+
+    ClusterStepResult stepStatus(ShardMigrationStep shardMigrationStep);
+
 }

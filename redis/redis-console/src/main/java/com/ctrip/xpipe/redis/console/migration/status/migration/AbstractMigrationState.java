@@ -94,7 +94,7 @@ public abstract class AbstractMigrationState implements MigrationState {
 
     protected void updateAndStop(MigrationState state) {
 
-        updateAndProcess(state, false, true);
+        updateAndProcess(state, false, false);
     }
 
     private void updateAndProcess(MigrationState stat, boolean process, boolean forceContinue) {

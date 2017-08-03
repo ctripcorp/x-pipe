@@ -9,14 +9,12 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.model.*;
 import com.ctrip.xpipe.redis.console.migration.status.*;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -180,6 +178,35 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         cluster.setActivedcId(destDcId);
         clusterService.updateActivedcId(clusterId(), destDcId);
 
+    }
+
+    @Override
+    public ClusterStepResult stepStatus(ShardMigrationStep shardMigrationStep) {
+        int finishCount = 0;
+        int successCount = 0;
+
+        List<MigrationShard> migrationShards = getMigrationShards();
+        int shardSize = migrationShards.size();
+
+        for(MigrationShard migrationShard : migrationShards){
+
+            ShardMigrationStepResult shardMigrationStepResult = migrationShard.stepResult(shardMigrationStep);
+            switch (shardMigrationStepResult){
+                case FAIL:
+                    finishCount++;
+                    break;
+                case SUCCESS:
+                    finishCount++;
+                    successCount++;
+                    break;
+                case UNKNOWN:
+                    break;
+                default:
+                    throw new IllegalStateException("unkonw result:" + shardMigrationStep + "," + this);
+            }
+        }
+
+        return new ClusterStepResult(shardSize, finishCount, successCount);
     }
 
     private void updateStorageMigrationClusterStatus() {

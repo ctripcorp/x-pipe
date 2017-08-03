@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.status.migration;
 import java.util.List;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.console.migration.model.ClusterStepResult;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
@@ -18,7 +19,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
 	public MigrationCheckingState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Checking);
 		this.setNextAfterSuccess(new MigrationMigratingState(holder))
-			.setNextAfterFail(this);
+			.setNextAfterFail(new MigrationCheckingFailState(holder));
 	}
 
 	@Override
@@ -27,6 +28,8 @@ public class MigrationCheckingState extends AbstractMigrationState {
 		
 		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
 		for (final MigrationShard migrationShard : migrationShards) {
+
+			migrationShard.retry(ShardMigrationStep.CHECK);
 			executors.execute(new AbstractExceptionLogTask() {
 				@Override
 				public void doRun() {
@@ -44,17 +47,19 @@ public class MigrationCheckingState extends AbstractMigrationState {
 	@Override
 	public void refresh() {
 
-		int successCnt = 0;
-		List<MigrationShard> migrationShards = getHolder().getMigrationShards();
-		for (MigrationShard migrationShard : migrationShards) {
-			if (migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK)) {
-				++successCnt;
+		MigrationCluster holder = getHolder();
+		ClusterStepResult clusterStepResult = holder.stepStatus(ShardMigrationStep.CHECK);
+
+		if(clusterStepResult.isStepFinish()){
+			if(clusterStepResult.isStepSuccess()){
+				logger.debug("[refresh][check success]{}", this);
+				updateAndProcess(nextAfterSuccess());
+			}else {
+				logger.debug("[refresh][check fail]{}", this);
+				updateAndStop(nextAfterFail());
 			}
 		}
 
-		if (successCnt == migrationShards.size()) {
-			updateAndProcess(nextAfterSuccess());
-		}
 	}
 
 }

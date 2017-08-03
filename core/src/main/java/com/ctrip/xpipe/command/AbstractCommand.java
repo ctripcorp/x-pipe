@@ -40,6 +40,11 @@ public abstract class AbstractCommand<V> implements Command<V>{
 
 	@Override
 	public CommandFuture<V> execute(Executor executors) {
+
+		if(future().isDone()){
+			logger.info("[execute][already done, reset]{}, {}", this, future().getNow());
+			reset();
+		}
 		
 		future().addListener(new CommandFutureListener<V>() {
 

@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.redis.console.migration.model.ClusterStepResult;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -34,7 +36,8 @@ public class MigrationCheckingStateTest extends AbstractMigrationStateTest {
     @Test
     public void testCheckSuccess() {
 
-        shardResult(0);
+        int shardSize = getShardSize();
+        when(migrationCluster.stepStatus(ShardMigrationStep.CHECK)).thenReturn(new ClusterStepResult(shardSize, shardSize, shardSize));
 
         checkingState.action();
         checkingState.refresh();
@@ -49,7 +52,10 @@ public class MigrationCheckingStateTest extends AbstractMigrationStateTest {
     @Test
     public void testCheckRollback() {
 
-        shardResult(1);
+
+        int shardSize = getShardSize();
+
+        when(migrationCluster.stepStatus(ShardMigrationStep.CHECK)).thenReturn(new ClusterStepResult(shardSize, shardSize, shardSize/2));
 
         checkingState.action();
         checkingState.refresh();

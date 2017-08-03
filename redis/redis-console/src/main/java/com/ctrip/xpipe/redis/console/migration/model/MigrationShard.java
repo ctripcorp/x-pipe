@@ -11,4 +11,8 @@ public interface MigrationShard extends MigrationShardInfoHolder, MigrationShard
 
     String shardName();
 
+    ShardMigrationStepResult stepResult(ShardMigrationStep step);
+
+    void retry(ShardMigrationStep step);
+
 }

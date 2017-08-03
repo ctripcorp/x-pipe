@@ -27,6 +27,9 @@ public enum  DO_STATUS {
             case Checking:
                 do_status = MIGRATING;
                 break;
+            case CheckingFail:
+                do_status = FAIL;
+                break;
             case Migrating:
                 do_status = MIGRATING;
                 break;
@@ -38,6 +41,9 @@ public enum  DO_STATUS {
                 break;
             case Publish:
                 do_status = MIGRATING;
+                break;
+            case PublishFail:
+                do_status = FAIL;
                 break;
             case Success:
                 do_status = SUCCESS;

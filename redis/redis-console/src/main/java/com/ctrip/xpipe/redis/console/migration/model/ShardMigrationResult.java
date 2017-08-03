@@ -22,6 +22,8 @@ public interface ShardMigrationResult {
 
     boolean stepSuccess(ShardMigrationStep step);
 
+    ShardMigrationStepResult stepResult(ShardMigrationStep step);
+
     void stepRetry(ShardMigrationStep step);
 
     void updateStepResult(ShardMigrationStep step, boolean success, String log);

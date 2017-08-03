@@ -128,7 +128,12 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
         CauseHolder(Throwable cause) {
             this.cause = cause;
         }
-    }
+
+		@Override
+		public String toString() {
+			return String.format("%s", cause == null? "null" : cause.getStackTrace());
+		}
+	}
 
 
 	@Override
@@ -337,4 +342,20 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
 		return this.command;
 	}
 
+	@Override
+	public String toString() {
+
+		String resultDesc = null;
+
+		if(isDone()){
+			if(isSuccess()){
+				resultDesc = String.format("success:%s", result);
+			}else {
+				resultDesc = String.format("fail:%s", cause());
+			}
+		}else {
+			resultDesc = "undone";
+		}
+		return String.format("cmd:%s, %s", command, resultDesc);
+	}
 }

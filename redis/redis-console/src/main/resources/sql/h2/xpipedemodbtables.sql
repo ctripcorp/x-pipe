@@ -136,7 +136,7 @@ create table MIGRATION_EVENT_TBL
 	id bigint unsigned not null auto_increment primary key,
 	start_time timestamp default CURRENT_TIMESTAMP,
 	operator varchar(128) not null default 'xpipe',
-	event_tag varchar(150) not null unique,
+	event_tag varchar(150) not null,
 	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
