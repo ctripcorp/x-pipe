@@ -47,7 +47,11 @@ public class FirstNewMasterChooserTest extends AbstractMetaServerTest {
     @Test
     public void testChooseFirstAlive() throws Exception {
 
-        Assert.assertNull(firstNewMasterChooser.choose(redises));
+        try {
+            firstNewMasterChooser.choose(redises);
+            Assert.fail();
+        }catch (ChooseNewMasterFailException e){
+        }
 
         startSlaveFakeRedis(redises.get(1).getPort(), SERVER_ROLE.SLAVE);
         Assert.assertEquals(redises.get(1), firstNewMasterChooser.choose(redises));

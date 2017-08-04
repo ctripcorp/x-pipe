@@ -59,12 +59,15 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
 
         logger.debug("[choose]{}, {}", masters, aliveServers);
         if (masters.size() == 0) {
+            if(aliveServers.size() == 0){
+                throw ChooseNewMasterFailException.noAliveServer(redises);
+            }
             newMaster = doChooseFromAliveServers(aliveServers);
         } else if (masters.size() == 1) {
             logger.info("[choose][already has master]{}", masters);
             newMaster = masters.get(0);
         } else {
-            throw new ChooseNewMasterFailException(masters);
+            throw ChooseNewMasterFailException.multiMaster(masters, redises);
         }
         return newMaster;
     }

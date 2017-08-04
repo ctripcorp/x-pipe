@@ -4,6 +4,9 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.StringUtil;
+
+import java.util.List;
 
 /**
  * @author wenchao.meng
@@ -11,6 +14,11 @@ import com.ctrip.xpipe.utils.ObjectUtils;
  * Aug 18, 2016
  */
 public class MetaUtils {
+
+	public static String toString(List<? extends Redis> redises){
+
+		return StringUtil.join(",", (redis) -> redis.desc(), redises);
+	}
 	
 	public static boolean same(KeeperMeta keeperMeta1, KeeperMeta keeperMeta2){
 		
