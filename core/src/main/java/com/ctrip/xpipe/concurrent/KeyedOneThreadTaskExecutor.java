@@ -23,8 +23,6 @@ public class KeyedOneThreadTaskExecutor<K> implements Destroyable{
 	private static Logger logger = LoggerFactory.getLogger(KeyedOneThreadTaskExecutor.class);
 	
 	private Map<K, OneThreadTaskExecutor> keyedExecutor = new ConcurrentHashMap<>();
-	
-	private String taskDesc;
 
 	private Executor executors;
 	

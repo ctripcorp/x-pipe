@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -24,12 +23,10 @@ public class FinalStateSetterManager<K, S> {
     private Map<K, S> map = new ConcurrentHashMap<K, S>();
     private KeyedOneThreadTaskExecutor<K> keyedOneThreadTaskExecutor;
 
-    private Executor executors;
     private Function<K, S> getter;
     private BiConsumer<K, S> setter;
 
     public FinalStateSetterManager(Executor executors, Function<K, S> getter, BiConsumer<K, S> setter){
-        this.executors = executors;
         this.getter = getter;
         this.setter = setter;
         keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<K>(executors);

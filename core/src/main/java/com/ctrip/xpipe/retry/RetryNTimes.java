@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.api.retry.RetryTemplate;
 

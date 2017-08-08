@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.meta.server.exception.MetaServerRuntimeException;
  *
  * Dec 13, 2016
  */
-public class ChooseNewMasterFailException extends MetaServerRuntimeException{
+public final class ChooseNewMasterFailException extends MetaServerRuntimeException{
 	
 	private static final long serialVersionUID = 1L;
 	
