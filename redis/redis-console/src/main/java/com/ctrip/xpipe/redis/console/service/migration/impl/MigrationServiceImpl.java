@@ -17,6 +17,8 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratingNow;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
+import com.ctrip.xpipe.redis.console.service.migration.exception.ToIdcNotFoundException;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -46,6 +48,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Autowired
     private MigrationClusterDao migrationClusterDao;
+
     private MigrationShardTblDao migrationShardTblDao;
 
     @PostConstruct
@@ -238,7 +241,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public TryMigrateResult tryMigrate(String clusterName, String fromIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow {
+    public TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException {
 
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (clusterTbl == null) {
@@ -261,19 +264,37 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterName);
         logger.debug("[tryMigrate][clusterRelatedDc]", clusterRelatedDc);
 
-        DcTbl toDc = findToDc(fromIdc, clusterRelatedDc);
+        DcTbl toDc = findToDc(fromIdc, toIdc, clusterRelatedDc);
         return new TryMigrateResult(clusterTbl, activeDc, toDc);
     }
 
-    private DcTbl findToDc(String fromIdc, List<DcTbl> clusterRelatedDc) {
+    protected DcTbl findToDc(String fromIdc, String toIdc, List<DcTbl> clusterRelatedDc) throws ToIdcNotFoundException {
 
-        //simple
-        for (DcTbl dcTbl : clusterRelatedDc) {
-            if (!dcTbl.getDcName().equalsIgnoreCase(fromIdc)) {
-                return dcTbl;
+        if(StringUtil.isEmpty(toIdc)){
+            //simple
+            for (DcTbl dcTbl : clusterRelatedDc) {
+                if (!dcTbl.getDcName().equalsIgnoreCase(fromIdc)) {
+                    return dcTbl;
+                }
             }
+            throw new ToIdcNotFoundException(String.format("fromIdc:%s, toIdc empty, can not find target dc %s", fromIdc, clusterRelatedDcToString(clusterRelatedDc)));
+        }else {
+
+            if(toIdc.equalsIgnoreCase(fromIdc)){
+                throw new ToIdcNotFoundException(String.format("fromIdc:%s equals with toIdc %s", fromIdc, toIdc));
+            }
+
+            for (DcTbl dcTbl : clusterRelatedDc) {
+                if (dcTbl.getDcName().equalsIgnoreCase(toIdc)) {
+                    return dcTbl;
+                }
+            }
+            throw new ToIdcNotFoundException(String.format("toIdc : %s, can not find it in all related dcs:%s", toIdc, clusterRelatedDcToString(clusterRelatedDc)));
         }
-        throw new IllegalStateException("can not find target dc " + fromIdc + "," + clusterRelatedDc);
+    }
+
+    private String clusterRelatedDcToString(List<DcTbl> clusterRelatedDc) {
+        return StringUtil.join(",", (dcTbl) -> dcTbl.getDcName() , clusterRelatedDc);
     }
 
 }

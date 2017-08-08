@@ -48,7 +48,7 @@ public class MigrationApi extends AbstractConsoleController {
         String fromIdc = checkMeta.getFromIdc();
         for (String clusterName : checkMeta.getClusters()) {
             try {
-                TryMigrateResult tryMigrateResult = migrationService.tryMigrate(clusterName, fromIdc);
+                TryMigrateResult tryMigrateResult = migrationService.tryMigrate(clusterName, fromIdc, checkMeta.getToIdc());
                 maySuccessClusters.add(tryMigrateResult);
                 logger.info("[checkAndPrepare]{}", tryMigrateResult);
             } catch (ClusterNotFoundException e) {
@@ -187,10 +187,18 @@ public class MigrationApi extends AbstractConsoleController {
     }
 
     private void mapRequestIdc(CheckPrepareRequest checkMeta) {
-        String reverse = dcMapper.reverse(checkMeta.getFromIdc());
-        if(reverse != null){
-            logger.debug("[checkRequestIdc][reverse dc]{} -> {}", checkMeta.getFromIdc(), reverse);
-            checkMeta.setFromIdc(reverse);
+
+        String fromIdcReverse = dcMapper.reverse(checkMeta.getFromIdc());
+        if(fromIdcReverse != null){
+            logger.debug("[checkRequestIdc][reverse dc]{} -> {}", checkMeta.getFromIdc(), fromIdcReverse);
+            checkMeta.setFromIdc(fromIdcReverse);
         }
+
+        String toIdcReverse = dcMapper.reverse(checkMeta.getToIdc());
+        if(toIdcReverse != null){
+            logger.debug("[checkRequestIdc][reverse dc]{} -> {}", checkMeta.getToIdc(), toIdcReverse);
+            checkMeta.setToIdc(toIdcReverse);
+        }
+
     }
 }

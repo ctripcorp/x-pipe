@@ -11,8 +11,17 @@ public class CheckPrepareRequest extends AbstractRequestMeta{
 	
 	private boolean isForce;
 	private String fromIdc;
+	private String toIdc;
 	private List<String>  clusters;
-	
+
+	public String getToIdc() {
+		return toIdc;
+	}
+
+	public void setToIdc(String toIdc) {
+		this.toIdc = toIdc;
+	}
+
 	public List<String> getClusters() {
 		return clusters;
 	}
@@ -22,7 +31,7 @@ public class CheckPrepareRequest extends AbstractRequestMeta{
 	public boolean isForce() {
 		return isForce;
 	}
-	public void setForce(boolean isForce) {
+	public void setIsForce(boolean isForce) {
 		this.isForce = isForce;
 	}
 	public String getFromIdc() {
