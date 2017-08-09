@@ -49,11 +49,13 @@ public abstract class AbstractSlaveOfCommand extends AbstractRedisCommand<String
 
 	@Override
 	public String toString() {
-		
+
+		String target = getClientPool() == null? "null" : getClientPool().desc();
+
 		if(StringUtil.isEmpty(ip)){
-			return String.format("%s no one", getName());
+			return String.format("%s: %s no one", target, getName());
 		}else{
-			return String.format("%s %s %d %s", getName(), ip, port, param);
+			return String.format("%s: %s %s %d %s", target, getName(), ip, port, param);
 		}
 	}
 

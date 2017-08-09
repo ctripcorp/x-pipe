@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisSlaveOfMasterFailException;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.unidal.tuple.Pair;
 
@@ -104,7 +105,7 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			logger.error("[makeRedisesOk]" + slaves + "->" + newMaster, e);
 			executionLog.error("[make slaves slaveof][fail]" + e.getMessage());
-			//go on
+			throw new MakeRedisSlaveOfMasterFailException(String.format("fail make slaves slave of:%s, %s", newMaster, e.getMessage()), e);
 		}
 	}
 

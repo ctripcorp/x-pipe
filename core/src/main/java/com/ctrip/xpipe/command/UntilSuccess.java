@@ -34,13 +34,14 @@ public class UntilSuccess extends AbstractCommandChain{
 
 		CommandFuture<?> future = executeNext();
 		if(future == null){
-			future().setFailure(new Exception("all commands fail:" + commands));
+			future().setFailure(new CommandChainException("until success fail", getResult()));
 			return;
 		}
-		
+
 		future.addListener(new CommandFutureListener() {
 			@Override
 			public void operationComplete(CommandFuture commandFuture) throws Exception {
+
 				if(commandFuture.isSuccess()){
 					future().setSuccess(commandFuture.get());
 				}else{

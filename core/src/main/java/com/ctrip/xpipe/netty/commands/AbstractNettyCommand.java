@@ -90,4 +90,9 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 	protected SimpleObjectPool<NettyClient> getClientPool() {
 		return clientPool;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("T:%s, CMD:%s", clientPool == null? "null": clientPool.desc(), getName());
+	}
 }

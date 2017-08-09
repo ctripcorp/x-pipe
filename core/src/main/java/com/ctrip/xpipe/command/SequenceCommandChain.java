@@ -68,7 +68,7 @@ public class SequenceCommandChain extends AbstractCommandChain{
 			return;
 		}
 		
-		future().setFailure(new CommandChainException("execute count:" + (executeCount()), getResult()));
+		future().setFailure(new CommandChainException("sequence chain, fail stop", getResult()));
 	}
 
 }

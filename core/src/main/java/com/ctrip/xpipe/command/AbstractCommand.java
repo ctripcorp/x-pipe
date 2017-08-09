@@ -104,7 +104,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 
 	@Override
 	public String toString() {
-		return "Command:" + getName();
+		return String.format("CMD[%s]", getName());
 	}
 	
 }

@@ -34,7 +34,7 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	private int masterPort;
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 	private int delayBaseMilli = 100;
-	private int retryTimes = 2;
+	private int retryTimes = 1;
 	protected ScheduledExecutorService scheduled;
 	protected Executor executors;
 
