@@ -5,10 +5,10 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
+import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
@@ -22,7 +22,6 @@ import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
-import com.ctrip.xpipe.redis.meta.server.dcchange.RedisReadonly;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -54,7 +53,10 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	private DcMetaCache dcMetaCache;
 	
 	@Autowired
-	private ChangePrimaryDcAction  changePrimaryDcAction; 
+	private ChangePrimaryDcAction  changePrimaryDcAction;
+
+	@Autowired
+	private PrimaryDcPrepareToChange primaryDcPrepareToChange;
 
 	@Override
 	protected void doInitialize() throws Exception {
@@ -200,19 +202,10 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 			logger.warn("[makeMasterReadOnly]current dc not primary:{}, {}", dcMetaCache.getCurrentDc(), dcMetaCache.getPrimaryDc(clusterId, shardId));
 			return ;
 		}
-		Pair<String, Integer>  keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
-		
-		RedisReadonly redisReadOnly = RedisReadonly.create(keeperMaster.getKey(), keeperMaster.getValue(), keyedObjectPool, scheduled); 
-		try {
-			if(readOnly){
-				logger.info("[makeMasterReadOnly][readonly]{}", keeperMaster);
-				redisReadOnly.makeReadOnly();
-			}else{
-				logger.info("[makeMasterReadOnly][writable]{}", keeperMaster);
-				redisReadOnly.makeWritable();
-			}
-		} catch (Exception e) {
-			logger.error("[makeMasterReadOnly]" + keeperMaster, e);
+		if(readOnly){
+			primaryDcPrepareToChange.prepare(clusterId, shardId);
+		}else {
+			primaryDcPrepareToChange.deprepare(clusterId, shardId);
 		}
 	}
 

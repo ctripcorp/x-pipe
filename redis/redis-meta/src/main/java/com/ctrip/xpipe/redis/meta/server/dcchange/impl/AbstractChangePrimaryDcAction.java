@@ -3,9 +3,9 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 import java.util.List;
 import java.util.concurrent.*;
 
+import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;

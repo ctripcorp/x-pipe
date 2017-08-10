@@ -7,10 +7,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.*;
 
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisSlaveOfMasterFailException;
-import com.ctrip.xpipe.utils.StringUtil;
-import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -27,6 +26,7 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisMasterFailE
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**
@@ -68,8 +68,7 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 	protected void changeSentinel(String clusterId, String shardId, Pair<String, Integer> newMaster) {
 		
 		try{
-			RedisMeta redisMaster = new RedisMeta().setIp(newMaster.getKey()).setPort(newMaster.getValue());
-			sentinelManager.addSentinel(clusterId, shardId, redisMaster, executionLog);
+			sentinelManager.addSentinel(clusterId, shardId, HostPort.fromPair(newMaster), executionLog);
 		}catch(Exception e){
 			executionLog.error("[addSentinel][fail]" + e.getMessage());
 			logger.error("[addSentinel]" + clusterId + "," + shardId, e);
