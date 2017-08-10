@@ -4,8 +4,8 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Test;
-import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;

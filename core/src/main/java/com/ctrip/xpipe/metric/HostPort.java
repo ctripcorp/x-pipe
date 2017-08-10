@@ -1,4 +1,7 @@
 package com.ctrip.xpipe.metric;
+
+import com.ctrip.xpipe.tuple.Pair;
+
 import java.util.Objects;
 
 public class HostPort {
@@ -29,6 +32,11 @@ public class HostPort {
 
 	public void setPort(int port) {
 		m_port = port;
+	}
+
+	public static HostPort fromPair(Pair<String, Integer> pair){
+
+		return new HostPort(pair.getKey(), pair.getValue());
 	}
 
 	@Override

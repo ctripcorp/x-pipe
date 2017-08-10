@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,13 +62,13 @@ public class DefaultSentinelManager implements SentinelManager{
 	}
 	
 	@Override
-	public void addSentinel(String clusterId, String shardId, RedisMeta redisMaster, ExecutionLog executionLog) {
+	public void addSentinel(String clusterId, String shardId, HostPort redisMaster, ExecutionLog executionLog) {
 		
 		String sentinelMonitorName = dcMetaCache.getSentinelMonitorName(clusterId, shardId);
 		String allSentinels = dcMetaCache.getSentinel(clusterId, shardId).getAddress();
 		
 		executionLog.info(String.format("[addSentinel]%s,%s,%s, monitorName:%s, master:%s:%d",
-				clusterId, shardId, allSentinels, sentinelMonitorName, redisMaster.getIp(), redisMaster.getPort()));
+				clusterId, shardId, allSentinels, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort()));
 		
 		if(checkEmpty(sentinelMonitorName, allSentinels, executionLog)){
 			return;
@@ -86,12 +87,12 @@ public class DefaultSentinelManager implements SentinelManager{
 			
 			InetSocketAddress sentinelAddress =  sentinels.get(i);
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(sentinelAddress);
-			SentinelAdd command = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getIp(), redisMaster.getPort(), quorum, scheduled);
+			SentinelAdd command = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled);
 			try {
 				String result = command.execute().get();
 				executionLog.info(String.format("add to sentinel %s : %s", sentinelAddress, result));
 			} catch (InterruptedException | ExecutionException e) {
-				throw new AddSentinelException(sentinelAddress, clusterId, shardId, redisMaster.getIp(), redisMaster.getPort(), e);
+				throw new AddSentinelException(sentinelAddress, clusterId, shardId, redisMaster.getHost(), redisMaster.getPort(), e);
 			}
 		}
 	}

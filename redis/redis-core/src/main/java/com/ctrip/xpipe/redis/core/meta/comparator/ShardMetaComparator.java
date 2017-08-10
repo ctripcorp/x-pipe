@@ -4,12 +4,12 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.tuple.Pair;
 
 /**
  * @author wenchao.meng
@@ -31,7 +31,7 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChan
 		List<Redis> futureAll =  getAll(future);
 
 
-		Pair<List<Redis>, List<Pair<Redis, Redis>>> subResult = sub(futureAll, currentAll); 
+		Pair<List<Redis>, List<Pair<Redis, Redis>>> subResult = sub(futureAll, currentAll);
 		List<Redis> tAdded = subResult.getKey();
 		added.addAll(tAdded);
 

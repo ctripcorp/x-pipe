@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server;
 
-import org.unidal.tuple.Pair;
-
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.tuple.Pair;
 
 /**
  * @author wenchao.meng

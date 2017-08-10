@@ -17,12 +17,12 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.ctrip.xpipe.tuple.Pair;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
 import org.junit.Assert;
 import org.junit.Before;
-import org.unidal.tuple.Pair;
 import org.xml.sax.SAXException;
 
 import com.ctrip.xpipe.AbstractTest;

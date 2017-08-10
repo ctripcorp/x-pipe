@@ -5,7 +5,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import org.unidal.tuple.Pair;
+import com.ctrip.xpipe.tuple.Pair;
 
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.utils.FileUtils;

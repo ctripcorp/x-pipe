@@ -1,12 +1,9 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.metric.HostPort;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
-import org.unidal.tuple.Pair;
+import com.ctrip.xpipe.tuple.Pair;
 
-import java.util.List;
 import java.util.Set;
 
 /**

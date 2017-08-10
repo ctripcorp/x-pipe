@@ -3,13 +3,12 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 import java.util.List;
 import java.util.Set;
 
-import org.unidal.tuple.Pair;
-
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.tuple.Pair;
 
 /**
  * @author wenchao.meng

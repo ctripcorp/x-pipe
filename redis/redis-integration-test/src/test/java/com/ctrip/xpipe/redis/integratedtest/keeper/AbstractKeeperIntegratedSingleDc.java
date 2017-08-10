@@ -3,9 +3,9 @@ package com.ctrip.xpipe.redis.integratedtest.keeper;
 import java.io.IOException;
 import java.util.List;
 
+import com.ctrip.xpipe.tuple.Pair;
 import org.apache.commons.exec.ExecuteException;
 import org.junit.Before;
-import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;

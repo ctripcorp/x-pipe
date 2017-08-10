@@ -1,8 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.store.stable;
 
+import com.ctrip.xpipe.tuple.Pair;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.unidal.tuple.Pair;
 
 
 /**
@@ -13,7 +14,7 @@ import org.unidal.tuple.Pair;
 public class StringComparator {
 	
 	private int comparatorSize = 1;
-	private Pair<Integer, Integer> []comparatorInfo;
+	private Pair<Integer, Integer>[]comparatorInfo;
 	
 	private final int buffsLength = 1 << 20;
 	private String []buffs = new String[ buffsLength ];

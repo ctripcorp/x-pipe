@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange;
 
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.metric.HostPort;
 
 /**
  * @author wenchao.meng
@@ -9,7 +9,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
  */
 public interface SentinelManager {
 	
-	void addSentinel(String clusterId, String shardId, RedisMeta redisMaster, ExecutionLog executionLog);
+	void addSentinel(String clusterId, String shardId, HostPort redisMaster, ExecutionLog executionLog);
 	
 	void removeSentinel(String clusterId, String shardId, ExecutionLog executionLog);
 

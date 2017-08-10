@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 
+import com.ctrip.xpipe.metric.HostPort;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,7 +61,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 	@Test
 	public void testAdd(){
 		
-		sentinelManager.addSentinel(getClusterId(), getShardId(), redisMaster, executionLog);
+		sentinelManager.addSentinel(getClusterId(), getShardId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
 		logger.info("{}", executionLog.getLog());
 	}
 	

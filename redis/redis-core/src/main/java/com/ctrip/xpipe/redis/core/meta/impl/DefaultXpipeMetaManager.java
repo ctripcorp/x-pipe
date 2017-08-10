@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.util.*;
 
 import com.ctrip.xpipe.metric.HostPort;
-import org.unidal.tuple.Pair;
+import com.ctrip.xpipe.tuple.Pair;
 import org.xml.sax.SAXException;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;

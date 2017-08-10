@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.unidal.tuple.Pair;
 
 /**
  * @author wenchao.meng

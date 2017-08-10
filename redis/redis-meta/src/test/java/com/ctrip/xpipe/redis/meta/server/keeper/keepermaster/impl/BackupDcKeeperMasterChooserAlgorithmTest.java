@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
+import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.unidal.tuple.Pair;
 
 import static org.mockito.Mockito.*;
 

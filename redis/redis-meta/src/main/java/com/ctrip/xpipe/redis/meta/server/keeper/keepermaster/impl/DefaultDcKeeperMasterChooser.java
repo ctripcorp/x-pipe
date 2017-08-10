@@ -2,13 +2,12 @@ package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.unidal.tuple.Pair;
-
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.KeeperMasterChooserAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
+import com.ctrip.xpipe.tuple.Pair;
 
 /**
  * @author wenchao.meng

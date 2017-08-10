@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.ctrip.xpipe.metric.HostPort;
-import org.unidal.tuple.Pair;
+import com.ctrip.xpipe.tuple.Pair;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;

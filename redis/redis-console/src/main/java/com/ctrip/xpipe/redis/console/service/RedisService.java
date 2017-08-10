@@ -5,8 +5,8 @@ import java.util.List;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.tuple.Pair;
 import org.unidal.dal.jdbc.DalException;
-import org.unidal.tuple.Pair;
 
 public interface RedisService {
 	

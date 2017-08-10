@@ -8,20 +8,17 @@ import java.util.concurrent.ConcurrentMap;
 import javax.annotation.PostConstruct;
 
 import com.ctrip.xpipe.metric.HostPort;
-import com.ctrip.xpipe.redis.console.health.ping.InstancePingResult;
-import com.ctrip.xpipe.redis.console.health.ping.PingSamplePlan;
-import com.ctrip.xpipe.redis.console.health.redisconf.InstanceRedisConfResult;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import org.unidal.tuple.Pair;
 
 /**
  * @author marsqing

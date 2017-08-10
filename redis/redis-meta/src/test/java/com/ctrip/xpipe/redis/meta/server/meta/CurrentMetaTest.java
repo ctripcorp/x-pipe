@@ -3,10 +3,10 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;

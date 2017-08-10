@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
+import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.unidal.tuple.Pair;
 
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.netty.ByteBufUtils;

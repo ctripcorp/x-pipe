@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster;
 
-import org.unidal.tuple.Pair;
+import com.ctrip.xpipe.tuple.Pair;
 
 /**
  * @author wenchao.meng

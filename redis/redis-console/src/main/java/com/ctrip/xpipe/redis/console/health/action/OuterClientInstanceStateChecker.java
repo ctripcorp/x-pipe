@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import org.unidal.tuple.Pair;
+import com.ctrip.xpipe.tuple.Pair;
 
 import javax.annotation.PostConstruct;
 import java.util.HashSet;

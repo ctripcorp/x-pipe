@@ -7,14 +7,13 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.unidal.tuple.Pair;
+import com.ctrip.xpipe.tuple.Pair;
 
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
-import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 
 /**
  * @author wenchao.meng
@@ -96,20 +95,20 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	public void testHas() {
 
 		Assert.assertTrue(metaManager.hasCluster(dc, clusterId));
-		;
+
 		Assert.assertFalse(metaManager.hasCluster(dc, randomString()));
-		;
+
 		Assert.assertFalse(metaManager.hasCluster(randomString(), clusterId));
-		;
+
 
 		Assert.assertTrue(metaManager.hasShard(dc, clusterId, shardId));
-		;
+
 		Assert.assertFalse(metaManager.hasShard(dc, clusterId, randomString()));
-		;
+
 		Assert.assertFalse(metaManager.hasShard(dc, randomString(), shardId));
-		;
+
 		Assert.assertFalse(metaManager.hasShard(randomString(), clusterId, shardId));
-		;
+
 
 	}
 
