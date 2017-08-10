@@ -131,6 +131,9 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 
 		for (DcMeta dcMeta : dcMetas) {
 			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+				if(!addCluster(dcMeta.getId(), clusterMeta)){
+					continue;
+				}
 				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 					Pair<String, String> cs = new Pair<>(clusterMeta.getId(), shardMeta.getId());
 					BaseSamplePlan<T> plan = plans.get(cs);
@@ -148,6 +151,10 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 			}
 		}
 		return plans.values();
+	}
+
+	protected boolean addCluster(String dcName, ClusterMeta clusterMeta) {
+		return true;
 	}
 
 	protected abstract void addRedis(BaseSamplePlan<T> plan, String dcId, RedisMeta redisMeta);

@@ -9,6 +9,9 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 public interface ClusterService {
 
 	ClusterTbl find(String clusterName);
+
+	ClusterStatus clusterStatus(String clusterName);
+
 	ClusterTbl find(long clusterId);
 	List<ClusterTbl> findAllClusters();
 	List<ClusterTbl> findClustersByActiveDcId(long activeDc);
@@ -23,4 +26,7 @@ public interface ClusterService {
 	void bindDc(String clusterName, String dcName);
 	void unbindDc(String clusterName, String dcName);
 	void update(ClusterTbl cluster);
+
+
+
 }

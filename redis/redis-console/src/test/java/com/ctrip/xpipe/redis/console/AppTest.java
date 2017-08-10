@@ -19,13 +19,12 @@ import com.ctrip.xpipe.spring.AbstractProfile;
  * @author lepdou 2016-11-09
  */
 @SpringBootApplication
-public class AppTest extends AbstractConsoleH2DbTest {
+public class AppTest extends AbstratAppTest {
 
 
 	@Before
 	public void startUp() {
 
-		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 		System.setProperty(HealthChecker.ENABLED, "false");
 		System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
 	}
@@ -34,6 +33,7 @@ public class AppTest extends AbstractConsoleH2DbTest {
 	@Test
 	public void startConsole8080() throws IOException, SQLException {
 
+		startH2Server();
 		System.setProperty("server.port", "8080");
 		System.setProperty(DefaultConsoleConfig.KEY_REDIS_CONF_CHECK_INTERVAL, "30000");
 		start();

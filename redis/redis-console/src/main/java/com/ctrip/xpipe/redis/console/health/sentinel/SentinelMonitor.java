@@ -5,6 +5,9 @@ import com.ctrip.xpipe.redis.console.health.AbstractRedisConfMonitor;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.Sample;
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -28,6 +31,9 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
     @Autowired
     private ConsoleDbConfig consoleDbConfig;
+
+    @Autowired
+    private ClusterService clusterService;
 
     @Override
     protected boolean shouldStart() {
@@ -61,6 +67,7 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
         plan.getHostPort2SampleResult().forEach((hostPort, instanceSentinelResult) -> {
 
+            log.debug("[sampleSentinel]{}, {}, {}", plan.getClusterId(), plan.getShardId(), hostPort);
 
             RedisSession redisSession = findRedisSession(hostPort);
 
@@ -84,6 +91,17 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
 
         });
+    }
+
+    @Override
+    protected boolean addCluster(String dcName, ClusterMeta clusterMeta) {
+
+        ClusterStatus clusterStatus = clusterService.clusterStatus(clusterMeta.getId());
+        if(clusterStatus != ClusterStatus.Normal){
+            log.info("[addCluster][false]{}, {}, {}", clusterMeta.getId(), dcName, clusterStatus);
+            return false;
+        }
+        return true;
     }
 
     @Override

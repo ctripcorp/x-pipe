@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.redis.core.entity.Cluster;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -48,6 +49,16 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
     		
     	});
+	}
+
+	@Override
+	public ClusterStatus clusterStatus(String clusterName) {
+
+		ClusterTbl clusterTbl = find(clusterName);
+		if(clusterTbl == null){
+			throw new IllegalArgumentException("cluster not found:" + clusterName);
+		}
+		return ClusterStatus.valueOf(clusterTbl.getStatus());
 	}
 
 	@Override

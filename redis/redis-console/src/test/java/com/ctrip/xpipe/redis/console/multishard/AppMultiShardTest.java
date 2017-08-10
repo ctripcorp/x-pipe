@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.multishard;
 
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
+import com.ctrip.xpipe.redis.console.AbstratAppTest;
 import com.ctrip.xpipe.redis.console.AppTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
@@ -24,7 +25,7 @@ import java.util.List;
  *         May 12, 2017
  */
 @SpringBootApplication
-public class AppMultiShardTest extends AbstractConsoleH2DbTest{
+public class AppMultiShardTest extends AbstratAppTest {
 
     private final int shardCount = 32;
     private final long []dcIds = new long[]{1, 2};
@@ -33,10 +34,6 @@ public class AppMultiShardTest extends AbstractConsoleH2DbTest{
             new long[]{1,2,3},
             new long[]{4,5,6}
     };
-
-    private String metaServers =
-            "{ \"jq\" : \"http://127.0.0.1:9747\", " +
-            "\"oy\" : \"http://127.0.0.1:9748\" } ";
 
     private final long beginDcClusterId = 1;
     private List<Long> dcClusterIds = new ArrayList<>();
@@ -55,10 +52,8 @@ public class AppMultiShardTest extends AbstractConsoleH2DbTest{
     @Before
     public void startUp() throws SQLException, ComponentLookupException {
 
-        System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
         System.setProperty(HealthChecker.ENABLED, "false");
         System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
-        System.setProperty(DefaultConsoleConfig.KEY_METASERVERS, metaServers);
 
         prepareData();
 
