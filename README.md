@@ -34,7 +34,7 @@ x-pipe
 # XPipe 解决什么问题
 Redis 在携程内部得到了广泛的使用，根据客户端数据统计，整个携程全部 Redis 的读写请求在每秒 200W，其中写请求约 10W，很多业务甚至会将 Redis 当成内存数据库使用。这样，就对 Redis 多数据中心提出了很大的需求，一是为了提升可用性，解决数据中心 DR(Disaster Recovery) 问题，二是提升访问性能，每个数据中心可以读取当前数据中心的数据，无需跨机房读数据，在这样的需求下，XPipe 应运而生 。  
 
-为了方便描述，后面用 DC 代表数据中心(Data Center)。
+为了方便描述，后面用 DC 代表数据中心 (Data Center)。
 
 <a name="系统详述"></a>
 # 系统详述
@@ -52,9 +52,17 @@ Redis 在携程内部得到了广泛的使用，根据客户端数据统计，�
 多数据中心首先要解决的是数据复制问题，即数据如何从一个 DC 传输到另外一个 DC。我们决定采用伪 slave 的方案，即实现 Redis 协议，伪装成为 Redis slave，让 Redis master 推送数据至伪 slave。这个伪 slave，我们把它称为 keeper，如下图所示：  
 ![keepers](https://raw.github.com/ctripcorp/x-pipe/master/doc/image/keepers.jpg)  
 
-有了 keeper 之后，多数据中心之间的数据传输，可以通过 keeper 进行。keeper 将 Redis 日志数据缓存到磁盘，这样，可以缓存大量的日志数据(Redis 将数据缓存到内存 ring buffer，容量有限)，当数据中心之间的网络出现较长时间异常时仍然可以续传日志数据。  
+使用 keeper 带来的优势  
 
-Redis 协议不可更改，而 keeper 之间的数据传输协议却可以自定义。这样就可以进行压缩，以提升系统性能，节约传输成本；多个机房之间的数据传输往往需要通过公网进行，这样数据的安全性变得极为重要，keeper 之间的数据传输也可以加密，提升安全性。
+- 减少 master 全量同步  
+如果异地机房 slave 直接连向 master，多个 slave 会导致 master 多次全量同步，而 keeper 可以缓存 rdb 和 replication log，异地机房的 slave 直接从 keeper 获取数据，增强 master 的稳定性。
+- 减少多数据中心网络流量  
+在两个数据中心之间，数据只需要通过 keeper 传输一次，且 keeper 之间传输协议可以自定义，方便支持压缩 (目前暂未支持)。
+- 网络异常时减少全量同步  
+keeper 将 Redis 日志数据缓存到磁盘，这样，可以缓存大量的日志数据 (Redis 将数据缓存到内存 ring buffer，容量有限)，当数据中心之间的网络出现较长时间异常时仍然可以续传日志数据。  
+- 安全性提升  
+多个机房之间的数据传输往往需要通过公网进行，这样数据的安全性变得极为重要，keeper 之间的数据传输也可以加密 (暂未实现)，提升安全性。
+
 <a name="机房切换"></a>
 ## 机房切换
 <a name="切换流程"></a>
