@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import org.junit.Assert;
@@ -16,6 +17,24 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     private ClusterService clusterService;
+
+    @Test
+    public void testCreateCluster(){
+
+        String clusterName = randomString(10);
+        ClusterModel clusterModel = new ClusterModel();
+
+        clusterModel.setClusterTbl(new ClusterTbl()
+                .setActivedcId(1)
+                .setClusterName(clusterName)
+                .setClusterDescription(randomString(20))
+        );
+
+        clusterService.createCluster(clusterModel);
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        Assert.assertTrue(clusterTbl.isIsXpipeInterested());
+
+    }
 
     @Test
     public void testUpdateActivedcId(){

@@ -136,6 +136,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	proto.setActivedcId(cluster.getActivedcId());
     	proto.setClusterDescription(cluster.getClusterDescription());
     	proto.setStatus(ClusterStatus.Normal.toString());
+		proto.setIsXpipeInterested(true);
     	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
     	
     	final ClusterTbl queryProto = proto;
@@ -145,10 +146,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				return clusterDao.createCluster(queryProto);
 			}
     	});
-    	
-    	for(DcTbl dc : slaveDcs) {
-    		bindDc(cluster.getClusterName(), dc.getDcName());
-    	}
+
+    	if(slaveDcs != null){
+			for(DcTbl dc : slaveDcs) {
+				bindDc(cluster.getClusterName(), dc.getDcName());
+			}
+		}
 
     	if(shards != null){
 			for (ShardModel shard : shards) {
