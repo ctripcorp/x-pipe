@@ -20,7 +20,7 @@ public class CtripDcMapper implements DcMapper{
         if(dcName == null){
             return null;
         }
-        Map<String, String> idsMappingRules = CredisConfig.INSTANCE.getCredisIdcMappingRules();
+        Map<String, String> idsMappingRules = CRedisConfig.INSTANCE.getCredisIdcMappingRules();
         return doMapping(dcName, idsMappingRules);
     }
 
@@ -40,7 +40,7 @@ public class CtripDcMapper implements DcMapper{
             return null;
         }
 
-        Map<String, String> mappingRules = CredisConfig.INSTANCE.getCredisIdcMappingRules();
+        Map<String, String> mappingRules = CRedisConfig.INSTANCE.getCredisIdcMappingRules();
         return doReverse(otherDcName, mappingRules);
     }
 

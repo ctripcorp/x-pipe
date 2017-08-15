@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.dao.MigrationClusterDaoTest;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDaoTest;
 import com.ctrip.xpipe.redis.console.dao.RedisDaoTest;
 import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
+import com.ctrip.xpipe.redis.console.health.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
 import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
@@ -80,7 +81,8 @@ import org.junit.runner.RunWith;
         MigrationClusterDaoTest.class,
         MigrationEventDaoTest.class,
         DefaultConsoleDbConfigTest.class,
-        RedisDaoTest.class
+        RedisDaoTest.class,
+        CheckClusterTest.class
 })
 public class AllTests {
 

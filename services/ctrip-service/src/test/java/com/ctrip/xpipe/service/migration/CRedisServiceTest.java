@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.service.migration;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.metric.HostPort;
 import org.junit.Assert;
 import org.junit.Test;
@@ -18,14 +18,26 @@ import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
  *
  * Dec 22, 2016
  */
-public class CredisServiceTest extends AbstractServiceTest {
+public class CRedisServiceTest extends AbstractServiceTest {
 
-	private CredisService outerClientService = (CredisService) OuterClientService.DEFAULT;
+	private CRedisService outerClientService = (CRedisService) OuterClientService.DEFAULT;
+
+	@Test
+	public void testGetClusterInfo() throws Exception {
+
+		JsonCodec jsonCodec = new JsonCodec(true);
+
+		logger.info("{}", outerClientService.getClusterInfo("Members.OfflineLogin"));
+		logger.info("{}", jsonCodec.encode(outerClientService.getClusterInfo("cluster_shyin")));
+		logger.info("{}", outerClientService.getClusterInfo("Members.OfflineLogin"));
+		logger.info("{}", jsonCodec.encode(outerClientService.getClusterInfo("cluster_shyin_1")));
+
+	}
 
 	@Test(expected =  IllegalStateException.class)
 	public void testGet() throws Exception {
 
-		CredisService.GetInstanceResult result = outerClientService.getInstance(new HostPort("127.0.0.1", 6379));
+		CRedisService.GetInstanceResult result = outerClientService.getInstance(new HostPort("127.0.0.1", 6379));
 		logger.info("{}", result);
 
 		result = outerClientService.getInstance(new HostPort("127.0.0.1", 63799));
@@ -53,7 +65,7 @@ public class CredisServiceTest extends AbstractServiceTest {
 	public void testCredisMigrationPublishService() throws Exception {
 		
 
-		Assert.assertTrue(outerClientService instanceof CredisService);
+		Assert.assertTrue(outerClientService instanceof CRedisService);
 		
 		List<InetSocketAddress> newMasters = new LinkedList<>();
 		
@@ -72,10 +84,10 @@ public class CredisServiceTest extends AbstractServiceTest {
 	@Test
 	public void testConvertDcName() {
 		
-		Assert.assertEquals("SHAJQ", ((CredisService) OuterClientService.DEFAULT).convertDcName("ntgxh"));
-		Assert.assertEquals("SHAJQ", ((CredisService) OuterClientService.DEFAULT).convertDcName("NTGXH"));
-		Assert.assertEquals("SHAOY", ((CredisService) OuterClientService.DEFAULT).convertDcName("fat"));
-		Assert.assertEquals("SHAOY", ((CredisService) OuterClientService.DEFAULT).convertDcName("FAT"));
-		Assert.assertEquals("dc", ((CredisService) OuterClientService.DEFAULT).convertDcName("dc"));
+		Assert.assertEquals("SHAJQ", ((CRedisService) OuterClientService.DEFAULT).convertDcName("ntgxh"));
+		Assert.assertEquals("SHAJQ", ((CRedisService) OuterClientService.DEFAULT).convertDcName("NTGXH"));
+		Assert.assertEquals("SHAOY", ((CRedisService) OuterClientService.DEFAULT).convertDcName("fat"));
+		Assert.assertEquals("SHAOY", ((CRedisService) OuterClientService.DEFAULT).convertDcName("FAT"));
+		Assert.assertEquals("dc", ((CRedisService) OuterClientService.DEFAULT).convertDcName("dc"));
 	}
 }

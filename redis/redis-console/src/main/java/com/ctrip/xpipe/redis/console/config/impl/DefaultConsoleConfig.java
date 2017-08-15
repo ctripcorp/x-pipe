@@ -34,6 +34,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public static final String KEY_QUORUM = "console.quorum";
     public static final String KEY_DOMAIN = "console.domain";
     public static final String KEY_CNAME_TODC = "console.cname.todc";
+    public static final String KEY_ALERT_CLIENTCONFIG_CONSISTENT = "console.alert.clientconfig.consistent";
 
     public static final String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
 
@@ -134,6 +135,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
         String config = getProperty(KEY_SENTINEL_QUORUM, "{}");
         return JsonCodec.INSTANCE.decode(config, QuorumConfig.class);
+    }
+
+    @Override
+    public boolean alertClientConfigConsistent() {
+        return getBooleanProperty(KEY_ALERT_CLIENTCONFIG_CONSISTENT, true);
     }
 
 

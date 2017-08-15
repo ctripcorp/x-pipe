@@ -12,9 +12,7 @@ import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import org.springframework.web.client.RestOperations;
 
 import com.ctrip.xpipe.spring.RestTemplateFactory;
@@ -24,13 +22,13 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
  *
  *         Dec 22, 2016
  */
-public class CredisService extends AbstractOuterClientService {
+public class CRedisService extends AbstractOuterClientService {
 
-	RestOperations restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(10, 100);
+	RestOperations restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(3, 100);
 
 	private CatTransactionMonitor catTransactionMonitor = new CatTransactionMonitor();
 
-	private CredisConfig credisConfig = CredisConfig.INSTANCE;
+	private CRedisConfig credisConfig = CRedisConfig.INSTANCE;
 
 	private final String TYPE = "credis";
 
@@ -120,7 +118,21 @@ public class CredisService extends AbstractOuterClientService {
 
 		return doMigrationPublish(clusterName, primaryDcName, Arrays.asList(newMaster));
 	}
-	
+
+	@Override
+	public ClusterInfo getClusterInfo(String clusterName) throws Exception {
+
+
+		return catTransactionMonitor.logTransaction(TYPE, String.format("getClusterInfo:%s", clusterName), new Callable<ClusterInfo>() {
+			@Override
+			public ClusterInfo call() throws Exception {
+				String address = CREDIS_SERVICE.QUERY_CLUSTER.getRealPath(credisConfig.getCredisServiceAddress());
+				ClusterInfo clusterInfo = restOperations.getForObject(address, ClusterInfo.class, clusterName);
+				return clusterInfo;
+			}
+		});
+	}
+
 	String convertDcName(String dc) {
 		return DcMapper.INSTANCE.getDc(dc);
 	}
@@ -131,7 +143,7 @@ public class CredisService extends AbstractOuterClientService {
 			return catTransactionMonitor.logTransaction(TYPE, String.format("getInstance"), new Callable<GetInstanceResult>() {
                 @Override
                 public GetInstanceResult call() throws Exception {
-                    String address = CREDIS_SERVICE.Query_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
+                    String address = CREDIS_SERVICE.QUERY_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
                     GetInstanceResult result = restOperations.getForObject(address + "?ip={ip}&port={port}", GetInstanceResult.class, hostPort.getHost(), hostPort.getPort());
                     return result;
                 }

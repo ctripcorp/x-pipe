@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.migration;
 
 import com.ctrip.xpipe.api.migration.OuterClientException;
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 
@@ -68,6 +69,11 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 		res.setStartTime(startTime);
 		res.setEndTime(endTime);
 		return res;
+	}
+
+	@Override
+	public ClusterInfo getClusterInfo(String clusterName) {
+		return new ClusterInfo();
 	}
 
 }

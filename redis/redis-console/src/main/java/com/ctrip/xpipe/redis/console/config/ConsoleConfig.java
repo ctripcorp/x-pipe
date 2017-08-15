@@ -49,4 +49,6 @@ public interface ConsoleConfig extends CoreConfig {
 
 	QuorumConfig  getDefaultSentinelQuorumConfig();
 
+	boolean alertClientConfigConsistent();
+
 }

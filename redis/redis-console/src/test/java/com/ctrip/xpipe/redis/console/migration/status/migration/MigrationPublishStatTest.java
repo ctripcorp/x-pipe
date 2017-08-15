@@ -100,6 +100,11 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 				throw new ResourceAccessException("test");
 			}
 
+			@Override
+			public ClusterInfo getClusterInfo(String clusterName) throws Exception {
+				return null;
+			}
+
 
 			@Override
 			public void markInstanceUp(HostPort hostPort) throws OuterClientException {
@@ -145,6 +150,11 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 				MigrationPublishResult res = new MigrationPublishResult();
 				res.setSuccess(false);
 				return res;
+			}
+
+			@Override
+			public ClusterInfo getClusterInfo(String clusterName) throws Exception {
+				return null;
 			}
 
 			@Override
