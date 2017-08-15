@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
@@ -28,6 +29,7 @@ public class AbstractMigrationStateTest extends AbstractConsoleTest {
 
 
         when(migrationCluster.getMigrationExecutor()).thenReturn(executors);
+        when(migrationCluster.getOuterClientService()).thenReturn(OuterClientService.DEFAULT);
 
         List<MigrationShard> migrationShards = new LinkedList<>();
         int shardSize = getShardSize();

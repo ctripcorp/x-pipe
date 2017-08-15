@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import org.junit.Before;
@@ -86,7 +87,7 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 	public void publishFailWithNetworkProblemTest() {
 		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
 		MigrationPublishState spy = spy(stat);
-		doReturn(new OuterClientService() {
+		doReturn(new AbstractOuterClientService() {
 
 			
 			@Override
@@ -137,7 +138,7 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 	public void publishFailWithReturnFail() {
 		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
 		MigrationPublishState spy = spy(stat);
-		doReturn(new OuterClientService() {
+		doReturn(new AbstractOuterClientService() {
 			
 			@Override
 			public int getOrder() {

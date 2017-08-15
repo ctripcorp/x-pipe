@@ -45,7 +45,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public int getConsoleNotifyRetryTimes() {
-        return getIntProperty(KEY_CONSOLE_NOTIFY_RETRY_TIMES, 10);
+        return getIntProperty(KEY_CONSOLE_NOTIFY_RETRY_TIMES, 3);
     }
 
     @Override

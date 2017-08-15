@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
  *         <p>
  *         Aug 15, 2017
  */
-@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public abstract class AbstractIntervalCheck {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());

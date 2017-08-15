@@ -22,6 +22,8 @@ public interface OuterClientService extends Ordered{
 	
 	OuterClientService DEFAULT = ServicesUtil.getOuterClientService();
 
+	String serviceName();
+
 	void markInstanceUp(HostPort hostPort) throws OuterClientException;
 
 	boolean isInstanceUp(HostPort hostPort) throws OuterClientException;

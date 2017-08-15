@@ -38,6 +38,11 @@ public class CRedisService extends AbstractOuterClientService {
 	}
 
 	@Override
+	public String serviceName() {
+		return "CRedis";
+	}
+
+	@Override
 	public void markInstanceUp(HostPort hostPort) throws OuterClientException {
 		doMarkInstance(hostPort, true);
 	}

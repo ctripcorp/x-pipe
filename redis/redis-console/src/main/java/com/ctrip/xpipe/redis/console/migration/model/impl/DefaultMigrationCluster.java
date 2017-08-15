@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.redis.console.migration.model.*;
 import com.ctrip.xpipe.redis.console.migration.status.*;
@@ -48,6 +49,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     private RedisService redisService;
     private MigrationService migrationService;
     private Executor executors;
+    private OuterClientService outerClientService = OuterClientService.DEFAULT;
 
     public DefaultMigrationCluster(Executor executors, MigrationEvent event, MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
                                    RedisService redisService, MigrationService migrationService) {
@@ -207,6 +209,28 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         }
 
         return new ClusterStepResult(shardSize, finishCount, successCount);
+    }
+
+    @Override
+    public void markCheckFail(String failMessage) {
+
+        logger.info("[markCheckFail]{}", clusterName());
+
+        for(MigrationShard migrationShard : getMigrationShards()){
+            migrationShard.markCheckFail(failMessage);
+        }
+
+    }
+
+    @Override
+    public OuterClientService getOuterClientService() {
+
+        return outerClientService;
+    }
+
+    //for unit test
+    public void setOuterClientService(OuterClientService outerClientService) {
+        this.outerClientService = outerClientService;
     }
 
     private void updateStorageMigrationClusterStatus() {

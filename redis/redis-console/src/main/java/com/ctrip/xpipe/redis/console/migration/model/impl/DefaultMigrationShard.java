@@ -117,7 +117,14 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			logger.debug("[update][time long]{}, {}", end - begin, this);
 		}
 	}
-	
+
+	@Override
+	public void markCheckFail(String failMessage) {
+
+		shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, LogUtils.error(failMessage));
+		notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.CHECK));
+	}
+
 	@Override
 	public void doCheck() {
 		
@@ -336,6 +343,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	public void retry(ShardMigrationStep step) {
 		shardMigrationResult.stepRetry(step);
 	}
+
 
 
 	public static class ShardObserverEvent{

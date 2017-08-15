@@ -61,6 +61,7 @@ public class DefaultMetaCache implements MetaCache {
     @PostConstruct
     public void postConstruct() {
 
+        logger.info("[postConstruct]{}", this);
 
         refreshIntervalMilli = consoleConfig.getCacheRefreshInterval();
 

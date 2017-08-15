@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 
@@ -26,5 +27,9 @@ public interface MigrationCluster extends Observer, Observable, MigrationCluster
     void updateActiveDcIdToDestDcId();
 
     ClusterStepResult stepStatus(ShardMigrationStep shardMigrationStep);
+
+    void markCheckFail(String failMessage);
+
+    OuterClientService getOuterClientService();
 
 }

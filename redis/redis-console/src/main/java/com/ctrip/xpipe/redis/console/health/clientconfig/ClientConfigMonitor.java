@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -22,6 +23,7 @@ import java.util.*;
  *         Aug 15, 2017
  */
 @Component
+@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class ClientConfigMonitor extends AbstractIntervalCheck{
 
     private OuterClientService outerClientService = ServicesUtil.getOuterClientService();

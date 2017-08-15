@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.migration;
 
 import com.ctrip.xpipe.api.migration.OuterClientException;
-import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.google.common.collect.Lists;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -73,7 +73,9 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 
 	@Override
 	public ClusterInfo getClusterInfo(String clusterName) {
-		return new ClusterInfo();
+		ClusterInfo clusterInfo = new ClusterInfo();
+		clusterInfo.setGroups(Lists.newArrayList(new GroupInfo()));
+		return clusterInfo;
 	}
 
 }
