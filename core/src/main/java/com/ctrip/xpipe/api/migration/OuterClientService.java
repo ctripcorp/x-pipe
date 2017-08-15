@@ -156,6 +156,16 @@ public interface OuterClientService extends Ordered{
 			}
 		}
 
+		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
+
+			masterIDC = direction.transform(masterIDC);
+
+			if (groups != null) {
+				groups.forEach(groupMeta -> groupMeta.mapIdc(direction));
+
+			}
+		}
+
 		public boolean isXpipe() {
 			return isXpipe;
 		}
@@ -235,6 +245,13 @@ public interface OuterClientService extends Ordered{
 			this.instances = instances;
 		}
 
+		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
+
+			if (instances != null) {
+				instances.forEach(instanceMeta -> instanceMeta.mapIdc(direction));
+			}
+		}
+
 		public void check() {
 			if (instances != null) {
 				instances.forEach(instanceMeta -> instanceMeta.check());
@@ -263,7 +280,9 @@ public interface OuterClientService extends Ordered{
 			}
 
 		}
-
+		void mapIdc(DC_TRANSFORM_DIRECTION direction){
+			env = direction.transform(env);
+		}
 
 		public boolean isCanRead() {
 			return canRead;

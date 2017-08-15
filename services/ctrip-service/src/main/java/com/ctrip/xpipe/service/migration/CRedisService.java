@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.monitor.Task;
@@ -131,8 +132,10 @@ public class CRedisService extends AbstractOuterClientService {
 		return catTransactionMonitor.logTransaction(TYPE, String.format("getClusterInfo:%s", clusterName), new Callable<ClusterInfo>() {
 			@Override
 			public ClusterInfo call() throws Exception {
+
 				String address = CREDIS_SERVICE.QUERY_CLUSTER.getRealPath(credisConfig.getCredisServiceAddress());
 				ClusterInfo clusterInfo = restOperations.getForObject(address, ClusterInfo.class, clusterName);
+				clusterInfo.mapIdc(DC_TRANSFORM_DIRECTION.OUTER_TO_INNER);
 				return clusterInfo;
 			}
 		});
