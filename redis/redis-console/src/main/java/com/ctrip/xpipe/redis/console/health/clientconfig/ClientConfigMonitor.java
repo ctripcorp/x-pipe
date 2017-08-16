@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.console.health.clientconfig;
 
 import com.ctrip.xpipe.api.migration.OuterClientService;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -23,13 +24,16 @@ import java.util.*;
  *         Aug 15, 2017
  */
 @Component
-@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
-public class ClientConfigMonitor extends AbstractIntervalCheck{
+@ConditionalOnProperty(name = {HealthChecker.ENABLED}, matchIfMissing = true)
+public class ClientConfigMonitor extends AbstractIntervalCheck {
 
     private OuterClientService outerClientService = ServicesUtil.getOuterClientService();
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private AlertManager alertManager;
 
     @Override
     protected void doCheck() {
@@ -40,7 +44,7 @@ public class ClientConfigMonitor extends AbstractIntervalCheck{
 
         Set<String> clusters = getClusters(xpipeMeta);
 
-        for(String cluster : clusters){
+        for (String cluster : clusters) {
             try {
                 checkCluster(cluster, xpipeMeta);
             } catch (Exception e) {
@@ -52,22 +56,20 @@ public class ClientConfigMonitor extends AbstractIntervalCheck{
     private void checkCluster(String clusterName, XpipeMeta xpipeMeta) throws Exception {
 
         OuterClientService.ClusterInfo clusterInfo = outerClientService.getClusterInfo(clusterName);
-        try{
+        try {
             clusterInfo.check();
-        }catch (Exception e){
-            EventMonitor.DEFAULT.logAlertEvent(e.getMessage());
+        } catch (Exception e) {
+            alertManager.alert(clusterName, null, ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, e.getMessage());
         }
 
         CheckCluster checkClusterInfo = fromInfo(clusterInfo, clusterName);
         CheckCluster checkClusterXPipe = fromXPipe(xpipeMeta, clusterName);
 
-        try{
+        try {
             checkClusterInfo.equals(checkClusterXPipe);
-        }catch (EqualsException e){
+        } catch (EqualsException e) {
             logger.warn("[checkCluster]", e);
-            if(consoleConfig.alertClientConfigConsistent()){
-                EventMonitor.DEFAULT.logAlertEvent("INCONSIS:" + e.simpleMessage());
-            }
+            alertManager.alert(clusterName, e.getShardName(), ALERT_TYPE.CLIENT_INCONSIS, e.getMessage());
         }
 
     }
@@ -75,10 +77,19 @@ public class ClientConfigMonitor extends AbstractIntervalCheck{
     private CheckCluster fromInfo(OuterClientService.ClusterInfo clusterInfo, String checkCluster) {
 
         CheckCluster result = new CheckCluster(checkCluster);
-        clusterInfo.getGroups().forEach(groupMeta -> {
+        List<OuterClientService.GroupInfo> groups = clusterInfo.getGroups();
+        if (groups == null) {
+            return result;
+        }
+
+        groups.forEach(groupMeta -> {
 
             CheckShard shard = result.getOrCreate(groupMeta.getName());
-            groupMeta.getInstances().forEach(instance -> {
+            List<OuterClientService.InstanceInfo> instances = groupMeta.getInstances();
+            if (instances == null) {
+                return;
+            }
+            instances.forEach(instance -> {
                 CheckRedis checkRedis = new CheckRedis(instance.getIPAddress(), instance.getPort(), instance.getEnv());
                 shard.addRedis(checkRedis);
             });
@@ -113,7 +124,7 @@ public class ClientConfigMonitor extends AbstractIntervalCheck{
 
         DcMeta[] dcMetas = xpipeMeta.getDcs().values().toArray(new DcMeta[0]);
 
-        if(dcMetas.length == 0){
+        if (dcMetas.length == 0) {
             return new HashSet<>();
         }
         return new HashSet<>(dcMetas[0].getClusters().keySet());

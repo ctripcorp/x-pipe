@@ -9,6 +9,7 @@ import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.utils.StringUtil;
 
 /**
  * @author shyin
@@ -34,7 +35,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public static final String KEY_QUORUM = "console.quorum";
     public static final String KEY_DOMAIN = "console.domain";
     public static final String KEY_CNAME_TODC = "console.cname.todc";
-    public static final String KEY_ALERT_CLIENTCONFIG_CONSISTENT = "console.alert.clientconfig.consistent";
 
     public static final String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
 
@@ -95,8 +95,20 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public String getAlertWhileList() {
-        return getProperty(KEY_ALERT_WHITE_LIST, "");
+    public Set<String> getAlertWhileList() {
+
+        HashSet result = new HashSet();
+        String whitelist = getProperty(KEY_ALERT_WHITE_LIST, "");
+        String[] split = whitelist.split("\\s*(,|;)\\s*");
+
+        for(String sp : split){
+            if(!StringUtil.isEmpty(sp)){
+                result.add(sp);
+            }
+        }
+
+        return result;
+
     }
 
     @Override
@@ -136,11 +148,5 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         String config = getProperty(KEY_SENTINEL_QUORUM, "{}");
         return JsonCodec.INSTANCE.decode(config, QuorumConfig.class);
     }
-
-    @Override
-    public boolean alertClientConfigConsistent() {
-        return getBooleanProperty(KEY_ALERT_CLIENTCONFIG_CONSISTENT, true);
-    }
-
 
 }

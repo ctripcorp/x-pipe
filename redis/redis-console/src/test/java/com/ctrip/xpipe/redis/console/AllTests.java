@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console;
 
 
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
@@ -81,6 +82,7 @@ import org.junit.runner.RunWith;
         MigrationClusterDaoTest.class,
         MigrationEventDaoTest.class,
         DefaultConsoleDbConfigTest.class,
+        DefaultConsoleConfigTest.class,
         RedisDaoTest.class,
         CheckClusterTest.class
 })

@@ -35,7 +35,7 @@ public interface ConsoleConfig extends CoreConfig {
 
 	int getCacheRefreshInterval();
 
-	String getAlertWhileList();
+	Set<String> getAlertWhileList();
 
 	String getAllConsoles();
 
@@ -48,7 +48,5 @@ public interface ConsoleConfig extends CoreConfig {
 	Map<String, String> getConsoleCnameToDc();
 
 	QuorumConfig  getDefaultSentinelQuorumConfig();
-
-	boolean alertClientConfigConsistent();
 
 }

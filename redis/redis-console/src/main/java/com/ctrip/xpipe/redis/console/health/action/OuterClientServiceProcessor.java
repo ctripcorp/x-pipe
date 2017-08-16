@@ -5,9 +5,13 @@ import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.tuple.Pair;
+import javafx.scene.control.Alert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +38,9 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private AlertManager alertManager;
 
     @Autowired
     private AllMonitorCollector allMonitorCollector;
@@ -106,7 +113,14 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
             finalStateSetterManager.set(hostPort, false);
         } else {
             logger.info("[quorumMarkInstanceDown][quorum fail]{}, {}", hostPort, quorum);
-            CatEventMonitor.DEFAULT.logAlertEvent("quorum_fail:" + hostPort);
+            Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
+
+            alertManager.alert(
+                    clusterShard == null?null:clusterShard.getKey(),
+                    clusterShard == null?null:clusterShard.getValue(),
+                    ALERT_TYPE.QUORUM_DOWN_FAIL,
+                    hostPort.toString()
+            );
         }
     }
 

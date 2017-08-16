@@ -26,7 +26,7 @@ public class AppTest extends AbstratAppTest {
 	public void startUp() {
 
 		System.setProperty(DefaultConsoleConfig.KEY_REDIS_CONF_CHECK_INTERVAL, "15000");
-		System.setProperty(HealthChecker.ENABLED, "false");
+		System.setProperty(HealthChecker.ENABLED, "true");
 		System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
 	}
 
@@ -38,6 +38,7 @@ public class AppTest extends AbstratAppTest {
 		System.setProperty("server.port", "8080");
 		System.setProperty(DefaultConsoleConfig.KEY_REDIS_CONF_CHECK_INTERVAL, "30000");
 		start();
+
 	}
 
 	@Test

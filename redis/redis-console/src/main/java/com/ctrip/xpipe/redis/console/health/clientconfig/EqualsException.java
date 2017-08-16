@@ -38,25 +38,13 @@ public class EqualsException extends RedisConsoleRuntimeException{
         return equalsException;
     }
 
-    @Override
-    public String getMessage() {
 
-        return clusterShardDesc() + "," + super.getMessage();
+    public String getShardName() {
+        return shardName;
     }
 
-    public String simpleMessage(){
-        return clusterShardDesc();
+    public String getClusterName() {
+        return clusterName;
     }
 
-    private String clusterShardDesc() {
-
-        String msg = "";
-        if(clusterName != null){
-            msg += "cluster:" + clusterName;
-        }
-        if(shardName != null){
-            msg += ", shard:" + shardName;
-        }
-        return msg;
-    }
 }

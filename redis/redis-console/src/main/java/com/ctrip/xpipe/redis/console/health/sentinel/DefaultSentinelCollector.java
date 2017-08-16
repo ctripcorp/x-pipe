@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.health.sentinel;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
@@ -45,6 +47,9 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private AlertManager alertManager;
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -111,8 +116,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
                     }
                 }
                 if (shoudReset) {
-                    CatEventMonitor.DEFAULT.logAlertEvent(String.format("[stl][reset][%s] %s", sentinelAddr, reason));
-                    logger.warn("[checkReset][reset]{}, {}", sentinelAddr, reason);
+                    alertManager.forceAlert(clusterId, shardId, ALERT_TYPE.SENTINEL_RESET, String.format("%s, %s", sentinelAddr, reason));
                     connection.sync().reset(sentinelMonitorName);
                 }
             } catch (Exception e) {
