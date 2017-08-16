@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.monitor;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.dianping.cat.Cat;
 import com.dianping.cat.message.Event;
 
@@ -12,6 +13,7 @@ import com.dianping.cat.message.Event;
 public class CatEventMonitor implements EventMonitor {
 
     private final String FAIL = "fail";
+    private final int typeMaxLen = 128;
 
     @Override
     public void logEvent(String type, String name, long count) {
@@ -25,7 +27,8 @@ public class CatEventMonitor implements EventMonitor {
 
     @Override
     public void logAlertEvent(String simpleAlertMessage) {
-        Cat.logEvent(ALERT_TYPE, simpleAlertMessage, FAIL, "");
+
+        Cat.logEvent(ALERT_TYPE, StringUtil.subHead(simpleAlertMessage, typeMaxLen), FAIL, "");
     }
 
 }

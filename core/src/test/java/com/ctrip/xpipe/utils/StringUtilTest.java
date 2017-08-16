@@ -14,6 +14,14 @@ import com.ctrip.xpipe.AbstractTest;
 public class StringUtilTest extends AbstractTest{
 
 	@Test
+	public void testSubHead(){
+
+		Assert.assertEquals("12345", StringUtil.subHead("12345", 5));
+		Assert.assertEquals("12345", StringUtil.subHead("123456", 5));
+
+	}
+
+	@Test
 	public void testToString(){
 
 		Assert.assertEquals(String.valueOf(Integer.MAX_VALUE), StringUtil.toString(Integer.MAX_VALUE));

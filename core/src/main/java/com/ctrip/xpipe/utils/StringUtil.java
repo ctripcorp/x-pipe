@@ -12,6 +12,16 @@ import java.util.function.Function;
  */
 public class StringUtil {
 
+    public static String subHead(String str, int maxLen){
+
+        if(str == null || str.length() <= maxLen){
+            return str;
+        }
+
+        return str.substring(0, maxLen);
+
+    }
+
     public static String toString(Object obj) {
         if (obj == null) {
             return "null";
