@@ -25,11 +25,6 @@ public class DefaultConsoleConfigTest extends AbstractConsoleTest{
 
 
     @Test
-    public void test(){
-        logger.info("{}", consoleConfig.alertClientConfigConsistent());
-    }
-
-    @Test
     public void testWhiteList(){
 
         System.setProperty(DefaultConsoleConfig.KEY_ALERT_WHITE_LIST, "cluster1, cluster2 ; cluster3");
