@@ -10,7 +10,29 @@
 	<artifactId>ctrip-service</artifactId>
 
 
+	<properties>
+		<hickwall.client.version>1.8</hickwall.client.version>
+		<clogging.version>4.1.8</clogging.version>
+	</properties>
+
+
 	<dependencies>
+		<dependency>
+			<groupId>com.ctrip.framework.clogging</groupId>
+			<artifactId>clogging-agent</artifactId>
+			<version>${clogging.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.ctrip.hickwall</groupId>
+			<artifactId>client</artifactId>
+			<version>${hickwall.client.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-simple</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -62,14 +84,6 @@
 		<dependency>
 			<groupId>net.razorvine</groupId>
 			<artifactId>pyrolite</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.ctrip.hickwall</groupId>
-			<artifactId>hickwall-protocol</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.ctrip.hickwall</groupId>
-			<artifactId>client</artifactId>
 		</dependency>
 	</dependencies>
 
