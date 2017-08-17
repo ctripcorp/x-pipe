@@ -1,20 +1,18 @@
-package com.ctrip.xpipe.service.hickwall;
+package com.ctrip.xpipe.service.metric;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import com.ctrip.xpipe.metric.MetricProxyException;
+import com.ctrip.xpipe.metric.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.hickwall.proxy.HickwallClient;
 import com.ctrip.hickwall.proxy.common.DataPoint;
-import com.ctrip.xpipe.metric.MetricBinMultiDataPoint;
-import com.ctrip.xpipe.metric.MetricDataPoint;
-import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
@@ -61,10 +59,10 @@ public class HickwallMetricProxy implements MetricProxy {
 						client.send(data);
 						data = null;
 					} catch (IOException e) {
-						logger.error("Error write data to hickwall server{}", config.getHickwallHostPort(), e);
+						logger.error("Error write data to metric server{}", config.getHickwallHostPort(), e);
 						tryUntilConnected();
 					}catch(Exception e){
-						logger.error("Error write data to hickwall server{}", config.getHickwallHostPort(), e);
+						logger.error("Error write data to metric server{}", config.getHickwallHostPort(), e);
 						try {
 							TimeUnit.SECONDS.sleep(5);
 						} catch (InterruptedException e1) {
@@ -78,13 +76,17 @@ public class HickwallMetricProxy implements MetricProxy {
 	}
 	
 	private void tryUntilConnected() {
+
 		while(! Thread.currentThread().isInterrupted()) {
+
+			String hickwallHostPort = config.getHickwallHostPort();
 			try {
-				client = new HickwallClient(config.getHickwallHostPort());
-				logger.info("Connected to hickwall server {}", config.getHickwallHostPort());
+				logger.info("[tryUntilConnected][begin]{}", hickwallHostPort);
+				client = new HickwallClient(hickwallHostPort);
+				logger.info("[tryUntilConnected][end]{}", hickwallHostPort);
 				break;
 			} catch (IOException e) {
-				logger.error("Error connect to hickwall server {}", config.getHickwallHostPort(), e);
+				logger.error("Error connect to metric server {}", hickwallHostPort, e);
 				try {
 					TimeUnit.SECONDS.sleep(5);
 				} catch (InterruptedException e1) {
@@ -95,27 +97,39 @@ public class HickwallMetricProxy implements MetricProxy {
 	}
 	
 	@Override
-	public void writeBinMultiDataPoint(MetricBinMultiDataPoint mbmp) throws MetricProxyException {
-		ArrayList<DataPoint> bmp = convertToHickwallFormat(mbmp);
+	public void writeBinMultiDataPoint(List<MetricData> rawData) throws MetricProxyException {
+		ArrayList<DataPoint> bmp = convertToHickwallFormat(rawData);
 
 		if (!datas.offer(bmp)) {
 			logger.error("Hickwall queue overflow, will drop data");
 		}
 	}
 	
-	private ArrayList<DataPoint> convertToHickwallFormat(MetricBinMultiDataPoint mbmp) {
-		ArrayList<DataPoint> dps = new ArrayList<>(mbmp.getPoints().size());
+	private ArrayList<DataPoint> convertToHickwallFormat(List<MetricData> datas) {
+
+		ArrayList<DataPoint> dps = new ArrayList<>(datas.size());
 		
-		for(MetricDataPoint mdp : mbmp.getPoints()) {
-			DataPoint dp = new DataPoint(mdp.getMetric(), (double) mdp.getValue(), mdp.getTimestamp());
+		for(MetricData md : datas) {
+			DataPoint dp = new DataPoint(metricName(md), (double) md.getValue(), md.getTimestampMilli() * 1000000);
 			dp.setEndpoint("fx");
-			
 			dps.add(dp);
 		}
 		
 		return dps;
 	}
-	
+
+	private String metricName(MetricData md) {
+
+		HostPort hostPort = md.getHostPort();
+		String metricNamePrefix = toMetricNamePrefix(md);
+		String metricName = metricNamePrefix + "." + hostPort.getHost() + "." + hostPort.getPort();
+		return metricName;
+	}
+
+	private String toMetricNamePrefix(MetricData metricData) {
+		return "fx.xpipe.delay." + metricData.getClusterName() + "." + metricData.getShardName();
+	}
+
 	@Override
 	public int getOrder() {
 		return HIGHEST_PRECEDENCE;

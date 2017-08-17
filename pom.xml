@@ -43,7 +43,7 @@
         <lettuce.version>4.3.2.Final</lettuce.version>
         <pyrolite.version>4.9</pyrolite.version>
         <hickwall.version>1.0</hickwall.version>
-        <hickwall.client.version>1.4</hickwall.client.version>
+        <hickwall.client.version>1.8</hickwall.client.version>
         <plexus-utils.version>3.0.24</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.0</git-commit-id-plugin.version>
         <log4j2.version>2.6.2</log4j2.version>
@@ -158,6 +158,12 @@
                 <groupId>com.ctrip.hickwall</groupId>
                 <artifactId>client</artifactId>
                 <version>${hickwall.client.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-simple</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>commons-io</groupId>

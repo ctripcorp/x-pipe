@@ -23,6 +23,8 @@ public class ApolloConfigTest extends AbstractServiceTest{
 		
 		Config config = Config.DEFAULT;
 		Assert.assertTrue(config instanceof ApolloConfig);
+
+
 		
 		String result = config.get("test");
 		logger.info("test value:{}", result);
