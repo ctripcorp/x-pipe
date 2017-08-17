@@ -18,13 +18,13 @@ import java.util.concurrent.TimeUnit;
  *         <p>
  *         Aug 17, 2017
  */
-public class HickwallMetricProxyTest extends AbstractServiceTest{
+public class HickwallMetricTest extends AbstractServiceTest{
 
-    private HickwallMetricProxy hickwallMetricProxy;
+    private HickwallMetric hickwallMetricProxy;
 
     @Before
     public void beforeHickwallMetricProxyTest(){
-        hickwallMetricProxy = new HickwallMetricProxy();
+        hickwallMetricProxy = new HickwallMetric();
     }
 
     @Test

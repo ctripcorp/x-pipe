@@ -1,1 +1,1 @@
-com.ctrip.xpipe.service.metric.HickwallMetricProxy
+com.ctrip.xpipe.service.metric.DefaultMetric

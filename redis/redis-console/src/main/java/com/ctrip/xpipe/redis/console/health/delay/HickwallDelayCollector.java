@@ -29,15 +29,13 @@ public class HickwallDelayCollector implements DelayCollector {
         try {
             List<MetricData> data = new LinkedList<>();
 
-            MetricBinMultiDataPoint bmp = new MetricBinMultiDataPoint();
-
             for (Entry<HostPort, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
-                MetricData point = getPoint(entry.getValue(), result);
+                MetricData point = getPoint(entry.getKey(), entry.getValue(), result);
                 data.add(point);
             }
 
             HostPort masterHostPort = result.getMasterHostPort();
-            MetricData point = getPoint(result.getMasterDelayNanos(), result);
+            MetricData point = getPoint(masterHostPort, result.getMasterDelayNanos(), result);
             data.add(point);
 
             proxy.writeBinMultiDataPoint(data);
@@ -46,11 +44,12 @@ public class HickwallDelayCollector implements DelayCollector {
         }
     }
 
-    private MetricData getPoint(long value, DelaySampleResult result) {
+    private MetricData getPoint(HostPort hostPort, long value, DelaySampleResult result) {
 
         MetricData data = new MetricData(result.getClusterId(), result.getShardId());
         data.setValue(value/1000);
         data.setTimestampMilli(System.currentTimeMillis());
+        data.setHostPort(hostPort);
         return data;
     }
 

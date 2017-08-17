@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.service.metric;
 
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.config.AbstractConfigBean;
 
 /**
@@ -9,7 +7,6 @@ import com.ctrip.xpipe.config.AbstractConfigBean;
  *
  *         Dec 8, 2016 3:56:43 PM
  */
-@Component
 public class HickwallConfig extends AbstractConfigBean {
 
 	public static final String KEY_HICKWALL_HOST_PORT = "hickwall.host.port";

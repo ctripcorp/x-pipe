@@ -20,9 +20,9 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
  *
  * Jan 6, 2017
  */
-public class HickwallMetricProxy implements MetricProxy {
+public class HickwallMetric implements MetricProxy {
 
-	private static Logger logger = LoggerFactory.getLogger(HickwallMetricProxy.class);
+	private static Logger logger = LoggerFactory.getLogger(HickwallMetric.class);
 	
 	private HickwallConfig config = new HickwallConfig();
 	
@@ -30,7 +30,7 @@ public class HickwallMetricProxy implements MetricProxy {
 
 	private HickwallClient client;
 	
-	public HickwallMetricProxy() {
+	public HickwallMetric() {
 		start();
 	}
 	
@@ -132,7 +132,7 @@ public class HickwallMetricProxy implements MetricProxy {
 
 	@Override
 	public int getOrder() {
-		return HIGHEST_PRECEDENCE;
+		return 0;
 	}
 
 }
