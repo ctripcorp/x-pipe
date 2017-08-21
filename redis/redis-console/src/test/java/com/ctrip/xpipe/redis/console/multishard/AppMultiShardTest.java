@@ -1,12 +1,9 @@
 package com.ctrip.xpipe.redis.console.multishard;
 
 import com.ctrip.xpipe.monitor.CatConfig;
-import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.AbstratAppTest;
 import com.ctrip.xpipe.redis.console.AppTest;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
-import com.ctrip.xpipe.spring.AbstractProfile;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.junit.After;
 import org.junit.Before;

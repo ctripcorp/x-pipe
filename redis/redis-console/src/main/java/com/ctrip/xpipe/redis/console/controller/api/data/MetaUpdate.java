@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
-import com.ctrip.xpipe.redis.core.IVisitor;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 import java.io.IOException;
 
 import com.ctrip.xpipe.netty.ByteBufUtils;
-import com.ctrip.xpipe.netty.ByteBufferUtils;
 import io.netty.buffer.ByteBuf;
 import org.junit.Assert;
 import org.junit.Test;

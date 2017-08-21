@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.console.model.DcClusterShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import org.unidal.tuple.Triple;
 
 @Service
 public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterShardTblDao> implements DcClusterShardService {

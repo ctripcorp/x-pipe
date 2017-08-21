@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.health.redisconf;
 
-import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;

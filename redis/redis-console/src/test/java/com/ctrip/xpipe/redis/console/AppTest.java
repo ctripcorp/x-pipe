@@ -1,19 +1,17 @@
 package com.ctrip.xpipe.redis.console;
 
-import java.io.IOException;
-import java.sql.SQLException;
-
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
+import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import com.ctrip.xpipe.redis.console.health.HealthChecker;
-import com.ctrip.xpipe.spring.AbstractProfile;
+import java.io.IOException;
+import java.sql.SQLException;
 
 /**
  * @author lepdou 2016-11-09

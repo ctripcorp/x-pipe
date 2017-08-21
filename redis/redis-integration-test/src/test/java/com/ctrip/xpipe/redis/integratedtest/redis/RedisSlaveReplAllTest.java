@@ -5,7 +5,6 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigSetCommand;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
-import com.google.common.base.Joiner;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

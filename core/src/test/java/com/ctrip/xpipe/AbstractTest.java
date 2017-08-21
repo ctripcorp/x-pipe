@@ -19,7 +19,6 @@ import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
 
 import com.ctrip.xpipe.testutils.ByteBufReleaseWrapper;
-import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ResourceLeakDetector;

@@ -16,11 +16,9 @@ import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
-import org.unidal.dal.jdbc.Updateset;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.security.DenyAll;
 
 import java.util.HashMap;
 import java.util.LinkedList;

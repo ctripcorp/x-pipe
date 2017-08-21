@@ -2,8 +2,6 @@ package com.ctrip.xpipe.service.migration;
 
 import com.ctrip.xpipe.utils.UrlUtils;
 
-import javax.management.Query;
-
 /**
  * @author shyin
  *

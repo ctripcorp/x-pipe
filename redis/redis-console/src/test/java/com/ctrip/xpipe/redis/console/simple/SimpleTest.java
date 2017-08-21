@@ -3,9 +3,6 @@ package com.ctrip.xpipe.redis.console.simple;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**

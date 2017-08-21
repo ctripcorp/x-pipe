@@ -2,8 +2,6 @@ package com.ctrip.xpipe.zk;
 
 import org.apache.curator.framework.CuratorFramework;
 
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-
 /**
  * @author marsqing
  *

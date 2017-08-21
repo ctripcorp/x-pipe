@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.redis.console.migration.model.*;
 import com.google.common.collect.Lists;

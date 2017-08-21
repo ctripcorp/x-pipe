@@ -5,7 +5,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import org.springframework.beans.factory.annotation.Autowired;

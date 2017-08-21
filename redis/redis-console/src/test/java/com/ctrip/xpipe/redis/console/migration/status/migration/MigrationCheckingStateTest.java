@@ -1,16 +1,9 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.redis.console.migration.model.ClusterStepResult;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
-import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
-import com.ctrip.xpipe.redis.core.entity.Cluster;
 import com.google.common.collect.Lists;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
