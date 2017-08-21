@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,25 +38,33 @@ public class CRedisServiceTest extends AbstractServiceTest {
 	@Test(expected =  IllegalStateException.class)
 	public void testGet() throws Exception {
 
-		CRedisService.GetInstanceResult result = outerClientService.getInstance(new HostPort("127.0.0.1", 6379));
+		CRedisService.GetInstanceResult result = outerClientService.getInstance(newHostPort("127.0.0.1", 6379));
 		logger.info("{}", result);
 
-		result = outerClientService.getInstance(new HostPort("127.0.0.1", 63799));
+		result = outerClientService.getInstance(newHostPort("127.0.0.1", 63799));
 		logger.info("{}", result);
 
-		logger.info("{}", outerClientService.isInstanceUp(new HostPort("127.0.0.1", 6379)));
+		logger.info("{}", outerClientService.isInstanceUp(newHostPort("127.0.0.1", 6379)));
 
-		logger.info("{}", outerClientService.isInstanceUp(new HostPort("10.2.24.216", 6379)));
+		logger.info("{}", outerClientService.isInstanceUp(newHostPort("10.2.24.216", 6379)));
 
-		outerClientService.isInstanceUp(new HostPort("127.0.0.1", 63799));
+		outerClientService.isInstanceUp(newHostPort("127.0.0.1", 63799));
 
+	}
+
+	private ClusterShardHostPort newHostPort(String host, int port) {
+		return new ClusterShardHostPort("cluster1", "shard1", new HostPort(host, port));
 	}
 
 
 	@Test
 	public void testMarkStatus() throws Exception {
 
-		outerClientService.markInstanceDown(new HostPort("127.0.0.1", 6379));
+		try {
+			outerClientService.markInstanceDown(newHostPort("127.0.0.1", 6379));
+		}catch (Exception e){
+			logger.error("[testMarkStatus]", e);
+		}
 
 		sleep(600000);
 

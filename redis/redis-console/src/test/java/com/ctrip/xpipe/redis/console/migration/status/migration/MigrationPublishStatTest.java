@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import com.ctrip.xpipe.api.migration.OuterClientException;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -89,35 +87,9 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 
 			
 			@Override
-			public int getOrder() {
-				return 0;
-			}
-			
-			@Override
 			public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
 					InetSocketAddress newMaster) {
 				throw new ResourceAccessException("test");
-			}
-
-			@Override
-			public ClusterInfo getClusterInfo(String clusterName) throws Exception {
-				return null;
-			}
-
-
-			@Override
-			public void markInstanceUp(HostPort hostPort) throws OuterClientException {
-
-			}
-
-			@Override
-			public boolean isInstanceUp(HostPort hostPort) throws OuterClientException {
-				return false;
-			}
-
-			@Override
-			public void markInstanceDown(HostPort hostPort) throws OuterClientException {
-
 			}
 
 			@Override
@@ -139,36 +111,11 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 		doReturn(new AbstractOuterClientService() {
 			
 			@Override
-			public int getOrder() {
-				return 0;
-			}
-			
-			@Override
 			public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
 					InetSocketAddress newMaster) {
 				MigrationPublishResult res = new MigrationPublishResult();
 				res.setSuccess(false);
 				return res;
-			}
-
-			@Override
-			public ClusterInfo getClusterInfo(String clusterName) throws Exception {
-				return null;
-			}
-
-			@Override
-			public void markInstanceUp(HostPort hostPort) throws OuterClientException {
-
-			}
-
-			@Override
-			public boolean isInstanceUp(HostPort hostPort) throws OuterClientException {
-				return true;
-			}
-
-			@Override
-			public void markInstanceDown(HostPort hostPort) throws OuterClientException {
-
 			}
 
 			@Override

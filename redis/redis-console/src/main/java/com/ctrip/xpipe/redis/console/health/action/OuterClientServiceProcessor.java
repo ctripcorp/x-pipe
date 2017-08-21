@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.health.action;
 import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
+import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
@@ -10,6 +11,7 @@ import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import org.apache.catalina.Host;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,27 +51,27 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
     @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
     private Executor executors;
 
-    private FinalStateSetterManager<HostPort, Boolean> finalStateSetterManager;
+    private FinalStateSetterManager<ClusterShardHostPort, Boolean> finalStateSetterManager;
 
     @PostConstruct
     public void postConstruct() {
 
-        finalStateSetterManager = new FinalStateSetterManager<>(executors, (hostPort) -> {
+        finalStateSetterManager = new FinalStateSetterManager<>(executors, (clusterShardHostPort) -> {
 
             try {
-                return outerClientService.isInstanceUp(hostPort);
+                return outerClientService.isInstanceUp(clusterShardHostPort);
             } catch (OuterClientException e) {
-                throw new IllegalStateException("get error:" + hostPort, e);
+                throw new IllegalStateException("get error:" + clusterShardHostPort, e);
             }
-        }, ((hostPort, result) -> {
+        }, ((clusterShardHostPort, result) -> {
             try {
                 if (result) {
-                    outerClientService.markInstanceUp(hostPort);
+                    outerClientService.markInstanceUp(clusterShardHostPort);
                 } else {
-                    outerClientService.markInstanceDown(hostPort);
+                    outerClientService.markInstanceDown(clusterShardHostPort);
                 }
             } catch (OuterClientException e) {
-                throw new IllegalStateException("set error:" + hostPort + "," + result, e);
+                throw new IllegalStateException("set error:" + clusterShardHostPort + "," + result, e);
             }
         })
         );
@@ -79,17 +81,26 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
     @Override
     public void onEvent(AbstractInstanceEvent instanceEvent) throws HealthEventProcessorException {
 
-        if (!instanceInBackupDc(instanceEvent.getHostPort())) {
-            logger.info("[onEvent][instance not in backupDc]{}", instanceEvent.getHostPort());
+        HostPort hostPort = instanceEvent.getHostPort();
+        Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
+
+        if (!instanceInBackupDc(hostPort)) {
+            logger.info("[onEvent][instance not in backupDc]{}, {}", clusterShard, hostPort);
             return;
         }
 
+        ClusterShardHostPort clusterShardHostPort = new ClusterShardHostPort(hostPort);
+        if(clusterShard != null){
+            clusterShardHostPort.setClusterName(clusterShard.getKey());
+            clusterShardHostPort.setShardName(clusterShard.getValue());
+        }
+
         if (instanceEvent instanceof InstanceUp) {
-            finalStateSetterManager.set(instanceEvent.getHostPort(), true);
+            finalStateSetterManager.set(clusterShardHostPort, true);
         } else if (instanceEvent instanceof InstanceDown) {
 
-            if (masterUp(instanceEvent.getHostPort())) {
-                quorumMarkInstanceDown(instanceEvent.getHostPort());
+            if (masterUp(clusterShardHostPort)) {
+                quorumMarkInstanceDown(clusterShardHostPort);
             } else {
                 logger.info("[onEvent][master down, do not call client service]{}", instanceEvent);
             }
@@ -98,24 +109,24 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
         }
     }
 
-    private void quorumMarkInstanceDown(HostPort hostPort) {
+    private void quorumMarkInstanceDown(ClusterShardHostPort clusterShardHostPort) {
+
+        HostPort hostPort = clusterShardHostPort.getHostPort();
 
         List<HEALTH_STATE> health_states = consoleServiceManager.allHealthStatus(hostPort.getHost(), hostPort.getPort());
 
-        logger.info("[quorumMarkInstanceDown]{}, {}", hostPort, health_states);
+        logger.info("[quorumMarkInstanceDown]{}, {}", clusterShardHostPort, health_states);
 
         boolean quorum = consoleServiceManager.quorumSatisfy(health_states,
                 (state) -> state == HEALTH_STATE.UNHEALTHY || state == HEALTH_STATE.DOWN);
 
         if (quorum) {
-            finalStateSetterManager.set(hostPort, false);
+            finalStateSetterManager.set(clusterShardHostPort, false);
         } else {
-            logger.info("[quorumMarkInstanceDown][quorum fail]{}, {}", hostPort, quorum);
-            Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
-
+            logger.info("[quorumMarkInstanceDown][quorum fail]{}, {}", clusterShardHostPort, quorum);
             alertManager.alert(
-                    clusterShard == null?null:clusterShard.getKey(),
-                    clusterShard == null?null:clusterShard.getValue(),
+                    clusterShardHostPort.getClusterName(),
+                    clusterShardHostPort.getShardName(),
                     ALERT_TYPE.QUORUM_DOWN_FAIL,
                     hostPort.toString()
             );
@@ -126,13 +137,13 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
         return metaCache.inBackupDc(hostPort);
     }
 
-    private boolean masterUp(HostPort hostPort) {
+    private boolean masterUp(ClusterShardHostPort clusterShardHostPort) {
 
         //master up
-        HostPort redisMaster = metaCache.findMasterInSameShard(hostPort);
+        HostPort redisMaster = metaCache.findMasterInSameShard(clusterShardHostPort.getHostPort());
         boolean masterUp = allMonitorCollector.getState(redisMaster) == HEALTH_STATE.UP;
         if (!masterUp) {
-            logger.info("[masterUp][master down instance:{}, master:{}]", hostPort, redisMaster);
+            logger.info("[masterUp][master down instance:{}, master:{}]", clusterShardHostPort, redisMaster);
         }
         return masterUp;
     }

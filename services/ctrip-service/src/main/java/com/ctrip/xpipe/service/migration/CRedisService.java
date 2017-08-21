@@ -9,6 +9,7 @@ import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
@@ -44,46 +45,46 @@ public class CRedisService extends AbstractOuterClientService {
 	}
 
 	@Override
-	public void markInstanceUp(HostPort hostPort) throws OuterClientException {
-		doMarkInstance(hostPort, true);
+	public void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
+		doMarkInstance(clusterShardHostPort, true);
 	}
 
 	@Override
-	public boolean isInstanceUp(HostPort hostPort) throws OuterClientException {
+	public boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
 
-		GetInstanceResult instance = getInstance(hostPort);
+		GetInstanceResult instance = getInstance(clusterShardHostPort);
 
 		if(instance.isSuccess()){
 			return instance.getResult().isCanRead();
 		}
-		throw new IllegalStateException("[isInstanceUp]" + hostPort + "," + instance.getMessage());
+		throw new IllegalStateException("[isInstanceUp]" + clusterShardHostPort + "," + instance.getMessage());
 	}
 
 	@Override
-	public void markInstanceDown(HostPort hostPort) throws OuterClientException {
-		doMarkInstance(hostPort, false);
-
+	public void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
+		doMarkInstance(clusterShardHostPort, false);
 	}
 
-	private void doMarkInstance(HostPort hostPort, boolean state) throws OuterClientException {
+	private void doMarkInstance(ClusterShardHostPort clusterShardHostPort, boolean state) throws OuterClientException {
 
 		try {
-
-			catTransactionMonitor.logTransaction(TYPE, String.format("doMarkInstance-%s-%s", hostPort, state), new Task() {
+			catTransactionMonitor.logTransaction(TYPE, String.format("doMarkInstance-%s-%s", clusterShardHostPort, state), new Task() {
                 @Override
                 public void go() throws Exception {
 
-                    String address = CREDIS_SERVICE.SWITCH_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
+					logger.info("[doMarkInstance][begin]{},{}", clusterShardHostPort, state);
+					String address = CREDIS_SERVICE.SWITCH_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
+                    HostPort hostPort = clusterShardHostPort.getHostPort();
                     MarkInstanceResponse response =
                             restOperations.postForObject(address, new MarkInstanceRequest(hostPort.getHost(), hostPort.getPort(), state), MarkInstanceResponse.class);
-                    logger.info("[doMarkInstance]{},{},{}", hostPort, state, response);
+                    logger.info("[doMarkInstance][ end ]{},{},{}", clusterShardHostPort, state, response);
                     if(!response.isSuccess()){
-                        throw new IllegalStateException(String.format("%s %s, response:%s", hostPort, state, response));
+                        throw new IllegalStateException(String.format("%s %s, response:%s", clusterShardHostPort, state, response));
                     }
                 }
             });
 		} catch (Exception e) {
-			throw new OuterClientException("mark:" + hostPort+ ":" + state, e);
+			throw new OuterClientException("mark:" + clusterShardHostPort+ ":" + state, e);
 		}
 
 	}
@@ -145,19 +146,23 @@ public class CRedisService extends AbstractOuterClientService {
 		return DcMapper.INSTANCE.getDc(dc);
 	}
 
-	public GetInstanceResult getInstance(HostPort hostPort) throws OuterClientException {
+	public GetInstanceResult getInstance(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
 
 		try {
 			return catTransactionMonitor.logTransaction(TYPE, String.format("getInstance"), new Callable<GetInstanceResult>() {
                 @Override
                 public GetInstanceResult call() throws Exception {
+
+                	HostPort hostPort = clusterShardHostPort.getHostPort();
                     String address = CREDIS_SERVICE.QUERY_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
-                    GetInstanceResult result = restOperations.getForObject(address + "?ip={ip}&port={port}", GetInstanceResult.class, hostPort.getHost(), hostPort.getPort());
+                    GetInstanceResult result = restOperations.getForObject(address + "?ip={ip}&port={port}",
+							GetInstanceResult.class,
+							hostPort.getHost(), hostPort.getPort());
                     return result;
                 }
             });
 		} catch (Exception e) {
-			throw new OuterClientException("getInstance:" + hostPort, e);
+			throw new OuterClientException("getInstance:" + clusterShardHostPort, e);
 		}
 	}
 

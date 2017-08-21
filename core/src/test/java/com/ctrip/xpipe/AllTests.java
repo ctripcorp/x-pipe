@@ -3,6 +3,7 @@ package com.ctrip.xpipe;
 import com.ctrip.xpipe.api.sso.SsoConfigTest;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactoryTest;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManagerTest;
+import com.ctrip.xpipe.endpoint.ClusterShardHostPortTest;
 import com.ctrip.xpipe.tuple.PairTest;
 import com.ctrip.xpipe.utils.*;
 import org.junit.runner.RunWith;
@@ -42,6 +43,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	XpipeNettyClientKeyedObjectPoolTest.class,
 	DefaultCommandFutureTest.class,
 	DefaultEndPointTest.class,
+	ClusterShardHostPortTest.class,
 	ByteArrayOutputStreamPayloadTest.class,
 	ByteArrayWritableByteChannelTest.class,
 	TestAbstractLifecycle.class,

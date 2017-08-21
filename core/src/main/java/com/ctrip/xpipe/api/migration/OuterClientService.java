@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -24,11 +25,11 @@ public interface OuterClientService extends Ordered{
 
 	String serviceName();
 
-	void markInstanceUp(HostPort hostPort) throws OuterClientException;
+	void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
-	boolean isInstanceUp(HostPort hostPort) throws OuterClientException;
+	boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
-	void markInstanceDown(HostPort hostPort) throws OuterClientException;
+	void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
 	MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) throws OuterClientException;
 	
