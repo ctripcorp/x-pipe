@@ -7,18 +7,19 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.core.IVisitor;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author wenchao.meng
@@ -40,6 +41,23 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private ShardService shardService;
+
+    @Autowired
+    private MetaCache metaCache;
+
+
+    @RequestMapping(value = "/stats", method = RequestMethod.GET)
+    public Map<String, Integer> getStats() {
+
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        ClusterShardCounter counter = new ClusterShardCounter();
+        xpipeMeta.accept(counter);
+
+        HashMap<String, Integer> counts = new HashMap<>();
+        counts.put("clusterCount", counter.getClusterCount());
+        counts.put("shardCount", counter.getShardCount());
+        return counts;
+    }
 
 
     @RequestMapping(value = "/clusters", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -85,10 +103,10 @@ public class MetaUpdate extends AbstractConsoleController {
         List<String> dcs = clusterCreateInfo.getDcs();
         List<String> trans = new LinkedList<>();
 
-        for(String dc : dcs){
+        for (String dc : dcs) {
 
             String transfer = direction.transform(dc);
-            if(!Objects.equals(transfer, dc)){
+            if (!Objects.equals(transfer, dc)) {
                 logger.info("[transform]{}->{}", dc, transfer);
             }
             trans.add(transfer);
@@ -138,7 +156,7 @@ public class MetaUpdate extends AbstractConsoleController {
 
         logger.info("[createShards]{}, {}", clusterName, shards);
 
-        ClusterTbl clusterTbl  = null;
+        ClusterTbl clusterTbl = null;
 
         try {
             clusterTbl = clusterService.find(clusterName);
@@ -156,25 +174,25 @@ public class MetaUpdate extends AbstractConsoleController {
         List<String> successShards = new LinkedList<>();
         List<String> failShards = new LinkedList<>();
 
-        for(ShardCreateInfo shardCreateInfo : shards){
+        for (ShardCreateInfo shardCreateInfo : shards) {
 
-            try{
+            try {
                 ShardTbl shardTbl = new ShardTbl()
                         .setSetinelMonitorName(shardCreateInfo.getShardMonitorName())
                         .setShardName(shardCreateInfo.getShardName());
                 shardService.createShard(clusterName, shardTbl, randomSentinelByDc);
                 successShards.add(shardCreateInfo.getShardName());
-            }catch (Exception e){
+            } catch (Exception e) {
                 logger.error("[createShards]" + clusterName + "," + shardCreateInfo.getShardName(), e);
                 failShards.add(shardCreateInfo.getShardName());
             }
         }
 
-        if(failShards.size() == 0){
+        if (failShards.size() == 0) {
             return RetMessage.createSuccessMessage();
-        }else{
+        } else {
             StringBuilder sb = new StringBuilder();
-            if(successShards.size() > 0){
+            if (successShards.size() > 0) {
                 sb.append(String.format("success shards:%s", joiner.join(successShards)));
             }
             sb.append(String.format("fail shards:%s", joiner.join(failShards)));
