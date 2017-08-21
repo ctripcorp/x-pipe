@@ -38,8 +38,6 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
 
     private final int  THREAD_COUNT = 4;
 
-    private int downAfterCheckNums = 5;
-
     private Map<HostPort, HealthStatus> allHealthStatus = new ConcurrentHashMap<>();
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(THREAD_COUNT, XpipeThreadFactory.create("ALL_MONITOR_CHECK"));
@@ -93,7 +91,7 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
 
                 HealthStatus healthStatus = new HealthStatus(
                         key,
-                        () -> downAfterCheckNums * consoleConfig.getRedisReplicationHealthCheckInterval(),
+                        () -> consoleConfig.getDownAfterCheckNums() * consoleConfig.getRedisReplicationHealthCheckInterval(),
                         () -> consoleConfig.getHealthyDelayMilli(),
                         scheduled);
 
