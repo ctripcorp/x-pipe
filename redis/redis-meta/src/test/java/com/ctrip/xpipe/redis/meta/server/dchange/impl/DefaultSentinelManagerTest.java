@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

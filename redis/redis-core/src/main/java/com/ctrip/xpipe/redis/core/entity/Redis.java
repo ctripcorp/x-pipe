@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.entity;
 
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**

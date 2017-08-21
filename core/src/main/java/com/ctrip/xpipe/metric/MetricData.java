@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.metric;
 
+import com.ctrip.xpipe.endpoint.HostPort;
+
 /**
  * @author wenchao.meng
  *         <p>

@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.health;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 
 /**
  * @author marsqing

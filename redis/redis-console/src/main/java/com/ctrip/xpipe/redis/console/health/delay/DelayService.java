@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.delay;
 
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 
 /**
  * @author shyin

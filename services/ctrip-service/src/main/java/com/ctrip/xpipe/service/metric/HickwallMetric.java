@@ -7,6 +7,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
 import com.ctrip.xpipe.api.server.Server;
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;

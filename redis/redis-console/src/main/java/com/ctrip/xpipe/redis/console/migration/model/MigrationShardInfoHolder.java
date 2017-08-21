@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 

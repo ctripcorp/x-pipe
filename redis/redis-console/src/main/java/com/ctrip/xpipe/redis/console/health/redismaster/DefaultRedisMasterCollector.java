@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.health.redismaster;
 
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.health.Sample;

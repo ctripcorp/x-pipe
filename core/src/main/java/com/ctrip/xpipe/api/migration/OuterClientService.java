@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.slf4j.Logger;

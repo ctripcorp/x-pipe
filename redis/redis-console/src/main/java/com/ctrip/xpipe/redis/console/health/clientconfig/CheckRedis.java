@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.clientconfig;
 
 import com.ctrip.xpipe.api.migration.OuterClientService;
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**

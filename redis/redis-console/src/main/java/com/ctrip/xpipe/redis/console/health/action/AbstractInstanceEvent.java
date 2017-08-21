@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.action;
 
 
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 
 /**
  * @author wenchao.meng

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.metric;
+package com.ctrip.xpipe.endpoint;
 
 import com.ctrip.xpipe.tuple.Pair;
 

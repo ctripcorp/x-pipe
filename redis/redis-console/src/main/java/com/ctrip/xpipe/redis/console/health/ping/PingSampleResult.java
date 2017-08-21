@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.health.ping;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 
 /**
  * @author marsqing

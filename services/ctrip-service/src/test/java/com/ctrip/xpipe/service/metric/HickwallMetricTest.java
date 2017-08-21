@@ -2,7 +2,7 @@ package com.ctrip.xpipe.service.metric;
 
 import com.ctrip.xpipe.AbstractServiceTest;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxyException;
 import org.junit.Before;

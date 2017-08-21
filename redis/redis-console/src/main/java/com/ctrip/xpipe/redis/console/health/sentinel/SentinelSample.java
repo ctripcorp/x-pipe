@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
-import com.ctrip.xpipe.metric.HostPort;
-import com.ctrip.xpipe.redis.console.health.BaseInstanceResult;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 import com.ctrip.xpipe.redis.console.health.Sample;
 
