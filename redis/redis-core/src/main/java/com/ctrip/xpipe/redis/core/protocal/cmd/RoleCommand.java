@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.StringUtil;
-
 import io.netty.buffer.ByteBuf;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng
@@ -31,12 +30,13 @@ public class RoleCommand extends AbstractRedisCommand<Role>{
 	}
 
 	public RoleCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
-		this(clientPool, true, scheduled);
+		this(clientPool, DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, true, scheduled);
 	}
 
-	public RoleCommand(SimpleObjectPool<NettyClient> clientPool, boolean log, ScheduledExecutorService scheduled) {
+	public RoleCommand(SimpleObjectPool<NettyClient> clientPool, int timeoutMilli, boolean log, ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);
 		this.log = log;
+		setCommandTimeoutMilli(timeoutMilli);
 		
 	}
 
