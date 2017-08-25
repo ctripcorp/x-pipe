@@ -508,6 +508,11 @@
 	</entity>
 
 	<entity name="redis-tbl" table="REDIS_TBL" alias="rt">
+		<!-- Add two constant below to fix bug, that when use h2 db in unit/integration test -->
+		<!-- RedisService.updateRedis() will fail, due to h2 db not recognize sequential insert with id of 0 -->
+		<member name="id" field="id" value-type="Long" length="20" nullable="true" key="true" auto-increment="true" />
+		<var name="key-id" value-type="Long" key-member="id" />
+
 		<var name="dc-name" value-type="String"/>
 		<var name="cluster-name" value-type="String"/>
 
