@@ -53,7 +53,10 @@ create table CLUSTER_TBL
     status varchar(24) not null default 'normal',
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
-	is_xpipe_interested tinyint(1) default 0
+	is_xpipe_interested tinyint(1) default 0,
+	cluster_org_id bigint(20) unsigned NOT NULL DEFAULT 0,
+	cluster_connector_names varchar(128)  NOT NULL DEFAULT 'default',
+    cluster_connector_emails varchar(128)  NOT NULL DEFAULT 'default'
 );
 
 
@@ -126,7 +129,8 @@ create table KEEPERCONTAINER_TBL
 	keepercontainer_port int not null,
 	keepercontainer_active tinyint(1) not null default 1,
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
-	deleted tinyint(1) not null default 0
+	deleted tinyint(1) not null default 0,
+	keepercontainer_org_id bigint(20) unsigned NOT NULL DEFAULT 0
 );
 
 -- Migration Event Table
@@ -183,3 +187,13 @@ CREATE TABLE `config_tbl` (
 );
 INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('sentinel.auto.process', 'true', '自动增删哨兵');
 
+-- Organization Table
+drop table if exists organization_tbl;
+CREATE TABLE `organization_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT primary key,
+  `org_id`  bigint(20) unsigned NOT NULL DEFAULT 0 unique,
+  `org_name` varchar(1024) NOT NULL DEFAULT 'none' unique,
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` tinyint(4) NOT NULL DEFAULT 0,
+);
+INSERT INTO organization_tbl (`org_id`, `org_name`) VALUES ('0', 'default');
