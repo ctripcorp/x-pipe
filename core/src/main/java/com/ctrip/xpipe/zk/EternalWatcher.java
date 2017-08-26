@@ -63,7 +63,7 @@ public class EternalWatcher extends AbstractStartStoppable implements Releasable
 			@Override
 			public void stateChanged(CuratorFramework client, ConnectionState newState) {
 				
-				if(newState == ConnectionState.RECONNECTED){
+				if(newState == ConnectionState.RECONNECTED || newState == ConnectionState.CONNECTED){
 					try {
 						addWatcher();
 					} catch (Exception e) {
