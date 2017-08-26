@@ -64,8 +64,8 @@ CREATE TABLE `CLUSTER_TBL` (
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   `is_xpipe_interested` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'is xpipe interested',
   `cluster_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of cluster',
-  `cluster_connector_names` varchar(128)  NOT NULL DEFAULT 'default' COMMENT 'persons who in charge of this cluster',
-  `cluster_connector_emails` varchar(128)  NOT NULL DEFAULT 'default' COMMENT 'persons email who in charge of this cluster',
+  `cluster_admin_names` varchar(128)  DEFAULT ' ' COMMENT 'persons who in charge of this cluster',
+  `cluster_admin_emails` varchar(128) DEFAULT ' ' COMMENT 'persons email who in charge of this cluster',
 
   PRIMARY KEY (`id`),
   UNIQUE KEY `cluster_name` (`cluster_name`),
