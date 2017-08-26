@@ -54,9 +54,9 @@ create table CLUSTER_TBL
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
 	is_xpipe_interested tinyint(1) default 0,
-	cluster_org_id bigint(20) unsigned NOT NULL DEFAULT 0,
-	cluster_connector_names varchar(128)  NOT NULL DEFAULT 'default',
-    cluster_connector_emails varchar(128)  NOT NULL DEFAULT 'default'
+	cluster_org_id bigint unsigned not null default 0,
+	cluster_connector_names varchar(128) default 'default',
+    cluster_connector_emails varchar(128) default 'default'
 );
 
 
@@ -190,10 +190,10 @@ INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('sentinel.auto.process',
 -- Organization Table
 drop table if exists organization_tbl;
 CREATE TABLE `organization_tbl` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT primary key,
-  `org_id`  bigint(20) unsigned NOT NULL DEFAULT 0 unique,
-  `org_name` varchar(1024) NOT NULL DEFAULT 'none' unique,
-  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted` tinyint(4) NOT NULL DEFAULT 0,
+  id bigint(20) unsigned not null AUTO_INCREMENT primary key,
+  org_id  bigint(20) unsigned not null default 0 unique,
+  org_name varchar(1024) not null default 'none' unique,
+  DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
+  deleted tinyint(4) not null default 0,
 );
 INSERT INTO organization_tbl (`org_id`, `org_name`) VALUES ('0', 'default');
