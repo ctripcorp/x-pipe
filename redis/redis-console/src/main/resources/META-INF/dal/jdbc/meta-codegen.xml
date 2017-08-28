@@ -11,8 +11,8 @@
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <member name="is-xpipe-interested" field="is_xpipe_interested" value-type="boolean" nullable="false" />
     <member name="cluster-org-id" field="cluster_org_id" value-type="long" length="20" nullable="false" />
-    <member name="cluster-connector-names" field="cluster_connector_names" value-type="String" length="128" nullable="false" />
-    <member name="cluster-connector-emails" field="cluster_connector_emails" value-type="String" length="128" nullable="false" />
+    <member name="cluster-admin-names" field="cluster_admin_names" value-type="String" length="128" />
+    <member name="cluster-admin-emails" field="cluster_admin_emails" value-type="String" length="128" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="cluster_name" unique="true" members="cluster_name ASC" />

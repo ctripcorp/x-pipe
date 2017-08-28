@@ -55,8 +55,8 @@ create table CLUSTER_TBL
 	deleted tinyint(1) not null default 0,
 	is_xpipe_interested tinyint(1) default 0,
 	cluster_org_id bigint unsigned not null default 0,
-	cluster_connector_names varchar(128) default 'default',
-    cluster_connector_emails varchar(128) default 'default'
+	cluster_admin_names varchar(128) default 'default',
+    cluster_admin_emails varchar(128) default 'default'
 );
 
 
