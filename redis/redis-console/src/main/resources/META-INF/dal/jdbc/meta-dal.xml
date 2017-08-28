@@ -765,7 +765,7 @@
 
 	<entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
 		<var name="dc-name" value-type="String"/>
-		<var name="org-id" value-type="Long"/>
+		<var name="org-id" value-type="long"/>
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
 
@@ -778,11 +778,11 @@
 				<member name='keepercontainer-ip'/>
 				<member name="count"/>
 			</readset>
-			<readset name="">
+			<readset name="KEEPER_COUNT_BY_CLUSTER">
 				<member name='keepercontainer-id'/>
 				<member name='keepercontainer-ip'/>
 				<member name="count"/>
-				<member name="org-id"/>
+				<member name="keepercontainer-org-id" />
 			</readset>
 		</readsets>
 		<query-defs>

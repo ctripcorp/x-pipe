@@ -45,13 +45,21 @@ public class KeepercontainerDcController extends AbstractConsoleController {
 
         int beginPort = findBeginPort(shardModel);
 
-        List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(dcName, beginPort, (ip, port) -> {
+//        List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(dcName, beginPort, (ip, port) -> {
+//
+//            if (shardModel != null && existOnConsole(ip, port, shardModel.getKeepers())) {
+//                return false;
+//            }
+//            return true;
+//        });
+
+        List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepersByCluster(dcName, beginPort, (ip, port) -> {
 
             if (shardModel != null && existOnConsole(ip, port, shardModel.getKeepers())) {
                 return false;
             }
             return true;
-        });
+        }, shardModel);
 
         List<RedisTbl> result = new LinkedList<>();
 
