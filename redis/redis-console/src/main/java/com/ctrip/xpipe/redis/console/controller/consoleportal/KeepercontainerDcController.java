@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
@@ -30,10 +32,16 @@ public class KeepercontainerDcController extends AbstractConsoleController {
     @Autowired
     private KeeperAdvancedService keeperAdvancedService;
 
+    @Autowired
+    private ClusterService clusterService;
 
-    @RequestMapping(value = "/dcs/{dcName}/activekeepercontainers", method = RequestMethod.GET)
-    public List<KeepercontainerTbl> findKeeperContainer(@PathVariable String dcName) {
-        return keepercontainerService.findAllActiveByDcName(dcName);
+
+    @RequestMapping(value = "/dcs/{dcName}/cluster/{clusterName}/activekeepercontainers", method = RequestMethod.GET)
+    public List<KeepercontainerTbl> findKeeperContainersByCluster(@PathVariable String dcName,
+                                                                @PathVariable String clusterName) {
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        long clusterOrgId = clusterTbl.getClusterOrgId();
+        return keepercontainerService.findKeeperCountByClusterOrg(dcName, clusterOrgId);
     }
 
 
@@ -45,13 +53,7 @@ public class KeepercontainerDcController extends AbstractConsoleController {
 
         int beginPort = findBeginPort(shardModel);
 
-//        List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(dcName, beginPort, (ip, port) -> {
-//
-//            if (shardModel != null && existOnConsole(ip, port, shardModel.getKeepers())) {
-//                return false;
-//            }
-//            return true;
-//        });
+        long clusterOrgId = getShardClusterOrgId(shardModel);
 
         List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepersByCluster(dcName, beginPort, (ip, port) -> {
 
@@ -59,7 +61,7 @@ public class KeepercontainerDcController extends AbstractConsoleController {
                 return false;
             }
             return true;
-        }, shardModel);
+        }, clusterOrgId);
 
         List<RedisTbl> result = new LinkedList<>();
 
@@ -89,5 +91,19 @@ public class KeepercontainerDcController extends AbstractConsoleController {
             port = shardModel.getRedises().get(0).getRedisPort();
         }
         return port;
+    }
+
+    private long getShardClusterOrgId(ShardModel shardModel) {
+        if(shardModel == null)  return 0L;
+        long clusterId = shardModel.getShardTbl().getClusterId();
+        return getClusterOrgId(clusterId);
+    }
+
+    private long getClusterOrgId(long clusterId) {
+        ClusterTbl clusterTbl = clusterService.find(clusterId);
+        if(clusterTbl == null) {
+            throw new IllegalStateException("Cluster could not be found by Id: " + clusterId);
+        }
+        return clusterTbl.getClusterOrgId();
     }
 }

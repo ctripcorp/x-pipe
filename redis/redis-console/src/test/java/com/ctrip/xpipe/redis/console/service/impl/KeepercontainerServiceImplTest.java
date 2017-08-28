@@ -38,12 +38,12 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     @Test
     public void testFindKeeperCountByCluster() {
         long orgId = 2L;
-        List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCountByCluster(dcNames[0], orgId);
+        List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCountByClusterOrg(dcNames[0], orgId);
         keeperCount.forEach(kc -> logger.info("{}", kc));
         Assert.assertTrue(keeperCount.stream().allMatch(kc->kc.getKeepercontainerOrgId() == orgId));
         logger.info("------------------------------------------------------------------");
         long noneOrgId = 0L;
-        keeperCount = keepercontainerService.findKeeperCountByCluster(dcNames[0], noneOrgId);
+        keeperCount = keepercontainerService.findKeeperCountByClusterOrg(dcNames[0], noneOrgId);
         keeperCount.forEach(kc -> logger.info("{}", kc));
         Assert.assertTrue(keeperCount.stream().allMatch(kc->kc.getKeepercontainerOrgId() == noneOrgId));
     }

@@ -60,30 +60,22 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
   @Override
   public List<KeeperBasicInfo> findBestKeepersByCluster(String dcName, int beginPort,
-      BiPredicate<String, Integer> keeperGood, ShardModel shardModel) {
+      BiPredicate<String, Integer> keeperGood, long clusterOrgId) {
 
-    return findBestKeepersByCluster(dcName, beginPort, keeperGood, shardModel, 2);
+    return findBestKeepersByCluster(dcName, beginPort, keeperGood, clusterOrgId, 2);
   }
 
   private List<KeeperBasicInfo> findBestKeepersByCluster(String dcName, int beginPort,
-      BiPredicate<String, Integer> keeperGood, ShardModel shardModel, int returnCount) {
+      BiPredicate<String, Integer> keeperGood, long clusterOrgId, int returnCount) {
 
     List<KeeperBasicInfo> result = new LinkedList<>();
-    long clusterOrgId = getShardClusterOrgId(shardModel);
-    List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCountByCluster(dcName, clusterOrgId);
+    List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCountByClusterOrg(dcName, clusterOrgId);
     if (keeperCount.size() < returnCount) {
       throw new IllegalStateException(
           "Organization keepers size:" + keeperCount.size() + ", but we need:" + returnCount);
     }
     fillInResult(keeperCount, result, beginPort, keeperGood, returnCount);
     return result;
-  }
-
-  private long getShardClusterOrgId(ShardModel shardModel) {
-    long clusterId = shardModel.getShardTbl().getClusterId();
-    ClusterTbl clusterTbl = clusterService.find(clusterId);
-    long clusterOrgId = clusterTbl.getClusterOrgId();
-    return clusterOrgId;
   }
 
   private void fillInResult(List<KeepercontainerTbl> keeperCount, List<KeeperBasicInfo> result, int beginPort,

@@ -778,9 +778,13 @@
 				<member name='keepercontainer-ip'/>
 				<member name="count"/>
 			</readset>
+
 			<readset name="KEEPER_COUNT_BY_CLUSTER">
 				<member name='keepercontainer-id'/>
 				<member name='keepercontainer-ip'/>
+				<member name='keepercontainer-port'/>
+				<member name="keepercontainer-active"/>
+				<member name="keepercontainer-dc"/>
 				<member name="count"/>
 				<member name="keepercontainer-org-id" />
 			</readset>

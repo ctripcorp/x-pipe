@@ -32,21 +32,19 @@ index_module.controller('ClusterDcShardUpdateCtl',
                                  loadCluster();
                              }
 
-                             function findActiveKeeperContainers(dcName) {
-                                 KeeperContainerService.findActiveKeeperContainersByDc(dcName)
-                                     .then(function (result) {
-                                    	 result.sort(function(keeperA, keeperB) {
-                                    		 return keeperA.keepercontainerIp.localeCompare(keeperB.keepercontainerIp);
-                                    	 });
-                                         $scope.keeperContainers = result;
-                                     })
-
+                             function findActiveKeeperContainersByCluster(dcName, clusterName) {
+                                 KeeperContainerService.findAvailableKeepersByDcAndCluster(dcName, clusterName)
+                                    .then(function(result) {
+                                         result.sort(function(keeperA, keeperB) {
+                                             return keeperA.count - keeperB.count;
+                                         });
+                                            $scope.keeperContainers = result;
+                                        })
                              }
 
                              function switchDc(dc) {
                                  $scope.currentDcName = dc.dcName;
-                                 findActiveKeeperContainers($scope.currentDcName);
-
+                                 findActiveKeeperContainersByCluster($scope.currentDcName, $scope.clusterName);
                                  var shard = $scope.dcShards[$scope.currentDcName];
 
                                  if (!shard){
@@ -78,7 +76,7 @@ index_module.controller('ClusterDcShardUpdateCtl',
                                  	 		});
                                          
                                          if(!$scope.currentDcName) $scope.currentDcName = $scope.dcs[0].dcName;
-                                         findActiveKeeperContainers($scope.currentDcName);
+                                         findActiveKeeperContainersByCluster($scope.currentDcName, $scope.clusterName);
                                          loadShard($scope.clusterName, $scope.currentDcName, $scope.shardName);
 
                                      }, function (result) {
@@ -125,7 +123,7 @@ index_module.controller('ClusterDcShardUpdateCtl',
                              }
 
                              function preCreateKeeper() {
-
+                                 $scope.orgSpecifiedKeepers = [];
                                  $scope.toCreateFirstKeeper = {
                                  };
                                  // init backup container
@@ -133,7 +131,6 @@ index_module.controller('ClusterDcShardUpdateCtl',
 
                                  var shard = $scope.dcShards[$scope.currentDcName];
                                   KeeperContainerService.findAvailableKeepersByDc($scope.currentDcName, shard).then(function(keepers){
-
                                      var keeper = keepers.shift();
                                      if(keeper){
                                          $scope.toCreateFirstKeeper = {

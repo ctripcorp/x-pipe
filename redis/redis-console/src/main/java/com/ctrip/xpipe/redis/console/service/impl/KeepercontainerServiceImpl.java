@@ -56,7 +56,7 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
 	}
 
 	@Override
-	public List<KeepercontainerTbl> findKeeperCountByCluster(String dcName, long orgId) {
+	public List<KeepercontainerTbl> findKeeperCountByClusterOrg(String dcName, long orgId) {
 		return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
 			@Override
 			public List<KeepercontainerTbl> doQuery() throws DalException {
@@ -64,7 +64,6 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
 			}
 		});
 	}
-
 
 	protected Void update(KeepercontainerTbl keepercontainerTbl){
 
