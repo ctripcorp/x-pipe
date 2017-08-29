@@ -36,16 +36,28 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
-    public void testFindKeeperCountByCluster() {
+    public void testFindKeeperCountByClusterCase1() {
         long orgId = 2L;
         List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCountByClusterOrg(dcNames[0], orgId);
         keeperCount.forEach(kc -> logger.info("{}", kc));
         Assert.assertTrue(keeperCount.stream().allMatch(kc->kc.getKeepercontainerOrgId() == orgId));
-        logger.info("------------------------------------------------------------------");
+    }
+
+    @Test
+    public void testFindKeeperCountByClusterCase2() {
         long noneOrgId = 0L;
-        keeperCount = keepercontainerService.findKeeperCountByClusterOrg(dcNames[0], noneOrgId);
+        List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCountByClusterOrg(dcNames[0], noneOrgId);
         keeperCount.forEach(kc -> logger.info("{}", kc));
         Assert.assertTrue(keeperCount.stream().allMatch(kc->kc.getKeepercontainerOrgId() == noneOrgId));
+    }
+
+    @Test
+    public void testFindKeeperCountByClusterCase3() {
+        long orgId = 3L;
+        long nonOrgId = 0L;
+        List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCountByClusterOrg(dcNames[0], orgId);
+        keeperCount.forEach(kc -> logger.info("{}", kc));
+        Assert.assertTrue(keeperCount.stream().allMatch(kc->kc.getKeepercontainerOrgId() == nonOrgId));
     }
 
     @Test
