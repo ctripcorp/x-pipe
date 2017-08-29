@@ -34,13 +34,15 @@
 
         <logger name="com.ctrip.xpipe.monitor.CatUtils" level="INFO"/>
         <logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="INFO"/>
+        <logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="WARN"/>
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
-		<logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="WARN"/>
-		<logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
-		<logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="WARN"/>
+        <logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
+        <logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="WARN"/>
+
+        <!--
 		<logger name="com.ctrip.xpipe.redis.meta.server.cluster.task" level="WARN"/>
 		<logger name="com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer" level="WARN"/>
-		
+        -->
         <root level="INFO">
             <appender-ref ref="console"/>
             <appender-ref ref="rollingFileInfo"/>
