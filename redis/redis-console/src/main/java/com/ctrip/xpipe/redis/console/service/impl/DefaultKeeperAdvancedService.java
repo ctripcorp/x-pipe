@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
@@ -59,7 +60,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
   }
 
   @Override
-  public List<KeeperBasicInfo> findBestKeepersByCluster(String dcName, int beginPort,
+  public List<KeeperBasicInfo> findBestKeepersByClusterOrg(String dcName, int beginPort,
       BiPredicate<String, Integer> keeperGood, long clusterOrgId) {
 
     return findBestKeepersByCluster(dcName, beginPort, keeperGood, clusterOrgId, 2);
@@ -69,12 +70,21 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
       BiPredicate<String, Integer> keeperGood, long clusterOrgId, int returnCount) {
 
     List<KeeperBasicInfo> result = new LinkedList<>();
-    List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCountByClusterOrg(dcName, clusterOrgId);
-    if (keeperCount.size() < returnCount) {
-      throw new IllegalStateException(
-          "Organization keepers size:" + keeperCount.size() + ", but we need:" + returnCount);
+    /*
+     * 1. BU has its own keepercontainer(kc), then find all and see if it satisfied the requirement 2. Cluster don't
+     * have a BU, find default one 3. BU don't have its own kc, find in the normal kc pool(org id is 0L)
+     */
+    List<KeepercontainerTbl> keepercontainerTbls =
+        keepercontainerService.findKeeperCountByClusterOrg(dcName, clusterOrgId);
+    if (keepercontainerTbls == null || keepercontainerTbls.isEmpty()) {
+      keepercontainerTbls =
+          keepercontainerService.findKeeperCountByClusterOrg(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID);
     }
-    fillInResult(keeperCount, result, beginPort, keeperGood, returnCount);
+    if (keepercontainerTbls.size() < returnCount) {
+      throw new IllegalStateException(
+          "Organization keepers size:" + keepercontainerTbls.size() + ", but we need:" + returnCount);
+    }
+    fillInResult(keepercontainerTbls, result, beginPort, keeperGood, returnCount);
     return result;
   }
 

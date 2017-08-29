@@ -16,7 +16,7 @@ public interface KeeperAdvancedService {
 
   List<KeeperBasicInfo> findBestKeepers(String dcName);
 
-  List<KeeperBasicInfo> findBestKeepersByCluster(String dcName, int beginPort,
-      BiPredicate<String, Integer> keeperGood, long clusterId);
+  List<KeeperBasicInfo> findBestKeepersByClusterOrg(String dcName, int beginPort,
+      BiPredicate<String, Integer> keeperGood, long clusterOrgId);
 
 }
