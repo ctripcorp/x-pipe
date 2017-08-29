@@ -83,7 +83,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     }
     if (keepercontainerTbls.size() < returnCount) {
       throw new IllegalStateException(
-          "Organization keepers size:" + keepercontainerTbls.size() + ", but we need:" + returnCount);
+          "OrganizationInfo keepers size:" + keepercontainerTbls.size() + ", but we need:" + returnCount);
     }
     fillInResult(keepercontainerTbls, result, beginPort, keeperGood, returnCount);
     return result;
