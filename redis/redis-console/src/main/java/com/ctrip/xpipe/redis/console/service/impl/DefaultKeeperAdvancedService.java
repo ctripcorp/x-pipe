@@ -60,15 +60,16 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
   }
 
   @Override
-  public List<KeeperBasicInfo> findBestKeepersByClusterOrg(String dcName, int beginPort,
-      BiPredicate<String, Integer> keeperGood, long clusterOrgId) {
+  public List<KeeperBasicInfo> findBestKeepersByCluster(String dcName, int beginPort,
+      BiPredicate<String, Integer> keeperGood, String clusterName) {
 
-    return findBestKeepersByCluster(dcName, beginPort, keeperGood, clusterOrgId, 2);
+    return findBestKeepersByCluster(dcName, beginPort, keeperGood, clusterName, 2);
   }
 
   private List<KeeperBasicInfo> findBestKeepersByCluster(String dcName, int beginPort,
-      BiPredicate<String, Integer> keeperGood, long clusterOrgId, int returnCount) {
-
+      BiPredicate<String, Integer> keeperGood, String clusterName, int returnCount) {
+    ClusterTbl clusterTbl = clusterService.find(clusterName);
+    long clusterOrgId = clusterTbl != null ? clusterTbl.getClusterOrgId() : XPipeConsoleConstant.DEFAULT_ORG_ID;
     List<KeeperBasicInfo> result = new LinkedList<>();
     /*
      * 1. BU has its own keepercontainer(kc), then find all and see if it satisfied the requirement 2. Cluster don't

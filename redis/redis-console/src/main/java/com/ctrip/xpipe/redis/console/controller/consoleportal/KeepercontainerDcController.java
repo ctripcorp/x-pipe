@@ -59,16 +59,16 @@ public class KeepercontainerDcController extends AbstractConsoleController {
 
     int beginPort = findBeginPort(shardModel);
 
-    long clusterOrgId = getShardClusterOrgId(shardModel);
+    String clusterName = getShardClusterName(shardModel);
 
     List<KeeperBasicInfo> bestKeepers =
-        keeperAdvancedService.findBestKeepersByClusterOrg(dcName, beginPort, (ip, port) -> {
+        keeperAdvancedService.findBestKeepersByCluster(dcName, beginPort, (ip, port) -> {
 
           if (shardModel != null && existOnConsole(ip, port, shardModel.getKeepers())) {
             return false;
           }
           return true;
-        }, clusterOrgId);
+        }, clusterName);
 
     List<RedisTbl> result = new LinkedList<>();
 
@@ -97,18 +97,18 @@ public class KeepercontainerDcController extends AbstractConsoleController {
     return port;
   }
 
-  private long getShardClusterOrgId(ShardModel shardModel) {
+  private String getShardClusterName(ShardModel shardModel) {
     if (shardModel == null)
-      return 0L;
+      return "";
     long clusterId = shardModel.getShardTbl().getClusterId();
-    return getClusterOrgId(clusterId);
+    return getClusterNameById(clusterId);
   }
 
-  private long getClusterOrgId(long clusterId) {
+  private String getClusterNameById(long clusterId) {
     ClusterTbl clusterTbl = clusterService.find(clusterId);
     if (clusterTbl == null) {
       throw new IllegalStateException("Cluster could not be found by Id: " + clusterId);
     }
-    return clusterTbl.getClusterOrgId();
+    return clusterTbl.getClusterName();
   }
 }
