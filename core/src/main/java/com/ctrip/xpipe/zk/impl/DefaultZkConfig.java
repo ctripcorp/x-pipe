@@ -24,12 +24,17 @@ public class DefaultZkConfig implements ZkConfig{
 	public static String KEY_ZK_NAMESPACE = "key_zk_namespace";
 	
 	private int zkSessionTimeoutMillis = 5000;
+	private int zkConnectionTimeoutMillis = 3000;
 	private int zkRetries = 3;
 	private String zkNameSpace = System.getProperty(KEY_ZK_NAMESPACE, DEFAULT_ZK_NAMESPACE);
 	
 	@Override
 	public int getZkConnectionTimeoutMillis() {
-		return 3000;
+		return zkConnectionTimeoutMillis;
+	}
+
+	public void setZkConnectionTimeoutMillis(int zkConnectionTimeoutMillis) {
+		this.zkConnectionTimeoutMillis = zkConnectionTimeoutMillis;
 	}
 
 	@Override
