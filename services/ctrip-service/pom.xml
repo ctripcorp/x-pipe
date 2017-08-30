@@ -15,6 +15,10 @@
             <artifactId>clogging-agent</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.unidal.framework</groupId>
+            <artifactId>dal-jdbc</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.ctrip.hickwall</groupId>
             <artifactId>client</artifactId>
             <exclusions>
