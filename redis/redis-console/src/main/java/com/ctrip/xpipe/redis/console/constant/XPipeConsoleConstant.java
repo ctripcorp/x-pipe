@@ -22,6 +22,8 @@ public final class XPipeConsoleConstant {
 	public static String ROLE_KEEPER = "keeper";
 
 	public static final String DEFAULT_XPIPE_USER = "xpipe";
+
+	public static long DEFAULT_ORG_ID = 0L;
 	
 	private XPipeConsoleConstant(){
 		

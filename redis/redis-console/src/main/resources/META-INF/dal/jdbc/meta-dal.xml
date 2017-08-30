@@ -765,6 +765,7 @@
 
 	<entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
 		<var name="dc-name" value-type="String"/>
+		<var name="org-id" value-type="long"/>
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
 
@@ -776,6 +777,16 @@
 				<member name='keepercontainer-id'/>
 				<member name='keepercontainer-ip'/>
 				<member name="count"/>
+			</readset>
+
+			<readset name="KEEPER_COUNT_BY_CLUSTER">
+				<member name='keepercontainer-id'/>
+				<member name='keepercontainer-ip'/>
+				<member name='keepercontainer-port'/>
+				<member name="keepercontainer-active"/>
+				<member name="keepercontainer-dc"/>
+				<member name="count"/>
+				<member name="keepercontainer-org-id" />
 			</readset>
 		</readsets>
 		<query-defs>
@@ -817,6 +828,24 @@
 					AND <FIELD name='keepercontainer-active'/> = 1
 					AND (kit.deleted = 0 or kit.deleted is null)
 					AND <FIELD name='deleted'/> = 0
+					GROUP BY <FIELD name='keepercontainer-id'/>
+					order by count
+					]]>
+				</statement>
+			</query>
+			<query name="find-keeper-container-by-cluster" type="SELECT" multiple="true">
+				<param name="dc-name"/>
+				<param name="org-id" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='keeper-info'/> on <FIELD name='keepercontainer-id'/> = kit.keepercontainer_id , <TABLE name='dc-info'/>
+					WHERE <FIELD name='keepercontainer-dc'/> = dt.id
+					AND dt.dc_name = ${dc-name}
+					AND <FIELD name='keepercontainer-active'/> = 1
+					AND (kit.deleted = 0 or kit.deleted is null)
+					AND <FIELD name='deleted'/> = 0
+					AND <FIELD name='keepercontainer-org-id'/> = ${org-id}
 					GROUP BY <FIELD name='keepercontainer-id'/>
 					order by count
 					]]>
