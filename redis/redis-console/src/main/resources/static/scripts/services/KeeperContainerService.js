@@ -1,6 +1,11 @@
 services.service('KeeperContainerService', ['$resource', '$q', function ($resource, $q) {
 
     var resource = $resource('', {}, {
+//        find_activekeepercontainers_by_dc: {
+//            method: 'GET',
+//            url: '/console/dcs/:dcName/activekeepercontainers',
+//            isArray : true
+//        },
         find_availablekeepers_by_dc: {
             method: 'POST',
             url: '/console/dcs/:dcName/availablekeepers',
