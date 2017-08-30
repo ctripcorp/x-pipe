@@ -34,59 +34,31 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
   private ClusterService clusterService;
 
   @Override
-  public List<KeeperBasicInfo> findBestKeepers(String dcName) {
-    return findBestKeepers(dcName, RedisProtocol.REDIS_PORT_DEFAULT, (host, port) -> true);
+  public List<KeeperBasicInfo> findBestKeepers(String dcName, String clusterName) {
+    return findBestKeepers(dcName, RedisProtocol.REDIS_PORT_DEFAULT, (host, port) -> true, clusterName);
   }
 
   @Override
-  public List<KeeperBasicInfo> findBestKeepers(String dcName, int beginPort, BiPredicate keeperGood) {
-    return findBestKeepers(dcName, beginPort, keeperGood, 2);
+  public List<KeeperBasicInfo> findBestKeepers(String dcName, int beginPort, BiPredicate keeperGood,
+      String clusterName) {
+    return findBestKeepers(dcName, beginPort, keeperGood, clusterName, 2);
   }
 
   public List<KeeperBasicInfo> findBestKeepers(String dcName, int beginPort, BiPredicate<String, Integer> keeperGood,
-      int returnCount) {
-
-    List<KeepercontainerTbl> keeperCount = keepercontainerService.findKeeperCount(dcName);
-    if (keeperCount.size() < returnCount) {
-      throw new IllegalStateException("all keepers size:" + keeperCount + ", but we need:" + returnCount);
-    }
+      String clusterName, int returnCount) {
 
     List<KeeperBasicInfo> result = new LinkedList<>();
 
-    // find available port
-    fillInResult(keeperCount, result, beginPort, keeperGood, returnCount);
-    return result;
-
-  }
-
-  @Override
-  public List<KeeperBasicInfo> findBestKeepersByCluster(String dcName, int beginPort,
-      BiPredicate<String, Integer> keeperGood, String clusterName) {
-
-    return findBestKeepersByCluster(dcName, beginPort, keeperGood, clusterName, 2);
-  }
-
-  private List<KeeperBasicInfo> findBestKeepersByCluster(String dcName, int beginPort,
-      BiPredicate<String, Integer> keeperGood, String clusterName, int returnCount) {
-    ClusterTbl clusterTbl = clusterService.find(clusterName);
-    long clusterOrgId = clusterTbl != null ? clusterTbl.getClusterOrgId() : XPipeConsoleConstant.DEFAULT_ORG_ID;
-    List<KeeperBasicInfo> result = new LinkedList<>();
-    /*
-     * 1. BU has its own keepercontainer(kc), then find all and see if it satisfied the requirement 2. Cluster don't
-     * have a BU, find default one 3. BU don't have its own kc, find in the normal kc pool(org id is 0L)
-     */
     List<KeepercontainerTbl> keepercontainerTbls =
-        keepercontainerService.findKeeperCountByClusterOrg(dcName, clusterOrgId);
-    if (keepercontainerTbls == null || keepercontainerTbls.isEmpty()) {
-      keepercontainerTbls =
-          keepercontainerService.findKeeperCountByClusterOrg(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID);
-    }
+        keepercontainerService.findBestKeeperContainersByDcCluster(dcName, clusterName);
     if (keepercontainerTbls.size() < returnCount) {
       throw new IllegalStateException(
           "OrganizationInfo keepers size:" + keepercontainerTbls.size() + ", but we need:" + returnCount);
     }
+
     fillInResult(keepercontainerTbls, result, beginPort, keeperGood, returnCount);
     return result;
+
   }
 
   private void fillInResult(List<KeepercontainerTbl> keeperCount, List<KeeperBasicInfo> result, int beginPort,

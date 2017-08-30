@@ -39,14 +39,9 @@ public class KeepercontainerDcController extends AbstractConsoleController {
   @RequestMapping(value = "/dcs/{dcName}/cluster/{clusterName}/activekeepercontainers", method = RequestMethod.GET)
   public List<KeepercontainerTbl> findKeeperContainersByCluster(@PathVariable String dcName,
       @PathVariable String clusterName) {
-    ClusterTbl clusterTbl = clusterService.find(clusterName);
-    long clusterOrgId = clusterTbl.getClusterOrgId();
+
     List<KeepercontainerTbl> keepercontainerTbls =
-        keepercontainerService.findKeeperCountByClusterOrg(dcName, clusterOrgId);
-    if (keepercontainerTbls == null || keepercontainerTbls.isEmpty()) {
-      keepercontainerTbls =
-          keepercontainerService.findKeeperCountByClusterOrg(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID);
-    }
+         keepercontainerService.findBestKeeperContainersByDcCluster(dcName, clusterName);
     return keepercontainerTbls;
   }
 
@@ -62,7 +57,7 @@ public class KeepercontainerDcController extends AbstractConsoleController {
     String clusterName = getShardClusterName(shardModel);
 
     List<KeeperBasicInfo> bestKeepers =
-        keeperAdvancedService.findBestKeepersByCluster(dcName, beginPort, (ip, port) -> {
+        keeperAdvancedService.findBestKeepers(dcName, beginPort, (ip, port) -> {
 
           if (shardModel != null && existOnConsole(ip, port, shardModel.getKeepers())) {
             return false;
@@ -98,16 +93,18 @@ public class KeepercontainerDcController extends AbstractConsoleController {
   }
 
   private String getShardClusterName(ShardModel shardModel) {
+    logger.debug("[getShardClusterName] shardModel: {}", shardModel);
     if (shardModel == null)
-      return "";
+      return null;
     long clusterId = shardModel.getShardTbl().getClusterId();
     return getClusterNameById(clusterId);
   }
 
   private String getClusterNameById(long clusterId) {
+    logger.debug("[getClusterNameById] clusterId: {}", clusterId);
     ClusterTbl clusterTbl = clusterService.find(clusterId);
     if (clusterTbl == null) {
-      throw new IllegalStateException("Cluster could not be found by Id: " + clusterId);
+      return null;
     }
     return clusterTbl.getClusterName();
   }

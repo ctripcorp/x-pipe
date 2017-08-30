@@ -33,16 +33,17 @@ public class OrganizationServiceImpl extends AbstractOrganizationService {
 
     @Override
     protected List<OrganizationTbl> retrieveOrgInfoFromRemote() {
-        RestTemplate restTemplate = new RestTemplate();
-        OrganizationTemplate organizationTemplate = restTemplate.postForObject(CMS_URL,
-            new CMSRequestBody(ACCESS_TOKEN), OrganizationTemplate.class);
-        List<OrganizationInfo> organizationInfos = organizationTemplate.getData();
-        return organizationInfos.stream()
-            .map(orgInfo->{
-                return new OrganizationTbl()
-                    .setOrgId(orgInfo.getOrganizationId())
-                    .setOrgName(orgInfo.getName());})
-            .collect(Collectors.toList());
+//        RestTemplate restTemplate = new RestTemplate();
+//        OrganizationTemplate organizationTemplate = restTemplate.postForObject(CMS_URL,
+//            new CMSRequestBody(ACCESS_TOKEN), OrganizationTemplate.class);
+//        List<OrganizationInfo> organizationInfos = organizationTemplate.getData();
+//        return organizationInfos.stream()
+//            .map(orgInfo->{
+//                return new OrganizationTbl()
+//                    .setOrgId(orgInfo.getOrganizationId())
+//                    .setOrgName(orgInfo.getName());})
+//            .collect(Collectors.toList());
+        return null;
     }
 
     @Override

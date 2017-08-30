@@ -10,5 +10,5 @@ public interface KeepercontainerService {
 	List<KeepercontainerTbl> findAllByDcName(String dcName);
 	List<KeepercontainerTbl> findAllActiveByDcName(String dcName);
 	List<KeepercontainerTbl> findKeeperCount(String dcName);
-	List<KeepercontainerTbl> findKeeperCountByClusterOrg(String dcName, long orgId);
+	List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName);
 }

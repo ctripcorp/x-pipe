@@ -106,7 +106,6 @@ index_module.controller('ClusterDcShardUpdateCtl',
                              }
 
                              function createRedis() {
-//                                 $scope.toCreateRedis.id = 0;
                                  var shard = $scope.dcShards[$scope.currentDcName];
                                  shard.redises.push($scope.toCreateRedis);
                                  $scope.toCreateRedis = {};
@@ -167,7 +166,6 @@ index_module.controller('ClusterDcShardUpdateCtl',
                                     			 break;
                                     		 }
                                     	 }
-//                                    	 $scope.toCreateFirstKeeper.id = 0;
                                          shard.keepers.push($scope.toCreateFirstKeeper);
                                      }
 
@@ -183,7 +181,6 @@ index_module.controller('ClusterDcShardUpdateCtl',
                                     			 break;
                                     		 }
                                     	 }
-//                                    	 otherKeeper.id = 0;
                                          shard.keepers.push(otherKeeper);
                                      }
                                  });
