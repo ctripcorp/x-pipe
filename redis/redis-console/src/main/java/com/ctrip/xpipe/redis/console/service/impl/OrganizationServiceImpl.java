@@ -1,11 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.redis.console.dao.OrganizationDao;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
-import com.ctrip.xpipe.redis.console.service.OrganizationService;
-import com.ctrip.xpipe.redis.console.service.template.CMSRequestBody;
-import com.ctrip.xpipe.redis.console.service.template.OrganizationInfo;
-import com.ctrip.xpipe.redis.console.service.template.OrganizationTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -26,12 +21,12 @@ import java.util.stream.Collectors;
  */
 
 @Service
-public class OrganizationServiceImpl extends AbstractOrganizationService {
+public class OrganizationServiceImpl {//extends AbstractOrganizationService {
 
-    @Autowired
-    private OrganizationDao organizationDao;
+    //@Autowired
+    //private OrganizationDao organizationDao;
 
-    @Override
+    //@Override
     protected List<OrganizationTbl> retrieveOrgInfoFromRemote() {
 //        RestTemplate restTemplate = new RestTemplate();
 //        OrganizationTemplate organizationTemplate = restTemplate.postForObject(CMS_URL,
@@ -46,7 +41,7 @@ public class OrganizationServiceImpl extends AbstractOrganizationService {
         return null;
     }
 
-    @Override
+//    @Override
     protected List<OrganizationTbl> getOrgTblCreateList(List<OrganizationTbl> remoteDBOrgs,
         List<OrganizationTbl> localDBOrgs) {
 
@@ -55,7 +50,7 @@ public class OrganizationServiceImpl extends AbstractOrganizationService {
         return remoteDBOrgs.stream().filter(org->!storedOrgId.contains(org.getOrgId())).collect(Collectors.toList());
     }
 
-    @Override
+//    @Override
     protected List<OrganizationTbl> getOrgTblUpdateList(List<OrganizationTbl> remoteDBOrgs,
         List<OrganizationTbl> localDBOrgs) {
 
