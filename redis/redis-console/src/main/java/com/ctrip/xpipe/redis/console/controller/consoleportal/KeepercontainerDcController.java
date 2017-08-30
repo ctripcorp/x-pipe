@@ -39,14 +39,9 @@ public class KeepercontainerDcController extends AbstractConsoleController {
   @RequestMapping(value = "/dcs/{dcName}/cluster/{clusterName}/activekeepercontainers", method = RequestMethod.GET)
   public List<KeepercontainerTbl> findKeeperContainersByCluster(@PathVariable String dcName,
       @PathVariable String clusterName) {
-    ClusterTbl clusterTbl = clusterService.find(clusterName);
-    long clusterOrgId = clusterTbl.getClusterOrgId();
+
     List<KeepercontainerTbl> keepercontainerTbls =
-        keepercontainerService.findKeeperCountByClusterOrg(dcName, clusterOrgId);
-    if (keepercontainerTbls == null || keepercontainerTbls.isEmpty()) {
-      keepercontainerTbls =
-          keepercontainerService.findKeeperCountByClusterOrg(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID);
-    }
+         keepercontainerService.findBestKeeperContainersByDcCluster(dcName, clusterName);
     return keepercontainerTbls;
   }
 
@@ -59,16 +54,16 @@ public class KeepercontainerDcController extends AbstractConsoleController {
 
     int beginPort = findBeginPort(shardModel);
 
-    long clusterOrgId = getShardClusterOrgId(shardModel);
+    String clusterName = getShardClusterName(shardModel);
 
     List<KeeperBasicInfo> bestKeepers =
-        keeperAdvancedService.findBestKeepersByClusterOrg(dcName, beginPort, (ip, port) -> {
+        keeperAdvancedService.findBestKeepers(dcName, beginPort, (ip, port) -> {
 
           if (shardModel != null && existOnConsole(ip, port, shardModel.getKeepers())) {
             return false;
           }
           return true;
-        }, clusterOrgId);
+        }, clusterName);
 
     List<RedisTbl> result = new LinkedList<>();
 
@@ -97,18 +92,20 @@ public class KeepercontainerDcController extends AbstractConsoleController {
     return port;
   }
 
-  private long getShardClusterOrgId(ShardModel shardModel) {
+  private String getShardClusterName(ShardModel shardModel) {
+    logger.debug("[getShardClusterName] shardModel: {}", shardModel);
     if (shardModel == null)
-      return 0L;
+      return null;
     long clusterId = shardModel.getShardTbl().getClusterId();
-    return getClusterOrgId(clusterId);
+    return getClusterNameById(clusterId);
   }
 
-  private long getClusterOrgId(long clusterId) {
+  private String getClusterNameById(long clusterId) {
+    logger.debug("[getClusterNameById] clusterId: {}", clusterId);
     ClusterTbl clusterTbl = clusterService.find(clusterId);
     if (clusterTbl == null) {
-      throw new IllegalStateException("Cluster could not be found by Id: " + clusterId);
+      return null;
     }
-    return clusterTbl.getClusterOrgId();
+    return clusterTbl.getClusterName();
   }
 }

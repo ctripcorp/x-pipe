@@ -78,7 +78,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
 
         redisService.deleteKeepers(dcName, clusterName, shardName);
 
-        List<KeeperBasicInfo> newKeepers = keeperAdvancedService.findBestKeepers(dcName);
+        List<KeeperBasicInfo> newKeepers = keeperAdvancedService.findBestKeepers(dcName, clusterName);
 
         Assert.assertEquals(2, newKeepers.size());
 
