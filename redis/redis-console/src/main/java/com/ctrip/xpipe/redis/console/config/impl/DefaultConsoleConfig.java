@@ -38,6 +38,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     public static final String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
 
+    public static final String KEY_CMS_ACCESS_TOKEN = "cms.access.token";
+
     @Override
     public String getDatasource() {
         return getProperty(KEY_DATASOURCE, "fxxpipe");
@@ -147,6 +149,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
         String config = getProperty(KEY_SENTINEL_QUORUM, "{}");
         return JsonCodec.INSTANCE.decode(config, QuorumConfig.class);
+    }
+
+    @Override
+    public String getCmsAccessToken() {
+        return getProperty(KEY_CMS_ACCESS_TOKEN, "");
     }
 
 }

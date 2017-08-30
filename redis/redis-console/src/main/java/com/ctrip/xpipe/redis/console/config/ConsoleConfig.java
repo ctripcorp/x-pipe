@@ -49,4 +49,5 @@ public interface ConsoleConfig extends CoreConfig {
 
 	QuorumConfig  getDefaultSentinelQuorumConfig();
 
+	String getCmsAccessToken();
 }

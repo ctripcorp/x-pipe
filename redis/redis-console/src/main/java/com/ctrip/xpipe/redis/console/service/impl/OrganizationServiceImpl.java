@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.dao.OrganizationDao;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.service.AbstractOrganizationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.Collections;
-import java.util.Comparator;
+
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,13 +19,13 @@ import java.util.stream.Collectors;
  * Created by zhuchen on 2017/8/29.
  */
 
-@Service
-public class OrganizationServiceImpl {//extends AbstractOrganizationService {
+//@Component("ctrip")
+public class OrganizationServiceImpl extends AbstractOrganizationService {
 
-    //@Autowired
-    //private OrganizationDao organizationDao;
+    @Autowired
+    private OrganizationDao organizationDao;
 
-    //@Override
+    @Override
     protected List<OrganizationTbl> retrieveOrgInfoFromRemote() {
 //        RestTemplate restTemplate = new RestTemplate();
 //        OrganizationTemplate organizationTemplate = restTemplate.postForObject(CMS_URL,
@@ -41,7 +40,7 @@ public class OrganizationServiceImpl {//extends AbstractOrganizationService {
         return null;
     }
 
-//    @Override
+    @Override
     protected List<OrganizationTbl> getOrgTblCreateList(List<OrganizationTbl> remoteDBOrgs,
         List<OrganizationTbl> localDBOrgs) {
 
@@ -50,7 +49,7 @@ public class OrganizationServiceImpl {//extends AbstractOrganizationService {
         return remoteDBOrgs.stream().filter(org->!storedOrgId.contains(org.getOrgId())).collect(Collectors.toList());
     }
 
-//    @Override
+    @Override
     protected List<OrganizationTbl> getOrgTblUpdateList(List<OrganizationTbl> remoteDBOrgs,
         List<OrganizationTbl> localDBOrgs) {
 
