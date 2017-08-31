@@ -52,6 +52,19 @@ public class OrganizationServiceImplTest extends AbstractServiceImplTest {
         Assert.assertEquals(10, result.size());
     }
 
+    @Test
+    public void testRetrieveOrgInfoFromRemote() {
+        List<OrganizationTbl> orgs = organizationService.retrieveOrgInfoFromRemote();
+        Assert.assertNotNull(orgs);
+    }
+
+    @Test
+    public void testUpdateOrganizations() {
+        organizationService.updateOrganizations();
+        List<OrganizationTbl> orgs = organizationDao.findAllOrgs();
+        orgs.forEach(org->logger.info("{}", org));
+    }
+
     private List<OrganizationTbl> createOrganizationTblList(int count) {
         List<OrganizationTbl> result = new LinkedList<>();
         String prefix = "org-";

@@ -56,7 +56,7 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
     }
 
     // Try to retrieve organization info from some source
-    private List<OrganizationTbl> retrieveOrgInfoFromRemote() {
+    List<OrganizationTbl> retrieveOrgInfoFromRemote() {
         List<OrganizationModel> organizationModels = Organization.DEFAULT.retrieveOrganizationInfo();
         return organizationModels
             .stream()

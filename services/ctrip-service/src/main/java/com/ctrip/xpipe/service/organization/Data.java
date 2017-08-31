@@ -95,4 +95,12 @@ public class Data {
     public void setDomainNameKeywords(String domainNameKeywords) {
         this.domainNameKeywords = domainNameKeywords;
     }
+
+    public String getEnglishName() {
+        return englishName;
+    }
+
+    public void setEnglishName(String englishName) {
+        this.englishName = englishName;
+    }
 }

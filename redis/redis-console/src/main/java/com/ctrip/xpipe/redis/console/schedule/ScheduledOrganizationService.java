@@ -22,11 +22,11 @@ public class ScheduledOrganizationService {
     @Autowired
     OrganizationService organizationService;
 
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("YYYY HH:mm:ss");
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
 
     @Scheduled(fixedRate = XPipeConsoleConstant.SCHEDULED_ORGANIZATION_SERVICE)
     public void updateOrganizations() {
-        logger.info("[updateOrganizations] {}", dateFormat.format(new Date()));
+        logger.info("[updateOrganizations] update organization table @{}", dateFormat.format(new Date()));
         organizationService.updateOrganizations();
     }
 }

@@ -14,7 +14,6 @@ import java.sql.SQLException;
 /**
  * Created by zhuchen on 2017/8/31.
  */
-@SpringBootApplication
 @EnableScheduling
 public class ScheduledOrganizationServiceTest extends AbstractConsoleIntegrationTest {
 
@@ -28,8 +27,6 @@ public class ScheduledOrganizationServiceTest extends AbstractConsoleIntegration
     @Test
     public void testUpdateOrganizations() throws IOException, SQLException {
         start();
-        while(true){
-
-        }
+        while(true){}
     }
 }

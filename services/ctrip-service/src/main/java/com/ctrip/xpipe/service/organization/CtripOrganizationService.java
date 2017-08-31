@@ -1,32 +1,33 @@
 package com.ctrip.xpipe.service.organization;
 
-import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.organization.OrganizationModel;
-import com.ctrip.xpipe.api.organization.OrganizationService;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 
 import org.springframework.web.client.RestOperations;
+
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by zhuchen on 2017/8/30.
  */
-public class CtripOrganizationService implements OrganizationService {
+public class CtripOrganizationService implements Organization {
 
     private CtripOrganizationConfig config = new CtripOrganizationConfig();
 
-    private RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
+    RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 
     @Override
     public List<OrganizationModel> retrieveOrganizationInfo() {
         String accessToken = config.getCmsAccessToken();
         String url = config.getCmsOrganizationUrl();
-        AccessBody accessBody = new AccessBody().setAccessToken(accessToken);
-        ResponseEntity<OrgResponseBody> response = restTemplate.postForEntity(url, accessBody, OrgResponseBody.class);
-        OrgResponseBody orgResponseBody = response.getBody();
-        List<OrganizationModel> orgs = orgResponseBody
+        AccessBody accessBody = new AccessBody();
+        accessBody.setAccess_token(accessToken);
+        OrgResponseBody response = restTemplate.postForObject(url, accessBody, OrgResponseBody.class);
+        List<OrganizationModel> orgs = response
             .getData()
             .stream()
             .map(org->{
@@ -51,4 +52,7 @@ public class CtripOrganizationService implements OrganizationService {
     }
 
 
+    @Override public int getOrder() {
+        return HIGHEST_PRECEDENCE;
+    }
 }

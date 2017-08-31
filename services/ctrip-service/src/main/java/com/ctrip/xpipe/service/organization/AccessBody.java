@@ -9,10 +9,11 @@ import org.springframework.stereotype.Component;
 public class AccessBody {
     String access_token;
 
-    AccessBody setAccessToken(String access_token) {
-        this.access_token = access_token;
-        return this;
+    public String getAccess_token() {
+        return access_token;
     }
 
-    private Object request_body;
+    public void setAccess_token(String access_token) {
+        this.access_token = access_token;
+    }
 }

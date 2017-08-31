@@ -1,13 +1,18 @@
 package com.ctrip.xpipe.service.organization;
 
 import com.ctrip.xpipe.AbstractServiceTest;
+import com.ctrip.xpipe.api.organization.OrganizationModel;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+
+import java.util.List;
 
 /**
  * Created by zhuchen on 2017/8/30.
  */
 public class CtripOrganizationServiceTest extends AbstractServiceTest{
-    Organization organization;
+    CtripOrganizationService organization;
 
     @Before
     public void beforeCtripOrganizationServiceTest() {
@@ -15,7 +20,7 @@ public class CtripOrganizationServiceTest extends AbstractServiceTest{
     }
 
     @Test
-    public void testRetrieveOrganizationInfo() {
+    public void testRetrieveOrganizationInfo() throws Exception {
         List<OrganizationModel> organizationModelList = organization.retrieveOrganizationInfo();
         Assert.assertNotNull(organizationModelList);
         Assert.assertNotEquals(0, organizationModelList.size());
