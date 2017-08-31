@@ -8,8 +8,8 @@ import java.util.List;
 /**
  * Created by zhuchen on 2017/8/30.
  */
-public interface OrganizationService extends Ordered {
-    OrganizationService DEFAULT = ServicesUtil.getOrganizationService();
+public interface Organization extends Ordered {
+    public static Organization DEFAULT = ServicesUtil.getOrganizationService();
 
     List<OrganizationModel> retrieveOrganizationInfo();
 }

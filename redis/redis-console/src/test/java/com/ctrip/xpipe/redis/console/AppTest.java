@@ -4,9 +4,11 @@ import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
+import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -19,7 +21,7 @@ import java.sql.SQLException;
 @SpringBootApplication
 public class AppTest extends AbstratAppTest {
 
-
+	@Autowired OrganizationService organizationService;
 	@Before
 	public void startUp() {
 

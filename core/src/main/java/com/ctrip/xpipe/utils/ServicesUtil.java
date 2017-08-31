@@ -8,7 +8,7 @@ import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.ctrip.xpipe.api.migration.DcMapper;
-import com.ctrip.xpipe.api.organization.OrganizationService;
+import com.ctrip.xpipe.api.organization.Organization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +67,7 @@ public class ServicesUtil {
 		return load(DcMapper.class);
 	}
 
-	public static OrganizationService getOrganizationService() {return load(OrganizationService.class);}
+	public static Organization getOrganizationService() {return load(Organization.class);}
 
 	@SuppressWarnings("unchecked")
 	public static <T extends Ordered> T load(Class<T> clazz) {
