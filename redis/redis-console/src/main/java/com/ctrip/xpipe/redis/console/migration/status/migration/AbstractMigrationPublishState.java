@@ -28,7 +28,11 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 		return publishService;
 	}
 
-	
+	//for unit test
+	protected void setPublishService(OuterClientService publishService) {
+		this.publishService = publishService;
+	}
+
 	protected boolean publish() {
 
 		String cluster = getHolder().clusterName();

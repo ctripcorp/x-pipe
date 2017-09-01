@@ -75,7 +75,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
 
 	@Override
 	protected void doRollback() {
-		updateAndForceProcess(new MigrationAbortedState(getHolder()));
+		rollbackToState(new MigrationAbortedState(getHolder()));
 	}
 
 	@Override

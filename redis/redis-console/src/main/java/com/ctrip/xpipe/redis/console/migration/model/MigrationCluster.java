@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author shyin
@@ -14,6 +15,9 @@ import java.util.concurrent.Executor;
 public interface MigrationCluster extends Observer, Observable, MigrationClusterInfoHolder, MigrationClusterAction, MigrationClusterServiceHolder {
 
     Executor getMigrationExecutor();
+
+    ScheduledExecutorService getScheduled();
+
     MigrationEvent getMigrationEvent();
 
     String fromDc();

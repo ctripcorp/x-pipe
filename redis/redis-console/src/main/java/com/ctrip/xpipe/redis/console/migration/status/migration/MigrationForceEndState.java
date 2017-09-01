@@ -18,13 +18,17 @@ public class MigrationForceEndState extends AbstractMigrationState {
 
 	@Override
 	protected void doRollback() {
-		throw new UnsupportedOperationException("already force end, can not rollback:" + getStatus());
+		throw new UnsupportedOperationException("already force end, can not tryRollback:" + getStatus());
 
 	}
 
 	@Override
 	public void doAction() {
-		getHolder().update(getHolder(), getHolder());
+		try {
+			getHolder().update(getHolder(), getHolder());
+		}finally {
+			markDone();
+		}
 	}
 
 	@Override

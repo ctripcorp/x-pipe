@@ -85,7 +85,7 @@ public class MigrationController extends AbstractConsoleController {
 		migrationService.cancelMigrationCluster(eventId, clusterId);
 	}
 
-	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/rollback", method = RequestMethod.POST)
+	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/tryRollback", method = RequestMethod.POST)
 	public void rollbackMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) throws ClusterNotFoundException {
 		logger.info("[rollbackMigrationCluster]{}, {}", eventId, clusterId);
 		migrationService.rollbackMigrationCluster(eventId, clusterId);

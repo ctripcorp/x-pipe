@@ -23,23 +23,27 @@ public class MigrationForcePublishState extends AbstractMigrationMigratingState 
 
 	@Override
 	protected void doRollback() {
-		throw new  UnsupportedOperationException("already force publish, can not rollback");
+		throw new  UnsupportedOperationException("already force publish, can not tryRollback");
 	}
 
 	@Override
 	public void doAction() {
 
 		CountDownLatch latch = new CountDownLatch(getHolder().getMigrationShards().size());
+
 		for(MigrationShard migrationShard : getHolder().getMigrationShards()) {
 			executors.execute(new AbstractExceptionLogTask() {
 				@Override
 				public void doRun() {
-					logger.info("[doOtherDcMigrate][start]{},{}",getHolder().clusterName(),
-							migrationShard.getCurrentShard().getShardName());
-					migrationShard.doMigrateOtherDc();
-					latch.countDown();
-					logger.info("[doOtherDcMigrate][done]{},{}",getHolder().clusterName(),
-							migrationShard.getCurrentShard().getShardName());
+					try{
+						logger.info("[doOtherDcMigrate][start]{},{}",getHolder().clusterName(),
+								migrationShard.getCurrentShard().getShardName());
+						migrationShard.doMigrateOtherDc();
+						logger.info("[doOtherDcMigrate][done]{},{}",getHolder().clusterName(),
+								migrationShard.getCurrentShard().getShardName());
+					}finally {
+						latch.countDown();
+					}
 				}
 			});
 		}
@@ -48,7 +52,7 @@ public class MigrationForcePublishState extends AbstractMigrationMigratingState 
 			latch.await();
 			updateAndProcess(nextAfterSuccess());
 		} catch (InterruptedException e) {
-			logger.error("[MigrationForcePublishState][action][Interrupted][will retry]",e);
+			logger.error("[MigrationForcePublishState][tryAction][Interrupted][will retry]",e);
 			updateAndProcess(nextAfterFail());
 		}
 	}

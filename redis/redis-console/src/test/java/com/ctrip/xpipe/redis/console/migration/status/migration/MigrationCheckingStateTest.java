@@ -63,7 +63,7 @@ public class MigrationCheckingStateTest extends AbstractMigrationStateTest {
         int shardSize = getShardSize();
         when(migrationCluster.stepStatus(ShardMigrationStep.CHECK)).thenReturn(new ClusterStepResult(shardSize, shardSize, shardSize));
 
-        checkingState.action();
+        checkingState.getStateActionState().tryAction();
         checkingState.refresh();
 
         sleep(50);
@@ -81,7 +81,7 @@ public class MigrationCheckingStateTest extends AbstractMigrationStateTest {
 
         when(migrationCluster.stepStatus(ShardMigrationStep.CHECK)).thenReturn(new ClusterStepResult(shardSize, shardSize, shardSize/2));
 
-        checkingState.action();
+        checkingState.getStateActionState().tryAction();
         checkingState.refresh();
 
         sleep(50);
@@ -89,7 +89,7 @@ public class MigrationCheckingStateTest extends AbstractMigrationStateTest {
         verify(migrationCluster, times(0)).updateStat(isA(MigrationMigratingState.class));
         verify(migrationCluster, times(0)).process();
 
-        checkingState.rollback();
+        checkingState.getStateActionState().tryRollback();
 
         verify(migrationCluster).updateStat(isA(MigrationAbortedState.class));
         verify(migrationCluster).process();

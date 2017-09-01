@@ -55,7 +55,7 @@ public class MigrationStatTest extends AbstractConsoleTest {
     public void setUp() {
 
         prepareData();
-        migrationCluster = new DefaultMigrationCluster(executors, migrationEvent, mockedMigrationCluster, mockedDcService, mockedClusterService,
+        migrationCluster = new DefaultMigrationCluster(executors, scheduled, migrationEvent, mockedMigrationCluster, mockedDcService, mockedClusterService,
                 mockedShardService, mockedRedisService, mockedMigrationService);
         migrationCluster.addNewMigrationShard(mockedMigrationShard);
     }
