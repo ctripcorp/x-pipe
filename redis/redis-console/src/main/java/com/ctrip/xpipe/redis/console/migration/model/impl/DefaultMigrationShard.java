@@ -199,7 +199,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	@Override
 	public void doRollBack() throws ShardMigrationException{
 		
-		logger.info("[rollback]{}-{}, {}<-{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
+		logger.info("[tryRollback]{}-{}, {}<-{}", cluster, shard, prevPrimaryDc, newPrimaryDc);
 		for(DcTbl dc : dcs.values()) {
 			if(!(dc.getDcName().equals(prevPrimaryDc))) {
 				doOtherDcRollback(dc.getDcName(), prevPrimaryDc);

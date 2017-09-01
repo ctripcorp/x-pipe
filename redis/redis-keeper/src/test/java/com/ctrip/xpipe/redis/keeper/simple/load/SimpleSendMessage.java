@@ -14,7 +14,7 @@ import java.util.concurrent.CountDownLatch;
  */
 public class SimpleSendMessage extends AbstractLoadRedis {
 
-    private final int messageSize = 1 << 15;
+    private final int messageSize = 1 << 10;
 
     private String message;
 
@@ -71,7 +71,8 @@ public class SimpleSendMessage extends AbstractLoadRedis {
     public static void main(String[] args) throws Exception {
 
         SimpleSendMessage simpleSendMessage = new SimpleSendMessage(new InetSocketAddress("localhost", 6379));
-        simpleSendMessage.total = 1<<20;
+        simpleSendMessage.total = 1 << 23;
+        simpleSendMessage.setMaxKeyIndex( 1 << 30);
         simpleSendMessage.initialize();
         simpleSendMessage.start();
 

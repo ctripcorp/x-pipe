@@ -49,7 +49,7 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
 
     @Override
     protected void doRollback() {
-        updateAndForceProcess(new MigrationPartialSuccessRollBackState(getHolder()));
+        rollbackToState(new MigrationPartialSuccessRollBackState(getHolder()));
     }
 
     @Override

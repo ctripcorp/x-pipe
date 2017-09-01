@@ -125,7 +125,7 @@ public class DalTransactionManagerTest extends AbstractConsoleTest{
 	@Test
 	public void testInTransactionExceptionForRollbackTransaction() {
 		dalTM.getThreadLocalTransactionInfo().get().setInTransaction(false);
-		thrown.expectMessage("There is no active transaction open, can't rollback");
+		thrown.expectMessage("There is no active transaction open, can't tryRollback");
 		dalTM.rollbackTransaction();
 	}
 	
@@ -133,7 +133,7 @@ public class DalTransactionManagerTest extends AbstractConsoleTest{
 	public void testInvalidRecursiveLayerForRollbackTransaction() {
 		dalTM.getThreadLocalTransactionInfo().get().setInTransaction(true);
 		dalTM.getThreadLocalTransactionInfo().get().decrRecursiveLayer();
-		thrown.expectMessage("Invalid transaction rollback");
+		thrown.expectMessage("Invalid transaction tryRollback");
 		dalTM.rollbackTransaction();
 	}
 	

@@ -1,13 +1,25 @@
 package com.ctrip.xpipe.redis.console.dao;
 
-import java.util.*;
-import java.util.concurrent.Executor;
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
+import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -16,22 +28,11 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.helper.Lists;
 import org.unidal.lookup.ContainerLoader;
 
-import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.exception.BadRequestException;
-import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
-import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.console.service.ShardService;
-import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Repository
 public class MigrationEventDao extends AbstractXpipeConsoleDAO {
@@ -46,8 +47,12 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private RedisService redisService;
 	@Autowired
 	private MigrationService migrationService;
+
 	@Resource( name = MigrationResources.MIGRATION_EXECUTOR )
 	private Executor executors;
+
+	@Resource( name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR )
+	private ScheduledExecutorService scheduled;
 
 
 	private MigrationEventTblDao migrationEventTblDao;
@@ -182,7 +187,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				MigrationShardTbl shard = detail.getRedundantShards();
 				
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {
-					event.addMigrationCluster(new DefaultMigrationCluster(executors, event, detail.getRedundantClusters(),
+					event.addMigrationCluster(new DefaultMigrationCluster(executors, scheduled, event, detail.getRedundantClusters(),
 							dcService, clusterService, shardService, redisService, migrationService));
 				}
 				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId()); 

@@ -26,6 +26,7 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublish
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
 
+import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -58,6 +59,7 @@ import org.junit.runner.RunWith;
         SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,
 
+        StateMachineTest.class,
         MigrationStatusTest.class,
         ConcurrentDalTransactionTest.class,
         DalTransactionManagerTest.class,

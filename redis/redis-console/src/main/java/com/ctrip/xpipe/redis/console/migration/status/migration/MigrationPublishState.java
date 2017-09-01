@@ -27,7 +27,7 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 	@Override
 	protected void doRollback() {
 		throw new UnsupportedOperationException("[doRollback]" +
-				"[xpipe succeed, publish results to redis client fail, can not rollback, find DBA to manually solve this problem]eventId:" + getHolder().getMigrationEvent().getMigrationEventId());
+				"[xpipe succeed, publish results to redis client fail, can not tryRollback, find DBA to manually solve this problem]eventId:" + getHolder().getMigrationEvent().getMigrationEventId());
 	}
 
 	@Override
@@ -36,10 +36,10 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 		updateActiveDcIdToDestDcId();
 
 		try {
-			logger.info("[action][updateRedisMaster]{}", this);
+			logger.info("[tryAction][updateRedisMaster]{}", this);
 			updateRedisMaster();
 		} catch (ResourceNotFoundException e) {
-			logger.error("[action]", e);
+			logger.error("[tryAction]", e);
 		}
 
 		if(publish()) {
