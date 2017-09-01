@@ -90,6 +90,6 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
 
     @Override
     protected String prepareDatas() throws IOException {
-        return prepareDatasFromFile("src/test/resources/apptest.sql");
+        return prepareDatasFromFile("src/test/resources/keeper-container-service-impl-test.sql");
     }
 }

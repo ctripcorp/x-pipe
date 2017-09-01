@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -71,26 +72,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	});
 	}
 
-	@Override
-	public List<ClusterTbl> findAllClusters() {
-		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
-			@Override
-			public List<ClusterTbl> doQuery() throws DalException {
-				return dao.findAllClusters(ClusterTblEntity.READSET_FULL);
-			}
-    	});
-	}
-	
-	@Override
-	public List<ClusterTbl> findClustersByActiveDcId(final long activeDcId) {
-		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
-			@Override
-			public List<ClusterTbl> doQuery() throws DalException {
-				return dao.findClustersByActiveDcId(activeDcId, ClusterTblEntity.READSET_FULL);
-			}
-		});
-	}
-
 
 	@Override
 	public List<String> findAllClusterNames() {
@@ -135,8 +116,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	proto.setActivedcId(cluster.getActivedcId());
     	proto.setClusterDescription(cluster.getClusterDescription());
     	proto.setStatus(ClusterStatus.Normal.toString());
-		proto.setIsXpipeInterested(true);
+			proto.setIsXpipeInterested(true);
     	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+    	proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
+    	proto.setClusterOrgId(cluster.getClusterOrgId());
     	
     	final ClusterTbl queryProto = proto;
     	ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
@@ -162,6 +145,27 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public ClusterTbl findClusterAndOrg(String clusterName) {
+		return clusterDao.findClusterAndOrgByName(clusterName);
+	}
+
+	@Override public List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(long activeDc) {
+		List<ClusterTbl> result = clusterDao.findClustersWithOrgInfoByActiveDcId(activeDc);
+		return fillClusterOrgName(result);
+	}
+
+	@Override public List<ClusterTbl> findAllClustersWithOrgInfo() {
+		List<ClusterTbl> result = clusterDao.findAllClusterWithOrgInfo();
+		return fillClusterOrgName(result);
+	}
+
+	private List<ClusterTbl> fillClusterOrgName(List<ClusterTbl> clusterTblList) {
+		for(ClusterTbl cluster : clusterTblList) {
+			cluster.setClusterOrgName(cluster.getOrganizationInfo().getOrgName());
+		}
+		return clusterTblList;
+	}
+	@Override
 	public void updateCluster(String clusterName, ClusterTbl cluster) {
 		ClusterTbl proto = find(clusterName);
     	if(null == proto) throw new BadRequestException("Cannot find cluster");
@@ -171,6 +175,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 		proto.setClusterDescription(cluster.getClusterDescription());
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
+		proto.setClusterOrgId(cluster.getClusterOrgId());
+		proto.setOrganizationInfo(null);
 		
 		final ClusterTbl queryProto = proto;
     	queryHandler.handleQuery(new DalQuery<Integer>() {

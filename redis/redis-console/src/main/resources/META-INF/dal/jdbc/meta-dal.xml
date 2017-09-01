@@ -118,10 +118,12 @@
 
 	<entity name="cluster-tbl" table="CLUSTER_TBL" alias="ct">
 		<member name="count" value-type="long" select-expr="COUNT(*)" all="false" />
-	
+		<var name="cluster-org-name" value-type="String"/>
+
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt" multiple="true"/>
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct" multiple="true"/>
 		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2" multiple="true"/>
+		<relation name="organization-info" entity-name="organization-tbl" entity-alias="ot"/>
 
 		<readsets>
 			<readset name="COUNT">
@@ -145,6 +147,10 @@
 				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
 				<readset-ref name="FULL" relation-name="shard-info"/>
 			</readset>
+			<readset name="FULL_WITH_ORG">
+				<readset-ref name="FULL"/>
+				<readset-ref name="FULL" relation-name="organization-info"/>
+			</readset>
 		</readsets>
 		
 		<query-defs>
@@ -166,6 +172,15 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-all-clusters-with-org-info" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-clusters-by-active-dc-id" type="SELECT" multiple="true">
 				<param name='activedc-id'/>
 				<statement>
@@ -178,12 +193,35 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-clusters-with-org-info-by-active-dc-id" type="SELECT" multiple="true">
+				<param name='activedc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
+					WHERE <FIELD name='activedc-id'/> = ${activedc-id}
+					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/> DESC
+					]]>
+				</statement>
+			</query>
 			<query name="find-cluster-by-cluster-name" type="SELECT" multiple="false">
 				<param name='cluster-name'/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
+					WHERE <FIELD name='cluster-name'/> = ${cluster-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-cluster-and-org-by-cluster-name" type="SELECT" multiple="false">
+				<param name='cluster-name'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
 					WHERE <FIELD name='cluster-name'/> = ${cluster-name}
 					AND <FIELD name='deleted'/> = 0
 					]]>
@@ -1129,6 +1167,13 @@
 
 		<var name="target-org-name" value-type="String"/>
 		<var name="target-org-id" value-type="long"/>
+
+		<readsets>
+			<readset name="id-and-name">
+				<member name='id'/>
+				<member name='org-name'/>
+			</readset>
+		</readsets>
 
 		<query-defs>
 			<query name="find-org-by-name" type="SELECT" multiple="false">

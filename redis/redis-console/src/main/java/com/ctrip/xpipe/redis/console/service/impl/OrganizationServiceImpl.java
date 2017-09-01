@@ -52,7 +52,8 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
 
     @Override
     public List<OrganizationTbl> getAllOrganizations() {
-        return organizationDao.findAllOrgs();
+        return organizationDao.findAllOrgs()
+            .stream().filter(org->org.getOrgId() != 0).collect(Collectors.toList());
     }
 
     // Try to retrieve organization info from some source

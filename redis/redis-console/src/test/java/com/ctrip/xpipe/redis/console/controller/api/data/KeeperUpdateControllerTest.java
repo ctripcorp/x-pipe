@@ -49,6 +49,6 @@ public class KeeperUpdateControllerTest extends AbstractConsoleIntegrationTest {
 
     @Override
     protected String prepareDatas() throws IOException {
-        return prepareDatasFromFile("src/test/resources/apptest.sql");
+        return prepareDatasFromFile("src/test/resources/keeper-update-controller-test.sql");
     }
 }

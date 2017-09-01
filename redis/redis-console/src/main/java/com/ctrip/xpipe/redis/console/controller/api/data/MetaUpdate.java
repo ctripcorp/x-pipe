@@ -119,7 +119,7 @@ public class MetaUpdate extends AbstractConsoleController {
 
         logger.info("[getClusters]");
 
-        List<ClusterTbl> allClusters = clusterService.findAllClusters();
+        List<ClusterTbl> allClusters = clusterService.findAllClustersWithOrgInfo();
 
         List<ClusterCreateInfo> result = new LinkedList<>();
         allClusters.forEach(clusterTbl -> {
