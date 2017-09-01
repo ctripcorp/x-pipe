@@ -1,19 +1,11 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
 import com.ctrip.xpipe.api.migration.OuterClientService;
-import com.ctrip.xpipe.redis.console.migration.model.*;
-import com.ctrip.xpipe.redis.console.migration.status.*;
-
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.migration.model.*;
+import com.ctrip.xpipe.redis.console.migration.status.*;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -23,6 +15,10 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author shyin
@@ -46,25 +42,30 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     private DcService dcService;
     private RedisService redisService;
     private MigrationService migrationService;
+
     private Executor executors;
+    private ScheduledExecutorService scheduled;
+
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
 
-    public DefaultMigrationCluster(Executor executors, MigrationEvent event, MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
+    public DefaultMigrationCluster(Executor executors, ScheduledExecutorService scheduled, MigrationEvent event, MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
                                    RedisService redisService, MigrationService migrationService) {
         this.event = event;
         this.migrationCluster = migrationCluster;
-
         this.clusterService = clusterService;
         this.shardService = shardService;
         this.dcService = dcService;
         this.redisService = redisService;
         this.migrationService = migrationService;
-        loadMetaInfo();
         this.executors = executors;
+        this.scheduled = scheduled;
+        loadMetaInfo();
         setStatus();
-
     }
 
+    public ScheduledExecutorService getScheduled() {
+        return scheduled;
+    }
 
     @Override
     public Executor getMigrationExecutor() {
@@ -137,7 +138,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     @Override
     public void process() {
         logger.info("[process]{}-{}, {}", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-        this.currentState.action();
+        this.currentState.getStateActionState().tryAction();
     }
 
     @Override
@@ -260,13 +261,13 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     @Override
     public void cancel() {
         logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-        this.currentState.rollback();
+        this.currentState.getStateActionState().tryRollback();
     }
 
     @Override
     public void rollback() {
         logger.info("[Rollback]{}-{}, {} -> Rollback", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-        this.currentState.rollback();
+        this.currentState.getStateActionState().tryRollback();
     }
 
     @Override
