@@ -58,12 +58,12 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right">Organizations</label>
+                    <label class="col-sm-4 control-label no-padding-right">部门信息</label>
                     <div class="col-sm-6">
                         <span style="color: red" ng-show="organizations.length <= 0">no organizations in database</span>
                         <select class="col-sm-4 control-label no-padding-right" ng-model="cluster.clusterOrgId" ng-required="true">
                             <option ng-repeat="org in organizations"
-                                    value="{{org.id}}"
+                                    ng-value="org.id"
                                     ng-bind="org.orgName"
                                     ng-required="true"></option>
                         </select>
@@ -119,6 +119,22 @@
 
                     <div class="col-sm-7">
                         <label ng-bind="cluster.clusterDescription"></label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right">部门信息</label>
+
+                    <div class="col-sm-7">
+                        <label ng-bind="cluster.organizationInfo.orgName"></label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right">Cluster 管理员邮箱</label>
+
+                    <div class="col-sm-7">
+                        <label ng-bind="cluster.clusterAdminEmails"></label>
                     </div>
                 </div>
 
