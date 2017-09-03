@@ -61,11 +61,9 @@
                     <label class="col-sm-4 control-label no-padding-right">部门信息</label>
                     <div class="col-sm-6">
                         <span style="color: red" ng-show="organizations.length <= 0">no organizations in database</span>
-                        <select class="col-sm-4 control-label no-padding-right" ng-model="cluster.clusterOrgId" ng-required="true">
-                            <option ng-repeat="org in organizations"
-                                    ng-value="org.id"
-                                    ng-bind="org.orgName"
-                                    ng-required="true"></option>
+                        <select class="col-sm-4 control-label no-padding-right" ng-model="cluster.organizationInfo"
+                                ng-options="org.orgName for org in organizations"  ng-required="true">
+                            <option></option>
                         </select>
                     </div>
                 </div>

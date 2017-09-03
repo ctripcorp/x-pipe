@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.core.entity.Cluster;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -119,7 +120,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			proto.setIsXpipeInterested(true);
     	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
     	proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
-    	proto.setClusterOrgId(cluster.getClusterOrgId());
+		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
     	
     	final ClusterTbl queryProto = proto;
     	ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
@@ -144,6 +145,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	return result;
 	}
 
+	public long getIdFromClusterOrg(ClusterTbl cluster) {
+		OrganizationTbl organizationTbl = cluster.getOrganizationInfo();
+		if(organizationTbl == null)
+			return 0L;
+		Long id = organizationTbl.getId();
+		return id == null ? 0L : id;
+	}
 
 	@Override
 	public ClusterTbl findClusterAndOrg(String clusterName) {
@@ -200,7 +208,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		proto.setClusterDescription(cluster.getClusterDescription());
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
-		proto.setClusterOrgId(cluster.getClusterOrgId());
+		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
 		// organization info should not be updated by cluster,
 		// it's automatically updated by scheduled task
 		proto.setOrganizationInfo(null);
