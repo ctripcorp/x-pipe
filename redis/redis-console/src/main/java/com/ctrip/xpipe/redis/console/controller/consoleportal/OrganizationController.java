@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Created by zhuchen on 2017/8/31.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)

@@ -32,12 +32,13 @@ public class OrganizationDaoTest extends AbstractConsoleIntegrationTest {
         List<OrganizationTbl> orgs = organizationDao.findAllOrgs();
         List<OrganizationTbl> newOrgs = orgs.stream().map(org->{
             if(org.getOrgId() > 0) {
-                return new OrganizationTbl()
-                    .setOrgId(org.getOrgId()).setOrgName(org.getOrgName()+"-update");
+                org.setOrgId(org.getOrgId()).setOrgName(org.getOrgName()+"-update");
+                return org;
             }
             return null;
         }).filter(org->org != null).collect(Collectors.toList());
         organizationDao.updateBatchOrganizations(newOrgs);
+        organizationDao.findAllOrgs().forEach(org->logger.info("{}", org));
     }
 
     private OrganizationTbl createOrgTbl(long orgId, String orgName) {
