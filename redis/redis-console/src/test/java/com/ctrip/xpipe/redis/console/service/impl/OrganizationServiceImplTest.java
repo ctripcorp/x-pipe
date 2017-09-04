@@ -53,17 +53,13 @@ public class OrganizationServiceImplTest extends AbstractServiceImplTest {
         result.forEach(org->logger.info("org id: {}, org name: {}", org.getOrgId(), org.getOrgName()));
         Assert.assertEquals(10, result.size());
     }
-    @BeforeClass
-    public static void beforeOrganizationServiceImplTest() {
-        System.setProperty(CatConfig.CAT_ENABLED_KEY, "true");
-    }
+
 
     @Test
     public void testRetrieveOrgInfoFromRemote() throws InterruptedException {
         List<OrganizationTbl> orgs = organizationService.retrieveOrgInfoFromRemote();
         orgs.forEach(org->logger.info("{}", org));
         Assert.assertNotNull(orgs);
-        Thread.sleep(1000*120);
     }
 
     @Test
