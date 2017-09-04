@@ -8,7 +8,9 @@ import javax.annotation.Resource;
 
 
 /**
- * Created by zhuchen on 2017/8/30.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 
 public class OrganizationServiceTest extends AbstractConsoleIntegrationTest {

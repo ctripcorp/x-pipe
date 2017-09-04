@@ -14,7 +14,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * Created by zhuchen on 2017/8/31.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 @Component

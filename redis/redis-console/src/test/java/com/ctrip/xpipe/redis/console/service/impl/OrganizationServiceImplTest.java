@@ -16,7 +16,9 @@ import java.util.stream.Collectors;
 
 
 /**
- * Created by zhuchen on 2017/8/31.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 
 public class OrganizationServiceImplTest extends AbstractServiceImplTest {

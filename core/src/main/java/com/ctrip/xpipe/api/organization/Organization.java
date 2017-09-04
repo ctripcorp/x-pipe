@@ -13,5 +13,5 @@ import java.util.List;
 public interface Organization extends Ordered {
     public static Organization DEFAULT = ServicesUtil.getOrganizationService();
 
-    List<OrganizationModel> retrieveOrganizationInfo();
+    List<OrganizationModel> retrieveOrganizationInfo() throws Exception;
 }
