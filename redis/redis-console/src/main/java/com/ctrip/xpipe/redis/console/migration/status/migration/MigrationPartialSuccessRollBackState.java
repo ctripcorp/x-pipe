@@ -25,7 +25,7 @@ public class MigrationPartialSuccessRollBackState extends AbstractMigrationState
 
     @Override
     protected void doRollback() {
-        throw new UnsupportedOperationException("already rollbacking, can not rollback rollback");
+        throw new UnsupportedOperationException("already rollbacking, can not tryRollback tryRollback");
     }
 
     @Override
@@ -52,10 +52,10 @@ public class MigrationPartialSuccessRollBackState extends AbstractMigrationState
         }
 
         try {
-			latch.await(migrationWaitTimeSeconds, TimeUnit.SECONDS);
+			latch.await(migrationWaitTimeMilli, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			logger.error("[MigrationRollBackStat][await][shard][doRollBack][fail]",e);
-			errorMessage.append(LogUtils.error(String.format("[wait time exceed]%s seconds", migrationWaitTimeSeconds)));
+			errorMessage.append(LogUtils.error(String.format("[wait time exceed]%s ms", migrationWaitTimeMilli)));
 		}
         
         String error = errorMessage.toString();

@@ -31,7 +31,7 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
 
         shardResult(0);
 
-        partialSuccessState.action();
+        partialSuccessState.getStateActionState().tryAction();
 
         partialSuccessState.refresh();
         partialSuccessState.refresh();
@@ -45,14 +45,13 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
 
         shardResult(1);
 
-        partialSuccessState.action();
-
+        partialSuccessState.getStateActionState().tryAction();
         partialSuccessState.refresh();
 
         verify(migrationCluster).updateStat(isA(MigrationPartialSuccessState.class));
         verify(migrationCluster, times(0)).process();
 
-        partialSuccessState.rollback();
+        partialSuccessState.getStateActionState().tryRollback();
         verify(migrationCluster).updateStat(isA(MigrationPartialSuccessRollBackState.class));
         verify(migrationCluster).process();
 
@@ -63,7 +62,7 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
 
         shardResult(1);
 
-        partialSuccessState.action();
+        partialSuccessState.getStateActionState().tryAction();
 
         partialSuccessState.refresh();
 

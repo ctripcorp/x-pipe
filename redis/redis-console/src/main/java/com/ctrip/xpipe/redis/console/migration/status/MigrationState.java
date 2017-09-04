@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status;
 
+import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateActionState;
+
 /**
  * @author shyin
  *         <p>
@@ -9,14 +11,14 @@ public interface MigrationState {
 
     MigrationStatus getStatus();
 
-    void rollback();
-
-    void action();
-
     void refresh();
 
     MigrationState nextAfterSuccess();
 
     MigrationState nextAfterFail();
+
+    boolean setStateActionState(StateActionState current, StateActionState future);
+
+    StateActionState getStateActionState();
 
 }

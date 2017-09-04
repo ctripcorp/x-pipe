@@ -20,7 +20,11 @@ public abstract class AbstractLoadRedis extends AbstractRedis{
 	public AbstractLoadRedis(InetSocketAddress master) {
 		super(master);
 	}
-	
+
+	public void setMaxKeyIndex(long maxKeyIndex) {
+		this.maxKeyIndex = maxKeyIndex;
+	}
+
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();

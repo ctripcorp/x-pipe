@@ -113,7 +113,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 		logger.info("[updateShardLeader]{}, {}, {}", clusterId, shardId, childrenPaths);
 
-		List<String> sortedChildren = LockInternals.getSortedChildren(String.format("%s/latch-", leaderLatchPath), sorter, childrenPaths);
+		List<String> sortedChildren = LockInternals.getSortedChildren("latch-", sorter, childrenPaths);
 
 		List<KeeperMeta> survivalKeepers = new ArrayList<>(childrenData.size());
 

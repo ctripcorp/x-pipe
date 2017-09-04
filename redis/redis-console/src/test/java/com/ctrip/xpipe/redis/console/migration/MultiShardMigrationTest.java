@@ -71,7 +71,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		createShards();
 
 		MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, clusterId);
-		migrationCluster = new DefaultMigrationCluster(executors, migrationEvent, migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
+		migrationCluster = new DefaultMigrationCluster(executors, scheduled, migrationEvent, migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
 
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++cnt) {
 
