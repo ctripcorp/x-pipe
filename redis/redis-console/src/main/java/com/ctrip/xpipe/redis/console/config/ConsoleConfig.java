@@ -48,4 +48,5 @@ public interface ConsoleConfig extends CoreConfig {
 	Map<String, String> getConsoleCnameToDc();
 
 	QuorumConfig  getDefaultSentinelQuorumConfig();
+
 }
