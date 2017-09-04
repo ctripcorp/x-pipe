@@ -37,7 +37,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public static final String KEY_CNAME_TODC = "console.cname.todc";
 
     public static final String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
-    
+
     @Override
     public String getDatasource() {
         return getProperty(KEY_DATASOURCE, "fxxpipe");

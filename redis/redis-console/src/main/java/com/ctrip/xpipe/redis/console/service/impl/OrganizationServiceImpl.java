@@ -99,6 +99,6 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
         Map<Long, OrganizationTbl> storedOrgTbl = new HashMap<>();
         localDBOrgs.forEach(org->storedOrgTbl.put(org.getOrgId(), org));
         return remoteDBOrgs.stream().filter(org->storedOrgTbl.containsKey(org.getOrgId())
-            && org.getOrgName() != storedOrgTbl.get(org.getOrgId()).getOrgName()).collect(Collectors.toList());
+            && !org.getOrgName().equalsIgnoreCase(storedOrgTbl.get(org.getOrgId()).getOrgName())).collect(Collectors.toList());
     }
 }
