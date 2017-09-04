@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.organization.OrganizationModel;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
@@ -16,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 /**
@@ -63,13 +66,21 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
 
     // Try to retrieve organization info from some source
     List<OrganizationTbl> retrieveOrgInfoFromRemote() {
-        List<OrganizationModel> organizationModels = Organization.DEFAULT.retrieveOrganizationInfo();
-        return organizationModels
-            .stream()
-            .map(org->{
-                return new OrganizationTbl().setOrgId(org.getId()).setOrgName(org.getName());
-            })
-            .collect(Collectors.toList());
+        return TransactionMonitor.DEFAULT.logTransactionSwallowException("OrganizationService",
+            "retrieveOrgInfoFromRemote", new Callable<List<OrganizationTbl>>() {
+
+            @Override
+            public List<OrganizationTbl> call() throws Exception {
+                List<OrganizationModel> organizationModels = Organization.DEFAULT.retrieveOrganizationInfo();
+                return organizationModels
+                    .stream()
+                    .map(org->
+                         new OrganizationTbl().setOrgId(org.getId()).setOrgName(org.getName())
+                    )
+                    .collect(Collectors.toList());
+            }
+        });
+
     }
 
     List<OrganizationTbl> getOrgTblCreateList(List<OrganizationTbl> remoteDBOrgs,

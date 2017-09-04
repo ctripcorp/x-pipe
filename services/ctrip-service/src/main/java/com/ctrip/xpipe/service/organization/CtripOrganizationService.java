@@ -11,6 +11,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.ctrip.xpipe.monitor.CatTransactionMonitor.logger;
+
 /**
  * Created by zhuchen on 2017/8/30.
  */
@@ -27,6 +29,10 @@ public class CtripOrganizationService implements Organization {
         AccessBody accessBody = new AccessBody();
         accessBody.setAccess_token(accessToken);
         OrgResponseBody response = restTemplate.postForObject(url, accessBody, OrgResponseBody.class);
+        if(!response.isStatus()) {
+            logger.error("Could not get rest response from CMS system");
+            logger.debug("{}", response);
+        }
         List<OrganizationModel> orgs = response
             .getData()
             .stream()
@@ -50,7 +56,6 @@ public class CtripOrganizationService implements Organization {
             .collect(Collectors.toList());
         return orgs;
     }
-
 
     @Override public int getOrder() {
         return HIGHEST_PRECEDENCE;

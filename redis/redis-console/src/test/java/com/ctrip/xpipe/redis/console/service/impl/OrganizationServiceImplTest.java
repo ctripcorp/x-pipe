@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.console.dao.OrganizationDao;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -51,11 +53,17 @@ public class OrganizationServiceImplTest extends AbstractServiceImplTest {
         result.forEach(org->logger.info("org id: {}, org name: {}", org.getOrgId(), org.getOrgName()));
         Assert.assertEquals(10, result.size());
     }
+    @BeforeClass
+    public static void beforeOrganizationServiceImplTest() {
+        System.setProperty(CatConfig.CAT_ENABLED_KEY, "true");
+    }
 
     @Test
-    public void testRetrieveOrgInfoFromRemote() {
+    public void testRetrieveOrgInfoFromRemote() throws InterruptedException {
         List<OrganizationTbl> orgs = organizationService.retrieveOrgInfoFromRemote();
+        orgs.forEach(org->logger.info("{}", org));
         Assert.assertNotNull(orgs);
+        Thread.sleep(1000*120);
     }
 
     @Test
