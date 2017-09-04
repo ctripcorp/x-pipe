@@ -188,7 +188,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		if(clusterOrgName == null || clusterOrgName.trim().isEmpty()) {
 			proto.setClusterOrgName(proto.getOrganizationInfo().getOrgName());
 		}
-		proto.setOrganizationInfo(null);
 		return proto;
 	}
 
