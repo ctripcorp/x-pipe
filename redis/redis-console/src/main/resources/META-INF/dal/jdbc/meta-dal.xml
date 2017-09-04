@@ -1182,7 +1182,7 @@
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
-					WHERE <FIELD name="org-name"/> = ${org-name}
+					WHERE <FIELD name="org-name"/> = ${target-org-name}
 					]]>
 				</statement>
 			</query>
@@ -1193,7 +1193,7 @@
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
-					WHERE <FIELD name="org-id"/> = ${org-id}
+					WHERE <FIELD name="org-id"/> = ${target-org-id}
 					]]>
 				</statement>
 			</query>

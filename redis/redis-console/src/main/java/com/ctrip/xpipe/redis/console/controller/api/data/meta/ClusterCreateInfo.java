@@ -19,7 +19,27 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
     private String desc;
 
+    private Long organizationId;
+
+    private String clusterAdminEmails;
+
     public ClusterCreateInfo(){
+    }
+
+    public Long getOrganizationId() {
+        return organizationId;
+    }
+
+    public void setOrganizationId(Long organizationId) {
+        this.organizationId = organizationId;
+    }
+
+    public String getClusterAdminEmails() {
+        return clusterAdminEmails;
+    }
+
+    public void setClusterAdminEmails(String clusterAdminEmails) {
+        this.clusterAdminEmails = clusterAdminEmails;
     }
 
     public List<String> getDcs() {

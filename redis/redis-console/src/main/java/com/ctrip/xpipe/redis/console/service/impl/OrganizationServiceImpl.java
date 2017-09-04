@@ -56,6 +56,11 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
             .stream().filter(org->org.getOrgId() != 0).collect(Collectors.toList());
     }
 
+    @Override
+    public OrganizationTbl getOrganizationTblByCMSOrganiztionId(long organizationId) {
+        return organizationDao.findByOrgId(organizationId);
+    }
+
     // Try to retrieve organization info from some source
     List<OrganizationTbl> retrieveOrgInfoFromRemote() {
         List<OrganizationModel> organizationModels = Organization.DEFAULT.retrieveOrganizationInfo();

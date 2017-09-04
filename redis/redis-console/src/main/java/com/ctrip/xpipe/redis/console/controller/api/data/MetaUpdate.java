@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -44,6 +45,8 @@ public class MetaUpdate extends AbstractConsoleController {
     @Autowired
     private MetaCache metaCache;
 
+    @Autowired
+    private OrganizationService organizationService;
 
     @RequestMapping(value = "/stats", method = RequestMethod.GET)
     public Map<String, Integer> getStats() {
@@ -85,16 +88,46 @@ public class MetaUpdate extends AbstractConsoleController {
         }
 
         ClusterModel clusterModel = new ClusterModel();
-
+        OrganizationTbl organizationTbl;
+        try {
+            organizationTbl = getOrganizationId(clusterCreateInfo);
+            checkNotNull(clusterCreateInfo.getClusterAdminEmails(), "cluster admin emails");
+            checkNotNull(clusterCreateInfo.getOrganizationId(), "organizationId");
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
         clusterModel.setClusterTbl(new ClusterTbl()
                 .setActivedcId(dcs.get(0).getId())
                 .setClusterName(clusterCreateInfo.getClusterName())
                 .setClusterDescription(clusterCreateInfo.getDesc())
+                .setClusterAdminEmails(clusterCreateInfo.getClusterAdminEmails())
+                .setOrganizationInfo(organizationTbl)
         );
+
 
         clusterModel.setSlaveDcs(dcs.subList(1, dcs.size()));
         clusterService.createCluster(clusterModel);
         return RetMessage.createSuccessMessage();
+    }
+
+    private OrganizationTbl getOrganizationId(ClusterCreateInfo clusterCreateInfo) {
+        Long organizationId = clusterCreateInfo.getOrganizationId();
+        if(organizationId == null) {
+            throw new IllegalStateException("organizationId is required");
+        }
+        OrganizationTbl organizationTbl = organizationService
+            .getOrganizationTblByCMSOrganiztionId(organizationId);
+        // If not exists, pull from cms first
+        if(organizationTbl == null) {
+            organizationService.updateOrganizations();
+            organizationTbl = organizationService
+                .getOrganizationTblByCMSOrganiztionId(organizationId);
+            if(organizationTbl == null) {
+                throw new IllegalStateException("Organization Id: " + organizationId + ", could not be found");
+            }
+        }
+        return organizationTbl;
+
     }
 
     private ClusterCreateInfo transform(ClusterCreateInfo clusterCreateInfo, DC_TRANSFORM_DIRECTION direction) {
@@ -127,6 +160,9 @@ public class MetaUpdate extends AbstractConsoleController {
             ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
             clusterCreateInfo.setDesc(clusterTbl.getClusterDescription());
             clusterCreateInfo.setClusterName(clusterTbl.getClusterName());
+            OrganizationTbl organizationTbl = clusterTbl.getOrganizationInfo();
+            clusterCreateInfo.setOrganizationId(organizationTbl != null ? organizationTbl.getOrgId() : 0L);
+            clusterCreateInfo.setClusterAdminEmails(clusterTbl.getClusterAdminEmails());
 
             List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterTbl.getClusterName());
             clusterRelatedDc.forEach(dcTbl -> {
@@ -209,4 +245,15 @@ public class MetaUpdate extends AbstractConsoleController {
         return result;
     }
 
+    private void checkNotNull(final Object o, String errorPrefix) {
+        if(o == null) {
+            throw new IllegalStateException(errorPrefix + " should not be null");
+        }
+        if(o instanceof String) {
+            String str = (String) o;
+            if(str.trim().isEmpty()) {
+                throw new IllegalStateException(errorPrefix + " should not be null");
+            }
+        }
+    }
 }
