@@ -101,6 +101,14 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
         if(dcs.size() <= 1){
             throw new CheckFailException("dcs size should be at least two, first active!");
         }
+
+        if(StringUtil.isEmpty(clusterAdminEmails)){
+            throw new CheckFailException("clusterAdminEmails empty");
+        }
+
+        if(organizationId == null) {
+            throw new CheckFailException("organizationId empty");
+        }
     }
 
     @Override

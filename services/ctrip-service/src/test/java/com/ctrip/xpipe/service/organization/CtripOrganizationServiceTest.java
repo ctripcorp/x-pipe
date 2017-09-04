@@ -9,7 +9,9 @@ import org.junit.Test;
 import java.util.List;
 
 /**
- * Created by zhuchen on 2017/8/30.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 public class CtripOrganizationServiceTest extends AbstractServiceTest{
     CtripOrganizationService organization;

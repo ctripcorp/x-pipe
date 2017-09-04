@@ -22,7 +22,9 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 /**
- * Created by zhuchen on 2017/8/29.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 @Service
 public class OrganizationServiceImpl extends AbstractConsoleService<OrganizationTblDao>

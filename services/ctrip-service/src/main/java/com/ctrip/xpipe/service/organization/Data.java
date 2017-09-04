@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.service.organization;
 
 /**
- * Created by zhuchen on 2017/8/31.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 public class Data {
     private long organizationId;

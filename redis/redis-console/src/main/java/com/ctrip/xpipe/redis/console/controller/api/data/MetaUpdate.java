@@ -91,8 +91,7 @@ public class MetaUpdate extends AbstractConsoleController {
         OrganizationTbl organizationTbl;
         try {
             organizationTbl = getOrganizationId(clusterCreateInfo);
-            checkNotNull(clusterCreateInfo.getClusterAdminEmails(), "cluster admin emails");
-            checkNotNull(clusterCreateInfo.getOrganizationId(), "organizationId");
+            clusterCreateInfo.check();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
@@ -245,15 +244,4 @@ public class MetaUpdate extends AbstractConsoleController {
         return result;
     }
 
-    private void checkNotNull(final Object o, String errorPrefix) {
-        if(o == null) {
-            throw new IllegalStateException(errorPrefix + " should not be null");
-        }
-        if(o instanceof String) {
-            String str = (String) o;
-            if(str.trim().isEmpty()) {
-                throw new IllegalStateException(errorPrefix + " should not be null");
-            }
-        }
-    }
 }

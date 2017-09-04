@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.api.organization;
 
 /**
- * Created by zhuchen on 2017/8/30.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 public class OrganizationModel {
     private long id;

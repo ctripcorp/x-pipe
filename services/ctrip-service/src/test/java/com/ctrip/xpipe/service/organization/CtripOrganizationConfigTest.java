@@ -5,7 +5,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Created by zhuchen on 2017/8/31.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 public class CtripOrganizationConfigTest extends AbstractServiceTest {
     CtripOrganizationConfig config;

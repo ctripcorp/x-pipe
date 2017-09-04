@@ -5,7 +5,9 @@ import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import java.util.List;
 
 /**
- * Created by zhuchen on 2017/8/29.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 public interface OrganizationService {
     void updateOrganizations();

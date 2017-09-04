@@ -7,7 +7,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Created by zhuchen on 2017/8/30.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 public class DefaultOrganization implements Organization {
 

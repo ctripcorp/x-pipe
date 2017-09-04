@@ -3,7 +3,9 @@ package com.ctrip.xpipe.service.organization;
 import org.springframework.stereotype.Component;
 
 /**
- * Created by zhuchen on 2017/8/31.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 @Component
 public class AccessBody {

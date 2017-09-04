@@ -6,7 +6,9 @@ import com.ctrip.xpipe.utils.ServicesUtil;
 import java.util.List;
 
 /**
- * Created by zhuchen on 2017/8/30.
+ * @author chen.zhu
+ *
+ * Sep 04, 2017
  */
 public interface Organization extends Ordered {
     public static Organization DEFAULT = ServicesUtil.getOrganizationService();
