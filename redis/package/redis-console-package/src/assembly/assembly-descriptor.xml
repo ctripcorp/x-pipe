@@ -34,6 +34,14 @@
 			</includes>
 			<lineEnding>unix</lineEnding>
 		</fileSet>
+		<fileSet>
+			<directory>../../redis-console/src/main/resources/sql/mysql</directory>
+			<outputDirectory>sql</outputDirectory>
+			<includes>
+				<include>*.sql</include>
+			</includes>
+			<lineEnding>unix</lineEnding>
+		</fileSet>
 		<!--artifact -->
 		<fileSet>
 			<directory>target</directory>
