@@ -71,4 +71,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     }
 
+    @Test
+    public void testUpdateCluster() {
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        clusterTbl.setClusterOrgId(6);
+        clusterService.updateCluster(clusterName, clusterTbl);
+        clusterTbl = clusterService.find(clusterName);
+        Assert.assertEquals(6, clusterTbl.getClusterOrgId());
+    }
+
 }

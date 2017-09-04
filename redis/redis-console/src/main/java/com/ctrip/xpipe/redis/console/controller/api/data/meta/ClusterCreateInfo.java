@@ -19,7 +19,27 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
     private String desc;
 
+    private Long organizationId;
+
+    private String clusterAdminEmails;
+
     public ClusterCreateInfo(){
+    }
+
+    public Long getOrganizationId() {
+        return organizationId;
+    }
+
+    public void setOrganizationId(Long organizationId) {
+        this.organizationId = organizationId;
+    }
+
+    public String getClusterAdminEmails() {
+        return clusterAdminEmails;
+    }
+
+    public void setClusterAdminEmails(String clusterAdminEmails) {
+        this.clusterAdminEmails = clusterAdminEmails;
     }
 
     public List<String> getDcs() {
@@ -80,6 +100,14 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
         if(dcs.size() <= 1){
             throw new CheckFailException("dcs size should be at least two, first active!");
+        }
+
+        if(StringUtil.isEmpty(clusterAdminEmails)){
+            throw new CheckFailException("clusterAdminEmails empty");
+        }
+
+        if(organizationId == null) {
+            throw new CheckFailException("organizationId empty");
         }
     }
 

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -50,7 +51,7 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     @Test
     public void testFindKeeperCountByClusterWithNoneBUSpecified() {
         String clusterName = "cluster1";
-        long orgId = 0L;
+        long orgId = XPipeConsoleConstant.DEFAULT_ORG_ID;
         List<KeepercontainerTbl> keeperCount = keepercontainerService.findBestKeeperContainersByDcCluster(dcNames[0], clusterName);
         keeperCount.forEach(kc -> logger.info("{}", kc));
         Assert.assertTrue(keeperCount.stream().allMatch(kc->kc.getKeepercontainerOrgId() == orgId));
@@ -59,7 +60,7 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     @Test
     public void testFindKeeperCountByClusterWithNoKCForBU() {
         String clusterName = "cluster3";
-        long orgId = 0L;
+        long orgId = XPipeConsoleConstant.DEFAULT_ORG_ID;
         List<KeepercontainerTbl> keeperCount = keepercontainerService.findBestKeeperContainersByDcCluster(dcNames[0], clusterName);
         keeperCount.forEach(kc -> logger.info("{}", kc));
         Assert.assertTrue(keeperCount.stream().allMatch(kc->kc.getKeepercontainerOrgId() == orgId));
@@ -90,6 +91,6 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
 
     @Override
     protected String prepareDatas() throws IOException {
-        return prepareDatasFromFile("src/test/resources/apptest.sql");
+        return prepareDatasFromFile("src/test/resources/keeper-container-service-impl-test.sql");
     }
 }

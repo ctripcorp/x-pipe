@@ -55,7 +55,7 @@ create table CLUSTER_TBL
 	deleted tinyint(1) not null default 0,
 	is_xpipe_interested tinyint(1) default 0,
 	cluster_org_id bigint unsigned not null default 0,
-    cluster_admin_emails varchar(128) default ' '
+    cluster_admin_emails varchar(250) default ' '
 );
 
 
@@ -191,8 +191,8 @@ drop table if exists organization_tbl;
 CREATE TABLE `organization_tbl` (
   id bigint(20) unsigned not null AUTO_INCREMENT primary key,
   org_id  bigint(20) unsigned not null default 0 unique,
-  org_name varchar(1024) not null default 'none' unique,
+  org_name varchar(250) not null default 'none' unique,
   DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
   deleted tinyint(4) not null default 0,
 );
-INSERT INTO organization_tbl (`org_id`, `org_name`) VALUES ('0', 'default');
+INSERT INTO organization_tbl (`org_id`, `org_name`) VALUES ('0', '');

@@ -45,17 +45,17 @@ public class ClusterController extends AbstractConsoleController {
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public ClusterTbl loadCluster(@PathVariable String clusterName) {
-        return valueOrDefault(ClusterTbl.class, clusterService.find(clusterName));
+        return valueOrDefault(ClusterTbl.class, clusterService.findClusterAndOrg(clusterName));
     }
 
     @RequestMapping(value = "/clusters/all", method = RequestMethod.GET)
     public List<ClusterTbl> findAllClusters(@RequestParam(required = false) String activeDcName) {
         if (StringUtil.isEmpty(activeDcName)) {
-            return valueOrEmptySet(ClusterTbl.class, clusterService.findAllClusters());
+            return valueOrEmptySet(ClusterTbl.class, clusterService.findAllClustersWithOrgInfo());
         } else {
             DcTbl dc = dcService.findByDcName(activeDcName);
             if (dc != null) {
-                List<ClusterTbl> clusters = clusterService.findClustersByActiveDcId(dc.getId());
+                List<ClusterTbl> clusters = clusterService.findClustersWithOrgInfoByActiveDcId(dc.getId());
 
                 if (!clusters.isEmpty()) {
                     List<Long> clusterIds = new ArrayList<Long>(clusters.size());
