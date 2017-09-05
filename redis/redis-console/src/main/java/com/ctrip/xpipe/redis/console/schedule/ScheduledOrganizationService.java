@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.schedule;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,12 +28,10 @@ public class ScheduledOrganizationService {
     @Autowired
     OrganizationService organizationService;
 
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
-
 
     @Scheduled(fixedRate = XPipeConsoleConstant.SCHEDULED_ORGANIZATION_SERVICE)
     public void updateOrganizations() {
-        logger.info("[updateOrganizations] update organization table @{}", dateFormat.format(new Date()));
+        logger.info("[updateOrganizations] update organization table @ {}", DateTimeUtils.currentTimeAsString());
         organizationService.updateOrganizations();
     }
 }
