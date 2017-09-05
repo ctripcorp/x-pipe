@@ -45,7 +45,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
         @Override
         public int compare(RedisTbl o1, RedisTbl o2) {
-            if (o1.getId() == o2.getId()) {
+            if (o1.getId().equals(o2.getId())) {
                 return 0;
             }
             return -1;
@@ -381,7 +381,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                     return dao.findWithIpPort(keeper.getRedisIp(), keeper.getRedisPort(), RedisTblEntity.READSET_FULL);
                 }
             });
-            if (null != redisWithSameConfiguration && !(keeper.getId() == redisWithSameConfiguration.getId())) {
+            if (null != redisWithSameConfiguration && !(keeper.getId().equals(redisWithSameConfiguration.getId()))) {
                 throw new BadRequestException("Already in use for keeper's port : "
                         + String.valueOf(redisWithSameConfiguration.getRedisPort()));
             }
