@@ -2,7 +2,10 @@
 ########### functions ###########
 function getPortFromPath(){
     path=$1
-    port=`echo $path | perl -pe "s/.*?([0-9]{3,5}).*/\1/"`
+    match=`echo $path | perl -ne "/_[0-9]{3,5}/ and print \"ok\""`
+    if [ "$match" == "ok" ]; then
+        port=`echo $path | perl -pe "s/.*?([0-9]{3,5}).*/\1/"`
+    fi
     echo $port
 }
 function getPortFromPathOrDefault(){
@@ -31,11 +34,12 @@ function makedir(){
     fi
 }
 function changeAndMakeLogDir(){
-    DIR=$1
-    makedir $DIR
+    current=$1
+    logdir=$2
+    makedir $logdir
     #../xx.conf
-    sed -i 's#LOG_FOLDER=\(.*\)#LOG_FOLDER='"$DIR"'#'  ../*.conf
-    sed -i 's#name="baseDir">.*</Property>#name="baseDir">'$DIR'</Property>#'   ../config/log4j2.xml
+    sed -i 's#LOG_FOLDER=\(.*\)#LOG_FOLDER='"$logdir"'#'  $current/../*.conf
+    sed -i 's#name="baseDir">.*</Property>#name="baseDir">'$logdir'</Property>#'   $current/../config/log4j2.xml
 }
 function changePort(){
     conf=$1
@@ -43,15 +47,23 @@ function changePort(){
     if grep "server.port" $conf;then
         sed -i 's/server.port=[0-9]\+/server.port='$port'/' $conf
     else
-        echo no port
+        echo no port in path
         sed -i 's/JAVA_OPTS="/JAVA_OPTS="-Dserver.port='$port' /'  $conf
     fi
 }
-
+function getCurrentRealPath(){
+    source="${BASH_SOURCE[0]}"
+    while [ -h "$source" ]; do # resolve $source until the file is no longer a symlink
+      dir="$( cd -P "$( dirname "$source" )" && pwd )"
+      source="$(readlink "$source")"
+      [[ $source != /* ]] && source="$dir/$source" # if $source was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+    done
+    dir="$( cd -P "$( dirname "$source" )" && pwd )"
+    echo $dir
+}
 
 #VARS
-DIR=`dirname $0`
-FULL_DIR=`pwd`/$DIR
+FULL_DIR=`getCurrentRealPath`
 SERVICE_NAME=redis-meta
 LOG_DIR=/opt/logs/100004375
 SERVER_PORT=`getPortFromPathOrDefault $FULL_DIR 8080`
@@ -65,41 +77,8 @@ echo port:$SERVER_PORT, jmx_port:$JMX_PORT, local ip:$IP
 echo log:$LOG_DIR
 
 #make sure log right
-changeAndMakeLogDir $LOG_DIR
-changePort ../$SERVICE_NAME.conf $SERVER_PORT
-
-IP=`ifconfig | grep "inet.10" | awk '{print $2}; NR == 1 {exit}'`
-
-
-########### vm args ###########
-function toUpper(){
-    echo $(echo $1 | tr [a-z] [A-Z])
-}
-function getEnv(){
-    ENV=local
-    if [ -f /opt/settings/server.properties ];then
-        ENV=`cat /opt/settings/server.properties | egrep -i "^env" | awk -F= '{print $2}'`
-    fi
-    echo `toUpper $ENV`
-}
-function makedir(){
-    if [ ! -d $1 ]; then
-        echo "log dir not exist, create it"
-        mkdir -p $1
-    fi
-}
-
-function changeAndMakeLogDir(){
-    DIR=$1
-    makedir $DIR
-    #../xx.conf
-    sed -i 's#LOG_FOLDER=\(.*\)#LOG_FOLDER='"$DIR"'#'  ../*.conf
-    sed -i 's#name="baseDir">.*</Property>#name="baseDir">'$DIR'</Property>#'   ../config/log4j2.xml
-
-}
-
-#make sure log right
-changeAndMakeLogDir $LOG_DIR
+changeAndMakeLogDir $FULL_DIR $LOG_DIR
+changePort $FULL_DIR/../$SERVICE_NAME.conf $SERVER_PORT
 
 #get total memory
 ENV=`getEnv`
