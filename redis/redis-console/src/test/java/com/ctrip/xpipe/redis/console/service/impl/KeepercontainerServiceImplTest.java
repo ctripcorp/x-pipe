@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -24,6 +25,9 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     private KeepercontainerServiceImpl keepercontainerService;
+
+    @Autowired
+    private ClusterDao clusterDao;
 
     @Before
     public void beforeAbstractServiceImpl(){
@@ -64,6 +68,15 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
         List<KeepercontainerTbl> keeperCount = keepercontainerService.findBestKeeperContainersByDcCluster(dcNames[0], clusterName);
         keeperCount.forEach(kc -> logger.info("{}", kc));
         Assert.assertTrue(keeperCount.stream().allMatch(kc->kc.getKeepercontainerOrgId() == orgId));
+    }
+
+    @Test
+    public void testFindKeeperCountByClusterWithAllKeeperDeleted() {
+        String clusterName = "cluster4";
+        ClusterTbl clusterTbl = clusterDao.findClusterAndOrgByName(clusterName);
+        List<KeepercontainerTbl> keeperCount = keepercontainerService.findBestKeeperContainersByDcCluster(dcNames[0], clusterName);
+        keeperCount.forEach(kc -> logger.info("{}", kc));
+        Assert.assertTrue(keeperCount.stream().allMatch(kc->kc.getKeepercontainerOrgId() == clusterTbl.getClusterOrgId()));
     }
 
     @Test
