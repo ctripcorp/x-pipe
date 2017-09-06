@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.dao.RedisDao;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.redis.core.entity.Keeper;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
@@ -14,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.dal.jdbc.DalException;
 import com.ctrip.xpipe.tuple.Pair;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +37,9 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
 
     @Autowired
     private KeeperAdvancedService keeperAdvancedService;
+
+    @Autowired
+    private RedisDao redisDao;
 
     private String dcName;
     private String shardName;
@@ -237,5 +244,9 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         Assert.assertEquals(2, inter.size());
     }
 
-
+    @Test(expected = BadRequestException.class)
+    public void testValidateKeepers() throws ResourceNotFoundException {
+        List<RedisTbl> keepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
+        redisService.validateKeepers(keepers);
+    }
 }

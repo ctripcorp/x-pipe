@@ -60,8 +60,10 @@ public class PrimaryDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterC
 				logger.info("[chooseKeeperMaster][no redis]{}", allRedises);
 				return null;
 			}
+
+			currentMaster = new Pair<>(allRedises.get(0).getIp(), allRedises.get(0).getPort());
 			logger.info("[chooseKeeperMaster][use first redis]{}", currentMaster);
-			return new Pair<>(allRedises.get(0).getIp(), allRedises.get(0).getPort());
+			return currentMaster;
 		}else if(redisMasters.size() == 1){
 			return new Pair<>(redisMasters.get(0).getIp(), redisMasters.get(0).getPort());
 		}else{

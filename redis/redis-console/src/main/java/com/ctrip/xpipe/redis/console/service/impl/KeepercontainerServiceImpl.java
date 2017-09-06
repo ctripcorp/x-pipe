@@ -77,15 +77,19 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
     } else {
       clusterOrgId = XPipeConsoleConstant.DEFAULT_ORG_ID;
     }
+    logger.info("cluster org id: {}", clusterOrgId);
     return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
       @Override
       public List<KeepercontainerTbl> doQuery() throws DalException {
         List<KeepercontainerTbl> kcs = dao.findKeeperContainerByCluster(dcName, clusterOrgId,
             KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
         if (kcs == null || kcs.isEmpty()) {
+          logger.info("cluster {} with org id {} is going to find keepercontainers in normal pool",
+                  clusterName, clusterOrgId);
           kcs = dao.findKeeperContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID,
               KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
         }
+        logger.info("find keeper containers: {}", kcs);
         return kcs;
       }
     });
