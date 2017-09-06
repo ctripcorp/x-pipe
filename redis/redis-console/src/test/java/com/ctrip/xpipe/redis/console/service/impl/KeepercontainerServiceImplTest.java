@@ -53,6 +53,15 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
+    public void testFindKeeperCountByClusterWithBUSpecifiedAndContainsKeepers() {
+        String clusterName = "cluster5";
+        long orgId = 5L;
+        List<KeepercontainerTbl> keeperCount = keepercontainerService.findBestKeeperContainersByDcCluster(dcNames[0], clusterName);
+        keeperCount.forEach(kc -> logger.info("{}", kc));
+        Assert.assertTrue(keeperCount.stream().allMatch(kc->kc.getKeepercontainerOrgId() == orgId));
+    }
+
+    @Test
     public void testFindKeeperCountByClusterWithNoneBUSpecified() {
         String clusterName = "cluster1";
         long orgId = XPipeConsoleConstant.DEFAULT_ORG_ID;

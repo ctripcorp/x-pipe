@@ -351,7 +351,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         return result;
     }
 
-    private void validateKeepers(List<RedisTbl> keepers) {
+    // Use protected for Unit Test available
+    protected void validateKeepers(List<RedisTbl> keepers) {
         if (2 != keepers.size()) {
             if (0 == keepers.size()) {
                 return;
