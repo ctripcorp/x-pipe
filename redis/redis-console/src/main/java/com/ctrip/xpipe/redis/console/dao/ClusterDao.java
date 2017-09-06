@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.dao;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
@@ -174,5 +175,35 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		}
 		
 		return 0;
+	}
+
+	@DalTransaction
+	public ClusterTbl findClusterAndOrgByName(final String clusterName) {
+		ClusterTbl proto =  queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
+			@Override public ClusterTbl doQuery() throws DalException {
+				return clusterTblDao.findClusterAndOrgByClusterName(clusterName, ClusterTblEntity.READSET_FULL_WITH_ORG);
+			}
+		});
+		String clusterOrgName = proto.getClusterOrgName();
+		if(clusterOrgName == null || clusterOrgName.trim().isEmpty()) {
+			proto.setClusterOrgName(proto.getOrganizationInfo().getOrgName());
+		}
+		return proto;
+	}
+
+	public List<ClusterTbl> findAllClusterWithOrgInfo() {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override public List<ClusterTbl> doQuery() throws DalException {
+				return clusterTblDao.findAllClustersWithOrgInfo(ClusterTblEntity.READSET_FULL_WITH_ORG);
+			}
+		});
+	}
+
+	public List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(final long dcId) {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override public List<ClusterTbl> doQuery() throws DalException {
+				return clusterTblDao.findClustersWithOrgInfoByActiveDcId(dcId, ClusterTblEntity.READSET_FULL_WITH_ORG);
+			}
+		});
 	}
 }

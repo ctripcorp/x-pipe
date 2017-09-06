@@ -9,12 +9,12 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 public interface ClusterService {
 
 	ClusterTbl find(String clusterName);
-
+	ClusterTbl findClusterAndOrg(String clusterName);
 	ClusterStatus clusterStatus(String clusterName);
 
 	ClusterTbl find(long clusterId);
-	List<ClusterTbl> findAllClusters();
-	List<ClusterTbl> findClustersByActiveDcId(long activeDc);
+	List<ClusterTbl> findAllClustersWithOrgInfo();
+	List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(long activeDc);
 	List<String> findAllClusterNames();
 	Long getAllCount();
 	ClusterTbl createCluster(ClusterModel clusterModel);

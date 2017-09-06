@@ -118,10 +118,12 @@
 
 	<entity name="cluster-tbl" table="CLUSTER_TBL" alias="ct">
 		<member name="count" value-type="long" select-expr="COUNT(*)" all="false" />
-	
+		<var name="cluster-org-name" value-type="String"/>
+
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt" multiple="true"/>
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct" multiple="true"/>
 		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2" multiple="true"/>
+		<relation name="organization-info" entity-name="organization-tbl" entity-alias="ot"/>
 
 		<readsets>
 			<readset name="COUNT">
@@ -145,6 +147,10 @@
 				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
 				<readset-ref name="FULL" relation-name="shard-info"/>
 			</readset>
+			<readset name="FULL_WITH_ORG">
+				<readset-ref name="FULL"/>
+				<readset-ref name="FULL" relation-name="organization-info"/>
+			</readset>
 		</readsets>
 		
 		<query-defs>
@@ -166,6 +172,15 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-all-clusters-with-org-info" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-clusters-by-active-dc-id" type="SELECT" multiple="true">
 				<param name='activedc-id'/>
 				<statement>
@@ -178,12 +193,35 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-clusters-with-org-info-by-active-dc-id" type="SELECT" multiple="true">
+				<param name='activedc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
+					WHERE <FIELD name='activedc-id'/> = ${activedc-id}
+					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/> DESC
+					]]>
+				</statement>
+			</query>
 			<query name="find-cluster-by-cluster-name" type="SELECT" multiple="false">
 				<param name='cluster-name'/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
+					WHERE <FIELD name='cluster-name'/> = ${cluster-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-cluster-and-org-by-cluster-name" type="SELECT" multiple="false">
+				<param name='cluster-name'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
 					WHERE <FIELD name='cluster-name'/> = ${cluster-name}
 					AND <FIELD name='deleted'/> = 0
 					]]>
@@ -508,6 +546,11 @@
 	</entity>
 
 	<entity name="redis-tbl" table="REDIS_TBL" alias="rt">
+		<!-- Add two constant below to fix bug, that when use h2 db in unit/integration test -->
+		<!-- RedisService.updateRedis() will fail, due to h2 db not recognize sequential insert with id of 0 -->
+		<member name="id" field="id" value-type="Long" length="20" nullable="true" key="true" auto-increment="true" />
+		<var name="key-id" value-type="Long" key-member="id" />
+
 		<var name="dc-name" value-type="String"/>
 		<var name="cluster-name" value-type="String"/>
 
@@ -760,6 +803,7 @@
 
 	<entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
 		<var name="dc-name" value-type="String"/>
+		<var name="org-id" value-type="long"/>
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
 
@@ -771,6 +815,16 @@
 				<member name='keepercontainer-id'/>
 				<member name='keepercontainer-ip'/>
 				<member name="count"/>
+			</readset>
+
+			<readset name="KEEPER_COUNT_BY_CLUSTER">
+				<member name='keepercontainer-id'/>
+				<member name='keepercontainer-ip'/>
+				<member name='keepercontainer-port'/>
+				<member name="keepercontainer-active"/>
+				<member name="keepercontainer-dc"/>
+				<member name="count"/>
+				<member name="keepercontainer-org-id" />
 			</readset>
 		</readsets>
 		<query-defs>
@@ -812,6 +866,24 @@
 					AND <FIELD name='keepercontainer-active'/> = 1
 					AND (kit.deleted = 0 or kit.deleted is null)
 					AND <FIELD name='deleted'/> = 0
+					GROUP BY <FIELD name='keepercontainer-id'/>
+					order by count
+					]]>
+				</statement>
+			</query>
+			<query name="find-keeper-container-by-cluster" type="SELECT" multiple="true">
+				<param name="dc-name"/>
+				<param name="org-id" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='keeper-info'/> on <FIELD name='keepercontainer-id'/> = kit.keepercontainer_id , <TABLE name='dc-info'/>
+					WHERE <FIELD name='keepercontainer-dc'/> = dt.id
+					AND dt.dc_name = ${dc-name}
+					AND <FIELD name='keepercontainer-active'/> = 1
+					AND (kit.deleted = 0 or kit.deleted is null)
+					AND <FIELD name='deleted'/> = 0
+					AND <FIELD name='keepercontainer-org-id'/> = ${org-id}
 					GROUP BY <FIELD name='keepercontainer-id'/>
 					order by count
 					]]>
@@ -1090,5 +1162,71 @@
 			</query>
 		</query-defs>
 	</entity>
+	<entity name="organization-tbl" table="organization_tbl" alias="ot">
+		<member name="id" field="id" value-type="Long" length="20" nullable="true" key="true" auto-increment="true" />
 
+		<var name="target-org-name" value-type="String"/>
+		<var name="target-org-id" value-type="long"/>
+
+		<readsets>
+			<readset name="id-and-name">
+				<member name='id'/>
+				<member name='org-name'/>
+			</readset>
+		</readsets>
+
+		<query-defs>
+			<query name="find-org-by-name" type="SELECT" multiple="false">
+				<param name="target-org-name"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name="org-name"/> = ${target-org-name}
+					]]>
+				</statement>
+			</query>
+
+			<query name="find-org-by-org-id" type="SELECT" multiple="false">
+				<param name="target-org-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name="org-id"/> = ${target-org-id}
+					]]>
+				</statement>
+			</query>
+
+			<query name="find-all-orgs" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='insert-batch' type='INSERT' batch='true'>
+				<statement>
+					<![CDATA[
+					INSERT INTO <TABLE/>(<FIELDS/>)
+        			VALUES(<VALUES/>)
+        			]]>
+				</statement>
+			</query>
+
+			<query name='update-batch' type='UPDATE' batch='true'>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+        			SET <FIELD name='org-id'/> = ${org-id}, <FIELD name='org-name'/> = ${org-name}
+       				WHERE <FIELD name='id'/> = ${id}
+        			AND <FIELD name='deleted'/> = 0
+        			]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
 </entities>

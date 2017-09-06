@@ -32,7 +32,7 @@ index_module.controller('ClusterFromCtl',
                              $scope.deleteShard = deleteShard;
                              $scope.activeDcSelected = activeDcSelected;
                              $scope.shardNameChanged = shardNameChanged;
-                             
+
                              init();
 
                              function init() {
@@ -48,6 +48,10 @@ index_module.controller('ClusterFromCtl',
                                         });
                                         
                                     });
+                                ClusterService.getOrganizations()
+                                .then(function (result) {
+                                     $scope.organizations = result;
+                                 });
 
                                  if ($scope.operateType != OPERATE_TYPE.CREATE) {
                                      ClusterService.load_cluster(clusterName)

@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.core.entity.Cluster;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -71,26 +73,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	});
 	}
 
-	@Override
-	public List<ClusterTbl> findAllClusters() {
-		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
-			@Override
-			public List<ClusterTbl> doQuery() throws DalException {
-				return dao.findAllClusters(ClusterTblEntity.READSET_FULL);
-			}
-    	});
-	}
-	
-	@Override
-	public List<ClusterTbl> findClustersByActiveDcId(final long activeDcId) {
-		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
-			@Override
-			public List<ClusterTbl> doQuery() throws DalException {
-				return dao.findClustersByActiveDcId(activeDcId, ClusterTblEntity.READSET_FULL);
-			}
-		});
-	}
-
 
 	@Override
 	public List<String> findAllClusterNames() {
@@ -135,8 +117,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	proto.setActivedcId(cluster.getActivedcId());
     	proto.setClusterDescription(cluster.getClusterDescription());
     	proto.setStatus(ClusterStatus.Normal.toString());
-		proto.setIsXpipeInterested(true);
+			proto.setIsXpipeInterested(true);
     	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+    	proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
+		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
     	
     	final ClusterTbl queryProto = proto;
     	ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
@@ -161,16 +145,73 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	return result;
 	}
 
+	public long getIdFromClusterOrg(ClusterTbl cluster) {
+		OrganizationTbl organizationTbl = cluster.getOrganizationInfo();
+		if(organizationTbl == null)
+			return 0L;
+		Long id = organizationTbl.getId();
+		return id == null ? 0L : id;
+	}
+
+	@Override
+	public ClusterTbl findClusterAndOrg(String clusterName) {
+		ClusterTbl clusterTbl = clusterDao.findClusterAndOrgByName(clusterName);
+		OrganizationTbl organizationTbl = clusterTbl.getOrganizationInfo();
+		if(organizationTbl != null) {
+			clusterTbl.setClusterOrgName(organizationTbl.getOrgName());
+		}
+		// Set null if no organization bind with cluster
+		if(organizationTbl == null || organizationTbl.getId() == null) {
+			clusterTbl.setOrganizationInfo(null);
+		}
+		return clusterTbl;
+	}
+
+	@Override
+	public List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(long activeDc) {
+		List<ClusterTbl> result = clusterDao.findClustersWithOrgInfoByActiveDcId(activeDc);
+		result = fillClusterOrgName(result);
+		return setOrgNullIfNoOrgIdExsits(result);
+	}
+
+	@Override public List<ClusterTbl> findAllClustersWithOrgInfo() {
+		List<ClusterTbl> result = clusterDao.findAllClusterWithOrgInfo();
+		result = fillClusterOrgName(result);
+		return setOrgNullIfNoOrgIdExsits(result);
+	}
+
+	private List<ClusterTbl> fillClusterOrgName(List<ClusterTbl> clusterTblList) {
+		for(ClusterTbl cluster : clusterTblList) {
+			cluster.setClusterOrgName(cluster.getOrganizationInfo().getOrgName());
+		}
+		return clusterTblList;
+	}
+
+	private List<ClusterTbl> setOrgNullIfNoOrgIdExsits(List<ClusterTbl> clusterTblList) {
+		for(ClusterTbl cluster : clusterTblList) {
+			OrganizationTbl organizationTbl = cluster.getOrganizationInfo();
+			if(organizationTbl.getId() == null) {
+				cluster.setOrganizationInfo(null);
+			}
+		}
+		return clusterTblList;
+	}
+
 	@Override
 	public void updateCluster(String clusterName, ClusterTbl cluster) {
 		ClusterTbl proto = find(clusterName);
     	if(null == proto) throw new BadRequestException("Cannot find cluster");
-    	
+
 		if(proto.getId() != cluster.getId()) {
 			throw new BadRequestException("Cluster not match.");
 		}
 		proto.setClusterDescription(cluster.getClusterDescription());
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
+		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
+		// organization info should not be updated by cluster,
+		// it's automatically updated by scheduled task
+		proto.setOrganizationInfo(null);
 		
 		final ClusterTbl queryProto = proto;
     	queryHandler.handleQuery(new DalQuery<Integer>() {
