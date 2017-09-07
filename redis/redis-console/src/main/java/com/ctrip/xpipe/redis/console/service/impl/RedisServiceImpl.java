@@ -351,7 +351,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         return result;
     }
 
-    private void validateKeepers(List<RedisTbl> keepers) {
+    // Use protected for Unit Test available
+    protected void validateKeepers(List<RedisTbl> keepers) {
         if (2 != keepers.size()) {
             if (0 == keepers.size()) {
                 return;
@@ -389,7 +390,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             // keepercontainer check
             for (RedisTbl originalKeeper : originalKeepers) {
                 if (originalKeeper.getKeepercontainerId() == keeper.getKeepercontainerId()
-                        && originalKeeper.getId() != keeper.getId()) {
+                        && originalKeeper.getId().equals(keeper.getId())) {
                     throw new BadRequestException("If you wanna change keeper port in same keepercontainer,please delete it first.");
                 }
             }
