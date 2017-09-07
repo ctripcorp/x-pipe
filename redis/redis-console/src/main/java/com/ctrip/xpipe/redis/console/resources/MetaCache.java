@@ -19,6 +19,8 @@ public interface MetaCache {
 
     HostPort findMasterInSameShard(HostPort hostPort);
 
+    Set<HostPort> allKeepers();
+
     Pair<String, String> findClusterShard(HostPort hostPort);
 
     String getSentinelMonitorName(String clusterId, String shardId);

@@ -39,6 +39,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public Set<HostPort> allKeepers() {
+        return null;
+    }
+
+    @Override
     public Pair<String, String> findClusterShard(HostPort hostPort) {
         return null;
     }

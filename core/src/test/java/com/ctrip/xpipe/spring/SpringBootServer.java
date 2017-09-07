@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.spring;
 
+import com.ctrip.xpipe.codec.Person;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -28,6 +29,12 @@ public class SpringBootServer {
         TimeUnit.SECONDS.sleep(2);
         logger.info("[homeApple][end]");
         return "Apple!";
+    }
+
+    @RequestMapping("/person")
+    @ResponseBody
+    public String getPersonMoreElements() throws InterruptedException {
+        return "{\"sex\":\"FEMALE\",\"age\":100, \"haha\":\"fail\"}";
     }
 
 

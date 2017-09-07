@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
@@ -18,6 +20,7 @@ import com.google.common.collect.Sets;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnectionException;
 import com.lambdaworks.redis.sentinel.api.StatefulRedisSentinelConnection;
+import org.apache.catalina.Host;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,6 +90,8 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
 
+        Set<HostPort> allKeepers = metaCache.allKeepers();
+
         hellos.forEach((hello) -> {
             HostPort sentinelAddr = hello.getSentinelAddr();
             RedisClient redisConnection = null;
@@ -97,26 +102,42 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
                 boolean shoudReset = false;
                 String reason = null;
+                Set<HostPort> keepers = new HashSet<>();
 
                 for (Map<String, String> slave : slaves) {
+
                     String host = slave.get("ip");
                     int port = Integer.parseInt(slave.get("port"));
-                    Pair<String, String> clusterShard = metaCache.findClusterShard(new HostPort(host, port));
+                    HostPort currentSlave = new HostPort(host, port);
+
+                    if(allKeepers.contains(currentSlave)){
+                        keepers.add(currentSlave);
+                    }
+
+                    Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
                     if (clusterShard == null) {
                         if (isKeeperOrDead(host, port)) {
                             shoudReset = true;
-                            reason = String.format("[%s]keeper or dead, current:%s,%s, but no clustershard", new HostPort(host, port), clusterId, shardId);
+                            reason = String.format("[%s]keeper or dead, current:%s,%s, but no clustershard", currentSlave, clusterId, shardId);
                         }
                         continue;
                     }
                     if (!ObjectUtils.equals(clusterId, clusterShard.getKey()) || !ObjectUtils.equals(shardId, clusterShard.getValue())) {
                         shoudReset = true;
-                        reason = String.format("[%s], current:%s,%s, but meta:%s:%s", new HostPort(host, port), clusterId, shardId, clusterShard.getKey(), clusterShard.getValue());
+                        reason = String.format("[%s], current:%s,%s, but meta:%s:%s", currentSlave, clusterId, shardId, clusterShard.getKey(), clusterShard.getValue());
                         break;
                     }
                 }
+
+                if(!shoudReset && keepers.size() >= 2){
+                    shoudReset = true;
+                    reason = String.format("%s,%s, has %d keepers:%s", clusterId, shardId, keepers.size(), keepers);
+                }
+
                 if (shoudReset) {
-                    alertManager.forceAlert(clusterId, shardId, ALERT_TYPE.SENTINEL_RESET, String.format("%s, %s", sentinelAddr, reason));
+                    logger.info("[reset][sentinelAddr]{}, {}, {}", sentinelAddr, sentinelMonitorName, reason);
+                    EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
+                            String.format("[%s]%s,%s", ALERT_TYPE.SENTINEL_RESET, sentinelAddr, reason));
                     connection.sync().reset(sentinelMonitorName);
                 }
             } catch (Exception e) {
