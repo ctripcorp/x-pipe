@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.console.health.action;
 
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import org.springframework.stereotype.Component;
+
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 
 /**
  * @author wenchao.meng

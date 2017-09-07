@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.spring;
 
-import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -10,6 +9,7 @@ import org.springframework.context.annotation.Profile;
 
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;

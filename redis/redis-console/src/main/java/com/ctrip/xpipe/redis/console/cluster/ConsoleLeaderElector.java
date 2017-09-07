@@ -1,15 +1,16 @@
 package com.ctrip.xpipe.redis.console.cluster;
 
-import com.ctrip.xpipe.cluster.AbstractLeaderElector;
-import com.ctrip.xpipe.api.cluster.ClusterServer;
-import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.utils.IpUtils;
-import com.ctrip.xpipe.utils.StringUtil;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import com.ctrip.xpipe.api.cluster.ClusterServer;
+import com.ctrip.xpipe.cluster.AbstractLeaderElector;
+import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 
 /**
  * @author wenchao.meng
