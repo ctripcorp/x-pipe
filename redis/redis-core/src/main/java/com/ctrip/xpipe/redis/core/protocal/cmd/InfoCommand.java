@@ -22,6 +22,11 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 		this.args = args;
 	}
 
+	public InfoCommand(SimpleObjectPool<NettyClient> clientPool, INFO_TYPE infoType, ScheduledExecutorService scheduled) {
+		super(clientPool, scheduled);
+		this.args = infoType.cmd();
+	}
+
 	@Override
 	public String getName() {
 		return "info";
@@ -43,6 +48,17 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 	@Override
 	public String toString() {
 		return getName() + " " + (args == null? "":args);
+	}
+
+
+	public static enum INFO_TYPE{
+
+		REPLICATION,
+		SERVER;
+
+		public String cmd(){
+			return toString().toLowerCase();
+		}
 	}
 
 }
