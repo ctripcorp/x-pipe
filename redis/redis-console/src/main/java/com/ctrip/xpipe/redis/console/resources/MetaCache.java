@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import java.util.Set;
+
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.tuple.Pair;
-
-import java.util.Set;
 
 /**
  * @author wenchao.meng

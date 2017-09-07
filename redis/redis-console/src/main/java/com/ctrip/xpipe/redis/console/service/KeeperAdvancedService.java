@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.redis.console.model.ShardModel;
-
 import java.util.List;
 import java.util.function.BiPredicate;
 

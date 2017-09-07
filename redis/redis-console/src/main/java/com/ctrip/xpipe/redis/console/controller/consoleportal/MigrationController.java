@@ -5,8 +5,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
-import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +17,8 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import com.ctrip.xpipe.redis.console.model.MigrationEventModel;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
+import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 
 /**
  * @author shyin

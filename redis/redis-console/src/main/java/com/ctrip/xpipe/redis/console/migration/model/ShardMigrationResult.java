@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
+import java.util.Map;
+
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.tuple.Pair;
-
-import java.util.Map;
 
 /**
  * @author wenchao.meng

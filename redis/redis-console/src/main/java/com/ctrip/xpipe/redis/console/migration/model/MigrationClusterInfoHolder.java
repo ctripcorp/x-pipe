@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
+import java.util.List;
+import java.util.Map;
+
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author shyin
