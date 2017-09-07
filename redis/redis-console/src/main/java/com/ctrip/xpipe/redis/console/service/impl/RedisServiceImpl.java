@@ -45,7 +45,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
         @Override
         public int compare(RedisTbl o1, RedisTbl o2) {
-            if (o1.getId().equals(o2.getId())) {
+            if (o1 != null && o2 != null &&
+                    o1.getId() != null && o2.getId() != null
+                    && o1.getId().equals(o2.getId())) {
                 return 0;
             }
             return -1;
@@ -390,7 +392,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             // keepercontainer check
             for (RedisTbl originalKeeper : originalKeepers) {
                 if (originalKeeper.getKeepercontainerId() == keeper.getKeepercontainerId()
-                        && originalKeeper.getId().equals(keeper.getId())) {
+                        && !originalKeeper.getId().equals(keeper.getId())) {
                     throw new BadRequestException("If you wanna change keeper port in same keepercontainer,please delete it first.");
                 }
             }
