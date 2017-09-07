@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
-import com.ctrip.xpipe.redis.core.entity.Keeper;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.dal.jdbc.DalException;
 import com.ctrip.xpipe.tuple.Pair;
 
-import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,7 +24,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static com.ctrip.xpipe.redis.console.model.RedisTblEntity.REDIS_ROLE;
 
 /**
  * @author wenchao.meng
