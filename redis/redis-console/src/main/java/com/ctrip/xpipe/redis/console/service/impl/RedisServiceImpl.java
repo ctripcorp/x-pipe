@@ -389,7 +389,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                     return dao.findWithIpPort(keeper.getRedisIp(), keeper.getRedisPort(), RedisTblEntity.READSET_FULL);
                 }
             });
-            if (null != redisWithSameConfiguration && !(keeper.getId().equals(redisWithSameConfiguration.getId()))) {
+            if (null != redisWithSameConfiguration && keeper.getId() != null &&
+                    !(keeper.getId().equals(redisWithSameConfiguration.getId()))) {
                 throw new BadRequestException("Already in use for keeper's port : "
                         + String.valueOf(redisWithSameConfiguration.getRedisPort()));
             }
@@ -397,7 +398,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             // keepercontainer check
             for (RedisTbl originalKeeper : originalKeepers) {
                 if (originalKeeper.getKeepercontainerId() == keeper.getKeepercontainerId()
-                        && !originalKeeper.getId().equals(keeper.getId())) {
+                        && originalKeeper.getId() != null && !originalKeeper.getId().equals(keeper.getId())) {
                     throw new BadRequestException("If you wanna change keeper port in same keepercontainer,please delete it first.");
                 }
             }
