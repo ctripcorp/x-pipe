@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -50,9 +51,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
         @Override
         public int compare(RedisTbl o1, RedisTbl o2) {
-            if (o1 != null && o2 != null &&
-                    o1.getId() != null && o2.getId() != null
-                    && o1.getId().equals(o2.getId())) {
+            if (o1 != null && o2 != null
+                    && ObjectUtils.equals(o1.getId(), o2.getId())) {
                 return 0;
             }
             return -1;
@@ -389,8 +389,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                     return dao.findWithIpPort(keeper.getRedisIp(), keeper.getRedisPort(), RedisTblEntity.READSET_FULL);
                 }
             });
-            if (null != redisWithSameConfiguration && keeper.getId() != null &&
-                    !(keeper.getId().equals(redisWithSameConfiguration.getId()))) {
+            if (null != redisWithSameConfiguration
+                    && !ObjectUtils.equals(keeper.getId(), redisWithSameConfiguration.getId())) {
                 throw new BadRequestException("Already in use for keeper's port : "
                         + String.valueOf(redisWithSameConfiguration.getRedisPort()));
             }
@@ -398,7 +398,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             // keepercontainer check
             for (RedisTbl originalKeeper : originalKeepers) {
                 if (originalKeeper.getKeepercontainerId() == keeper.getKeepercontainerId()
-                        && originalKeeper.getId() != null && !originalKeeper.getId().equals(keeper.getId())) {
+                        && !originalKeeper.getId().equals(keeper.getId())) {
                     throw new BadRequestException("If you wanna change keeper port in same keepercontainer,please delete it first.");
                 }
             }
