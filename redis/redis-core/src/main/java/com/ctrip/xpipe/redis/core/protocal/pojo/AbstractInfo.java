@@ -13,7 +13,7 @@ public abstract class AbstractInfo implements RedisInfo{
 
     private static final String KEEPER_ROLE_PREFIX = RedisProtocol.KEEPER_ROLE_PREFIX;
 
-    private Server.SERVER_ROLE serverRole;
+    private Server.SERVER_ROLE role;
 
     private boolean isKeeper;
 
@@ -21,13 +21,21 @@ public abstract class AbstractInfo implements RedisInfo{
 
     }
     public AbstractInfo(Server.SERVER_ROLE serverRole, boolean isKeeper){
-        this.serverRole = serverRole;
+        this.role = serverRole;
         this.isKeeper = isKeeper;
     }
 
     @Override
     public Server.SERVER_ROLE getRole() {
-        return serverRole;
+        return role;
+    }
+
+    public void setServerRole(Server.SERVER_ROLE role) {
+        this.role = role;
+    }
+
+    public void setKeeper(boolean keeper) {
+        isKeeper = keeper;
     }
 
     @Override

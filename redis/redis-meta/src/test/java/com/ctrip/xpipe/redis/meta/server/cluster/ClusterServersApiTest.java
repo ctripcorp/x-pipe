@@ -124,8 +124,10 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 			
 			logger.info("[testChangePrimaryDcCheck]{}", server.getAddress());
 			MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(server.getAddress());
-			consoleService.makeMasterReadOnly(getClusterId(), getShardId(), true);
-			consoleService.makeMasterReadOnly(getClusterId(), getShardId(), false);
+			MetaServerConsoleService.PreviousPrimaryDcMessage message = consoleService.makeMasterReadOnly(getClusterId(), getShardId(), true);
+			logger.info("[testMakeMasterReadOnly][true]{}", message);
+			message = consoleService.makeMasterReadOnly(getClusterId(), getShardId(), false);
+			logger.info("[testMakeMasterReadOnly][false]{}", message);
 		}
 		
 	}

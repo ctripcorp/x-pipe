@@ -24,6 +24,7 @@ public class InfoReplicationCommandTest extends AbstractRedisTest{
 
     @Test
     public void testSplit(){
+
         String replication = "# Replication\r\n" +
                 "role:master\r\n" +
                 "connected_slaves:1\r\n" +

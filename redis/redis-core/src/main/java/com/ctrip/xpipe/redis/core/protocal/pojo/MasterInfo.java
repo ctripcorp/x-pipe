@@ -68,5 +68,4 @@ public class MasterInfo extends AbstractInfo{
         }
         return masterInfo;
     }
-
 }

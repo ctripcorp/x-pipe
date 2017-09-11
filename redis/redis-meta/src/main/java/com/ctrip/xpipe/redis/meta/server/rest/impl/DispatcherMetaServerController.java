@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
 
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -74,11 +75,11 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_MAKE_MASTER_READONLY, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public void makeMasterReadOnly(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable boolean readOnly, 
-			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+	public MetaServerConsoleService.PreviousPrimaryDcMessage makeMasterReadOnly(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable boolean readOnly,
+																				@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
 		
 		logger.info("[makeMasterReadOnly]{}, {}, {}", clusterId, shardId, readOnly);
-		metaServer.makeMasterReadOnly(clusterId, shardId, readOnly, forwardInfo);
+		return metaServer.makeMasterReadOnly(clusterId, shardId, readOnly, forwardInfo);
 	}
 	
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)

@@ -37,6 +37,15 @@ public class SlaveInfo extends AbstractInfo{
         return masterReplId;
     }
 
+    //when psync2, master -> slave, get raw master info
+    public MasterInfo toMasterInfo(){
+
+        if(masterReplId == null || slaveReplOffset == null || slaveReplOffset == 0){
+            return null;
+        }
+
+        return new MasterInfo(masterReplId, slaveReplOffset);
+    }
 
 
     public static SlaveInfo fromInfo(String []lines){
