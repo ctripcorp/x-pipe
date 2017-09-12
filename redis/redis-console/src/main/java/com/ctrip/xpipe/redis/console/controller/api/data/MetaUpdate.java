@@ -183,7 +183,7 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
     private RetMessage updateSingleCluster(ClusterCreateInfo clusterInfo) {
-        boolean NEED_UPDATE = false;
+        boolean needUpdate = false;
         try {
             ClusterTbl clusterTbl = clusterService.find(clusterInfo.getClusterName());
             if(clusterTbl == null) {
@@ -192,14 +192,14 @@ public class MetaUpdate extends AbstractConsoleController {
             }
             Long clusterOrgId = getOrganizationId(clusterInfo);
             if(!ObjectUtils.equals(clusterTbl.getClusterOrgId(), clusterOrgId)) {
-                NEED_UPDATE = true;
+                needUpdate = true;
                 clusterTbl.setClusterOrgId(clusterOrgId);
             }
             if(!ObjectUtils.equals(clusterTbl.getClusterAdminEmails(), clusterInfo.getClusterAdminEmails())) {
-                NEED_UPDATE = true;
+                needUpdate = true;
                 clusterTbl.setClusterAdminEmails(clusterInfo.getClusterAdminEmails());
             }
-            if(NEED_UPDATE) {
+            if(needUpdate) {
                 clusterService.update(clusterTbl);
             } else {
                 String message = String.format("No field changes for cluster: %s", clusterInfo.getClusterName());
