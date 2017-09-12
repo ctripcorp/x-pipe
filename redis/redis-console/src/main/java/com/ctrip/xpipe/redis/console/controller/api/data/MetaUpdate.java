@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -104,7 +105,7 @@ public class MetaUpdate extends AbstractConsoleController {
         ClusterModel clusterModel = new ClusterModel();
         OrganizationTbl organizationTbl;
         try {
-            organizationTbl = getOrganizationId(clusterCreateInfo);
+            organizationTbl = getOrganizationTbl(clusterCreateInfo);
             clusterCreateInfo.check();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
@@ -123,7 +124,7 @@ public class MetaUpdate extends AbstractConsoleController {
         return RetMessage.createSuccessMessage();
     }
 
-    private OrganizationTbl getOrganizationId(ClusterCreateInfo clusterCreateInfo) {
+    private OrganizationTbl getOrganizationTbl(ClusterCreateInfo clusterCreateInfo) {
         Long organizationId = clusterCreateInfo.getOrganizationId();
         if(organizationId == null) {
             throw new IllegalStateException("organizationId is required");
@@ -158,6 +159,57 @@ public class MetaUpdate extends AbstractConsoleController {
         }
         clusterCreateInfo.setDcs(trans);
         return clusterCreateInfo;
+    }
+
+    @RequestMapping(value = "/cluster", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public RetMessage updateCluster(@RequestBody ClusterCreateInfo clusterInfo) {
+        return updateSingleCluster(clusterInfo);
+    }
+
+    @RequestMapping(value = "/clusters", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public RetMessage updateClusters(@RequestBody List<ClusterCreateInfo> clusterInfos) {
+        for(ClusterCreateInfo clusterCreateInfo : clusterInfos) {
+            RetMessage retMessage = updateSingleCluster(clusterCreateInfo);
+            if(ObjectUtils.equals(retMessage.getState(), RetMessage.FAIL_STATE))
+                return retMessage;
+        }
+        return RetMessage.createSuccessMessage();
+    }
+
+    private Long getOrganizationId(ClusterCreateInfo clusterCreateInfo) {
+        OrganizationTbl organizationTbl = getOrganizationTbl(clusterCreateInfo);
+        Long id = organizationTbl.getId();
+        return id == null ? 0L : id;
+    }
+
+    private RetMessage updateSingleCluster(ClusterCreateInfo clusterInfo) {
+        boolean NEED_UPDATE = false;
+        try {
+            ClusterTbl clusterTbl = clusterService.find(clusterInfo.getClusterName());
+            if(clusterTbl == null) {
+                String message = String.format("cluster not found: %s", clusterInfo.getClusterName());
+                return RetMessage.createFailMessage(message);
+            }
+            Long clusterOrgId = getOrganizationId(clusterInfo);
+            if(!ObjectUtils.equals(clusterTbl.getClusterOrgId(), clusterOrgId)) {
+                NEED_UPDATE = true;
+                clusterTbl.setClusterOrgId(clusterOrgId);
+            }
+            if(!ObjectUtils.equals(clusterTbl.getClusterAdminEmails(), clusterInfo.getClusterAdminEmails())) {
+                NEED_UPDATE = true;
+                clusterTbl.setClusterAdminEmails(clusterInfo.getClusterAdminEmails());
+            }
+            if(NEED_UPDATE) {
+                clusterService.update(clusterTbl);
+            } else {
+                String message = String.format("No field changes for cluster: %s", clusterInfo.getClusterName());
+                return RetMessage.createSuccessMessage(message);
+            }
+        } catch (Exception e) {
+            logger.error("{}", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+        return RetMessage.createSuccessMessage();
     }
 
     @RequestMapping(value = "/clusters", method = RequestMethod.GET)
