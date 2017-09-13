@@ -29,6 +29,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static String KEY_SLOT_REFRESH_MILLI = "slot.refresh.milli";
 	public static String KEY_LEADER_CHACK_MILLI = "leader.check.milli";
 	public static String KEY_CLUSTER_SERVERS_CHACK_MILLI = "cluster.servers.check.milli";
+	public static String KEY_WAITFOR_OFFSET_MILLI = "dcchange.waitfor.offset.milli";
 	public static String KEY_DC_INFOS = "dcinfos";
 	
 	
@@ -112,7 +113,10 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 		return result;
 	}
 
-
+	@Override
+	public int getWaitforOffsetMilli() {
+		return getIntProperty(KEY_WAITFOR_OFFSET_MILLI, 2000);
+	}
 
 
 	//from local config file
