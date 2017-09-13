@@ -49,7 +49,7 @@ public interface MetaServerConsoleService extends MetaServerService{
 	 * @param newPrimaryDc
 	 * @return
 	 */
-	PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc);
+	PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, PrimaryDcChangeRequest request);
 
 	DcMeta getDynamicInfo();
 	
@@ -126,7 +126,32 @@ public interface MetaServerConsoleService extends MetaServerService{
 		SUCCESS,
 		FAIL
 	}
-	
+
+	public static class PrimaryDcChangeRequest {
+
+		private MasterInfo masterInfo;
+
+		public PrimaryDcChangeRequest(){
+		}
+
+		public PrimaryDcChangeRequest(MasterInfo masterInfo){
+			this.masterInfo = masterInfo;
+		}
+
+		public MasterInfo getMasterInfo() {
+			return masterInfo;
+		}
+
+		public void setMasterInfo(MasterInfo masterInfo) {
+			this.masterInfo = masterInfo;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("masterInfo: %s", masterInfo);
+		}
+	}
+
 	public static class PrimaryDcChangeMessage extends ErrorMessage<PRIMARY_DC_CHANGE_RESULT>{
 		
 		private String newMasterIp;

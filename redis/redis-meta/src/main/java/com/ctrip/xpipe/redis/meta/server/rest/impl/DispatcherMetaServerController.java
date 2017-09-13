@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
-
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -82,12 +81,15 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 		return metaServer.makeMasterReadOnly(clusterId, shardId, readOnly, forwardInfo);
 	}
 	
-	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public PrimaryDcChangeMessage doChangePrimaryDc(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc, 
-			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
-		
-		logger.info("[doChangePrimaryDc]{}, {}, {}", clusterId, shardId, newPrimaryDc);
-		return metaServer.doChangePrimaryDc(clusterId, shardId, newPrimaryDc, forwardInfo);
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC, method = RequestMethod.PUT,
+			produces= MediaType.APPLICATION_JSON_UTF8_VALUE,
+			consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public PrimaryDcChangeMessage doChangePrimaryDc(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc,
+													@RequestBody(required = false) MetaServerConsoleService.PrimaryDcChangeRequest request,
+													@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+
+		logger.info("[doChangePrimaryDc]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, request);
+		return metaServer.doChangePrimaryDc(clusterId, shardId, newPrimaryDc, request, forwardInfo);
 	}
 
 }
