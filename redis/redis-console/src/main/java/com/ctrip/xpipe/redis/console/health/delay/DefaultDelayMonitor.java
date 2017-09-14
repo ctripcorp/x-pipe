@@ -45,6 +45,11 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 
 	@Override
 	protected void notifyCollectors(Sample<InstanceDelayResult> sample) {
+		sample.getSamplePlan().getHostPort2SampleResult().keySet().forEach((hostPort) -> {
+
+			RedisSession redisSession = findRedisSession(hostPort);
+			redisSession.closeSubscribedChannel(CHECK_CHANNEL);
+		});
 		DelaySampleResult sampleResult = convertToSampleResult(sample);
 		for (DelayCollector collector : delayCollectors) {
 			collector.collect(sampleResult);

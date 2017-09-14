@@ -52,7 +52,7 @@ public class HealthChecker {
 
 					try {
 						List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
-						if(dcsToCheck != null){
+						if(!dcsToCheck.isEmpty()){
 							sampleAll(dcsToCheck);
 						}
 					} catch (Throwable e) {
