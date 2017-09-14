@@ -9,6 +9,8 @@ import java.util.concurrent.*;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
+import com.ctrip.xpipe.redis.meta.server.dcchange.OffsetWaiter;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisSlaveOfMasterFailException;
 
 import com.ctrip.xpipe.api.command.Command;
@@ -37,20 +39,25 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 
 	private NewMasterChooser newMasterChooser;
+	private OffsetWaiter offsetWaiter;
 
-	public BecomePrimaryAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser, ScheduledExecutorService scheduled, Executor executors) {
+	public BecomePrimaryAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, OffsetWaiter offsetWaiter, XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser, ScheduledExecutorService scheduled, Executor executors) {
 		super(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, scheduled, executors);
 		this.newMasterChooser = newMasterChooser;
+		this.offsetWaiter = offsetWaiter;
 	}
 
-	protected PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
+	protected PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
 		
 		doChangeMetaCache(clusterId, shardId, newPrimaryDc);
 		
 		executionLog.info(String.format("[chooseNewMaster][begin]"));
 		Pair<String, Integer> newMaster = chooseNewMaster(clusterId, shardId);
 		executionLog.info(String.format("[chooseNewMaster]%s:%d", newMaster.getKey(), newMaster.getValue()));
-		
+
+		//wait for slave to achieve master offset
+		offsetWaiter.tryWaitfor(new HostPort(newMaster.getKey(), newMaster.getValue()), masterInfo, executionLog);
+
 		List<RedisMeta> slaves = getAllSlaves(newMaster, dcMetaCache.getShardRedises(clusterId, shardId));
 		
 		makeRedisesOk(newMaster, slaves);

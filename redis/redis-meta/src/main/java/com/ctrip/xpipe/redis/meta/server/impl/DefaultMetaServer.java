@@ -211,7 +211,6 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		}else {
 			message = primaryDcPrepareToChange.deprepare(clusterId, shardId);
 		}
-
 		return message;
 	}
 
@@ -222,6 +221,6 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		logger.info("[doChangePrimaryDc]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, request);
 		dcMetaCache.primaryDcChanged(clusterId, shardId, newPrimaryDc);
 		
-		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc);
+		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, request.getMasterInfo());
 	}
 }

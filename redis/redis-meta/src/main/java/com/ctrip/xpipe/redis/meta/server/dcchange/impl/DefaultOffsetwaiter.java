@@ -44,6 +44,11 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
     @Override
     public boolean tryWaitfor(HostPort hostPort, MasterInfo masterInfo, ExecutionLog executionLog) {
 
+        if(hostPort == null){
+            executionLog.info("target instance null:" + hostPort);
+            return false;
+        }
+
         if (masterInfo == null) {
             executionLog.info("master info null, no wait");
             return false;
@@ -57,7 +62,14 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
         }
 
         executionLog.info(String.format("wait for %s %s", hostPort, masterInfo));
-        return doWait(masterReplId, masterOffset, hostPort, executionLog);
+
+        try {
+            return doWait(masterReplId, masterOffset, hostPort, executionLog);
+        } catch (Exception e) {
+            logger.error("[tryWaitfor]" + hostPort + "," + masterInfo, e);
+            executionLog.error(e.getMessage());
+        }
+        return  false;
     }
 
     private boolean doWait(String masterReplId, Long masterOffset, HostPort hostPort, ExecutionLog executionLog) {
@@ -86,14 +98,14 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
                 String slaveReplId = slaveInfo.getMasterReplId();
                 Long slaveOffset = slaveInfo.getSlaveReplOffset();
 
-                if (!StringUtil.isEmpty(slaveReplId) && !StringUtil.isEmpty(masterReplId)){
-                    if(!slaveReplId.equalsIgnoreCase(masterReplId)){
+                if (!StringUtil.isEmpty(slaveReplId) && !StringUtil.isEmpty(masterReplId)) {
+                    if (!slaveReplId.equalsIgnoreCase(masterReplId)) {
                         executionLog.info(String.format("master replid not equal with slave replid, break. %s %s", masterReplId, slaveReplId));
                         break;
                     }
                 }
                 executionLog.info(String.format("master offset:%s, slave offset:%d, sub:%d", masterOffset, slaveOffset, masterOffset - slaveOffset));
-                if(slaveOffset >= masterOffset){
+                if (slaveOffset >= masterOffset) {
                     executionLog.info(String.format("wait succeed!", masterOffset, slaveOffset));
                     return true;
                 }

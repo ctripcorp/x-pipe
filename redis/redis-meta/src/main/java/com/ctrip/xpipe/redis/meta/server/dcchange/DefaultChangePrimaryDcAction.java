@@ -5,6 +5,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,8 +54,11 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	@Autowired
 	private MultiDcService multiDcService;
 
+	@Autowired
+	private OffsetWaiter offsetWaiter;
+
 	@Override
-	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
+	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
 		
 		if(!currentMetaManager.hasCluster(clusterId)){
 			logger.info("[changePrimaryDc][not interested in this cluster]");
@@ -64,12 +68,12 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 		ChangePrimaryDcAction changePrimaryDcAction = null;
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
 			logger.info("[doChangePrimaryDc][become primary]{}, {}", clusterId, shardId, newPrimaryDc);
-			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
+			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, offsetWaiter, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
 		}else{
 			logger.info("[doChangePrimaryDc][become backup]{}, {}", clusterId, shardId, newPrimaryDc);
 			changePrimaryDcAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, multiDcService, scheduled, executors);
 		}
-		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc);
+		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
 	}
 
 	private NewMasterChooser createNewMasterChooser() {

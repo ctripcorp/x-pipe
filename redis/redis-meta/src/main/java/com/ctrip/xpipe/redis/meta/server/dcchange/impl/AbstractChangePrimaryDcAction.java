@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 import java.util.List;
 import java.util.concurrent.*;
 
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,10 +62,10 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 	}
 
 	@Override
-	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
+	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
 		
 		try{
-			return doChangePrimaryDc(clusterId, shardId, newPrimaryDc);
+			return doChangePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
 		}catch(Exception e){
 			executionLog.error(e.getMessage());
 			logger.error("[changePrimaryDc]" + clusterId + "," + shardId + "," + newPrimaryDc, e);
@@ -72,7 +73,7 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 		}
 	}
 
-	protected abstract PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc);
+	protected abstract PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo);
 
 	protected abstract void changeSentinel(String clusterId, String shardId, Pair<String, Integer> newMaster);
 
