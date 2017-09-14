@@ -1,21 +1,16 @@
 package com.ctrip.xpipe.spring;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.codec.Person;
 import com.ctrip.xpipe.testutils.SpringApplicationStarter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestOperations;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng
