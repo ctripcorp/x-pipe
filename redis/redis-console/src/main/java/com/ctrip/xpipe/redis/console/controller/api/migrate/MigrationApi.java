@@ -142,10 +142,10 @@ public class MigrationApi extends AbstractConsoleController {
         return response;
     }
 
-    @RequestMapping(value = "/tryRollback", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
+    @RequestMapping(value = "/rollback", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
     public RollbackResponse rollback(@RequestBody(required = true) RollbackRequest request) {
 
-        logger.info("[tryRollback]{}", request);
+        logger.info("[rollback]{}", request);
 
         long tickedId = request.getTicketId();
 
@@ -162,10 +162,10 @@ public class MigrationApi extends AbstractConsoleController {
                 migrationCluster = migrationService.rollbackMigrationCluster(tickedId, clusterName);
                 rollbackResponse.addResult(new RollbackClusterResponse(true, clusterName, migrationCluster.fromDc(), migrationCluster.destDc(), "success"));
             } catch (ClusterNotFoundException e) {
-                logger.error("[tryRollback]" + clusterName, e);
+                logger.error("[rollback]" + clusterName, e);
                 rollbackResponse.addResult(new RollbackClusterResponse(false, clusterName, e.getMessage()));
             } catch (Exception e) {
-                logger.error("[tryRollback]" + clusterName, e);
+                logger.error("[rollback]" + clusterName, e);
                 if (migrationCluster == null) {
                     rollbackResponse.addResult(new RollbackClusterResponse(false, clusterName, e.getMessage()));
                 } else {
