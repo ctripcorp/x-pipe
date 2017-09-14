@@ -12,7 +12,6 @@ import org.unidal.dal.jdbc.engine.QueryContext;
 import org.unidal.dal.jdbc.mapping.TableProvider;
 import org.unidal.dal.jdbc.mapping.TableProviderManager;
 import org.unidal.dal.jdbc.transaction.TransactionManager;
-
 import org.unidal.lookup.annotation.Inject;
 import org.unidal.lookup.annotation.Named;
 

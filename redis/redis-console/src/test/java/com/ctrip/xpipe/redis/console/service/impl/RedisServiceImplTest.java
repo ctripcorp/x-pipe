@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.dao.RedisDao;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
@@ -15,11 +17,13 @@ import org.unidal.dal.jdbc.DalException;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
 
 /**
  * @author wenchao.meng
@@ -33,6 +37,9 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
 
     @Autowired
     private KeeperAdvancedService keeperAdvancedService;
+
+    @Autowired
+    private RedisDao redisDao;
 
     private String dcName;
     private String shardName;
@@ -237,5 +244,19 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         Assert.assertEquals(2, inter.size());
     }
 
+    @Test
+    public void testValidateKeepersWithNothingChanged() throws ResourceNotFoundException {
+        List<RedisTbl> keepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
+        redisService.validateKeepers(keepers);
+    }
 
+    @Test(expected = BadRequestException.class)
+    public void testValidateKeepersWithKeeperPortChange() throws ResourceNotFoundException {
+        List<RedisTbl> originKeepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
+        List<RedisTbl> targetKeepers = new ArrayList<>(originKeepers);
+        // A front end port change, leads to an id change in backend
+        // Due to the function logic, we change the id only
+        targetKeepers.get(0).setId(11111L);
+        redisService.validateKeepers(targetKeepers);
+    }
 }
