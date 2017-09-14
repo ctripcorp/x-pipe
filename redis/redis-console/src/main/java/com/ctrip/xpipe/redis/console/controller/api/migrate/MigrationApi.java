@@ -3,8 +3,29 @@ package com.ctrip.xpipe.redis.console.controller.api.migrate;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.ctrip.xpipe.api.migration.DcMapper;
-import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.*;
+import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.AbstractClusterMeta;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CHECK_FAIL_STATUS;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareClusterResponse;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareRequest;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareResponse;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckStatusClusterResponse;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckStatusResponse;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DO_STATUS;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoRequest;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoResponse;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.RollbackClusterResponse;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.RollbackRequest;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.RollbackResponse;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -14,11 +35,6 @@ import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratin
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.TryMigrateResult;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
-
-import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 
 /**
  * @author wenchao.meng
@@ -126,10 +142,10 @@ public class MigrationApi extends AbstractConsoleController {
         return response;
     }
 
-    @RequestMapping(value = "/tryRollback", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
+    @RequestMapping(value = "/rollback", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
     public RollbackResponse rollback(@RequestBody(required = true) RollbackRequest request) {
 
-        logger.info("[tryRollback]{}", request);
+        logger.info("[rollback]{}", request);
 
         long tickedId = request.getTicketId();
 
@@ -146,10 +162,10 @@ public class MigrationApi extends AbstractConsoleController {
                 migrationCluster = migrationService.rollbackMigrationCluster(tickedId, clusterName);
                 rollbackResponse.addResult(new RollbackClusterResponse(true, clusterName, migrationCluster.fromDc(), migrationCluster.destDc(), "success"));
             } catch (ClusterNotFoundException e) {
-                logger.error("[tryRollback]" + clusterName, e);
+                logger.error("[rollback]" + clusterName, e);
                 rollbackResponse.addResult(new RollbackClusterResponse(false, clusterName, e.getMessage()));
             } catch (Exception e) {
-                logger.error("[tryRollback]" + clusterName, e);
+                logger.error("[rollback]" + clusterName, e);
                 if (migrationCluster == null) {
                     rollbackResponse.addResult(new RollbackClusterResponse(false, clusterName, e.getMessage()));
                 } else {

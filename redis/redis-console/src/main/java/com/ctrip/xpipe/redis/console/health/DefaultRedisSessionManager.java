@@ -1,14 +1,21 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.lambdaworks.redis.ClientOptions;
 import com.lambdaworks.redis.ClientOptions.DisconnectedBehavior;
 import com.lambdaworks.redis.RedisClient;
@@ -16,9 +23,6 @@ import com.lambdaworks.redis.RedisURI;
 import com.lambdaworks.redis.resource.ClientResources;
 import com.lambdaworks.redis.resource.DefaultClientResources;
 import com.lambdaworks.redis.resource.Delay;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 /**
  * @author marsqing

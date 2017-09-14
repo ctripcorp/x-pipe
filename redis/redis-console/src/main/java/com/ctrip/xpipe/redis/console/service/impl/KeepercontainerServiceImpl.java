@@ -2,18 +2,18 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import java.util.List;
 
-import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTblDao;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
 
 @Service
@@ -77,15 +77,19 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
     } else {
       clusterOrgId = XPipeConsoleConstant.DEFAULT_ORG_ID;
     }
+    logger.info("cluster org id: {}", clusterOrgId);
     return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
       @Override
       public List<KeepercontainerTbl> doQuery() throws DalException {
         List<KeepercontainerTbl> kcs = dao.findKeeperContainerByCluster(dcName, clusterOrgId,
             KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
         if (kcs == null || kcs.isEmpty()) {
+          logger.info("cluster {} with org id {} is going to find keepercontainers in normal pool",
+                  clusterName, clusterOrgId);
           kcs = dao.findKeeperContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID,
               KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
         }
+        logger.info("find keeper containers: {}", kcs);
         return kcs;
       }
     });

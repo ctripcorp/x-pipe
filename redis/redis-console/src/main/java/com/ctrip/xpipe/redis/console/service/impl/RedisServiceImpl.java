@@ -5,11 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
-import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.MathUtil;
-import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -26,6 +22,16 @@ import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
+import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.MathUtil;
+import com.ctrip.xpipe.utils.StringUtil;
 
 
 @Service
@@ -45,7 +51,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
         @Override
         public int compare(RedisTbl o1, RedisTbl o2) {
-            if (o1.getId().equals(o2.getId())) {
+            if (o1 != null && o2 != null
+                    && ObjectUtils.equals(o1.getId(), o2.getId())) {
                 return 0;
             }
             return -1;
@@ -351,7 +358,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         return result;
     }
 
-    private void validateKeepers(List<RedisTbl> keepers) {
+    // Use protected for Unit Test available
+    protected void validateKeepers(List<RedisTbl> keepers) {
         if (2 != keepers.size()) {
             if (0 == keepers.size()) {
                 return;
@@ -381,7 +389,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                     return dao.findWithIpPort(keeper.getRedisIp(), keeper.getRedisPort(), RedisTblEntity.READSET_FULL);
                 }
             });
-            if (null != redisWithSameConfiguration && !(keeper.getId().equals(redisWithSameConfiguration.getId()))) {
+            if (null != redisWithSameConfiguration
+                    && !ObjectUtils.equals(keeper.getId(), redisWithSameConfiguration.getId())) {
                 throw new BadRequestException("Already in use for keeper's port : "
                         + String.valueOf(redisWithSameConfiguration.getRedisPort()));
             }
@@ -389,7 +398,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             // keepercontainer check
             for (RedisTbl originalKeeper : originalKeepers) {
                 if (originalKeeper.getKeepercontainerId() == keeper.getKeepercontainerId()
-                        && originalKeeper.getId() != keeper.getId()) {
+                        && !originalKeeper.getId().equals(keeper.getId())) {
                     throw new BadRequestException("If you wanna change keeper port in same keepercontainer,please delete it first.");
                 }
             }

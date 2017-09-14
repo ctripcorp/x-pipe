@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.health.redismaster;
 
+import java.util.List;
+
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-
-import java.util.List;
 
 /**
  * @author wenchao.meng

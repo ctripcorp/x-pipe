@@ -9,7 +9,6 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.unidal.dal.jdbc.transaction.TransactionManager;
 import org.unidal.lookup.ContainerLoader;
 

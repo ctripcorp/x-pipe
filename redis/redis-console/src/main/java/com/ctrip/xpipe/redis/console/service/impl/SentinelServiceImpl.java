@@ -1,16 +1,19 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import javax.annotation.PostConstruct;
 
-import com.ctrip.xpipe.api.factory.ObjectFactory;
-import com.ctrip.xpipe.utils.MapUtils;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
+import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTblDao;
@@ -21,6 +24,7 @@ import com.ctrip.xpipe.redis.console.model.SetinelTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
+import com.ctrip.xpipe.utils.MapUtils;
 
 @Service
 public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> implements SentinelService {

@@ -1,25 +1,40 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import com.ctrip.xpipe.utils.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
-import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.ClusterModel;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 /**
  * @author wenchao.meng
@@ -90,7 +105,7 @@ public class MetaUpdate extends AbstractConsoleController {
         ClusterModel clusterModel = new ClusterModel();
         OrganizationTbl organizationTbl;
         try {
-            organizationTbl = getOrganizationId(clusterCreateInfo);
+            organizationTbl = getOrganizationTbl(clusterCreateInfo);
             clusterCreateInfo.check();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
@@ -109,7 +124,7 @@ public class MetaUpdate extends AbstractConsoleController {
         return RetMessage.createSuccessMessage();
     }
 
-    private OrganizationTbl getOrganizationId(ClusterCreateInfo clusterCreateInfo) {
+    private OrganizationTbl getOrganizationTbl(ClusterCreateInfo clusterCreateInfo) {
         Long organizationId = clusterCreateInfo.getOrganizationId();
         if(organizationId == null) {
             throw new IllegalStateException("organizationId is required");
@@ -144,6 +159,57 @@ public class MetaUpdate extends AbstractConsoleController {
         }
         clusterCreateInfo.setDcs(trans);
         return clusterCreateInfo;
+    }
+
+    @RequestMapping(value = "/cluster", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public RetMessage updateCluster(@RequestBody ClusterCreateInfo clusterInfo) {
+        return updateSingleCluster(clusterInfo);
+    }
+
+    @RequestMapping(value = "/clusters", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public RetMessage updateClusters(@RequestBody List<ClusterCreateInfo> clusterInfos) {
+        for(ClusterCreateInfo clusterCreateInfo : clusterInfos) {
+            RetMessage retMessage = updateSingleCluster(clusterCreateInfo);
+            if(ObjectUtils.equals(retMessage.getState(), RetMessage.FAIL_STATE))
+                return retMessage;
+        }
+        return RetMessage.createSuccessMessage();
+    }
+
+    private Long getOrganizationId(ClusterCreateInfo clusterCreateInfo) {
+        OrganizationTbl organizationTbl = getOrganizationTbl(clusterCreateInfo);
+        Long id = organizationTbl.getId();
+        return id == null ? 0L : id;
+    }
+
+    private RetMessage updateSingleCluster(ClusterCreateInfo clusterInfo) {
+        boolean needUpdate = false;
+        try {
+            ClusterTbl clusterTbl = clusterService.find(clusterInfo.getClusterName());
+            if(clusterTbl == null) {
+                String message = String.format("cluster not found: %s", clusterInfo.getClusterName());
+                return RetMessage.createFailMessage(message);
+            }
+            Long clusterOrgId = getOrganizationId(clusterInfo);
+            if(!ObjectUtils.equals(clusterTbl.getClusterOrgId(), clusterOrgId)) {
+                needUpdate = true;
+                clusterTbl.setClusterOrgId(clusterOrgId);
+            }
+            if(!ObjectUtils.equals(clusterTbl.getClusterAdminEmails(), clusterInfo.getClusterAdminEmails())) {
+                needUpdate = true;
+                clusterTbl.setClusterAdminEmails(clusterInfo.getClusterAdminEmails());
+            }
+            if(needUpdate) {
+                clusterService.update(clusterTbl);
+            } else {
+                String message = String.format("No field changes for cluster: %s", clusterInfo.getClusterName());
+                return RetMessage.createSuccessMessage(message);
+            }
+        } catch (Exception e) {
+            logger.error("{}", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+        return RetMessage.createSuccessMessage();
     }
 
     @RequestMapping(value = "/clusters", method = RequestMethod.GET)
