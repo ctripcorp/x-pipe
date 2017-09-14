@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
+import com.ctrip.xpipe.redis.meta.server.dcchange.OffsetWaiter;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,6 +40,9 @@ public class BecomePrimaryActionTest extends AbstractMetaServerTest{
 	
 	@Mock
 	private NewMasterChooser newMasterChooser;
+
+	@Mock
+	private OffsetWaiter offsetWaiter;
 	
 	private String newPrimaryDc = "jq";
 
@@ -60,9 +65,9 @@ public class BecomePrimaryActionTest extends AbstractMetaServerTest{
 	@Test
 	public void test() throws Exception{
 		
-		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, getXpipeNettyClientKeyedObjectPool(), newMasterChooser, scheduled, executors);
+		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, offsetWaiter, getXpipeNettyClientKeyedObjectPool(), newMasterChooser, scheduled, executors);
 		
-		PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc);
+		PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc, new MasterInfo());
 		
 		logger.info("{}", message);
 	}

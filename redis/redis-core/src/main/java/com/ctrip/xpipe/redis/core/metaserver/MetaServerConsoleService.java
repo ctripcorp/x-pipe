@@ -134,6 +134,12 @@ public interface MetaServerConsoleService extends MetaServerService{
 		public PrimaryDcChangeRequest(){
 		}
 
+		public PrimaryDcChangeRequest(PreviousPrimaryDcMessage previousPrimaryDcMessage){
+			if(previousPrimaryDcMessage != null){
+				this.masterInfo = previousPrimaryDcMessage.getMasterInfo();
+			}
+		}
+
 		public PrimaryDcChangeRequest(MasterInfo masterInfo){
 			this.masterInfo = masterInfo;
 		}

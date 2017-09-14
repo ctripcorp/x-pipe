@@ -123,7 +123,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                         return "testPrevPrimaryDcSuccess";
                     }
                 });
-        when(mockedCommandBuilder.buildNewPrimaryDcCommand("test-cluster", "test-shard", "dc-b"))
+        when(mockedCommandBuilder.buildNewPrimaryDcCommand(eq("test-cluster"), eq("test-shard"), eq("dc-b"), anyObject()))
                 .thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
                     @Override
                     protected void doExecute() throws Exception {
@@ -189,7 +189,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                         return "testPrevPrimaryDcSuccess";
                     }
                 });
-        when(mockedCommandBuilder.buildNewPrimaryDcCommand("test-cluster", "test-shard", "dc-b"))
+        when(mockedCommandBuilder.buildNewPrimaryDcCommand(eq("test-cluster"), eq("test-shard"), eq("dc-b"), anyObject()))
                 .thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
                     @Override
                     protected void doExecute() throws Exception {

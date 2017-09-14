@@ -145,7 +145,8 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 
 	protected void mockSuccessNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
 			String shard, String newPrimaryDc) {
-		when(migrationCommandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc))
+
+		when(migrationCommandBuilder.buildNewPrimaryDcCommand(eq(cluster), eq(shard), eq(newPrimaryDc), anyObject()))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 					@Override
@@ -167,7 +168,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 	
 	protected void mockFailNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
 			String shard, String newPrimaryDc) {
-		when(migrationCommandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc))
+		when(migrationCommandBuilder.buildNewPrimaryDcCommand(eq(cluster), eq(shard), eq(newPrimaryDc), anyObject()))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 					@Override
@@ -189,7 +190,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 
 	protected void mockFailNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
 			String shard, String newPrimaryDc, Throwable ex) {
-		when(migrationCommandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc))
+		when(migrationCommandBuilder.buildNewPrimaryDcCommand(eq(cluster), eq(shard), eq(newPrimaryDc), anyObject()))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 					@Override

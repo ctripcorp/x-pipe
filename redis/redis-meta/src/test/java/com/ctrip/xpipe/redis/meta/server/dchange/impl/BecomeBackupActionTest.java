@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,7 +57,7 @@ public class BecomeBackupActionTest extends AbstractMetaServerTest{
 		
 		BecomeBackupAction becomeBackupAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, getXpipeNettyClientKeyedObjectPool(), multiDcService, scheduled, executors);
 		
-		PrimaryDcChangeMessage message = becomeBackupAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc);
+		PrimaryDcChangeMessage message = becomeBackupAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc, new MasterInfo());
 		
 		logger.info("{}", message);
 	}

@@ -6,6 +6,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.annotation.Resource;
 
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -220,7 +221,11 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 		logger.info("[doChangePrimaryDc]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, request);
 		dcMetaCache.primaryDcChanged(clusterId, shardId, newPrimaryDc);
-		
-		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, request.getMasterInfo());
+
+		MasterInfo masterInfo = null;
+		if(request != null){
+			masterInfo = request.getMasterInfo();
+		}
+		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
 	}
 }

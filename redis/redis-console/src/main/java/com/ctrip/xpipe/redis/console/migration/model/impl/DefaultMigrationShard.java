@@ -216,6 +216,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	
 	private CommandFuture<MetaServerConsoleService.PreviousPrimaryDcMessage> doPrevPrimaryDcMigrate(String cluster, String shard, String dc) {
 
+		shardMigrationResult.stepRetry(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC);
 		CommandFuture<MetaServerConsoleService.PreviousPrimaryDcMessage> migrateResult = commandBuilder.buildPrevPrimaryDcCommand(cluster, shard, dc).execute();
 		migrateResult.addListener(new CommandFutureListener<MetaServerConsoleService.PreviousPrimaryDcMessage>() {
 			@Override
@@ -224,6 +225,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 				try {
 					MetaServerConsoleService.PreviousPrimaryDcMessage previousPrimaryDcMessage = commandFuture.get();
 					logger.info("[doPrevPrimaryDcMigrate][result]{},{},{},{}", cluster, shard, dc, previousPrimaryDcMessage);
+					shardMigrationResult.setPreviousPrimaryDcMessage(previousPrimaryDcMessage);
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, previousPrimaryDcMessage.getMessage());
 				} catch (Exception e) {
 					logger.error("[doPrevPrimaryDcMigrate][fail]",e);
@@ -236,7 +238,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	}
 
 	private CommandFuture<PrimaryDcChangeMessage> doNewPrimaryDcMigrate(String cluster, String shard, String newPrimaryDc) {
-		CommandFuture<PrimaryDcChangeMessage> migrateResult = commandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc).execute();
+
+		CommandFuture<PrimaryDcChangeMessage> migrateResult = commandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc, shardMigrationResult.getPreviousPrimaryDcMessage()).execute();
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 			@Override
 			public void operationComplete(CommandFuture<PrimaryDcChangeMessage> commandFuture) throws Exception {

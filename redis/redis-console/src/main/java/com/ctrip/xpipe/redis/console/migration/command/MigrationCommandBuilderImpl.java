@@ -79,7 +79,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 	}
 
 	@Override
-	public Command<PrimaryDcChangeMessage> buildNewPrimaryDcCommand(final String cluster, final String shard, final String newPrimaryDc) {
+	public Command<PrimaryDcChangeMessage> buildNewPrimaryDcCommand(final String cluster, final String shard, final String newPrimaryDc, MetaServerConsoleService.PreviousPrimaryDcMessage previousPrimaryDcMessage) {
 		return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 			@Override
@@ -93,7 +93,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 				try {
 					result = metaServerConsoleServiceManagerWrapper
 							.get(newPrimaryDc)
-							.doChangePrimaryDc(cluster, shard, newPrimaryDc);
+							.doChangePrimaryDc(cluster, shard, newPrimaryDc, new MetaServerConsoleService.PrimaryDcChangeRequest(previousPrimaryDcMessage));
 
 					future().setSuccess(result);
 				} catch (Exception e) {
@@ -123,8 +123,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 				try {
 					result = metaServerConsoleServiceManagerWrapper
 							.get(executeDc)
-							.doChangePrimaryDc(cluster, shard, primaryDc);
-
+							.doChangePrimaryDc(cluster, shard, primaryDc, null);
 					future().setSuccess(result);
 				} catch (Exception e) {
 					logger.error("[PrimaryDcChange][OtherDc][Failed]{}-{}", cluster, shard);

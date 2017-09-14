@@ -77,7 +77,7 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
         int waitMilli = metaServerConfig.getWaitforOffsetMilli();
         long endTime = System.currentTimeMillis() + waitMilli;
 
-        executionLog.info(String.format("wait timeout:%d ms", waitMilli));
+        executionLog.info(String.format("wait timeout config:%d ms", waitMilli));
 
         while (true) {
 
