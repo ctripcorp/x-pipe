@@ -42,7 +42,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 	public void beforeDefaultSentinelManagerTest() throws Exception{
 		
 		sentinelManager = new DefaultSentinelManager(dcMetaCache, getXpipeNettyClientKeyedObjectPool());
-		executionLog = new ExecutionLog();
+		executionLog = new ExecutionLog(currentTestName());
 		redisMaster = new RedisMeta().setIp("127.0.0.1").setPort(port);
 		
 		when(dcMetaCache.getSentinelMonitorName(getClusterId(), getShardId())).thenReturn(sentinelMonitorName);

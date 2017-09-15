@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoReplicationComplementCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveInfo;
+import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.redis.meta.server.dcchange.RedisReadonly;
@@ -51,13 +52,16 @@ public class DefaultPrimaryDcPrepareToChange implements PrimaryDcPrepareToChange
     @Autowired
     private SentinelManager sentinelManager;
 
+    @Autowired
+    private CurrentClusterServer currentClusterServer;
+
     @Override
     public MetaServerConsoleService.PreviousPrimaryDcMessage prepare(String clusterId, String shardId) {
 
         logger.info("[prepare]{}, {}", clusterId, shardId);
 
         MetaServerConsoleService.PreviousPrimaryDcMessage message = new MetaServerConsoleService.PreviousPrimaryDcMessage();
-        ExecutionLog executionLog = new ExecutionLog();
+        ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 
         Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
         message.setMasterAddr(new HostPort(keeperMaster.getKey(), keeperMaster.getValue()));
@@ -84,7 +88,7 @@ public class DefaultPrimaryDcPrepareToChange implements PrimaryDcPrepareToChange
         logger.info("[deprepare]{}, {}", clusterId, shardId);
 
         MetaServerConsoleService.PreviousPrimaryDcMessage message = new MetaServerConsoleService.PreviousPrimaryDcMessage();
-        ExecutionLog executionLog = new ExecutionLog();
+        ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 
         Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
         message.setMasterAddr(new HostPort(keeperMaster.getKey(), keeperMaster.getValue()));

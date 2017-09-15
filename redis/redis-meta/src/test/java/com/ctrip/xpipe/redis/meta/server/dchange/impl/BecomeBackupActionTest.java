@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
+import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,7 +56,7 @@ public class BecomeBackupActionTest extends AbstractMetaServerTest{
 	@Test
 	public void test() throws Exception{
 		
-		BecomeBackupAction becomeBackupAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, getXpipeNettyClientKeyedObjectPool(), multiDcService, scheduled, executors);
+		BecomeBackupAction becomeBackupAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, new ExecutionLog(currentTestName()), getXpipeNettyClientKeyedObjectPool(), multiDcService, scheduled, executors);
 		
 		PrimaryDcChangeMessage message = becomeBackupAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc, new MasterInfo());
 		

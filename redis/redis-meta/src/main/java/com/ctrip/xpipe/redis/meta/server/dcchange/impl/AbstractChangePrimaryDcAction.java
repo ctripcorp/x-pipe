@@ -33,7 +33,7 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 	
 	protected int waitTimeoutSeconds = DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS;
 	
-	protected ExecutionLog executionLog = new ExecutionLog();
+	protected ExecutionLog executionLog;
 	
 	protected DcMetaCache   dcMetaCache;
 	
@@ -50,12 +50,14 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 	public AbstractChangePrimaryDcAction(DcMetaCache dcMetaCache,
 										 CurrentMetaManager currentMetaManager,
 										 SentinelManager sentinelManager,
+										 ExecutionLog executionLog,
 										 XpipeNettyClientKeyedObjectPool keyedObjectPool,
 										 ScheduledExecutorService scheduled,
 										 Executor executors) {
 		this.dcMetaCache = dcMetaCache;
 		this.currentMetaManager = currentMetaManager;
 		this.sentinelManager = sentinelManager;
+		this.executionLog = executionLog;
 		this.keyedObjectPool = keyedObjectPool;
 		this.scheduled = scheduled;
 		this.executors = executors;

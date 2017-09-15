@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
-import com.ctrip.xpipe.redis.meta.server.dcchange.OffsetWaiter;
+import com.ctrip.xpipe.redis.meta.server.dcchange.*;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisSlaveOfMasterFailException;
 
 import com.ctrip.xpipe.api.command.Command;
@@ -20,9 +20,6 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultSlaveOfCommand;
-import com.ctrip.xpipe.redis.meta.server.dcchange.NewMasterChooser;
-import com.ctrip.xpipe.redis.meta.server.dcchange.RedisReadonly;
-import com.ctrip.xpipe.redis.meta.server.dcchange.SentinelManager;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.ChooseNewMasterFailException;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisMasterFailException;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
@@ -41,8 +38,9 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 	private NewMasterChooser newMasterChooser;
 	private OffsetWaiter offsetWaiter;
 
-	public BecomePrimaryAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, OffsetWaiter offsetWaiter, XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser, ScheduledExecutorService scheduled, Executor executors) {
-		super(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, scheduled, executors);
+	public BecomePrimaryAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, OffsetWaiter offsetWaiter, ExecutionLog executionLog,
+							   XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser, ScheduledExecutorService scheduled, Executor executors) {
+		super(dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, scheduled, executors);
 		this.newMasterChooser = newMasterChooser;
 		this.offsetWaiter = offsetWaiter;
 	}

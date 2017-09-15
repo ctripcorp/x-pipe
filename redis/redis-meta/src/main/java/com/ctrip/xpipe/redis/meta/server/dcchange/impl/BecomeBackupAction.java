@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
+import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import com.ctrip.xpipe.redis.meta.server.dcchange.SentinelManager;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.BackupDcKeeperMasterChooserAlgorithm;
@@ -29,9 +30,10 @@ public class BecomeBackupAction extends AbstractChangePrimaryDcAction{
 
 	private MultiDcService multiDcService;
 	
-	public BecomeBackupAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, XpipeNettyClientKeyedObjectPool keyedObjectPool,
+	public BecomeBackupAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, ExecutionLog executionLog,
+							  XpipeNettyClientKeyedObjectPool keyedObjectPool,
 							  MultiDcService multiDcService, ScheduledExecutorService scheduled, Executor executors) {
-		super(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, scheduled, executors);
+		super(dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, scheduled, executors);
 		this.multiDcService = multiDcService;
 	}
 	

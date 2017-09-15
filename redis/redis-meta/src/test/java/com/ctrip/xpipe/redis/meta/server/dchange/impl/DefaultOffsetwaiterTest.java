@@ -36,7 +36,7 @@ public class DefaultOffsetwaiterTest extends AbstractMetaServerTest{
         offsetwaiter.setMetaServerConfig(new UnitTestServerConfig().setWaitforOffsetMilli(waitforOffsetMilli));
         offsetwaiter.setScheduled(scheduled);
 
-        executionLog = new ExecutionLog();
+        executionLog = new ExecutionLog(currentTestName());
 
         host = "127.0.0.1";
         port = randomPort();
