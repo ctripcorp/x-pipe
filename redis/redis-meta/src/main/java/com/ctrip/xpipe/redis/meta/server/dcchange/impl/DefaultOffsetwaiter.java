@@ -127,6 +127,7 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
         try {
             TimeUnit.MILLISECONDS.sleep(time);
         } catch (InterruptedException e) {
+            logger.error("[sleep]", e);
         }
     }
 
