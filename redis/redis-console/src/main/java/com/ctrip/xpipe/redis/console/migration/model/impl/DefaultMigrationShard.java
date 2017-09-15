@@ -231,7 +231,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					MetaServerConsoleService.PreviousPrimaryDcMessage previousPrimaryDcMessage = commandFuture.get();
 					logger.info("[doPrevPrimaryDcMigrate][result]{},{},{},{}", cluster, shard, dc, previousPrimaryDcMessage);
 					shardMigrationResult.setPreviousPrimaryDcMessage(previousPrimaryDcMessage);
-					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, previousPrimaryDcMessage.getMessage());
+					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true,
+							previousPrimaryDcMessage == null? LogUtils.info("Succeed, return message null"): previousPrimaryDcMessage.getMessage());
 				} catch (Exception e) {
 					logger.error("[doPrevPrimaryDcMigrate][fail]",e);
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, LogUtils.error("Ignored:" + e.getMessage()));
