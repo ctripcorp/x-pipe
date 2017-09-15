@@ -77,7 +77,11 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
         int waitMilli = metaServerConfig.getWaitforOffsetMilli();
         long endTime = System.currentTimeMillis() + waitMilli;
 
+        String slaveReplId = null;
+        Long slaveOffset = null;
+
         executionLog.info(String.format("wait timeout config:%d ms", waitMilli));
+
 
         while (true) {
 
@@ -95,8 +99,8 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
                 }
 
                 SlaveInfo slaveInfo = (SlaveInfo) redisInfo;
-                String slaveReplId = slaveInfo.getMasterReplId();
-                Long slaveOffset = slaveInfo.getSlaveReplOffset();
+                slaveReplId = slaveInfo.getMasterReplId();
+                slaveOffset = slaveInfo.getSlaveReplOffset();
 
                 if (!StringUtil.isEmpty(slaveReplId) && !StringUtil.isEmpty(masterReplId)) {
                     if (!slaveReplId.equalsIgnoreCase(masterReplId)) {
@@ -104,7 +108,6 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
                         break;
                     }
                 }
-                executionLog.info(String.format("master offset:%s, slave offset:%d, sub:%d", masterOffset, slaveOffset, masterOffset - slaveOffset));
                 if (slaveOffset >= masterOffset) {
                     executionLog.info(String.format("wait succeed!", masterOffset, slaveOffset));
                     return true;
@@ -119,6 +122,10 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
                 break;
             }
             sleep(1);
+        }
+
+        if(slaveOffset != null){
+            executionLog.info(String.format("master offset:%s, slave offset:%d, sub:%d", masterOffset, slaveOffset, masterOffset - slaveOffset));
         }
         return false;
     }
