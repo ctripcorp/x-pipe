@@ -2,11 +2,9 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -66,26 +64,6 @@ public class DefaultRedisSessionManagerTest extends AbstractConsoleTest{
             }
         }, 0, 5, TimeUnit.SECONDS);
 
-    }
-
-    @Test
-    public void testRedisClientConnectionTimeOut() {
-        String REDIS_HOST = "10.3.2.23";
-        int PORT = 55555;
-        System.out.println("======================= " + DateTimeUtils.currentTimeAsString() + " =========================");
-        RedisSession redisSession = redisSessionManager.findOrCreateSession(REDIS_HOST, PORT);
-        redisSession.ping(new PingCallback() {
-            @Override
-            public void pong(String pongMsg) {
-                System.out.println(pongMsg);
-            }
-
-            @Override
-            public void fail(Throwable th) {
-                System.out.println(th.getCause().getMessage());
-            }
-        });
-        System.out.println("======================= " + DateTimeUtils.currentTimeAsString() + " =========================");
     }
 
     private String channelName(String channel, int index) {

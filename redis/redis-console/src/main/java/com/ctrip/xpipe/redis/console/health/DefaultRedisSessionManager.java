@@ -9,6 +9,8 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.lambdaworks.redis.SocketOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -88,8 +90,11 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	public RedisClient findRedisConnection(String host, int port) {
 		RedisURI redisUri = new RedisURI(host, port, 2, TimeUnit.SECONDS);
-
+		SocketOptions socketOptions = SocketOptions.builder()
+				.connectTimeout(XPipeConsoleConstant.SOCKET_TIMEOUT, TimeUnit.SECONDS)
+				.build();
 		ClientOptions clientOptions = ClientOptions.builder() //
+				.socketOptions(socketOptions)
 				.disconnectedBehavior(DisconnectedBehavior.REJECT_COMMANDS)//
 				.build();
 
