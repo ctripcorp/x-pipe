@@ -7,7 +7,11 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
+import com.ctrip.xpipe.redis.console.health.RedisSession;
+import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
+import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -36,6 +40,8 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
     private RunidGenerator idGenerator = RunidGenerator.DEFAULT;
     private RedisTblDao redisTblDao;
     private DcClusterShardTblDao dcClusterShardTblDao;
+    @Autowired
+    private RedisSessionManager redisSessionManager;
 
     @PostConstruct
     private void postConstruct() {
@@ -113,7 +119,7 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
 
     @DalTransaction
     public int[] updateBatch(List<RedisTbl> redises) {
-
+        unsubscribeChannel(redises);
         return queryHandler.handleQuery(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {
@@ -122,6 +128,18 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
         });
     }
 
+    public void unsubscribeChannel(List<RedisTbl> redisTbls) {
+        if(redisTbls == null || redisTbls.isEmpty()) {
+            return;
+        }
+        redisTbls.stream()
+                .filter(redisTbl -> redisTbl.getRedisRole() == XPipeConsoleConstant.ROLE_REDIS)
+                .forEach(redisTbl -> {
+                    RedisSession redisSession = redisSessionManager
+                            .findOrCreateSession(redisTbl.getRedisIp(), redisTbl.getRedisPort());
+                    redisSession.closeSubscribedChannel(DefaultDelayMonitor.CHECK_CHANNEL);
+                });
+    }
 
     @DalTransaction
     public int[] updateBatchMaster(List<RedisTbl> redises) {
