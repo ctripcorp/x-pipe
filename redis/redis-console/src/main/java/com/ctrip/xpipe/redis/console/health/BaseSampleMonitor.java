@@ -38,7 +38,7 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 	private ConsoleConfig config;
 
 	@Autowired
-	private RedisSessionManager redisSessionManager;
+	protected RedisSessionManager redisSessionManager;
 
 	protected ConcurrentMap<Long, Sample<T>> samples = new ConcurrentHashMap<>();
 

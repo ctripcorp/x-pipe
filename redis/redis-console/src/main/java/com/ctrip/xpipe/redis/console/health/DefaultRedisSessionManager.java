@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -102,6 +103,16 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		redis.setOptions(clientOptions);
 
 		return redis;
+	}
+
+	@Override
+	public Set<HostPort> getStoredRedises() {
+		return sessions.keySet();
+	}
+
+	@Override
+	public void removeUnusedRedisSession(HostPort redisHostPort) {
+		sessions.remove(redisHostPort);
 	}
 
 	@PreDestroy

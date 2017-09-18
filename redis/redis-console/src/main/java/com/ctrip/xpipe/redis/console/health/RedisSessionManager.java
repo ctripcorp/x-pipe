@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.xpipe.endpoint.HostPort;
+
+import java.util.Set;
 
 /**
  * @author marsqing
@@ -10,4 +13,7 @@ public interface RedisSessionManager {
 
 	RedisSession findOrCreateSession(String host, int port);
 
+	Set<HostPort> getStoredRedises();
+
+	void removeUnusedRedisSession(HostPort redisHostPort);
 }
