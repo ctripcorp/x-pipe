@@ -190,7 +190,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         queryHandler.handleQuery(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {
-                return dao.deleteBatch(keepersByDcClusterShard.toArray(new RedisTbl[0]), RedisTblEntity.UPDATESET_FULL);
+                redisDao.deleteRedisesBatch(keepersByDcClusterShard);
+                return null;
             }
         });
         return keepersByDcClusterShard;
@@ -218,8 +219,13 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         List<RedisTbl> redisTbls = findRedisesByDcClusterShard(dcId, clusterId, shardId);
         List<RedisTbl> toDelete = inter(redisAddresses, redisTbls);
         logger.info("[deleteRedises]{}", toDelete);
-        delete(toDelete.toArray(new RedisTbl[0]));
-
+        queryHandler.handleQuery(new DalQuery<int[]>() {
+            @Override
+            public int[] doQuery() throws DalException {
+                redisDao.deleteRedisesBatch(toDelete);
+                return null;
+            }
+        });
         notifier.notifyClusterUpdate(dcId, clusterId);
     }
 
@@ -229,15 +235,6 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                 .setRedisPort(addr.getValue())
                 .setRedisRole(role)
                 .setRunId("unknown");
-    }
-
-    public void delete(RedisTbl... redises) {
-        queryHandler.handleQuery(new DalQuery<int[]>() {
-            @Override
-            public int[] doQuery() throws DalException {
-                return dao.deleteBatch(redises, RedisTblEntity.UPDATESET_FULL);
-            }
-        });
     }
 
     @Override

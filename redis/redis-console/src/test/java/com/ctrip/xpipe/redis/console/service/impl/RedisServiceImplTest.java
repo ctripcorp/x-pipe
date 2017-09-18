@@ -19,6 +19,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -81,6 +82,17 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
     }
 
     @Test
+    public void testDeleteRedises() throws DalException, ResourceNotFoundException{
+        List<RedisTbl> redises = redisService.findRedisesByDcClusterShard(dcName, clusterName, shardName);
+        int expect_length = redises.size() - 1;
+        List<Pair<String, Integer>> redisAddresses = new LinkedList<>();
+        redisAddresses.add(new Pair<>(redises.get(0).getRedisIp(), redises.get(0).getRedisPort()));
+        redisService.deleteRedises(dcName, clusterName, shardName, redisAddresses);
+        redises = redisService.findRedisesByDcClusterShard(dcName, clusterName, shardName);
+        Assert.assertEquals(expect_length, redises.size());
+    }
+
+    @Test
     public void testInsertKeepers() throws ResourceNotFoundException, DalException {
 
         redisService.deleteKeepers(dcName, clusterName, shardName);
@@ -109,19 +121,6 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
 
         keepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
         Assert.assertEquals(0, keepers.size());
-    }
-
-    @Test
-    public void testDelete() throws ResourceNotFoundException, DalException {
-
-        List<RedisTbl> redises = redisService.findRedisesByDcClusterShard(dcName, clusterName, shardName);
-
-        redisService.delete(redises.toArray(new RedisTbl[0]));
-
-        List<RedisTbl> newRedises = redisService.findRedisesByDcClusterShard(dcName, clusterName, shardName);
-
-        Assert.assertEquals(0, newRedises.size());
-
     }
 
     @Test
