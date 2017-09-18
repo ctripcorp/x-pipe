@@ -17,7 +17,11 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.ctrip.xpipe.netty.ByteBufUtils;
+import com.ctrip.xpipe.netty.ByteBufferUtils;
+import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.tuple.Pair;
+import io.netty.buffer.ByteBuf;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
@@ -131,6 +135,13 @@ public abstract class AbstractRedisTest extends AbstractTest{
 			}
 		}
 		return false;
+	}
+
+	protected String toRedisProtocalString(String str){
+
+		ByteBuf format = new BulkStringParser(str).format();
+		return ByteBufUtils.readToString(format);
+
 	}
 
 	protected void assertRedisEquals(RedisMeta redisMaster, List<RedisMeta> slaves) {

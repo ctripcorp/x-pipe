@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import org.springframework.http.*;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -122,23 +120,25 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	}
 
 	@Override
-	public void makeMasterReadOnly(String clusterId, String shardId, boolean readOnly, ForwardInfo forwardInfo) {
+	public MetaServerConsoleService.PreviousPrimaryDcMessage makeMasterReadOnly(String clusterId, String shardId, boolean readOnly, ForwardInfo forwardInfo) {
 
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, META_SERVER_SERVICE.MAKE_MASTER_READONLY.getForwardType());
 		logger.info("[makeMasterReadOnly][forward]{},{},{}, {}--> {}", clusterId, shardId, readOnly, forwardInfo, this);
-		
+
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
-		restTemplate.exchange(makeMasterReadonlyPath, HttpMethod.PUT, entity, String.class, clusterId, shardId, readOnly);
-	}
+		ResponseEntity<MetaServerConsoleService.PreviousPrimaryDcMessage> result = restTemplate.exchange(makeMasterReadonlyPath, HttpMethod.PUT, entity, MetaServerConsoleService.PreviousPrimaryDcMessage.class, clusterId, shardId, readOnly);
+		return result.getBody();
+    }
 
 	@Override
-	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc,
-			ForwardInfo forwardInfo) {
+	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc
+			, MetaServerConsoleService.PrimaryDcChangeRequest request, ForwardInfo forwardInfo) {
 		
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getForwardType());
 		logger.info("[doChangePrimaryDc][forward]{},{},{}, {}--> {}", clusterId, shardId, newPrimaryDc, forwardInfo, this);
-		
-		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
+		headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
+
+		HttpEntity<MetaServerConsoleService.PrimaryDcChangeRequest> entity = new HttpEntity<>(request, headers);
 		ResponseEntity<PrimaryDcChangeMessage> resposne = restTemplate.exchange(changePrimaryDcPath, HttpMethod.PUT, 
 				entity, PrimaryDcChangeMessage.class, clusterId, shardId, newPrimaryDc);
 		return resposne.getBody();

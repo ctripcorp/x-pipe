@@ -2,6 +2,12 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoReplicationComplementCommand;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
+import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveInfo;
+import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.redis.meta.server.dcchange.RedisReadonly;
@@ -16,7 +22,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author wenchao.meng
@@ -27,6 +37,8 @@ import java.util.concurrent.ScheduledExecutorService;
 public class DefaultPrimaryDcPrepareToChange implements PrimaryDcPrepareToChange{
 
     private Logger logger = LoggerFactory.getLogger(getClass());
+
+    private  int waitForMasterInfoMilli = 2000;
 
     @Autowired
     private CurrentMetaManager currentMetaManager;
@@ -40,49 +52,77 @@ public class DefaultPrimaryDcPrepareToChange implements PrimaryDcPrepareToChange
     @Autowired
     private SentinelManager sentinelManager;
 
+    @Autowired
+    private CurrentClusterServer currentClusterServer;
+
     @Override
-    public void prepare(String clusterId, String shardId) {
+    public MetaServerConsoleService.PreviousPrimaryDcMessage prepare(String clusterId, String shardId) {
 
         logger.info("[prepare]{}, {}", clusterId, shardId);
 
-        makeMasterReadOnly(clusterId, shardId, true);
+        MetaServerConsoleService.PreviousPrimaryDcMessage message = new MetaServerConsoleService.PreviousPrimaryDcMessage();
+        ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 
-        removeSentinel(clusterId, shardId);
+        Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
+        message.setMasterAddr(new HostPort(keeperMaster.getKey(), keeperMaster.getValue()));
+        executionLog.info("[prepare]" + keeperMaster);
+
+        RedisInfo redisInfo = getInfoReplication(keeperMaster, executionLog);
+        MasterInfo masterInfo = convert(redisInfo, executionLog);
+        message.setMasterInfo(masterInfo);
+
+        logger.info("[prepare]{}, {}, {}", keeperMaster, redisInfo, masterInfo);
+
+        makeMasterReadOnly(clusterId, shardId, keeperMaster, true, executionLog);
+
+        removeSentinel(clusterId, shardId, executionLog);
+
+        message.setMessage(executionLog.getLog());
+        return message;
         
     }
 
     @Override
-    public void deprepare(String clusterId, String shardId) {
+    public MetaServerConsoleService.PreviousPrimaryDcMessage deprepare(String clusterId, String shardId) {
 
         logger.info("[deprepare]{}, {}", clusterId, shardId);
 
-        makeMasterReadOnly(clusterId, shardId, false);
+        MetaServerConsoleService.PreviousPrimaryDcMessage message = new MetaServerConsoleService.PreviousPrimaryDcMessage();
+        ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 
-        addSentinel(clusterId, shardId);
+        Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
+        message.setMasterAddr(new HostPort(keeperMaster.getKey(), keeperMaster.getValue()));
+        executionLog.info("[deprepare]" + keeperMaster);
 
+        makeMasterReadOnly(clusterId, shardId, keeperMaster, false, executionLog);
+
+        addSentinel(clusterId, shardId, executionLog);
+
+        message.setMessage(executionLog.getLog());
+        return message;
     }
 
-    private void addSentinel(String clusterId, String shardId) {
+    private void addSentinel(String clusterId, String shardId, ExecutionLog executionLog) {
 
         logger.info("[addSentinel]{},{}", clusterId, shardId);
         Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
-        sentinelManager.addSentinel(clusterId, shardId, new HostPort(keeperMaster.getKey(), keeperMaster.getValue()), new ExecutionLog());
+        sentinelManager.addSentinel(clusterId, shardId, new HostPort(keeperMaster.getKey(), keeperMaster.getValue()), executionLog);
 
     }
 
-    private void removeSentinel(String clusterId, String shardId) {
+    private void removeSentinel(String clusterId, String shardId, ExecutionLog executionLog) {
 
         logger.info("[removeSentinel]{},{}", clusterId, shardId);
-        sentinelManager.removeSentinel(clusterId, shardId, new ExecutionLog());
+        sentinelManager.removeSentinel(clusterId, shardId, executionLog);
     }
 
-    private void makeMasterReadOnly(String clusterId, String shardId, boolean readOnly) {
+    private Pair<String, Integer> makeMasterReadOnly(String clusterId, String shardId, Pair<String, Integer> keeperMaster, boolean readOnly, ExecutionLog executionLog) {
 
         logger.info("[makeMasterReadOnly]{},{},{}", clusterId, shardId, readOnly);
-        Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
 
         RedisReadonly redisReadOnly = RedisReadonly.create(keeperMaster.getKey(), keeperMaster.getValue(), keyedObjectPool, scheduled);
         try {
+            executionLog.info(String.format("[makeMasterReadOnly][begin] %s:%s", keeperMaster, readOnly));
             if(readOnly){
                 logger.info("[makeMasterReadOnly][readonly]{}", keeperMaster);
                 redisReadOnly.makeReadOnly();
@@ -92,7 +132,54 @@ public class DefaultPrimaryDcPrepareToChange implements PrimaryDcPrepareToChange
             }
         } catch (Exception e) {
             logger.error("[makeMasterReadOnly]" + keeperMaster, e);
+            executionLog.error(e.getMessage());
         }
+        return keeperMaster;
     }
+
+    public RedisInfo getInfoReplication(Pair<String, Integer> redisMaster, ExecutionLog executionLog) {
+
+        InfoReplicationComplementCommand command = new InfoReplicationComplementCommand(
+                keyedObjectPool.getKeyPool(new InetSocketAddress(redisMaster.getKey(), redisMaster.getValue())),
+                scheduled
+        );
+
+
+        try {
+            executionLog.info("[getInfoReplication]" + redisMaster);
+            RedisInfo redisInfo = command.execute().get(waitForMasterInfoMilli, TimeUnit.MILLISECONDS);
+            executionLog.info("[getInfoReplication]" + redisInfo);
+            return redisInfo;
+        } catch (InterruptedException e) {
+            logger.error("[getInfoReplication]" + redisMaster, e);
+            executionLog.error(e.getMessage());
+        } catch (ExecutionException e) {
+            logger.error("[getInfoReplication]" + redisMaster, e);
+            executionLog.error(e.getMessage());
+        } catch (TimeoutException e) {
+            logger.error("[getInfoReplication]" + redisMaster, e);
+            executionLog.error(e.getMessage());
+        }
+        return null;
+    }
+
+    private MasterInfo convert(RedisInfo redisInfo, ExecutionLog executionLog) {
+
+        if(redisInfo == null){
+            return null;
+        }
+
+        if(redisInfo instanceof MasterInfo){
+            return (MasterInfo) redisInfo;
+        }
+
+        if(redisInfo instanceof SlaveInfo){
+            executionLog.info("[convert][SlaveInfo]" + redisInfo);
+            return ((SlaveInfo) redisInfo).toMasterInfo();
+        }
+
+        throw new IllegalStateException("unknown redisInfo:" + redisInfo);
+    }
+
 
 }

@@ -168,7 +168,7 @@ create table MIGRATION_SHARD_TBL
 	id bigint unsigned not null auto_increment primary key,
 	migration_cluster_id bigint unsigned not null default 0,
 	shard_id bigint unsigned not null default 0,
-	log varchar(10240) not null default '',
+	log varchar(20480) not null default '',
 	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
