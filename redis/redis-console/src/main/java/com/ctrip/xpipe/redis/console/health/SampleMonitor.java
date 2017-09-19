@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+
 import java.util.Collection;
 import java.util.List;
-
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 
 /**
  * @author marsqing

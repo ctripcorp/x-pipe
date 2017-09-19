@@ -1,19 +1,7 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
@@ -21,26 +9,28 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.ObjectUtils;
-import com.lambdaworks.redis.SocketOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.lambdaworks.redis.ClientOptions;
 import com.lambdaworks.redis.ClientOptions.DisconnectedBehavior;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisURI;
+import com.lambdaworks.redis.SocketOptions;
 import com.lambdaworks.redis.resource.ClientResources;
 import com.lambdaworks.redis.resource.DefaultClientResources;
 import com.lambdaworks.redis.resource.Delay;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import static com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor.CHECK_CHANNEL;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * @author marsqing

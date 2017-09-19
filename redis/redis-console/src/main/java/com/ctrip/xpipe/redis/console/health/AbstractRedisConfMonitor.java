@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.util.Collection;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author wenchao.meng

@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 import com.ctrip.xpipe.redis.console.health.Sample;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

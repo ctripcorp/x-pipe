@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
+import com.ctrip.xpipe.redis.console.health.BaseInstanceResult;
+
 import java.util.HashSet;
 import java.util.Set;
-
-import com.ctrip.xpipe.redis.console.health.BaseInstanceResult;
 
 /**
  * @author wenchao.meng

@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author marsqing

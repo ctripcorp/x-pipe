@@ -1,5 +1,17 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.lambdaworks.redis.RedisChannelHandler;
+import com.lambdaworks.redis.RedisClient;
+import com.lambdaworks.redis.RedisConnectionStateListener;
+import com.lambdaworks.redis.RedisFuture;
+import com.lambdaworks.redis.api.StatefulRedisConnection;
+import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
+import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -7,17 +19,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.lambdaworks.redis.*;
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.endpoint.HostPort;
-import com.lambdaworks.redis.api.StatefulRedisConnection;
-import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 
 
 /**
@@ -42,8 +43,6 @@ public class RedisSession {
     private ConcurrentMap<String, PubSubConnectionWrapper> subscribConns = new ConcurrentHashMap<>();
 
     private AtomicReference<StatefulRedisConnection<String, String>> nonSubscribeConn = new AtomicReference<>();
-
-    private final static int THREAD_NUMBER = 5;
 
     private static Executor executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("RedisSession"));
 

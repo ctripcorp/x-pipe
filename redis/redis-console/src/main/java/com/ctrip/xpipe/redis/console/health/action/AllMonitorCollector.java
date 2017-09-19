@@ -1,22 +1,5 @@
 package com.ctrip.xpipe.redis.console.health.action;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
@@ -30,6 +13,17 @@ import com.ctrip.xpipe.redis.console.health.ping.PingCollector;
 import com.ctrip.xpipe.redis.console.health.ping.PingSampleResult;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
 
 /**
  * @author wenchao.meng

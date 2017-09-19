@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.console.health.clientconfig;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author wenchao.meng

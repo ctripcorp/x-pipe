@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.health.clientconfig;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.utils.ObjectUtils;
+
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**

@@ -1,13 +1,5 @@
 package com.ctrip.xpipe.redis.console.health.clientconfig;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
@@ -21,6 +13,13 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 import com.ctrip.xpipe.utils.ServicesUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

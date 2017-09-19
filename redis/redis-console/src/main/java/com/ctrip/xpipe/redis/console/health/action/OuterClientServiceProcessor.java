@@ -1,17 +1,5 @@
 package com.ctrip.xpipe.redis.console.health.action;
 
-import java.util.List;
-import java.util.concurrent.Executor;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
@@ -23,6 +11,16 @@ import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * @author wenchao.meng
