@@ -8,7 +8,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.lambdaworks.redis.*;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.lambdaworks.redis.api.StatefulRedisConnection;
 import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
+
 
 /**
  * @author marsqing
@@ -40,6 +42,12 @@ public class RedisSession {
     private ConcurrentMap<String, PubSubConnectionWrapper> subscribConns = new ConcurrentHashMap<>();
 
     private AtomicReference<StatefulRedisConnection<String, String>> nonSubscribeConn = new AtomicReference<>();
+
+    private final static int THREAD_NUMBER = 5;
+
+    private static Executor executors = Executors.newFixedThreadPool(THREAD_NUMBER,
+            XpipeThreadFactory.create("RedisSession"));
+
 
     public RedisSession(RedisClient redisClient, HostPort hostPort) {
         this.redis = redisClient;
@@ -92,7 +100,7 @@ public class RedisSession {
                 public StatefulRedisPubSubConnection get() {
                     return redis.connectPubSub();
                 }
-            });
+            }, executors);
             pubSubFuture.whenComplete((pubSub, th) -> {
                 if(th != null) {
                     callback.fail(new Exception(th));
@@ -160,13 +168,13 @@ public class RedisSession {
             public void accept(StatefulRedisConnection statefulRedisConnection) {
                 final CompletableFuture<String> future = statefulRedisConnection.async().ping().toCompletableFuture();
 
-                future.whenComplete((pong, th) -> {
+                future.whenCompleteAsync((pong, th) -> {
                     if(th != null){
                         callback.fail(th);
                     }else{
                         callback.pong(pong);
                     }
-                });
+                }, executors);
             }
         };
         Consumer<Throwable> throwableConsumer = new Consumer<Throwable>() {
@@ -185,13 +193,13 @@ public class RedisSession {
             public void accept(StatefulRedisConnection statefulRedisConnection) {
                 final CompletableFuture<List<Object>> future = statefulRedisConnection.async().role().toCompletableFuture();
 
-                future.whenComplete((role, th) -> {
+                future.whenCompleteAsync((role, th) -> {
                     if (th != null) {
                         callback.fail(th);
                     } else {
                         callback.role((String) role.get(0));
                     }
-                });
+                }, executors);
             }
         };
         asyncExecute(connectionConsumer, null);
@@ -202,7 +210,7 @@ public class RedisSession {
             @Override
             public void accept(StatefulRedisConnection statefulRedisConnection) {
                 RedisFuture<String> redisFuture = statefulRedisConnection.async().configRewrite();
-                redisFuture.whenComplete(consumer);
+                redisFuture.whenCompleteAsync(consumer, executors);
             }
         };
         asyncExecute(connectionConsumer, null);
@@ -223,8 +231,8 @@ public class RedisSession {
                 return findOrCreateNonSubscribeConnection();
             }
         };
-        CompletableFuture.supplyAsync(supplier)
-                .whenComplete((connection, th) -> {
+        CompletableFuture.supplyAsync(supplier, executors)
+                .whenCompleteAsync((connection, th) -> {
                     if(th != null) {
                         log.error("[asyncExecute]" + hostPort, th);
                         if(throwableConsumer != null)
@@ -232,7 +240,7 @@ public class RedisSession {
                     } else {
                         connectionConsumer.accept(connection);
                     }
-                });
+                }, executors);
     }
 
     @Override
