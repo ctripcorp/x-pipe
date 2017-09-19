@@ -45,8 +45,7 @@ public class RedisSession {
 
     private final static int THREAD_NUMBER = 5;
 
-    private static Executor executors = Executors.newFixedThreadPool(THREAD_NUMBER,
-            XpipeThreadFactory.create("RedisSession"));
+    private static Executor executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("RedisSession"));
 
 
     public RedisSession(RedisClient redisClient, HostPort hostPort) {
@@ -101,7 +100,7 @@ public class RedisSession {
                     return redis.connectPubSub();
                 }
             }, executors);
-            pubSubFuture.whenComplete((pubSub, th) -> {
+            pubSubFuture.whenCompleteAsync((pubSub, th) -> {
                 if(th != null) {
                     callback.fail(new Exception(th));
                     log.warn("Error subscribe to redis {}", hostPort);
@@ -125,7 +124,7 @@ public class RedisSession {
                         log.warn("Error subscribe to redis {}", hostPort);
                     }
                 }
-            });
+            }, executors);
         }
     }
 
