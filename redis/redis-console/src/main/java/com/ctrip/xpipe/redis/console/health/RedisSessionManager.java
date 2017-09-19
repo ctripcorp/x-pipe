@@ -12,8 +12,4 @@ import java.util.Set;
 public interface RedisSessionManager {
 
 	RedisSession findOrCreateSession(String host, int port);
-
-	Set<HostPort> getStoredRedises();
-
-	void removeUnusedRedisSession(HostPort redisHostPort);
 }

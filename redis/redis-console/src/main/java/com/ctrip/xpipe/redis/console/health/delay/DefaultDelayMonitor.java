@@ -85,7 +85,7 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 		if (samplePlan.getHostPort2SampleResult().isEmpty()) {
 			return;
 		}
-		removeUnusedRedises(samplePlan.getHostPort2SampleResult().keySet());
+
 		for (final HostPort hostPort : samplePlan.getHostPort2SampleResult().keySet()) {
 				RedisSession session = findRedisSession(hostPort.getHost(), hostPort.getPort());
 				session.subscribeIfAbsent(CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
@@ -107,22 +107,6 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 		long startNanoTime = recordSample(samplePlan);
 		log.debug("[sampleDelay][publish]{}:{}", samplePlan.getMasterHost(), samplePlan.getMasterPort());
 		masterSession.publish(CHECK_CHANNEL, Long.toHexString(startNanoTime));
-	}
-
-	private void removeUnusedRedises(Set<HostPort> inUseRedisHostPorts) {
-		Set<HostPort> currentStoredRedises = redisSessionManager.getStoredRedises();
-		List<HostPort> unusedRedises = currentStoredRedises.stream()
-				.filter(hostPort -> !inUseRedisHostPorts.contains(hostPort))
-				.collect(Collectors.toList());
-		if(unusedRedises == null || unusedRedises.isEmpty()) {
-			return;
-		}
-		unusedRedises.forEach(hostPort -> {
-			RedisSession redisSession = redisSessionManager
-					.findOrCreateSession(hostPort.getHost(), hostPort.getPort());
-			redisSession.closeSubscribedChannel(CHECK_CHANNEL);
-			redisSessionManager.removeUnusedRedisSession(hostPort);
-		});
 	}
 
 	@Override
