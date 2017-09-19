@@ -7,6 +7,7 @@ import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.zookeeper.CreateMode;
 import org.junit.Test;
 
 /**
@@ -14,7 +15,7 @@ import org.junit.Test;
  *         <p>
  *         Aug 29, 2017
  */
-public class TestPathChildren extends AbstractMetaServerTest{
+public class TestPathChildren extends AbstractMetaServerTest {
 
     @Test
     public void testPathChildern() throws Exception {
@@ -31,25 +32,46 @@ public class TestPathChildren extends AbstractMetaServerTest{
             @Override
             public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
                 logger.info("{}", event);
-                printAllData(pathChildrenCache);
+//                printAllData(pathChildrenCache);
             }
         });
 
-        try{
+        try {
             logger.info("[begin start]");
             pathChildrenCache.start();
-        }catch (Exception e) {
+        } catch (Exception e) {
             logger.error("[start]", e);
         }
 
-        logger.info("[simple getChildren]{}",   curatorFramework.getChildren().forPath(path));
+        createPath(curatorFramework, path, 3);
+        logger.info("[simple getChildren]{}", curatorFramework.getChildren().forPath(path));
 
         waitForAnyKey();
     }
 
+    private void createPath(CuratorFramework curatorFramework, String path, int count) {
+
+        for (int i = 0; i < count; i++) {
+
+            int finalI = i;
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(String.format("%s/%d", path, finalI));
+                    } catch (Exception e) {
+                        logger.error("[run]", e);
+                    }
+                }
+            });
+        }
+
+
+    }
+
     private void printAllData(PathChildrenCache pathChildrenCache) {
 
-        for(ChildData childData : pathChildrenCache.getCurrentData()){
+        for (ChildData childData : pathChildrenCache.getCurrentData()) {
             logger.info("{}", childData);
         }
     }
