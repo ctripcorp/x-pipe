@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.lambdaworks.redis.RedisChannelHandler;
 import com.lambdaworks.redis.RedisClient;
@@ -11,7 +13,15 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
+import org.unidal.lookup.annotation.Inject;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -44,13 +54,20 @@ public class RedisSession {
 
     private AtomicReference<StatefulRedisConnection<String, String>> nonSubscribeConn = new AtomicReference<>();
 
-    private static Executor executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("RedisSession"));
+    private static Executor executors;
 
+    public void initExecutor() {
+        if(executors == null) {
+            executors = (ExecutorService) (ConsoleContextConfig.getApplicationContext()
+                    .getBean(ConsoleContextConfig.GLOBAL_EXECUTOR));
+        }
+    }
 
     public RedisSession(RedisClient redisClient, HostPort hostPort) {
         this.redis = redisClient;
         redis.addListener(channelListener());
         this.hostPort = hostPort;
+        initExecutor();
     }
 
     public void check() {

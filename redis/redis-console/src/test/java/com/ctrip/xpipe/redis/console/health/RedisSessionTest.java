@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.health;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.lambdaworks.redis.ClientOptions;
 import com.lambdaworks.redis.RedisClient;
@@ -23,9 +24,13 @@ import static org.junit.Assert.*;
 
 public class RedisSessionTest extends AbstractConsoleIntegrationTest {
 
+    private Server server;
+
     private RedisSession redisSession;
 
     private static final int COUNT = 300;
+
+    private static final int TIMEOUT = 1000;
 
     private static final String CHECK_CHANNEL = "xpipe-health-check";
     @Before
@@ -33,7 +38,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         int BLOCKED_PORT = 55555;
         int BLOCK_TIME = 1000 * 20;
         String HOST = "127.0.0.1";
-        startServer(BLOCKED_PORT, new Callable<String>() {
+        server = startServer(BLOCKED_PORT, new Callable<String>() {
 
             @Override
             public String call() throws Exception {
@@ -65,7 +70,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         }
         long after = System.currentTimeMillis();
         System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
-        Assert.assertTrue(after - begin < 100);
+        Assert.assertTrue(after - begin < TIMEOUT);
     }
 
     @Test
@@ -77,7 +82,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         }
         long after = System.currentTimeMillis();
         System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
-        Assert.assertTrue(after - begin < 100);
+        Assert.assertTrue(after - begin < TIMEOUT);
     }
 
     @Test
@@ -99,7 +104,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         }
         long after = System.currentTimeMillis();
         System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
-//        Assert.assertTrue(after - begin < 100);
+        Assert.assertTrue(after - begin < TIMEOUT);
     }
 
     @Test
@@ -121,7 +126,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         }
         long after = System.currentTimeMillis();
         System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
-        Assert.assertTrue(after - begin < 100);
+        Assert.assertTrue(after - begin < TIMEOUT);
     }
 
     @Test
@@ -134,7 +139,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         long after = System.currentTimeMillis();
         System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         System.out.println(begin + " : " + after);
-        Assert.assertTrue(after - begin < 100);
+        Assert.assertTrue(after - begin < TIMEOUT);
     }
 
     private RedisClient createRedisClient(String host, int port) {
@@ -156,7 +161,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
     }
 
     @After
-    public void afterRedisSessionTest() {
-
+    public void afterRedisSessionTest() throws Exception {
+        server.stop();
     }
 }
