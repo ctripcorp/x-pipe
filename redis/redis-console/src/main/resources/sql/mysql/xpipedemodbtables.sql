@@ -207,7 +207,7 @@ CREATE TABLE `migration_shard_tbl` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `migration_cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'migration cluster id',
   `shard_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'migration shard under specific migration cluster',
-  `log` varchar(10240) NOT NULL DEFAULT '' COMMENT 'migration log',
+  `log` varchar(20480) NOT NULL DEFAULT '' COMMENT 'migration log',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),

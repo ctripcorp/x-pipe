@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.health.delay;
 
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -45,11 +47,6 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 
 	@Override
 	protected void notifyCollectors(Sample<InstanceDelayResult> sample) {
-		sample.getSamplePlan().getHostPort2SampleResult().keySet().forEach((hostPort) -> {
-
-			RedisSession redisSession = findRedisSession(hostPort);
-			redisSession.closeSubscribedChannel(CHECK_CHANNEL);
-		});
 		DelaySampleResult sampleResult = convertToSampleResult(sample);
 		for (DelayCollector collector : delayCollectors) {
 			collector.collect(sampleResult);

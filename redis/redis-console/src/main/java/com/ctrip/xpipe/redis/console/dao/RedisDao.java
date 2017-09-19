@@ -7,7 +7,11 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
+import com.ctrip.xpipe.redis.console.health.RedisSession;
+import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
+import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -113,7 +117,6 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
 
     @DalTransaction
     public int[] updateBatch(List<RedisTbl> redises) {
-
         return queryHandler.handleQuery(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {
@@ -121,7 +124,6 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
             }
         });
     }
-
 
     @DalTransaction
     public int[] updateBatchMaster(List<RedisTbl> redises) {
