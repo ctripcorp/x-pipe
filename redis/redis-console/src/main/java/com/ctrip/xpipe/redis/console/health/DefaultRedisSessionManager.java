@@ -104,6 +104,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		unusedRedises.forEach(hostPort -> {
 			RedisSession redisSession = sessions.getOrDefault(hostPort, null);
 			if(redisSession != null) {
+				logger.info("[removeUnusedRedises]Redis: {} not in use, remove from session manager", hostPort);
 				redisSession.closeSubscribedChannel(DefaultDelayMonitor.CHECK_CHANNEL);
 				sessions.remove(hostPort);
 			}
