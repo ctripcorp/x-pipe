@@ -40,8 +40,6 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
     private RunidGenerator idGenerator = RunidGenerator.DEFAULT;
     private RedisTblDao redisTblDao;
     private DcClusterShardTblDao dcClusterShardTblDao;
-    @Autowired
-    private RedisSessionManager redisSessionManager;
 
     @PostConstruct
     private void postConstruct() {
@@ -119,26 +117,12 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
 
     @DalTransaction
     public int[] updateBatch(List<RedisTbl> redises) {
-        unsubscribeChannel(redises);
         return queryHandler.handleQuery(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {
                 return redisTblDao.updateBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
             }
         });
-    }
-
-    public void unsubscribeChannel(List<RedisTbl> redisTbls) {
-        if(redisTbls == null || redisTbls.isEmpty()) {
-            return;
-        }
-        redisTbls.stream()
-                .filter(redisTbl -> redisTbl.getRedisRole() == XPipeConsoleConstant.ROLE_REDIS)
-                .forEach(redisTbl -> {
-                    RedisSession redisSession = redisSessionManager
-                            .findOrCreateSession(redisTbl.getRedisIp(), redisTbl.getRedisPort());
-                    redisSession.closeSubscribedChannel(DefaultDelayMonitor.CHECK_CHANNEL);
-                });
     }
 
     @DalTransaction
