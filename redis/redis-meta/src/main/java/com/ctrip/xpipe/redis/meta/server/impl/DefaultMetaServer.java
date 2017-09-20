@@ -5,6 +5,8 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
+import com.ctrip.xpipe.exception.SIMPLE_RETURN_CODE;
+import com.ctrip.xpipe.exception.SimpleErrorMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
@@ -186,11 +188,11 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		if(currentDc.equalsIgnoreCase(newPrimaryDc)){
 			
 			List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterId, shardId);
-			boolean result = new AtLeastOneChecker(redises, keyedObjectPool, scheduled).check();
-			if(result){
+			SimpleErrorMessage result = new AtLeastOneChecker(redises, keyedObjectPool, scheduled).check();
+			if(result.getErrorType() == SIMPLE_RETURN_CODE.SUCCESS){
 				return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS);
 			}
-			return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.FAIL, "all redis dead:" + redises); 
+			return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.FAIL, "all redises dead:" + result.getErrorMessage());
 		}
 		return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS, String.format("current dc :%s is not new primary: %s ", currentDc, newPrimaryDc));
 	}
