@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.health;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.lambdaworks.redis.ClientOptions;
@@ -17,7 +18,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.annotation.Resource;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
@@ -33,6 +36,10 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
     private static final int TIMEOUT = 1000;
 
     private static final String CHECK_CHANNEL = "xpipe-health-check";
+
+    @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+    ExecutorService executors;
+
     @Before
     public void beforeRedisSessionTest() throws Exception {
         int BLOCKED_PORT = 55555;
@@ -46,7 +53,8 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
                 return "+OK\r\n";
             }
         });
-        redisSession = new RedisSession(createRedisClient(HOST, BLOCKED_PORT), new HostPort(HOST, BLOCKED_PORT));
+        redisSession = new RedisSession(createRedisClient(HOST, BLOCKED_PORT),
+                new HostPort(HOST, BLOCKED_PORT), executors);
     }
 
     @Test

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,6 +52,9 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	@Autowired
 	private MetaCache metaCache;
+
+	@Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+	Executor executors;
 
 	public DefaultRedisSessionManager() {
 		this(1);
@@ -138,7 +143,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			synchronized (this) {
 				session = sessions.get(hostPort);
 				if (session == null) {
-					session = new RedisSession(findRedisConnection(host, port), hostPort);
+					session = new RedisSession(findRedisConnection(host, port), hostPort, executors);
 					sessions.put(hostPort, session);
 				}
 			}
