@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.health.info.InfoCallback;
 import com.lambdaworks.redis.RedisChannelHandler;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnectionStateListener;
@@ -218,6 +219,35 @@ public class RedisSession {
         final CompletableFuture<List<Object>> future = findOrCreateNonSubscribeConnection().async().role().toCompletableFuture();
         return (String) future.get(waitResultSeconds, TimeUnit.SECONDS).get(0);
 
+    }
+
+    public void info(InfoCallback infoCallback) {
+        String serverInfoSection = "server";
+        Consumer<StatefulRedisConnection> connectionConsumer = new Consumer<StatefulRedisConnection>() {
+            @Override
+            public void accept(StatefulRedisConnection statefulRedisConnection) {
+                final CompletableFuture<String> future = statefulRedisConnection.async()
+                        .info(serverInfoSection).toCompletableFuture();
+
+                future.whenCompleteAsync((info, th) -> {
+                    if(th != null){
+                        log.error("[info]{}", hostPort, th);
+                        infoCallback.fail(th);
+                    }else{
+                        log.debug("[info]{}: \n{}", hostPort, info);
+                        infoCallback.check(info);
+                    }
+                }, executors);
+            }
+        };
+        Consumer<Throwable> throwableConsumer = new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable e) {
+                infoCallback.fail(e);
+                log.error("[info]{}", hostPort, e);
+            }
+        };
+        asyncExecute(connectionConsumer, throwableConsumer);
     }
 
     private void asyncExecute(Consumer<StatefulRedisConnection> connectionConsumer,
