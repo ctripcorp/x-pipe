@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.health.info.InfoCallback;
+import com.ctrip.xpipe.redis.console.health.migration.Callbackable;
+import com.ctrip.xpipe.redis.console.health.migration.version.VersionCallback;
 import com.lambdaworks.redis.RedisChannelHandler;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnectionStateListener;
@@ -11,6 +12,10 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.Observer;
+import rx.functions.Action0;
+import rx.functions.Action1;
 
 import java.util.List;
 import java.util.Map;
@@ -18,6 +23,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 
@@ -221,43 +227,32 @@ public class RedisSession {
 
     }
 
-    public void info(InfoCallback infoCallback) {
+    public void serverInfo(Callbackable<String> versionCallback) {
         String serverInfoSection = "server";
-        Consumer<StatefulRedisConnection> connectionConsumer = new Consumer<StatefulRedisConnection>() {
-            @Override
-            public void accept(StatefulRedisConnection statefulRedisConnection) {
-                final CompletableFuture<String> future = statefulRedisConnection.async()
-                        .info(serverInfoSection).toCompletableFuture();
+        Consumer<StatefulRedisConnection> connectionConsumer = (connection) -> {
+            CompletableFuture<String> future = connection.async().info(serverInfoSection).toCompletableFuture();
+            future.whenCompleteAsync((info, th) -> {
+                if(th != null){
+                    log.error("[info]{}", hostPort, th);
+                    versionCallback.fail(th);
+                }else{
+                    log.debug("[info]{}: \n{}", hostPort, info);
+                    versionCallback.success(info);
+                }
+            }, executors);
+        };
 
-                future.whenCompleteAsync((info, th) -> {
-                    if(th != null){
-                        log.error("[info]{}", hostPort, th);
-                        infoCallback.fail(th);
-                    }else{
-                        log.debug("[info]{}: \n{}", hostPort, info);
-                        infoCallback.check(info);
-                    }
-                }, executors);
-            }
+        Consumer<Throwable> throwableConsumer = (throwable) -> {
+            versionCallback.fail(throwable);
+            log.error("[info]{}", hostPort, throwable);
         };
-        Consumer<Throwable> throwableConsumer = new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable e) {
-                infoCallback.fail(e);
-                log.error("[info]{}", hostPort, e);
-            }
-        };
+
         asyncExecute(connectionConsumer, throwableConsumer);
     }
 
     private void asyncExecute(Consumer<StatefulRedisConnection> connectionConsumer,
                               Consumer<Throwable> throwableConsumer) {
-        Supplier<StatefulRedisConnection> supplier = new Supplier<StatefulRedisConnection>() {
-            @Override
-            public StatefulRedisConnection get() {
-                return findOrCreateNonSubscribeConnection();
-            }
-        };
+        Supplier<StatefulRedisConnection> supplier = ()->findOrCreateNonSubscribeConnection();
         CompletableFuture.supplyAsync(supplier, executors)
                 .whenCompleteAsync((connection, th) -> {
                     if(th != null) {

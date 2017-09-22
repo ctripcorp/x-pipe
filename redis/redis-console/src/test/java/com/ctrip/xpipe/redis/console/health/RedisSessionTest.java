@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.health;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.health.migration.version.VersionCallback;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -12,18 +13,16 @@ import com.lambdaworks.redis.RedisURI;
 import com.lambdaworks.redis.SocketOptions;
 import com.lambdaworks.redis.resource.DefaultClientResources;
 import com.lambdaworks.redis.resource.Delay;
-import org.apache.tomcat.jni.Time;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.*;
 
 public class RedisSessionTest extends AbstractConsoleIntegrationTest {
 
@@ -168,8 +167,30 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         return redis;
     }
 
+
+    @Autowired
+    VersionCallback versionCallback;
+
+    @Test
+    public void testInfo() {
+        String host = "10.3.2.23";
+        int port = 6379;
+        redisSession = new RedisSession(createRedisClient(host, port),
+                new HostPort(host, port), executors);
+//        redisSession.serverInfo(versionCallback);
+        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
+        long begin = System.currentTimeMillis();
+        for(int i = 0; i < COUNT; i++) {
+            redisSession.serverInfo(versionCallback);
+        }
+        long after = System.currentTimeMillis();
+        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
+    }
+
+
     @After
     public void afterRedisSessionTest() throws Exception {
         server.stop();
+        waitForAnyKeyToExit();
     }
 }
