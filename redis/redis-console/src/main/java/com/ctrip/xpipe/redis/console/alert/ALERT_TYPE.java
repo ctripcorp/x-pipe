@@ -13,7 +13,8 @@ public enum ALERT_TYPE {
     REDIS_CONF("redis_conf"),
     CLIENT_INCONSIS("client_inconsis"),
     MIGRATION_MANY_UNFINISHED("migra_unfinish"),
-    REDIS_VERSION_NOT_VALID("redis_version_not_valid");
+    REDIS_VERSION_NOT_VALID("redis_version_not_valid"),
+    REDIS_CONF_NOT_VALID("redis_conf_not_valid");
 
     private String simpleDesc;
 

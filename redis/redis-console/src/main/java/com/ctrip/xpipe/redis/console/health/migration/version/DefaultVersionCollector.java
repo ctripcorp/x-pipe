@@ -66,12 +66,11 @@ public class DefaultVersionCollector implements VersionCollector {
     }
 
     // Change to protected to do unit test
-    protected String getRedisVersion(String message) {
+    public static String getRedisVersion(String message) {
         String[] serverInfo = StringUtil.splitRemoveEmpty(LINE_SPLITTER, message);
         for(String info : serverInfo) {
             if(info.contains(REDIS_VERSION_KEY)) {
                 String[] strs = StringUtil.splitRemoveEmpty(REDIS_VERSION_SPLITTER, info);
-                logger.debug("Redis version is: {}", strs);
                 return strs[1];
             }
         }

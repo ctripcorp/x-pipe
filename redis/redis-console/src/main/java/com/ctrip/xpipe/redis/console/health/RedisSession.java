@@ -221,24 +221,46 @@ public class RedisSession {
 
     }
 
-    public void serverInfo(Callbackable<String> versionCallback) {
+    public void serverInfo(Callbackable<String> callback) {
         String serverInfoSection = "server";
         Consumer<StatefulRedisConnection> connectionConsumer = (connection) -> {
             CompletableFuture<String> future = connection.async().info(serverInfoSection).toCompletableFuture();
             future.whenCompleteAsync((info, th) -> {
                 if(th != null){
                     log.error("[info]{}", hostPort, th);
-                    versionCallback.fail(th);
+                    callback.fail(th);
                 }else{
                     log.debug("[info]{}: \n{}", hostPort, info);
-                    versionCallback.success(info);
+                    callback.success(info);
                 }
             }, executors);
         };
 
         Consumer<Throwable> throwableConsumer = (throwable) -> {
-            versionCallback.fail(throwable);
+            callback.fail(throwable);
             log.error("[info]{}", hostPort, throwable);
+        };
+
+        asyncExecute(connectionConsumer, throwableConsumer);
+    }
+
+    public void conf(String confSection, Callbackable<List<String>> callback) {
+        Consumer<StatefulRedisConnection> connectionConsumer = (connection) -> {
+            CompletableFuture<List<String>> future = connection.async().configGet(confSection).toCompletableFuture();
+            future.whenCompleteAsync((conf, throwable) -> {
+                if(throwable != null) {
+                    log.error("[conf]Executing conf command error", throwable);
+                    callback.fail(throwable);
+                } else {
+                    log.debug("[conf]Executing result {}", conf);
+                    callback.success(conf);
+                }
+            });
+        };
+
+        Consumer<Throwable> throwableConsumer = (throwable) -> {
+            callback.fail(throwable);
+            log.error("[conf]{}", hostPort, throwable);
         };
 
         asyncExecute(connectionConsumer, throwableConsumer);

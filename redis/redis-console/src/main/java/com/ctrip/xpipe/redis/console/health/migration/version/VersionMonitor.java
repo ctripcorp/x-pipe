@@ -22,7 +22,7 @@ import java.util.Map;
 
 @Component
 @Lazy
-//@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
+@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class VersionMonitor extends AbstractRedisConfMonitor<VersionInstanceResult> {
 
     @Autowired

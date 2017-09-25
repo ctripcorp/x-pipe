@@ -3,9 +3,11 @@ package com.ctrip.xpipe.redis.console.health;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.health.migration.Callbackable;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.lambdaworks.redis.ClientOptions;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisURI;
@@ -18,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import javax.annotation.Resource;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -145,6 +148,27 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         System.out.println(begin + " : " + after);
         Assert.assertTrue(after - begin < TIMEOUT);
+    }
+
+    @Test
+    public void conf() throws Exception {
+        String host = "10.3.2.23";
+        int port = 6379;
+        redisSession = new RedisSession(createRedisClient(host, port),
+                new HostPort(host, port), executors);
+
+        redisSession.conf("repl-diskless-sync", new Callbackable<List<String>>() {
+            @Override
+            public void success(List<String> message) {
+                System.out.println(StringUtil.toString(message));
+            }
+
+            @Override
+            public void fail(Throwable throwable) {
+
+            }
+        });
+        waitForAnyKeyToExit();
     }
 
     private RedisClient createRedisClient(String host, int port) {
