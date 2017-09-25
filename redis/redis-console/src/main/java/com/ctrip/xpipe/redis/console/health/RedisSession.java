@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.migration.Callbackable;
-import com.ctrip.xpipe.redis.console.health.migration.version.VersionCallback;
 import com.lambdaworks.redis.RedisChannelHandler;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnectionStateListener;
@@ -12,10 +11,6 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Observer;
-import rx.functions.Action0;
-import rx.functions.Action1;
 
 import java.util.List;
 import java.util.Map;
@@ -23,7 +18,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 
