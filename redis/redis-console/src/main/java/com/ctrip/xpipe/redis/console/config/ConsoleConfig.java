@@ -49,7 +49,5 @@ public interface ConsoleConfig extends CoreConfig {
 
 	QuorumConfig  getDefaultSentinelQuorumConfig();
 
-	int getRedisMigrationHealthCheckInterval();
-
 	String getRedisAlertVersion();
 }
