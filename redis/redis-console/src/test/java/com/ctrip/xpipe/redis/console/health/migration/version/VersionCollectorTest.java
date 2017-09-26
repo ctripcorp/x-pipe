@@ -17,8 +17,6 @@ import java.io.InputStream;
 
 public class VersionCollectorTest {
 
-    DefaultVersionCollector collector;
-
     String serverInfo;
 
     @Before
@@ -26,13 +24,12 @@ public class VersionCollectorTest {
         String path = "src/test/resources/InfoServer";
         InputStream ins = FileUtils.getFileInputStream(path);
         serverInfo =  IOUtils.toString(ins);
-        collector = new DefaultVersionCollector();
     }
 
     @Test
     public void collectTest() throws IOException {
         String EXPECTED_VERSION = "3.0.7";
-        String version = collector.getRedisVersion(serverInfo);
+        String version = DefaultVersionCollector.getRedisVersion(serverInfo);
         Assert.assertEquals(EXPECTED_VERSION, version);
     }
 

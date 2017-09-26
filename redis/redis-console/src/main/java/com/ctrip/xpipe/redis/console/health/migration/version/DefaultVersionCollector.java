@@ -29,7 +29,7 @@ public class DefaultVersionCollector implements VersionCollector {
 
     private static final String REDIS_VERSION_KEY = "redis_version";
 
-    private static final String REDIS_VERSION_SPLITTER = ":";
+    private static final String REDIS_VERSION_SPLITTER = "\\s*:\\s*";
 
     @Autowired
     private AlertManager alertManager;

@@ -60,7 +60,7 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
             String key = serverConf.get(0);
             String val = serverConf.get(1);
             if (ObjectUtils.equals(key, DiskLessMonitor.REPL_DISKLESS_SYNC)) {
-                if (ObjectUtils.equals(val, "no") || ObjectUtils.equals(val, "NO"))
+                if (ObjectUtils.equals(val, "yes") || ObjectUtils.equals(val, "YES"))
                     return true;
             }
             return false;

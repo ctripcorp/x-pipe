@@ -3,7 +3,10 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -118,6 +121,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	proto.setStatus(ClusterStatus.Normal.toString());
 			proto.setIsXpipeInterested(true);
     	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+		if(!checkEmails(cluster.getClusterAdminEmails())) {
+			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
+		}
     	proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
 		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
     	
@@ -206,6 +212,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 		proto.setClusterDescription(cluster.getClusterDescription());
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+		if(!checkEmails(cluster.getClusterAdminEmails())) {
+			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
+		}
 		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
 		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
 		// organization info should not be updated by cluster,
@@ -313,4 +322,25 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	});
 	}
 
+	public static final Pattern VALID_EMAIL_ADDRESS_REGEX =
+			Pattern.compile("^[A-Z0-9._%+-]+@Ctrip.com$", Pattern.CASE_INSENSITIVE);
+
+
+	public boolean checkEmails(String emails) {
+		if(emails == null || emails.trim().isEmpty()) {
+			return false;
+		}
+		String splitter = "\\s*(,|;)\\s*";
+		String[] emailStrs = StringUtil.splitRemoveEmpty(splitter, emails);
+		for(String email : emailStrs) {
+			if(!checkEmail(email))
+				return false;
+		}
+		return true;
+	}
+
+	private boolean checkEmail(String email) {
+		Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(email);
+		return matcher.find();
+	}
 }
