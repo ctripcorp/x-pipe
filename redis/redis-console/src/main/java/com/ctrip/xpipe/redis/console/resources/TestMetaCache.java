@@ -21,17 +21,19 @@ import com.ctrip.xpipe.tuple.Pair;
 @Profile(AbstractProfile.PROFILE_NAME_TEST)
 public class TestMetaCache implements MetaCache {
 
+    XpipeMeta xpipeMeta = new XpipeMeta();
+
     public TestMetaCache(){
     }
 
     @Override
     public XpipeMeta getXpipeMeta() {
-        return null;
+        return xpipeMeta;
     }
 
     @Override
     public boolean inBackupDc(HostPort hostPort) {
-        return false;
+        return true;
     }
 
     @Override

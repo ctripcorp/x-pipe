@@ -38,6 +38,13 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     public static final String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
 
+    private static final String KEY_REDIS_ALERT_VERSION = "redis.alert.version";
+
+    @Override
+    public String getRedisAlertVersion() {
+        return getProperty(KEY_REDIS_ALERT_VERSION, "2.8.19");
+    }
+
     @Override
     public String getDatasource() {
         return getProperty(KEY_DATASOURCE, "fxxpipe");

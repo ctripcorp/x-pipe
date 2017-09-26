@@ -12,7 +12,6 @@ import com.lambdaworks.redis.RedisURI;
 import com.lambdaworks.redis.SocketOptions;
 import com.lambdaworks.redis.resource.DefaultClientResources;
 import com.lambdaworks.redis.resource.Delay;
-import org.apache.tomcat.jni.Time;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -22,8 +21,6 @@ import javax.annotation.Resource;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.*;
 
 public class RedisSessionTest extends AbstractConsoleIntegrationTest {
 
@@ -38,7 +35,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
     private static final String CHECK_CHANNEL = "xpipe-health-check";
 
     @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
-    ExecutorService executors;
+    private ExecutorService executors;
 
     @Before
     public void beforeRedisSessionTest() throws Exception {
@@ -167,6 +164,9 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         redis.setOptions(clientOptions);
         return redis;
     }
+
+
+
 
     @After
     public void afterRedisSessionTest() throws Exception {
