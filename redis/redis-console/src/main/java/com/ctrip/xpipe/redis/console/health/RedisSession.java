@@ -230,7 +230,6 @@ public class RedisSession {
                     log.error("[info]{}", hostPort, th);
                     callback.fail(th);
                 }else{
-                    log.debug("[info]{}: \n{}", hostPort, info);
                     callback.success(info);
                 }
             }, executors);
@@ -252,7 +251,6 @@ public class RedisSession {
                     log.error("[conf]Executing conf command error", throwable);
                     callback.fail(throwable);
                 } else {
-                    log.debug("[conf]Executing result {}", conf);
                     callback.success(conf);
                 }
             });

@@ -56,11 +56,12 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
     }
 
     private boolean isReplDiskLessSync(List<String> serverConf) {
+        logger.debug("[isReplDiskLessSync]config is as: {}", serverConf);
         try {
             String key = serverConf.get(0);
             String val = serverConf.get(1);
-            if (ObjectUtils.equals(key, DiskLessMonitor.REPL_DISKLESS_SYNC)) {
-                if (ObjectUtils.equals(val, "yes") || ObjectUtils.equals(val, "YES"))
+            if (key != null && key.contains(DiskLessMonitor.REPL_DISKLESS_SYNC)) {
+                if (val != null && val.toLowerCase().contains("yes"))
                     return true;
             }
             return false;
@@ -73,7 +74,7 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
     private boolean versionMatches(String serverInfo) {
         String targetVersion = consoleConfig.getRedisAlertVersion();
         String version = DefaultVersionCollector.getRedisVersion(serverInfo);
-        return ObjectUtils.equals(version, targetVersion);
+        return version != null && version.contains(targetVersion);
     }
 
 

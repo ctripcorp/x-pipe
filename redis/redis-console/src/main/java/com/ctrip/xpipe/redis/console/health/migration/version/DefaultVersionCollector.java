@@ -53,14 +53,11 @@ public class DefaultVersionCollector implements VersionCollector {
     }
 
     public void checkRedisVersion(HostPort hostPort, String message, String clusterId, String shardId) {
-        logger.info("[checkRedisVersion]Redis {}: Server Info: \n{}", hostPort, message);
+        logger.debug("[checkRedisVersion]Redis {}: Server Info: \n{}", hostPort, message);
         String targetVersion = consoleConfig.getRedisAlertVersion();
-        logger.info("[checkRedisVersion]Alert version for redis is: {}", targetVersion);
         String currentRedisVersion = getRedisVersion(message);
-        logger.info("[checkRedisVersion]Current Redis {} version: {}", hostPort, currentRedisVersion);
-        logger.info("[checkRedisVersion]Check Result: {}", ObjectUtils.equals(currentRedisVersion, targetVersion));
-        if(ObjectUtils.equals(currentRedisVersion, targetVersion)) {
-            logger.warn("[checkRedisVersion]Redis Server in bad version");
+        logger.debug("[checkRedisVersion]Current Redis {} version: {}", hostPort, currentRedisVersion);
+        if(currentRedisVersion != null && currentRedisVersion.contains(targetVersion)) {
             String alertMessage = String.format("Redis Server: %s version is %s, which is not supported in backup DC",
                     hostPort.toString(), currentRedisVersion);
             logger.warn("{}", alertMessage);
