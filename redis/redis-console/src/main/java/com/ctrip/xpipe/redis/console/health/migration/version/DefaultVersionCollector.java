@@ -55,6 +55,7 @@ public class DefaultVersionCollector implements VersionCollector {
     private void checkRedisVersion(HostPort hostPort, String message, String clusterId, String shardId) {
         logger.debug("Redis {}: Server Info: \n{}", hostPort, message);
         String targetVersion = consoleConfig.getRedisAlertVersion();
+        logger.debug("Alert version for redis is: {}", targetVersion);
         String currentRedisVersion = getRedisVersion(message);
         logger.debug("Current Redis {} version: {}", hostPort, currentRedisVersion);
         if(ObjectUtils.equals(currentRedisVersion, targetVersion)) {
