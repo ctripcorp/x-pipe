@@ -15,7 +15,7 @@ public class RedisInfoServerUtils {
         String[] lines = StringUtil.splitByLineRemoveEmpty(InfoServer);
         for(String line : lines) {
             line = line.trim();
-            if(line.startsWith(key, key.length())) {
+            if(line.startsWith(key)) {
                 String[] keyAndVal = StringUtil.splitRemoveEmpty(COLON_SPLITTER, line);
                 return keyAndVal[1];
             }

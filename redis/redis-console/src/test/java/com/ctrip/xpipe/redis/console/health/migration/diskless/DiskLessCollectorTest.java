@@ -1,21 +1,17 @@
-package com.ctrip.xpipe.redis.console.health.migration.version;
+package com.ctrip.xpipe.redis.console.health.migration.diskless;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.utils.FileUtils;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -23,29 +19,32 @@ import java.io.InputStream;
  * Sep 25, 2017
  */
 
-public class VersionCollectorTest extends AbstractConsoleIntegrationTest {
-
-    Logger logger = LoggerFactory.getLogger(getClass());
+public class DiskLessCollectorTest extends AbstractConsoleIntegrationTest {
 
     String serverInfo;
+
+    List<String> diskLess;
 
     @Before
     public void before() throws IOException {
         String path = "src/test/resources/InfoServer";
         InputStream ins = FileUtils.getFileInputStream(path);
-        serverInfo =  IOUtils.toString(ins);
+        serverInfo = IOUtils.toString(ins);
+        diskLess = Arrays.asList("repl-diskless-sync", "yes");
     }
 
 
     @Autowired
-    private DefaultVersionCollector collector;
+    private DefaultDiskLessCollector collector;
 
     @Test
     public void testCheckRedisVersion() {
         String clusterId = "test";
         String shardId = "test";
         HostPort hostPort = new HostPort("10.3.2.23", 10010);
-        String message = serverInfo;
-        collector.checkRedisVersion(hostPort, message, clusterId, shardId);
+        RedisInfoAndConf instance = new RedisInfoAndConf();
+        instance.setServerInfo(serverInfo);
+        instance.setServerConf(diskLess);
+        collector.checkRedisDiskLess(hostPort, instance, clusterId, shardId);
     }
 }

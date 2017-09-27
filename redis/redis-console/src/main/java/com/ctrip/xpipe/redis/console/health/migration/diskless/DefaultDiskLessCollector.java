@@ -47,10 +47,10 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         });
     }
 
-    private void checkRedisDiskLess(HostPort hostPort, RedisInfoAndConf redisInfoAndConf, String clusterId, String shardId) {
+    void checkRedisDiskLess(HostPort hostPort, RedisInfoAndConf redisInfoAndConf, String clusterId, String shardId) {
         if(versionMatches(redisInfoAndConf.getServerInfo()) && isReplDiskLessSync(redisInfoAndConf.getServerConf())) {
-            String message = String.format("Redis %s with version %s should not set %s as YES",
-                    hostPort.toString(), consoleConfig.getRedisAlertVersion(), DiskLessMonitor.REPL_DISKLESS_SYNC);
+            String message = String.format("Redis %s should not set %s as YES",
+                    hostPort.toString(), DiskLessMonitor.REPL_DISKLESS_SYNC);
             alertManager.alert(clusterId, shardId, ALERT_TYPE.REDIS_CONF_NOT_VALID, message);
         }
     }
