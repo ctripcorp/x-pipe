@@ -5,8 +5,8 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.Sample;
-import com.ctrip.xpipe.redis.console.health.migration.version.DefaultVersionCollector;
-import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.redis.console.health.migration.RedisInfoServerUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +49,7 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
 
     private void checkRedisDiskLess(HostPort hostPort, RedisInfoAndConf redisInfoAndConf, String clusterId, String shardId) {
         if(versionMatches(redisInfoAndConf.getServerInfo()) && isReplDiskLessSync(redisInfoAndConf.getServerConf())) {
-            String message = String.format("Primary Site Redis %s with version %s should not set %s as YES",
+            String message = String.format("Redis %s with version %s should not set %s as YES",
                     hostPort.toString(), consoleConfig.getRedisAlertVersion(), DiskLessMonitor.REPL_DISKLESS_SYNC);
             alertManager.alert(clusterId, shardId, ALERT_TYPE.REDIS_CONF_NOT_VALID, message);
         }
@@ -60,8 +60,8 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         try {
             String key = serverConf.get(0);
             String val = serverConf.get(1);
-            if (key != null && key.contains(DiskLessMonitor.REPL_DISKLESS_SYNC)) {
-                if (val != null && val.toLowerCase().contains("yes"))
+            if (key != null && key.trim().equalsIgnoreCase(DiskLessMonitor.REPL_DISKLESS_SYNC)) {
+                if (val != null && val.trim().equalsIgnoreCase("yes"))
                     return true;
             }
             return false;
@@ -72,10 +72,11 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
     }
 
     private boolean versionMatches(String serverInfo) {
+        logger.debug("[versionMatches]Redis info server command result: \n {}", serverInfo);
         String targetVersion = consoleConfig.getRedisAlertVersion();
-        String version = DefaultVersionCollector.getRedisVersion(serverInfo);
-        return version != null && version.contains(targetVersion);
+        String version = RedisInfoServerUtils.getRedisVersion(serverInfo);
+        logger.debug("[versionMatches]Redis version is {}", version);
+        logger.debug("[versionMatches]Redis alert version is {}", targetVersion);
+        return version != null && StringUtil.compareVersion(version, targetVersion) < 1;
     }
-
-
 }

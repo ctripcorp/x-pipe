@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.health.migration.Callbackable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Lazy;
@@ -103,7 +102,7 @@ public class DiskLessMonitor extends AbstractRedisConfMonitor<DiskLessInstanceRe
 
     @Override
     protected boolean addCluster(String dcName, ClusterMeta clusterMeta) {
-        String activeDC = clusterMeta.getActiveDc();
-        return ObjectUtils.equals(activeDC, dcName);
+        // check both primary and recovery site
+        return true;
     }
 }

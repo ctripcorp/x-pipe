@@ -48,7 +48,6 @@ public class VersionMonitor extends AbstractRedisConfMonitor<VersionInstanceResu
                 redisSession.serverInfo(new Callbackable<String>() {
                     @Override
                     public void success(String message) {
-                        System.out.println(message);
                         addInstanceSuccess(startNanoTime, hostPort.getHost(), hostPort.getPort(), message);
                     }
 

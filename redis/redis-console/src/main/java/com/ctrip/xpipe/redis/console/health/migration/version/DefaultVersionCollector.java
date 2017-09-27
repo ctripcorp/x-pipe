@@ -5,7 +5,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.Sample;
-import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.redis.console.health.migration.RedisInfoServerUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,12 +24,6 @@ import org.springframework.stereotype.Component;
 public class DefaultVersionCollector implements VersionCollector {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
-
-    private static final String LINE_SPLITTER = System.lineSeparator();
-
-    private static final String REDIS_VERSION_KEY = "redis_version";
-
-    private static final String REDIS_VERSION_SPLITTER = "\\s*:\\s*";
 
     @Autowired
     private AlertManager alertManager;
@@ -52,28 +46,15 @@ public class DefaultVersionCollector implements VersionCollector {
         });
     }
 
-    public void checkRedisVersion(HostPort hostPort, String message, String clusterId, String shardId) {
+    private void checkRedisVersion(HostPort hostPort, String message, String clusterId, String shardId) {
         logger.debug("[checkRedisVersion]Redis {}: Server Info: \n{}", hostPort, message);
-        String targetVersion = consoleConfig.getRedisAlertVersion();
-        String currentRedisVersion = getRedisVersion(message);
-        logger.debug("[checkRedisVersion]Current Redis {} version: {}", hostPort, currentRedisVersion);
-        if(currentRedisVersion != null && currentRedisVersion.contains(targetVersion)) {
-            String alertMessage = String.format("Redis Server: %s version is %s, which is not supported in backup DC",
-                    hostPort.toString(), currentRedisVersion);
+        String targetVersion = consoleConfig.getXRedisMinimumRequestVersion();
+        String version = RedisInfoServerUtils.getXRedisVersion(message);
+        logger.debug("[checkRedisVersion]Current Redis {} xredis_version: {}", hostPort, version);
+        if(version != null && StringUtil.compareVersion(version, targetVersion) < 1) {
+            String alertMessage = String.format("Redis %s should be XRedis",  hostPort.toString());
             logger.warn("{}", alertMessage);
             alertManager.alert(clusterId, shardId, ALERT_TYPE.REDIS_VERSION_NOT_VALID, alertMessage);
         }
-    }
-
-    // Change to protected to do unit test
-    public static String getRedisVersion(String message) {
-        String[] serverInfo = StringUtil.splitRemoveEmpty(LINE_SPLITTER, message);
-        for(String info : serverInfo) {
-            if(info.contains(REDIS_VERSION_KEY)) {
-                String[] strs = StringUtil.splitRemoveEmpty(REDIS_VERSION_SPLITTER, info);
-                return strs[1];
-            }
-        }
-        return null;
     }
 }

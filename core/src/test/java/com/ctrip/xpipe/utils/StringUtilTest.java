@@ -51,4 +51,17 @@ public class StringUtilTest extends AbstractTest{
 		
 	}
 
+	@Test
+	public void testCompareVersion() {
+		String version = "2.8.19";
+		String targetVersion = "2.8.22";
+		Assert.assertEquals(-1, StringUtil.compareVersion(version, targetVersion));
+		version = "2.8.19.1";
+		Assert.assertEquals(-1, StringUtil.compareVersion(version, targetVersion));
+		version = "2.8";
+		Assert.assertEquals(-1, StringUtil.compareVersion(version, targetVersion));
+		version = "2.8.22.1";
+		Assert.assertEquals(1, StringUtil.compareVersion(version, targetVersion));
+	}
+
 }
