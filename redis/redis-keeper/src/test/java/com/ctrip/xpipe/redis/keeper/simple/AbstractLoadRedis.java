@@ -14,6 +14,8 @@ public abstract class AbstractLoadRedis extends AbstractRedis{
 	protected long total = 1 << 30;
 	
 	protected long maxKeyIndex = Integer.parseInt(System.getProperty("maxKeyIndex", String.valueOf(1 << 20)));
+
+	protected int sleepMilli = Integer.parseInt(System.getProperty("sleepMilli", String.valueOf(0)));
 	
 	protected final AtomicLong current = new AtomicLong();
 
