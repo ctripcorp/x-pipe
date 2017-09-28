@@ -1,18 +1,17 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
+import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.web.EmbeddedServletContainerAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration;
-
-import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
-import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.context.annotation.ComponentScan;
+
+import java.io.IOException;
 
 /**
  * @author marsqing

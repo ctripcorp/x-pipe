@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Lazy;
@@ -22,8 +24,10 @@ import java.util.concurrent.*;
  * Sep 28, 2017
  */
 @Component
-//@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
+@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class DefaultRedisConfManager implements RedisConfManager {
+
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
     private ConcurrentMap<HostPort, RedisConf> configs = new ConcurrentHashMap<>();
 
@@ -62,10 +66,14 @@ public class DefaultRedisConfManager implements RedisConfManager {
     public void postConstruct() {
         scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
             @Override
-            protected void doRun() throws Exception {
+            protected void doRun() {
                 String eventType = "Redis.Server.Version";
-                for(ConcurrentMap.Entry entry : configs.entrySet()) {
-                    CatEventMonitor.DEFAULT.logEvent(eventType, entry.getValue().toString());
+                try {
+                    for(ConcurrentMap.Entry entry : configs.entrySet()) {
+                        CatEventMonitor.DEFAULT.logEvent(eventType, entry.getValue().toString());
+                    }
+                } catch (Exception e) {
+                    logger.error("[postConstruct]{}", e);
                 }
             }
         }, 1, 1, TimeUnit.MINUTES);

@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.util.concurrent.TimeUnit;
-
 import com.lambdaworks.redis.ClientOptions;
 import com.lambdaworks.redis.ClientOptions.DisconnectedBehavior;
 import com.lambdaworks.redis.RedisClient;
@@ -13,9 +11,10 @@ import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 import com.lambdaworks.redis.resource.ClientResources;
 import com.lambdaworks.redis.resource.DefaultClientResources;
 import com.lambdaworks.redis.resource.Delay;
-
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author marsqing
