@@ -76,6 +76,6 @@ public class DefaultRedisConfManager implements RedisConfManager {
                     logger.error("[postConstruct]{}", e);
                 }
             }
-        }, 1, 1, TimeUnit.MINUTES);
+        }, 5, 1, TimeUnit.MINUTES);
     }
 }
