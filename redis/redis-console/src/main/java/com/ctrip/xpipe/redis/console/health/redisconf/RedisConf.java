@@ -54,6 +54,7 @@ public class RedisConf {
         StringBuffer sb = new StringBuffer();
         sb.append("Cluster: ").append(clusterId)
                 .append(" Shard: ").append(shardId)
+                .append(hostPort.toString())
                 .append(" redis_version: ").append(redisVersion)
                 .append(" xredis_version: ").append(xredisVersion);
         return sb.toString();
