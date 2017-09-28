@@ -1,11 +1,13 @@
-package com.ctrip.xpipe.redis.console.health.migration.version;
+package com.ctrip.xpipe.redis.console.health.redisconf.version;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.Sample;
-import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisConf;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfManager;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisInfoServerUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,17 +27,14 @@ public class DefaultVersionCollector implements VersionCollector {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String LINE_SPLITTER = System.lineSeparator();
-
-    private static final String REDIS_VERSION_KEY = "redis_version";
-
-    private static final String REDIS_VERSION_SPLITTER = "\\s*:\\s*";
-
     @Autowired
     private AlertManager alertManager;
 
     @Autowired
     private ConsoleConfig consoleConfig;
+
+    @Autowired
+    private RedisConfManager redisConfManager;
 
     @Override
     public void collect(Sample<VersionInstanceResult> result) {
@@ -45,6 +44,7 @@ public class DefaultVersionCollector implements VersionCollector {
 
         samplePlan.getHostPort2SampleResult().forEach((hostPort, sampleResult) -> {
             if(sampleResult.isSuccess()) {
+                cacheRedisInfo(hostPort, sampleResult.getContext());
                 checkRedisVersion(hostPort, sampleResult.getContext(), clusterId, shardId);
             } else {
                 logger.error("Getting Redis Version, execution error: {}", sampleResult.getFailReason());
@@ -52,28 +52,21 @@ public class DefaultVersionCollector implements VersionCollector {
         });
     }
 
-    private void checkRedisVersion(HostPort hostPort, String message, String clusterId, String shardId) {
-        logger.debug("Redis {}: Server Info: \n{}", hostPort, message);
-        String targetVersion = consoleConfig.getRedisAlertVersion();
-        String currentRedisVersion = getRedisVersion(message);
-        logger.debug("Current Redis {} version: {}", hostPort, currentRedisVersion);
-        System.out.println(currentRedisVersion);
-        if(ObjectUtils.equals(currentRedisVersion, targetVersion)) {
-            String alertMessage = String.format("Redis Server: %s version is %s, which is not supported in backup DC",
-                    hostPort.toString(), currentRedisVersion);
+    void checkRedisVersion(HostPort hostPort, String message, String clusterId, String shardId) {
+        logger.debug("[checkRedisVersion]Redis {}: Server Info: \n{}", hostPort, message);
+        String targetVersion = consoleConfig.getXRedisMinimumRequestVersion();
+        String version = RedisInfoServerUtils.getXRedisVersion(message);
+        logger.debug("[checkRedisVersion]Current Redis {} xredis_version: {}", hostPort, version);
+        if(version == null || StringUtil.compareVersion(version, targetVersion) < 0) {
+            String alertMessage = String.format("Redis %s should be XRedis",  hostPort.toString());
+            logger.warn("{}", alertMessage);
             alertManager.alert(clusterId, shardId, ALERT_TYPE.REDIS_VERSION_NOT_VALID, alertMessage);
         }
     }
 
-    // Change to protected to do unit test
-    public static String getRedisVersion(String message) {
-        String[] serverInfo = StringUtil.splitRemoveEmpty(LINE_SPLITTER, message);
-        for(String info : serverInfo) {
-            if(info.contains(REDIS_VERSION_KEY)) {
-                String[] strs = StringUtil.splitRemoveEmpty(REDIS_VERSION_SPLITTER, info);
-                return strs[1];
-            }
-        }
-        return null;
+    void cacheRedisInfo(HostPort hostPort, String info) {
+        RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
+        redisConf.setRedisVersion(RedisInfoServerUtils.getRedisVersion(info));
+        redisConf.setXredisVersion(RedisInfoServerUtils.getXRedisVersion(info));
     }
 }

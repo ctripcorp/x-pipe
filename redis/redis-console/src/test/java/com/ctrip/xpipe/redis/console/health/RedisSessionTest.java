@@ -28,7 +28,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
 
     private RedisSession redisSession;
 
-    private static final int COUNT = 300;
+    private static final int COUNT = 200;
 
     private static final int TIMEOUT = 1000;
 
@@ -57,7 +57,6 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
     @Test
     public void subscribeIfAbsent() throws Exception {
 
-        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         long begin = System.currentTimeMillis();
         for(int i = 0; i < COUNT; i++) {
             redisSession.subscribeIfAbsent(CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
@@ -74,25 +73,21 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
             });
         }
         long after = System.currentTimeMillis();
-        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         Assert.assertTrue(after - begin < TIMEOUT);
     }
 
     @Test
     public void publish() throws Exception {
-        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         long begin = System.currentTimeMillis();
         for(int i = 0; i < COUNT; i++) {
             redisSession.publish(CHECK_CHANNEL, CHECK_CHANNEL);
         }
         long after = System.currentTimeMillis();
-        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         Assert.assertTrue(after - begin < TIMEOUT);
     }
 
     @Test
     public void ping() throws Exception {
-        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         long begin = System.currentTimeMillis();
         for(int i = 0; i < COUNT; i++) {
             redisSession.ping(new PingCallback() {
@@ -108,13 +103,11 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
             });
         }
         long after = System.currentTimeMillis();
-        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         Assert.assertTrue(after - begin < TIMEOUT);
     }
 
     @Test
     public void role() throws Exception {
-        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         long begin = System.currentTimeMillis();
         for(int i = 0; i < COUNT; i++) {
             redisSession.role(new RedisSession.RollCallback() {
@@ -130,19 +123,16 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
             });
         }
         long after = System.currentTimeMillis();
-        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         Assert.assertTrue(after - begin < TIMEOUT);
     }
 
     @Test
     public void configRewrite() throws Exception {
-        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         long begin = System.currentTimeMillis();
         for(int i = 0; i < COUNT; i++) {
             redisSession.configRewrite((str, th) -> {});
         }
         long after = System.currentTimeMillis();
-        System.out.println("===============" + DateTimeUtils.currentTimeAsString() + "========");
         System.out.println(begin + " : " + after);
         Assert.assertTrue(after - begin < TIMEOUT);
     }

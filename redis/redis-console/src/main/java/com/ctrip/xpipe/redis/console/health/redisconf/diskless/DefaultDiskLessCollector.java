@@ -1,12 +1,14 @@
-package com.ctrip.xpipe.redis.console.health.migration.diskless;
+package com.ctrip.xpipe.redis.console.health.redisconf.diskless;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.Sample;
-import com.ctrip.xpipe.redis.console.health.migration.version.DefaultVersionCollector;
-import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisConf;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfManager;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisInfoServerUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,9 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
     @Autowired
     private ConsoleConfig consoleConfig;
 
+    @Autowired
+    private RedisConfManager redisConfManager;
+
     @Override
     public void collect(Sample<DiskLessInstanceResult> sample) {
         DiskLessSamplePlan samplePlan = (DiskLessSamplePlan) sample.getSamplePlan();
@@ -47,20 +52,21 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         });
     }
 
-    private void checkRedisDiskLess(HostPort hostPort, RedisInfoAndConf redisInfoAndConf, String clusterId, String shardId) {
-        if(versionMatches(redisInfoAndConf.getServerInfo()) && isReplDiskLessSync(redisInfoAndConf.getServerConf())) {
-            String message = String.format("Primary Site Redis %s with version %s should not set %s as YES",
-                    hostPort.toString(), consoleConfig.getRedisAlertVersion(), DiskLessMonitor.REPL_DISKLESS_SYNC);
+    void checkRedisDiskLess(HostPort hostPort, List<String> serverConf, String clusterId, String shardId) {
+        if(versionMatches(hostPort) && isReplDiskLessSync(serverConf)) {
+            String message = String.format("Redis %s should not set %s as YES",
+                    hostPort.toString(), DiskLessMonitor.REPL_DISKLESS_SYNC);
             alertManager.alert(clusterId, shardId, ALERT_TYPE.REDIS_CONF_NOT_VALID, message);
         }
     }
 
     private boolean isReplDiskLessSync(List<String> serverConf) {
+        logger.debug("[isReplDiskLessSync]config is as: {}", serverConf);
         try {
             String key = serverConf.get(0);
             String val = serverConf.get(1);
-            if (ObjectUtils.equals(key, DiskLessMonitor.REPL_DISKLESS_SYNC)) {
-                if (ObjectUtils.equals(val, "yes") || ObjectUtils.equals(val, "YES"))
+            if (key != null && key.trim().equalsIgnoreCase(DiskLessMonitor.REPL_DISKLESS_SYNC)) {
+                if (val != null && val.trim().equalsIgnoreCase("yes"))
                     return true;
             }
             return false;
@@ -70,11 +76,12 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         return false;
     }
 
-    private boolean versionMatches(String serverInfo) {
+    private boolean versionMatches(HostPort hostPort) {
+        RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
         String targetVersion = consoleConfig.getRedisAlertVersion();
-        String version = DefaultVersionCollector.getRedisVersion(serverInfo);
-        return ObjectUtils.equals(version, targetVersion);
+        String version = redisConf.getRedisVersion();
+        logger.debug("[versionMatches]Redis version is {}", version);
+        logger.debug("[versionMatches]Redis alert version is {}", targetVersion);
+        return version != null && StringUtil.compareVersion(version, targetVersion) < 1;
     }
-
-
 }

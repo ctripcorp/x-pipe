@@ -55,6 +55,12 @@ public class RestTemplateFactory {
     }
 
     public static RestOperations createCommonsHttpRestTemplate(int maxConnPerRoute, int maxConnTotal,
+                                                               int connectTimeout, int soTimeout, int retryTimes) {
+        return createCommonsHttpRestTemplate(maxConnPerRoute, maxConnTotal, connectTimeout, soTimeout, retryTimes,
+                RetryPolicyFactories.newRestOperationsRetryPolicyFactory(10));
+    }
+
+    public static RestOperations createCommonsHttpRestTemplate(int maxConnPerRoute, int maxConnTotal,
                                                                int connectTimeout, int soTimeout, int retryTimes, RetryPolicyFactory retryPolicyFactory) {
         HttpClient httpClient = HttpClientBuilder.create()
                 .setMaxConnPerRoute(maxConnPerRoute)

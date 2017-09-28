@@ -1,8 +1,8 @@
-package com.ctrip.xpipe.redis.console.health.migration.version;
+package com.ctrip.xpipe.redis.console.health.redisconf.version;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.*;
-import com.ctrip.xpipe.redis.console.health.migration.Callbackable;
+import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -48,7 +48,6 @@ public class VersionMonitor extends AbstractRedisConfMonitor<VersionInstanceResu
                 redisSession.serverInfo(new Callbackable<String>() {
                     @Override
                     public void success(String message) {
-                        System.out.println(message);
                         addInstanceSuccess(startNanoTime, hostPort.getHost(), hostPort.getPort(), message);
                     }
 

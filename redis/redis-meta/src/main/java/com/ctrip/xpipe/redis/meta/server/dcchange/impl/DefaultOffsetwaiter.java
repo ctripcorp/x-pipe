@@ -109,7 +109,7 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
                     }
                 }
                 if (slaveOffset >= masterOffset) {
-                    executionLog.info(String.format("wait succeed!", masterOffset, slaveOffset));
+                    executionLog.info(String.format("wait succeed:%d >= %d", slaveOffset, masterOffset));
                     return true;
                 }
             } catch (Exception e) {

@@ -6,6 +6,7 @@ import redis.clients.jedis.Jedis;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng
@@ -15,6 +16,8 @@ import java.util.concurrent.CountDownLatch;
 public class SimpleSendMessage extends AbstractLoadRedis {
 
     private final int messageSize = 1 << 10;
+
+    private int expire = 0;
 
     private String message;
 
@@ -43,8 +46,8 @@ public class SimpleSendMessage extends AbstractLoadRedis {
 
             executors.execute(new AbstractExceptionLogTask() {
                 @Override
-                public void doRun() {
-                    try{
+                public void doRun() throws InterruptedException {
+                    try {
                         try (Jedis jedis = new Jedis(master.getHostString(), master.getPort())) {
                             while (true) {
                                 long index = increase();
@@ -53,11 +56,19 @@ public class SimpleSendMessage extends AbstractLoadRedis {
                                     break;
                                 }
                                 long keyIndex = getKeyIndex(index);
-                                jedis.set(String.valueOf(keyIndex), message);
+                                if (expire > 0) {
+                                    jedis.setex(String.valueOf(keyIndex), expire, message);
+                                } else {
+                                    jedis.set(String.valueOf(keyIndex), message);
+                                }
+
+                                if(sleepMilli > 0){
+                                    TimeUnit.MILLISECONDS.sleep(sleepMilli);
+                                }
                             }
                         }
                         logger.info("[doStart][finish]");
-                    }finally {
+                    } finally {
                         latch.countDown();
                     }
                 }
@@ -72,10 +83,12 @@ public class SimpleSendMessage extends AbstractLoadRedis {
 
         SimpleSendMessage simpleSendMessage = new SimpleSendMessage(new InetSocketAddress("localhost", 6379));
         simpleSendMessage.total = 1 << 23;
-        simpleSendMessage.setMaxKeyIndex( 1 << 30);
+        simpleSendMessage.sleepMilli = 10;
+        simpleSendMessage.expire = 0;
+        simpleSendMessage.setMaxKeyIndex(1 << 30);
+
         simpleSendMessage.initialize();
         simpleSendMessage.start();
-
     }
 
 }

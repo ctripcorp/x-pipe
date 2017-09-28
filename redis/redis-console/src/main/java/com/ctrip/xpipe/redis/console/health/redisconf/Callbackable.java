@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health.migration;
+package com.ctrip.xpipe.redis.console.health.redisconf;
 
 /**
  * @author chen.zhu

@@ -42,6 +42,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 
 /**
  * @author wenchao.meng
@@ -621,16 +622,33 @@ public class AbstractTest {
     }
 
     protected Server startServer(int serverPort, final Callable<String> function) throws Exception {
+
+        return startServer(serverPort, new Function<String, String>() {
+            @Override
+            public String apply(String s) {
+                try {
+                    return function.call();
+                } catch (Exception e) {
+                    logger.error("[startServer]" + function, e);
+                    return e.getMessage();
+                }
+            }
+        });
+    }
+
+    protected Server startServer(int serverPort, final Function<String, String> function) throws Exception {
         IoActionFactory ioActionFactory = new IoActionFactory() {
 
             @Override
             public IoAction createIoAction(Socket socket) {
                 return new AbstractIoAction(socket) {
 
+                    private String readLine = null;
+
                     @Override
                     protected void doWrite(OutputStream ous) throws IOException {
                         try {
-                            String call = function.call();
+                            String call = function.apply(readLine == null? null : readLine.trim());
                             if (call != null) {
                                 ous.write(call.getBytes());
                             }
@@ -641,9 +659,9 @@ public class AbstractTest {
 
                     @Override
                     protected Object doRead(InputStream ins) throws IOException {
-                        String line = readLine(ins);
-                        logger.info("[doRead]{}", line == null ? null : line.trim());
-                        return line;
+                        readLine = readLine(ins);
+                        logger.info("[doRead]{}", readLine == null ? null : readLine.trim());
+                        return readLine;
                     }
                 };
             }

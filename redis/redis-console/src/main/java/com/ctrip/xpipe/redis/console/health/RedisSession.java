@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.health.migration.Callbackable;
+import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
 import com.lambdaworks.redis.RedisChannelHandler;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnectionStateListener;
@@ -230,7 +230,6 @@ public class RedisSession {
                     log.error("[info]{}", hostPort, th);
                     callback.fail(th);
                 }else{
-                    log.debug("[info]{}: \n{}", hostPort, info);
                     callback.success(info);
                 }
             }, executors);
@@ -252,7 +251,6 @@ public class RedisSession {
                     log.error("[conf]Executing conf command error", throwable);
                     callback.fail(throwable);
                 } else {
-                    log.debug("[conf]Executing result {}", conf);
                     callback.success(conf);
                 }
             });

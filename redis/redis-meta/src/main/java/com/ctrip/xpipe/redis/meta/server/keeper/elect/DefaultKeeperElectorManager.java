@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkUtils;
 import com.ctrip.xpipe.zk.ZkClient;
 import org.apache.curator.framework.CuratorFramework;
@@ -27,11 +27,9 @@ import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executor;
 
 /**
  * @author wenchao.meng
@@ -46,9 +44,6 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	@Autowired
 	private KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager;
-
-	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
-	private Executor executors;
 
 	private void observeLeader(final ClusterMeta cluster) {
 
@@ -69,15 +64,15 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		if(currentMetaManager.watchIfNotWatched(clusterId, shardId)){
 			try {
                 logger.info("[observerShardLeader][add PathChildrenCache]{}, {}", clusterId, shardId);
-                PathChildrenCache pathChildrenCache = new PathChildrenCache(client, leaderLatchPath, true);
+                PathChildrenCache pathChildrenCache = new PathChildrenCache(client, leaderLatchPath, true, XpipeThreadFactory.create(String.format("PathChildrenCache:%s-%s", clusterId, shardId)));
                 pathChildrenCache.getListenable().addListener(new PathChildrenCacheListener() {
                     @Override
                     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
 
-                    	logger.info("[childEvent]{}, {}", event.getType(), ZkUtils.toString(event.getData()));
+                    	logger.info("[childEvent]{}, {}, {}, {}", clusterId, shardId, event.getType(), ZkUtils.toString(event.getData()));
                         updateShardLeader(leaderLatchPath, pathChildrenCache.getCurrentData(), clusterId, shardId);
                     }
-                }, executors);
+                });
 				currentMetaManager.addResource(clusterId, shardId, new Releasable() {
                     @Override
                     public void release() throws Exception {

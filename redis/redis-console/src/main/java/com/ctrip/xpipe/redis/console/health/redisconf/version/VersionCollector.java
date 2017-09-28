@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health.migration.version;
+package com.ctrip.xpipe.redis.console.health.redisconf.version;
 
 import com.ctrip.xpipe.redis.console.health.Sample;
 
