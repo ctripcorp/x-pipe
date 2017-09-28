@@ -57,8 +57,8 @@ public class DefaultVersionCollector implements VersionCollector {
         String targetVersion = consoleConfig.getXRedisMinimumRequestVersion();
         String version = RedisInfoServerUtils.getXRedisVersion(message);
         logger.debug("[checkRedisVersion]Current Redis {} xredis_version: {}", hostPort, version);
-        if(version == null || StringUtil.compareVersion(version, targetVersion) < 0) {
-            String alertMessage = String.format("Redis %s should be XRedis",  hostPort.toString());
+        if(version == null || StringUtil.compareVersion(version, targetVersion) < 1) {
+            String alertMessage = String.format("Redis %s should be XRedis 0.0.3 or above",  hostPort.toString());
             logger.warn("{}", alertMessage);
             alertManager.alert(clusterId, shardId, ALERT_TYPE.REDIS_VERSION_NOT_VALID, alertMessage);
         }
