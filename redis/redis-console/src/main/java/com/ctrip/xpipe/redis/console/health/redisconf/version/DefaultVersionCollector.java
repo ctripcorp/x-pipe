@@ -1,11 +1,13 @@
-package com.ctrip.xpipe.redis.console.health.migration.version;
+package com.ctrip.xpipe.redis.console.health.redisconf.version;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.Sample;
-import com.ctrip.xpipe.redis.console.health.migration.RedisInfoServerUtils;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisConf;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfManager;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisInfoServerUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,9 @@ public class DefaultVersionCollector implements VersionCollector {
     @Autowired
     private ConsoleConfig consoleConfig;
 
+    @Autowired
+    private RedisConfManager redisConfManager;
+
     @Override
     public void collect(Sample<VersionInstanceResult> result) {
         VersionSamplePlan samplePlan = (VersionSamplePlan) result.getSamplePlan();
@@ -39,6 +44,7 @@ public class DefaultVersionCollector implements VersionCollector {
 
         samplePlan.getHostPort2SampleResult().forEach((hostPort, sampleResult) -> {
             if(sampleResult.isSuccess()) {
+                cacheRedisInfo(hostPort, sampleResult.getContext());
                 checkRedisVersion(hostPort, sampleResult.getContext(), clusterId, shardId);
             } else {
                 logger.error("Getting Redis Version, execution error: {}", sampleResult.getFailReason());
@@ -56,5 +62,11 @@ public class DefaultVersionCollector implements VersionCollector {
             logger.warn("{}", alertMessage);
             alertManager.alert(clusterId, shardId, ALERT_TYPE.REDIS_VERSION_NOT_VALID, alertMessage);
         }
+    }
+
+    void cacheRedisInfo(HostPort hostPort, String info) {
+        RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
+        redisConf.setRedisVersion(RedisInfoServerUtils.getRedisVersion(info));
+        redisConf.setXredisVersion(RedisInfoServerUtils.getXRedisVersion(info));
     }
 }

@@ -1,6 +1,5 @@
 # Server
 redis_version:2.8.19
-xredis_version:0.0.1
 redis_git_sha1:ae9bea3a
 redis_git_dirty:1
 redis_build_id:e1d1a9c293b216ed

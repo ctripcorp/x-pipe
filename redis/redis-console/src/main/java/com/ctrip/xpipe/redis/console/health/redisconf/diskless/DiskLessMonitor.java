@@ -1,8 +1,8 @@
-package com.ctrip.xpipe.redis.console.health.migration.diskless;
+package com.ctrip.xpipe.redis.console.health.redisconf.diskless;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.*;
-import com.ctrip.xpipe.redis.console.health.migration.Callbackable;
+import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +30,6 @@ public class DiskLessMonitor extends AbstractRedisConfMonitor<DiskLessInstanceRe
 
     public final static String REPL_DISKLESS_SYNC = "repl-diskless-sync";
 
-    private ConcurrentMap<HostPort, RedisInfoAndConf> redisInfoAndConfMap = new ConcurrentHashMap<>();
-
     @Override
     protected void notifyCollectors(Sample<DiskLessInstanceResult> sample) {
         collectors.forEach(collector->collector.collect(sample));
@@ -49,24 +47,10 @@ public class DiskLessMonitor extends AbstractRedisConfMonitor<DiskLessInstanceRe
             HostPort hostPort = entry.getKey();
             try{
                 RedisSession redisSession = findRedisSession(hostPort);
-                RedisInfoAndConf redisInfoAndConf = findRedisInfoAndConf(hostPort);
                 redisSession.conf(REPL_DISKLESS_SYNC, new Callbackable<List<String>>() {
                     @Override
                     public void success(List<String> message) {
-                        redisInfoAndConf.setServerConf(message);
-                        redisSession.serverInfo(new Callbackable<String>() {
-                            @Override
-                            public void success(String message) {
-                                redisInfoAndConf.setServerInfo(message);
-                                addInstanceSuccess(startNanoTime, hostPort, redisInfoAndConf);
-                            }
-
-                            @Override
-                            public void fail(Throwable throwable) {
-                                addInstanceFail(startNanoTime, hostPort, throwable);
-                            }
-                        });
-
+                        addInstanceSuccess(startNanoTime, hostPort, message);
                     }
 
                     @Override
@@ -79,12 +63,6 @@ public class DiskLessMonitor extends AbstractRedisConfMonitor<DiskLessInstanceRe
             }
         }
     }
-
-    private RedisInfoAndConf findRedisInfoAndConf(HostPort hostPort) {
-        redisInfoAndConfMap.putIfAbsent(hostPort, new RedisInfoAndConf());
-        return redisInfoAndConfMap.get(hostPort);
-    }
-
 
 
     @Override

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health.migration.diskless;
+package com.ctrip.xpipe.redis.console.health.redisconf.diskless;
 
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 

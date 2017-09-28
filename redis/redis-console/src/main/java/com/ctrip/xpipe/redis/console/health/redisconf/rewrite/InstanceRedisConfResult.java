@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health.redisconf;
+package com.ctrip.xpipe.redis.console.health.redisconf.rewrite;
 
 import com.ctrip.xpipe.redis.console.health.BaseInstanceResult;
 
