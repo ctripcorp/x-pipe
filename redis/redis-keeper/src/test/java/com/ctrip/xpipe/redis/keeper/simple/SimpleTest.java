@@ -13,7 +13,10 @@ import java.net.SocketException;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.function.Function;
 
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -31,9 +34,34 @@ import com.dianping.cat.message.Transaction;
  *
  *         May 18, 2016 4:44:03 PM
  */
-public class SimpleTest extends AbstractTest {
+public class SimpleTest extends AbstractRedisTest {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
+
+	@Test
+	public void testServer() throws Exception {
+
+		Server server = startServer(6379, new Function<String, String>() {
+			@Override
+			public String apply(String request) {
+
+				if(request == null){
+					return null;
+				}
+
+				if(request.equalsIgnoreCase("PING")){
+					return "+PONG\r\n";
+				}
+
+				if(request.indexOf("SYNC") >= 0){
+					return "-ERRORXX\r\n";
+				}
+				return "+OK\r\n";
+			}
+		});
+
+		waitForAnyKey();
+	}
 
 	@Test
 	public void test() throws FileNotFoundException {
