@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
@@ -48,9 +47,6 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
     @Autowired
     private MetaCache metaCache;
-
-    @Autowired
-    private AlertManager alertManager;
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -177,6 +173,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
         try {
             latch.await(1, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
+            logger.debug("[isKeeperOrDead]latch await error: {}", e);
         }
 
         if (role.get() instanceof String && Server.SERVER_ROLE.KEEPER.sameRole((String) role.get())) {

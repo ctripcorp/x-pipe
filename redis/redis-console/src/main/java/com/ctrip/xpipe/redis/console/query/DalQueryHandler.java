@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.console.query;
 
+import com.ctrip.xpipe.redis.console.exception.ServerException;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.dal.jdbc.DalNotFoundException;
-
-import com.ctrip.xpipe.redis.console.exception.ServerException;
 
 /**
  * @author shyin

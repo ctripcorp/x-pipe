@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConf;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfManager;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisInfoServerUtils;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,9 @@ public class DefaultVersionCollector implements VersionCollector {
     @Autowired
     private RedisConfManager redisConfManager;
 
+    @Autowired
+    private MetaCache metaCache;
+
     @Override
     public void collect(Sample<VersionInstanceResult> result) {
         VersionSamplePlan samplePlan = (VersionSamplePlan) result.getSamplePlan();
@@ -53,20 +57,32 @@ public class DefaultVersionCollector implements VersionCollector {
     }
 
     void checkRedisVersion(HostPort hostPort, String message, String clusterId, String shardId) {
+        if(!isRedisInBackupDC(hostPort)) {
+            logger.debug("[checkRedisVersion]Redis {} is not in backup dc");
+            return;
+        }
         logger.debug("[checkRedisVersion]Redis {}: Server Info: \n{}", hostPort, message);
         String targetVersion = consoleConfig.getXRedisMinimumRequestVersion();
         String version = RedisInfoServerUtils.getXRedisVersion(message);
         logger.debug("[checkRedisVersion]Current Redis {} xredis_version: {}", hostPort, version);
-        if(version == null || StringUtil.compareVersion(version, targetVersion) < 1) {
+        if(version == null || StringUtil.compareVersion(version, targetVersion) < 0) {
             String alertMessage = String.format("Redis %s should be XRedis 0.0.3 or above",  hostPort.toString());
             logger.warn("{}", alertMessage);
             alertManager.alert(clusterId, shardId, ALERT_TYPE.REDIS_VERSION_NOT_VALID, alertMessage);
         }
     }
 
-    void cacheRedisInfo(HostPort hostPort, String info) {
+    private void cacheRedisInfo(HostPort hostPort, String info) {
+        String redisVersion = RedisInfoServerUtils.getRedisVersion(info);
+        String xredisVersion = RedisInfoServerUtils.getXRedisVersion(info);
+        logger.debug("[cacheRedisInfo] Cache Redis {}, Redis Version: {}, XRedis Version: {}",
+                hostPort, redisVersion, xredisVersion);
         RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
-        redisConf.setRedisVersion(RedisInfoServerUtils.getRedisVersion(info));
-        redisConf.setXredisVersion(RedisInfoServerUtils.getXRedisVersion(info));
+        redisConf.setRedisVersion(redisVersion);
+        redisConf.setXredisVersion(xredisVersion);
+    }
+
+    private boolean isRedisInBackupDC(HostPort hostPort) {
+        return metaCache.inBackupDc(hostPort);
     }
 }

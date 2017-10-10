@@ -11,8 +11,8 @@ public class RedisInfoServerUtils {
 
     private static final String COLON_SPLITTER = "\\s*:\\s*";
 
-    public static String getValueByKey(String InfoServer, String key) {
-        String[] lines = StringUtil.splitByLineRemoveEmpty(InfoServer);
+    public static String getValueByKey(String infoServer, String key) {
+        String[] lines = StringUtil.splitByLineRemoveEmpty(infoServer);
         for(String line : lines) {
             line = line.trim();
             if(line.startsWith(key)) {
@@ -23,11 +23,11 @@ public class RedisInfoServerUtils {
         return null;
     }
 
-    public static String getRedisVersion(String InfoServer) {
-        return getValueByKey(InfoServer, "redis_version");
+    public static String getRedisVersion(String infoServer) {
+        return getValueByKey(infoServer, "redis_version");
     }
 
-    public static String getXRedisVersion(String InfoServer) {
-        return getValueByKey(InfoServer, "xredis_version");
+    public static String getXRedisVersion(String infoServer) {
+        return getValueByKey(infoServer, "xredis_version");
     }
 }

@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.service.model;
 
-import java.util.List;
-
 import com.ctrip.xpipe.redis.console.model.ShardModel;
+
+import java.util.List;
 
 public interface ShardModelService {
 	List<ShardModel> getAllShardModel(String dcName, String clusterName);

@@ -1,24 +1,17 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-
-import javax.annotation.PostConstruct;
-
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.console.health.action.HEALTH_STATE;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.health.action.HEALTH_STATE;
-import com.ctrip.xpipe.utils.StringUtil;
+import javax.annotation.PostConstruct;
+import java.util.*;
+import java.util.function.Function;
 
 /**
  * @author wenchao.meng

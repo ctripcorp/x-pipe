@@ -45,7 +45,7 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
     public boolean tryWaitfor(HostPort hostPort, MasterInfo masterInfo, ExecutionLog executionLog) {
 
         if(hostPort == null){
-            executionLog.info("target instance null:" + hostPort);
+            executionLog.info("target instance null");
             return false;
         }
 

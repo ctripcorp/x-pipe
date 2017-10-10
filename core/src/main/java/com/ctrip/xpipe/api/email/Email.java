@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.api.email;
 
+import com.ctrip.xpipe.api.lifecycle.Ordered;
+import com.ctrip.xpipe.utils.ServicesUtil;
+
 import java.util.List;
 
 /**
@@ -8,7 +11,10 @@ import java.util.List;
  * Oct 09, 2017
  */
 
-public interface Email {
+public interface Email  extends Ordered {
+
+    Email DEFAULT = ServicesUtil.getEmail();
+
     List<String> getRecipients();
     List<String> getCCers();
     List<String> getBCCers();

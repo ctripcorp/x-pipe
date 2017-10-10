@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConf;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfManager;
-import com.ctrip.xpipe.redis.console.health.redisconf.RedisInfoServerUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,8 +79,8 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
         String targetVersion = consoleConfig.getRedisAlertVersion();
         String version = redisConf.getRedisVersion();
-        logger.debug("[versionMatches]Redis version is {}", version);
-        logger.debug("[versionMatches]Redis alert version is {}", targetVersion);
+        logger.debug("[versionMatches]Redis {} version is {}", hostPort, version);
+        logger.debug("[versionMatches]Redis {} alert version is {}", hostPort, targetVersion);
         return version != null && StringUtil.compareVersion(version, targetVersion) < 1;
     }
 }

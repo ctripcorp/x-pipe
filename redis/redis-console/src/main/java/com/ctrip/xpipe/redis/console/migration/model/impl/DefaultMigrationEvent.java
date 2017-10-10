@@ -1,9 +1,5 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
@@ -12,6 +8,10 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.google.common.collect.Lists;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author shyin

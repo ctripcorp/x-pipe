@@ -75,6 +75,10 @@ public class ServicesUtil {
 		return load(EmailService.class);
 	}
 
+	public static Email getEmail() {
+		return load(Email.class);
+	}
+
 	@SuppressWarnings("unchecked")
 	public static <T extends Ordered> T load(Class<T> clazz) {
 		
