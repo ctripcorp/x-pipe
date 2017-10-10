@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.Sample;
+import com.ctrip.xpipe.redis.console.health.redisconf.ErrorReporter;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConf;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfManager;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -36,6 +37,9 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
     @Autowired
     private RedisConfManager redisConfManager;
 
+    @Autowired
+    private ErrorReporter reporter;
+
     @Override
     public void collect(Sample<DiskLessInstanceResult> sample) {
         DiskLessSamplePlan samplePlan = (DiskLessSamplePlan) sample.getSamplePlan();
@@ -49,6 +53,7 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
                 logger.error("Getting Redis info and conf, execution error: {}", sampleResult.getFailReason());
             }
         });
+        reporter.setRedisConfCollected(true);
     }
 
     void checkRedisDiskLess(HostPort hostPort, List<String> serverConf, String clusterId, String shardId) {
@@ -56,6 +61,8 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
             String message = String.format("Redis %s should not set %s as YES",
                     hostPort.toString(), DiskLessMonitor.REPL_DISKLESS_SYNC);
             alertManager.alert(clusterId, shardId, ALERT_TYPE.REDIS_CONF_NOT_VALID, message);
+            RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
+            reporter.addConfIssueRedis(redisConf);
         }
     }
 

@@ -25,9 +25,6 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
   @Autowired
   private RedisService redisService;
 
-  @Autowired
-  private ClusterService clusterService;
-
   @Override
   public List<KeeperBasicInfo> findBestKeepers(String dcName, String clusterName) {
     return findBestKeepers(dcName, RedisProtocol.REDIS_PORT_DEFAULT, (host, port) -> true, clusterName);
