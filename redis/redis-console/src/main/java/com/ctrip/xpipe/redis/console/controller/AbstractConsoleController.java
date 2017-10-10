@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.console.controller;
 
-import java.util.LinkedList;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.spring.AbstractController;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author shyin

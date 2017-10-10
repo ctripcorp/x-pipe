@@ -1,17 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
-import java.rmi.ServerException;
-import java.util.Date;
-import java.util.List;
-
-import javax.annotation.PostConstruct;
-
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.unidal.dal.jdbc.DalException;
-import org.unidal.lookup.ContainerLoader;
-
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
@@ -20,16 +8,7 @@ import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTblDao;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTblEntity;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTblDao;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTblEntity;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -40,6 +19,16 @@ import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratin
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ToIdcNotFoundException;
 import com.ctrip.xpipe.utils.StringUtil;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.unidal.dal.jdbc.DalException;
+import org.unidal.lookup.ContainerLoader;
+
+import javax.annotation.PostConstruct;
+import java.rmi.ServerException;
+import java.util.Date;
+import java.util.List;
 
 @Service
 public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventTblDao> implements MigrationService {

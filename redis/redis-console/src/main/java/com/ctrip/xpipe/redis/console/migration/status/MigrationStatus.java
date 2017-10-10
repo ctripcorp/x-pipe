@@ -1,18 +1,9 @@
 package com.ctrip.xpipe.redis.console.migration.status;
 
-import java.lang.reflect.InvocationTargetException;
-
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationAbortedState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingFailState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationForceEndState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationMigratingState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessRollBackState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationSuccessState;
+import com.ctrip.xpipe.redis.console.migration.status.migration.*;
+
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * @author shyin

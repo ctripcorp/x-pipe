@@ -12,12 +12,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author chen.zhu
@@ -65,6 +67,8 @@ public class DefaultRedisConfManager implements RedisConfManager {
 
     @PostConstruct
     public void postConstruct() {
+        int initialDelay = 5;
+        int period = 1;
         scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() {
@@ -78,7 +82,17 @@ public class DefaultRedisConfManager implements RedisConfManager {
                     logger.error("[postConstruct]{}", e);
                 }
             }
-        }, 5, 1, TimeUnit.MINUTES);
+        }, initialDelay, period, TimeUnit.MINUTES);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for(RedisConf redisConf : configs.values()) {
+            sb.append(redisConf.toString());
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 
     @Override

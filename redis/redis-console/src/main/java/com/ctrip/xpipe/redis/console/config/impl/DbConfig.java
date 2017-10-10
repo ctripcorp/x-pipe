@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
+import com.ctrip.xpipe.config.AbstractConfig;
+import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.dal.jdbc.DalException;
-
-import com.ctrip.xpipe.config.AbstractConfig;
-import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 
 /**
  * @author wenchao.meng

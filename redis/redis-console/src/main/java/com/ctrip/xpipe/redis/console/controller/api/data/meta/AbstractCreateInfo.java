@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author wenchao.meng

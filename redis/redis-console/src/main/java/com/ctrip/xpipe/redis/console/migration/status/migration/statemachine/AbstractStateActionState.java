@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration.statemachine;
 
-import java.util.Date;
-
+import com.ctrip.xpipe.redis.console.migration.status.ActionMigrationState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.redis.console.migration.status.ActionMigrationState;
+import java.util.Date;
 
 /**
  * @author wenchao.meng
