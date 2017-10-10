@@ -43,7 +43,7 @@ public class CtripPlatformEmailServiceTest {
         lists[1] = Arrays.asList("Cluster2,Shard2,10.3.2.23,6379",
                 "Cluster3,Shard3,10.3.2.23,6380",
                 "Cluster4,Shard4,10.5.6.7,6479");
-        Email email = new RedisAlertEmail();
+        Email email = Email.DEFAULT;
         emailService.sendEmail(email, lists);
     }
 

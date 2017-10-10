@@ -128,4 +128,9 @@ public class RedisAlertEmail extends AbstractEmail{
         }
         return sb.toString();
     }
+
+    @Override
+    public int getOrder() {
+        return HIGHEST_PRECEDENCE;
+    }
 }
