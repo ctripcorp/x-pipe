@@ -13,5 +13,5 @@ public interface EmailService extends Ordered {
 
     EmailService DEFAULT = ServicesUtil.getEmailService();
 
-    <T extends Email> void sendEmail(T t);
+    <T extends Email> void sendEmail(T t, Object... context);
 }

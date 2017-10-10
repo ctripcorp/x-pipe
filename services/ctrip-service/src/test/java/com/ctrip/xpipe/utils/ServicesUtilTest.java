@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.utils;
 
+import com.ctrip.xpipe.service.email.CtripPlatformEmailService;
 import com.ctrip.xpipe.service.organization.CtripOrganizationService;
 import org.junit.Assert;
 import org.junit.Test;
@@ -19,6 +20,7 @@ public class ServicesUtilTest extends AbstractTest{
 		
 		Assert.assertTrue(ServicesUtil.getFoundationService() instanceof CtripFoundationService);
 		Assert.assertTrue(ServicesUtil.getOrganizationService() instanceof CtripOrganizationService);
+		Assert.assertTrue(ServicesUtil.getEmailService() instanceof CtripPlatformEmailService);
 	}
 
 }
