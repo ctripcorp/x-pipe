@@ -28,6 +28,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         clusterModel.setClusterTbl(new ClusterTbl()
                 .setActivedcId(1)
                 .setClusterName(clusterName)
+                .setClusterAdminEmails("test@ctrip.com")
                 .setClusterDescription(randomString(20))
         );
 
