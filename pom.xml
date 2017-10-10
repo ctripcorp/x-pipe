@@ -52,6 +52,7 @@
         <hickwall.client.version>1.8</hickwall.client.version>
         <clogging.version>4.1.8</clogging.version>
         <credis.version>2.5.3</credis.version>
+        <framework-bom.version>1.6.1</framework-bom.version>
     </properties>
 
     <modules>
@@ -71,6 +72,13 @@
                 <groupId>com.ctrip.framework.apollo-sso</groupId>
                 <artifactId>apollo-sso-ctrip</artifactId>
                 <version>${apollo.sso.ctrip.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>framework-bom</artifactId>
+                <version>${framework-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <!-- xpipe related -->
             <dependency>
