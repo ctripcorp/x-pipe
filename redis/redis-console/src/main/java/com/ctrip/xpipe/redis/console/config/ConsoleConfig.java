@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.config;
 
-import java.util.Map;
-import java.util.Set;
-
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author shyin

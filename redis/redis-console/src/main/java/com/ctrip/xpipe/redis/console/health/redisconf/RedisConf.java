@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.redisconf;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**
  * @author chen.zhu
@@ -58,5 +59,41 @@ public class RedisConf {
                 .append(", redis_version: ").append(redisVersion)
                 .append(", xredis_version: ").append(xredisVersion);
         return sb.toString();
+    }
+
+
+    @Override
+    public int hashCode() {
+        return hostPort.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj == null || !(obj instanceof RedisConf)) {
+            return false;
+        }
+        if(obj == this) {
+            return true;
+        }
+        RedisConf redisConf = (RedisConf) obj;
+        return ObjectUtils.equals(redisConf.clusterId, this.clusterId)
+                && ObjectUtils.equals(redisConf.shardId, this.shardId)
+                && ObjectUtils.equals(redisConf.hostPort, this.hostPort);
+    }
+
+    public String getClusterId() {
+        return clusterId;
+    }
+
+    public void setClusterId(String clusterId) {
+        this.clusterId = clusterId;
+    }
+
+    public String getShardId() {
+        return shardId;
+    }
+
+    public void setShardId(String shardId) {
+        this.shardId = shardId;
     }
 }

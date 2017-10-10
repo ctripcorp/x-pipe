@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.util;
 
-import java.util.List;
-
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+
+import java.util.List;
 
 /**
  * @author shyin

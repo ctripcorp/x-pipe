@@ -80,6 +80,11 @@
             <groupId>net.razorvine</groupId>
             <artifactId>pyrolite</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.ctrip.basebiz</groupId>
+            <artifactId>EmailServiceClient</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 
 
