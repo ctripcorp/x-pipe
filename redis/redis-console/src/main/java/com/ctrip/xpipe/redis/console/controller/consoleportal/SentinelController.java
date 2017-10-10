@@ -1,17 +1,16 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
-import java.util.List;
-import java.util.Map;
-
+import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.service.SentinelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
-import com.ctrip.xpipe.redis.console.service.SentinelService;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author shyin

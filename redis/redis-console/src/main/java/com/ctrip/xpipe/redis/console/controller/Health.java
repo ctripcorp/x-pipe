@@ -1,21 +1,19 @@
 package com.ctrip.xpipe.redis.console.controller;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
+import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.IpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
-import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
-import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.utils.IpUtils;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author wenchao.meng

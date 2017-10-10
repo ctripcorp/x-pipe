@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.model;
 
-import java.util.Date;
-import java.util.Map;
-
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+
+import java.util.Date;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
