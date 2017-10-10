@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,10 +73,16 @@ public class DefaultRedisConfManager implements RedisConfManager {
                     for(ConcurrentMap.Entry entry : configs.entrySet()) {
                         CatEventMonitor.DEFAULT.logEvent(eventType, entry.getValue().toString());
                     }
+                    logger.debug("Current Redis Conf Manager Cache:\n {}", this.toString());
                 } catch (Exception e) {
                     logger.error("[postConstruct]{}", e);
                 }
             }
         }, 5, 1, TimeUnit.MINUTES);
+    }
+
+    @Override
+    public String toString() {
+        return StringUtil.toString(configs.values().toArray());
     }
 }

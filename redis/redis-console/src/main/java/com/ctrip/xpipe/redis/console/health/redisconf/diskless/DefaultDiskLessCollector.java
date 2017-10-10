@@ -86,8 +86,8 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
         String targetVersion = consoleConfig.getRedisAlertVersion();
         String version = redisConf.getRedisVersion();
-        logger.debug("[versionMatches]Redis version is {}", version);
-        logger.debug("[versionMatches]Redis alert version is {}", targetVersion);
+        logger.debug("[versionMatches]Redis {} version is {}", hostPort, version);
+        logger.debug("[versionMatches]Redis {} alert version is {}", hostPort, targetVersion);
         return version != null && StringUtil.compareVersion(version, targetVersion) < 1;
     }
 }

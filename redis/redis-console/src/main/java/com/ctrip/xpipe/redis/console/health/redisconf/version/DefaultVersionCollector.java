@@ -72,8 +72,12 @@ public class DefaultVersionCollector implements VersionCollector {
     }
 
     void cacheRedisInfo(HostPort hostPort, String info) {
+        String redisVersion = RedisInfoServerUtils.getRedisVersion(info);
+        String xredisVersion = RedisInfoServerUtils.getXRedisVersion(info);
+        logger.debug("[cacheRedisInfo] Cache Redis {}, Redis Version: {}, XRedis Version: {}",
+                hostPort, redisVersion, xredisVersion);
         RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
-        redisConf.setRedisVersion(RedisInfoServerUtils.getRedisVersion(info));
-        redisConf.setXredisVersion(RedisInfoServerUtils.getXRedisVersion(info));
+        redisConf.setRedisVersion(redisVersion);
+        redisConf.setXredisVersion(xredisVersion);
     }
 }
