@@ -83,6 +83,11 @@ public class DefaultRedisConfManager implements RedisConfManager {
 
     @Override
     public String toString() {
-        return StringUtil.toString(configs.values().toArray());
+        StringBuilder sb = new StringBuilder();
+        for(RedisConf redisConf : configs.values()) {
+            sb.append(redisConf.toString());
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 }
