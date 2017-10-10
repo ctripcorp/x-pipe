@@ -67,7 +67,7 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
             "retrieveOrgInfoFromRemote", new Callable<List<OrganizationTbl>>() {
 
             @Override
-            public List<OrganizationTbl> call() throws Exception {
+            public List<OrganizationTbl> call() {
                 List<OrganizationModel> organizationModels = Organization.DEFAULT.retrieveOrganizationInfo();
                 return organizationModels
                     .stream()

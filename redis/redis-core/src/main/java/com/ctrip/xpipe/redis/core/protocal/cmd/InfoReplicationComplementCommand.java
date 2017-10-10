@@ -8,6 +8,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -32,11 +33,11 @@ public class InfoReplicationComplementCommand extends AbstractCommand<RedisInfo>
     }
 
     @Override
-    protected void doExecute() throws Exception {
+    protected void doExecute() throws InterruptedException, ExecutionException {
 
         new InfoReplicationCommand(clientPool, scheduled).execute().addListener(new CommandFutureListener<RedisInfo>() {
             @Override
-            public void operationComplete(CommandFuture<RedisInfo> commandFuture) throws Exception {
+            public void operationComplete(CommandFuture<RedisInfo> commandFuture) throws InterruptedException, ExecutionException {
 
                 if(!commandFuture.isSuccess()){
                     future().setFailure(commandFuture.cause());
@@ -63,7 +64,7 @@ public class InfoReplicationComplementCommand extends AbstractCommand<RedisInfo>
         new InfoCommand(clientPool, InfoCommand.INFO_TYPE.SERVER, scheduled).execute().addListener(new CommandFutureListener<String>() {
 
             @Override
-            public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+            public void operationComplete(CommandFuture<String> commandFuture) throws InterruptedException, ExecutionException {
 
                 if(!commandFuture.isSuccess()){
                     logger.info("[getRunId][fail use previous result]{}, {}", clientPool.desc(), masterInfo);

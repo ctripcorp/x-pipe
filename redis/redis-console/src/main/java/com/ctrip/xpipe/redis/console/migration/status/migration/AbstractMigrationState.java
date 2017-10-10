@@ -74,7 +74,7 @@ public abstract class AbstractMigrationState implements ActionMigrationState {
 
         future = scheduled.schedule(new AbstractExceptionLogTask() {
             @Override
-            protected void doRun() throws Exception {
+            protected void doRun() {
 
                 logger.info("[checkTimeout][timeout]{}", AbstractMigrationState.this);
                 getStateActionState().timeout();
