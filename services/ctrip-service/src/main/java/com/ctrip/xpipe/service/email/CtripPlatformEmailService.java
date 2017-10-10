@@ -43,8 +43,11 @@ public class CtripPlatformEmailService implements EmailService {
 
         try {
             SendEmailResponse response = client.sendEmail(request);
-            logger.info("Email service ResultCode: {}, Result message: {}",
-                    response.getResultCode(), response.getResultMsg());
+            if(response != null && response.getResultCode() == 1) {
+                logger.info("Email sent successfully");
+            } else {
+                logger.error("Email service Result message: {}", response.getResultMsg());
+            }
         } catch (Exception e) {
             logger.error("Email service Error\n {}", e);
         }

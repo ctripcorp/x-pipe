@@ -104,16 +104,16 @@ public class RedisAlertEmail extends AbstractEmail{
                 "</entry>",
                 config.getEnvironment(),
                 DateTimeUtils.currentTimeAsString(),
-                getRedisVersionErrors(context),
-                getRedisConfErrors(context));
+                getVersionErrorRedises(context),
+                getConfErrorRedises(context));
     }
 
-    private String getRedisVersionErrors(Object... context) {
+    private String getVersionErrorRedises(Object... context) {
         List<String> redisVersionErrors = (List<String>) context[0];
         return buildFormat(redisVersionErrors);
     }
 
-    private String getRedisConfErrors(Object... context) {
+    private String getConfErrorRedises(Object... context) {
         List<String> redisConfErrors = (List<String>) context[1];
         return buildFormat(redisConfErrors);
     }
