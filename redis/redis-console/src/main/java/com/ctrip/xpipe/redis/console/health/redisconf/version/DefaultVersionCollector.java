@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConf;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfManager;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisInfoServerUtils;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,9 @@ public class DefaultVersionCollector implements VersionCollector {
     @Autowired
     private RedisConfManager redisConfManager;
 
+    @Autowired
+    private MetaCache metaCache;
+
     @Override
     public void collect(Sample<VersionInstanceResult> result) {
         VersionSamplePlan samplePlan = (VersionSamplePlan) result.getSamplePlan();
@@ -53,6 +57,10 @@ public class DefaultVersionCollector implements VersionCollector {
     }
 
     void checkRedisVersion(HostPort hostPort, String message, String clusterId, String shardId) {
+        if(!isRedisInBackupDC(hostPort)) {
+            logger.debug("[checkRedisVersion]Redis {} is not in backup dc");
+            return;
+        }
         logger.debug("[checkRedisVersion]Redis {}: Server Info: \n{}", hostPort, message);
         String targetVersion = consoleConfig.getXRedisMinimumRequestVersion();
         String version = RedisInfoServerUtils.getXRedisVersion(message);
@@ -64,7 +72,7 @@ public class DefaultVersionCollector implements VersionCollector {
         }
     }
 
-    void cacheRedisInfo(HostPort hostPort, String info) {
+    private void cacheRedisInfo(HostPort hostPort, String info) {
         String redisVersion = RedisInfoServerUtils.getRedisVersion(info);
         String xredisVersion = RedisInfoServerUtils.getXRedisVersion(info);
         logger.debug("[cacheRedisInfo] Cache Redis {}, Redis Version: {}, XRedis Version: {}",
@@ -72,5 +80,9 @@ public class DefaultVersionCollector implements VersionCollector {
         RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
         redisConf.setRedisVersion(redisVersion);
         redisConf.setXredisVersion(xredisVersion);
+    }
+
+    private boolean isRedisInBackupDC(HostPort hostPort) {
+        return metaCache.inBackupDc(hostPort);
     }
 }

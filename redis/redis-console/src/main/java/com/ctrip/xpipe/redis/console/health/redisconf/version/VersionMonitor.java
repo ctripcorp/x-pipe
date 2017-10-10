@@ -78,7 +78,6 @@ public class VersionMonitor extends AbstractRedisConfMonitor<VersionInstanceResu
 
     @Override
     protected boolean addCluster(String dcName, ClusterMeta clusterMeta) {
-        String activeDC = clusterMeta.getActiveDc();
-        return !ObjectUtils.equals(activeDC, dcName);
+        return true;
     }
 }
