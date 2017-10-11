@@ -92,5 +92,5 @@ public class DefaultRedisConfManager implements RedisConfManager {
         }
         return sb.toString();
     }
-    
+
 }
