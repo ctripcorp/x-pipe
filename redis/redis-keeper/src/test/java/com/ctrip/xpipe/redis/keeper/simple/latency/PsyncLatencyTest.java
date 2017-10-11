@@ -1,12 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.simple.latency;
 
 
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.keeper.simple.latency.netty.ReceiveMessageHandler;
 import com.ctrip.xpipe.redis.keeper.simple.latency.netty.SetMessageHandler;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -17,6 +14,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+
+import java.net.InetSocketAddress;
 
 /**
  * psync output commandstream, cal latency

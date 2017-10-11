@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.core.meta;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import org.junit.Assert;
+import org.junit.Test;
 
 
 /**

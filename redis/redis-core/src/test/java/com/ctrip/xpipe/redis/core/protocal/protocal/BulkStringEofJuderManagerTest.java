@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringEoFJudger.BulkStringEofMarkJudger;
+import org.junit.Assert;
+import org.junit.Test;
 
 
 /**

@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.core.meta;
 
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

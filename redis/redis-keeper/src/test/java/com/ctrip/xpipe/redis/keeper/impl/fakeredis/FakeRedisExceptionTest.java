@@ -1,14 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
@@ -20,8 +11,15 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
-
 import io.netty.buffer.Unpooled;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

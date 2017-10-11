@@ -5,20 +5,17 @@ import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.core.util.NonFinalizeFileInputStream;
+import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Date;
 import java.util.Properties;
 import java.util.UUID;
@@ -28,9 +25,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.ctrip.xpipe.redis.core.util.NonFinalizeFileInputStream;
-import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
 
 /**
  * @author marsqing

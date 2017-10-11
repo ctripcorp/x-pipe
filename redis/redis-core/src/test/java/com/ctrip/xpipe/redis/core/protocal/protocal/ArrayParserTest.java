@@ -1,15 +1,13 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.netty.ByteBufUtils;
+import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import io.netty.buffer.ByteBuf;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
-import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
-import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
+import java.io.IOException;
 
 
 /**

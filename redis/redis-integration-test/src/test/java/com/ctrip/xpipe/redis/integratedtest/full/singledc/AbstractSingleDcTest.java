@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.integratedtest.full.singledc;
 
-import java.awt.IllegalComponentStateException;
-import java.util.List;
-
-import org.junit.Assert;
-import org.junit.Before;
-
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.integratedtest.DcInfo;
 import com.ctrip.xpipe.redis.integratedtest.full.AbstractIntegratedTestTemplate;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import org.junit.Assert;
+import org.junit.Before;
+
+import java.awt.*;
+import java.util.List;
 
 
 

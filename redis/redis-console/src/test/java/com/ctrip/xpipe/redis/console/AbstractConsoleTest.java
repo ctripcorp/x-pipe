@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.console;
 
-import org.junit.BeforeClass;
-
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import org.junit.BeforeClass;
 
 /**
  * @author wenchao.meng

@@ -1,10 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
-
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
@@ -16,6 +12,9 @@ import com.ctrip.xpipe.redis.meta.server.redis.RedisStateManager;
 import com.ctrip.xpipe.redis.meta.server.redis.impl.DefaultRedisStateManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * @author wenchao.meng

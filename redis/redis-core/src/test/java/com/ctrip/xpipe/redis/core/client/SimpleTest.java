@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.core.client;
 
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

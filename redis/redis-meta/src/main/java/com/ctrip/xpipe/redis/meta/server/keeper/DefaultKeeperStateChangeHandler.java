@@ -1,20 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.keeper;
 
-import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-
-import javax.annotation.Resource;
-
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
-import com.ctrip.xpipe.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
@@ -23,11 +8,24 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
-import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
+import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

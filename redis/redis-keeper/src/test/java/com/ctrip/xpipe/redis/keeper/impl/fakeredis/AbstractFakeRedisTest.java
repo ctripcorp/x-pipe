@@ -1,11 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-
-import org.junit.Assert;
-import org.junit.Before;
-
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -21,6 +15,11 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import org.junit.Assert;
+import org.junit.Before;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

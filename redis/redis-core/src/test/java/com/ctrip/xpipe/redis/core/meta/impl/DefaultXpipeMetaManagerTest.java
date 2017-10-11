@@ -1,19 +1,18 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import com.ctrip.xpipe.tuple.Pair;
-
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
+import com.ctrip.xpipe.tuple.Pair;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

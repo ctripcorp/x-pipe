@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.api.cluster.ShardArrange;
+import org.springframework.stereotype.Component;
 
 /**
  * @author wenchao.meng

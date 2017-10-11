@@ -1,17 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.FileSize;
 import com.ctrip.xpipe.netty.ByteBufUtils;
@@ -25,8 +13,18 @@ import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.SizeControllableFile;
-
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DefaultRdbStore extends AbstractStore implements RdbStore {
 

@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.spring.application;
 
-import java.io.IOException;
-
-import org.junit.Test;
-import org.springframework.boot.SpringApplication;
-
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.MetaServerApplication;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import org.junit.Test;
+import org.springframework.boot.SpringApplication;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

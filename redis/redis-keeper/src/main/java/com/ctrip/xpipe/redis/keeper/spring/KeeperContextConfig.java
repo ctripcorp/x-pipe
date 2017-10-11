@@ -1,9 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.spring;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
 import com.ctrip.xpipe.redis.core.metaserver.DefaultMetaServerLocator;
@@ -12,6 +8,9 @@ import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.zk.ZkClient;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 
 
 /**

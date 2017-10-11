@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server.config;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.zk.ZkConfig;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author wenchao.meng

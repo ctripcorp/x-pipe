@@ -1,14 +1,14 @@
 package com.ctrip.xpipe.redis.core.server;
 
+import com.ctrip.xpipe.simpleserver.AbstractIoAction;
+import com.ctrip.xpipe.simpleserver.SocketAware;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.ctrip.xpipe.simpleserver.AbstractIoAction;
-import com.ctrip.xpipe.simpleserver.SocketAware;
 
 /**
  * @author wenchao.meng

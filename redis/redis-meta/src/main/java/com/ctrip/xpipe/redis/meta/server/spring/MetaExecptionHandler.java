@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
-import org.springframework.web.bind.annotation.ControllerAdvice;
-
 import com.ctrip.xpipe.spring.AbstractExceptionHandler;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 
 /**
  * @author wenchao.meng

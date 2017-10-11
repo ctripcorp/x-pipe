@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

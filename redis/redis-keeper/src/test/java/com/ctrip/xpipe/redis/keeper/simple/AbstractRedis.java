@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.simple;
 
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 
 /**
  * @author wenchao.meng

@@ -1,18 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.store.CommandsListener;
-import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
-import com.ctrip.xpipe.redis.core.store.FullSyncListener;
-import com.ctrip.xpipe.redis.core.store.MetaStore;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
-
+import com.ctrip.xpipe.redis.core.store.*;
 import io.netty.buffer.ByteBuf;
+
+import java.io.IOException;
 
 /**
  * @author marsqing

@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 
 
 /**

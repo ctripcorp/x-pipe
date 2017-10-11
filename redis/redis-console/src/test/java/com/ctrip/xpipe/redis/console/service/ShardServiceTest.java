@@ -1,19 +1,19 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
-
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.model.ShardTblDao;
+import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
+import com.ctrip.xpipe.redis.console.service.impl.ShardServiceImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.model.ShardTbl;
-import com.ctrip.xpipe.redis.console.model.ShardTblDao;
-import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
-import com.ctrip.xpipe.redis.console.service.impl.ShardServiceImpl;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 /**
  * @author shyin

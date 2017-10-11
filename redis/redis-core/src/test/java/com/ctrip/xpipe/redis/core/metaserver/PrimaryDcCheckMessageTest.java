@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

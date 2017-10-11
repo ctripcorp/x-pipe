@@ -1,14 +1,12 @@
 package com.ctrip.xpipe.redis.integratedtest.full;
 
 
-
-import org.junit.Assert;
-
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServer;
+import org.junit.Assert;
 
 /**
  * @author wenchao.meng

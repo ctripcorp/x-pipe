@@ -1,18 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
@@ -28,11 +15,18 @@ import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.IpUtils;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng

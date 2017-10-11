@@ -1,15 +1,15 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import static org.mockito.Mockito.when;
 
 /**
  * @author wenchao.meng

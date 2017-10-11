@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.core.entity;
 
-import java.io.IOException;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.IOException;
 
 
 /**

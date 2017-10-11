@@ -1,5 +1,22 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.netty.NettyPoolUtil;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSlaveOfCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.Fsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
+import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.InetSocketAddress;
@@ -7,24 +24,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-
-import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.netty.NettyPoolUtil;
-import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.redis.core.protocal.cmd.Fsync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSlaveOfCommand;
-import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 
 /**
  * @author marsqing

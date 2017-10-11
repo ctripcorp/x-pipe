@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.integratedtest.full.multidc.manul;
 
 
-import java.io.File;
-import java.io.IOException;
-
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.integratedtest.full.multidc.AbstractMultiDcTest;
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.integratedtest.full.multidc.AbstractMultiDcTest;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.keeper;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
 
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.zk.ZkClient;
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author wenchao.meng

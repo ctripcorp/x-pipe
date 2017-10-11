@@ -1,17 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import java.io.File;
-import java.io.IOException;
-
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
-
-import io.netty.buffer.Unpooled;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

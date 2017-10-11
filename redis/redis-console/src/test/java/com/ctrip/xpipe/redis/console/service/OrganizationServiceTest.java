@@ -4,8 +4,6 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.Resource;
-
 
 /**
  * @author chen.zhu

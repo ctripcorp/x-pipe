@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.integratedtest.consoleapi.util;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestOperations;
-import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author liu

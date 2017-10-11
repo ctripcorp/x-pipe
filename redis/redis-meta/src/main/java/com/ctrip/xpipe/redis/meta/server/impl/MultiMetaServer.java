@@ -1,16 +1,16 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.meta.server.MetaServer;
+import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
+import com.google.common.util.concurrent.MoreExecutors;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
-
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.meta.server.MetaServer;
-import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
-import com.google.common.util.concurrent.MoreExecutors;
 
 /**
  * @author wenchao.meng

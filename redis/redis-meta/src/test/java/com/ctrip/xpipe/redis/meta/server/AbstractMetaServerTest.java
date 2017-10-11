@@ -1,14 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server;
 
 
-
-import org.junit.After;
-import org.junit.Before;
-
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.testutils.MemoryPrinter;
+import org.junit.After;
+import org.junit.Before;
 
 /**
  * @author wenchao.meng

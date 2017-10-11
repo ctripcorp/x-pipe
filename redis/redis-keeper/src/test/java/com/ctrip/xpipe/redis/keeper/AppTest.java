@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.keeper.spring.TestWithoutZkProfile;
 import com.ctrip.xpipe.spring.AbstractProfile;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.error.NoMasterlinkRedisError;
@@ -13,6 +11,8 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

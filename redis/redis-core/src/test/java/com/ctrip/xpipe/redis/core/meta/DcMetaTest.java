@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.core.meta;
 
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

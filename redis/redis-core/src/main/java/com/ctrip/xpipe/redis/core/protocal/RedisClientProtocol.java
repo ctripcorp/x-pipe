@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.core.protocal;
 
 
-import java.io.IOException;
-
 import io.netty.buffer.ByteBuf;
+
+import java.io.IOException;
 
 
 /**

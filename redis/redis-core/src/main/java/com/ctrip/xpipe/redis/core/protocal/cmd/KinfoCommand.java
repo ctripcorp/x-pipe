@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -11,8 +9,9 @@ import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
-
 import io.netty.buffer.ByteBuf;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author marsqing

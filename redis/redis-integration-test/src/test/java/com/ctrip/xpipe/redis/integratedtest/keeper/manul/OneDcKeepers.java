@@ -1,10 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
 
-import java.io.IOException;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -14,6 +9,10 @@ import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegratedSingl
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

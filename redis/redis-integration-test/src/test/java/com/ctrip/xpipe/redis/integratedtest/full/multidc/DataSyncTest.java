@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.integratedtest.full.multidc;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.transaction;
 
-import java.io.IOException;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -13,8 +10,10 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigRewrite;
 import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.XSlaveofCommand;
-
 import io.netty.buffer.ByteBuf;
+
+import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * first try xslaveof, then slaveof

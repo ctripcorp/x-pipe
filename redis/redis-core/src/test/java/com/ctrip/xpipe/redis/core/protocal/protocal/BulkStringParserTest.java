@@ -1,18 +1,16 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-import java.io.IOException;
-import java.nio.channels.WritableByteChannel;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.payload.AbstractInOutPayload;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringEoFJudger.BulkStringEofMarkJudger;
 import com.ctrip.xpipe.utils.StringUtil;
-
 import io.netty.buffer.ByteBuf;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.channels.WritableByteChannel;
 
 /**
  * @author wenchao.meng

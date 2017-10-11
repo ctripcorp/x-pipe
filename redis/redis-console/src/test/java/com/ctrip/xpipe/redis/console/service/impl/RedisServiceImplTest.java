@@ -8,20 +8,16 @@ import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.dal.jdbc.DalException;
-import com.ctrip.xpipe.tuple.Pair;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 

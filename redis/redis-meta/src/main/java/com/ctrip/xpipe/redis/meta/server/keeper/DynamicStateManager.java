@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.keeper;
 
-import java.util.Set;
-
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
+
+import java.util.Set;
 
 /**
  * @author wenchao.meng

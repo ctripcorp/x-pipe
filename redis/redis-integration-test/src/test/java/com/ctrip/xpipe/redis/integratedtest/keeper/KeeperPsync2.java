@@ -1,18 +1,17 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author wenchao.meng

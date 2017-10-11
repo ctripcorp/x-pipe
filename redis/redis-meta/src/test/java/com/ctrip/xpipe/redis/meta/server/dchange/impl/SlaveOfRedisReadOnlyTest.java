@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.SlaveOfRedisReadOnly;
-
+import org.junit.Assert;
+import org.junit.Test;
 import redis.clients.jedis.Jedis;
 
 /**

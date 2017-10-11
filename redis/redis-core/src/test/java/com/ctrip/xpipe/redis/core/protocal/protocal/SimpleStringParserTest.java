@@ -1,13 +1,10 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
-
-import io.netty.buffer.Unpooled;
 
 
 /**

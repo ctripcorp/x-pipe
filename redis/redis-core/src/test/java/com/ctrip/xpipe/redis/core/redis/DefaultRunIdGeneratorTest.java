@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.core.redis;
 
-import java.util.HashSet;
-import java.util.Set;
-
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

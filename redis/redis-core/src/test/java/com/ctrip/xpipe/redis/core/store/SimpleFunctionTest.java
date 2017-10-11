@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

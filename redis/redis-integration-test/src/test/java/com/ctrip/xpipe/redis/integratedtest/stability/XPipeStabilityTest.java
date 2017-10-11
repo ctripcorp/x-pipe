@@ -1,14 +1,10 @@
 package com.ctrip.xpipe.redis.integratedtest.stability;
 
-import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.Date;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
+import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.dianping.cat.Cat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -19,17 +15,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.dianping.cat.Cat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
+
+import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.Date;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author shyin

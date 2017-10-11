@@ -1,10 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -12,8 +7,11 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand.ConfigGetDisklessSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand.ConfigGetDisklessSyncDelay;
 import com.ctrip.xpipe.utils.IpUtils;
-
+import org.junit.Test;
 import redis.clients.jedis.Jedis;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

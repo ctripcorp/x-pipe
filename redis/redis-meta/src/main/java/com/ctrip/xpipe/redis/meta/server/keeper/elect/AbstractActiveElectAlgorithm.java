@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 
 /**
  * @author wenchao.meng

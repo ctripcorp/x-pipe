@@ -1,14 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.observer.AbstractObservable;
@@ -24,12 +15,19 @@ import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.StringUtil;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng

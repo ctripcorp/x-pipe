@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
-import java.util.concurrent.TimeoutException;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author wenchao.meng

@@ -1,21 +1,21 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
-
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTblDao;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTblEntity;
+import com.ctrip.xpipe.redis.console.service.impl.KeepercontainerServiceImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTblDao;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTblEntity;
-import com.ctrip.xpipe.redis.console.service.impl.KeepercontainerServiceImpl;
+
+import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 /**
  * @author shyin

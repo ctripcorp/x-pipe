@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
 
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-
-import org.apache.commons.exec.ExecuteException;
-import org.junit.Test;
-
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegratedSingleDc;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import org.apache.commons.exec.ExecuteException;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author wenchao.meng

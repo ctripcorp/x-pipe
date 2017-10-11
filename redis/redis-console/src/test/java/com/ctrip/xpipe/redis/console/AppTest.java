@@ -1,16 +1,12 @@
 package com.ctrip.xpipe.redis.console;
 
-import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
-import com.ctrip.xpipe.redis.console.schedule.ScheduledOrganizationService;
-import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;

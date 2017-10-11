@@ -1,13 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
-
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
@@ -16,6 +8,13 @@ import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.TestZkClient;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * @author wenchao.meng

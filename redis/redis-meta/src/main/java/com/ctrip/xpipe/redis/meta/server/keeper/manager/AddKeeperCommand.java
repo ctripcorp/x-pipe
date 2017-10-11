@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.command.AbstractCommand;
@@ -15,6 +13,8 @@ import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.retry.RetryDelay;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

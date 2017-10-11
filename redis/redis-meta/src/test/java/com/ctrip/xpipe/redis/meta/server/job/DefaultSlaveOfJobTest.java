@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

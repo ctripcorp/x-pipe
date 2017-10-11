@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.rest.ForwardType;
 import com.ctrip.xpipe.utils.StringUtil;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author wenchao.meng

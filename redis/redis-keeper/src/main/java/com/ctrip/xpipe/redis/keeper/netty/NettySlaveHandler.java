@@ -7,7 +7,6 @@ import com.ctrip.xpipe.netty.ByteBufReadActionException;
 import com.ctrip.xpipe.netty.ChannelTrafficStatisticsHandler;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;

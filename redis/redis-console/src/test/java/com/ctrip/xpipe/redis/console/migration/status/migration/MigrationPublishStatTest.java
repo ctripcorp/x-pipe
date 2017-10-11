@@ -1,7 +1,12 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,25 +14,13 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.web.client.ResourceAccessException;
 
-import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.model.ShardTbl;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
-
-
-import static org.mockito.Mockito.*;
-
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author shyin

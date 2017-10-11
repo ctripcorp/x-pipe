@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.integratedtest.simple;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

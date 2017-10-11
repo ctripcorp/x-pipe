@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.server;
 
-import java.net.Socket;
-
 import com.ctrip.xpipe.redis.core.server.AbstractRedisAction;
+
+import java.net.Socket;
 
 
 /**

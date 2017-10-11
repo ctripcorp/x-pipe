@@ -1,16 +1,16 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
-import java.io.IOException;
-
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
+import java.io.IOException;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author wenchao.meng

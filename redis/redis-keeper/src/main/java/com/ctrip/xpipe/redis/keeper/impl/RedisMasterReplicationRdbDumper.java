@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

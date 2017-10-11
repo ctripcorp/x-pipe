@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.integratedtest.stability;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * @author wenchao.meng

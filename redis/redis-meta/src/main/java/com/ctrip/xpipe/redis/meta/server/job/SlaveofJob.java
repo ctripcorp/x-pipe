@@ -1,17 +1,17 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
 
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
+
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

@@ -1,21 +1,20 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
-import java.util.HashSet;
-import java.util.Set;
-
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-
-import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
-import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author wenchao.meng

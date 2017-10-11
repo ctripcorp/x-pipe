@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
 
-import java.util.LinkedList;
-import java.util.List;
-
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.tuple.Pair;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author wenchao.meng

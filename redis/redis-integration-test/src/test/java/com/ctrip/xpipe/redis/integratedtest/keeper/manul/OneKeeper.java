@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
 
-import java.io.IOException;
-
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegratedSingleDc;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import org.junit.Test;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

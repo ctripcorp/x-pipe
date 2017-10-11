@@ -1,12 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store.stable;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
@@ -14,9 +7,14 @@ import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
-
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author wenchao.meng

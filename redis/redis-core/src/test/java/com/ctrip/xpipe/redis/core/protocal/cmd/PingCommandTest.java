@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutionException;
-
 import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
+import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author wenchao.meng

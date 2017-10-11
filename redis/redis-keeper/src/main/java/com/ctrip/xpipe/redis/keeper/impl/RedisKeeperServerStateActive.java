@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -11,6 +8,9 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 import com.ctrip.xpipe.redis.keeper.impl.RedisPromotor.SlavePromotionInfo;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

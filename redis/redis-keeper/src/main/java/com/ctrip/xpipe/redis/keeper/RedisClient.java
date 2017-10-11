@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.keeper;
 
-import java.io.Closeable;
-import java.util.Set;
-
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+
+import java.io.Closeable;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

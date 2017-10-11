@@ -1,35 +1,10 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
-import org.apache.commons.exec.ExecuteException;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.config.MetaServerAddressAware;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.metaserver.DefaultMetaServerLocator;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
@@ -43,6 +18,20 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.google.common.collect.Lists;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 
 /**
  * @author wenchao.meng

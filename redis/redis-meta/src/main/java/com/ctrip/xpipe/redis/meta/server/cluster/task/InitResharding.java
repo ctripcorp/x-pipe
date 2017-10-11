@@ -1,14 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.zk.ZkClient;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

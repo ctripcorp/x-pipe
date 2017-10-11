@@ -4,10 +4,10 @@ import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
-
 import com.google.common.collect.Maps;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestOperations;
+
 import java.util.Map;
 
 /**

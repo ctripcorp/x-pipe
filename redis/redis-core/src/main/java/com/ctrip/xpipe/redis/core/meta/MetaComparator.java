@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.core.meta;
 
+import com.ctrip.xpipe.redis.core.meta.comparator.ConfigChanged;
+
 import java.util.List;
 import java.util.Set;
-
-import com.ctrip.xpipe.redis.core.meta.comparator.ConfigChanged;
 
 /**
  * @author wenchao.meng

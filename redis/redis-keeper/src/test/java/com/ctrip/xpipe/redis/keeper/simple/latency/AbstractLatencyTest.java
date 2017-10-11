@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.simple.latency;
 
 
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.redis.keeper.simple.AbstractLoadRedis;
+
+import java.net.InetSocketAddress;
 
 
 /**

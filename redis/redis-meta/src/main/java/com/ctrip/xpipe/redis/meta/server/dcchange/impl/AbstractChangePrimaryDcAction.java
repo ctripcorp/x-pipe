@@ -1,24 +1,23 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
-import java.util.List;
-import java.util.concurrent.*;
-
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
-import com.ctrip.xpipe.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import com.ctrip.xpipe.redis.meta.server.dcchange.SentinelManager;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.concurrent.*;
 
 /**
  * @author wenchao.meng

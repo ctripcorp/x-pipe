@@ -1,17 +1,16 @@
 package com.ctrip.xpipe.redis.integratedtest.simple;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
+import org.junit.Test;
+import redis.clients.jedis.Jedis;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
-import org.junit.Test;
-
-import redis.clients.jedis.Jedis;
 
 /**
  * @author wenchao.meng

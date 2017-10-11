@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.manual;
 
-import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.junit.After;
-
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientFactory;
 import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import org.junit.After;
+
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author wenchao.meng

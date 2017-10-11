@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-import org.junit.Test;
-
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

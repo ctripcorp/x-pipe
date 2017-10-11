@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.rest;
 
-import java.util.Map;
-import java.util.Set;
-
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
+
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

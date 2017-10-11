@@ -1,21 +1,20 @@
 package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Callable;
-
 import com.ctrip.xpipe.exception.SIMPLE_RETURN_CODE;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
 
 /**
  * @author wenchao.meng

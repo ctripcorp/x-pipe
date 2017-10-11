@@ -1,10 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -20,6 +15,11 @@ import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.tuple.Pair;
+
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

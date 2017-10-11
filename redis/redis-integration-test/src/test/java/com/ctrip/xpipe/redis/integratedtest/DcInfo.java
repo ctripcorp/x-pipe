@@ -1,12 +1,10 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
 
-
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.springframework.context.ApplicationContext;
 
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng

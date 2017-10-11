@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.rest;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.rest.ForwardType;
+import org.junit.Assert;
+import org.junit.Test;
 
 
 

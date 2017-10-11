@@ -14,8 +14,8 @@ import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManage
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.ctrip.xpipe.zk.ZkUtils;
 import com.ctrip.xpipe.zk.ZkClient;
+import com.ctrip.xpipe.zk.ZkUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;

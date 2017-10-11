@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.rest;
 
-import java.beans.PropertyEditorSupport;
-
 import com.ctrip.xpipe.api.codec.Codec;
+
+import java.beans.PropertyEditorSupport;
 
 /**
  * @author wenchao.meng

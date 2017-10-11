@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import java.io.File;
-import java.io.IOException;
-
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
+
+import java.io.File;
+import java.io.IOException;
 
 
 /**

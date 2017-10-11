@@ -1,6 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server;
 
 
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTrigger;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.MetaserverLeaderElector;
+import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
+import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
+import com.ctrip.xpipe.zk.impl.TestZkClient;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -10,15 +18,6 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 import org.springframework.web.context.support.StandardServletEnvironment;
-
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
-import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTrigger;
-import com.ctrip.xpipe.redis.meta.server.cluster.impl.MetaserverLeaderElector;
-import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
-import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
-import com.ctrip.xpipe.zk.impl.TestZkClient;
 
 /**
  * @author wenchao.meng

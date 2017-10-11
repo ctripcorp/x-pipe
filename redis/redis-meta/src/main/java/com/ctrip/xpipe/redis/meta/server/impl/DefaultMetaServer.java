@@ -1,36 +1,34 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
-import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
-
-import javax.annotation.Resource;
-
 import com.ctrip.xpipe.exception.SIMPLE_RETURN_CODE;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
-import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
+import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
+import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author marsqing

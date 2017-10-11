@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.meta.server.multidc;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * @author wenchao.meng

@@ -5,7 +5,6 @@ import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
-import org.apache.catalina.Host;
 
 /**
  * used for console

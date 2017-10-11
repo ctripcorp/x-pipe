@@ -1,16 +1,14 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-
-import io.netty.buffer.ByteBuf;
 
 /**
  * @author wenchao.meng

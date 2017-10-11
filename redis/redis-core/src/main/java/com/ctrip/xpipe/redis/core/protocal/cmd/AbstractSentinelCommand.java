@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.StringUtil;
-
 import io.netty.buffer.ByteBuf;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

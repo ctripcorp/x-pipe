@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration;
 
-import com.ctrip.xpipe.endpoint.HostPort;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -16,6 +14,8 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import static org.mockito.Mockito.*;
 
 /**

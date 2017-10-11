@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

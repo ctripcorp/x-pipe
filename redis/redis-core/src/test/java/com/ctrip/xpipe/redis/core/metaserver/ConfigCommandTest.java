@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
-import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutionException;
-
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand.ConfigGetMinSlavesToWrite;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigSetCommand.ConfigSetMinSlavesToWrite;
+import org.junit.Test;
+
+import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author wenchao.meng

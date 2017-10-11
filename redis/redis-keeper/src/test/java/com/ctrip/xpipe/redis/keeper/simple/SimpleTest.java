@@ -1,33 +1,24 @@
 package com.ctrip.xpipe.redis.keeper.simple;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.util.Calendar;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.function.Function;
-
+import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
+import com.ctrip.xpipe.simpleserver.Server;
+import com.dianping.cat.Cat;
+import com.dianping.cat.message.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSON;
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
-import com.ctrip.xpipe.simpleserver.Server;
-import com.dianping.cat.Cat;
-import com.dianping.cat.message.Transaction;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.*;
+import java.util.Calendar;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.function.Function;
 
 /**
  * @author wenchao.meng

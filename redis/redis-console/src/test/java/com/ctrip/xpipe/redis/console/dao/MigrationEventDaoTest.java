@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.dao;
 
+import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.*;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResult;
@@ -9,8 +10,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
-
-import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 
 import java.util.HashSet;
 import java.util.List;

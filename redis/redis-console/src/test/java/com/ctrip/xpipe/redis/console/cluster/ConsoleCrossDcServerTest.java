@@ -8,7 +8,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.xbill.DNS.TextParseException;
 
@@ -16,6 +15,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+
+import static org.mockito.Mockito.when;
 
 /**
  * @author wenchao.meng

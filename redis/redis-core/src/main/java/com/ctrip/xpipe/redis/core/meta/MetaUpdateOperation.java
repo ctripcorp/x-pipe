@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.core.meta;
 
-import java.util.List;
-
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+
+import java.util.List;
 
 /**
  * @author wenchao.meng

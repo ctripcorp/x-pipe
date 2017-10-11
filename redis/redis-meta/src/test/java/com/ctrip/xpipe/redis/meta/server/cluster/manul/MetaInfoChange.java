@@ -1,12 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.manul;
 
 
-import java.io.IOException;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.web.client.HttpServerErrorException;
-
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -18,6 +12,11 @@ import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServic
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.AbstractMetaServerClusterTest;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.web.client.HttpServerErrorException;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

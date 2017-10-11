@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.store.meta;
 
-import java.io.File;
-import java.io.IOException;
-
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.utils.ObjectUtils;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

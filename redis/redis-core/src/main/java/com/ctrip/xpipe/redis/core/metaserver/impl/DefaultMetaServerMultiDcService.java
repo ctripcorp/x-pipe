@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author wenchao.meng

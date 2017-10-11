@@ -1,12 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
 
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

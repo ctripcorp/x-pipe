@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.integratedtest.stability;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 
 /**
  * @author wenchao.meng

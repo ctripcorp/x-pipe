@@ -1,12 +1,8 @@
 package com.ctrip.xpipe.redis.core.console;
 
-import java.util.Set;
+import com.ctrip.xpipe.redis.core.entity.*;
 
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import java.util.Set;
 
 /**
  * all api for console

@@ -1,5 +1,16 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
+import com.ctrip.xpipe.utils.FileUtils;
+import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -8,28 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
-import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
-import com.ctrip.xpipe.utils.FileUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
-import com.ctrip.xpipe.redis.core.store.CommandStore;
-import com.ctrip.xpipe.redis.core.store.CommandsListener;
-import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
-import com.ctrip.xpipe.redis.core.store.FullSyncListener;
-import com.ctrip.xpipe.redis.core.store.MetaStore;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-
-import io.netty.buffer.ByteBuf;
 
 // TODO make methods correctly sequenced
 public class DefaultReplicationStore extends AbstractStore implements ReplicationStore {

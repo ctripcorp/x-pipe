@@ -1,18 +1,17 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
-import java.util.Set;
-
+import com.ctrip.xpipe.redis.meta.server.MetaServer;
+import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
+import com.ctrip.xpipe.spring.AbstractController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ctrip.xpipe.redis.meta.server.MetaServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
-import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
-import com.ctrip.xpipe.spring.AbstractController;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

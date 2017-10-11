@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange;
 
-import java.util.List;
-
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+
+import java.util.List;
 
 /**
  * @author wenchao.meng

@@ -5,7 +5,6 @@ import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;

@@ -1,19 +1,18 @@
 package com.ctrip.xpipe.redis.integratedtest.full.demo;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.commons.exec.ExecuteException;
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.integratedtest.full.multidc.AbstractMultiDcTest;
+import org.apache.commons.exec.ExecuteException;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

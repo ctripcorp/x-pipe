@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 
-import java.io.IOException;
-
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import org.junit.Test;
+
+import java.io.IOException;
 
 
 /**

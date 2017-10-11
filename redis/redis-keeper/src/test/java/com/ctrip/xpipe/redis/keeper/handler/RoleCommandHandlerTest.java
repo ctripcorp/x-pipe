@@ -1,19 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-
-import static org.mockito.Mockito.*;
-
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
-
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.ByteBufUtils;
@@ -24,9 +10,20 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
+
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author wenchao.meng

@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
+import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 
 
 /**

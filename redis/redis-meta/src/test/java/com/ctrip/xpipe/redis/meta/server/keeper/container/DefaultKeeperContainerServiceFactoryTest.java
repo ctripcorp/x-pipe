@@ -2,12 +2,11 @@ package com.ctrip.xpipe.redis.meta.server.keeper.container;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
-import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactory;
-
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
 /**

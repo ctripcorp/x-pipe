@@ -1,5 +1,17 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.google.common.util.concurrent.SettableFuture;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -10,20 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
-import com.ctrip.xpipe.redis.core.store.CommandsListener;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
-import com.google.common.util.concurrent.SettableFuture;
-
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
 
 /**
  * @author wenchao.meng

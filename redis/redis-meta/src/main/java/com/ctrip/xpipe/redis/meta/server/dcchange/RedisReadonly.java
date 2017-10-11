@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.RedisReadonlyException;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.SlaveOfRedisReadOnly;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

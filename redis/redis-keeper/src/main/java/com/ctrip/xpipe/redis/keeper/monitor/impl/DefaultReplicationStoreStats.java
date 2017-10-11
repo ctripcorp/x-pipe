@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.monitor.impl;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author wenchao.meng

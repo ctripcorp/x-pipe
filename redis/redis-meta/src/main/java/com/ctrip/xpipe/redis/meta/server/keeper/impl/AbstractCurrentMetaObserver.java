@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
@@ -11,6 +9,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author wenchao.meng

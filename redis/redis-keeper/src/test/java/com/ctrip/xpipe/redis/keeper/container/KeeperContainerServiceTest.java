@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

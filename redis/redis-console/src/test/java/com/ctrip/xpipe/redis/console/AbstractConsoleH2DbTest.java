@@ -1,11 +1,8 @@
 package com.ctrip.xpipe.redis.console;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
+import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
+import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -20,9 +17,11 @@ import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
 import org.unidal.lookup.ContainerLoader;
 
-import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
-import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.utils.FileUtils;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /**
  * @author wenchao.meng

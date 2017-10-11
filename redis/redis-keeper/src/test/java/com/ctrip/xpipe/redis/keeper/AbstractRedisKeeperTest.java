@@ -1,11 +1,5 @@
 package com.ctrip.xpipe.redis.keeper;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
@@ -15,11 +9,7 @@ import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
-import com.ctrip.xpipe.redis.core.store.CommandsListener;
-import com.ctrip.xpipe.redis.core.store.RdbFileListener;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
@@ -28,8 +18,13 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneKeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
-
 import io.netty.channel.ChannelFuture;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

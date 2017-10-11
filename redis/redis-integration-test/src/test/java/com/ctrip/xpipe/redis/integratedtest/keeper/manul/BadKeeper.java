@@ -1,10 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
@@ -14,8 +9,11 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
-
 import io.netty.buffer.Unpooled;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

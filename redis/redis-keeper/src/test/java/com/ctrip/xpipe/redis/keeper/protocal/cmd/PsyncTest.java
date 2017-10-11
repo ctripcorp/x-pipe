@@ -1,12 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.protocal.cmd;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -20,8 +13,13 @@ import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
-
 import io.netty.buffer.ByteBuf;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

@@ -1,12 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server;
 
-import java.util.Map;
-
-import org.apache.curator.framework.CuratorFramework;
-import org.junit.Before;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -22,6 +15,12 @@ import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.TestZkClient;
+import org.apache.curator.framework.CuratorFramework;
+import org.junit.Before;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
+import java.util.Map;
 
 /**
  * @author wenchao.meng

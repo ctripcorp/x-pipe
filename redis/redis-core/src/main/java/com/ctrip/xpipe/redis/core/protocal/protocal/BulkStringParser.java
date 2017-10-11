@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
@@ -9,9 +7,10 @@ import com.ctrip.xpipe.payload.StringInOutPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJudger.JudgeResult;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

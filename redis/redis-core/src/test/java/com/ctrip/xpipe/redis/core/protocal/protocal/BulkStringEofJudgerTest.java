@@ -1,15 +1,13 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringEoFJudger.BulkStringEofMarkJudger;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringEoFJudger.BulkStringLengthEofJudger;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJudger.JudgeResult;
-
 import io.netty.buffer.Unpooled;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

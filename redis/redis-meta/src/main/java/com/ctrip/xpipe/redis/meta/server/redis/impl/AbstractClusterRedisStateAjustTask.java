@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.redis.impl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.meta.server.redis.ClusterRedisStateAjustTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author wenchao.meng

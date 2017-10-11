@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.monitor.impl;
 
-import java.util.Map;
-
-import org.jboss.netty.util.internal.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.utils.MapUtils;
+import org.jboss.netty.util.internal.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * @author wenchao.meng

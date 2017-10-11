@@ -1,12 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.redis.impl;
 
-import java.util.concurrent.*;
-
-import javax.annotation.Resource;
-
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
@@ -15,6 +8,14 @@ import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.redis.RedisStateManager;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.annotation.Resource;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

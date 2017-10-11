@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
-
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.DcTblDao;
+import com.ctrip.xpipe.redis.console.model.DcTblEntity;
+import com.ctrip.xpipe.redis.console.service.impl.DcServiceImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,11 +13,8 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.unidal.dal.jdbc.DalException;
 
-import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.DcTblDao;
-import com.ctrip.xpipe.redis.console.model.DcTblEntity;
-import com.ctrip.xpipe.redis.console.service.impl.DcServiceImpl;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 /**
  * @author shyin

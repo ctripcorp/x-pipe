@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
 
-import java.io.Serializable;
-
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
-import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import java.io.Serializable;
 
 
 /**

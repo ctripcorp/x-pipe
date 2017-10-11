@@ -1,8 +1,16 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-
+import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
+import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.netty.ByteBufUtils;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
+import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,17 +18,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
-import com.ctrip.xpipe.exception.ExceptionUtils;
-import com.ctrip.xpipe.lifecycle.LifecycleHelper;
-import com.ctrip.xpipe.netty.ByteBufUtils;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
-import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.simpleserver.Server;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 
 /**

@@ -1,9 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
-import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
-import org.junit.Test;
-import org.springframework.web.client.RestOperations;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
@@ -11,8 +7,12 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
+import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
+import org.junit.Test;
+import org.springframework.web.client.RestOperations;
 
 /**
  * @author wenchao.meng

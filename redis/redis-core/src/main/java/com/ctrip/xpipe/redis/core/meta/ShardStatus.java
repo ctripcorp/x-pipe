@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.core.meta;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 
 /**

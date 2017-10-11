@@ -1,18 +1,17 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.manual;
 
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand.SentinelAdd;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand.SentinelRemove;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand.Sentinels;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author wenchao.meng
