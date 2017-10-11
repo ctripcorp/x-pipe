@@ -8,13 +8,13 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 		$scope.doMigrate = doMigrate;
 		
 		init();
-		
+
 		function init() {
 			DcService.loadAllDcs().then(function(data){
 				$scope.dcs = data;
 			});
 		}
-		
+
 		function sourceDcSelected() {
 			var dcName = $scope.sourceDc;
 			if(dcName) {
@@ -24,7 +24,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 				});
 			}
 		}
-		
+
 		function targetDcSelected(cluster) {
 			if(cluster.targetDc == "-") {
 				cluster.selected = false;
@@ -128,17 +128,32 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 				});
 			}
 		};
-		
-		
+
+
 		$scope.tableParams = new NgTableParams({
             page : 1,
             count : 10
         }, {
             filterDelay:100,
             getData : function(params) {
-            	// TODO [marsqing] paging control
-                // params.total(1);
-                return $scope.clusters;
+                var filter_text = params.filter().clusterOrgName;
+                var sourceClusters = $scope.clusters.slice(0);
+                var copedClusters = [];
+                if(filter_text && (filter_text = filter_text.trim()) !== "") {
+                    var filtered_data = [];
+                    for(var i = 0 ; i < sourceClusters.length ; i++) {
+                        var cluster = sourceClusters[i];
+                        if(cluster.clusterOrgName && cluster.clusterOrgName.search(filter_text) !== -1) {
+                            filtered_data.push(cluster);
+                        }
+                    }
+                    copedClusters = filtered_data;
+                }else {
+                    copedClusters = sourceClusters;
+                }
+                return copedClusters;
             }
         });
+
+
     }]);
