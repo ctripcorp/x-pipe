@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
-import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.utils.StringUtil;
-
 import java.util.LinkedList;
 import java.util.List;
+
+import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.utils.StringUtil;
 
 /**
  * @author wenchao.meng

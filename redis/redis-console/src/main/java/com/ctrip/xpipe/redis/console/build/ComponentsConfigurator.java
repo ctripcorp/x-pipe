@@ -1,14 +1,15 @@
 package com.ctrip.xpipe.redis.console.build;
 
-import com.ctrip.xpipe.redis.console.dal.XpipeDalDataObjectAssembly;
-import com.ctrip.xpipe.redis.console.dal.XpipeDalTransactionManager;
-import com.ctrip.xpipe.redis.console.ds.XpipeDataSourceProvider;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.unidal.dal.jdbc.datasource.DataSourceProvider;
 import org.unidal.lookup.configuration.AbstractResourceConfigurator;
 import org.unidal.lookup.configuration.Component;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.ctrip.xpipe.redis.console.dal.XpipeDalDataObjectAssembly;
+import com.ctrip.xpipe.redis.console.dal.XpipeDalTransactionManager;
+import com.ctrip.xpipe.redis.console.ds.XpipeDataSourceProvider;
 
 /**
  * @author shyin

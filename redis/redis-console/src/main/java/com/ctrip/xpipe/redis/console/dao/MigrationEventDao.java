@@ -1,5 +1,24 @@
 package com.ctrip.xpipe.redis.console.dao;
 
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+import org.springframework.util.CollectionUtils;
+import org.unidal.dal.jdbc.DalException;
+import org.unidal.helper.Lists;
+import org.unidal.lookup.ContainerLoader;
+
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -11,7 +30,24 @@ import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
+import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterInfo;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTblDao;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTblEntity;
+import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationEventTblDao;
+import com.ctrip.xpipe.redis.console.model.MigrationEventTblEntity;
+import com.ctrip.xpipe.redis.console.model.MigrationShardModel;
+import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationShardTblDao;
+import com.ctrip.xpipe.redis.console.model.MigrationShardTblEntity;
+import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.model.ShardTblDao;
+import com.ctrip.xpipe.redis.console.model.ShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -20,19 +56,6 @@ import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
-import org.springframework.util.CollectionUtils;
-import org.unidal.dal.jdbc.DalException;
-import org.unidal.helper.Lists;
-import org.unidal.lookup.ContainerLoader;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 
 @Repository
 public class MigrationEventDao extends AbstractXpipeConsoleDAO {

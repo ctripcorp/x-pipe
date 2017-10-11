@@ -1,5 +1,11 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
@@ -8,7 +14,12 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilderImpl;
-import com.ctrip.xpipe.redis.console.migration.model.*;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResultStatus;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStepResult;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
@@ -20,11 +31,6 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.utils.LogUtils;
 import com.ctrip.xpipe.utils.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 /**
  * @author shyin

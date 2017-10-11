@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
-
 import java.util.List;
+
+import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 
 public interface DcClusterService {
 
