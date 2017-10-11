@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
