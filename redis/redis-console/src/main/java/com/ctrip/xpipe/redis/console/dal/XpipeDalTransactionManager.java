@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.dal;
 
-import com.dianping.cat.Cat;
+import java.sql.Connection;
+import java.sql.SQLException;
+
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.unidal.dal.jdbc.DalRuntimeException;
@@ -13,8 +15,7 @@ import org.unidal.dal.jdbc.transaction.TransactionManager;
 import org.unidal.lookup.annotation.Inject;
 import org.unidal.lookup.annotation.Named;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import com.dianping.cat.Cat;
 
 /**
  * @author shyin

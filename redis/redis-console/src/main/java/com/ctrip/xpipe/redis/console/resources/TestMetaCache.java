@@ -1,14 +1,15 @@
 package com.ctrip.xpipe.redis.console.resources;
 
-import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
-import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.tuple.Pair;
+import java.util.Set;
+
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.tuple.Pair;
 
 /**
  * @author wenchao.meng
