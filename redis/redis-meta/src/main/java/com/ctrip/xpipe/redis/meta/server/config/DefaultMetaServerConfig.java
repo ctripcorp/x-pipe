@@ -1,11 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.config;
 
 
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.foundation.FoundationService;
@@ -16,6 +11,10 @@ import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.utils.IpUtils;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * @author marsqing

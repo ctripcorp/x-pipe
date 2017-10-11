@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -10,8 +8,9 @@ import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.command.UntilSuccess;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-
 import io.netty.buffer.ByteBuf;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

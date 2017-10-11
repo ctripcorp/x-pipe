@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.console.migration.status;
 
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.junit.runner.RunWith;
-
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 /**
  * @author wenchao.meng

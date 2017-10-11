@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.core.config;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.zk.ZkConfig;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author marsqing

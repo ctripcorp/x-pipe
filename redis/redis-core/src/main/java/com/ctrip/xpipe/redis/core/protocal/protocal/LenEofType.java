@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
 
-import java.io.File;
-import java.util.Set;
-
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-
 import io.netty.buffer.ByteBuf;
+
+import java.io.File;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

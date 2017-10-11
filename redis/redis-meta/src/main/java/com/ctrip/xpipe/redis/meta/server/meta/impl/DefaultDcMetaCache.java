@@ -1,6 +1,22 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.lifecycle.Ordered;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
+import com.ctrip.xpipe.redis.core.console.ConsoleService;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
+
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -8,28 +24,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.ResourceAccessException;
-
-import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.api.lifecycle.Ordered;
-import com.ctrip.xpipe.api.lifecycle.TopElement;
-import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
-import com.ctrip.xpipe.redis.core.console.ConsoleService;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
-import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
-import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
-import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
  * @author wenchao.meng

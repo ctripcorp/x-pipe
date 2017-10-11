@@ -1,14 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store.meta;
 
-import org.slf4j.LoggerFactory;
-import org.unidal.helper.Files.IO;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.slf4j.Logger;
-
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -18,6 +9,13 @@ import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.core.store.exception.BadMetaStoreException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.unidal.helper.Files.IO;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author wenchao.meng

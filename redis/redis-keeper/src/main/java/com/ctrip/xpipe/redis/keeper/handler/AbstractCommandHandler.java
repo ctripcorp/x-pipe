@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-
 import com.ctrip.xpipe.redis.keeper.CommandHandler;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author wenchao.meng

@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import java.io.IOException;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
@@ -12,10 +9,12 @@ import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+
+import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

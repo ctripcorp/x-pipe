@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.rest;
 
+import com.ctrip.xpipe.rest.ForwardType;
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.ctrip.xpipe.rest.ForwardType;
 
 /**
  * @author wenchao.meng

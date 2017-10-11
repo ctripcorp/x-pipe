@@ -1,26 +1,20 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
+import com.ctrip.xpipe.redis.keeper.*;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import org.junit.Assert;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static org.mockito.Mockito.*;
-
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.meta.KeeperState;
-import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
-import com.ctrip.xpipe.redis.keeper.RdbDumper;
-import com.ctrip.xpipe.redis.keeper.RedisClient;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
-import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * @author wenchao.meng

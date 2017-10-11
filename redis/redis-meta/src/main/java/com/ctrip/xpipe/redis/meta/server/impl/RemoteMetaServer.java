@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
-import org.springframework.http.*;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
@@ -17,6 +15,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractRemoteClusterServe
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.redis.meta.server.rest.exception.CircularForwardException;
 import com.ctrip.xpipe.rest.ForwardType;
+import org.springframework.http.*;
 
 /**
  * @author wenchao.meng

@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 

@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.sso;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.AppTest;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;

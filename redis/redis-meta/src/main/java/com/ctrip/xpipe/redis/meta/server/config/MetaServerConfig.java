@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.config;
 
-import java.util.Map;
-
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
+
+import java.util.Map;
 
 /**
  * @author marsqing

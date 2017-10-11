@@ -1,9 +1,5 @@
 package com.ctrip.xpipe.redis.console.notifier;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.doThrow;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,8 +7,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.web.client.ResourceAccessException;
 
-import com.ctrip.xpipe.redis.console.notifier.MetaNotifyRetryPolicy;
-import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTask;
+import static org.mockito.Mockito.*;
 
 
 

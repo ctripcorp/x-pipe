@@ -1,9 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
-import com.ctrip.xpipe.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
@@ -16,6 +12,9 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.retry.RetryNTimes;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.tuple.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
 import java.util.concurrent.Executor;

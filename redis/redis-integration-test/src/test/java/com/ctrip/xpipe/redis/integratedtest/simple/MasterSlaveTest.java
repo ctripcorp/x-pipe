@@ -1,16 +1,14 @@
 package com.ctrip.xpipe.redis.integratedtest.simple;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-
 import redis.clients.jedis.Jedis;
+
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author wenchao.meng

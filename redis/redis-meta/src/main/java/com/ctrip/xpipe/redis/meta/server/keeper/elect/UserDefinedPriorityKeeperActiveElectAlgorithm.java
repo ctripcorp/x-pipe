@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
 
-import java.util.List;
-
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+
+import java.util.List;
 
 /**
  * @author wenchao.meng

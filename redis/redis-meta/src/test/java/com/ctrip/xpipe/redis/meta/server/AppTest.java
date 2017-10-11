@@ -1,16 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.boot.SpringApplication;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ConfigurableApplicationContext;
-
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
@@ -19,6 +8,16 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author shyin

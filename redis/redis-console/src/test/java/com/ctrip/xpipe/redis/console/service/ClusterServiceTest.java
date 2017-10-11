@@ -1,19 +1,19 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
-
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
+import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
+import com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
-import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
-import com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 /**
  * @author shyin

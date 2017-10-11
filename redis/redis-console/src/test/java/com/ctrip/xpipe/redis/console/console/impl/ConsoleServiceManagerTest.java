@@ -6,10 +6,11 @@ import com.ctrip.xpipe.redis.console.health.action.HEALTH_STATE;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;
+
+import static org.mockito.Mockito.when;
 
 /**
  * @author wenchao.meng

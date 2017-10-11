@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.manual;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.cmd.XSlaveofCommand;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

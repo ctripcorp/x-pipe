@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.simple.latency.netty;
 
 
 import com.ctrip.xpipe.redis.keeper.simple.latency.PsyncLatencyTest;
-
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;

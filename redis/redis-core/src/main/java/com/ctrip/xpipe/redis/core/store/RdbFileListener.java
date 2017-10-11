@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

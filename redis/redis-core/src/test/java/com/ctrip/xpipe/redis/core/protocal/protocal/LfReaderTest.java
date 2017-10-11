@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-
-import io.netty.buffer.Unpooled;
 
 /**
  * @author wenchao.meng

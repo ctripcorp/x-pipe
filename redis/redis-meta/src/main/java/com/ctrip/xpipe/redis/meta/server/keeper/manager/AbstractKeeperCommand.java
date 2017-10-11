@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
@@ -14,6 +12,8 @@ import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerException;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.retry.RetryDelay;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

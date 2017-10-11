@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import org.junit.Assert;
+import org.junit.Test;
 
 
 /**

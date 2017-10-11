@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
-import java.util.Set;
-
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+
+import java.util.Set;
 
 /**
  * @author wenchao.meng

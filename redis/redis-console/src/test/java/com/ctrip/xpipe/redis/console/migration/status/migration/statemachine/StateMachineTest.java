@@ -2,15 +2,13 @@ package com.ctrip.xpipe.redis.console.migration.status.migration.statemachine;
 
 import com.ctrip.xpipe.redis.console.migration.model.ClusterStepResult;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
-import com.ctrip.xpipe.redis.console.migration.status.migration.*;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
+import com.ctrip.xpipe.redis.console.migration.status.migration.AbstractMigrationStateTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationAbortedState;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingState;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

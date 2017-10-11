@@ -1,12 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-import java.io.IOException;
-import java.util.List;
-
-import com.ctrip.xpipe.tuple.Pair;
-import org.apache.commons.exec.ExecuteException;
-import org.junit.Before;
-
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -14,6 +7,12 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
+import com.ctrip.xpipe.tuple.Pair;
+import org.apache.commons.exec.ExecuteException;
+import org.junit.Before;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
  * @author wenchao.meng

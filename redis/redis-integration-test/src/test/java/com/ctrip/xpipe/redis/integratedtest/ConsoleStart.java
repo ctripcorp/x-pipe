@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
 
-import java.io.File;
-
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import org.unidal.test.jetty.JettyServer;
 
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import java.io.File;
 
 /**
  * @author wenchao.meng

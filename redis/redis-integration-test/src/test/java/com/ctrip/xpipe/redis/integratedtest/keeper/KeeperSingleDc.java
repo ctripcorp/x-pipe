@@ -1,11 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-import java.io.IOException;
-
-import org.apache.commons.exec.ExecuteException;
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -14,6 +8,11 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.google.common.collect.Lists;
+import org.apache.commons.exec.ExecuteException;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

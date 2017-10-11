@@ -1,16 +1,16 @@
 package com.ctrip.xpipe.redis.core.server;
 
-import java.net.Socket;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.simpleserver.IoAction;
 import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
+
+import java.net.Socket;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng

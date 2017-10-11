@@ -1,26 +1,8 @@
 package com.ctrip.xpipe.redis.integratedtest.full;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.commons.exec.ExecuteException;
-import org.jboss.netty.util.internal.ConcurrentHashMap;
-import org.junit.After;
-import org.junit.Before;
-
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.foundation.DefaultFoundationService;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.MetaServerMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import com.ctrip.xpipe.redis.integratedtest.ConsoleStart;
@@ -28,6 +10,17 @@ import com.ctrip.xpipe.redis.integratedtest.DcInfo;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.utils.IpUtils;
+import org.apache.commons.exec.ExecuteException;
+import org.jboss.netty.util.internal.ConcurrentHashMap;
+import org.junit.After;
+import org.junit.Before;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

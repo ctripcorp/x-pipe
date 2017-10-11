@@ -1,10 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.meta;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
@@ -15,6 +10,10 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerLocator;
 import com.ctrip.xpipe.redis.core.metaserver.impl.AbstractMetaService;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.google.common.base.Function;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * @author marsqing

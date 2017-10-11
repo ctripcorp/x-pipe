@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.console.monitor;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.console.monitor.impl.StandaloneStatMonitor;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 public class StandaloneMonitorTest extends AbstractRedisTest{
 	@Test

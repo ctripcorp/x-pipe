@@ -1,15 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
-import java.io.IOException;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+
+import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

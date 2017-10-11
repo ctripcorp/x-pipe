@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.exception;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.meta.server.exception.MetaServerRuntimeException;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author wenchao.meng

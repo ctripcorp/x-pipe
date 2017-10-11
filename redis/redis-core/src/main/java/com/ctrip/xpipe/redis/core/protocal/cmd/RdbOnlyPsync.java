@@ -3,11 +3,11 @@
  */
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author marsqing

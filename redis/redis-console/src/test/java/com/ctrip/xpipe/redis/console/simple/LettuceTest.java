@@ -1,24 +1,23 @@
 package com.ctrip.xpipe.redis.console.simple;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import com.lambdaworks.redis.*;
-import com.lambdaworks.redis.sentinel.api.StatefulRedisSentinelConnection;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.lambdaworks.redis.*;
 import com.lambdaworks.redis.api.StatefulRedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 import com.lambdaworks.redis.resource.ClientResources;
 import com.lambdaworks.redis.resource.DefaultClientResources;
 import com.lambdaworks.redis.resource.Delay;
+import com.lambdaworks.redis.sentinel.api.StatefulRedisSentinelConnection;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

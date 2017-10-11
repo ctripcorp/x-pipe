@@ -1,19 +1,16 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
-
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.manul;
 
 
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.foundation.DefaultFoundationService;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.AbstractMetaServerClusterTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

@@ -1,13 +1,5 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import java.util.List;
-
-import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.junit.Assert;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -16,6 +8,14 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.junit.Assert;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
+
+import java.util.List;
 
 public class MigrationServiceTest extends AbstractConsoleIntegrationTest {
 	

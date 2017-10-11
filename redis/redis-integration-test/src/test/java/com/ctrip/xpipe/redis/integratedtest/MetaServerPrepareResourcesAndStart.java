@@ -1,10 +1,14 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
 
-
-import java.io.File;
-
-
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
+import com.ctrip.xpipe.zk.ZkClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
@@ -14,14 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.unidal.test.jetty.JettyServer;
 
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
-import com.ctrip.xpipe.zk.ZkClient;
+import java.io.File;
 
 /**
  * TODO to fix use spring boot

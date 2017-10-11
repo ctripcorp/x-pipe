@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import java.io.File;
-
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+
+import java.io.File;
 
 /**
  * @author wenchao.meng

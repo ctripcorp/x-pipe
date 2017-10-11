@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
-import java.util.Arrays;
-import java.util.List;
-
 import com.ctrip.xpipe.redis.core.config.MetaServerAddressAware;
 import com.google.common.base.Strings;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author marsqing

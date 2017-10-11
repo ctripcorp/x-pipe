@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.integratedtest.simple;
 
-import java.net.InetSocketAddress;
-
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

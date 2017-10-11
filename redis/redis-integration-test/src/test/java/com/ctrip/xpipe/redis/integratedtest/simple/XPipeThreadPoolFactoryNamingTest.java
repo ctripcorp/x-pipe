@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.integratedtest.simple;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.junit.Test;
-
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import org.junit.Test;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author shyin

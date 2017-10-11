@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+
+import java.io.IOException;
 
 /**
  * @author marsqing

@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.transaction;
 
 
-import java.net.InetSocketAddress;
-
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import java.net.InetSocketAddress;
 
 /**
  * manual test for local redis

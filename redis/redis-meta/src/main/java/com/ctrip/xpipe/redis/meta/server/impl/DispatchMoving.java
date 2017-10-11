@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
-import java.lang.reflect.Method;
-
+import com.ctrip.xpipe.redis.meta.server.MetaServer;
+import com.ctrip.xpipe.redis.meta.server.cluster.*;
+import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
+import com.ctrip.xpipe.rest.ForwardType;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -11,15 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.ctrip.xpipe.redis.meta.server.MetaServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
-import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.SLOT_STATE;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
-import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
-import com.ctrip.xpipe.rest.ForwardType;
-import com.ctrip.xpipe.utils.ObjectUtils;
+import java.lang.reflect.Method;
 
 /**
  * @author wenchao.meng

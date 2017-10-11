@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import java.io.File;
-
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+
+import java.io.File;
 
 /**
  * @author wenchao.meng

@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
 
-import java.util.List;
-
+import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
+import java.util.List;
 
 
 /**

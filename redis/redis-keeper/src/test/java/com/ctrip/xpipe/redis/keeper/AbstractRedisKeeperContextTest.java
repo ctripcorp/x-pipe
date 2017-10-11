@@ -1,24 +1,18 @@
 package com.ctrip.xpipe.redis.keeper;
 
-import java.io.File;
-import java.io.IOException;
-
+import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.spring.KeeperContextConfig;
 import org.junit.Before;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.xml.sax.SAXException;
 
-import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.spring.KeeperContextConfig;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

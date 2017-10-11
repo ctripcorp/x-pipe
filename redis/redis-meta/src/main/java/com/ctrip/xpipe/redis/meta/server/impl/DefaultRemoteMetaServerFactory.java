@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
 
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractRemoteClusterSeverFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * @author wenchao.meng

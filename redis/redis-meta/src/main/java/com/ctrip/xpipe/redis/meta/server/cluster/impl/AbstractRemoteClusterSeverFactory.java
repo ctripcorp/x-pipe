@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author wenchao.meng

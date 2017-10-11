@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.core.meta;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author wenchao.meng

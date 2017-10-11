@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
-import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
-import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 
 /**
  * @author wenchao.meng

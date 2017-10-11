@@ -1,24 +1,24 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
-
+import com.ctrip.xpipe.netty.ByteBufUtils;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.RedisClient;
+import io.netty.buffer.ByteBuf;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
-import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.ctrip.xpipe.netty.ByteBufUtils;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
-import com.ctrip.xpipe.redis.keeper.RedisClient;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import io.netty.buffer.ByteBuf;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.doNothing;
 
 /**
  * @author wenchao.meng

@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
 
-import java.io.IOException;
-import java.util.Set;
-
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -13,8 +10,10 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
-
 import io.netty.channel.Channel;
+
+import java.io.IOException;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

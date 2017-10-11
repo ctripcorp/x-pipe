@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.rest;
 
+import com.ctrip.xpipe.rest.ForwardType;
+
 import java.util.LinkedList;
 import java.util.List;
-
-import com.ctrip.xpipe.rest.ForwardType;
 
 /**
  * @author wenchao.meng

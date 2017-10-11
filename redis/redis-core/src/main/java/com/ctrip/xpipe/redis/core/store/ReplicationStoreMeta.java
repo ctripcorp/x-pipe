@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import java.io.Serializable;
-
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import java.io.Serializable;
 
 /**
  * @author wenchao.meng

@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+
+import java.io.IOException;
 
 public interface CommandReader {
 

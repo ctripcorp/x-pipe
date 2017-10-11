@@ -1,16 +1,11 @@
 package com.ctrip.xpipe.redis.integratedtest.full.multidc;
 
 
-
-
-
-
-import java.util.List;
-
-import org.junit.Before;
-
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.integratedtest.full.AbstractIntegratedTestTemplate;
+import org.junit.Before;
+
+import java.util.List;
 
 /**
  * @author wenchao.meng

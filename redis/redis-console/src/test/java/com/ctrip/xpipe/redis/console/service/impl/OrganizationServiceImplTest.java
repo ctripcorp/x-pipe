@@ -1,11 +1,8 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.console.dao.OrganizationDao;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

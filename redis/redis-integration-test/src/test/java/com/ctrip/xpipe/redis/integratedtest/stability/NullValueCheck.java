@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.integratedtest.stability;
 
-import java.util.concurrent.atomic.AtomicLong;
-
+import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author wenchao.meng

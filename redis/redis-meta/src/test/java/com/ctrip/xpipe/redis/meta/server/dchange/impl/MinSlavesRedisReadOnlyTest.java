@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 
-import java.net.InetSocketAddress;
-
+import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand.ConfigGetMinSlavesToWrite;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.dcchange.impl.MinSlavesRedisReadOnly;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand.ConfigGetMinSlavesToWrite;
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.dcchange.impl.MinSlavesRedisReadOnly;
+import java.net.InetSocketAddress;
 
 /**
  * 

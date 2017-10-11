@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.redis.keeper;
 
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

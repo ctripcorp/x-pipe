@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
 
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.MetaHolder;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

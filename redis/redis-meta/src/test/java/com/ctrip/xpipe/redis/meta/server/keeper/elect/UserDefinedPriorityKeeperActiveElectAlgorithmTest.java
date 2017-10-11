@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**

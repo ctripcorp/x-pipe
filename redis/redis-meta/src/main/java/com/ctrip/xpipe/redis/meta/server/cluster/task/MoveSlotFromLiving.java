@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.zk.ZkClient;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author wenchao.meng

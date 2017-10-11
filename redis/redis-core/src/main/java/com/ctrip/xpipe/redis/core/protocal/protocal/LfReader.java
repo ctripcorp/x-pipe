@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-import java.io.ByteArrayOutputStream;
-
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-
 import io.netty.buffer.ByteBuf;
+
+import java.io.ByteArrayOutputStream;
 
 /**
  * @author wenchao.meng

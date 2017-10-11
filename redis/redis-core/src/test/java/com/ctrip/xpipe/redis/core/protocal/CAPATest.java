@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.core.protocal;
 
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 
 /**
  * @author wenchao.meng

@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
-import java.util.LinkedList;
-import java.util.List;
-
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.MetaServer;
+import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.MetaServer;
-import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.mockito.Mockito.*;
 

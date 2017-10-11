@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.core.protocal;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

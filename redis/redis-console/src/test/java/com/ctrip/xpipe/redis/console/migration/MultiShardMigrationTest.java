@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.console.migration;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
+import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.model.*;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
@@ -15,16 +16,10 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.annotation.DirtiesContext;
 
-import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
-import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
-import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 /**
  * @author shyin
  *

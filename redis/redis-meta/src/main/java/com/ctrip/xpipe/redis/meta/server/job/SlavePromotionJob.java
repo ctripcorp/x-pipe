@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
-import java.net.InetSocketAddress;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
@@ -14,6 +11,9 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+
+import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

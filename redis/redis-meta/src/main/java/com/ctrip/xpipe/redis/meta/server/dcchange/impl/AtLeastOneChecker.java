@@ -1,20 +1,19 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
 import com.ctrip.xpipe.redis.meta.server.dcchange.HealthChecker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

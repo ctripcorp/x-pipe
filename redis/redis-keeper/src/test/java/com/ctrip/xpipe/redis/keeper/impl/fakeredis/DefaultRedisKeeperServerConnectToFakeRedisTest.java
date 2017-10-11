@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

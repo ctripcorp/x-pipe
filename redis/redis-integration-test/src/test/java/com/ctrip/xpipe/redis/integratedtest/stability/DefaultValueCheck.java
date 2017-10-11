@@ -1,20 +1,18 @@
 package com.ctrip.xpipe.redis.integratedtest.stability;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.integratedtest.stability.XPipeStabilityTest.XPipeStabilityTestExceptionHandler;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import org.apache.commons.lang3.tuple.Pair;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.exceptions.JedisConnectionException;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author wenchao.meng

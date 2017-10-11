@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author shyin

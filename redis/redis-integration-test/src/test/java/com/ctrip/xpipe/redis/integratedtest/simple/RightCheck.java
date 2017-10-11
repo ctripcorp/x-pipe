@@ -1,17 +1,15 @@
 package com.ctrip.xpipe.redis.integratedtest.simple;
 
+import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.FileUtils;
+import com.ctrip.xpipe.utils.IpUtils;
+import redis.clients.jedis.Jedis;
+
 import java.io.InputStream;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import com.ctrip.xpipe.tuple.Pair;
-
-import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.ctrip.xpipe.utils.FileUtils;
-import com.ctrip.xpipe.utils.IpUtils;
-
-import redis.clients.jedis.Jedis;
 
 /**
  * foramt

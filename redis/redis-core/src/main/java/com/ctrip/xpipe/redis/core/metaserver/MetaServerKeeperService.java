@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
-import java.util.List;
-
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+
+import java.util.List;
 
 /**
  * @author wenchao.meng

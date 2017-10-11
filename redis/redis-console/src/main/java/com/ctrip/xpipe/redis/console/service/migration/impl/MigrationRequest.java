@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-
 import java.util.LinkedList;
 import java.util.List;
+
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 
 /**
  * @author wenchao.meng

@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.redis.integratedtest.full.singledc;
 
 
-import java.io.IOException;
 import org.junit.After;
 import org.junit.Test;
+
+import java.io.IOException;
 
 
 /**

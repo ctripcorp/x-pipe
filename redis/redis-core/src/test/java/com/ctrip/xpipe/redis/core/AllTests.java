@@ -1,28 +1,23 @@
 package com.ctrip.xpipe.redis.core;
 
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounterTest;
-import com.ctrip.xpipe.redis.core.meta.QuorumConfigTest;
-import com.ctrip.xpipe.redis.core.protocal.cmd.*;
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfoTest;
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRoleTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
-
 import com.ctrip.xpipe.redis.core.meta.DcInfoTest;
 import com.ctrip.xpipe.redis.core.meta.MetaCloneTest;
+import com.ctrip.xpipe.redis.core.meta.QuorumConfigTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICETest;
-import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParserTest;
-import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJuderManagerTest;
-import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJudgerTest;
-import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParserTest;
-import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParserTest;
+import com.ctrip.xpipe.redis.core.protocal.cmd.*;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfoTest;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRoleTest;
+import com.ctrip.xpipe.redis.core.protocal.protocal.*;
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
 
 /**
  * @author wenchao.meng

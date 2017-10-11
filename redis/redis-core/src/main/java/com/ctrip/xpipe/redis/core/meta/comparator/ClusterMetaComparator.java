@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
-import java.util.Set;
-
-import org.unidal.tuple.Triple;
-
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import org.unidal.tuple.Triple;
+
+import java.util.Set;
 
 /**
  * @author wenchao.meng

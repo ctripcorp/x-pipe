@@ -4,10 +4,10 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static org.mockito.Mockito.*;
-
 import org.mockito.runners.MockitoJUnitRunner;
+
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author wenchao.meng

@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
 
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+
 import java.util.Map;
 import java.util.Set;
-
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 
 /**
  * @author wenchao.meng

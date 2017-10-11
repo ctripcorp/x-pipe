@@ -1,14 +1,14 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import java.io.IOException;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+
+import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

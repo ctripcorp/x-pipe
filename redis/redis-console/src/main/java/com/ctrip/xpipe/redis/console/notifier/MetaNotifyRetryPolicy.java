@@ -1,11 +1,12 @@
 package com.ctrip.xpipe.redis.console.notifier;
 
-import com.ctrip.xpipe.api.retry.RetryPolicy;
-import com.ctrip.xpipe.retry.AbstractRetryPolicy;
+import java.util.concurrent.TimeoutException;
+
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 
-import java.util.concurrent.TimeoutException;
+import com.ctrip.xpipe.api.retry.RetryPolicy;
+import com.ctrip.xpipe.retry.AbstractRetryPolicy;
 
 /**
  * @author shyin

@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.exception.ErrorMessage;
@@ -10,6 +8,8 @@ import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.utils.TcpPortCheck;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

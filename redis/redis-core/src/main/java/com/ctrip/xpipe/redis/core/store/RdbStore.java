@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.core.store;
 
+import com.ctrip.xpipe.api.lifecycle.Destroyable;
+import io.netty.buffer.ByteBuf;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-
-import com.ctrip.xpipe.api.lifecycle.Destroyable;
-
-import io.netty.buffer.ByteBuf;
 
 public interface RdbStore extends Destroyable, Closeable{
 	

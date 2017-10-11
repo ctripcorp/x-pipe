@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.exception;
 
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.redis.meta.server.exception.MetaServerRuntimeException;
+
+import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

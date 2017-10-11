@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 
 

@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.data.impl;
 
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.redis.keeper.data.RedisData;
-
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**

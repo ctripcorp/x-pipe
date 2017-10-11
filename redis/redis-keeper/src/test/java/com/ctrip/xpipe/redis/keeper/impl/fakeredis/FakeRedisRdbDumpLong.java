@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

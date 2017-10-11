@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
-import java.net.InetSocketAddress;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultSlaveOfCommand;
+
+import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

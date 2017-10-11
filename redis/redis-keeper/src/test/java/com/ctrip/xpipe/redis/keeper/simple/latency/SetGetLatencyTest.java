@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.simple.latency;
 
 
-import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
-
 import com.ctrip.xpipe.api.monitor.DelayMonitor;
 import com.ctrip.xpipe.monitor.DefaultDelayMonitor;
-
 import redis.clients.jedis.Jedis;
+
+import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

@@ -1,16 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-
-import javax.annotation.Resource;
-
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
-import com.ctrip.xpipe.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
@@ -21,6 +10,15 @@ import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.annotation.Resource;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng

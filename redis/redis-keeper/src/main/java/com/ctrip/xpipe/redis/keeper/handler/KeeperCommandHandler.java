@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand;
@@ -12,6 +10,8 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.utils.StringUtil;
+
+import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

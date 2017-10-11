@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.utils.MapUtils;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author wenchao.meng

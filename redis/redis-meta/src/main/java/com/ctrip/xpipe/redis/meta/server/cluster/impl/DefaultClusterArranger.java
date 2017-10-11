@@ -1,18 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.ctrip.xpipe.redis.meta.server.cluster.*;
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observable;
@@ -21,12 +8,23 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.observer.NodeModified;
+import com.ctrip.xpipe.redis.meta.server.cluster.*;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.ContinueResharding;
 import com.ctrip.xpipe.redis.meta.server.cluster.task.InitResharding;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.zk.ZkClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**

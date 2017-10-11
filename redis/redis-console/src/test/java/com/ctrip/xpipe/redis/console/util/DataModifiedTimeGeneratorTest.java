@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.console.util;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author shyin

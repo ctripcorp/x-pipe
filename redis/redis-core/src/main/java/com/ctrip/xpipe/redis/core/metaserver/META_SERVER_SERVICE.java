@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import com.ctrip.xpipe.rest.ForwardType;
 import com.ctrip.xpipe.spring.AbstractController;
 import com.ctrip.xpipe.utils.StringUtil;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author wenchao.meng

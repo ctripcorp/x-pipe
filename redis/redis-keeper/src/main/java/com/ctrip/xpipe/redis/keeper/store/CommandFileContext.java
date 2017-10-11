@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.channels.FileChannel;
-
 import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 
 /**
  * @author wenchao.meng

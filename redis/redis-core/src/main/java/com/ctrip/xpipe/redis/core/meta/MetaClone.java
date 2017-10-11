@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.core.meta;
 
-import java.io.Serializable;
-
 import org.apache.commons.lang3.SerializationUtils;
+
+import java.io.Serializable;
 
 /**
  * @author wenchao.meng

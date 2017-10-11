@@ -1,20 +1,17 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
-
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.meta.ShardStatus;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import org.apache.commons.lang3.SerializationUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.meta.ShardStatus;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 
 

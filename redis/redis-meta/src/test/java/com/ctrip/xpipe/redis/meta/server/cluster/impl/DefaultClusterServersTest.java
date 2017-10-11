@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 
 /**

@@ -1,20 +1,19 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.retry.RetryPolicyFactories;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author wenchao.meng

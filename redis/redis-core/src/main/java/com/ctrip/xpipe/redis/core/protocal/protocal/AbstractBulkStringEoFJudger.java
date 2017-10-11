@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
-
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-
 import io.netty.buffer.ByteBuf;
+
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author wenchao.meng

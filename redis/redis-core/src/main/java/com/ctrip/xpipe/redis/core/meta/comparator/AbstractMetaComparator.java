@@ -1,19 +1,18 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
+import com.ctrip.xpipe.redis.core.BaseEntity;
+import com.ctrip.xpipe.redis.core.meta.MetaComparator;
+import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
 
-import com.ctrip.xpipe.redis.core.BaseEntity;
-import com.ctrip.xpipe.redis.core.meta.MetaComparator;
-import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

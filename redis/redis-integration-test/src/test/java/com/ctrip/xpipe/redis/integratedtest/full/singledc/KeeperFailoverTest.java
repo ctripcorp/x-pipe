@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.integratedtest.full.singledc;
 
-import java.io.IOException;
-
+import com.ctrip.xpipe.api.server.PARTIAL_STATE;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.api.server.PARTIAL_STATE;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-
 import io.netty.buffer.ByteBuf;
 /**
  * @author wenchao.meng

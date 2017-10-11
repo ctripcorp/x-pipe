@@ -1,22 +1,20 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
+import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import io.netty.channel.Channel;
+import io.netty.channel.DefaultChannelPromise;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import static org.mockito.Mockito.*;
-
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
-import com.ctrip.xpipe.redis.keeper.RedisClient;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-
-import io.netty.channel.Channel;
-import io.netty.channel.DefaultChannelPromise;
+import static org.mockito.Mockito.when;
 
 /**
  * @author wenchao.meng

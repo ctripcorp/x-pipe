@@ -1,13 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
@@ -19,6 +12,12 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterApi;
 import com.ctrip.xpipe.redis.meta.server.rest.ClusterDebugInfo;
 import com.ctrip.xpipe.zk.ZkClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author wenchao.meng

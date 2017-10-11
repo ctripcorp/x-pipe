@@ -1,16 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
 
+import com.ctrip.xpipe.redis.meta.server.cluster.*;
+import com.ctrip.xpipe.zk.ZkClient;
+
 import java.util.Map;
 import java.util.Map.Entry;
-
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServer;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
-import com.ctrip.xpipe.redis.meta.server.cluster.RemoteClusterServerFactory;
-import com.ctrip.xpipe.redis.meta.server.cluster.SLOT_STATE;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
-import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
-import com.ctrip.xpipe.zk.ZkClient;
 
 /**
  * restart, do with unfinished tasks

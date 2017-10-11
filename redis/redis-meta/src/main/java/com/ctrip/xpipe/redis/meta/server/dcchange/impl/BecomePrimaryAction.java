@@ -1,32 +1,31 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
 
-import java.net.InetSocketAddress;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.*;
-
-import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.meta.MetaUtils;
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
-import com.ctrip.xpipe.redis.meta.server.dcchange.*;
-import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisSlaveOfMasterFailException;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultSlaveOfCommand;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
+import com.ctrip.xpipe.redis.meta.server.dcchange.*;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.ChooseNewMasterFailException;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisMasterFailException;
+import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisSlaveOfMasterFailException;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
+
+import java.net.InetSocketAddress;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.*;
 
 /**
  * @author wenchao.meng

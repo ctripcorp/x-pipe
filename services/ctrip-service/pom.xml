@@ -84,6 +84,16 @@
             <groupId>com.ctrip.basebiz</groupId>
             <artifactId>EmailServiceClient</artifactId>
             <version>1.0.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>javax.servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.ctrip.framework</groupId>
+                    <artifactId>vi</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

@@ -1,26 +1,25 @@
 package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
-import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
-import com.ctrip.xpipe.redis.meta.server.dcchange.exception.ChooseNewMasterFailException;
-import com.ctrip.xpipe.simpleserver.Server;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.dcchange.exception.ChooseNewMasterFailException;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.FirstNewMasterChooser;
+import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Sets;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author wenchao.meng
