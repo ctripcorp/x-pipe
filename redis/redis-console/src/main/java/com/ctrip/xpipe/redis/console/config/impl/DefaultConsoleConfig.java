@@ -41,6 +41,36 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_REDIS_ALERT_VERSION = "redis.alert.version";
     private static final String KEY_XREDIS_REQUEST_MINI_VERSION = "xredis.minimum.request.version";
 
+    private static final String KEY_DBA_EMAILS = "redis.dba.emails";
+    private static final String KEY_REDIS_ALERT_CC_EMAILS = "redis.alert.cc.emails";
+    private static final String KEY_REDIS_ALERT_SENDER_EMAIL = "redis.alert.sender.email";
+    private static final String KEY_XPIPE_RUNTIME_ENVIRONMENT = "xpipe.runtime.environment";
+    private static final String KEY_XPIPE_ADMIN_EMAILS = "xpipe.admin.emails";
+
+    @Override
+    public String getDBAEmails() {
+        return getProperty(KEY_DBA_EMAILS, "");
+    }
+
+    @Override
+    public String getRedisAlertCCEmails() {
+        return getProperty(KEY_REDIS_ALERT_CC_EMAILS, "");
+    }
+
+    @Override
+    public String getRedisAlertSenderEmail() {
+        return getProperty(KEY_REDIS_ALERT_SENDER_EMAIL, "");
+    }
+
+    @Override
+    public String getXpipeRuntimeEnvironmentEnvironment() {
+        return getProperty(KEY_XPIPE_RUNTIME_ENVIRONMENT, "");
+    }
+
+    @Override
+    public String getXPipeAdminEmails() {
+        return getProperty(KEY_XPIPE_ADMIN_EMAILS, "");
+    }
 
     @Override
     public String getRedisAlertVersion() {

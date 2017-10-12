@@ -18,5 +18,20 @@ public interface Email  extends Ordered {
     List<String> getRecipients();
     List<String> getCCers();
     List<String> getBCCers();
+
     String getSender();
+    String getSubject();
+    String getCharset();
+
+    String getBodyContent();
+
+    void addRecipient(String emailAddr);
+    void addCCer(String emailAddr);
+    void addBCCer(String emailAddr);
+
+    void setSender(String sender);
+    void setSubject(String subject);
+    void setCharset(String charset);
+
+    void setBodyContent(String bodyContent);
 }

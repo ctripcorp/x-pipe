@@ -21,8 +21,10 @@ public class DefaultEmailServiceTest {
         Email defaultEmail = Email.DEFAULT;
         DefaultEmail email = (DefaultEmail) defaultEmail;
         email.addRecipient("test@gmail.com");
-        email.sender = "sender@gmail.com";
-        emailService.sendEmail(email, "Hello World!");
+        email.setSender("sender@gmail.com");
+        email.setBodyContent("Hello world!");
+        email.setSubject("Hello");
+        emailService.sendEmail(email);
     }
 
     @Test

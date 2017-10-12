@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.config;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -52,4 +53,14 @@ public interface ConsoleConfig extends CoreConfig {
 	String getRedisAlertVersion();
 
 	String getXRedisMinimumRequestVersion();
+
+	String getXpipeRuntimeEnvironmentEnvironment();
+
+	String getDBAEmails();
+
+	String getRedisAlertCCEmails();
+
+	String getRedisAlertSenderEmail();
+
+	String getXPipeAdminEmails();
 }

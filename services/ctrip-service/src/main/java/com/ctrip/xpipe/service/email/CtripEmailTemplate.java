@@ -13,7 +13,4 @@ public interface CtripEmailTemplate {
     boolean isBodyHTML();
 
     String getSendCode();
-    String getSubject();
-    String getCharset();
-    String getBodyContent(Object... context);
 }

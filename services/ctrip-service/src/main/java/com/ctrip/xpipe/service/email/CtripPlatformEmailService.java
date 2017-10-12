@@ -20,22 +20,22 @@ public class CtripPlatformEmailService implements EmailService {
     private static Logger logger = LoggerFactory.getLogger(CtripPlatformEmailService.class);
 
     @Override
-    public <T extends Email> void sendEmail(T t, Object... context) {
-        AbstractEmail email = (AbstractEmail) t;
+    public void sendEmail(Email email) {
+        CtripEmail ctripEmail = (CtripEmail) email;
 
         EmailServiceClient client = EmailServiceClient.getInstance();
 
         SendEmailRequest request = new SendEmailRequest();
 
-        request.setAppID(email.getAppID());
-        request.setSender(email.getSender());
-        request.setRecipient(email.getRecipients());
-        request.setSendCode(email.getSendCode());
-        request.setSubject(email.getSubject());
-        request.setCharset(email.getCharset());
-        request.setBodyTemplateID(email.getBodyTemplateID());
-        request.setBodyContent(email.getBodyContent(context));
-        request.setIsBodyHtml(email.isBodyHTML());
+        request.setAppID(ctripEmail.getAppID());
+        request.setSender(ctripEmail.getSender());
+        request.setRecipient(ctripEmail.getRecipients());
+        request.setSendCode(ctripEmail.getSendCode());
+        request.setSubject(ctripEmail.getSubject());
+        request.setCharset(ctripEmail.getCharset());
+        request.setBodyTemplateID(ctripEmail.getBodyTemplateID());
+        request.setBodyContent(ctripEmail.getBodyContent());
+        request.setIsBodyHtml(ctripEmail.isBodyHTML());
 
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.HOUR,1);
@@ -45,7 +45,7 @@ public class CtripPlatformEmailService implements EmailService {
             SendEmailResponse response = client.sendEmail(request);
             if(response != null && response.getResultCode() == 1) {
                 logger.info("Email sent successfully");
-            } else {
+            } else if(response != null){
                 logger.error("Email service Result message: {}", response.getResultMsg());
             }
         } catch (Exception e) {
