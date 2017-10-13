@@ -36,6 +36,7 @@ public class IssueReporter {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String REDIS_ALERT_TEMPLATE_NAME = "RedisAlertTemplate.vm";
+    private static final String EMAIL_SUBJECT = "XPipe 报警";
 
     private ConcurrentSet<RedisAlert> redisConfAlerts = new ConcurrentSet<>();
     private ConcurrentSet<RedisAlert> redisVersionAlerts = new ConcurrentSet<>();
@@ -84,6 +85,7 @@ public class IssueReporter {
 
         email.setBodyContent(velocityUtil.getRenderedString(REDIS_ALERT_TEMPLATE_NAME, context));
         email.setSender(consoleConfig.getRedisAlertSenderEmail());
+        email.setSubject(EMAIL_SUBJECT);
         fillListWithCommaSeparatedString(email.getRecipients(), consoleConfig.getDBAEmails());
         fillListWithCommaSeparatedString(email.getCCers(), consoleConfig.getRedisAlertCCEmails());
     }
