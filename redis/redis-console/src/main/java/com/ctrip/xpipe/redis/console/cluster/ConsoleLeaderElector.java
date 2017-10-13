@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.cluster;
 
-import com.ctrip.xpipe.cluster.AbstractLeaderElector;
 import com.ctrip.xpipe.api.cluster.ClusterServer;
+import com.ctrip.xpipe.cluster.AbstractLeaderElector;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;

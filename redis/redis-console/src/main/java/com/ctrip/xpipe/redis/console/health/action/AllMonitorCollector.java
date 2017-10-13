@@ -4,7 +4,7 @@ import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.health.delay.DelayCollector;
@@ -37,8 +37,6 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
     private final int  THREAD_COUNT = 4;
-
-    private int downAfterCheckNums = 5;
 
     private Map<HostPort, HealthStatus> allHealthStatus = new ConcurrentHashMap<>();
 
@@ -93,7 +91,7 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
 
                 HealthStatus healthStatus = new HealthStatus(
                         key,
-                        () -> downAfterCheckNums * consoleConfig.getRedisReplicationHealthCheckInterval(),
+                        () -> consoleConfig.getDownAfterCheckNums() * consoleConfig.getRedisReplicationHealthCheckInterval(),
                         () -> consoleConfig.getHealthyDelayMilli(),
                         scheduled);
 

@@ -1,15 +1,10 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.RedisService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author zhangle 16/8/24

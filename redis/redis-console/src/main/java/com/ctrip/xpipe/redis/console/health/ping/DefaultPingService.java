@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.console.health.ping;
 
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.ctrip.xpipe.metric.HostPort;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author marsqing

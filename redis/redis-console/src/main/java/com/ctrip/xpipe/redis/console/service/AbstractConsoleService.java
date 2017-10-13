@@ -1,18 +1,16 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-
-import javax.annotation.PostConstruct;
-
+import com.ctrip.xpipe.redis.console.exception.ServerException;
+import com.ctrip.xpipe.redis.console.query.DalQueryHandler;
+import com.ctrip.xpipe.redis.console.util.SetOperationUtil;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.lookup.ContainerLoader;
 
-import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.query.DalQueryHandler;
-import com.ctrip.xpipe.redis.console.util.SetOperationUtil;
+import javax.annotation.PostConstruct;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
 /**
  * @author shyin

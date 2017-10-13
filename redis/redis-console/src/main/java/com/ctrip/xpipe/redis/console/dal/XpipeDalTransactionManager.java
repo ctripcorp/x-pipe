@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.dal;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-
+import com.dianping.cat.Cat;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.unidal.dal.jdbc.DalRuntimeException;
@@ -12,11 +10,11 @@ import org.unidal.dal.jdbc.engine.QueryContext;
 import org.unidal.dal.jdbc.mapping.TableProvider;
 import org.unidal.dal.jdbc.mapping.TableProviderManager;
 import org.unidal.dal.jdbc.transaction.TransactionManager;
-
 import org.unidal.lookup.annotation.Inject;
 import org.unidal.lookup.annotation.Named;
 
-import com.dianping.cat.Cat;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
  * @author shyin
@@ -176,10 +174,10 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	      TransactionInfo trxInfo = m_threadLocalData.get();
 
 	      if (!trxInfo.isInTransaction()) {
-	         throw new DalRuntimeException("There is no active transaction open, can't rollback");
+	         throw new DalRuntimeException("There is no active transaction open, can't tryRollback");
 	      }
 	      if(trxInfo.getRecursiveLayer() <= INITIAL_STATUS) {
-	    	  throw new DalRuntimeException("Invalid transaction rollback");
+	    	  throw new DalRuntimeException("Invalid transaction tryRollback");
 	      }
 
 	      if(PARENT_TRANSACTION == trxInfo.getRecursiveLayer()) {
@@ -188,7 +186,7 @@ public class XpipeDalTransactionManager implements TransactionManager, LogEnable
 	 	            trxInfo.getConnection().rollback();
 	 	         }
 	 	      } catch (SQLException e) {
-	 	         throw new DalRuntimeException("Unable to rollback transaction, message: " + e, e);
+	 	         throw new DalRuntimeException("Unable to tryRollback transaction, message: " + e, e);
 	 	      } finally {
 	 	         try {
 	 	            trxInfo.reset();

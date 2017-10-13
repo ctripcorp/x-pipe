@@ -82,7 +82,7 @@ public class FileUtils {
 			f = new File(path+ "/" + fileName);
 			if(f.exists()){
 				try {
-					logger.debug("[getFileInputStream]{}", f.getAbsolutePath());
+					logger.info("[getFileInputStream]{}", f.getAbsolutePath());
 					return new FileInputStream(f);
 				} catch (IOException e) {
 					throw new IllegalArgumentException("file load fail:" + f, e);
@@ -94,7 +94,7 @@ public class FileUtils {
 		f = new File(fileName);
 		if(f.exists()){
 			try {
-				logger.debug("[getFileInputStream]{}", f.getAbsolutePath());
+				logger.info("[getFileInputStream]{}", f.getAbsolutePath());
 				return new FileInputStream(f);
 			} catch (IOException e) {
 				throw new IllegalArgumentException("file load fail:" + f, e);
@@ -108,7 +108,7 @@ public class FileUtils {
 		}
 		if(url != null){
 			try {
-				logger.debug("[load]{}", url);
+				logger.info("[load]{}", url);
 				return url.openStream();
 			} catch (IOException e) {
 				throw new IllegalArgumentException("classpath load fail:" + url, e);

@@ -7,8 +7,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.*;
 
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
+import com.ctrip.xpipe.redis.meta.server.dcchange.*;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisSlaveOfMasterFailException;
 
 import com.ctrip.xpipe.api.command.Command;
@@ -18,9 +20,6 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultSlaveOfCommand;
-import com.ctrip.xpipe.redis.meta.server.dcchange.NewMasterChooser;
-import com.ctrip.xpipe.redis.meta.server.dcchange.RedisReadonly;
-import com.ctrip.xpipe.redis.meta.server.dcchange.SentinelManager;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.ChooseNewMasterFailException;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.MakeRedisMasterFailException;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
@@ -37,20 +36,26 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 
 	private NewMasterChooser newMasterChooser;
+	private OffsetWaiter offsetWaiter;
 
-	public BecomePrimaryAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser, ScheduledExecutorService scheduled, Executor executors) {
-		super(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, scheduled, executors);
+	public BecomePrimaryAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, OffsetWaiter offsetWaiter, ExecutionLog executionLog,
+							   XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser, ScheduledExecutorService scheduled, Executor executors) {
+		super(dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, scheduled, executors);
 		this.newMasterChooser = newMasterChooser;
+		this.offsetWaiter = offsetWaiter;
 	}
 
-	protected PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
+	protected PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
 		
 		doChangeMetaCache(clusterId, shardId, newPrimaryDc);
 		
 		executionLog.info(String.format("[chooseNewMaster][begin]"));
 		Pair<String, Integer> newMaster = chooseNewMaster(clusterId, shardId);
 		executionLog.info(String.format("[chooseNewMaster]%s:%d", newMaster.getKey(), newMaster.getValue()));
-		
+
+		//wait for slave to achieve master offset
+		offsetWaiter.tryWaitfor(new HostPort(newMaster.getKey(), newMaster.getValue()), masterInfo, executionLog);
+
 		List<RedisMeta> slaves = getAllSlaves(newMaster, dcMetaCache.getShardRedises(clusterId, shardId));
 		
 		makeRedisesOk(newMaster, slaves);

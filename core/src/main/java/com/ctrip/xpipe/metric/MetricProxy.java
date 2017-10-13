@@ -2,6 +2,8 @@ package com.ctrip.xpipe.metric;
 
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 
+import java.util.List;
+
 /**
  * @author marsqing
  *
@@ -9,6 +11,6 @@ import com.ctrip.xpipe.api.lifecycle.Ordered;
  */
 public interface MetricProxy extends Ordered {
 
-	void writeBinMultiDataPoint(MetricBinMultiDataPoint bmp) throws MetricProxyException;
+	void writeBinMultiDataPoint(List<MetricData> datas) throws MetricProxyException;
 
 }

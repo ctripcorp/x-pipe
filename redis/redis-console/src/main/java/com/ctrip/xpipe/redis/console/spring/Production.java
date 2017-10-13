@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.spring;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
-import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import com.ctrip.xpipe.zk.impl.SpringZkClient;
 import org.springframework.context.annotation.Bean;

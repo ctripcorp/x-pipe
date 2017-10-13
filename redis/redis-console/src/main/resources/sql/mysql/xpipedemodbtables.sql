@@ -63,6 +63,9 @@ CREATE TABLE `CLUSTER_TBL` (
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   `is_xpipe_interested` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'is xpipe interested',
+  `cluster_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of cluster',
+  `cluster_admin_emails` varchar(1024) DEFAULT ' ' COMMENT 'persons email who in charge of this cluster',
+
   PRIMARY KEY (`id`),
   UNIQUE KEY `cluster_name` (`cluster_name`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
@@ -154,6 +157,7 @@ CREATE TABLE `KEEPERCONTAINER_TBL` (
   `keepercontainer_active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'keepercontainer active status',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  `keepercontainer_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of keeper container',
   PRIMARY KEY (`keepercontainer_id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `keepercontainer_dc` (`keepercontainer_dc`)
@@ -203,7 +207,7 @@ CREATE TABLE `migration_shard_tbl` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `migration_cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'migration cluster id',
   `shard_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'migration shard under specific migration cluster',
-  `log` varchar(10240) NOT NULL DEFAULT '' COMMENT 'migration log',
+  `log` varchar(20480) NOT NULL DEFAULT '' COMMENT 'migration log',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
@@ -227,3 +231,17 @@ CREATE TABLE `config_tbl` (
 
 INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('sentinel.auto.process', 'true', '自动增删哨兵');
 
+-- Organization Table
+drop table if exists organization_tbl;
+CREATE TABLE `organization_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `org_id`  bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id',
+  `org_name` varchar(250) NOT NULL DEFAULT 'none' COMMENT 'organization name',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`),
+  UNIQUE KEY `org_id` (`org_id`),
+  UNIQUE KEY `org_name` (`org_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Organization Info';
+INSERT INTO organization_tbl (`org_id`, `org_name`) VALUES ('0', '');

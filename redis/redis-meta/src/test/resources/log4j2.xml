@@ -9,7 +9,8 @@
 
     <appenders>
         <console name="console" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
+            <!--<PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>-->
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,com.dianping.cat)}%n"/>
             <ScriptFilter onMatch="DENY" onMisMatch="ACCEPT">
                 <ScriptRef ref="filter.gv" />
             </ScriptFilter>
@@ -17,6 +18,15 @@
 
         <RollingFile name="rollingFileInfo" fileName="target/metaserver-${sys:server.port}.log"
                      filePattern="target/metaserver-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="500 MB"/>
+            </Policies>
+        </RollingFile>
+
+        <RollingFile name="zkLogFile" fileName="target/zk.log"
+                     filePattern="target/zk-%d{yyyy-MM-dd}-%i.log">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
@@ -34,13 +44,22 @@
 
         <logger name="com.ctrip.xpipe.monitor.CatUtils" level="INFO"/>
         <logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="INFO"/>
+        <logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="WARN"/>
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
-		<logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="WARN"/>
-		<logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
-		<logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="WARN"/>
+        <logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
+        <logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="WARN"/>
+
+        <logger name="org.apache.zookeeper" level="INFO" additivity="false">
+            <appender-ref ref="zkLogFile"/>
+        </logger>
+        <logger name="org.apache.curator" level="INFO" additivity="false">
+            <appender-ref ref="zkLogFile"/>
+        </logger>
+
+        <!--
 		<logger name="com.ctrip.xpipe.redis.meta.server.cluster.task" level="WARN"/>
 		<logger name="com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer" level="WARN"/>
-		
+        -->
         <root level="INFO">
             <appender-ref ref="console"/>
             <appender-ref ref="rollingFileInfo"/>

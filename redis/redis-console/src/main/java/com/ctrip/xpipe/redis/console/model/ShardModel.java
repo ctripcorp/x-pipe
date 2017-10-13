@@ -61,4 +61,9 @@ public class ShardModel implements java.io.Serializable{
 	public void setSentinels(Map<Long, SetinelTbl> sentinels) {
 		this.sentinels = sentinels;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("shard:%s, keepers:%s, redises:%s", shardTbl, m_keepers, m_redises);
+	}
 }

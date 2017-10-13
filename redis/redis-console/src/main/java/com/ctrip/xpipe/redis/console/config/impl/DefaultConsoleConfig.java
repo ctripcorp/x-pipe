@@ -1,14 +1,15 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.utils.StringUtil;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author shyin
@@ -37,6 +38,20 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     public static final String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
 
+    private static final String KEY_REDIS_ALERT_VERSION = "redis.alert.version";
+    private static final String KEY_XREDIS_REQUEST_MINI_VERSION = "xredis.minimum.request.version";
+
+
+    @Override
+    public String getRedisAlertVersion() {
+        return getProperty(KEY_REDIS_ALERT_VERSION, "2.8.22");
+    }
+
+    @Override
+    public String getXRedisMinimumRequestVersion() {
+        return getProperty(KEY_XREDIS_REQUEST_MINI_VERSION, "0.0.1");
+    }
+
     @Override
     public String getDatasource() {
         return getProperty(KEY_DATASOURCE, "fxxpipe");
@@ -44,7 +59,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public int getConsoleNotifyRetryTimes() {
-        return getIntProperty(KEY_CONSOLE_NOTIFY_RETRY_TIMES, 10);
+        return getIntProperty(KEY_CONSOLE_NOTIFY_RETRY_TIMES, 3);
     }
 
     @Override
@@ -94,8 +109,20 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public String getAlertWhileList() {
-        return getProperty(KEY_ALERT_WHITE_LIST, "");
+    public Set<String> getAlertWhileList() {
+
+        HashSet result = new HashSet();
+        String whitelist = getProperty(KEY_ALERT_WHITE_LIST, "");
+        String[] split = whitelist.split("\\s*(,|;)\\s*");
+
+        for(String sp : split){
+            if(!StringUtil.isEmpty(sp)){
+                result.add(sp);
+            }
+        }
+
+        return result;
+
     }
 
     @Override
@@ -135,6 +162,5 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         String config = getProperty(KEY_SENTINEL_QUORUM, "{}");
         return JsonCodec.INSTANCE.decode(config, QuorumConfig.class);
     }
-
 
 }

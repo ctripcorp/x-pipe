@@ -1,1 +1,1 @@
-com.ctrip.xpipe.service.migration.CredisService
+com.ctrip.xpipe.service.migration.CRedisService

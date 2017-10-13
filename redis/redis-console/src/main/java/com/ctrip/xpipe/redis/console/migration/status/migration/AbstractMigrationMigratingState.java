@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 
 import java.util.List;

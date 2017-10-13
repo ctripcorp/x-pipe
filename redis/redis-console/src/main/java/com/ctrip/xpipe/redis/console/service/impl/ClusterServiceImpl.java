@@ -1,25 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-
-import com.ctrip.xpipe.redis.core.entity.Cluster;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.unidal.dal.jdbc.DalException;
-
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterModel;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
-import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.ShardModel;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
@@ -27,6 +13,16 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+import com.ctrip.xpipe.utils.StringUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.unidal.dal.jdbc.DalException;
+
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> implements ClusterService {
@@ -70,26 +66,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
     		
     	});
-	}
-
-	@Override
-	public List<ClusterTbl> findAllClusters() {
-		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
-			@Override
-			public List<ClusterTbl> doQuery() throws DalException {
-				return dao.findAllClusters(ClusterTblEntity.READSET_FULL);
-			}
-    	});
-	}
-	
-	@Override
-	public List<ClusterTbl> findClustersByActiveDcId(final long activeDcId) {
-		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
-			@Override
-			public List<ClusterTbl> doQuery() throws DalException {
-				return dao.findClustersByActiveDcId(activeDcId, ClusterTblEntity.READSET_FULL);
-			}
-		});
 	}
 
 
@@ -136,8 +112,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	proto.setActivedcId(cluster.getActivedcId());
     	proto.setClusterDescription(cluster.getClusterDescription());
     	proto.setStatus(ClusterStatus.Normal.toString());
-		proto.setIsXpipeInterested(true);
+			proto.setIsXpipeInterested(true);
     	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+		if(!checkEmails(cluster.getClusterAdminEmails())) {
+			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
+		}
+    	proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
+		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
     	
     	final ClusterTbl queryProto = proto;
     	ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
@@ -162,16 +143,76 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	return result;
 	}
 
+	public long getIdFromClusterOrg(ClusterTbl cluster) {
+		OrganizationTbl organizationTbl = cluster.getOrganizationInfo();
+		if(organizationTbl == null)
+			return 0L;
+		Long id = organizationTbl.getId();
+		return id == null ? 0L : id;
+	}
+
+	@Override
+	public ClusterTbl findClusterAndOrg(String clusterName) {
+		ClusterTbl clusterTbl = clusterDao.findClusterAndOrgByName(clusterName);
+		OrganizationTbl organizationTbl = clusterTbl.getOrganizationInfo();
+		if(organizationTbl != null) {
+			clusterTbl.setClusterOrgName(organizationTbl.getOrgName());
+		}
+		// Set null if no organization bind with cluster
+		if(organizationTbl == null || organizationTbl.getId() == null) {
+			clusterTbl.setOrganizationInfo(null);
+		}
+		return clusterTbl;
+	}
+
+	@Override
+	public List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(long activeDc) {
+		List<ClusterTbl> result = clusterDao.findClustersWithOrgInfoByActiveDcId(activeDc);
+		result = fillClusterOrgName(result);
+		return setOrgNullIfNoOrgIdExsits(result);
+	}
+
+	@Override public List<ClusterTbl> findAllClustersWithOrgInfo() {
+		List<ClusterTbl> result = clusterDao.findAllClusterWithOrgInfo();
+		result = fillClusterOrgName(result);
+		return setOrgNullIfNoOrgIdExsits(result);
+	}
+
+	private List<ClusterTbl> fillClusterOrgName(List<ClusterTbl> clusterTblList) {
+		for(ClusterTbl cluster : clusterTblList) {
+			cluster.setClusterOrgName(cluster.getOrganizationInfo().getOrgName());
+		}
+		return clusterTblList;
+	}
+
+	private List<ClusterTbl> setOrgNullIfNoOrgIdExsits(List<ClusterTbl> clusterTblList) {
+		for(ClusterTbl cluster : clusterTblList) {
+			OrganizationTbl organizationTbl = cluster.getOrganizationInfo();
+			if(organizationTbl.getId() == null) {
+				cluster.setOrganizationInfo(null);
+			}
+		}
+		return clusterTblList;
+	}
+
 	@Override
 	public void updateCluster(String clusterName, ClusterTbl cluster) {
 		ClusterTbl proto = find(clusterName);
     	if(null == proto) throw new BadRequestException("Cannot find cluster");
-    	
+
 		if(proto.getId() != cluster.getId()) {
 			throw new BadRequestException("Cluster not match.");
 		}
 		proto.setClusterDescription(cluster.getClusterDescription());
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+		if(!checkEmails(cluster.getClusterAdminEmails())) {
+			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
+		}
+		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
+		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
+		// organization info should not be updated by cluster,
+		// it's automatically updated by scheduled task
+		proto.setOrganizationInfo(null);
 		
 		final ClusterTbl queryProto = proto;
     	queryHandler.handleQuery(new DalQuery<Integer>() {
@@ -274,4 +315,25 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	});
 	}
 
+	public static final Pattern VALID_EMAIL_ADDRESS_REGEX =
+			Pattern.compile("^[A-Z0-9._%+-]+@Ctrip.com$", Pattern.CASE_INSENSITIVE);
+
+
+	public boolean checkEmails(String emails) {
+		if(emails == null || emails.trim().isEmpty()) {
+			return false;
+		}
+		String splitter = "\\s*(,|;)\\s*";
+		String[] emailStrs = StringUtil.splitRemoveEmpty(splitter, emails);
+		for(String email : emailStrs) {
+			if(!checkEmail(email))
+				return false;
+		}
+		return true;
+	}
+
+	private boolean checkEmail(String email) {
+		Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(email);
+		return matcher.find();
+	}
 }

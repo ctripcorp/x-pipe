@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<xpipe>
+	<dc id="jq" lastModifiedTime="1234567abc">
+		<metaServer ip="1.1.1.1" port="9747" master="true"/>
+		<metaServer ip="1.1.1.1" port="9748" master="false"/>
+		<zkServer address="127.0.0.1:2181"/>
+		
+		<keeperContainers>
+			<keeperContainer id="1" ip="1.1.1.1" port="8080"/>
+			<keeperContainer id="2" ip="1.1.1.1" port="8081"/>
+		</keeperContainers>
+		<sentinel id="1" address="127.0.0.1:17171,127.0.0.1:17171"/>
+		<sentinel id="2" address="127.0.0.1:17171,127.0.0.1:17171"/>
+		
+		<cluster id="cluster1" active-dc="jq" backup-dcs = "oy" phase="1" lastModifiedTime="1234567abc"><!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
+			<shard id="shard1" sentinelId="1" sentinelMonitorName="cluster1-shard1" phase="1"> <!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
+				<keeper id="40a" ip="1.1.1.1" port="8888" master="1.1.1.1:1234" active="true" keeperContainerId="1" offset="111111" survive="false"/>
+				<keeper id="40a" ip="1.1.1.2" port="9999" master="1.1.1.1:8888" active="false" keeperContainerId="1" offset="11111" survive="false"/>
+				<redis id="40b" ip="1.1.1.3" port="1234" master="" offset="111111" survive="false"/>
+				<redis id="40c" ip="1.1.1.4" port="1234" master="1.1.1.1:8888" offset="111111" survive="false"/>
+			</shard>
+			<shard id="shard2" />
+		</cluster>
+		<cluster id="cluster02" />
+	</dc>
+	
+	<dc id="oy">
+		<cluster id="cluster1"  active-dc="jq">
+			<shard id="shard1">
+				<keeper id="40b" ip="2.2.2.1" port="8888" active="true" keeperContainerId="1"/>
+				<keeper id="40b" ip="2.2.2.2" port="9999" active="false" keeperContainerId="1"/>
+				<redis ip="2.2.2.3" port="1234" master="true" />
+				<redis ip="2.2.2.4" port="1234" master="false" />
+			</shard>
+			<shard id="shard2" />
+		</cluster>
+		<cluster id="cluster02" />
+	</dc>
+</xpipe>

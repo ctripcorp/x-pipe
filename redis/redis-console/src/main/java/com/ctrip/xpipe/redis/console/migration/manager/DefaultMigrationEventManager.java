@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
-
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

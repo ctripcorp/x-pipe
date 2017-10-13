@@ -12,7 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

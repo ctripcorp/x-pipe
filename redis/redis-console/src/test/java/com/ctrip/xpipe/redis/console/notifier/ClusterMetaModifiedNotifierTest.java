@@ -22,8 +22,6 @@ import java.util.concurrent.TimeUnit;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.notifier.DefaultClusterMetaModifiedNotifier;
-import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTask;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;

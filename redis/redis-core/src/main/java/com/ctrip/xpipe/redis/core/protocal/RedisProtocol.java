@@ -14,6 +14,8 @@ public interface RedisProtocol {
 	
 	String OK = "OK";
 
+	String KEEPER_ROLE_PREFIX = "keeperrole";
+
 	static String booleanToString(boolean yes){
 
 		if(yes){

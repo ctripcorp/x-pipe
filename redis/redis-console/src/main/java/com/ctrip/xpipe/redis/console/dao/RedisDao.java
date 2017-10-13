@@ -4,24 +4,15 @@ import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTblDao;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTblEntity;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.model.RedisTblDao;
-import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
-import org.unidal.dal.jdbc.Updateset;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.security.DenyAll;
-
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -115,7 +106,6 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
 
     @DalTransaction
     public int[] updateBatch(List<RedisTbl> redises) {
-
         return queryHandler.handleQuery(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {
@@ -123,7 +113,6 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
             }
         });
     }
-
 
     @DalTransaction
     public int[] updateBatchMaster(List<RedisTbl> redises) {

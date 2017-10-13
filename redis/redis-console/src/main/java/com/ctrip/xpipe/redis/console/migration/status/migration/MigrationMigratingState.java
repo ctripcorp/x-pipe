@@ -20,7 +20,7 @@ public class MigrationMigratingState extends AbstractMigrationMigratingState {
 
 	@Override
 	protected void doRollback() {
-		throw new UnsupportedOperationException("migrating, please do rollback when partial success");
+		throw new UnsupportedOperationException("migrating, please do tryRollback when partial success");
 	}
 
 	@Override

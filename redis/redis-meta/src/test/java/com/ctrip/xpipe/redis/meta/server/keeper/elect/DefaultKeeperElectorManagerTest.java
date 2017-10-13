@@ -1,22 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-
-import static org.mockito.Mockito.*;
-
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
-
 import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.cluster.DefaultLeaderElector;
 import com.ctrip.xpipe.cluster.ElectContext;
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -27,6 +15,22 @@ import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.zk.ZkClient;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author wenchao.meng
@@ -65,37 +69,78 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 	}
 
 	@Test
-	public void testObserverShardLeader(){
+	public void testUpdateShardLeader(){
+
+		String prefix = "/path";
+		List<ChildData> dataList = new LinkedList<>();
+		final int portBegin = 4000;
+		final int count = 3;
+
+		dataList.add(new ChildData(prefix + "/" + randomString(10) +"-latch-02", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin + 1))));
+		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-03", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin + 2))));
+		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-01", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin))));
+
+		keeperElectorManager.updateShardLeader(prefix, dataList, clusterMeta.getId(), shardMeta.getId());
+
+		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), argThat(new BaseMatcher<List<KeeperMeta>>() {
+
+			@Override
+			public boolean matches(Object item) {
+				List<KeeperMeta> keepers = (List<KeeperMeta>) item;
+				if(keepers.size() != count){
+					return false;
+				}
+				KeeperMeta prefix = null;
+				for(KeeperMeta keeperMeta : keepers){
+					if(prefix != null){
+						if(keeperMeta.getPort() < prefix.getPort()){
+							return false;
+						}
+					}
+					prefix = keeperMeta;
+				}
+				return true;
+			}
+			@Override
+			public void describeTo(Description description) {
+			}
+		}));
+
+	}
+
+	@Test
+	public void testObserverShardLeader() throws Exception {
+
+		String clusterId = clusterMeta.getId();
+		String shardId = shardMeta.getId();
 
 		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
-		keeperElectorManager.observerShardLeader(clusterMeta.getId(), shardMeta.getId());
+		keeperElectorManager.observerShardLeader(clusterId, shardId);
+		addKeeperZkNode(clusterId, shardId, getZkClient());
+		sleep(100);
 		verify(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
 		verify(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
 
 		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(false);
-		keeperElectorManager.observerShardLeader(clusterMeta.getId(), shardMeta.getId());
-		verify(currentMetaManager, times(2)).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
+		keeperElectorManager.observerShardLeader(clusterId, shardId);
+		sleep(100);
+		verify(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
 		verify(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
-
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testAddWatch() throws Exception{
-		
-		
+
 		when(currentMetaManager.hasShard(anyString(), anyString())).thenReturn(true);
 		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
 		
 		keeperElectorManager.update(new NodeAdded<>(clusterMeta), null);
-		
-		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
-		
 		//change notify
 		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
 		
 		sleep(100);
-		verify(keeperActiveElectAlgorithm, times(2)).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
+		verify(keeperActiveElectAlgorithm, times(1)).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -116,13 +161,14 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		}).when(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
 		
 		keeperElectorManager.update(new NodeAdded<>(clusterMeta), null);
-		
+
+		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
+		sleep(100);
 		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 
 		release.get().release();
 
 		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
-		
 		sleep(100);
 		verify(keeperActiveElectAlgorithm, times(1)).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 	}

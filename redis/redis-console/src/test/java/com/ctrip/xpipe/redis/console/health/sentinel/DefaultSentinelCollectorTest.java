@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.google.common.collect.Sets;

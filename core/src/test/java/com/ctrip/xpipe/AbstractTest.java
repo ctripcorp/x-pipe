@@ -1,38 +1,5 @@
 package com.ctrip.xpipe;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.charset.Charset;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.function.BooleanSupplier;
-
-import com.ctrip.xpipe.testutils.ByteBufReleaseWrapper;
-import com.ctrip.xpipe.utils.StringUtil;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.util.ResourceLeakDetector;
-import org.apache.commons.io.FileUtils;
-import org.junit.BeforeClass;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.slf4j.Logger;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TestName;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
@@ -47,9 +14,35 @@ import com.ctrip.xpipe.simpleserver.IoAction;
 import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.testutils.ByteBufReleaseWrapper;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkTestServer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.ResourceLeakDetector;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ConfigurableApplicationContext;
+
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.Charset;
+import java.util.HashSet;
+import java.util.Properties;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 
 /**
  * @author wenchao.meng
@@ -87,6 +80,7 @@ public class AbstractTest {
         if (System.getProperty(CatConfig.CAT_ENABLED_KEY) == null) {
             System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
         }
+        System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
     }
 
     @Before
@@ -101,7 +95,6 @@ public class AbstractTest {
 
         doBeforeAbstractTest();
 
-        System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 
         logger.info(remarkableMessage("[begin test][{}]"), name.getMethodName());
 
@@ -629,16 +622,33 @@ public class AbstractTest {
     }
 
     protected Server startServer(int serverPort, final Callable<String> function) throws Exception {
+
+        return startServer(serverPort, new Function<String, String>() {
+            @Override
+            public String apply(String s) {
+                try {
+                    return function.call();
+                } catch (Exception e) {
+                    logger.error("[startServer]" + function, e);
+                    return e.getMessage();
+                }
+            }
+        });
+    }
+
+    protected Server startServer(int serverPort, final Function<String, String> function) throws Exception {
         IoActionFactory ioActionFactory = new IoActionFactory() {
 
             @Override
             public IoAction createIoAction(Socket socket) {
                 return new AbstractIoAction(socket) {
 
+                    private String readLine = null;
+
                     @Override
                     protected void doWrite(OutputStream ous) throws IOException {
                         try {
-                            String call = function.call();
+                            String call = function.apply(readLine == null? null : readLine.trim());
                             if (call != null) {
                                 ous.write(call.getBytes());
                             }
@@ -649,9 +659,9 @@ public class AbstractTest {
 
                     @Override
                     protected Object doRead(InputStream ins) throws IOException {
-                        String line = readLine(ins);
-                        logger.info("[doRead]{}", line == null ? null : line.trim());
-                        return line;
+                        readLine = readLine(ins);
+                        logger.info("[doRead]{}", readLine == null ? null : readLine.trim());
+                        return readLine;
                     }
                 };
             }

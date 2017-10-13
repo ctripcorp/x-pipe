@@ -1,12 +1,16 @@
 package com.ctrip.xpipe.api.migration;
 
 import java.net.InetSocketAddress;
+import java.util.LinkedList;
 import java.util.List;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.utils.ServicesUtil;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * for client router system
@@ -18,17 +22,32 @@ public interface OuterClientService extends Ordered{
 	
 	OuterClientService DEFAULT = ServicesUtil.getOuterClientService();
 
-	void markInstanceUp(HostPort hostPort) throws OuterClientException;
+	String serviceName();
 
-	boolean isInstanceUp(HostPort hostPort) throws OuterClientException;
+	void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
-	void markInstanceDown(HostPort hostPort) throws OuterClientException;
+	boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
+
+	void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
 	MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) throws OuterClientException;
 	
 	MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName, InetSocketAddress newMaster) throws OuterClientException;
 
-	class MigrationPublishResult {
+	ClusterInfo getClusterInfo(String clusterName) throws Exception;
+
+	abstract class AbstractInfo {
+
+		protected Logger logger = LoggerFactory.getLogger(getClass());
+
+		@Override
+		public String toString() {
+			return JsonCodec.INSTANCE.encode(this);
+		}
+	}
+
+	class MigrationPublishResult extends AbstractInfo{
+
 		private boolean Success;
 		private String Message;
 		
@@ -114,9 +133,203 @@ public interface OuterClientService extends Ordered{
 			this.endTime = endTime;
 		}
 		
-		@Override
-		public String toString() {
-			return Codec.DEFAULT.encode(this);
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class ClusterInfo extends AbstractInfo {
+
+		public static int READ_ACTIVE_SLAVES = 2;
+
+		private boolean isXpipe;
+		private String masterIDC;
+		private String name;
+		private int rule;
+		private String ruleName;
+		private boolean usingIdc;
+		private List<GroupInfo> groups = new LinkedList<>();
+
+		public void check() {
+
+			if (groups != null) {
+				groups.forEach(groupMeta -> groupMeta.check());
+
+			}
+		}
+
+		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
+
+			masterIDC = direction.transform(masterIDC);
+
+			if (groups != null) {
+				groups.forEach(groupMeta -> groupMeta.mapIdc(direction));
+
+			}
+		}
+
+		public boolean isXpipe() {
+			return isXpipe;
+		}
+
+		public void setIsXpipe(boolean xpipe) {
+			isXpipe = xpipe;
+		}
+
+		public String getMasterIDC() {
+			return masterIDC;
+		}
+
+		public void setMasterIDC(String masterIDC) {
+			this.masterIDC = masterIDC;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public int getRule() {
+			return rule;
+		}
+
+		public void setRule(int rule) {
+			this.rule = rule;
+		}
+
+		public String getRuleName() {
+			return ruleName;
+		}
+
+		public void setRuleName(String ruleName) {
+			this.ruleName = ruleName;
+		}
+
+		public boolean isUsingIdc() {
+			return usingIdc;
+		}
+
+		public void setUsingIdc(boolean usingIdc) {
+			this.usingIdc = usingIdc;
+		}
+
+		public List<GroupInfo> getGroups() {
+			return groups;
+		}
+
+		public void setGroups(List<GroupInfo> groups) {
+			this.groups = groups;
+		}
+
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class GroupInfo extends AbstractInfo {
+		private String name;
+		private List<InstanceInfo> instances;
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public List<InstanceInfo> getInstances() {
+			return instances;
+		}
+
+		public void setInstances(List<InstanceInfo> instances) {
+			this.instances = instances;
+		}
+
+		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
+
+			if (instances != null) {
+				instances.forEach(instanceMeta -> instanceMeta.mapIdc(direction));
+			}
+		}
+
+		public void check() {
+			if (instances != null) {
+				instances.forEach(instanceMeta -> instanceMeta.check());
+			}
+		}
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class InstanceInfo extends AbstractInfo {
+
+		private boolean canRead;
+		private String env;
+		private String IPAddress;
+		private boolean isMaster;
+		private int port;
+		private boolean status;
+
+		public void check() {
+
+			String addr = String.format("%s:%d", IPAddress, port);
+			if (!canRead) {
+				throw new IllegalStateException("instance can not read:" + addr);
+			}
+			if (!status) {
+				throw new IllegalStateException("instance not valid:" + addr);
+			}
+
+		}
+		void mapIdc(DC_TRANSFORM_DIRECTION direction){
+			env = direction.transform(env);
+		}
+
+		public boolean isCanRead() {
+			return canRead;
+		}
+
+		public void setCanRead(boolean canRead) {
+			this.canRead = canRead;
+		}
+
+		public String getEnv() {
+			return env;
+		}
+
+		public void setEnv(String env) {
+			this.env = env;
+		}
+
+		public String getIPAddress() {
+			return IPAddress;
+		}
+
+		public void setIPAddress(String IPAddress) {
+			this.IPAddress = IPAddress;
+		}
+
+		public boolean isMaster() {
+			return isMaster;
+		}
+
+		public void setIsMaster(boolean master) {
+			isMaster = master;
+		}
+
+		public int getPort() {
+			return port;
+		}
+
+		public void setPort(int port) {
+			this.port = port;
+		}
+
+		public boolean isStatus() {
+			return status;
+		}
+
+		public void setStatus(boolean status) {
+			this.status = status;
 		}
 	}
 }

@@ -3,11 +3,7 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -20,16 +16,11 @@ import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.google.common.base.Strings;
-
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.concurrent.*;
 
 /**
  * @author shyin

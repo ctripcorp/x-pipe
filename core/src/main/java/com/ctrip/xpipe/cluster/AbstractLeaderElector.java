@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-import javax.annotation.Resource;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -67,12 +66,12 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
             @Override
             public void notLeader() {
 
-                logger.info("[notCrossDcLeader]{}", getServerId());
+                logger.info("[notLeader]{}", getServerId());
                 isLeader = false;
                 Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
                 for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
                     try{
-                        logger.info("[notCrossDcLeader][notify]{}", entry.getKey());
+                        logger.info("[notLeader][notify]{}", entry.getKey());
                         entry.getValue().notLeader();
                     }catch (Exception e){
                         logger.error("[notLeader]" + entry, e);

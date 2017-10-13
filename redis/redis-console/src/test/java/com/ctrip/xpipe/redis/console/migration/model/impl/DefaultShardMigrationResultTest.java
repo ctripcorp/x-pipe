@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResultStatus;

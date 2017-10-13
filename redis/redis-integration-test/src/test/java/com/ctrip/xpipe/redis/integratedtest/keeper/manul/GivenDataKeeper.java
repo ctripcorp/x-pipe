@@ -10,9 +10,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;

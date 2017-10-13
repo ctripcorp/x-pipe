@@ -6,7 +6,7 @@
 		<artifactId>package</artifactId>
 		<version>0.2.2-SNAPSHOT</version>
 	</parent>
-	<artifactId>package-redis-meta</artifactId>
+	<artifactId>redis-meta-package</artifactId>
 
 	<dependencies>
 		<dependency>

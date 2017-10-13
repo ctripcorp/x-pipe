@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.console;
 
+import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-import com.ctrip.xpipe.redis.console.health.HealthChecker;
 
 /**
  * @author shyin

@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.migration.status;
 
-import java.lang.reflect.InvocationTargetException;
-
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.migration.*;
+
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * @author shyin

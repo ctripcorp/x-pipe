@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.console.health.ping;
 
-import java.util.List;
-import java.util.Map.Entry;
-
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import com.ctrip.xpipe.metric.HostPort;
+import java.util.List;
+import java.util.Map.Entry;
 
 /**
  * @author marsqing

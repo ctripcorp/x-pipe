@@ -31,25 +31,27 @@
         <unidal.codegen.version>2.4.2</unidal.codegen.version>
         <unidal.plexus.version>2.4.2</unidal.plexus.version>
         <commons-pool.version>2.3</commons-pool.version>
-        <commons-lang.version>3.4</commons-lang.version>
+        <commons-lang3.version>3.4</commons-lang3.version>
         <commons-httpclient.version>4.5.2</commons-httpclient.version>
         <spring-boot.version>1.4.3.RELEASE</spring-boot.version>
         <spring-boot-maven-plugin.version>1.4.3.RELEASE</spring-boot-maven-plugin.version>
         <spring-platfrom-bom.version>2.0.5.RELEASE</spring-platfrom-bom.version>
-        <ctrip-framework-foundation.version>1.4.1</ctrip-framework-foundation.version>
+        <ctrip-framework-foundation.version>1.7.1</ctrip-framework-foundation.version>
         <ctrip-apollo.version>0.2.0</ctrip-apollo.version>
         <cat.version>2.7.3</cat.version>
         <apollo.sso.ctrip.version>1.1.0</apollo.sso.ctrip.version>
         <lettuce.version>4.3.2.Final</lettuce.version>
         <pyrolite.version>4.9</pyrolite.version>
-        <hickwall.version>1.0</hickwall.version>
-        <hickwall.client.version>1.4</hickwall.client.version>
         <plexus-utils.version>3.0.24</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.0</git-commit-id-plugin.version>
         <log4j2.version>2.6.2</log4j2.version>
         <disruptor.version>3.3.6</disruptor.version>
         <dnsjava.version>2.1.6</dnsjava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <hickwall.client.version>1.8</hickwall.client.version>
+        <clogging.version>4.1.8</clogging.version>
+        <credis.version>2.5.3</credis.version>
     </properties>
 
     <modules>
@@ -60,11 +62,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>com.ctrip.framework</groupId>
-                <artifactId>framework-foundation</artifactId>
-                <version>${ctrip-framework-foundation.version}</version>
-            </dependency>
             <dependency>
                 <groupId>com.ctrip.framework.apollo</groupId>
                 <artifactId>apollo-client</artifactId>
@@ -132,8 +129,46 @@
                 <artifactId>local-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <!-- xpipe related -->
+
+            <!--  ctrip related -->
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>framework-foundation</artifactId>
+                <version>${ctrip-framework-foundation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.clogging</groupId>
+                <artifactId>clogging-agent</artifactId>
+                <version>${clogging.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.ctrip.framework</groupId>
+                        <artifactId>vi</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hickwall</groupId>
+                <artifactId>client</artifactId>
+                <version>${hickwall.client.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-simple</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.ctrip.framework</groupId>
+                        <artifactId>vi</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.credis</groupId>
+                <artifactId>credis</artifactId>
+                <version>${credis.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>dnsjava</groupId>
                 <artifactId>dnsjava</artifactId>
@@ -148,16 +183,6 @@
                 <groupId>net.razorvine</groupId>
                 <artifactId>pyrolite</artifactId>
                 <version>${pyrolite.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ctrip.hickwall</groupId>
-                <artifactId>hickwall-protocol</artifactId>
-                <version>${hickwall.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ctrip.hickwall</groupId>
-                <artifactId>client</artifactId>
-                <version>${hickwall.client.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-io</groupId>
@@ -203,7 +228,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>${commons-lang.version}</version>
+                <version>${commons-lang3.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.spring.platform</groupId>

@@ -1,25 +1,34 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.status.ActionMigrationState;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Inited;
+import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateActionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author shyin
  *         <p>
  *         Dec 8, 2016
  */
-public abstract class AbstractMigrationState implements MigrationState {
+public abstract class AbstractMigrationState implements ActionMigrationState {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected int migrationWaitTimeSeconds = 120;
+    protected static final int DEFAULT_MIGRATION_WAIT_TIME_MILLI = Integer.parseInt(System.getProperty("MIGRATION_TIMEOUT_MILLI", "120000"));;
+
+    protected int migrationWaitTimeMilli = DEFAULT_MIGRATION_WAIT_TIME_MILLI;
 
     private AtomicBoolean hasContine = new AtomicBoolean(false);
 
@@ -29,12 +38,48 @@ public abstract class AbstractMigrationState implements MigrationState {
     private MigrationState nextAfterSuccess;
     private MigrationState nextAfterFail;
 
+    private AtomicReference<StateActionState> stateActionState = new AtomicReference<>();
+
     protected Executor executors;
+    private ScheduledExecutorService scheduled;
+    private ScheduledFuture<?> future;
+
 
     public AbstractMigrationState(MigrationCluster holder, MigrationStatus status) {
         this.holder = holder;
         this.status = status;
-        executors = holder.getMigrationExecutor();
+        this.executors = holder.getMigrationExecutor();
+        this.scheduled = holder.getScheduled();
+        this.stateActionState.set(new Inited(this));
+    }
+
+    @Override
+    public StateActionState getStateActionState() {
+        return stateActionState.get();
+    }
+
+    public void setMigrationWaitTimeMilli(int migrationWaitTimeMilli) {
+        this.migrationWaitTimeMilli = migrationWaitTimeMilli;
+    }
+
+    @Override
+    public void cancelCheckTimeout() {
+        if(future != null){
+            future.cancel(true);
+        }
+    }
+
+    @Override
+    public void checkTimeout() {
+
+        future = scheduled.schedule(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() {
+
+                logger.info("[checkTimeout][timeout]{}", AbstractMigrationState.this);
+                getStateActionState().timeout();
+            }
+        },migrationWaitTimeMilli, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -45,8 +90,33 @@ public abstract class AbstractMigrationState implements MigrationState {
 
     @Override
     public void rollback() {
-        logger.info("[rollback]{}", this);
-        doRollback();
+        try{
+            logger.info("[tryRollback]{}", this);
+            doRollback();
+        }finally {
+            markRollbackDone();
+        }
+    }
+
+    protected void markDone(){
+        this.stateActionState.get().actionDone();
+    }
+
+    protected void markRollbackDone(){
+        this.stateActionState.get().rollbackDone();
+    }
+
+    @Override
+    public boolean setStateActionState(StateActionState current, StateActionState future){
+
+        StateActionState previous = this.stateActionState.get();
+        if(this.stateActionState.compareAndSet(current, future)){
+            logger.info("[setStateActionState][success]{}, {}->{}", this, previous, stateActionState);
+            return true;
+        }else{
+            logger.info("[setStateActionState][fail]{}, {}, {}->{}", this, previous, current, stateActionState);
+            return false;
+        }
     }
 
     protected abstract void doRollback();
@@ -83,17 +153,22 @@ public abstract class AbstractMigrationState implements MigrationState {
     }
 
     protected void updateAndProcess(MigrationState state) {
-
+        markDone();
         updateAndProcess(state, true, false);
     }
 
     protected void updateAndForceProcess(MigrationState state) {
+        markDone();
+        updateAndProcess(state, true, true);
+    }
+
+    protected void rollbackToState(MigrationState state) {
 
         updateAndProcess(state, true, true);
     }
 
     protected void updateAndStop(MigrationState state) {
-
+        markDone();
         updateAndProcess(state, false, false);
     }
 

@@ -1,32 +1,35 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.recipes.locks.LockInternals;
-import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
-import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher.Event.EventType;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
-import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
-import com.ctrip.xpipe.zk.EternalWatcher;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.ctrip.xpipe.zk.ZkUtils;
 import com.ctrip.xpipe.zk.ZkClient;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.framework.recipes.locks.LockInternals;
+import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
+import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author wenchao.meng
@@ -35,18 +38,17 @@ import com.ctrip.xpipe.zk.ZkClient;
  */
 @Component
 public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver implements KeeperElectorManager, Observer, TopElement{
-	
+
 	@Autowired
 	private ZkClient zkClient;
-	
+
 	@Autowired
 	private KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager;
-	
-	
+
 	private void observeLeader(final ClusterMeta cluster) {
 
 		logger.info("[observeLeader]{}", cluster.getId());
-		
+
 		for (final ShardMeta shard : cluster.getShards().values()) {
 			observerShardLeader(cluster.getId(), shard.getId());
 		}
@@ -60,43 +62,35 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		final CuratorFramework client = zkClient.get();
 
 		if(currentMetaManager.watchIfNotWatched(clusterId, shardId)){
-
 			try {
-				client.createContainers(leaderLatchPath);
-				EternalWatcher eternalWatcher = new EternalWatcher(client, new CuratorWatcher() {
+                logger.info("[observerShardLeader][add PathChildrenCache]{}, {}", clusterId, shardId);
+                PathChildrenCache pathChildrenCache = new PathChildrenCache(client, leaderLatchPath, true, XpipeThreadFactory.create(String.format("PathChildrenCache:%s-%s", clusterId, shardId)));
+                pathChildrenCache.getListenable().addListener(new PathChildrenCacheListener() {
+                    @Override
+                    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
 
-					@Override
-					public void process(WatchedEvent event) throws Exception {
+                    	logger.info("[childEvent]{}, {}, {}, {}", clusterId, shardId, event.getType(), ZkUtils.toString(event.getData()));
+                        updateShardLeader(leaderLatchPath, pathChildrenCache.getCurrentData(), clusterId, shardId);
+                    }
+                });
+				currentMetaManager.addResource(clusterId, shardId, new Releasable() {
+                    @Override
+                    public void release() throws Exception {
 
-						logger.info("[process]{}, {}, {}",  event, this.hashCode(), currentClusterServer.getServerId());
-						if(event.getType() != EventType.NodeChildrenChanged){
-							logger.info("[process][event type not children changed, exit]");
-							return;
+                    	try{
+							logger.info("[release][release children cache]{}, {}", clusterId, shardId);
+							pathChildrenCache.close();
+						}catch (Exception e){
+							logger.error(String.format("[release][release children cache]%s, %s", clusterId, shardId), e);
 						}
-
-						List<String> children = client.getChildren().forPath(leaderLatchPath);
-						updateShardLeader(children, leaderLatchPath, clusterId, shardId);
-					}
-
-					@Override
-					public String toString() {
-						return String.format("leader watcher %s,%s", clusterId, shardId);
-					}
-				}, leaderLatchPath);
-				eternalWatcher.start();
-				currentMetaManager.addResource(clusterId, shardId, eternalWatcher);
+                    }
+                });
+                pathChildrenCache.start();
 			} catch (Exception e) {
 				logger.error("[observerShardLeader]" + clusterId + " " + shardId, e);
 			}
 		}else{
 			logger.warn("[observerShardLeader][already watched]{}, {}", clusterId, shardId);
-		}
-
-		try {
-			List<String> children = client.getChildren().forPath(leaderLatchPath);
-			updateShardLeader(children, leaderLatchPath, clusterId, shardId);
-		} catch (Exception e) {
-			logger.error("[observerShardLeader]" + clusterId + "," + shardId, e);
 		}
 	}
 
@@ -107,33 +101,42 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		}
 	};
 
+	protected void updateShardLeader(String leaderLatchPath, List<ChildData> childrenData, String clusterId, String shardId){
 
-	private void updateShardLeader(List<String> children, String leaderLatchPath, String clusterId, String shardId) throws Exception {
+		List<String> childrenPaths = new LinkedList<>();
+		childrenData.forEach(childData -> childrenPaths.add(childData.getPath()));
 
-		logger.info("[updateShardLeader]{}, {}, {}, {}", children, leaderLatchPath, clusterId, shardId);
+		logger.info("[updateShardLeader]{}, {}, {}", clusterId, shardId, childrenPaths);
 
-		List<KeeperMeta> surviveKeepers = new ArrayList<>(children.size());
-		CuratorFramework client = zkClient.get();
-		List<String> sortedChildren = LockInternals.getSortedChildren("latch-", sorter, children);
-		
-		for(String child : sortedChildren){
-			String leaderId = new String(client.getData().forPath(leaderLatchPath + "/" + child));
-			KeeperMeta keeper = Codec.DEFAULT.decode(leaderId, KeeperMeta.class);
-			surviveKeepers.add(keeper);
+		List<String> sortedChildren = LockInternals.getSortedChildren("latch-", sorter, childrenPaths);
+
+		List<KeeperMeta> survivalKeepers = new ArrayList<>(childrenData.size());
+
+		for(String path : sortedChildren){
+			for(ChildData childData : childrenData){
+				if(path.equals(childData.getPath())){
+					String data = new String(childData.getData());
+					KeeperMeta keeper = JsonCodec.INSTANCE.decode(data, KeeperMeta.class);
+					survivalKeepers.add(keeper);
+					break;
+				}
+			}
 		}
-		
-		
-		KeeperActiveElectAlgorithm klea = keeperActiveElectAlgorithmManager.get(clusterId, shardId);
-		KeeperMeta activeKeeper = klea.select(clusterId, shardId, surviveKeepers);
-		currentMetaManager.setSurviveKeepers(clusterId, shardId, surviveKeepers, activeKeeper);
-	}
 
+		if(survivalKeepers.size() != childrenData.size()){
+			throw new IllegalStateException(String.format("[children data not equal with survival keepers]%s, %s", childrenData, survivalKeepers));
+		}
+
+		KeeperActiveElectAlgorithm klea = keeperActiveElectAlgorithmManager.get(clusterId, shardId);
+		KeeperMeta activeKeeper = klea.select(clusterId, shardId, survivalKeepers);
+		currentMetaManager.setSurviveKeepers(clusterId, shardId, survivalKeepers, activeKeeper);
+	}
 
 	@Override
 	protected void handleClusterModified(ClusterMetaComparator comparator) {
-		
+
 		String clusterId = comparator.getCurrent().getId();
-				
+
 		for(ShardMeta shardMeta : comparator.getAdded()){
 			try {
 				observerShardLeader(clusterId, shardMeta.getId());
@@ -156,7 +159,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	protected void handleClusterDeleted(ClusterMeta clusterMeta) {
 		//nothing to do
 	}
-	
+
 	public void setKeeperActiveElectAlgorithmManager(
 			KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager) {
 		this.keeperActiveElectAlgorithmManager = keeperActiveElectAlgorithmManager;

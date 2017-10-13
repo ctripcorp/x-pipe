@@ -31,7 +31,7 @@ public abstract class AbstractRedisConfMonitor<T extends BaseInstanceResult> ext
             return null;
         }
 
-            if(clusterServer != null && !clusterServer.amILeader()){
+        if(clusterServer != null && !clusterServer.amILeader()){
             log.debug("[generatePlan][not leader quit]");
             return null;
         }
@@ -39,7 +39,7 @@ public abstract class AbstractRedisConfMonitor<T extends BaseInstanceResult> ext
 
         long current = System.currentTimeMillis();
         if( current - lastPlanTime < consoleConfig.getRedisConfCheckIntervalMilli()){
-            log.debug("[generatePlan][too quick {}, not leader quit]", current - lastPlanTime);
+            log.debug("[generatePlan][too quick {}, quit]", current - lastPlanTime);
             return null;
         }
 

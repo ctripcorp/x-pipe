@@ -1,13 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.task;
 
-import java.util.Collection;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.command.AbstractCommand;
@@ -17,6 +9,13 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng
@@ -122,7 +121,7 @@ public abstract class AbstractResharding extends AbstractCommand<Void> implement
 
 	public void checkTaskFinish() {
 		
-		if(allTaskSubmited && completedTasks.get() >= totalTasks.get()){
+		if(allTaskSubmited && completedTasks.get() >= totalTasks.get() && !future().isDone()){
 			logger.info("[checkTaskFinish][finish]");
 			future().setSuccess(null);
 		}

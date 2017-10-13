@@ -15,6 +15,10 @@ public class ExecutionLog {
 	private static Logger logger = LoggerFactory.getLogger(ExecutionLog.class);
 	
 	private StringBuilder log = new StringBuilder();
+
+	public ExecutionLog(String initMessage){
+		info(initMessage);
+	}
 	
 	public void info(String message){
 		log.append(LogUtils.info(message));

@@ -52,7 +52,8 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
         clusterModel.setClusterTbl(new ClusterTbl().
                 setClusterName(clusterName)
                 .setActivedcId(dcIds[0])
-                .setClusterDescription("desc"));
+                .setClusterDescription("desc")
+                .setClusterAdminEmails("test@ctrip.com"));
 
 
         clusterModel.setShards(createShards(shardNames));

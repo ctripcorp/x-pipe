@@ -34,6 +34,7 @@
 
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
+        <logger name="com.ctrip.xpipe.redis.console.migration.status.migration.statemachine" level="DEBUG"/>
 
         <!--
         <logger name="com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollector" level="DEBUG"/>

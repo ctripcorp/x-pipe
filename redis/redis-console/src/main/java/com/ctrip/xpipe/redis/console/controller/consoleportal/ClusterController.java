@@ -9,20 +9,10 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.utils.StringUtil;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author zhangle
@@ -45,17 +35,17 @@ public class ClusterController extends AbstractConsoleController {
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public ClusterTbl loadCluster(@PathVariable String clusterName) {
-        return valueOrDefault(ClusterTbl.class, clusterService.find(clusterName));
+        return valueOrDefault(ClusterTbl.class, clusterService.findClusterAndOrg(clusterName));
     }
 
     @RequestMapping(value = "/clusters/all", method = RequestMethod.GET)
     public List<ClusterTbl> findAllClusters(@RequestParam(required = false) String activeDcName) {
         if (StringUtil.isEmpty(activeDcName)) {
-            return valueOrEmptySet(ClusterTbl.class, clusterService.findAllClusters());
+            return valueOrEmptySet(ClusterTbl.class, clusterService.findAllClustersWithOrgInfo());
         } else {
             DcTbl dc = dcService.findByDcName(activeDcName);
             if (dc != null) {
-                List<ClusterTbl> clusters = clusterService.findClustersByActiveDcId(dc.getId());
+                List<ClusterTbl> clusters = clusterService.findClustersWithOrgInfoByActiveDcId(dc.getId());
 
                 if (!clusters.isEmpty()) {
                     List<Long> clusterIds = new ArrayList<Long>(clusters.size());

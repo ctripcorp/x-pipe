@@ -29,4 +29,6 @@ public interface MetaServerConfig extends CoreConfig {
 	int getLeaderCheckMilli();
 
 	Map<String, DcInfo> getDcInofs();
+
+	int getWaitforOffsetMilli();
 }

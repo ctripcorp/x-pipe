@@ -1,21 +1,19 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-
-import javax.annotation.PostConstruct;
-
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import javax.annotation.PostConstruct;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author marsqing
@@ -52,7 +50,7 @@ public class HealthChecker {
 
 					try {
 						List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
-						if(dcsToCheck != null){
+						if(!dcsToCheck.isEmpty()){
 							sampleAll(dcsToCheck);
 						}
 					} catch (Throwable e) {

@@ -19,12 +19,16 @@ public class MigrationAbortedState extends AbstractMigrationState implements Mig
 
 	@Override
 	protected void doRollback() {
-		throw new UnsupportedOperationException("rollback success, can not rollback:" + getStatus());
+		throw new UnsupportedOperationException("tryRollback success, can not tryRollback:" + getStatus());
 	}
 
 	@Override
 	public void doAction() {
-		getHolder().update(getHolder(), getHolder());
+		try {
+			getHolder().update(getHolder(), getHolder());
+		}finally {
+			markDone();
+		}
 	}
 	
 	@Override

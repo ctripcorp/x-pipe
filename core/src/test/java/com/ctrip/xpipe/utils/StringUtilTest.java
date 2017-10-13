@@ -14,6 +14,14 @@ import com.ctrip.xpipe.AbstractTest;
 public class StringUtilTest extends AbstractTest{
 
 	@Test
+	public void testSubHead(){
+
+		Assert.assertEquals("12345", StringUtil.subHead("12345", 5));
+		Assert.assertEquals("12345", StringUtil.subHead("123456", 5));
+
+	}
+
+	@Test
 	public void testToString(){
 
 		Assert.assertEquals(String.valueOf(Integer.MAX_VALUE), StringUtil.toString(Integer.MAX_VALUE));
@@ -41,6 +49,19 @@ public class StringUtilTest extends AbstractTest{
 		Assert.assertFalse(StringUtil.trimEquals(null, " abc  \t"));
 		Assert.assertFalse(StringUtil.trimEquals("abc ", null));
 		
+	}
+
+	@Test
+	public void testCompareVersion() {
+		String version = "2.8.19";
+		String targetVersion = "2.8.22";
+		Assert.assertEquals(-1, StringUtil.compareVersion(version, targetVersion));
+		version = "2.8.19.1";
+		Assert.assertEquals(-1, StringUtil.compareVersion(version, targetVersion));
+		version = "2.8";
+		Assert.assertEquals(-1, StringUtil.compareVersion(version, targetVersion));
+		version = "2.8.22.1";
+		Assert.assertEquals(1, StringUtil.compareVersion(version, targetVersion));
 	}
 
 }

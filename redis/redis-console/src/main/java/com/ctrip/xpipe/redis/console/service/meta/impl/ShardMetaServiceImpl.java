@@ -2,35 +2,21 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.model.ShardTbl;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.AbstractMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.ShardMetaService;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.unidal.dal.jdbc.DalException;
+
+import java.util.List;
+import java.util.concurrent.*;
 
 /**
  * @author shyin
@@ -80,31 +66,31 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 		
 		Future<DcTbl> future_dcInfo = fixedThreadPool.submit(new Callable<DcTbl>() {
 			@Override
-			public DcTbl call() throws Exception {
+			public DcTbl call() throws DalException {
 				return dcService.find(dcName);
 			}
 		});
 		Future<ClusterTbl> future_clusterInfo = fixedThreadPool.submit(new Callable<ClusterTbl>() {
 			@Override
-			public ClusterTbl call() throws Exception {
+			public ClusterTbl call() throws DalException {
 				return clusterService.find(clusterName);
 			}
 		});
 		Future<ShardTbl> future_shardInfo = fixedThreadPool.submit(new Callable<ShardTbl>() {
 			@Override
-			public ShardTbl call() throws Exception {
+			public ShardTbl call() throws DalException {
 				return shardService.find(clusterName, shardName);
 			}
 		});
 		Future<DcClusterTbl> future_dcClusterInfo = fixedThreadPool.submit(new Callable<DcClusterTbl>() {
 			@Override
-			public DcClusterTbl call() throws Exception {
+			public DcClusterTbl call() throws DalException {
 				return dcClusterService.find(dcName, clusterName);
 			}
 		});
 		Future<DcClusterShardTbl> future_dcClusterShardInfo = fixedThreadPool.submit(new Callable<DcClusterShardTbl>() {
 			@Override
-			public DcClusterShardTbl call() throws Exception {
+			public DcClusterShardTbl call() throws DalException {
 				return dcClusterShardService.find(dcName, clusterName, shardName);
 			}
 		});
@@ -130,13 +116,13 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 		ExecutorService fixedThreadPool = Executors.newFixedThreadPool(2);
 		Future<DcClusterTbl> future_dcClusterInfo = fixedThreadPool.submit(new Callable<DcClusterTbl>() {
 			@Override
-			public DcClusterTbl call() throws Exception {
+			public DcClusterTbl call() throws DalException {
 				return dcClusterService.find(dcInfo.getDcName(), clusterInfo.getClusterName());
 			}
 		});
 		Future<DcClusterShardTbl> future_dcClusterShardInfo = fixedThreadPool.submit(new Callable<DcClusterShardTbl>() {
 			@Override
-			public DcClusterShardTbl call() throws Exception {
+			public DcClusterShardTbl call() throws DalException {
 				return dcClusterShardService.find(dcInfo.getDcName(), clusterInfo.getClusterName(), shardInfo.getShardName());
 			}
 		});

@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.console.health.delay;
 
+import com.ctrip.xpipe.endpoint.HostPort;
+import org.springframework.stereotype.Component;
+
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-
-import org.springframework.stereotype.Component;
-
-import com.ctrip.xpipe.metric.HostPort;
 
 /**
  * @author shyin

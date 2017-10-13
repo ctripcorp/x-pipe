@@ -40,7 +40,7 @@ public class ConsoleServiceManager {
             try{
                 HEALTH_STATE instanceStatus = consoleService.getInstanceStatus(ip, port);
                 result.add(instanceStatus);
-                logger.info("[allHealthStatus]{}, {}", consoleService, instanceStatus);
+                logger.info("[allHealthStatus]{}, {}:{}, {}", consoleService, ip, port, instanceStatus);
             }catch (Exception e){
                 logger.error("[allHealthStatus]" + consoleService + "," + ip + ":" + port, e);
             }

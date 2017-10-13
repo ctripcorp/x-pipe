@@ -1,13 +1,14 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import java.util.List;
-
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.migration.model.ClusterStepResult;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+
+import java.util.List;
 
 /**
  * @author shyin
@@ -24,8 +25,41 @@ public class MigrationCheckingState extends AbstractMigrationState {
 
 	@Override
 	public void doAction() {
+
 		MigrationCluster migrationCluster = getHolder();
-		
+
+		if(!doCheckClientService(migrationCluster)){
+		    return;
+        }
+
+		doShardCheck(migrationCluster);
+	}
+
+    private boolean doCheckClientService(MigrationCluster migrationCluster) {
+
+
+        String clusterName = migrationCluster.clusterName();
+        OuterClientService outerClientService = migrationCluster.getOuterClientService();
+        String failMesage = "";
+
+        logger.info("[doCheckClientService]{}", clusterName);
+
+        try {
+            OuterClientService.ClusterInfo clusterInfo = outerClientService.getClusterInfo(clusterName);
+            //simple check
+            if(clusterInfo != null && clusterInfo.getGroups() != null && clusterInfo.getGroups().size() > 0){
+                return true;
+            }
+            failMesage = String.format("%s FAIL, cluster:%s, info empty:%s", outerClientService.serviceName(), clusterName, clusterInfo);
+        } catch (Exception e) {
+            logger.error("[doCheckClientService]" + clusterName, e);
+            failMesage = String.format("%s FAIL, cluster:%s, error message:%s", outerClientService.serviceName(), clusterName, e.getMessage());
+        }
+        migrationCluster.markCheckFail(failMesage);
+        return false;
+    }
+
+    private void doShardCheck(MigrationCluster migrationCluster) {
 		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
 		for (final MigrationShard migrationShard : migrationShards) {
 
@@ -41,7 +75,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
 
 	@Override
 	protected void doRollback() {
-		updateAndForceProcess(new MigrationAbortedState(getHolder()));
+		rollbackToState(new MigrationAbortedState(getHolder()));
 	}
 
 	@Override

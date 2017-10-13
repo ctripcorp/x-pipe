@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.integratedtest.tools;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
@@ -37,6 +37,8 @@ public class ConfigCheck extends AbstractIntegratedTest {
 
     private String checkCluster = System.getProperty("cluster", "test");
 
+    RestOperations restOperations = RestTemplateFactory.createCommonsHttpRestTemplate();
+
     @Test
     public void check() {
 
@@ -59,8 +61,10 @@ public class ConfigCheck extends AbstractIntegratedTest {
 
     private CRedisMeta getCRedisMeta(String checkCluster) {
 
-        RestOperations restOperations = RestTemplateFactory.createCommonsHttpRestTemplate();
+        logger.info("[getCRedisMeta][begin]");
         CRedisMeta result = restOperations.getForObject(clientAddr, CRedisMeta.class, checkCluster);
+        logger.info("[getCRedisMeta][end]");
+
         logger.debug("{}", new JsonCodec(true).encode(result));
         return result;
     }

@@ -1,21 +1,22 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
-import java.io.Serializable;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResultStatus;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStepResult;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Serializable;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author shyin
@@ -33,6 +34,8 @@ public class DefaultShardMigrationResult implements Serializable, ShardMigration
 	private Map<ShardMigrationStep, Pair<Boolean, String>> steps = new ConcurrentHashMap<>(6);
 
 	private HostPort newMaster;
+
+	private MetaServerConsoleService.PreviousPrimaryDcMessage previousPrimaryDcMessage;
 	
 	public DefaultShardMigrationResult() {
 		status = ShardMigrationResultStatus.FAIL;
@@ -83,6 +86,9 @@ public class DefaultShardMigrationResult implements Serializable, ShardMigration
 		if(step == ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC){
 			newMaster = null;
 		}
+		if(step == ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC){
+			previousPrimaryDcMessage = null;
+		}
 	}
 
 	@Override
@@ -109,6 +115,16 @@ public class DefaultShardMigrationResult implements Serializable, ShardMigration
 	@Override
 	public HostPort getNewMaster() {
 		return newMaster;
+	}
+
+	@Override
+	public void setPreviousPrimaryDcMessage(MetaServerConsoleService.PreviousPrimaryDcMessage primaryDcMessage) {
+		this.previousPrimaryDcMessage = primaryDcMessage;
+	}
+
+	@Override
+	public MetaServerConsoleService.PreviousPrimaryDcMessage getPreviousPrimaryDcMessage() {
+		return this.previousPrimaryDcMessage;
 	}
 
 	public static ShardMigrationResult fromEncodeStr(String encodeStr){

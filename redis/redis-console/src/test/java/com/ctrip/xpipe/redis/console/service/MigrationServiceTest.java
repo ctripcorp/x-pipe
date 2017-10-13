@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationEventModel;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;

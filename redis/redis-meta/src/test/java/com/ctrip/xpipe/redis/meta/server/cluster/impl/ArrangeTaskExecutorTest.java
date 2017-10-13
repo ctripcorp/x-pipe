@@ -10,9 +10,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 
-import java.util.concurrent.TimeoutException;
-import java.util.function.BooleanSupplier;
-
 
 /**
  * @author wenchao.meng

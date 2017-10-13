@@ -29,6 +29,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static String KEY_SLOT_REFRESH_MILLI = "slot.refresh.milli";
 	public static String KEY_LEADER_CHACK_MILLI = "leader.check.milli";
 	public static String KEY_CLUSTER_SERVERS_CHACK_MILLI = "cluster.servers.check.milli";
+	public static String KEY_WAITFOR_OFFSET_MILLI = "dcchange.waitfor.offset.milli";
 	public static String KEY_DC_INFOS = "dcinfos";
 	
 	
@@ -44,8 +45,24 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	private int defaultMetaServerId = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "1"));
 	private int defaultServerPort = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "8080"));
 	
-	private Config serverConfig = new CompositeConfig(new DefaultPropertyConfig(), 
-				new DefaultFileConfig(META_SRRVER_PROPERTIES_PATH, META_SRRVER_PROPERTIES_FILE)); 
+	private Config serverConfig;
+
+	public DefaultMetaServerConfig(){
+
+		CompositeConfig compositeConfig = new CompositeConfig();
+		try{
+			compositeConfig.addConfig(new DefaultFileConfig(META_SRRVER_PROPERTIES_PATH, META_SRRVER_PROPERTIES_FILE));
+		}catch (Exception e){
+			logger.info("[DefaultMetaServerConfig]{}", e);
+		}
+		try{
+			compositeConfig.addConfig(new DefaultFileConfig());
+		}catch (Exception e){
+			logger.info("[DefaultMetaServerConfig]{}", e);
+		}
+		compositeConfig.addConfig(new DefaultPropertyConfig());
+		serverConfig = compositeConfig;
+	}
 
 	@Override
 	public String getConsoleAddress() {
@@ -96,7 +113,10 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 		return result;
 	}
 
-
+	@Override
+	public int getWaitforOffsetMilli() {
+		return getIntProperty(KEY_WAITFOR_OFFSET_MILLI, 2000);
+	}
 
 
 	//from local config file

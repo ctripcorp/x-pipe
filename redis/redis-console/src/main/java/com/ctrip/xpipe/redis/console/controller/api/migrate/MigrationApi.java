@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.migrate;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import com.ctrip.xpipe.api.migration.DcMapper;
+import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.*;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
@@ -18,7 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author wenchao.meng
