@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,9 @@ public class AlertManager {
     @Autowired
     private ConsoleConfig consoleConfig;
 
+    @Autowired
+    private IssueReporter reporter;
+
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
@@ -49,19 +53,19 @@ public class AlertManager {
     }
 
 
-    public void forceAlert(String cluster, String shard, ALERT_TYPE type, String message){
+    public void forceAlert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message){
 
-        doAlert(cluster, shard, type, message, true);
+        doAlert(cluster, shard, hostPort, type, message, true);
 
     }
 
 
-    public void alert(String cluster, String shard, ALERT_TYPE type, String message){
+    public void alert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message){
 
-        doAlert(cluster, shard, type, message, false);
+        doAlert(cluster, shard, hostPort, type, message, false);
     }
 
-    private void doAlert(String cluster, String shard, ALERT_TYPE type, String message, boolean force) {
+    private void doAlert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message, boolean force) {
 
         if(!force && !shouldAlert(cluster)){
             logger.warn("[alert][skip]{}, {}, {}, {}", cluster, shard, type, message);
@@ -70,9 +74,19 @@ public class AlertManager {
 
         logger.warn("[alert]{}, {}, {}, {}", cluster, shard, type, message);
         EventMonitor.DEFAULT.logAlertEvent(String.format("%s,%s,%s,%s", cluster, shard, type.simpleDesc(), message));
-
+        reporter.addRedisAlert(createRedisAlert(cluster, shard, hostPort, type, message));
     }
 
+    private RedisAlert createRedisAlert(String cluster, String shard, HostPort hostPort,
+                                        ALERT_TYPE alertType, String message) {
+        return new RedisAlert.RedisAlertBuilder()
+                            .alertType(alertType)
+                            .clusterId(cluster)
+                            .shardId(shard)
+                            .message(message)
+                            .hostPort(hostPort)
+                            .createRedisAlert();
+    }
     private boolean shouldAlert(String cluster) {
         return !alertClusterWhiteList.contains(cluster);
     }

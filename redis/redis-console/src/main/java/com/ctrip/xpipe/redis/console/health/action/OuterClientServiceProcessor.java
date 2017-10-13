@@ -126,6 +126,7 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
             alertManager.alert(
                     clusterShardHostPort.getClusterName(),
                     clusterShardHostPort.getShardName(),
+                    hostPort,
                     ALERT_TYPE.QUORUM_DOWN_FAIL,
                     hostPort.toString()
             );

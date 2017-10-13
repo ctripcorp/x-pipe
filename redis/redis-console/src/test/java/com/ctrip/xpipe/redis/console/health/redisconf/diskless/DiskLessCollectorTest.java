@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.utils.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -26,9 +27,13 @@ public class DiskLessCollectorTest extends AbstractConsoleIntegrationTest {
 
     List<String> diskLess;
 
-    @Before
-    public void before() throws IOException {
+    @BeforeClass
+    public static void beforeDiskLessCollectorTestClass() throws IOException {
         System.setProperty(HealthChecker.ENABLED, "true");
+    }
+
+    @Before
+    public void beforeDiskLessCollectorTest() throws IOException {
         String path = "src/test/resources/InfoServer";
         InputStream ins = FileUtils.getFileInputStream(path);
         serverInfo = IOUtils.toString(ins);

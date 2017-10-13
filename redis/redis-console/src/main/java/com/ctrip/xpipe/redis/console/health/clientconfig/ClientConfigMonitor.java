@@ -62,7 +62,7 @@ public class ClientConfigMonitor extends AbstractIntervalCheck {
         try {
             clusterInfo.check();
         } catch (Exception e) {
-            alertManager.alert(clusterName, null, ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, e.getMessage());
+            alertManager.alert(clusterName, null, null, ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, e.getMessage());
         }
 
         CheckCluster checkClusterInfo = fromInfo(clusterInfo, clusterName);
@@ -72,7 +72,7 @@ public class ClientConfigMonitor extends AbstractIntervalCheck {
             checkClusterInfo.equals(checkClusterXPipe);
         } catch (EqualsException e) {
             logger.warn("[checkCluster]", e);
-            alertManager.alert(clusterName, e.getShardName(), ALERT_TYPE.CLIENT_INCONSIS, e.getMessage());
+            alertManager.alert(clusterName, e.getShardName(), null, ALERT_TYPE.CLIENT_INCONSIS, e.getMessage());
         }
 
     }

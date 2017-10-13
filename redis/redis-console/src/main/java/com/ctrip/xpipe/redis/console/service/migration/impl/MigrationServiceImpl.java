@@ -126,7 +126,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         }
 
         if (unfinishedByClusterId.size() > 1) {
-            alertManager.alert(String.valueOf(clusterId), null, ALERT_TYPE.MIGRATION_MANY_UNFINISHED, String.format("[count]%d", unfinishedByClusterId.size()));
+            alertManager.alert(String.valueOf(clusterId), null, null, ALERT_TYPE.MIGRATION_MANY_UNFINISHED, String.format("[count]%d", unfinishedByClusterId.size()));
         }
         return unfinishedByClusterId.get(unfinishedByClusterId.size() - 1);
     }

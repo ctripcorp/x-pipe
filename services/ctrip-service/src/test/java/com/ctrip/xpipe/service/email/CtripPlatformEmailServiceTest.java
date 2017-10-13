@@ -2,10 +2,17 @@ package com.ctrip.xpipe.service.email;
 
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailService;
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.utils.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -17,7 +24,6 @@ import java.util.List;
 public class CtripPlatformEmailServiceTest {
 
     EmailService emailService;
-
 
     @Before
     public void before() {
@@ -31,14 +37,15 @@ public class CtripPlatformEmailServiceTest {
     }
 
     @Test
-    public void sendEmail() {
-        List[] lists = new List[2];
-        lists[0] = Arrays.asList("Cluster1,Shard1,10.3.2.23,6379",
-                "Cluster2,Shard2,10.3.2.23,6380");
-        lists[1] = Arrays.asList("Cluster2,Shard2,10.3.2.23,6379",
-                "Cluster3,Shard3,10.3.2.23,6380",
-                "Cluster4,Shard4,10.5.6.7,6479");
+    public void sendEmail() throws IOException {
+        String path = "src/test/resources/ctripPlatformEmailServiceTest.txt";
+        InputStream ins = FileUtils.getFileInputStream(path);
+        String text = IOUtils.toString(ins);
         Email email = Email.DEFAULT;
+        email.setBodyContent(text);
+        email.addRecipient("zhuchen@ctrip.com");
+        email.setSender("xpipe@ctrip.com");
+        email.setSubject("XPipe Test");
         emailService.sendEmail(email);
     }
 
