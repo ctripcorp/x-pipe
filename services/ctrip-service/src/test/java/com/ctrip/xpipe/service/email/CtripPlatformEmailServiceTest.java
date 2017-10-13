@@ -41,7 +41,7 @@ public class CtripPlatformEmailServiceTest {
         String path = "src/test/resources/ctripPlatformEmailServiceTest.txt";
         InputStream ins = FileUtils.getFileInputStream(path);
         String text = IOUtils.toString(ins);
-        Email email = Email.DEFAULT;
+        Email email = new Email();
         email.setBodyContent(text);
         email.addRecipient("zhuchen@ctrip.com");
         email.setSender("xpipe@ctrip.com");

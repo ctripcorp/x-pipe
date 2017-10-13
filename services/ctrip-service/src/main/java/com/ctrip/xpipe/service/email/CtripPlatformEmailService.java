@@ -5,6 +5,7 @@ import com.ctrip.soa.platform.basesystem.emailservice.v1.SendEmailRequest;
 import com.ctrip.soa.platform.basesystem.emailservice.v1.SendEmailResponse;
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailService;
+import jline.internal.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,36 +22,43 @@ public class CtripPlatformEmailService implements EmailService {
 
     @Override
     public void sendEmail(Email email) {
-        CtripEmail ctripEmail = (CtripEmail) email;
 
         EmailServiceClient client = EmailServiceClient.getInstance();
 
-        SendEmailRequest request = new SendEmailRequest();
-
-        request.setAppID(ctripEmail.getAppID());
-        request.setSender(ctripEmail.getSender());
-        request.setRecipient(ctripEmail.getRecipients());
-        request.setSendCode(ctripEmail.getSendCode());
-        request.setSubject(ctripEmail.getSubject());
-        request.setCharset(ctripEmail.getCharset());
-        request.setBodyTemplateID(ctripEmail.getBodyTemplateID());
-        request.setBodyContent(ctripEmail.getBodyContent());
-        request.setIsBodyHtml(ctripEmail.isBodyHTML());
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.HOUR,1);
-        request.setExpiredTime(calendar);
-
         try {
-            SendEmailResponse response = client.sendEmail(request);
+            SendEmailResponse response = client.sendEmail(createSendEmailRequest(email));
             if(response != null && response.getResultCode() == 1) {
-                logger.info("Email sent successfully");
+                logger.info("[sendEmail]Email sent successfully");
             } else if(response != null){
-                logger.error("Email service Result message: {}", response.getResultMsg());
+                logger.error("[sendEmail]Email service Result message: {}", response.getResultMsg());
             }
         } catch (Exception e) {
-            logger.error("Email service Error\n {}", e);
+            logger.error("[sendEmail]Email service Error\n {}", e);
         }
+    }
+
+    private SendEmailRequest createSendEmailRequest(Email email) {
+
+        CtripEmailTemplate ctripEmailTemplate = CtripEmailTemplateFactory
+                .createCtripEmailTemplate(email.getEmailType());
+
+        SendEmailRequest request = new SendEmailRequest();
+
+        request.setSendCode(ctripEmailTemplate.getSendCode());
+        request.setIsBodyHtml(ctripEmailTemplate.isBodyHTML());
+        request.setAppID(ctripEmailTemplate.getAppID());
+        request.setBodyTemplateID(ctripEmailTemplate.getBodyTemplateID());
+
+        request.setSender(email.getSender());
+        request.setRecipient(email.getRecipients());
+        request.setSubject(email.getSubject());
+        request.setCharset(email.getCharset());
+        request.setBodyContent(email.getBodyContent());
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.HOUR, 1);
+        request.setExpiredTime(calendar);
+        return request;
     }
 
     @Override

@@ -55,7 +55,7 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         if(versionMatches(hostPort) && isReplDiskLessSync(serverConf)) {
             String message = String.format("Redis %s should not set %s as YES",
                     hostPort.toString(), DiskLessMonitor.REPL_DISKLESS_SYNC);
-            alertManager.alert(clusterId, shardId, hostPort, ALERT_TYPE.REDIS_CONF_NOT_VALID, message);
+            alertManager.alert(clusterId, shardId, hostPort, ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR, message);
         }
     }
 

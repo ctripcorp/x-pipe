@@ -18,8 +18,7 @@ public class DefaultEmailServiceTest {
 
     @Test
     public void sendEmail() throws Exception {
-        Email defaultEmail = Email.DEFAULT;
-        DefaultEmail email = (DefaultEmail) defaultEmail;
+        Email email = new Email();
         email.addRecipient("test@gmail.com");
         email.setSender("sender@gmail.com");
         email.setBodyContent("Hello world!");

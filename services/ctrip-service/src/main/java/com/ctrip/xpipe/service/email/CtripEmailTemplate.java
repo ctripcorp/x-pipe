@@ -9,8 +9,6 @@ public interface CtripEmailTemplate {
 
     Integer getAppID();
     Integer getBodyTemplateID();
-
     boolean isBodyHTML();
-
     String getSendCode();
 }

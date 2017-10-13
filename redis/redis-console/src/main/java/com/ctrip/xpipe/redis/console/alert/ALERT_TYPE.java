@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.alert;
 
+import com.ctrip.xpipe.api.email.EMAIL_TYPE;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -7,22 +9,29 @@ package com.ctrip.xpipe.redis.console.alert;
  */
 public enum ALERT_TYPE {
 
-    CLIENT_INSTANCE_NOT_OK("client_status"),
-    QUORUM_DOWN_FAIL("quorum_fail"),
-    SENTINEL_RESET("stl_rst"),
-    REDIS_CONF("redis_conf"),
-    CLIENT_INCONSIS("client_inconsis"),
-    MIGRATION_MANY_UNFINISHED("migra_unfinish"),
-    REDIS_VERSION_NOT_VALID("redis_version_not_valid"),
-    REDIS_CONF_NOT_VALID("redis_conf_not_valid");
+    CLIENT_INSTANCE_NOT_OK("client_status", EMAIL_TYPE.SEND_TO_DBA),
+    QUORUM_DOWN_FAIL("quorum_fail", EMAIL_TYPE.SEND_TO_DEV),
+    SENTINEL_RESET("stl_rst", EMAIL_TYPE.SEND_TO_DEV),
+    REDIS_CONF_REWRITE_FAILURE("redis_conf_rewrite_failure", EMAIL_TYPE.SEND_TO_DBA),
+    CLIENT_INCONSIS("client_inconsis", EMAIL_TYPE.SEND_TO_DBA),
+    MIGRATION_MANY_UNFINISHED("migra_unfinish", EMAIL_TYPE.SEND_TO_DEV),
+    XREDIS_VERSION_NOT_VALID("xredis_version_not_valid", EMAIL_TYPE.SEND_TO_DBA),
+    REDIS_REPL_DISKLESS_SYNC_ERROR("redis_repl_diskless_sync_error", EMAIL_TYPE.SEND_TO_DBA);
 
     private String simpleDesc;
 
-    ALERT_TYPE(String simpleDesc){
+    private EMAIL_TYPE emailType;
+
+    ALERT_TYPE(String simpleDesc, EMAIL_TYPE emailType){
         this.simpleDesc = simpleDesc;
+        this.emailType = emailType;
     }
 
     public String simpleDesc() {
         return simpleDesc;
+    }
+
+    public EMAIL_TYPE emailType() {
+        return emailType;
     }
 }
