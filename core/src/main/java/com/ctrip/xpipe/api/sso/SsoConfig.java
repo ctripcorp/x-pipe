@@ -2,6 +2,8 @@ package com.ctrip.xpipe.api.sso;
 
 import java.util.regex.Pattern;
 
+import static java.util.regex.Pattern.*;
+
 /**
  * @author wenchao.meng
  *         <p>

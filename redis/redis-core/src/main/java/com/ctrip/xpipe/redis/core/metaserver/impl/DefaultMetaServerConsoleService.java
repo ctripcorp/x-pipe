@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -14,7 +13,6 @@ import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.retry.RetryPolicyFactories;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
-import org.springframework.http.MediaType;
 
 /**
  * @author wenchao.meng
@@ -84,28 +82,16 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	}
 
 	@Override
-	public PreviousPrimaryDcMessage makeMasterReadOnly(String clusterId, String shardId, boolean readOnly) {
-
-		HttpEntity<Object> entity = new HttpEntity<Object>(null);
-		return restTemplate.exchange(
-				makeMasterReadonlyPath,
-				HttpMethod.PUT, entity,
-				PreviousPrimaryDcMessage.class, clusterId, shardId, readOnly).getBody();
-
+	public void makeMasterReadOnly(String clusterId, String shardId, boolean readOnly) {
+		restTemplate.put(makeMasterReadonlyPath, null, clusterId, shardId, readOnly);
+		
 	}
 
 	@Override
-	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, PrimaryDcChangeRequest request) {
-
-		HttpHeaders httpHeaders = new HttpHeaders();
-		httpHeaders.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
-		HttpEntity<Object> entity = new HttpEntity<Object>(request, httpHeaders);
-
-		return restTemplate.exchange(changePrimaryDcPath,
-				HttpMethod.PUT,
-				entity,
-				PrimaryDcChangeMessage.class,
-				clusterId, shardId, newPrimaryDc).getBody();
+	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
+		
+		HttpEntity<Object> entity = new HttpEntity<Object>(null);
+		return restTemplate.exchange(changePrimaryDcPath, HttpMethod.PUT, entity, PrimaryDcChangeMessage.class, clusterId, shardId, newPrimaryDc).getBody();
 	}
 
 	@Override

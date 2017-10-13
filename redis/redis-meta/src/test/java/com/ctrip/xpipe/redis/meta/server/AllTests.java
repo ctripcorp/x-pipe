@@ -1,14 +1,20 @@
 package com.ctrip.xpipe.redis.meta.server;
 
+import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
+import com.ctrip.xpipe.redis.meta.server.meta.MetaJacksonTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
+
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersApiTest;
-import com.ctrip.xpipe.redis.meta.server.cluster.impl.*;
-import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
-import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultOffsetwaiterTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutorTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTriggerTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterArrangerTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.FirstNewMasterChooserTest;
-import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
-import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
@@ -21,13 +27,10 @@ import com.ctrip.xpipe.redis.meta.server.keeper.manager.AddKeeperCommandTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateControllerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DeleteKeeperCommandTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaTest;
-import com.ctrip.xpipe.redis.meta.server.meta.MetaJacksonTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaManagerTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
 
 
 /**
@@ -44,7 +47,6 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultClusterServersTest.class,
 	ClusterServerShardingTest.class,
 	ClusterServersApiTest.class,
-	DefaultMetaServersTest.class,
 	DefaultCurrentClusterServerTest.class,
 	DefaultKeeperContainerServiceFactoryTest.class,
 	ForwardInfoEditorTest.class,
@@ -61,7 +63,6 @@ import org.junit.runners.Suite.SuiteClasses;
 	PrimaryDcKeeperMasterChooserAlgorithmTest.class,
 	DefaultDcKeeperMasterChooserTest.class,
 	FirstNewMasterChooserTest.class,
-	DefaultOffsetwaiterTest.class,
 	DefaultSlaveOfJobTest.class,
 	DefaultKeeperStateControllerTest.class,
 	KeeperStateChangeJobTest.class,

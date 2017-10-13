@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange;
 
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.HostPort;
 
 /**
  * @author wenchao.meng

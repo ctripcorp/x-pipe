@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.redis.console.migration.AbstractMigrationTest;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 
 import static org.mockito.Mockito.*;
 
@@ -15,7 +18,10 @@ import org.mockito.runners.MockitoJUnitRunner;
  *         Jun 27, 2017
  */
 @RunWith(MockitoJUnitRunner.class)
-public class MigrationInitiatedStateTest extends AbstractMigrationStateTest {
+public class MigrationInitiatedStateTest extends AbstractMigrationTest {
+
+    @Mock
+    private MigrationCluster migrationCluster;
 
     private MigrationInitiatedState initiatedState;
 
@@ -28,7 +34,8 @@ public class MigrationInitiatedStateTest extends AbstractMigrationStateTest {
     @Test
     public void testRollback() {
 
-        initiatedState.getStateActionState().tryRollback();
+        initiatedState.rollback();
+
         verify(migrationCluster).updateStat(any(MigrationState.class));
         verify(migrationCluster).process();
 

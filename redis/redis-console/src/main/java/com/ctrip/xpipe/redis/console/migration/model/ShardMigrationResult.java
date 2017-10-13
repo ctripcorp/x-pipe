@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
-import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.Map;
@@ -36,9 +35,5 @@ public interface ShardMigrationResult {
     void setNewMaster(HostPort newMaster);
 
     HostPort getNewMaster();
-
-    void setPreviousPrimaryDcMessage(MetaServerConsoleService.PreviousPrimaryDcMessage primaryDcMessage);
-
-    MetaServerConsoleService.PreviousPrimaryDcMessage getPreviousPrimaryDcMessage();
 
 }

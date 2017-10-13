@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.server.Server;
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
@@ -84,8 +82,6 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
 
-        Set<HostPort> allKeepers = metaCache.allKeepers();
-
         hellos.forEach((hello) -> {
             HostPort sentinelAddr = hello.getSentinelAddr();
             RedisClient redisConnection = null;
@@ -96,42 +92,27 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
                 boolean shoudReset = false;
                 String reason = null;
-                Set<HostPort> keepers = new HashSet<>();
 
                 for (Map<String, String> slave : slaves) {
-
                     String host = slave.get("ip");
                     int port = Integer.parseInt(slave.get("port"));
-                    HostPort currentSlave = new HostPort(host, port);
-
-                    if(allKeepers.contains(currentSlave)){
-                        keepers.add(currentSlave);
-                    }
-
-                    Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
+                    Pair<String, String> clusterShard = metaCache.findClusterShard(new HostPort(host, port));
                     if (clusterShard == null) {
                         if (isKeeperOrDead(host, port)) {
                             shoudReset = true;
-                            reason = String.format("[%s]keeper or dead, current:%s,%s, but no clustershard", currentSlave, clusterId, shardId);
+                            reason = String.format("[%s]keeper or dead, current:%s,%s, but no clustershard", new HostPort(host, port), clusterId, shardId);
                         }
                         continue;
                     }
                     if (!ObjectUtils.equals(clusterId, clusterShard.getKey()) || !ObjectUtils.equals(shardId, clusterShard.getValue())) {
                         shoudReset = true;
-                        reason = String.format("[%s], current:%s,%s, but meta:%s:%s", currentSlave, clusterId, shardId, clusterShard.getKey(), clusterShard.getValue());
+                        reason = String.format("[%s], current:%s,%s, but meta:%s:%s", new HostPort(host, port), clusterId, shardId, clusterShard.getKey(), clusterShard.getValue());
                         break;
                     }
                 }
-
-                if(!shoudReset && keepers.size() >= 2){
-                    shoudReset = true;
-                    reason = String.format("%s,%s, has %d keepers:%s", clusterId, shardId, keepers.size(), keepers);
-                }
-
                 if (shoudReset) {
-                    logger.info("[reset][sentinelAddr]{}, {}, {}", sentinelAddr, sentinelMonitorName, reason);
-                    EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
-                            String.format("[%s]%s,%s", ALERT_TYPE.SENTINEL_RESET, sentinelAddr, reason));
+                    CatEventMonitor.DEFAULT.logAlertEvent(String.format("[stl][reset][%s] %s", sentinelAddr, reason));
+                    logger.warn("[checkReset][reset]{}, {}", sentinelAddr, reason);
                     connection.sync().reset(sentinelMonitorName);
                 }
             } catch (Exception e) {
@@ -173,7 +154,6 @@ public class DefaultSentinelCollector implements SentinelCollector {
         try {
             latch.await(1, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            logger.debug("[isKeeperOrDead]latch await error: {}", e);
         }
 
         if (role.get() instanceof String && Server.SERVER_ROLE.KEEPER.sameRole((String) role.get())) {

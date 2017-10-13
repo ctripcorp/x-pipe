@@ -1,22 +1,24 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import javax.annotation.PostConstruct;
+
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
  * @author marsqing
@@ -32,7 +34,7 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 	private ConsoleConfig config;
 
 	@Autowired
-	protected RedisSessionManager redisSessionManager;
+	private RedisSessionManager redisSessionManager;
 
 	protected ConcurrentMap<Long, Sample<T>> samples = new ConcurrentHashMap<>();
 

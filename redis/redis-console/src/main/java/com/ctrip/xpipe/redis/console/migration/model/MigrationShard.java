@@ -15,5 +15,4 @@ public interface MigrationShard extends MigrationShardInfoHolder, MigrationShard
 
     void retry(ShardMigrationStep step);
 
-    void markCheckFail(String failMessage);
 }

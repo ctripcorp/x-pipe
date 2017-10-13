@@ -24,8 +24,6 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	private int metaServerId = 1;
 	
 	private int metaServerPort = 9747;
-
-	private int waitforOffsetMilli = 1000;
 	
 	public UnitTestServerConfig(){
 		
@@ -112,15 +110,5 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	public Map<String, DcInfo> getDcInofs() {
 		
 		return new HashMap<>();
-	}
-
-	@Override
-	public int getWaitforOffsetMilli() {
-		return waitforOffsetMilli;
-	}
-
-	public UnitTestServerConfig setWaitforOffsetMilli(int waitforOffsetMilli) {
-		this.waitforOffsetMilli = waitforOffsetMilli;
-		return this;
 	}
 }

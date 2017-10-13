@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.migration;
 
-import com.ctrip.xpipe.endpoint.HostPort;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ctrip.xpipe.command.AbstractCommand;
@@ -105,7 +104,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 	protected void mockSuccessPrevPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
 			String shard, String prevPrimaryDc) {
 		when(migrationCommandBuilder.buildPrevPrimaryDcCommand(cluster, shard, prevPrimaryDc))
-				.thenReturn(new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>() {
+				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 					@Override
 					public String getName() {
 						return String.format("Mocked-PrevSuccess-%s-%s-%s", cluster, shard, prevPrimaryDc);
@@ -114,7 +113,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 					@Override
 					protected void doExecute() throws Exception {
 						future().setSuccess(
-								new MetaServerConsoleService.PreviousPrimaryDcMessage(new HostPort("127.0.0.1", 6379), null, "Prev success"));
+								new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.SUCCESS, "Prev success"));
 					}
 
 					@Override
@@ -126,7 +125,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 	protected void mockFailPrevPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
 			String shard, String prevPrimaryDc, Throwable ex) {
 		when(migrationCommandBuilder.buildPrevPrimaryDcCommand(cluster, shard, prevPrimaryDc))
-				.thenReturn(new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>() {
+				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 					@Override
 					public String getName() {
 						return String.format("Mocked-PrevFail-%s-%s-%s", cluster, shard, prevPrimaryDc);
@@ -145,8 +144,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 
 	protected void mockSuccessNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
 			String shard, String newPrimaryDc) {
-
-		when(migrationCommandBuilder.buildNewPrimaryDcCommand(eq(cluster), eq(shard), eq(newPrimaryDc), anyObject()))
+		when(migrationCommandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 					@Override
@@ -168,7 +166,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 	
 	protected void mockFailNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
 			String shard, String newPrimaryDc) {
-		when(migrationCommandBuilder.buildNewPrimaryDcCommand(eq(cluster), eq(shard), eq(newPrimaryDc), anyObject()))
+		when(migrationCommandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 					@Override
@@ -190,7 +188,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 
 	protected void mockFailNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
 			String shard, String newPrimaryDc, Throwable ex) {
-		when(migrationCommandBuilder.buildNewPrimaryDcCommand(eq(cluster), eq(shard), eq(newPrimaryDc), anyObject()))
+		when(migrationCommandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc))
 				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 					@Override
@@ -277,7 +275,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 	protected void mockSuccessRollBackCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster, String shard,
 			String prevPrimaryDc) {
 		when(migrationCommandBuilder.buildRollBackCommand(cluster, shard, prevPrimaryDc))
-			.thenReturn(new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>(){
+			.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>(){
 
 				@Override
 				public String getName() {
@@ -299,7 +297,7 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 	protected void mockFailRollBackCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster, String shard,
 			String prevPrimaryDc) {
 		when(migrationCommandBuilder.buildRollBackCommand(cluster, shard, prevPrimaryDc))
-			.thenReturn(new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>(){
+			.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>(){
 
 				@Override
 				public String getName() {

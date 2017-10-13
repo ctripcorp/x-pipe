@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.service;
 
 import com.ctrip.xpipe.AbstractServiceTest;
+import com.google.common.util.concurrent.AbstractService;
 import org.junit.After;
 import org.junit.Test;
 import org.springframework.boot.SpringApplication;

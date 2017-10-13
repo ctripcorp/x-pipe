@@ -7,6 +7,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import io.netty.buffer.ByteBuf;
 
 /**

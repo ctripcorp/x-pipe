@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console;
 
 
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
@@ -11,7 +10,6 @@ import com.ctrip.xpipe.redis.console.dao.MigrationClusterDaoTest;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDaoTest;
 import com.ctrip.xpipe.redis.console.dao.RedisDaoTest;
 import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
-import com.ctrip.xpipe.redis.console.health.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
 import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
@@ -26,7 +24,6 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublish
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
 
-import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -59,7 +56,6 @@ import org.junit.runner.RunWith;
         SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,
 
-        StateMachineTest.class,
         MigrationStatusTest.class,
         ConcurrentDalTransactionTest.class,
         DalTransactionManagerTest.class,
@@ -84,9 +80,7 @@ import org.junit.runner.RunWith;
         MigrationClusterDaoTest.class,
         MigrationEventDaoTest.class,
         DefaultConsoleDbConfigTest.class,
-        DefaultConsoleConfigTest.class,
-        RedisDaoTest.class,
-        CheckClusterTest.class
+        RedisDaoTest.class
 })
 public class AllTests {
 

@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.migration.command;
 
+import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
@@ -48,9 +48,8 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 	}
 
 	@Override
-	public Command<MetaServerConsoleService.PreviousPrimaryDcMessage> buildPrevPrimaryDcCommand(final String cluster, final String shard, final String prevPrimaryDc) {
-
-		return new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>() {
+	public Command<PrimaryDcChangeMessage> buildPrevPrimaryDcCommand(final String cluster, final String shard, final String prevPrimaryDc) {
+		return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 			@Override
 			public String getName() {
@@ -59,9 +58,9 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 
 			@Override
 			protected void doExecute() throws Exception {
-				MetaServerConsoleService.PreviousPrimaryDcMessage result = null;
+				PrimaryDcChangeMessage result = null;
 				try {
-					result = metaServerConsoleServiceManagerWrapper
+					metaServerConsoleServiceManagerWrapper
 						.get(prevPrimaryDc)
 						.makeMasterReadOnly(cluster, shard, true);
 					
@@ -79,7 +78,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 	}
 
 	@Override
-	public Command<PrimaryDcChangeMessage> buildNewPrimaryDcCommand(final String cluster, final String shard, final String newPrimaryDc, MetaServerConsoleService.PreviousPrimaryDcMessage previousPrimaryDcMessage) {
+	public Command<PrimaryDcChangeMessage> buildNewPrimaryDcCommand(final String cluster, final String shard, final String newPrimaryDc) {
 		return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 			@Override
@@ -93,7 +92,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 				try {
 					result = metaServerConsoleServiceManagerWrapper
 							.get(newPrimaryDc)
-							.doChangePrimaryDc(cluster, shard, newPrimaryDc, new MetaServerConsoleService.PrimaryDcChangeRequest(previousPrimaryDcMessage));
+							.doChangePrimaryDc(cluster, shard, newPrimaryDc);
 
 					future().setSuccess(result);
 				} catch (Exception e) {
@@ -123,7 +122,8 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 				try {
 					result = metaServerConsoleServiceManagerWrapper
 							.get(executeDc)
-							.doChangePrimaryDc(cluster, shard, primaryDc, null);
+							.doChangePrimaryDc(cluster, shard, primaryDc);
+
 					future().setSuccess(result);
 				} catch (Exception e) {
 					logger.error("[PrimaryDcChange][OtherDc][Failed]{}-{}", cluster, shard);
@@ -138,8 +138,8 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 	}
 
 	@Override
-	public Command<MetaServerConsoleService.PreviousPrimaryDcMessage> buildRollBackCommand(final String cluster, final String shard, final String prevPrimaryDc) {
-		return new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>() {
+	public Command<PrimaryDcChangeMessage> buildRollBackCommand(final String cluster, final String shard, final String prevPrimaryDc) {
+		return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
 
 			@Override
 			public String getName() {
@@ -148,9 +148,9 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 
 			@Override
 			protected void doExecute() throws Exception {
-				MetaServerConsoleService.PreviousPrimaryDcMessage result = null;
+				PrimaryDcChangeMessage result = null;
 				try {
-					result = metaServerConsoleServiceManagerWrapper
+					metaServerConsoleServiceManagerWrapper
 							.get(prevPrimaryDc)
 							.makeMasterReadOnly(cluster, shard, false);
 

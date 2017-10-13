@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.zk.impl;
 
-import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.ctrip.xpipe.zk.ZkConfig;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
@@ -10,7 +9,9 @@ import org.apache.curator.retry.RetryNTimes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
+import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.ctrip.xpipe.zk.ZkConfig;
 
 /**
  * @author wenchao.meng
@@ -24,17 +25,12 @@ public class DefaultZkConfig implements ZkConfig{
 	public static String KEY_ZK_NAMESPACE = "key_zk_namespace";
 	
 	private int zkSessionTimeoutMillis = 5000;
-	private int zkConnectionTimeoutMillis = 3000;
-	private int zkRetries = 3;
+	private int zkRetries = 10;
 	private String zkNameSpace = System.getProperty(KEY_ZK_NAMESPACE, DEFAULT_ZK_NAMESPACE);
 	
 	@Override
 	public int getZkConnectionTimeoutMillis() {
-		return zkConnectionTimeoutMillis;
-	}
-
-	public void setZkConnectionTimeoutMillis(int zkConnectionTimeoutMillis) {
-		this.zkConnectionTimeoutMillis = zkConnectionTimeoutMillis;
+		return 3000;
 	}
 
 	@Override
@@ -62,7 +58,7 @@ public class DefaultZkConfig implements ZkConfig{
 	
 	@Override
 	public int getSleepMsBetweenRetries() {
-		return 100;
+		return 1000;
 	}
 
 	@Override

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange;
 
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 
 /**
  * @author wenchao.meng
@@ -10,6 +9,6 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
  */
 public interface ChangePrimaryDcAction {
 	
-	PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo);
+	PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc);
 
 }

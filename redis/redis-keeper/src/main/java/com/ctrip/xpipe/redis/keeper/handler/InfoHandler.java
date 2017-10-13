@@ -22,7 +22,6 @@ import com.ctrip.xpipe.utils.StringUtil;
  */
 public class InfoHandler extends AbstractCommandHandler{
 
-
 	@Override
 	public String[] getCommands() {
 		return new String[]{"info"};
@@ -88,7 +87,7 @@ public class InfoHandler extends AbstractCommandHandler{
 
 			sb.append("# Replication" + RedisProtocol.CRLF);
 			sb.append("role:" + Server.SERVER_ROLE.SLAVE + RedisProtocol.CRLF);
-			sb.append(RedisProtocol.KEEPER_ROLE_PREFIX + ":" + redisKeeperServer.role() + RedisProtocol.CRLF);
+			sb.append("keeperrole:" + redisKeeperServer.role() + RedisProtocol.CRLF);
 			sb.append("state:" + redisKeeperServer.getRedisKeeperServerState().keeperState() + RedisProtocol.CRLF);
 			RedisMaster redisMaster =  redisKeeperServer.getRedisMaster();
 			String masterHost = redisMaster == null ? null: redisMaster.masterEndPoint().getHost();

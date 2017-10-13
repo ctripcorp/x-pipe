@@ -4,8 +4,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
@@ -55,12 +53,6 @@ public class RestTemplateFactory {
     }
 
     public static RestOperations createCommonsHttpRestTemplate(int maxConnPerRoute, int maxConnTotal,
-                                                               int connectTimeout, int soTimeout, int retryTimes) {
-        return createCommonsHttpRestTemplate(maxConnPerRoute, maxConnTotal, connectTimeout, soTimeout, retryTimes,
-                RetryPolicyFactories.newRestOperationsRetryPolicyFactory(10));
-    }
-
-    public static RestOperations createCommonsHttpRestTemplate(int maxConnPerRoute, int maxConnTotal,
                                                                int connectTimeout, int soTimeout, int retryTimes, RetryPolicyFactory retryPolicyFactory) {
         HttpClient httpClient = HttpClientBuilder.create()
                 .setMaxConnPerRoute(maxConnPerRoute)
@@ -70,28 +62,16 @@ public class RestTemplateFactory {
                 .build();
         ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
         RestTemplate restTemplate = new RestTemplate(factory);
-        //set jackson mapper
         for (HttpMessageConverter<?> hmc : restTemplate.getMessageConverters()) {
             if (hmc instanceof MappingJackson2HttpMessageConverter) {
-                ObjectMapper objectMapper = createObjectMapper();
                 MappingJackson2HttpMessageConverter mj2hmc = (MappingJackson2HttpMessageConverter) hmc;
-                mj2hmc.setObjectMapper(objectMapper);
+                mj2hmc.setObjectMapper((new ObjectMapper()).configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true));
             }
         }
 
         return (RestOperations) Proxy.newProxyInstance(RestOperations.class.getClassLoader(),
                 new Class[]{RestOperations.class},
                 new RetryableRestOperationsHandler(restTemplate, retryTimes, retryPolicyFactory));
-    }
-
-    private static ObjectMapper createObjectMapper() {
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-        return objectMapper;
-
     }
 
     private static class RetryableRestOperationsHandler implements InvocationHandler {

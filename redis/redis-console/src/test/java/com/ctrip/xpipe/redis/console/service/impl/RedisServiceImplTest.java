@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
-import com.ctrip.xpipe.redis.console.dao.RedisDao;
-import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
@@ -17,14 +15,11 @@ import org.unidal.dal.jdbc.DalException;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
 
 /**
  * @author wenchao.meng
@@ -38,9 +33,6 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
 
     @Autowired
     private KeeperAdvancedService keeperAdvancedService;
-
-    @Autowired
-    private RedisDao redisDao;
 
     private String dcName;
     private String shardName;
@@ -82,22 +74,11 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
     }
 
     @Test
-    public void testDeleteRedises() throws DalException, ResourceNotFoundException{
-        List<RedisTbl> redises = redisService.findRedisesByDcClusterShard(dcName, clusterName, shardName);
-        int expect_length = redises.size() - 1;
-        List<Pair<String, Integer>> redisAddresses = new LinkedList<>();
-        redisAddresses.add(new Pair<>(redises.get(0).getRedisIp(), redises.get(0).getRedisPort()));
-        redisService.deleteRedises(dcName, clusterName, shardName, redisAddresses);
-        redises = redisService.findRedisesByDcClusterShard(dcName, clusterName, shardName);
-        Assert.assertEquals(expect_length, redises.size());
-    }
-
-    @Test
     public void testInsertKeepers() throws ResourceNotFoundException, DalException {
 
         redisService.deleteKeepers(dcName, clusterName, shardName);
 
-        List<KeeperBasicInfo> newKeepers = keeperAdvancedService.findBestKeepers(dcName, clusterName);
+        List<KeeperBasicInfo> newKeepers = keeperAdvancedService.findBestKeepers(dcName);
 
         Assert.assertEquals(2, newKeepers.size());
 
@@ -121,6 +102,19 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
 
         keepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
         Assert.assertEquals(0, keepers.size());
+    }
+
+    @Test
+    public void testDelete() throws ResourceNotFoundException, DalException {
+
+        List<RedisTbl> redises = redisService.findRedisesByDcClusterShard(dcName, clusterName, shardName);
+
+        redisService.delete(redises.toArray(new RedisTbl[0]));
+
+        List<RedisTbl> newRedises = redisService.findRedisesByDcClusterShard(dcName, clusterName, shardName);
+
+        Assert.assertEquals(0, newRedises.size());
+
     }
 
     @Test
@@ -243,19 +237,5 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         Assert.assertEquals(2, inter.size());
     }
 
-    @Test
-    public void testValidateKeepersWithNothingChanged() throws ResourceNotFoundException {
-        List<RedisTbl> keepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
-        redisService.validateKeepers(keepers);
-    }
 
-    @Test(expected = BadRequestException.class)
-    public void testValidateKeepersWithKeeperPortChange() throws ResourceNotFoundException {
-        List<RedisTbl> originKeepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
-        List<RedisTbl> targetKeepers = new ArrayList<>(originKeepers);
-        // A front end port change, leads to an id change in backend
-        // Due to the function logic, we change the id only
-        targetKeepers.get(0).setId(11111L);
-        redisService.validateKeepers(targetKeepers);
-    }
 }

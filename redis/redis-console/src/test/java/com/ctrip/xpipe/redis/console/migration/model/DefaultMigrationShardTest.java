@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
 import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
@@ -107,11 +106,11 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
     @Test
     public void testMigrateSuccess() {
         when(mockedCommandBuilder.buildPrevPrimaryDcCommand("test-cluster", "test-shard", "dc-a"))
-                .thenReturn(new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>() {
+                .thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
                     @Override
                     protected void doExecute() throws Exception {
-                        future().setSuccess(new MetaServerConsoleService.PreviousPrimaryDcMessage(
-                                new HostPort("127.0.0.1", 0), null, "Test-Success"));
+                        future().setSuccess(new MetaServerConsoleService.PrimaryDcChangeMessage(
+                                MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.SUCCESS, "Test-success"));
                     }
 
                     @Override
@@ -123,7 +122,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                         return "testPrevPrimaryDcSuccess";
                     }
                 });
-        when(mockedCommandBuilder.buildNewPrimaryDcCommand(eq("test-cluster"), eq("test-shard"), eq("dc-b"), anyObject()))
+        when(mockedCommandBuilder.buildNewPrimaryDcCommand("test-cluster", "test-shard", "dc-b"))
                 .thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
                     @Override
                     protected void doExecute() throws Exception {
@@ -173,11 +172,11 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
     @Test
     public void testMigrationFail() {
         when(mockedCommandBuilder.buildPrevPrimaryDcCommand("test-cluster", "test-shard", "dc-a"))
-                .thenReturn(new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>() {
+                .thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
                     @Override
                     protected void doExecute() throws Exception {
-                        MetaServerConsoleService.PreviousPrimaryDcMessage message = new MetaServerConsoleService.PreviousPrimaryDcMessage();
-                        future().setSuccess(message);
+                        future().setSuccess(new MetaServerConsoleService.PrimaryDcChangeMessage(
+                                MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.SUCCESS, "Test-success"));
                     }
 
                     @Override
@@ -189,7 +188,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                         return "testPrevPrimaryDcSuccess";
                     }
                 });
-        when(mockedCommandBuilder.buildNewPrimaryDcCommand(eq("test-cluster"), eq("test-shard"), eq("dc-b"), anyObject()))
+        when(mockedCommandBuilder.buildNewPrimaryDcCommand("test-cluster", "test-shard", "dc-b"))
                 .thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
                     @Override
                     protected void doExecute() throws Exception {

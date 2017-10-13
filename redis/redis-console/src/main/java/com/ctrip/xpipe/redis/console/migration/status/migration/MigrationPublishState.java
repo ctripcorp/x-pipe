@@ -1,15 +1,15 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.List;
+
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.PublishState;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
-
-import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * @author shyin
@@ -27,7 +27,7 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 	@Override
 	protected void doRollback() {
 		throw new UnsupportedOperationException("[doRollback]" +
-				"[xpipe succeed, publish results to redis client fail, can not tryRollback, find DBA to manually solve this problem]eventId:" + getHolder().getMigrationEvent().getMigrationEventId());
+				"[xpipe succeed, publish results to redis client fail, can not rollback, find DBA to manually solve this problem]eventId:" + getHolder().getMigrationEvent().getMigrationEventId());
 	}
 
 	@Override
@@ -36,10 +36,10 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 		updateActiveDcIdToDestDcId();
 
 		try {
-			logger.info("[tryAction][updateRedisMaster]{}", this);
+			logger.info("[action][updateRedisMaster]{}", this);
 			updateRedisMaster();
 		} catch (ResourceNotFoundException e) {
-			logger.error("[tryAction]", e);
+			logger.error("[action]", e);
 		}
 
 		if(publish()) {

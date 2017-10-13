@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.notifier;
 
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-
 import java.util.List;
+
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 
 /**
  * @author shyin

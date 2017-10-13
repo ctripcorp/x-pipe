@@ -1,15 +1,19 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import com.ctrip.xpipe.api.migration.OuterClientService;
-import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
-import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+
+import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
+import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
+import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 
 /**
  * @author shyin
@@ -28,11 +32,7 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 		return publishService;
 	}
 
-	//for unit test
-	protected void setPublishService(OuterClientService publishService) {
-		this.publishService = publishService;
-	}
-
+	
 	protected boolean publish() {
 
 		String cluster = getHolder().clusterName();

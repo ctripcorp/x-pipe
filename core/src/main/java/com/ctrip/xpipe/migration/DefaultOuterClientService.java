@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.migration;
 
 import com.ctrip.xpipe.api.migration.OuterClientException;
-import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.google.common.collect.Lists;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -22,16 +20,16 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	private Map<HostPort, Boolean> instanceStatus = new ConcurrentHashMap<>();
 
 	@Override
-	public void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
-		logger.info("[markInstanceUp]{}", clusterShardHostPort);
-		instanceStatus.put(clusterShardHostPort.getHostPort(), true);
+	public void markInstanceUp(HostPort hostPort) throws OuterClientException {
+		logger.info("[markInstanceUp]{}", hostPort);
+		instanceStatus.put(hostPort, true);
 
 	}
 
 	@Override
-	public boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
+	public boolean isInstanceUp(HostPort hostPort) throws OuterClientException {
 
-		Boolean result = instanceStatus.get(clusterShardHostPort.getHostPort());
+		Boolean result = instanceStatus.get(hostPort);
 		if(result == null){
 			return Boolean.parseBoolean(System.getProperty("InstanceUp", "true"));
 		}
@@ -39,9 +37,9 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	}
 
 	@Override
-	public void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
-		logger.info("[markInstanceDown]{}", clusterShardHostPort);
-		instanceStatus.put(clusterShardHostPort.getHostPort(), false);
+	public void markInstanceDown(HostPort hostPort) throws OuterClientException {
+		logger.info("[markInstanceDown]{}", hostPort);
+		instanceStatus.put(hostPort, false);
 	}
 
 	@Override
@@ -70,13 +68,6 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 		res.setStartTime(startTime);
 		res.setEndTime(endTime);
 		return res;
-	}
-
-	@Override
-	public ClusterInfo getClusterInfo(String clusterName) {
-		ClusterInfo clusterInfo = new ClusterInfo();
-		clusterInfo.setGroups(Lists.newArrayList(new GroupInfo()));
-		return clusterInfo;
 	}
 
 }

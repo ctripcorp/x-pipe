@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.util.*;
 
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.tuple.Pair;
 import org.xml.sax.SAXException;
 

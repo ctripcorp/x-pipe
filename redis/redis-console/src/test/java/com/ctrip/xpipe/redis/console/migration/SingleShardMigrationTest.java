@@ -61,7 +61,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		MockitoAnnotations.initMocks(this);
 		
 		MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, 1L);
-		migrationCluster = new DefaultMigrationCluster(executors, scheduled, migrationEvent, migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
+		migrationCluster = new DefaultMigrationCluster(executors, migrationEvent, migrationClusterTbl, dcService, clusterService, shardService, redisService, migrationService);
 		
 		Map<Long, DcTbl> dcs = new HashMap<>();
 		for (DcTbl dc : dcService.findClusterRelatedDc("cluster1")) {

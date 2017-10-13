@@ -1,11 +1,8 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
-import org.apache.catalina.Host;
 
 /**
  * used for console
@@ -39,7 +36,7 @@ public interface MetaServerConsoleService extends MetaServerService{
 	 * @param shardId
 	 * @param readOnly  true mark as read only, false writable
 	 */
-	PreviousPrimaryDcMessage makeMasterReadOnly(String clusterId, String shardId, boolean readOnly);
+	void makeMasterReadOnly(String clusterId, String shardId, boolean readOnly);
 
 	/**
 	 * for new primary: promote redis, sync to redis<br/>
@@ -49,7 +46,7 @@ public interface MetaServerConsoleService extends MetaServerService{
 	 * @param newPrimaryDc
 	 * @return
 	 */
-	PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, PrimaryDcChangeRequest request);
+	PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc);
 
 	DcMeta getDynamicInfo();
 	
@@ -59,54 +56,6 @@ public interface MetaServerConsoleService extends MetaServerService{
 		PRIMARY_DC_ALREADY_IS_NEW,
 		FAIL
 	}
-
-	public static class PreviousPrimaryDcMessage{
-
-		private HostPort masterAddr;
-
-		private MasterInfo masterInfo;
-
-		private String message;
-
-		public PreviousPrimaryDcMessage(){
-		}
-
-		public PreviousPrimaryDcMessage(HostPort masterAddr, MasterInfo masterInfo, String message){
-			this.masterAddr = masterAddr;
-			this.masterInfo = masterInfo;
-			this.message = message;
-		}
-
-		public HostPort getMasterAddr() {
-			return masterAddr;
-		}
-
-		public void setMasterAddr(HostPort masterAddr) {
-			this.masterAddr = masterAddr;
-		}
-
-		public void setMessage(String message) {
-			this.message = message;
-		}
-
-		public void setMasterInfo(MasterInfo masterInfo) {
-			this.masterInfo = masterInfo;
-		}
-
-		public MasterInfo getMasterInfo() {
-			return masterInfo;
-		}
-
-		public String getMessage() {
-			return message;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("master:%s, masterInfo:%s, log:%s", masterAddr, masterInfo, message);
-		}
-	}
-
 	
 	public static class PrimaryDcCheckMessage extends ErrorMessage<PRIMARY_DC_CHECK_RESULT>{
 		
@@ -126,38 +75,7 @@ public interface MetaServerConsoleService extends MetaServerService{
 		SUCCESS,
 		FAIL
 	}
-
-	public static class PrimaryDcChangeRequest {
-
-		private MasterInfo masterInfo;
-
-		public PrimaryDcChangeRequest(){
-		}
-
-		public PrimaryDcChangeRequest(PreviousPrimaryDcMessage previousPrimaryDcMessage){
-			if(previousPrimaryDcMessage != null){
-				this.masterInfo = previousPrimaryDcMessage.getMasterInfo();
-			}
-		}
-
-		public PrimaryDcChangeRequest(MasterInfo masterInfo){
-			this.masterInfo = masterInfo;
-		}
-
-		public MasterInfo getMasterInfo() {
-			return masterInfo;
-		}
-
-		public void setMasterInfo(MasterInfo masterInfo) {
-			this.masterInfo = masterInfo;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("masterInfo: %s", masterInfo);
-		}
-	}
-
+	
 	public static class PrimaryDcChangeMessage extends ErrorMessage<PRIMARY_DC_CHANGE_RESULT>{
 		
 		private String newMasterIp;

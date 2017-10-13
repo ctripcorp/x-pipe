@@ -2,8 +2,11 @@ package com.ctrip.xpipe.utils;
 
 import java.net.Inet6Address;
 import java.net.InetSocketAddress;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 
+import com.ctrip.xpipe.metric.HostPort;
 import org.junit.Assert;
 import org.junit.Test;
 

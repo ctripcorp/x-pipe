@@ -1,19 +1,19 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import java.rmi.ServerException;
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.PostConstruct;
+
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
-import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
-import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratingNow;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
@@ -25,10 +25,11 @@ import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.PostConstruct;
-import java.rmi.ServerException;
-import java.util.Date;
-import java.util.List;
+import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
+import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
+import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 
 @Service
 public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventTblDao> implements MigrationService {
@@ -41,9 +42,6 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Autowired
     private ClusterService clusterService;
-
-    @Autowired
-    private AlertManager alertManager;
 
     @Autowired
     private DcService dcService;
@@ -115,7 +113,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         }
 
         if (unfinishedByClusterId.size() > 1) {
-            alertManager.alert(String.valueOf(clusterId), null, ALERT_TYPE.MIGRATION_MANY_UNFINISHED, String.format("[count]%d", unfinishedByClusterId.size()));
+            EventMonitor.DEFAULT.logAlertEvent(String.format("[unfinished > 1]%d : %d", unfinishedByClusterId.size(), clusterId));
         }
         return unfinishedByClusterId.get(unfinishedByClusterId.size() - 1);
     }

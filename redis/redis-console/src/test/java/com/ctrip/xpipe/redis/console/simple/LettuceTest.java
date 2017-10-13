@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.redis.console.simple;
 
 import java.io.IOException;
+import java.sql.Time;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import com.lambdaworks.redis.*;

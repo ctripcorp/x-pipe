@@ -5,8 +5,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Resource;
 
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
-import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,14 +53,8 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	@Autowired
 	private MultiDcService multiDcService;
 
-	@Autowired
-	private OffsetWaiter offsetWaiter;
-
-	@Autowired
-	private CurrentClusterServer currentClusterServer;
-
 	@Override
-	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
+	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
 		
 		if(!currentMetaManager.hasCluster(clusterId)){
 			logger.info("[changePrimaryDc][not interested in this cluster]");
@@ -70,16 +62,14 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 		}
 		
 		ChangePrimaryDcAction changePrimaryDcAction = null;
-
-		ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
 			logger.info("[doChangePrimaryDc][become primary]{}, {}", clusterId, shardId, newPrimaryDc);
-			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
+			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
 		}else{
 			logger.info("[doChangePrimaryDc][become backup]{}, {}", clusterId, shardId, newPrimaryDc);
-			changePrimaryDcAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, multiDcService, scheduled, executors);
+			changePrimaryDcAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, keyedObjectPool, multiDcService, scheduled, executors);
 		}
-		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
+		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc);
 	}
 
 	private NewMasterChooser createNewMasterChooser() {

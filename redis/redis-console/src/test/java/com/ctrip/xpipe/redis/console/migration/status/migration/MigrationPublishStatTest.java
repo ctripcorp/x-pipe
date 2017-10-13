@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
-import com.ctrip.xpipe.migration.AbstractOuterClientService;
+import com.ctrip.xpipe.api.migration.OuterClientException;
+import com.ctrip.xpipe.metric.HostPort;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,8 +11,10 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.web.client.ResourceAccessException;
 
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -35,7 +39,7 @@ import java.util.Map;
  *         Dec 22, 2016
  */
 @RunWith(MockitoJUnitRunner.class)
-public class MigrationPublishStatTest extends AbstractMigrationStateTest {
+public class MigrationPublishStatTest extends AbstractConsoleTest {
 	@Mock
 	private MigrationCluster migrationCluster;
 	@Mock
@@ -47,9 +51,6 @@ public class MigrationPublishStatTest extends AbstractMigrationStateTest {
 
 	@Before
 	public void setUp() throws ResourceNotFoundException {
-
-		when(migrationCluster.getScheduled()).thenReturn(scheduled);
-		when(migrationCluster.getMigrationExecutor()).thenReturn(executors);
 		when(migrationCluster.getCurrentCluster()).thenReturn((new ClusterTbl().setClusterName("test-cluster")));
 		when(migrationCluster.getMigrationCluster()).thenReturn((new MigrationClusterTbl()).setDestinationDcId(1));
 
@@ -72,11 +73,26 @@ public class MigrationPublishStatTest extends AbstractMigrationStateTest {
 	}
 
 	@Test
+	public void migrationPublishStatActionTest() {
+		MigrationState stat = new MigrationPublishState(migrationCluster);
+		MigrationState spy = spy(stat);
+
+		spy.action();
+		verify(spy, times(1)).nextAfterSuccess();
+		verify(spy, times(0)).nextAfterFail();
+	}
+	
+	@Test
 	public void publishFailWithNetworkProblemTest() {
-
 		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
-		stat.setPublishService(new AbstractOuterClientService() {
+		MigrationPublishState spy = spy(stat);
+		doReturn(new OuterClientService() {
 
+			
+			@Override
+			public int getOrder() {
+				return 0;
+			}
 			
 			@Override
 			public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
@@ -84,21 +100,44 @@ public class MigrationPublishStatTest extends AbstractMigrationStateTest {
 				throw new ResourceAccessException("test");
 			}
 
+
+			@Override
+			public void markInstanceUp(HostPort hostPort) throws OuterClientException {
+
+			}
+
+			@Override
+			public boolean isInstanceUp(HostPort hostPort) throws OuterClientException {
+				return false;
+			}
+
+			@Override
+			public void markInstanceDown(HostPort hostPort) throws OuterClientException {
+
+			}
+
 			@Override
 			public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName,
 					List<InetSocketAddress> newMasters) {
 				throw new ResourceAccessException("test");
 			}
-		});
-		stat.getStateActionState().tryAction();
-		verify(migrationCluster).updateStat(isA(MigrationPublishState.class));
+		}).when(spy).getMigrationPublishService();
+		
+		spy.action();
+		verify(spy, times(0)).nextAfterSuccess();
+		verify(spy, times(1)).nextAfterFail();
 	}
 	
 	@Test
 	public void publishFailWithReturnFail() {
-
 		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
-		stat.setPublishService(new AbstractOuterClientService() {
+		MigrationPublishState spy = spy(stat);
+		doReturn(new OuterClientService() {
+			
+			@Override
+			public int getOrder() {
+				return 0;
+			}
 			
 			@Override
 			public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
@@ -109,15 +148,31 @@ public class MigrationPublishStatTest extends AbstractMigrationStateTest {
 			}
 
 			@Override
+			public void markInstanceUp(HostPort hostPort) throws OuterClientException {
+
+			}
+
+			@Override
+			public boolean isInstanceUp(HostPort hostPort) throws OuterClientException {
+				return true;
+			}
+
+			@Override
+			public void markInstanceDown(HostPort hostPort) throws OuterClientException {
+
+			}
+
+			@Override
 			public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName,
 					List<InetSocketAddress> newMasters) {
 				MigrationPublishResult res = new MigrationPublishResult();
 				res.setSuccess(false);
 				return res;
 			}
-		});
+		}).when(spy).getMigrationPublishService();
 		
-		stat.getStateActionState().tryAction();
-		verify(migrationCluster).updateStat(isA(MigrationPublishState.class));
+		spy.action();
+		verify(spy, times(0)).nextAfterSuccess();
+		verify(spy, times(1)).nextAfterFail();
 	}
 }

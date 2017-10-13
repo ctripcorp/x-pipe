@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange;
 
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
-
 /**
  * @author wenchao.meng
  *         <p>
@@ -9,8 +7,9 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
  */
 public interface PrimaryDcPrepareToChange {
 
-    MetaServerConsoleService.PreviousPrimaryDcMessage prepare(String clusterId, String shardId);
+    void prepare(String clusterId, String shardId);
 
-    MetaServerConsoleService.PreviousPrimaryDcMessage deprepare(String clusterId, String shardId);
+    void deprepare(String clusterId, String shardId);
+
 
 }

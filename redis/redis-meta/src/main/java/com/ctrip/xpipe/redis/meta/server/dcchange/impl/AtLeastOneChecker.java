@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.ctrip.xpipe.exception.ExceptionUtils;
-import com.ctrip.xpipe.exception.SimpleErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,18 +36,17 @@ public class AtLeastOneChecker implements HealthChecker{
 	}
 
 	@Override
-	public SimpleErrorMessage check() {
-
-		StringBuilder sb = new StringBuilder();
+	public boolean check() {
+		
 		for(Redis  redis : redises){
+			
 			try {
 				new PingCommand(pool.getKeyPool(new InetSocketAddress(redis.getIp(), redis.getPort())), scheduled).execute().get();
-				return SimpleErrorMessage.success();
+				return true;
 			} catch (InterruptedException | ExecutionException e) {
 				logger.info("[check]", e);
-				sb.append(String.format("%s: %s\r\n", redis.desc(), ExceptionUtils.getRootCause(e).getMessage()));
 			}
 		}
-		return SimpleErrorMessage.fail(sb.toString());
+		return false;
 	}
 }

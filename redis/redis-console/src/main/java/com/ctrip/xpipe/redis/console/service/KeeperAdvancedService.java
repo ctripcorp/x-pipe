@@ -10,9 +10,8 @@ import java.util.function.BiPredicate;
  */
 public interface KeeperAdvancedService {
 
-  List<KeeperBasicInfo> findBestKeepers(String dcName, int beginPort, BiPredicate<String, Integer> keeperGood,
-      String clusterName);
+    List<KeeperBasicInfo> findBestKeepers(String dcName, int beginPort, BiPredicate<String, Integer> keeperGood);
 
-  List<KeeperBasicInfo> findBestKeepers(String dcName, String clusterName);
+    List<KeeperBasicInfo> findBestKeepers(String dcName);
 
 }

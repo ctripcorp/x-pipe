@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.action;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 

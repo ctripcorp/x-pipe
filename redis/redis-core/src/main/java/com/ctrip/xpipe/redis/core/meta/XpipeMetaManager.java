@@ -4,7 +4,7 @@ package com.ctrip.xpipe.redis.core.meta;
 import java.util.List;
 import java.util.Set;
 
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.tuple.Pair;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;

@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -18,8 +18,6 @@ public interface MetaCache {
     boolean inBackupDc(HostPort hostPort);
 
     HostPort findMasterInSameShard(HostPort hostPort);
-
-    Set<HostPort> allKeepers();
 
     Pair<String, String> findClusterShard(HostPort hostPort);
 

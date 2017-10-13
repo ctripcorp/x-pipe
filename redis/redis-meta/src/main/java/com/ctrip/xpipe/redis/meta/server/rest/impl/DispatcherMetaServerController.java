@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -74,22 +74,19 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_MAKE_MASTER_READONLY, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public MetaServerConsoleService.PreviousPrimaryDcMessage makeMasterReadOnly(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable boolean readOnly,
-																				@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+	public void makeMasterReadOnly(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable boolean readOnly, 
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
 		
 		logger.info("[makeMasterReadOnly]{}, {}, {}", clusterId, shardId, readOnly);
-		return metaServer.makeMasterReadOnly(clusterId, shardId, readOnly, forwardInfo);
+		metaServer.makeMasterReadOnly(clusterId, shardId, readOnly, forwardInfo);
 	}
 	
-	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC, method = RequestMethod.PUT,
-			produces= MediaType.APPLICATION_JSON_UTF8_VALUE,
-			consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public PrimaryDcChangeMessage doChangePrimaryDc(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc,
-													@RequestBody(required = false) MetaServerConsoleService.PrimaryDcChangeRequest request,
-													@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
-
-		logger.info("[doChangePrimaryDc]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, request);
-		return metaServer.doChangePrimaryDc(clusterId, shardId, newPrimaryDc, request, forwardInfo);
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public PrimaryDcChangeMessage doChangePrimaryDc(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc, 
+			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+		
+		logger.info("[doChangePrimaryDc]{}, {}, {}", clusterId, shardId, newPrimaryDc);
+		return metaServer.doChangePrimaryDc(clusterId, shardId, newPrimaryDc, forwardInfo);
 	}
 
 }

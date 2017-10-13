@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.health.action;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import org.junit.Assert;
 import org.junit.Before;

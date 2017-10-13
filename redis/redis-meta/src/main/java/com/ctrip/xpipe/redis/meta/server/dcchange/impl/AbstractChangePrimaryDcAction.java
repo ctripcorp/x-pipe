@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 import java.util.List;
 import java.util.concurrent.*;
 
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +32,7 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 	
 	protected int waitTimeoutSeconds = DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS;
 	
-	protected ExecutionLog executionLog;
+	protected ExecutionLog executionLog = new ExecutionLog();
 	
 	protected DcMetaCache   dcMetaCache;
 	
@@ -50,24 +49,22 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 	public AbstractChangePrimaryDcAction(DcMetaCache dcMetaCache,
 										 CurrentMetaManager currentMetaManager,
 										 SentinelManager sentinelManager,
-										 ExecutionLog executionLog,
 										 XpipeNettyClientKeyedObjectPool keyedObjectPool,
 										 ScheduledExecutorService scheduled,
 										 Executor executors) {
 		this.dcMetaCache = dcMetaCache;
 		this.currentMetaManager = currentMetaManager;
 		this.sentinelManager = sentinelManager;
-		this.executionLog = executionLog;
 		this.keyedObjectPool = keyedObjectPool;
 		this.scheduled = scheduled;
 		this.executors = executors;
 	}
 
 	@Override
-	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
+	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc) {
 		
 		try{
-			return doChangePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
+			return doChangePrimaryDc(clusterId, shardId, newPrimaryDc);
 		}catch(Exception e){
 			executionLog.error(e.getMessage());
 			logger.error("[changePrimaryDc]" + clusterId + "," + shardId + "," + newPrimaryDc, e);
@@ -75,7 +72,7 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 		}
 	}
 
-	protected abstract PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo);
+	protected abstract PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc);
 
 	protected abstract void changeSentinel(String clusterId, String shardId, Pair<String, Integer> newMaster);
 

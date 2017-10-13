@@ -1,21 +1,22 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
+import com.ctrip.xpipe.tuple.Pair;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Sets;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+
+import static org.mockito.Mockito.*;
 
 import java.util.LinkedList;
 import java.util.List;
-
-import static org.mockito.Mockito.when;
 
 /**
  * @author wenchao.meng
@@ -36,6 +37,7 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 		redises = new LinkedList<>();
 		int port1 = randomPort();
 		redises.add(new RedisMeta().setIp("localhost").setPort(port1));
+		
 		redises.add(new RedisMeta().setIp("localhost").setPort(randomPort(Sets.newHashSet(port1))));
 		when(dcMetaCache.getShardRedises(clusterId, shardId)).thenReturn(redises);
 		when(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)).thenReturn(true);
@@ -43,13 +45,9 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 	
 	@Test
 	public void testNoneMaster(){
-
-		when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(null);
+		
 		Assert.assertEquals(new Pair<>(redises.get(0).getIp(), redises.get(0).getPort()) ,primaryAlgorithm.choose());
-
-		when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(new Pair<>(redises.get(1).getIp(), redises.get(1).getPort()));
-		Assert.assertEquals(new Pair<>(redises.get(1).getIp(), redises.get(1).getPort()) ,primaryAlgorithm.choose());
-
+		
 	}
 
 	@Test

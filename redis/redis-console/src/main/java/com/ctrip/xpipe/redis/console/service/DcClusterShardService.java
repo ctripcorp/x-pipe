@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-
 import java.util.List;
+import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 
 public interface DcClusterShardService {
 

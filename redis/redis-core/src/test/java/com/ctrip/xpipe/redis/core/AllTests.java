@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.core;
 
-import com.ctrip.xpipe.redis.core.meta.ClusterShardCounterTest;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfigTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfoTest;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRoleTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -38,7 +36,6 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	ArrayParserTest.class,
 	RedisErrorParserTest.class,
 	MetaCloneTest.class,
-	ClusterShardCounterTest.class,
 	DefaultXpipeMetaManagerTest.class,
 	ReplicationStoreMetaTest.class,
 	DcMetaComparatorTest.class,
@@ -46,7 +43,6 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 	ShardMetaComparatorTest.class,
 	RoleCommandTest.class,
 	MasterRoleTest.class,
-	MasterInfoTest.class,
 	DcInfoTest.class,
 	DefaultPsyncTest.class,
 	META_SERVER_SERVICETest.class,

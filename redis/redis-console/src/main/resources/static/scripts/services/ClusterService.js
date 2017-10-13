@@ -47,23 +47,9 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         unbind_dc: {
             method: 'DELETE',
             url: '/console/clusters/:clusterName/dcs/:dcName'
-        },
-        get_all_organizations: {
-            method: 'GET',
-            url: '/console/organizations',
-            isArray : true
         }
     });
-    function getOrganizations() {
-        var d = $q.defer();
-        resource.get_all_organizations({},
-            function(result) {
-            d.resolve(result);
-        }, function(result) {
-            d.reject(result);
-        });
-        return d.promise;
-    }
+
     function getClustersCount() {
     	var d = $q.defer();
     	resource.get_clusters_count({},
@@ -218,7 +204,6 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         findClusterBatch : findClusterBatch,
         getClustersCount : getClustersCount,
         bindDc: bindDc,
-        unbindDc: unbindDc,
-        getOrganizations: getOrganizations
+        unbindDc: unbindDc
     }
 }]);

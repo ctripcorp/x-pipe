@@ -273,7 +273,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	}
 
-	protected void stopServerListeningPort(int listenPort) throws IOException {
+	protected void stopServerListeningPort(int listenPort) throws ExecuteException, IOException {
 
 		logger.info("[stopServerListeningPort]{}", listenPort);
 		executeScript("kill_server.sh", String.valueOf(listenPort));
