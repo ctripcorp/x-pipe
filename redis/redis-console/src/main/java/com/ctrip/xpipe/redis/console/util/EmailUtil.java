@@ -26,20 +26,20 @@ public class EmailUtil {
         List<String> dbaEmails = getDBAEmails();
         List<String> xpipeAdminEmails = getXPipeAdminEmails();
         switch (emailType) {
-            case SEND_TO_DBA: {
+            case REDIS_ALERT_SEND_TO_DBA: {
                 email.setRecipients(dbaEmails);
                 break;
             }
-            case SEND_TO_DBA_CC_DEV: {
+            case REDIS_ALERT_SEND_TO_DBA_CC_DEV: {
                 email.setRecipients(dbaEmails);
                 email.setcCers(xpipeAdminEmails);
                 break;
             }
-            case SEND_TO_DEV: {
+            case REDIS_ALERT_SEND_TO_DEV: {
                 email.setRecipients(xpipeAdminEmails);
                 break;
             }
-            case SEND_TO_DEV_CC_DBA: {
+            case REDIS_ALERT_SEND_TO_DEV_CC_DBA: {
                 email.setRecipients(xpipeAdminEmails);
                 email.setcCers(dbaEmails);
                 break;

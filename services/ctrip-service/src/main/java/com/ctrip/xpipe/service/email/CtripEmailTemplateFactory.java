@@ -11,7 +11,10 @@ public class CtripEmailTemplateFactory {
 
     public static CtripEmailTemplate createCtripEmailTemplate(EMAIL_TYPE emailType) {
         switch (emailType) {
-            case CC_DBA: {
+            case REDIS_ALERT_SEND_TO_DBA:
+            case REDIS_ALERT_SEND_TO_DBA_CC_DEV:
+            case REDIS_ALERT_SEND_TO_DEV:
+            case REDIS_ALERT_SEND_TO_DEV_CC_DBA: {
                 return new CtripAlertEmailTemplate();
             }
             default:

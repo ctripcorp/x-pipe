@@ -9,8 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>
@@ -24,7 +22,7 @@ public class EmailUtilTest extends AbstractConsoleIntegrationTest {
     @Test
     public void fillRecipientsAndCCersByType() throws Exception {
         Email email = new Email();
-        email.setEmailType(EMAIL_TYPE.SEND_TO_DBA_CC_DEV);
+        email.setEmailType(EMAIL_TYPE.REDIS_ALERT_SEND_TO_DBA_CC_DEV);
         emailUtil.fillRecipientsAndCCersByType(email);
         logger.info("{}", email.getRecipients());
         logger.info("{}", email.getCCers());

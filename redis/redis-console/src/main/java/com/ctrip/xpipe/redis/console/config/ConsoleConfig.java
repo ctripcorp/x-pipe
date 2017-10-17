@@ -58,8 +58,6 @@ public interface ConsoleConfig extends CoreConfig {
 
 	String getDBAEmails();
 
-	String getRedisAlertCCEmails();
-
 	String getRedisAlertSenderEmail();
 
 	String getXPipeAdminEmails();

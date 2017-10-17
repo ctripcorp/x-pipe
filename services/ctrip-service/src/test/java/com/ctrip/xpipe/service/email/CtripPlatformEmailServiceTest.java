@@ -1,20 +1,16 @@
 package com.ctrip.xpipe.service.email;
 
+import com.ctrip.xpipe.api.email.EMAIL_TYPE;
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailService;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author chen.zhu
@@ -43,6 +39,7 @@ public class CtripPlatformEmailServiceTest {
         String text = IOUtils.toString(ins);
         Email email = new Email();
         email.setBodyContent(text);
+        email.setEmailType(EMAIL_TYPE.REDIS_ALERT_SEND_TO_DBA_CC_DEV);
         email.addRecipient("zhuchen@ctrip.com");
         email.setSender("xpipe@ctrip.com");
         email.setSubject("XPipe Test");

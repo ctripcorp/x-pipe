@@ -49,7 +49,7 @@ public class EmailReporterTest extends AbstractConsoleIntegrationTest {
         map.put(ALERT_TYPE.MIGRATION_MANY_UNFINISHED, generateRedisAlertSet(5, ALERT_TYPE.MIGRATION_MANY_UNFINISHED));
         map.put(ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR, generateRedisAlertSet(5, ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR));
         Map<ALERT_TYPE, Set<RedisAlert>> result = emailReporter
-                .getEmailTypeSeparatedRedisAlerts(map, EMAIL_TYPE.SEND_TO_DBA_CC_DEV);
+                .getEmailTypeSeparatedRedisAlerts(map, EMAIL_TYPE.REDIS_ALERT_SEND_TO_DBA_CC_DEV);
         Assert.assertNotEquals(map, result);
         Set<ALERT_TYPE> expectedSet = new HashSet<>();
         expectedSet.addAll(

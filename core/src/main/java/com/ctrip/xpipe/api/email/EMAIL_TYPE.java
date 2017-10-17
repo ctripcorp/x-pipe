@@ -7,10 +7,10 @@ package com.ctrip.xpipe.api.email;
  */
 public enum EMAIL_TYPE {
 
-    SEND_TO_DBA("send_to_dba"),
-    SEND_TO_DEV("send_to_dev"),
-    SEND_TO_DBA_CC_DEV("send_to_dba_cc_dev"),
-    SEND_TO_DEV_CC_DBA("send_to_dev_cc_dba"),
+    REDIS_ALERT_SEND_TO_DBA("send_to_dba"),
+    REDIS_ALERT_SEND_TO_DEV("send_to_dev"),
+    REDIS_ALERT_SEND_TO_DBA_CC_DEV("send_to_dba_cc_dev"),
+    REDIS_ALERT_SEND_TO_DEV_CC_DBA("send_to_dev_cc_dba"),
     DO_NOTHING("do nothing");
 
     private String simpleDesc;
