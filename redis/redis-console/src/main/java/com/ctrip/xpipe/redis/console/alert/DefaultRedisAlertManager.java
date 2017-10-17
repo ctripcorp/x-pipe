@@ -2,22 +2,17 @@ package com.ctrip.xpipe.redis.console.alert;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.utils.MapUtils;
 import io.netty.util.internal.ConcurrentSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,9 +45,11 @@ public class DefaultRedisAlertManager implements RedisAlertManager {
             @Override
             protected void doRun() {
                 try {
-                    Collection<RedisAlert> redisAlertCollection = getAllRedisAlerts();
-                    reporters.forEach(reporter -> reporter.report(redisAlertCollection));
-                    cleanup();
+                    synchronized (this) {
+                        final Map<ALERT_TYPE, Set<RedisAlert>> map = new HashMap<>(redisAlerts);
+                        reporters.forEach(reporter -> reporter.scheduledReport(map));
+                        cleanup();
+                    }
                 } catch (Exception e) {
                     logger.error("[scheduledTask]{}", e);
                 }
@@ -60,13 +57,7 @@ public class DefaultRedisAlertManager implements RedisAlertManager {
         }, initialDelay, period, TimeUnit.MINUTES);
     }
 
-    private Collection<RedisAlert> getAllRedisAlerts() {
-        Collection<RedisAlert> collection = new LinkedList<>();
-        redisAlerts.values().forEach(redisAlertSet->collection.addAll(redisAlertSet));
-        return collection;
-    }
-
-    private void cleanup() {
+    protected void cleanup() {
         backupRedisAlerts = redisAlerts;
         redisAlerts = new ConcurrentHashMap<>();
     }
@@ -76,12 +67,16 @@ public class DefaultRedisAlertManager implements RedisAlertManager {
                                              String shardId, HostPort hostPort, String message) {
         ConcurrentSet<RedisAlert> typedRedisAlerts = MapUtils.getOrCreate(redisAlerts,
                 alertType, () -> new ConcurrentSet<>());
-        ConcurrentSet<RedisAlert> typedBackupRedisAlerts = MapUtils.getOrCreate(backupRedisAlerts,
-                alertType, () -> new ConcurrentSet<>());
+        ConcurrentSet<RedisAlert> typedBackupRedisAlerts = backupRedisAlerts == null ? null
+                :MapUtils.getOrCreate(backupRedisAlerts, alertType, () -> new ConcurrentSet<>());
 
         RedisAlert redisAlert = createRedisAlert(clusterId, shardId, hostPort, alertType, message);
-        if(typedRedisAlerts.add(redisAlert) && !typedBackupRedisAlerts.contains(redisAlert)) {
-            reporters.forEach(reporter -> reporter.report(redisAlert));
+        if(typedRedisAlerts.add(redisAlert) &&
+                (backupRedisAlerts != null && !typedBackupRedisAlerts.contains(redisAlert))) {
+            logger.info("[findOrCreateRedisAlert]New Issue occurs, report immediately");
+            reporters.forEach(reporter -> reporter.immediateReport(redisAlert));
+        } else {
+            logger.info("[findOrCreateRedisAlert]RedisAlert {} already exists", redisAlert);
         }
         return redisAlert;
     }

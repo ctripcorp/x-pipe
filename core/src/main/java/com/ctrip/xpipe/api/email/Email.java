@@ -27,6 +27,18 @@ public class Email {
         charset = "UTF-8";
     }
 
+    public void setRecipients(List<String> recipients) {
+        this.recipients = recipients;
+    }
+
+    public void setcCers(List<String> cCers) {
+        this.cCers = cCers;
+    }
+
+    public void setbCCers(List<String> bCCers) {
+        this.bCCers = bCCers;
+    }
+
     public EMAIL_TYPE getEmailType() {
         return emailType;
     }

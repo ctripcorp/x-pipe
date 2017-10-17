@@ -49,7 +49,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public String getDBAEmails() {
-        return getProperty(KEY_DBA_EMAILS, "");
+        return getProperty(KEY_DBA_EMAILS, "zhuchen@ctrip.com");
     }
 
     @Override
@@ -69,7 +69,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public String getXPipeAdminEmails() {
-        return getProperty(KEY_XPIPE_ADMIN_EMAILS, "");
+        return getProperty(KEY_XPIPE_ADMIN_EMAILS, "zhuchen@ctrip.com");
     }
 
     @Override

@@ -13,7 +13,9 @@ XPipe相关事宜请联系
     #foreach( $email in $xpipeAdminEmails ) ${email} | #end
 <br/>
 
+#if($redisAlerts.containsKey(${XREDIS_VERSION_NOT_VALID}))
 <div>
+
     -------------------
     <h4>从机房Redis版本错误</h4>
     <p>说明：XPipe从机房Redis应该为XRedis，且版本号大于等于0.0.3</p>
@@ -27,7 +29,7 @@ XPipe相关事宜请联系
         </tr>
         </thead>
         <tbody>
-            #foreach( $redisAlert in $redisVersionAlerts )
+            #foreach( $redisAlert in $redisAlerts.get(${XREDIS_VERSION_NOT_VALID}))
                 <tr>
                     <td>$redisAlert.getClusterId()</td>
                     <td>$redisAlert.getShardId()</td>
@@ -37,7 +39,11 @@ XPipe相关事宜请联系
             #end
         </tbody>
     </table>
+
 </div>
+#end
+
+#if($redisAlerts.containsKey(${REDIS_REPL_DISKLESS_SYNC_ERROR}))
 <div>
     -------------------
     <h4>Redis配置错误</h4>
@@ -52,7 +58,7 @@ XPipe相关事宜请联系
         </tr>
         </thead>
         <tbody>
-            #foreach( $redisAlert in $redisConfNotValidAlerts )
+            #foreach( $redisAlert in $redisAlerts.get(${REDIS_REPL_DISKLESS_SYNC_ERROR}) )
             <tr>
                 <td>$redisAlert.getClusterId()</td>
                 <td>$redisAlert.getShardId()</td>
@@ -63,6 +69,9 @@ XPipe相关事宜请联系
         </tbody>
     </table>
 </div>
+#end
+
+#if($redisAlerts.containsKey(${CLIENT_INCONSIS}))
 <div>
     -------------------
     <h4>CRedis | XPipe 数据不一致</h4>
@@ -76,16 +85,19 @@ XPipe相关事宜请联系
         </tr>
         </thead>
         <tbody>
-            #foreach( $redisAlert in $clientInconsisAlerts )
+            #foreach( $redisAlert in $redisAlerts.get(${CLIENT_INCONSIS}) )
             <tr>
-                <td>$redisAlert.getClusterId()</td>
-                <td>$redisAlert.getShardId()</td>
-                <td>$redisAlert.getMessage()</td>
+                <td>$!redisAlert.getClusterId()</td>
+                <td>$!redisAlert.getShardId()</td>
+                <td>$!redisAlert.getMessage()</td>
             </tr>
             #end
         </tbody>
     </table>
 </div>
+#end
+
+#if($redisAlerts.containsKey(${CLIENT_INSTANCE_NOT_OK}))
 <div>
     -------------------
     <h4>CRedis中实例故障或连接故障</h4>
@@ -99,16 +111,19 @@ XPipe相关事宜请联系
         </tr>
         </thead>
         <tbody>
-            #foreach( $redisAlert in $clientInstanceNotOkAlerts )
+            #foreach( $redisAlert in $redisAlerts.get(${CLIENT_INSTANCE_NOT_OK}) )
             <tr>
-                <td>$redisAlert.getClusterId()</td>
-                <td>$redisAlert.getShardId()</td>
-                <td>$redisAlert.getMessage()</td>
+                <td>$!redisAlert.getClusterId()</td>
+                <td>$!redisAlert.getShardId()</td>
+                <td>$!redisAlert.getMessage()</td>
             </tr>
             #end
         </tbody>
     </table>
 </div>
+#end
+
+#if($redisAlerts.containsKey(${REDIS_CONF_REWRITE_FAILURE}))
 <div>
     -------------------
     <h4>Redis CONF REWRITE 错误</h4>
@@ -122,7 +137,83 @@ XPipe相关事宜请联系
         </tr>
         </thead>
         <tbody>
-            #foreach( $redisAlert in $redisConfAlerts )
+            #foreach( $redisAlert in $redisAlerts.get(${REDIS_CONF_REWRITE_FAILURE}) )
+            <tr>
+                <td>$!redisAlert.getClusterId()</td>
+                <td>$!redisAlert.getShardId()</td>
+                <td>$!redisAlert.getMessage()</td>
+            </tr>
+            #end
+        </tbody>
+    </table>
+</div>
+#end
+
+#if($redisAlerts.containsKey(${QUORUM_DOWN_FAIL}))
+<div>
+    -------------------
+    <h4>Redis CONF REWRITE 错误</h4>
+    <p>说明：Redis CONF REWRITE 错误</p>
+    <table border="1">
+        <thead>
+        <tr>
+            <th>Redis集群</th>
+            <th>Redis分片</th>
+            <th>日志信息</th>
+        </tr>
+        </thead>
+        <tbody>
+            #foreach( $redisAlert in $redisAlerts.get(${QUORUM_DOWN_FAIL}) )
+            <tr>
+                <td>$!redisAlert.getClusterId()</td>
+                <td>$!redisAlert.getShardId()</td>
+                <td>$!redisAlert.getMessage()</td>
+            </tr>
+            #end
+        </tbody>
+    </table>
+</div>
+#end
+
+#if($redisAlerts.containsKey(${MIGRATION_MANY_UNFINISHED}))
+<div>
+    -------------------
+    <h4>Redis CONF REWRITE 错误</h4>
+    <p>说明：Redis CONF REWRITE 错误</p>
+    <table border="1">
+        <thead>
+        <tr>
+            <th>Redis集群</th>
+            <th>日志信息</th>
+        </tr>
+        </thead>
+        <tbody>
+            #foreach( $redisAlert in $redisAlerts.get(${MIGRATION_MANY_UNFINISHED}) )
+            <tr>
+                <td>$redisAlert.getClusterId()</td>
+                <td>$redisAlert.getMessage()</td>
+            </tr>
+            #end
+        </tbody>
+    </table>
+</div>
+#end
+
+#if($redisAlerts.containsKey(${SENTINEL_RESET}))
+<div>
+    -------------------
+    <h4>Redis CONF REWRITE 错误</h4>
+    <p>说明：Redis CONF REWRITE 错误</p>
+    <table border="1">
+        <thead>
+        <tr>
+            <th>Redis集群</th>
+            <th>Redis分片</th>
+            <th>日志信息</th>
+        </tr>
+        </thead>
+        <tbody>
+            #foreach( $redisAlert in $redisAlerts.get(${SENTINEL_RESET}) )
             <tr>
                 <td>$redisAlert.getClusterId()</td>
                 <td>$redisAlert.getShardId()</td>
@@ -132,6 +223,7 @@ XPipe相关事宜请联系
         </tbody>
     </table>
 </div>
+#end
 </body>
 </html>
 ]]></htmlContent></entry>

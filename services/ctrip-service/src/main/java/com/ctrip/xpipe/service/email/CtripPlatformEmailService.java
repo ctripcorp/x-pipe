@@ -51,6 +51,7 @@ public class CtripPlatformEmailService implements EmailService {
 
         request.setSender(email.getSender());
         request.setRecipient(email.getRecipients());
+        request.setCc(email.getCCers());
         request.setSubject(email.getSubject());
         request.setCharset(email.getCharset());
         request.setBodyContent(email.getBodyContent());

@@ -46,8 +46,7 @@ public class RedisAlert {
         return ObjectUtils.equals(other.getAlertType(), this.alertType) &&
                 ObjectUtils.equals(other.getClusterId(), this.clusterId) &&
                 ObjectUtils.equals(other.getShardId(), this.shardId) &&
-                ObjectUtils.equals(other.getHostPort(), this.hostPort) &&
-                ObjectUtils.equals(other.getMessage(), this.message);
+                ObjectUtils.equals(other.getHostPort(), this.hostPort);
     }
 
     @Override
@@ -58,10 +57,6 @@ public class RedisAlert {
 
     public ALERT_TYPE getAlertType() {
         return alertType;
-    }
-
-    public void setAlertType(ALERT_TYPE alertType) {
-        this.alertType = alertType;
     }
 
     public String getMessage() {
