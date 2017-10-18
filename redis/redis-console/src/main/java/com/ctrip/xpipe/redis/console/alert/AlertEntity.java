@@ -3,24 +3,34 @@ package com.ctrip.xpipe.redis.console.alert;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
+import java.util.Date;
+
 /**
  * @author chen.zhu
  * <p>
  * Oct 12, 2017
  */
-public class RedisAlert {
-    private HostPort hostPort;
+public class AlertEntity {
+
+    private Date date;
+
     private String clusterId;
+
     private String shardId;
+
     private String message;
+
+    private HostPort hostPort;
+
     private ALERT_TYPE alertType;
 
-    public RedisAlert(HostPort hostPort, String clusterId, String shardId, String message, ALERT_TYPE alertType) {
+    public AlertEntity(HostPort hostPort, String clusterId, String shardId, String message, ALERT_TYPE alertType) {
         this.hostPort = hostPort;
         this.clusterId = clusterId;
         this.shardId = shardId;
         this.message = message;
         this.alertType = alertType;
+        this.date = new Date(System.currentTimeMillis());
     }
 
     @Override
@@ -40,9 +50,9 @@ public class RedisAlert {
 
     @Override
     public boolean equals(Object obj) {
-        if(obj == null || !(obj instanceof RedisAlert)) return false;
+        if(obj == null || !(obj instanceof AlertEntity)) return false;
         if(obj == this) return true;
-        RedisAlert other = (RedisAlert) obj;
+        AlertEntity other = (AlertEntity) obj;
         return ObjectUtils.equals(other.getAlertType(), this.alertType) &&
                 ObjectUtils.equals(other.getClusterId(), this.clusterId) &&
                 ObjectUtils.equals(other.getShardId(), this.shardId) &&
@@ -55,6 +65,23 @@ public class RedisAlert {
                 + ", Shard: " + shardId + ", HostPort: " + hostPort + ", Message: " + message;
     }
 
+    public String getKey() {
+        StringBuffer sb = new StringBuffer(alertType + "");
+        if(clusterId != null && !clusterId.isEmpty()) {
+            sb.append(":").append(clusterId);
+        }
+        if(shardId != null && !shardId.isEmpty()) {
+            sb.append(":").append(shardId);
+        }
+        if(hostPort != null) {
+            sb.append(":").append(hostPort.toString());
+        }
+        if(message != null && message.isEmpty()) {
+            sb.append(":").append(message);
+        }
+        return sb.toString();
+    }
+
     public ALERT_TYPE getAlertType() {
         return alertType;
     }
@@ -63,32 +90,49 @@ public class RedisAlert {
         return message;
     }
 
-    public void setMessage(String message) {
+    public AlertEntity setMessage(String message) {
         this.message = message;
+        return this;
     }
 
     public HostPort getHostPort() {
         return hostPort;
     }
 
-    public void setHostPort(HostPort hostPort) {
+    public AlertEntity setHostPort(HostPort hostPort) {
         this.hostPort = hostPort;
+        return this;
     }
 
     public String getClusterId() {
         return clusterId;
     }
 
-    public void setClusterId(String clusterId) {
+    public AlertEntity setClusterId(String clusterId) {
         this.clusterId = clusterId;
+        return this;
     }
 
     public String getShardId() {
         return shardId;
     }
 
-    public void setShardId(String shardId) {
+    public AlertEntity setShardId(String shardId) {
         this.shardId = shardId;
+        return this;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public AlertEntity setDate(Date date) {
+        this.date = date;
+        return this;
+    }
+
+    public void setAlertType(ALERT_TYPE alertType) {
+        this.alertType = alertType;
     }
 
     public static class RedisAlertBuilder {
@@ -123,8 +167,8 @@ public class RedisAlert {
             return this;
         }
 
-        public RedisAlert createRedisAlert() {
-            return new RedisAlert(this.hostPort, this.clusterId, this.shardId, this.message, this.alertType);
+        public AlertEntity createRedisAlert() {
+            return new AlertEntity(this.hostPort, this.clusterId, this.shardId, this.message, this.alertType);
         }
     }
 }

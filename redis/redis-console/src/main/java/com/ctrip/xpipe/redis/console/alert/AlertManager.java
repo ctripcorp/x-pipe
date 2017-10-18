@@ -32,7 +32,7 @@ public class AlertManager {
     private ConsoleConfig consoleConfig;
 
     @Autowired
-    private RedisAlertManager redisAlertManager;
+    private NotificationManager notifier;
 
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -74,7 +74,7 @@ public class AlertManager {
 
         logger.warn("[alert]{}, {}, {}, {}", cluster, shard, type, message);
         EventMonitor.DEFAULT.logAlertEvent(String.format("%s,%s,%s,%s", cluster, shard, type.simpleDesc(), message));
-        redisAlertManager.findOrCreateRedisAlert(type, cluster, shard, hostPort, message);
+        notifier.addAlert(cluster, shard, hostPort, type, message);
     }
 
     private boolean shouldAlert(String cluster) {
