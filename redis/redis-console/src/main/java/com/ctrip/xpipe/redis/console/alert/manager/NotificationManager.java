@@ -1,12 +1,14 @@
 package com.ctrip.xpipe.redis.console.alert.manager;
 
 import com.ctrip.xpipe.api.email.EmailType;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -16,13 +18,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author chen.zhu
@@ -51,12 +51,17 @@ public class NotificationManager {
     @Autowired
     private DecoratorManager decoratorManager;
 
+    @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
+    private ScheduledExecutorService scheduled;
+
     @PostConstruct
     public void start() {
         logger.info("Alert Notification Manager started");
 
-        XpipeThreadFactory.create("Send Alert", true).newThread(new SendAlert()).start();
-        XpipeThreadFactory.create("Announce Recover", true).newThread(new AnnounceRecover()).start();
+        int initialDelay = 0;
+        int period = 1;
+        scheduled.scheduleAtFixedRate(new SendAlert(), initialDelay, period, TimeUnit.MINUTES);
+        scheduled.scheduleAtFixedRate(new AnnounceRecover(), initialDelay, period, TimeUnit.MINUTES);
     }
 
     public void addAlert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message) {
@@ -85,10 +90,6 @@ public class NotificationManager {
 
         unrecoveredAlerts.put(alertKey, alert);
 
-        Pair<String, String> pair = decoratorManager.generateTitleAndContent(alert, true);
-        String title = pair.getKey();
-        String content = pair.getValue();
-
         if (suspendMinute > 0) {
             if (isSuspend(alertKey, suspendMinute)) {
                 return false;
@@ -96,6 +97,10 @@ public class NotificationManager {
                 sendedAlerts.put(alertKey, alert);
             }
         }
+
+        Pair<String, String> pair = decoratorManager.generateTitleAndContent(alert, true);
+        String title = pair.getKey();
+        String content = pair.getValue();
 
         for (AlertChannel channel : channels) {
             List<String> receivers = policyManager.queryRecepients(alert);

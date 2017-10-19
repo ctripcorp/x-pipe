@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;
-import com.ctrip.xpipe.redis.console.alert.policy.XRedisVersionAlertPolicy;
+import com.ctrip.xpipe.redis.console.alert.policy.SendToDBAAlertPolicy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu
@@ -47,7 +46,7 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
     @Test
     public void queryRecoverMinute() throws Exception {
         int minute = policyManager.queryRecoverMinute(alert);
-        int expect = 15;
+        int expect = alert.getAlertType().getRecoverTime();
         Assert.assertEquals(expect, minute);
     }
 
@@ -60,14 +59,14 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void queryRecepients() throws Exception {
-        AlertPolicy policy = policyManager.alertPolicyMap.get(XRedisVersionAlertPolicy.ID);
+        AlertPolicy policy = policyManager.alertPolicyMap.get(SendToDBAAlertPolicy.ID);
         List<String> expected = policy.queryRecipients();
         Assert.assertEquals(expected, policyManager.queryRecepients(alert));
     }
 
     @Test
     public void queryCCers() throws Exception {
-        AlertPolicy policy = policyManager.alertPolicyMap.get(XRedisVersionAlertPolicy.ID);
+        AlertPolicy policy = policyManager.alertPolicyMap.get(SendToDBAAlertPolicy.ID);
         List<String> expected = policy.queryCCers();
         Assert.assertEquals(expected, policyManager.queryCCers(alert));
     }

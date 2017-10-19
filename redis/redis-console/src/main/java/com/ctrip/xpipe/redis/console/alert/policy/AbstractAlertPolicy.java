@@ -19,10 +19,6 @@ public abstract class AbstractAlertPolicy implements AlertPolicy {
 
     private static final AlertChannel[] CHANNELS = {AlertChannel.MAIL};
 
-    private static final int SUSPEND_MINUTE = 30;
-
-    private static final int RECOVER_MINUTE = 15;
-
     @Autowired
     protected SenderManager senderManager;
 
@@ -36,12 +32,12 @@ public abstract class AbstractAlertPolicy implements AlertPolicy {
 
     @Override
     public int querySuspendMinute() {
-        return SUSPEND_MINUTE;
+        return consoleConfig.getAlertSystemSuspendMinute();
     }
 
     @Override
     public int queryRecoverMinute() {
-        return RECOVER_MINUTE;
+        return consoleConfig.getAlertSystemRecoverMinute();
     }
 
     @Override

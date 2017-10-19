@@ -9,18 +9,14 @@ import java.util.List;
  * <p>
  * Oct 19, 2017
  */
-@Component(SendToDBAAlertPolicy.ID)
-public class SendToDBAAlertPolicy extends AbstractAlertPolicy {
+@Component(SendToXPipeAdminAlertPolicy.ID)
+public class SendToXPipeAdminAlertPolicy extends AbstractAlertPolicy {
 
-    public static final String ID = "send.to.dba.alert.policy";
+    public static final String ID = "send.to.xpipe.admin.alert.policy";
 
     @Override
     public List<String> queryRecipients() {
-        return getDBAEmails();
-    }
-
-    @Override
-    public List<String> queryCCers() {
         return getXPipeAdminEmails();
     }
+
 }

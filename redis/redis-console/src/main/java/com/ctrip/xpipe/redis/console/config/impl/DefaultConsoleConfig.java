@@ -1,15 +1,15 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.utils.StringUtil;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author shyin
@@ -45,6 +45,20 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_REDIS_ALERT_SENDER_EMAIL = "redis.alert.sender.email";
     private static final String KEY_XPIPE_RUNTIME_ENVIRONMENT = "xpipe.runtime.environment";
     private static final String KEY_XPIPE_ADMIN_EMAILS = "xpipe.admin.emails";
+
+    private static final String KEY_ALERT_MESSAGE_SUSPEND_TIME = "alert.message.suspend.time";
+
+    private static final String KEY_ALERT_MESSAGE_RECOVER_TIME = "alert.message.recover.time";
+
+    @Override
+    public int getAlertSystemRecoverMinute() {
+        return getIntProperty(KEY_ALERT_MESSAGE_RECOVER_TIME, 5);
+    }
+
+    @Override
+    public int getAlertSystemSuspendMinute() {
+        return getIntProperty(KEY_ALERT_MESSAGE_SUSPEND_TIME, 30);
+    }
 
     @Override
     public String getDBAEmails() {

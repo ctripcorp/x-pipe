@@ -20,4 +20,5 @@ public interface AlertPolicy {
     int querySuspendMinute();
 
     int queryRecoverMinute();
+
 }

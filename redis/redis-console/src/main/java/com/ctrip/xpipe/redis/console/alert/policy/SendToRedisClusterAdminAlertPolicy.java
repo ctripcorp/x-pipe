@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.alert.policy;
 
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -9,18 +10,14 @@ import java.util.List;
  * <p>
  * Oct 19, 2017
  */
-@Component(SendToDBAAlertPolicy.ID)
-public class SendToDBAAlertPolicy extends AbstractAlertPolicy {
+@Component(SendToRedisClusterAdminAlertPolicy.ID)
+public class SendToRedisClusterAdminAlertPolicy extends AbstractAlertPolicy {
 
-    public static final String ID = "send.to.dba.alert.policy";
+    public static final String ID = "send.to.redis.cluster.admin.alert.policy";
 
     @Override
     public List<String> queryRecipients() {
-        return getDBAEmails();
+        return new LinkedList<>();
     }
 
-    @Override
-    public List<String> queryCCers() {
-        return getXPipeAdminEmails();
-    }
 }

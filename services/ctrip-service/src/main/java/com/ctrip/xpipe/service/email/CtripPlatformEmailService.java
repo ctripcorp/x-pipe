@@ -5,11 +5,14 @@ import com.ctrip.soa.platform.basesystem.emailservice.v1.SendEmailRequest;
 import com.ctrip.soa.platform.basesystem.emailservice.v1.SendEmailResponse;
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailService;
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.monitor.CatTransactionMonitor;
 import jline.internal.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Calendar;
+import java.util.concurrent.Callable;
 
 /**
  * @author chen.zhu
@@ -20,13 +23,23 @@ public class CtripPlatformEmailService implements EmailService {
 
     private static Logger logger = LoggerFactory.getLogger(CtripPlatformEmailService.class);
 
+    private CatTransactionMonitor catTransactionMonitor = new CatTransactionMonitor();
+
+    private static final String TYPE = "SOA.EMAIL.SERVICE";
+
     @Override
     public void sendEmail(Email email) {
 
         EmailServiceClient client = EmailServiceClient.getInstance();
 
         try {
-            SendEmailResponse response = client.sendEmail(createSendEmailRequest(email));
+            SendEmailResponse response = catTransactionMonitor.logTransaction(TYPE,
+                    "send email", new Callable<SendEmailResponse>() {
+                        @Override
+                        public SendEmailResponse call() throws Exception {
+                            return client.sendEmail(createSendEmailRequest(email));
+                        }
+                    });
             if(response != null && response.getResultCode() == 1) {
                 logger.info("[sendEmail]Email sent successfully");
             } else if(response != null){
