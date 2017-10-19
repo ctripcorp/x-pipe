@@ -1,5 +1,4 @@
-<entry><htmlContent>
-<![CDATA[
+
     <html><head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 
@@ -43,5 +42,3 @@
 
     </body>
     </html>
-]]>
-</htmlContent></entry>

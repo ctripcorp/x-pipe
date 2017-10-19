@@ -50,7 +50,7 @@ public interface ConsoleConfig extends CoreConfig {
 
 	QuorumConfig  getDefaultSentinelQuorumConfig();
 
-	String getRedisAlertVersion();
+	String getReplDisklessMinRedisVersion();
 
 	String getXRedisMinimumRequestVersion();
 

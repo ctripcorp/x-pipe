@@ -1,5 +1,9 @@
 package com.ctrip.xpipe.redis.console.alert;
 
+
+import com.ctrip.xpipe.api.email.EmailType;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,7 +16,7 @@ public class AlertMessageEntity {
 
     private String m_title;
 
-    private String m_type;
+    private EmailType m_type;
 
     private String m_content;
 
@@ -20,11 +24,12 @@ public class AlertMessageEntity {
 
     private Map<String, Object> params;
 
-    public AlertMessageEntity(String title, String type, String content, List<String> receivers) {
+    public AlertMessageEntity(String title, EmailType type, String content, List<String> receivers) {
         m_title = title;
         m_type = type;
         m_content = content;
         m_receivers = receivers;
+        params = new HashMap<>();
     }
 
     public <T> AlertMessageEntity addParam(String key, T val) {
@@ -69,7 +74,7 @@ public class AlertMessageEntity {
         return m_title;
     }
 
-    public String getType() {
+    public EmailType getType() {
         return m_type;
     }
 

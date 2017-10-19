@@ -1,17 +1,19 @@
-package com.ctrip.xpipe.redis.console.alert;
+package com.ctrip.xpipe.redis.console.alert.manager;
 
+import com.ctrip.xpipe.api.email.EmailType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager;
-import com.ctrip.xpipe.redis.console.alert.manager.DecoratorManager;
-import com.ctrip.xpipe.redis.console.alert.manager.SenderManager;
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.alert.AlertChannel;
+import com.ctrip.xpipe.redis.console.alert.AlertEntity;
+import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.ctrip.xpipe.tuple.Pair;
 
 import javax.annotation.PostConstruct;
 import java.util.LinkedList;
@@ -74,7 +76,7 @@ public class NotificationManager {
         return false;
     }
 
-    private boolean send(AlertEntity alert) {
+    protected boolean send(AlertEntity alert) {
         boolean result = false;
 
         String alertKey = alert.getKey();
@@ -83,13 +85,13 @@ public class NotificationManager {
 
         unrecoveredAlerts.put(alertKey, alert);
 
-        Pair<String, String> pair = decoratorManager.generateTitleAndContent(alert);
+        Pair<String, String> pair = decoratorManager.generateTitleAndContent(alert, true);
         String title = pair.getKey();
         String content = pair.getValue();
 
         if (suspendMinute > 0) {
             if (isSuspend(alertKey, suspendMinute)) {
-                return true;
+                return false;
             } else {
                 sendedAlerts.put(alertKey, alert);
             }
@@ -98,8 +100,7 @@ public class NotificationManager {
         for (AlertChannel channel : channels) {
             List<String> receivers = policyManager.queryRecepients(alert);
 
-            //Todo: Implement type
-            AlertMessageEntity message = new AlertMessageEntity(title, "type", content, receivers);
+            AlertMessageEntity message = new AlertMessageEntity(title, EmailType.CONSOLE_ALERT, content, receivers);
             if(channel == AlertChannel.MAIL) {
                 List<String> ccers = policyManager.queryCCers(alert);
                 message.addParam(EmailSender.CC_ER, ccers);
@@ -113,7 +114,7 @@ public class NotificationManager {
         return result;
     }
 
-    private boolean sendRecoveryMessage(AlertEntity alert, String currentMinute) {
+    protected boolean sendRecoveryMessage(AlertEntity alert, String currentMinute) {
 
         List<AlertChannel> channels = policyManager.queryChannels(alert);
         String prefix = "<entry><htmlContent><![CDATA[";
@@ -122,8 +123,8 @@ public class NotificationManager {
             String title = "[告警恢复] [告警类型 " + alert.getAlertType() + "][" + alert.getMessage() + "]";
             String content = prefix + "[告警已恢复][恢复时间]" + currentMinute + suffix;
             List<String> receivers = policyManager.queryRecepients(alert);
-            //Todo: Implement type
-            AlertMessageEntity message = new AlertMessageEntity(title, "type", content, receivers);
+
+            AlertMessageEntity message = new AlertMessageEntity(title, EmailType.CONSOLE_ALERT, content, receivers);
             if(channel == AlertChannel.MAIL) {
                 List<String> ccers = policyManager.queryCCers(alert);
                 message.addParam(EmailSender.CC_ER, ccers);
@@ -154,7 +155,7 @@ public class NotificationManager {
         }
     }
 
-    private class AnnounceRecover implements Runnable {
+    protected class AnnounceRecover implements Runnable {
         @Override
         public void run() {
             while (true) {

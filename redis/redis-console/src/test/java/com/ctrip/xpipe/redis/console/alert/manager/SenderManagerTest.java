@@ -1,8 +1,17 @@
 package com.ctrip.xpipe.redis.console.alert.manager;
 
+import com.ctrip.xpipe.api.email.EmailType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.alert.AlertChannel;
+import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
+import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
+import com.ctrip.xpipe.redis.console.alert.sender.Sender;
+import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -16,6 +25,21 @@ public class SenderManagerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void querySender() throws Exception {
+        Sender sender = senderManager.querySender(EmailSender.ID);
+        Assert.assertTrue(sender instanceof EmailSender);
+        AlertChannel channel = AlertChannel.MAIL;
+        String id = channel.getId();
+        sender = senderManager.querySender(id);
+        Assert.assertTrue(sender instanceof EmailSender);
+    }
+
+    @Test
+    public void sendAlert() throws Exception {
+        String title = "Test";
+        String content = "Test Content";
+        List<String> recepients = Arrays.asList("test1@gmail.com, test2@gmail.com");
+        senderManager.sendAlert(AlertChannel.MAIL,
+                new AlertMessageEntity(title, EmailType.CONSOLE_ALERT, content, recepients));
     }
 
 }

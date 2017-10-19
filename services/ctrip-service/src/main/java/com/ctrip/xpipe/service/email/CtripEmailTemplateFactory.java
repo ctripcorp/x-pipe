@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.service.email;
 
-import com.ctrip.xpipe.api.email.EMAIL_TYPE;
+import com.ctrip.xpipe.api.email.EmailType;
 
 /**
  * @author chen.zhu
@@ -9,12 +9,9 @@ import com.ctrip.xpipe.api.email.EMAIL_TYPE;
  */
 public class CtripEmailTemplateFactory {
 
-    public static CtripEmailTemplate createCtripEmailTemplate(EMAIL_TYPE emailType) {
+    public static CtripEmailTemplate createCtripEmailTemplate(EmailType emailType) {
         switch (emailType) {
-            case REDIS_ALERT_SEND_TO_DBA:
-            case REDIS_ALERT_SEND_TO_DBA_CC_DEV:
-            case REDIS_ALERT_SEND_TO_DEV:
-            case REDIS_ALERT_SEND_TO_DEV_CC_DBA: {
+            case CONSOLE_ALERT: {
                 return new CtripAlertEmailTemplate();
             }
             default:

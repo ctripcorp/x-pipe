@@ -21,7 +21,7 @@ public abstract class AbstractAlertPolicy implements AlertPolicy {
 
     private static final int SUSPEND_MINUTE = 30;
 
-    private static final int RECOVER_MINUTE = 30;
+    private static final int RECOVER_MINUTE = 15;
 
     @Autowired
     protected SenderManager senderManager;

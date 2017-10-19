@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.service.email;
 
-import com.ctrip.xpipe.api.email.EMAIL_TYPE;
+import com.ctrip.xpipe.api.email.EmailType;
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.utils.FileUtils;
@@ -39,9 +39,9 @@ public class CtripPlatformEmailServiceTest {
         String text = IOUtils.toString(ins);
         Email email = new Email();
         email.setBodyContent(text);
-        email.setEmailType(EMAIL_TYPE.REDIS_ALERT_SEND_TO_DBA_CC_DEV);
+        email.setEmailType(EmailType.CONSOLE_ALERT);
         email.addRecipient("zhuchen@ctrip.com");
-        email.setSender("xpipe@ctrip.com");
+        email.setSender("xpipe@test.com");
         email.setSubject("XPipe Test");
         emailService.sendEmail(email);
     }

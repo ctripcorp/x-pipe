@@ -67,7 +67,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public String getRedisAlertVersion() {
+    public String getReplDisklessMinRedisVersion() {
         return getProperty(KEY_REDIS_REPL_DISKLESS_MINIMUM_VERSION, "2.8.22");
     }
 

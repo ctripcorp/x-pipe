@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.service.email;
 
+import com.ctrip.xpipe.api.email.Email;
+
 /**
  * @author chen.zhu
  * <p>
@@ -31,5 +33,13 @@ public class CtripAlertEmailTemplate implements CtripEmailTemplate {
     @Override
     public String getSendCode() {
         return SEND_CODE;
+    }
+
+    @Override
+    public void decorateBodyContent(Email email) {
+        if(email == null)   return;
+        String content = email.getBodyContent();
+        content = "<entry><htmlContent><![CDATA[" + content + "]]></htmlContent></entry>";
+        email.setBodyContent(content);
     }
 }

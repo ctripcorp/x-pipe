@@ -21,8 +21,8 @@ public enum AlertChannel {
         return null;
     }
 
-    private AlertChannel(String id) {
-        id = id;
+    AlertChannel(String id) {
+        this.id = id;
     }
 
     public String getId() {

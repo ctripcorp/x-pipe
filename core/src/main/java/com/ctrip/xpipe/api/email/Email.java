@@ -18,7 +18,7 @@ public class Email {
     private String charset;
     private String subject;
     private String bodyContent;
-    private EMAIL_TYPE emailType;
+    private EmailType emailType;
 
     public Email() {
         recipients = new LinkedList<>();
@@ -39,11 +39,11 @@ public class Email {
         this.bCCers = bCCers;
     }
 
-    public EMAIL_TYPE getEmailType() {
+    public EmailType getEmailType() {
         return emailType;
     }
 
-    public void setEmailType(EMAIL_TYPE emailType) {
+    public void setEmailType(EmailType emailType) {
         this.emailType = emailType;
     }
 
