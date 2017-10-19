@@ -7,12 +7,12 @@ import java.util.List;
 /**
  * @author chen.zhu
  * <p>
- * Oct 18, 2017
+ * Oct 19, 2017
  */
-@Component(ClientInConsisAlertPolicy.ID)
-public class ClientInConsisAlertPolicy extends AbstractAlertPolicy {
+@Component(SendToDBAAlertPolicy.ID)
+public class SendToDBAAlertPolicy extends AbstractAlertPolicy {
 
-    public static final String ID = "client.inconsis.alert.policy";
+    public static final String ID = "send.to.dba.alert.policy";
 
     @Override
     public List<String> queryRecipients() {
