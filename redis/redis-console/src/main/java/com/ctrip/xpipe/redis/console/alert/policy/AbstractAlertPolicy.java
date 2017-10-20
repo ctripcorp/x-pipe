@@ -45,12 +45,12 @@ public abstract class AbstractAlertPolicy implements AlertPolicy {
         return new LinkedList<>();
     }
 
-    protected List<String> getDBAEmails() {
+    public List<String> getDBAEmails() {
         String emailsStr = consoleConfig.getDBAEmails();
         return splitCommaString2List(emailsStr);
     }
 
-    protected List<String> getXPipeAdminEmails() {
+    public List<String> getXPipeAdminEmails() {
         String emailsStr = consoleConfig.getXPipeAdminEmails();
         return splitCommaString2List(emailsStr);
     }

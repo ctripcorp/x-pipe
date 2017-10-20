@@ -7,11 +7,11 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
+import com.ctrip.xpipe.redis.console.alert.decorator.ScheduledAlertMessageDecorator;
 import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +19,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
+
+import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.*;
 
 /**
  * @author chen.zhu
@@ -42,6 +42,8 @@ public class NotificationManager {
 
     private Map<String, AlertEntity> sendedAlerts = new ConcurrentHashMap<>(1000);
 
+    private Map<ALERT_TYPE, Set<AlertEntity>> scheduledAlerts = new ConcurrentHashMap<>(1000);;
+
     @Autowired
     private AlertPolicyManager policyManager;
 
@@ -51,17 +53,26 @@ public class NotificationManager {
     @Autowired
     private DecoratorManager decoratorManager;
 
+    @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+    private ExecutorService executor;
+
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
-    private ScheduledExecutorService scheduled;
+    private ScheduledExecutorService schedule;
 
     @PostConstruct
     public void start() {
         logger.info("Alert Notification Manager started");
 
-        int initialDelay = 0;
-        int period = 1;
-        scheduled.scheduleAtFixedRate(new SendAlert(), initialDelay, period, TimeUnit.MINUTES);
-        scheduled.scheduleAtFixedRate(new AnnounceRecover(), initialDelay, period, TimeUnit.MINUTES);
+        executor.execute(new SendAlert());
+        executor.execute(new AnnounceRecover());
+        schedule.scheduleAtFixedRate(new AbstractExceptionLogTask() {
+
+            @Override
+            protected void doRun() throws Exception {
+                senderManager.sendAlerts(scheduledAlerts);
+                scheduledAlerts = new ConcurrentHashMap<>();
+            }
+        }, 1, 30, TimeUnit.MINUTES);
     }
 
     public void addAlert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message) {
@@ -87,6 +98,13 @@ public class NotificationManager {
         String alertKey = alert.getKey();
         List<AlertChannel> channels = policyManager.queryChannels(alert);
         int suspendMinute = policyManager.querySuspendMinute(alert);
+
+        // Skip the existing alerts, and report them once upon time
+        if(unrecoveredAlerts.containsKey(alertKey)) {
+            scheduledAlerts.putIfAbsent(alert.getAlertType(), new HashSet<>());
+            scheduledAlerts.get(alert.getAlertType()).add(alert);
+            return false;
+        }
 
         unrecoveredAlerts.put(alertKey, alert);
 

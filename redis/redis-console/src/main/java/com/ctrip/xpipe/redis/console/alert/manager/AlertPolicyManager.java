@@ -1,8 +1,12 @@
 package com.ctrip.xpipe.redis.console.alert.manager;
 
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
-import com.ctrip.xpipe.redis.console.alert.policy.*;
+import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;
+import com.ctrip.xpipe.redis.console.alert.policy.SendToDBAAlertPolicy;
+import com.ctrip.xpipe.redis.console.alert.policy.SendToRedisClusterAdminAlertPolicy;
+import com.ctrip.xpipe.redis.console.alert.policy.SendToXPipeAdminAlertPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +61,7 @@ public class AlertPolicyManager {
             }
             return result;
         } catch (Exception ex) {
-            return 30;
+            return 5;
         }
     }
 
@@ -103,4 +107,5 @@ public class AlertPolicyManager {
         }
         return alertPolicies;
     }
+
 }

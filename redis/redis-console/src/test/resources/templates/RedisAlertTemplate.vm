@@ -9,8 +9,7 @@
 [项目: <span style="color:red">100004374 xpipe管理控制台</span>]<br/>
 [异常名称:] ${title}<br/>
 [时间: ${time}]<br/>
-XPipe相关事宜请联系
-    #foreach( $email in $xpipeAdminEmails ) ${email} | #end
+XPipe相关事宜请联系 [$xpipeAdminEmails]
 <br/>
 
 

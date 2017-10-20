@@ -57,9 +57,10 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
     public void isSuspend() throws Exception {
         AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
         notificationManager.addAlert(cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
-        Assert.assertFalse(notificationManager.isSuspend(alert.getKey(), 1000));
-        Thread.sleep(1000 * 60);
-        Assert.assertTrue(notificationManager.isSuspend(alert.getKey(), 1));
+        Thread.sleep(1000);
+        Assert.assertTrue(notificationManager.isSuspend(alert.getKey(), 1000));
+        Thread.sleep(2000 * 60);
+        Assert.assertFalse(notificationManager.isSuspend(alert.getKey(), 1));
     }
 
     @Test

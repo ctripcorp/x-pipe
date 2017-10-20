@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.alert.decorator;
 
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -37,7 +36,7 @@ public abstract class Decorator {
     }
 
 
-    private VelocityContext generateCommonContext() {
+    protected VelocityContext generateCommonContext() {
         VelocityContext context = new VelocityContext();
         context.put("time", DateTimeUtils.currentTimeAsString());
         context.put("environment", consoleConfig.getXpipeRuntimeEnvironmentEnvironment());
