@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
-import javax.annotation.PostConstruct;
-
+import com.ctrip.xpipe.config.AbstractConfigBean;
+import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.ctrip.xpipe.config.AbstractConfigBean;
-import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
+import javax.annotation.PostConstruct;
 
 /**
  * @author wenchao.meng

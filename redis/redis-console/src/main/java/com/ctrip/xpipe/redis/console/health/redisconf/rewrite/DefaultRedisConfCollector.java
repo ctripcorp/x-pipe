@@ -40,7 +40,7 @@ public class DefaultRedisConfCollector implements RedisConfCollector{
 
                 logger.info("{}: fail:{}", hostPort, result.getFailReason());
                 if(result.getFailReason() instanceof RedisConfFailException){
-                    alertManager.alert(clusterId, shardId, ALERT_TYPE.REDIS_CONF, String.format("%s:%s",
+                    alertManager.alert(clusterId, shardId, hostPort, ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE, String.format("%s:%s",
                             result.getFailReason().getClass().getSimpleName(), hostPort));
                 }
             }

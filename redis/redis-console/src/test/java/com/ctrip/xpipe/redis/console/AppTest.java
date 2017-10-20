@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -21,11 +22,16 @@ import java.sql.SQLException;
 @EnableScheduling
 public class AppTest extends AbstratAppTest {
 
+	@BeforeClass
+	public static void beforeAppTestClass() {
+		System.setProperty(HealthChecker.ENABLED, "true");
+	}
+
 	@Before
 	public void startUp() {
 
 		System.setProperty(DefaultConsoleConfig.KEY_REDIS_CONF_CHECK_INTERVAL, "15000");
-		System.setProperty(HealthChecker.ENABLED, "false");
+		System.setProperty(HealthChecker.ENABLED, "true");
 		System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
 
 	}

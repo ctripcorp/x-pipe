@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.service.email;
 
+import com.ctrip.xpipe.api.email.Email;
+
 /**
  * @author chen.zhu
  * <p>
@@ -9,11 +11,7 @@ public interface CtripEmailTemplate {
 
     Integer getAppID();
     Integer getBodyTemplateID();
-
     boolean isBodyHTML();
-
     String getSendCode();
-    String getSubject();
-    String getCharset();
-    String getBodyContent(Object... context);
+    void decorateBodyContent(Email email);
 }

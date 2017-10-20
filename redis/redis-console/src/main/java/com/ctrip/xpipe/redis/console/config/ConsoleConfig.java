@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.config;
 
-import java.util.Map;
-import java.util.Set;
-
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author shyin
@@ -49,7 +49,19 @@ public interface ConsoleConfig extends CoreConfig {
 
 	QuorumConfig  getDefaultSentinelQuorumConfig();
 
-	String getRedisAlertVersion();
+	String getReplDisklessMinRedisVersion();
 
 	String getXRedisMinimumRequestVersion();
+
+	String getXpipeRuntimeEnvironmentEnvironment();
+
+	String getDBAEmails();
+
+	String getRedisAlertSenderEmail();
+
+	String getXPipeAdminEmails();
+
+	int getAlertSystemSuspendMinute();
+
+	int getAlertSystemRecoverMinute();
 }

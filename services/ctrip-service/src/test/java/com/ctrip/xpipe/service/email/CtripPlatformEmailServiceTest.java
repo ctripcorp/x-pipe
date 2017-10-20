@@ -1,18 +1,16 @@
 package com.ctrip.xpipe.service.email;
 
+import com.ctrip.xpipe.api.email.EmailType;
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailService;
-import com.ctrip.xpipe.service.email.redis.alert.RedisAlertEmail;
-import com.ctriposs.baiji.rpc.common.util.ServiceUtils;
+import com.ctrip.xpipe.utils.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static org.junit.Assert.*;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * @author chen.zhu
@@ -22,7 +20,6 @@ import static org.junit.Assert.*;
 public class CtripPlatformEmailServiceTest {
 
     EmailService emailService;
-
 
     @Before
     public void before() {
@@ -36,15 +33,17 @@ public class CtripPlatformEmailServiceTest {
     }
 
     @Test
-    public void sendEmail() {
-        List[] lists = new List[2];
-        lists[0] = Arrays.asList("Cluster1,Shard1,10.3.2.23,6379",
-                "Cluster2,Shard2,10.3.2.23,6380");
-        lists[1] = Arrays.asList("Cluster2,Shard2,10.3.2.23,6379",
-                "Cluster3,Shard3,10.3.2.23,6380",
-                "Cluster4,Shard4,10.5.6.7,6479");
-        Email email = Email.DEFAULT;
-        emailService.sendEmail(email, lists);
+    public void sendEmail() throws IOException {
+        String path = "src/test/resources/ctripPlatformEmailServiceTest.txt";
+        InputStream ins = FileUtils.getFileInputStream(path);
+        String text = IOUtils.toString(ins);
+        Email email = new Email();
+        email.setBodyContent(text);
+        email.setEmailType(EmailType.CONSOLE_ALERT);
+        email.addRecipient("zhuchen@ctrip.com");
+        email.setSender("xpipe@test.com");
+        email.setSubject("XPipe Test");
+        emailService.sendEmail(email);
     }
 
 }

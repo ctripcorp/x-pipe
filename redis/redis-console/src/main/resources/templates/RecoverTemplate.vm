@@ -1,0 +1,47 @@
+<html><head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+    <title>${title}</title>
+</head>
+<body>
+[XPipe 恢复通知]<br/>
+[主题： <span style="color:red">${title}]</span><br/>
+[环境：<span style="color:red">${environment}</span>]<br/>
+[项目: <span style="color:red">100004374 xpipe管理控制台</span>]<br/>
+[时间: <span style="color:red">${time}]<br/>
+
+XPipe相关事宜请联系 [$xpipeAdminEmails] <br/>
+
+<div>
+
+    -------------------
+    <h4>错误已恢复</h4>
+    <p>详情见下表</p>
+    <table border="1">
+        <thead>
+        <tr>
+            <th>报错类型</th>
+            <th>Redis集群</th>
+            <th>Redis分片</th>
+            <th>机器IP</th>
+            <th>Redis端口</th>
+            <th>错误信息</th>
+        </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>$!redisAlert.getAlertType()</td>
+                <td>$!redisAlert.getClusterId()</td>
+                <td>$!redisAlert.getShardId()</td>
+                <td>$!redisAlert.getHostPort().getHost()</td>
+                <td>$!redisAlert.getHostPort().getPort()</td>
+                <td>$!redisAlert.getMessage()</td>
+            </tr>
+        </tbody>
+    </table>
+
+</div>
+
+
+</body>
+</html>

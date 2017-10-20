@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
-import org.springframework.web.client.RestOperations;
-
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.health.action.HEALTH_STATE;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
+import org.springframework.web.client.RestOperations;
 
 /**
  * @author wenchao.meng

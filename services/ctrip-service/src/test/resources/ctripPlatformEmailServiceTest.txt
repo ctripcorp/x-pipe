@@ -1,0 +1,44 @@
+
+    <html><head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+        <title>XPipe异常告警</title>
+    </head>
+    <body>
+    [XPipe异常告警]<br/>
+    [环境：<span style="color:red"></span>]<br/>
+    [项目: <span style="color:red">100004374 xpipe管理控制台</span>]<br/>
+    [异常名称: Redis 版本|配置 异常][时间: 2017-10-17T10:01:04.049]<br/>
+    XPipe相关事宜请联系
+            <br/>
+
+    <div>
+        -------------------
+        <h4>新产生的问题</h4>
+        <p>说明：新的问题出现，会立马引发一次报警</p>
+        <table border="1">
+            <thead>
+            <tr>
+                <th>报警类型</th>
+                <th>Redis集群</th>
+                <th>Redis分片</th>
+                <th>机器IP</th>
+                <th>Redis端口</th>
+                <th>错误信息</th>
+            </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CLIENT_INCONSIS</td>
+                    <td>cluster</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td>fake message</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    </body>
+    </html>

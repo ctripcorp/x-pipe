@@ -1,15 +1,15 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.utils.StringUtil;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author shyin
@@ -38,13 +38,51 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     public static final String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
 
-    private static final String KEY_REDIS_ALERT_VERSION = "redis.alert.version";
+    private static final String KEY_REDIS_REPL_DISKLESS_MINIMUM_VERSION = "redis.repl.diskless.minimum.version";
     private static final String KEY_XREDIS_REQUEST_MINI_VERSION = "xredis.minimum.request.version";
 
+    private static final String KEY_DBA_EMAILS = "redis.dba.emails";
+    private static final String KEY_REDIS_ALERT_SENDER_EMAIL = "redis.alert.sender.email";
+    private static final String KEY_XPIPE_RUNTIME_ENVIRONMENT = "xpipe.runtime.environment";
+    private static final String KEY_XPIPE_ADMIN_EMAILS = "xpipe.admin.emails";
+
+    private static final String KEY_ALERT_MESSAGE_SUSPEND_TIME = "alert.message.suspend.time";
+
+    private static final String KEY_ALERT_MESSAGE_RECOVER_TIME = "alert.message.recover.time";
 
     @Override
-    public String getRedisAlertVersion() {
-        return getProperty(KEY_REDIS_ALERT_VERSION, "2.8.22");
+    public int getAlertSystemRecoverMinute() {
+        return getIntProperty(KEY_ALERT_MESSAGE_RECOVER_TIME, 5);
+    }
+
+    @Override
+    public int getAlertSystemSuspendMinute() {
+        return getIntProperty(KEY_ALERT_MESSAGE_SUSPEND_TIME, 30);
+    }
+
+    @Override
+    public String getDBAEmails() {
+        return getProperty(KEY_DBA_EMAILS, "");
+    }
+
+    @Override
+    public String getRedisAlertSenderEmail() {
+        return getProperty(KEY_REDIS_ALERT_SENDER_EMAIL, "");
+    }
+
+    @Override
+    public String getXpipeRuntimeEnvironmentEnvironment() {
+        return getProperty(KEY_XPIPE_RUNTIME_ENVIRONMENT, "");
+    }
+
+    @Override
+    public String getXPipeAdminEmails() {
+        return getProperty(KEY_XPIPE_ADMIN_EMAILS, "");
+    }
+
+    @Override
+    public String getReplDisklessMinRedisVersion() {
+        return getProperty(KEY_REDIS_REPL_DISKLESS_MINIMUM_VERSION, "2.8.22");
     }
 
     @Override

@@ -15,12 +15,12 @@ public class DefaultEmailService implements EmailService {
     private final static Logger logger = LoggerFactory.getLogger(DefaultEmailService.class);
 
     @Override
-    public <T extends Email> void sendEmail(T t, Object... context) {
-        logger.info("Sender: {}", t.getSender());
-        logger.info("Receivers: {}", t.getRecipients());
-        logger.info("CCers: {}", t.getCCers());
-        logger.info("BCCers: {}", t.getBCCers());
-        logger.info("Context:\n{}", context);
+    public void sendEmail(Email email) {
+        logger.info("Sender: {}", email.getSender());
+        logger.info("Receivers: {}", email.getRecipients());
+        logger.info("CCers: {}", email.getCCers());
+        logger.info("BCCers: {}", email.getBCCers());
+        logger.info("Context:\n{}", email.getBodyContent());
     }
 
     @Override
