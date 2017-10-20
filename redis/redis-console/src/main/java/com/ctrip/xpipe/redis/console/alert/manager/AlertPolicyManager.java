@@ -45,7 +45,12 @@ public class AlertPolicyManager {
 
     public int queryRecoverMinute(AlertEntity alert) {
         try {
-            return alert.getAlertType().getRecoverTime();
+            List<AlertPolicy> alertPolicies = findAlertPolicies(alert);
+            int result = alert.getAlertType().getRecoverTime();
+            for (AlertPolicy alertPolicy : alertPolicies) {
+                result = Math.max(result, alertPolicy.queryRecoverMinute());
+            }
+            return result;
         } catch (Exception ex) {
             return 30;
         }

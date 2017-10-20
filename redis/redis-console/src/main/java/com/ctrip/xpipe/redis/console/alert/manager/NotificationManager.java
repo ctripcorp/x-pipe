@@ -65,9 +65,13 @@ public class NotificationManager {
         schedule.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 
             @Override
-            protected void doRun() throws Exception {
-                senderManager.sendAlerts(scheduledAlerts);
-                scheduledAlerts = new ConcurrentHashMap<>();
+            protected void doRun() {
+                try {
+                    senderManager.sendAlerts(scheduledAlerts);
+                    scheduledAlerts = new ConcurrentHashMap<>();
+                } catch (Exception e) {
+                    logger.error("[start][schedule]{}", e);
+                }
             }
         }, 1, 30, TimeUnit.MINUTES);
     }
@@ -100,6 +104,7 @@ public class NotificationManager {
         if(unrecoveredAlerts.containsKey(alertKey)) {
             scheduledAlerts.putIfAbsent(alert.getAlertType(), new HashSet<>());
             scheduledAlerts.get(alert.getAlertType()).add(alert);
+            unrecoveredAlerts.put(alertKey, alert);
             return false;
         }
 
