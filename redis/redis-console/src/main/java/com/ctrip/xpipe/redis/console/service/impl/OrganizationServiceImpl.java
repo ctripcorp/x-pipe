@@ -1,16 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.organization.OrganizationModel;
@@ -20,6 +9,12 @@ import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTblDao;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 /**
  * @author chen.zhu

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.alert.policy;
 
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
-import com.ctrip.xpipe.redis.console.alert.sender.Sender;
 
 import java.util.LinkedList;
 import java.util.List;

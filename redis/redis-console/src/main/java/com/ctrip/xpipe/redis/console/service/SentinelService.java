@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+
 import java.util.List;
 import java.util.Map;
-
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 
 public interface SentinelService {
 

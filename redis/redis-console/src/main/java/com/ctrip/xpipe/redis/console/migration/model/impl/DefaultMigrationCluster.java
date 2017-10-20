@@ -1,28 +1,11 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.migration.model.ClusterStepResult;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
-import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
-import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
-import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStepResult;
-import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.redis.console.migration.status.PartialSuccessState;
-import com.ctrip.xpipe.redis.console.migration.status.PublishState;
+import com.ctrip.xpipe.redis.console.migration.model.*;
+import com.ctrip.xpipe.redis.console.migration.status.*;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -32,6 +15,10 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author shyin

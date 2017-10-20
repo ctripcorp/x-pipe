@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.console.notifier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.retry.RetryNTimes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author shyin

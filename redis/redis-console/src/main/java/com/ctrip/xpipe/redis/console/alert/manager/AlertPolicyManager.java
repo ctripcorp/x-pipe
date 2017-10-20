@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.alert.manager;
 
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;

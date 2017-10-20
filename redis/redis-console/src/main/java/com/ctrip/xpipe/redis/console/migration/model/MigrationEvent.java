@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
-import java.util.List;
-
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
+
+import java.util.List;
 
 /**
  * @author shyin

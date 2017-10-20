@@ -5,17 +5,10 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import javafx.scene.control.Alert;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.BlockingQueue;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

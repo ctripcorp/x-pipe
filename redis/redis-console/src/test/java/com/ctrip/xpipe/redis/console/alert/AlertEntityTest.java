@@ -2,8 +2,6 @@ package com.ctrip.xpipe.redis.console.alert;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>

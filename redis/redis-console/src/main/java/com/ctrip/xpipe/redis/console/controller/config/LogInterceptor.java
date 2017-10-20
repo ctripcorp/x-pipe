@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.console.controller.config;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
-import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author wenchao.meng

@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
-import com.ctrip.xpipe.redis.console.alert.decorator.ScheduledAlertMessageDecorator;
 import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
@@ -21,8 +20,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.*;
-
-import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.*;
 
 /**
  * @author chen.zhu
@@ -140,11 +137,10 @@ public class NotificationManager {
     protected boolean sendRecoveryMessage(AlertEntity alert, String currentMinute) {
 
         List<AlertChannel> channels = policyManager.queryChannels(alert);
-        String prefix = "<entry><htmlContent><![CDATA[";
-        String suffix = "]]></htmlContent></entry>";
+        Pair<String, String> pair = decoratorManager.generateTitleAndContent(alert, false);
+        String title = pair.getKey(), content = pair.getValue();
         for (AlertChannel channel : channels) {
-            String title = "[告警恢复] [告警类型 " + alert.getAlertType() + "][" + alert.getMessage() + "]";
-            String content = prefix + "[告警已恢复][恢复时间]" + currentMinute + suffix;
+
             List<String> receivers = policyManager.queryRecepients(alert);
 
             AlertMessageEntity message = new AlertMessageEntity(title, EmailType.CONSOLE_ALERT, content, receivers);
@@ -206,8 +202,6 @@ public class NotificationManager {
                 for (String key : recoveredItems) {
                     unrecoveredAlerts.remove(key);
                 }
-
-                recoveredItems = null;
 
                 long duration = System.currentTimeMillis() - current;
                 if (duration < MILLIS1MINUTE) {

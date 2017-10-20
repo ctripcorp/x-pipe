@@ -15,9 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.EMAIL_CLUSTER_ADMIN;
-import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.EMAIL_DBA;
-import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.EMAIL_XPIPE_ADMIN;
+import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.*;
 
 /**
  * @author chen.zhu
