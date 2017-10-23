@@ -1,19 +1,42 @@
 index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'NgTableParams', 'ClusterService', 'DcService', 'MigrationService',
-    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, NgTableParams, ClusterService, DcService, MigrationService, $filters) {
+    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, NgTableParams, ClusterService, DcService, MigrationService) {
 		
 		$scope.sourceDcSelected = sourceDcSelected;
 		$scope.targetDcSelected = targetDcSelected;
 		$scope.availableTargetDcs = availableTargetDcs;
 		$scope.preMigrate = preMigrate;
 		$scope.doMigrate = doMigrate;
+		$scope.clusterOrgNameSelected = clusterOrgNameSelected;
 		
 		init();
 
 		function init() {
 			DcService.loadAllDcs().then(function(data){
 				$scope.dcs = data;
+                ClusterService.getOrganizations().then(function (result) {
+                        $scope.organizations = result;
+                        $scope.organizations.push({"orgName": "不选择"});
+				});
 			});
 		}
+
+		$scope.clusterOrgName = '';
+		function clusterOrgNameSelected() {
+			var orgName = $scope.clusterOrgName;
+            var dcName = $scope.sourceDc;
+            if(dcName && orgName) {
+            	if(orgName === "不选择") {
+            		sourceDcSelected();
+				} else {
+                    ClusterService.findClustersByActiveDcName(dcName).then(function (data) {
+                        $scope.clusters = data.filter(function (localCluster) {
+                            return localCluster.clusterOrgName === orgName;
+                        });
+                        $scope.tableParams.reload();
+                    });
+                }
+            }
+        }
 
 		function sourceDcSelected() {
 			var dcName = $scope.sourceDc;
@@ -136,24 +159,9 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
         }, {
             filterDelay:100,
             getData : function(params) {
-                var filter_text = params.filter().clusterOrgName;
-                var sourceClusters = $scope.clusters.slice(0);
-                var copedClusters = [];
-                if(filter_text && (filter_text = filter_text.trim()) !== "") {
-                    var filtered_data = [];
-                    for(var i = 0 ; i < sourceClusters.length ; i++) {
-                        var cluster = sourceClusters[i];
-                        if(cluster.clusterOrgName && cluster.clusterOrgName.search(filter_text) !== -1) {
-                            filtered_data.push(cluster);
-                        }
-                    }
-                    copedClusters = filtered_data;
-                }else {
-                    copedClusters = sourceClusters;
-                }
-                return copedClusters;
+            	// TODO [marsqing] paging control
+                // params.total(1);
+                return $scope.clusters;
             }
         });
-
-
     }]);

@@ -11,9 +11,14 @@
 					<md-checkbox class="border-white" ng-checked="isChecked()" md-indeterminate="isIndeterminate()" ng-click="toggleAll()"></md-checkbox>
 					<span ng-if="isChecked()">取消全选</span> <span ng-if="!isChecked()">全选</span>
 				</div>
-				<div class="col-md-3 text-center">
+				<div class="col-md-2 text-center">
 					<md-select md-on-close="sourceDcSelected()" ng-model="sourceDc" class="md-no-underline color-white radius-border-fat no-margin" required placeholder="源机房">
 						<md-option ng-repeat="dc in dcs" value="{{dc.dcName}}">{{dc.dcName}}</md-option>
+					</md-select>
+				</div>
+				<div class="col-md-2 text-center">
+					<md-select md-on-close="clusterOrgNameSelected()" ng-model="clusterOrgName" class="md-no-underline color-white radius-border-fat no-margin" placeholder="组织部门">
+						<md-option ng-repeat="org in organizations" value="{{org.orgName}}">{{org.orgName}}</md-option>
 					</md-select>
 				</div>
 				<div class="col-md-5 text-right	">
@@ -31,7 +36,7 @@
 					<md-checkbox ng-checked="cluster.selected" ng-click="cluster.selected = !cluster.selected"></md-checkbox>
 				</td>
 				<td data-title="'cluster'">{{cluster.clusterName}}</td>
-				<td data-title="'cluster部门'" width="10%" filter="{ clusterOrgName : 'text' }">{{cluster.clusterOrgName}}</td>
+				<td data-title="'cluster部门'">{{cluster.clusterOrgName}}</td>
 				<td data-title="'cluster描述'">{{cluster.clusterDescription}}</td>
 				<td data-title="'目标主机房'">
 					<md-select ng-model="cluster.targetDc" md-on-close="targetDcSelected(cluster)" class="md-no-underline no-margin radius-border-thin" required placeholder="目标主机房" ng-if="availableTargetDcs(cluster).length > 1">
