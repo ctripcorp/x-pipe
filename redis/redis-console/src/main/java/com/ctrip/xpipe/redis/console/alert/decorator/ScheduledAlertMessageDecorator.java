@@ -27,11 +27,14 @@ public class ScheduledAlertMessageDecorator extends Decorator {
 
     @Override
     public String generateTitle(AlertEntity alert) {
-        return "[XPipe 报警]";
+        return String.format("[%s][XPipe 报警]%s",
+                consoleConfig.getXpipeRuntimeEnvironmentEnvironment(),
+                alert.getKey());
     }
 
     public String generateTitle() {
-        return "[XPipe 报警]";
+        return String.format("[%s][XPipe 报警]",
+                consoleConfig.getXpipeRuntimeEnvironmentEnvironment());
     }
 
     @Override
