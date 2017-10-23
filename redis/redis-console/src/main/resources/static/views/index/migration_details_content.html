@@ -15,6 +15,12 @@
 			<div class="col-md-4" ng-if="migrationCluster.migrationCluster && migrationCluster.migrationCluster.publishInfo">
 			发布结果: 
 			<span class="label label-sm label-info"　
+				  ng-class="{
+						'label-default':migrationCluster.migrationCluster.statusType == 'Init',
+						'label-info':migrationCluster.migrationCluster.statusType == 'Processing',
+						'label-success':migrationCluster.migrationCluster.statusType == 'Success',
+						'label-danger':migrationCluster.migrationCluster.statusType == 'Fail'
+						}"
 			ng-click="showPublishResult(migrationCluster.migrationCluster.publishInfo)">
 					详情	
 			</span>
