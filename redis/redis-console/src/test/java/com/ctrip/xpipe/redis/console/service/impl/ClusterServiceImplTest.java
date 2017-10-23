@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,9 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private OrganizationService organizationService;
 
     @Test
     public void testCreateCluster(){
@@ -87,13 +91,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     @Test
     public void testUpdateClusterPositive() {
         long EXPECTED_ORG_ID = 6L;
-        OrganizationTbl organizationTbl = new OrganizationTbl();
-        organizationTbl.setId(EXPECTED_ORG_ID);
+        organizationService.updateOrganizations();
+        OrganizationTbl organizationTbl = organizationService.getOrganizationTblByCMSOrganiztionId(EXPECTED_ORG_ID);
         ClusterTbl clusterTbl = clusterService.find(clusterName);
-        clusterTbl.setOrganizationInfo(organizationTbl);
+        clusterTbl.setClusterOrgName(organizationTbl.getOrgName());
         clusterService.updateCluster(clusterName, clusterTbl);
         clusterTbl = clusterService.find(clusterName);
-        Assert.assertEquals(EXPECTED_ORG_ID, clusterTbl.getClusterOrgId());
+        Assert.assertEquals((long)organizationTbl.getId(), clusterTbl.getClusterOrgId());
     }
 
     @Test
