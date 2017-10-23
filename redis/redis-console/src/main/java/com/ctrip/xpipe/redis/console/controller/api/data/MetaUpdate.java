@@ -98,6 +98,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 .setClusterDescription(clusterCreateInfo.getDesc())
                 .setClusterAdminEmails(clusterCreateInfo.getClusterAdminEmails())
                 .setOrganizationInfo(organizationTbl)
+                .setClusterOrgName(organizationTbl.getOrgName())
         );
 
 

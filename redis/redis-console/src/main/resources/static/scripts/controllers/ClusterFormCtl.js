@@ -20,6 +20,8 @@ index_module.controller('ClusterFromCtl',
                              $scope.shards = [];
                              $scope.currentShard = {};
                              $scope.sentinels = {};
+                             $scope.organizations = [];
+                             $scope.organizationNames = [];
 
                              $scope.doCluster = doCluster;
                              $scope.getDcName = getDcName;
@@ -51,6 +53,10 @@ index_module.controller('ClusterFromCtl',
                                 ClusterService.getOrganizations()
                                 .then(function (result) {
                                      $scope.organizations = result;
+                                    $scope.organizationNames = result.map(function (org) {
+                                        return org.orgName;
+                                    });
+                                     console.log($scope.organizationNames);
                                  });
 
                                  if ($scope.operateType != OPERATE_TYPE.CREATE) {

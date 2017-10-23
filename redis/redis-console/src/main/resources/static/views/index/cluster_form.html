@@ -57,16 +57,30 @@
                         <textarea rows="4" style="width: 330px;" ng-model="cluster.clusterDescription" ng-required="true"></textarea>
                     </div>
                 </div>
+                <!--<div class="form-group">-->
+                    <!--<label class="col-sm-4 control-label no-padding-right">部门信息</label>-->
+                    <!--<div class="col-sm-6">-->
+                        <!--<span style="color: red" ng-show="organizations.length <= 0">no organizations in database</span>-->
+                        <!--<select class="col-sm-4 control-label no-padding-right" ng-model="cluster.organizationInfo"-->
+                                <!--ng-options="org for org in organizations"  ng-required="true">-->
+                            <!--<option ng-value="org.orgName"></option>-->
+                        <!--</select>-->
+                    <!--</div>-->
+                <!--</div>-->
                 <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right">部门信息</label>
                     <div class="col-sm-6">
-                        <span style="color: red" ng-show="organizations.length <= 0">no organizations in database</span>
-                        <select class="col-sm-4 control-label no-padding-right" ng-model="cluster.organizationInfo"
-                                ng-options="org.orgName for org in organizations"  ng-required="true">
-                            <option ng-bind="cluster.organizationInfo.orgName"></option>
+                        <select
+                                ng-model="cluster.clusterOrgName"
+                                chosen="directiveOptions"
+                                allow_single_deselect=true
+                                ng-options="orgName for orgName in organizationNames"
+                                style="width:200px;">
+                            <option value=""></option>
                         </select>
                     </div>
                 </div>
+
                 <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right">Cluster 管理员邮箱</label>
 
@@ -158,3 +172,4 @@
 <xpipeconfirmdialog xpipe-dialog-id="'deleteClusterConfirm'" xpipe-title="'删除 cluster'"
                     xpipe-detail="'您确定要删除该cluster下的所有内容吗（所有的shards以及相应的redis实例都将被删除）?'"
                     xpipe-show-cancel-btn="true" xpipe-confirm="deleteCluster"></xpipeconfirmdialog>
+

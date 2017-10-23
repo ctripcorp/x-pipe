@@ -8,11 +8,9 @@ import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -35,6 +33,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private ClusterMetaModifiedNotifier notifier;
 	@Autowired
 	private ShardService shardService;
+
+	@Autowired
+	private OrganizationService organizationService;
 	
 	@Override
 	public ClusterTbl find(final String clusterName) {
@@ -102,7 +103,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		ClusterTbl cluster = clusterModel.getClusterTbl();
     	List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
     	List<ShardModel> shards = clusterModel.getShards();
-    	
+    	cluster.setOrganizationInfo(findClusterOrgWithOrgName(cluster.getClusterOrgName()));
     	// ensure active dc assigned
     	if(XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
     		throw new BadRequestException("No active dc assigned.");
@@ -143,6 +144,16 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	return result;
 	}
 
+	public OrganizationTbl findClusterOrgWithOrgName(String orgName) {
+		List<OrganizationTbl> orgs = organizationService.getAllOrganizations();
+		for(OrganizationTbl org : orgs) {
+			if(ObjectUtils.equals(org.getOrgName(), orgName)) {
+				return org;
+			}
+		}
+		return null;
+	}
+
 	public long getIdFromClusterOrg(ClusterTbl cluster) {
 		OrganizationTbl organizationTbl = cluster.getOrganizationInfo();
 		if(organizationTbl == null)
@@ -150,6 +161,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		Long id = organizationTbl.getId();
 		return id == null ? 0L : id;
 	}
+
+
 
 	@Override
 	public ClusterTbl findClusterAndOrg(String clusterName) {
@@ -197,6 +210,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public void updateCluster(String clusterName, ClusterTbl cluster) {
+		cluster.setOrganizationInfo(findClusterOrgWithOrgName(cluster.getClusterOrgName()));
 		ClusterTbl proto = find(clusterName);
     	if(null == proto) throw new BadRequestException("Cannot find cluster");
 
