@@ -69,6 +69,12 @@ public class ClusterDaoTest  extends AbstractConsoleIntegrationTest {
         clusterTblList.forEach(cluster->logger.info("{}", cluster));
     }
 
+    @Test
+    public void testDeleteCluster() throws Exception {
+        clusterDao.createCluster(clusterTbl);
+        clusterDao.deleteCluster(clusterTbl);
+    }
+
     @Override
     protected String prepareDatas() throws IOException {
         return "insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id) values (2,'cluster2',1,'Cluster:cluster2 , ActiveDC : A','0000000000000000','Normal',1, 2);\n"

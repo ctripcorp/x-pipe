@@ -102,9 +102,13 @@ public class MetaUpdate extends AbstractConsoleController {
         );
 
 
-        clusterModel.setSlaveDcs(dcs.subList(1, dcs.size()));
-        clusterService.createCluster(clusterModel);
-        return RetMessage.createSuccessMessage();
+        try {
+            clusterModel.setSlaveDcs(dcs.subList(1, dcs.size()));
+            clusterService.createCluster(clusterModel);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
     }
 
     private OrganizationTbl getOrganizationTbl(ClusterCreateInfo clusterCreateInfo) {

@@ -13,4 +13,5 @@ public interface OrganizationService {
     void updateOrganizations();
     List<OrganizationTbl> getAllOrganizations();
     OrganizationTbl getOrganizationTblByCMSOrganiztionId(long organizationId);
+    OrganizationTbl getOrgByName(String name);
 }

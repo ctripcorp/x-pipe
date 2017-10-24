@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,7 +32,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private ClusterMetaModifiedNotifier notifier;
 	@Autowired
 	private ShardService shardService;
-
 	@Autowired
 	private OrganizationService organizationService;
 	
@@ -98,9 +96,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	@DalTransaction
 	public ClusterTbl createCluster(ClusterModel clusterModel) {
 		ClusterTbl cluster = clusterModel.getClusterTbl();
-    	cluster.setOrganizationInfo(findClusterOrgWithOrgName(cluster.getClusterOrgName()));
+    	List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
+    	List<ShardModel> shards = clusterModel.getShards();
+
     	// ensure active dc assigned
     	if(XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
     		throw new BadRequestException("No active dc assigned.");
@@ -116,58 +117,39 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
 		}
     	proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
-		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
+		proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster));
 
-		return createCluster(proto, clusterModel);
-	}
-
-	@DalTransaction
-	public ClusterTbl createCluster(final ClusterTbl proto, final ClusterModel clusterModel) {
-		final ClusterTbl queryProto = proto;
-		ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
+    	final ClusterTbl queryProto = proto;
+    	ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
 			@Override
 			public ClusterTbl doQuery() throws DalException {
 				return clusterDao.createCluster(queryProto);
 			}
-		});
+    	});
 
-		ClusterTbl cluster = clusterModel.getClusterTbl();
-		List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
-		List<ShardModel> shards = clusterModel.getShards();
-		if(slaveDcs != null){
+    	if(slaveDcs != null){
 			for(DcTbl dc : slaveDcs) {
 				bindDc(cluster.getClusterName(), dc.getDcName());
 			}
 		}
 
-		if(shards != null){
+    	if(shards != null){
 			for (ShardModel shard : shards) {
 				shardService.createShard(cluster.getClusterName(), shard.getShardTbl(), shard.getSentinels());
 			}
 		}
 
-		return result;
+    	return result;
 	}
 
-	public OrganizationTbl findClusterOrgWithOrgName(String orgName) {
-		List<OrganizationTbl> orgs = organizationService.getAllOrganizations();
-		for(OrganizationTbl org : orgs) {
-			if(ObjectUtils.equals(org.getOrgName(), orgName)) {
-				return org;
-			}
-		}
-		return null;
-	}
-
-	public long getIdFromClusterOrg(ClusterTbl cluster) {
-		OrganizationTbl organizationTbl = cluster.getOrganizationInfo();
+	public long getOrgIdFromClusterOrgName(ClusterTbl cluster) {
+		String orgName = cluster.getClusterOrgName();
+		OrganizationTbl organizationTbl = organizationService.getOrgByName(orgName);
 		if(organizationTbl == null)
 			return 0L;
 		Long id = organizationTbl.getId();
 		return id == null ? 0L : id;
 	}
-
-
 
 	@Override
 	public ClusterTbl findClusterAndOrg(String clusterName) {
@@ -215,7 +197,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public void updateCluster(String clusterName, ClusterTbl cluster) {
-		cluster.setOrganizationInfo(findClusterOrgWithOrgName(cluster.getClusterOrgName()));
 		ClusterTbl proto = find(clusterName);
     	if(null == proto) throw new BadRequestException("Cannot find cluster");
 
@@ -228,7 +209,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
 		}
 		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
-		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
+		proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster));
 		// organization info should not be updated by cluster,
 		// it's automatically updated by scheduled task
 		proto.setOrganizationInfo(null);

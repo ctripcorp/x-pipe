@@ -25,7 +25,7 @@ public class ScheduledAlertMessageDecoratorTest extends AbstractConsoleIntegrati
 
     @Test
     public void generateTitle() throws Exception {
-        Assert.assertEquals("[XPipe 报警]", decorator.generateTitle());
+        Assert.assertEquals("[][XPipe 报警]", decorator.generateTitle());
     }
 
     @Test

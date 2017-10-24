@@ -26,7 +26,7 @@ public class AlertMessageDecoratorTest extends AbstractConsoleIntegrationTest {
     public void generateTitle() throws Exception {
         Assert.assertTrue(decorator
                 .generateTitle(new AlertEntity(null, null, null, null, ALERT_TYPE.CLIENT_INCONSIS))
-                .startsWith("[XPipe 报警]"));
+                .contains("[XPipe 报警]"));
     }
 
 }

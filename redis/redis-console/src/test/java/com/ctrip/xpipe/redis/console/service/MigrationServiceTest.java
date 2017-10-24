@@ -56,7 +56,7 @@ public class MigrationServiceTest extends AbstractConsoleIntegrationTest {
 		List<MigrationShardTbl> result_shards = migrationService.findMigrationShards(result_cluster.getId());
 		
 		Assert.assertEquals(eventId, result.getId());
-		Assert.assertEquals("xpipe", result.getOperator());
+		Assert.assertEquals("unit test", result.getOperator());
 		Assert.assertNotNull(result_cluster);
 		Assert.assertEquals(1, result_cluster.getClusterId());
 		Assert.assertEquals(2, result_cluster.getDestinationDcId());

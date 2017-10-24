@@ -93,11 +93,11 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			}
 		});
 		
-		if(null != shards) {
+		if(null != shards && !shards.isEmpty()) {
 			shardDao.deleteShardsBatch(shards);
 		}
 		
-		if(null != dcClusters) {
+		if(null != dcClusters && !dcClusters.isEmpty()) {
 			dcClusterDao.deleteDcClustersBatch(dcClusters);
 		}
 		

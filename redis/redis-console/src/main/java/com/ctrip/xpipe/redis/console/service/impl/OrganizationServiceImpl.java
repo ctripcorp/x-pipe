@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.organization.OrganizationModel;
-import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.dao.OrganizationDao;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTblDao;
@@ -37,7 +36,7 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
         updateDB(orgsToCreate, orgsToUpdate);
     }
 
-    @DalTransaction
+
     private void updateDB(List<OrganizationTbl> orgsToCreate, List<OrganizationTbl> orgsToUpdate) {
         if (null != orgsToCreate && orgsToCreate.size() > 0) {
             logger.info("[handleUpdate][orgsToCreate]{}, {}", orgsToUpdate.size(), orgsToUpdate);
@@ -59,6 +58,11 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
     @Override
     public OrganizationTbl getOrganizationTblByCMSOrganiztionId(long organizationId) {
         return organizationDao.findByOrgId(organizationId);
+    }
+
+    @Override
+    public OrganizationTbl getOrgByName(String name) {
+        return organizationDao.findByName(name);
     }
 
     // Try to retrieve organization info from some source

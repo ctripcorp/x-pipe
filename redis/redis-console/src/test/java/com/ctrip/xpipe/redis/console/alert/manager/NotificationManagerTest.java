@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 /**
  * @author chen.zhu
@@ -57,6 +58,7 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
+    @DirtiesContext
     public void send() throws Exception {
         AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
         Assert.assertTrue(notificationManager.send(alert));
