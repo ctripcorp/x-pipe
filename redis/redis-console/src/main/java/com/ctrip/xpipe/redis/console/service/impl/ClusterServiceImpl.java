@@ -98,11 +98,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	@DalTransaction
 	public ClusterTbl createCluster(ClusterModel clusterModel) {
 		ClusterTbl cluster = clusterModel.getClusterTbl();
-    	List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
-    	List<ShardModel> shards = clusterModel.getShards();
     	cluster.setOrganizationInfo(findClusterOrgWithOrgName(cluster.getClusterOrgName()));
     	// ensure active dc assigned
     	if(XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
@@ -120,28 +117,36 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
     	proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
 		proto.setClusterOrgId(getIdFromClusterOrg(cluster));
-    	
-    	final ClusterTbl queryProto = proto;
-    	ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
+
+		return createCluster(proto, clusterModel);
+	}
+
+	@DalTransaction
+	public ClusterTbl createCluster(final ClusterTbl proto, final ClusterModel clusterModel) {
+		final ClusterTbl queryProto = proto;
+		ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
 			@Override
 			public ClusterTbl doQuery() throws DalException {
 				return clusterDao.createCluster(queryProto);
 			}
-    	});
+		});
 
-    	if(slaveDcs != null){
+		ClusterTbl cluster = clusterModel.getClusterTbl();
+		List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
+		List<ShardModel> shards = clusterModel.getShards();
+		if(slaveDcs != null){
 			for(DcTbl dc : slaveDcs) {
 				bindDc(cluster.getClusterName(), dc.getDcName());
 			}
 		}
 
-    	if(shards != null){
+		if(shards != null){
 			for (ShardModel shard : shards) {
 				shardService.createShard(cluster.getClusterName(), shard.getShardTbl(), shard.getSentinels());
 			}
 		}
-    	
-    	return result;
+
+		return result;
 	}
 
 	public OrganizationTbl findClusterOrgWithOrgName(String orgName) {
