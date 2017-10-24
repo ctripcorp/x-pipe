@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.alert.decorator;
 
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import org.apache.velocity.VelocityContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,7 +25,9 @@ public class AlertMessageDecorator extends Decorator {
 
     @Override
     public String generateTitle(AlertEntity alert) {
-        return "[XPipe 报警]" + alert.getKey();
+        return String.format("[%s][XPipe 报警]%s",
+                consoleConfig.getXpipeRuntimeEnvironmentEnvironment(),
+                alert.getKey());
     }
 
     @Override
