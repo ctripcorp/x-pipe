@@ -8,12 +8,16 @@ import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
+import com.ctrip.xpipe.redis.console.aop.DalTransactionAspect;
+import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -27,6 +31,7 @@ import java.util.concurrent.*;
  * Oct 18, 2017
  */
 @Component
+@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class NotificationManager {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationManager.class.getSimpleName());
@@ -39,7 +44,7 @@ public class NotificationManager {
 
     private Map<String, AlertEntity> sendedAlerts = new ConcurrentHashMap<>(1000);
 
-    private Map<ALERT_TYPE, Set<AlertEntity>> scheduledAlerts = new ConcurrentHashMap<>(1000);;
+    private Map<ALERT_TYPE, Set<AlertEntity>> scheduledAlerts = new ConcurrentHashMap<>(1000);
 
     @Autowired
     private AlertPolicyManager policyManager;
@@ -50,9 +55,6 @@ public class NotificationManager {
     @Autowired
     private DecoratorManager decoratorManager;
 
-    @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
-    private ExecutorService executor;
-
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService schedule;
 
@@ -60,8 +62,8 @@ public class NotificationManager {
     public void start() {
         logger.info("Alert Notification Manager started");
 
-        executor.execute(new SendAlert());
-        executor.execute(new AnnounceRecover());
+        schedule.schedule(new SendAlert(), 1, TimeUnit.MINUTES);
+        schedule.schedule(new AnnounceRecover(), 1, TimeUnit.MINUTES);
         schedule.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 
             @Override
