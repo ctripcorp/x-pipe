@@ -26,6 +26,9 @@ import javax.annotation.PostConstruct;
 @Aspect
 @Component
 public class DalTransactionAspect {
+
+	private static final String ROLE_HINT = "xpipe";
+
 	private TransactionManager transactionManager;
 
 	private static Logger logger = LoggerFactory.getLogger(DalTransaction.class);
@@ -36,7 +39,7 @@ public class DalTransactionAspect {
 	@PostConstruct
 	private void postConstruct() {
 		try {
-			transactionManager = ContainerLoader.getDefaultContainer().lookup(TransactionManager.class);
+			transactionManager = ContainerLoader.getDefaultContainer().lookup(TransactionManager.class, ROLE_HINT);
 			logger.info("[postConstruct]Load TransactionManager: {}", transactionManager.getClass());
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot find transaction manager.",e);

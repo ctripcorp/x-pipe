@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -31,6 +32,7 @@ import java.util.concurrent.*;
  * Oct 18, 2017
  */
 @Component
+@Lazy
 @ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class NotificationManager {
 

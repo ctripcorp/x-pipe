@@ -21,7 +21,7 @@ import java.sql.SQLException;
  *
  * Aug 26, 2016
  */
-@Named(type = TransactionManager.class)
+@Named(type = TransactionManager.class, value="xpipe")
 public class XpipeDalTransactionManager implements TransactionManager, LogEnabled {
 	   public static int INITIAL_STATUS = 0;
 	   public static int PARENT_TRANSACTION = 1;
