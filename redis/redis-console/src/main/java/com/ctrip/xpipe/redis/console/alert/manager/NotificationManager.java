@@ -38,7 +38,7 @@ public class NotificationManager {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationManager.class.getSimpleName());
 
-    private static final int MILLIS1MINUTE = 1 * 60 * 1000;
+    private static final int MILLIS1MINUTE = 60 * 1000;
 
     private BlockingQueue<AlertEntity> alerts = new LinkedBlockingDeque<>(10000);
 
@@ -187,40 +187,48 @@ public class NotificationManager {
         @Override
         public void run() {
             while (true) {
-                long current = System.currentTimeMillis();
-                String currentStr = DateTimeUtils.currentTimeAsString();
-                List<String> recoveredItems = new LinkedList<>();
+                try {
+                    long current = System.currentTimeMillis();
+                    String currentStr = DateTimeUtils.currentTimeAsString();
+                    List<String> recoveredItems = new LinkedList<>();
 
-                for (Map.Entry<String, AlertEntity> entry : unrecoveredAlerts.entrySet()) {
-                    try {
-                        String key = entry.getKey();
-                        AlertEntity alert = entry.getValue();
-                        int recoverMinute = policyManager.queryRecoverMinute(alert);
-                        long alertTime = alert.getDate().getTime();
-                        int alreadyMinutes = (int) ((current - alertTime) / MILLIS1MINUTE);
+                    for (Map.Entry<String, AlertEntity> entry : unrecoveredAlerts.entrySet()) {
+                        try {
+                            String key = entry.getKey();
+                            AlertEntity alert = entry.getValue();
+                            int recoverMinute = policyManager.queryRecoverMinute(alert);
+                            long alertTime = alert.getDate().getTime();
+                            int alreadyMinutes = (int) ((current - alertTime) / MILLIS1MINUTE);
 
-                        if (alreadyMinutes >= recoverMinute) {
-                            recoveredItems.add(key);
-                            sendRecoveryMessage(alert, currentStr);
+                            if (alreadyMinutes >= recoverMinute) {
+                                recoveredItems.add(key);
+                                sendRecoveryMessage(alert, currentStr);
+                            }
+                        } catch (Exception e) {
+                            logger.error("{}", e);
                         }
-                    } catch (Exception e) {
-                        logger.error("{}", e);
                     }
-                }
 
-                for (String key : recoveredItems) {
-                    unrecoveredAlerts.remove(key);
-                }
-
-                long duration = System.currentTimeMillis() - current;
-                if (duration < MILLIS1MINUTE) {
-                    long lackMills = MILLIS1MINUTE - duration;
-
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(lackMills);
-                    } catch (InterruptedException e) {
-                        logger.error("{}", e);
+                    for (String key : recoveredItems) {
+                        AlertEntity alertEntity = unrecoveredAlerts.remove(key);
+                        Set<AlertEntity> set = scheduledAlerts.getOrDefault(alertEntity.getAlertType(), null);
+                        if (set != null && !set.isEmpty()) {
+                            set.remove(alertEntity);
+                        }
                     }
+
+                    long duration = System.currentTimeMillis() - current;
+                    if (duration < MILLIS1MINUTE) {
+                        long lackMills = MILLIS1MINUTE - duration;
+
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(lackMills);
+                        } catch (InterruptedException e) {
+                            logger.error("{}", e);
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.error("[AnnounceRecover][run] {}", e);
                 }
             }
         }
