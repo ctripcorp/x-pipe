@@ -58,7 +58,7 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
 
     @After
     public void tearDown() {
-        ContainerLoader.destroyDefaultContainer();
+        ContainerLoader.destroy();
     }
 
     private void setUpTestDataSource() throws ComponentLookupException, SQLException, IOException {
