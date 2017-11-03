@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ctrip</groupId>
+        <artifactId>super-pom</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <groupId>com.ctrip.framework</groupId>
+    <artifactId>framework-bom</artifactId>
+    <version>1.0.1</version>
+    <packaging>pom</packaging>
+    <name>Ctrip Framework BOM</name>
+    <description>Ctrip Framework BOM</description>
+    <organization>
+        <name>Ctrip, Inc.</name>
+        <url>http://www.ctrip.com</url>
+    </organization>
+    <properties>
+        <!--ctrip third party bom -->
+        <ctrip-thirdparty-bom.version>0.0.1</ctrip-thirdparty-bom.version>
+        <!-- framework -->
+        <cat.version>2.12.1</cat.version>
+        <clogging.version>4.1.8</clogging.version>
+        <dal.version>1.10.0</dal.version>
+        <ctrip-datasource.version>1.2.0</ctrip-datasource.version>
+        <soa.version>2.5.12</soa.version>
+        <artemis.version>1.5.11</artemis.version>
+        <caravan.version>1.11.11</caravan.version>
+        <framework-foundation.version>1.7.1</framework-foundation.version>
+
+        <!-- arch bom -->
+        <arch-bom.version>1.0.12</arch-bom.version>
+
+        <!-- third party -->
+        <foundation-service.version>3.0.5</foundation-service.version>
+        <plexus-container-default.version>3.0.5</plexus-container-default.version>
+        <cs2j.version>1.0.0</cs2j.version>
+        <!-- in line with the version used by tars -->
+        <tomcat.version>7.0.73</tomcat.version>
+        <starter-tomcat.version>7.0.73.ctrip.1</starter-tomcat.version>
+
+        <!-- framework bom repository path, only used for framework bom deployment -->
+        <!-- Maven Release Repository URL -->
+        <releases.repo>http://maven.dev.sh.ctripcorp.com:8081/nexus/content/repositories/fxrelease</releases.repo>
+        <!-- Maven Snapshot Repository URL -->
+        <snapshots.repo>http://maven.dev.sh.ctripcorp.com:8081/nexus/content/repositories/fxsnapshot</snapshots.repo>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Framework Foundation -->
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>framework-foundation</artifactId>
+                <version>${framework-foundation.version}</version>
+            </dependency>
+            <!-- Cat -->
+            <dependency>
+                <groupId>com.dianping.cat</groupId>
+                <artifactId>cat-client</artifactId>
+                <version>${cat.version}</version>
+            </dependency>
+            <!-- Clogging -->
+            <dependency>
+                <groupId>com.ctrip.framework.clogging</groupId>
+                <artifactId>clogging-agent</artifactId>
+                <version>${clogging.version}</version>
+            </dependency>
+            <!-- DAL -->
+            <dependency>
+                <groupId>com.ctrip.platform</groupId>
+                <artifactId>ctrip-dal-client</artifactId>
+                <version>${dal.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.platform</groupId>
+                <artifactId>ctrip-datasource</artifactId>
+                <version>${ctrip-datasource.version}</version>
+            </dependency>
+            <!-- SOA -->
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-core</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-common</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-client</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-server</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-mobile-request-filter</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-extensions</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-formatter-protobuf</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <!-- Cavaran -->
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-common</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-configuration</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-ribbon</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-web</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-util</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-ctrip</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-etcd</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-hystrix</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-protobuf</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <!-- Artemis -->
+            <dependency>
+                <groupId>com.ctrip.soa.artemis</groupId>
+                <artifactId>artemis-client</artifactId>
+                <version>${artemis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.artemis</groupId>
+                <artifactId>artemis-common</artifactId>
+                <version>${artemis.version}</version>
+            </dependency>
+
+            <!-- Third Party-->
+            <dependency>
+                <groupId>com.ctrip.thirdparty</groupId>
+                <artifactId>ctrip-thirdparty-bom</artifactId>
+                <version>${ctrip-thirdparty-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- unidal -->
+            <dependency>
+                <groupId>org.unidal.framework</groupId>
+                <artifactId>foundation-service</artifactId>
+                <version>${foundation-service.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-container-default</artifactId>
+                <version>${plexus-container-default.version}</version>
+            </dependency>
+
+            <!-- cs2j -->
+            <dependency>
+                <groupId>com.ctrip.framework.cs2j</groupId>
+                <artifactId>cs2j-support</artifactId>
+                <version>${cs2j.version}</version>
+            </dependency>
+
+            <!-- tomcat related, in line with the version used by tars -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-jasper</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-logging-juli</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-jdbc</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-juli</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-jsp-api</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-tomcat</artifactId>
+                <version>${starter-tomcat.version}</version>
+            </dependency>
+
+            <!-- Arch -->
+            <dependency>
+                <groupId>com.ctrip.arch</groupId>
+                <artifactId>arch-bom</artifactId>
+                <version>${arch-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
