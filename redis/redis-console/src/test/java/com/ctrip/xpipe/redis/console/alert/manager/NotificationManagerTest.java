@@ -70,6 +70,9 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
     public void sendRecoveryMessage() throws Exception {
         AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
         Assert.assertTrue(notificationManager.sendRecoveryMessage(alert, DateTimeUtils.currentTimeAsString()));
+
+        alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.MARK_INSTANCE_DOWN);
+        notificationManager.sendRecoveryMessage(alert, DateTimeUtils.currentTimeAsString());
     }
 
 }

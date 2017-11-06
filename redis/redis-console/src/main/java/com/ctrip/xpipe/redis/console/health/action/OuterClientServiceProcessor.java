@@ -66,8 +66,12 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
             try {
                 if (result) {
                     outerClientService.markInstanceUp(clusterShardHostPort);
+                    alertManager.alert(clusterShardHostPort.getClusterName(), clusterShardHostPort.getShardName(),
+                            clusterShardHostPort.getHostPort(), ALERT_TYPE.MARK_INSTANCE_UP, "Mark Instance Up");
                 } else {
                     outerClientService.markInstanceDown(clusterShardHostPort);
+                    alertManager.alert(clusterShardHostPort.getClusterName(), clusterShardHostPort.getShardName(),
+                            clusterShardHostPort.getHostPort(), ALERT_TYPE.MARK_INSTANCE_DOWN, "Mark Instance Down");
                 }
             } catch (OuterClientException e) {
                 throw new IllegalStateException("set error:" + clusterShardHostPort + "," + result, e);

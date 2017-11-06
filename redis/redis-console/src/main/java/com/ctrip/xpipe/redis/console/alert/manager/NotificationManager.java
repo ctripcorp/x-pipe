@@ -32,8 +32,6 @@ import java.util.concurrent.*;
  * Oct 18, 2017
  */
 @Component
-@Lazy
-@ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class NotificationManager {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationManager.class.getSimpleName());
@@ -182,7 +180,7 @@ public class NotificationManager {
             }
         }
     }
-
+    
     protected class AnnounceRecover implements Runnable {
         @Override
         public void run() {
@@ -202,7 +200,9 @@ public class NotificationManager {
 
                             if (alreadyMinutes >= recoverMinute) {
                                 recoveredItems.add(key);
-                                sendRecoveryMessage(alert, currentStr);
+                                if(announceRecovery(alert.getAlertType())) {
+                                    sendRecoveryMessage(alert, currentStr);
+                                }
                             }
                         } catch (Exception e) {
                             logger.error("{}", e);
@@ -232,5 +232,16 @@ public class NotificationManager {
                 }
             }
         }
+
+        private boolean announceRecovery(ALERT_TYPE alertType) {
+            for(ALERT_TYPE type : unAnnocedRecovers) {
+                if(type == alertType)
+                    return false;
+            }
+            return true;
+        }
+
+        private ALERT_TYPE[] unAnnocedRecovers = {ALERT_TYPE.MARK_INSTANCE_DOWN,
+                ALERT_TYPE.MARK_INSTANCE_UP, ALERT_TYPE.QUORUM_DOWN_FAIL};
     }
 }

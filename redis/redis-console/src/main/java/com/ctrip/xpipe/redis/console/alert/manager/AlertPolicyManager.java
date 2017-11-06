@@ -72,11 +72,11 @@ public class AlertPolicyManager {
     public List<String> queryRecepients(AlertEntity alert) {
         try {
             List<AlertPolicy> alertPolicies = findAlertPolicies(alert);
-            List<String> result = new LinkedList<>();
+            Set<String> result = new HashSet<>();
             for (AlertPolicy alertPolicy : alertPolicies) {
                 result.addAll(alertPolicy.queryRecipients());
             }
-            return result;
+            return new ArrayList<>(result);
         } catch (Exception e) {
             logger.error("[queryRecepients]{}", e);
             return new LinkedList<>();
@@ -86,11 +86,11 @@ public class AlertPolicyManager {
     public List<String> queryCCers(AlertEntity alert) {
         try {
             List<AlertPolicy> alertPolicies = findAlertPolicies(alert);
-            List<String> result = new LinkedList<>();
+            Set<String> result = new HashSet<>();
             for (AlertPolicy alertPolicy : alertPolicies) {
                 result.addAll(alertPolicy.queryCCers());
             }
-            return result;
+            return new ArrayList<>(result);
         } catch (Exception e) {
             logger.error("[queryCCers]{}", e);
             return new LinkedList<>();
