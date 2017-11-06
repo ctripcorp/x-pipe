@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.service.sso;
 
 
+import com.ctrip.infosec.sso.client.principal.Assertion;
+import com.ctrip.infosec.sso.client.principal.AttributePrincipal;
+import com.ctrip.infosec.sso.client.util.AssertionHolder;
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
-import org.jasig.cas.client.authentication.AttributePrincipal;
-import org.jasig.cas.client.util.AssertionHolder;
-import org.jasig.cas.client.validation.Assertion;
 
 /**
  * @author lepdou 2016-11-08

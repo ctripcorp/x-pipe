@@ -40,7 +40,6 @@
         <ctrip-framework-foundation.version>1.7.1</ctrip-framework-foundation.version>
         <ctrip-apollo.version>0.6.5</ctrip-apollo.version>
         <cat.version>2.9.2</cat.version>
-        <apollo.sso.ctrip.version>1.1.0</apollo.sso.ctrip.version>
         <lettuce.version>4.3.2.Final</lettuce.version>
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
@@ -53,6 +52,11 @@
         <hickwall.client.version>1.8</hickwall.client.version>
         <clogging.version>4.1.8</clogging.version>
         <credis.version>2.5.3</credis.version>
+        <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
+        <qunaer.common.version>9.0.9</qunaer.common.version>
+        <qconfig.client.version>1.4.4</qconfig.client.version>
+        <qtracer.version>1.2.4</qtracer.version>
+        <netty3.version>3.10.5.Final</netty3.version>
     </properties>
 
     <modules>
@@ -63,6 +67,70 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- qconfig sso -->
+            <dependency>
+                <groupId>com.ctrip.infosec</groupId>
+                <artifactId>sso-client-qconfig</artifactId>
+                <version>1.0.7-SNAPSHOT</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.ctrip.framework</groupId>
+                        <artifactId>vi</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>qunar.common</groupId>
+                <artifactId>common-api</artifactId>
+                <version>${qunaer.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.common</groupId>
+                <artifactId>common-concurrent</artifactId>
+                <version>${qunaer.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qconfig</groupId>
+                <artifactId>qconfig-client</artifactId>
+                <version>${qconfig.client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qtracer</groupId>
+                <artifactId>qtracer-client</artifactId>
+                <version>${qtracer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qtracer</groupId>
+                <artifactId>qtracer-common</artifactId>
+                <version>${qtracer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qtracer</groupId>
+                <artifactId>qtracer-instrument-agent</artifactId>
+                <version>${qtracer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qtracer</groupId>
+                <artifactId>qtracer-instrument-http</artifactId>
+                <version>${qtracer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qtracer</groupId>
+                <artifactId>qtracer-instrument-annotation</artifactId>
+                <version>${qtracer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qtracer</groupId>
+                <artifactId>qtracer-instrument-lib</artifactId>
+                <version>${qtracer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty</artifactId>
+                <version>${netty3.version}</version>
+            </dependency>
+
+
             <dependency>
                 <groupId>org.unidal.framework</groupId>
                 <artifactId>foundation-service</artifactId>
@@ -72,11 +140,6 @@
                 <groupId>com.ctrip.framework.apollo</groupId>
                 <artifactId>apollo-client</artifactId>
                 <version>${ctrip-apollo.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ctrip.framework.apollo-sso</groupId>
-                <artifactId>apollo-sso-ctrip</artifactId>
-                <version>${apollo.sso.ctrip.version}</version>
             </dependency>
             <!-- xpipe related -->
             <dependency>
