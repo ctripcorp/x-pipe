@@ -1164,6 +1164,8 @@
 	<entity name="organization-tbl" table="organization_tbl" alias="ot">
 		<member name="id" field="id" value-type="Long" length="20" nullable="true" key="true" auto-increment="true" />
 
+		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
+
 		<var name="target-org-name" value-type="String"/>
 		<var name="target-org-id" value-type="long"/>
 
@@ -1182,6 +1184,18 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name="org-name"/> = ${target-org-name}
+					]]>
+				</statement>
+			</query>
+
+			<query name="find-involved-orgs" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT DISTINCT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='cluster-info'/>
+					WHERE <FIELD name='id'/> = ct.cluster_org_id
+					AND ct.deleted = 0
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>

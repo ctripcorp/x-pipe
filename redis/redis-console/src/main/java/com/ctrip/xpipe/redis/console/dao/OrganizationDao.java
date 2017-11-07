@@ -69,6 +69,15 @@ public class OrganizationDao extends AbstractXpipeConsoleDAO {
         });
     }
 
+    public List<OrganizationTbl> findInvolvedOrgs() {
+        return queryHandler.handleQuery(new DalQuery<List<OrganizationTbl>>() {
+            @Override
+            public List<OrganizationTbl> doQuery() throws DalException {
+                return organizationTblDao.findInvolvedOrgs(OrganizationTblEntity.READSET_FULL);
+            }
+        });
+    }
+
     @DalTransaction
     public void updateOrg(OrganizationTbl org) {
         queryHandler.handleQuery(new DalQuery<Void>() {

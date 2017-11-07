@@ -52,8 +52,24 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
             method: 'GET',
             url: '/console/organizations',
             isArray : true
+        },
+        get_involved_organizations: {
+            method: 'GET',
+            url: '/console/involved/organizations',
+            isArray : true
         }
     });
+    function getInvolvedOrgs() {
+        var d = $q.defer();
+        resource.get_involved_organizations({},
+            function(result) {
+                d.resolve(result);
+            }, function(result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     function getOrganizations() {
         var d = $q.defer();
         resource.get_all_organizations({},
@@ -219,6 +235,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         getClustersCount : getClustersCount,
         bindDc: bindDc,
         unbindDc: unbindDc,
-        getOrganizations: getOrganizations
+        getOrganizations: getOrganizations,
+        getInvolvedOrgs: getInvolvedOrgs
     }
 }]);

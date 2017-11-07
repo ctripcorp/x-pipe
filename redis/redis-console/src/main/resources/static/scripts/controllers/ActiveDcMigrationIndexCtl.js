@@ -13,7 +13,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 		function init() {
 			DcService.loadAllDcs().then(function(data){
 				$scope.dcs = data;
-                ClusterService.getOrganizations().then(function (result) {
+                ClusterService.getInvolvedOrgs().then(function (result) {
                         $scope.organizations = result;
                         $scope.organizations.push({"orgName": "不选择"});
 				});
@@ -40,11 +40,19 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 
 		function sourceDcSelected() {
 			var dcName = $scope.sourceDc;
-			if(dcName) {
+            var orgName = $scope.clusterOrgName;
+			if(dcName && (!orgName || orgName === "不选择")) {
 				ClusterService.findClustersByActiveDcName(dcName).then(function(data) {
 					$scope.clusters = data;
 					$scope.tableParams.reload();
 				});
+			} else {
+                ClusterService.findClustersByActiveDcName(dcName).then(function (data) {
+                    $scope.clusters = data.filter(function (localCluster) {
+                        return localCluster.clusterOrgName === orgName;
+                    });
+                    $scope.tableParams.reload();
+                });
 			}
 		}
 

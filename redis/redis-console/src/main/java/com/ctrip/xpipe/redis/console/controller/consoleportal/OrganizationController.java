@@ -32,4 +32,9 @@ public class OrganizationController extends AbstractConsoleController {
 
         return organizationService.getAllOrganizations();
     }
+
+    @RequestMapping(value = "/involved/organizations", method = RequestMethod.GET)
+    public List<OrganizationTbl> getInvolvedOrgs() {
+        return organizationService.getInvolvedOrgs();
+    }
 }
