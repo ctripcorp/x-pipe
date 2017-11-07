@@ -19,8 +19,7 @@ public class SSOConfigurations {
     @Bean
     public FilterRegistrationBean ctripSSOFilter() {
         FilterRegistrationBean ctripSSOFilter = new FilterRegistrationBean();
-        ctripSSOFilter.addInitParameter("exclude_paths", "/api,/health");
-        ctripSSOFilter.setFilter(filter("com.ctrip.infosec.sso.client.CtripSSOFilter"));
+        ctripSSOFilter.setFilter(new CtripSSOFilter());
         ctripSSOFilter.addUrlPatterns("/*");
         return ctripSSOFilter;
     }
