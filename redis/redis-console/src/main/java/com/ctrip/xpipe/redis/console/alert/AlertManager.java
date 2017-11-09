@@ -5,6 +5,8 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.manager.NotificationManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +15,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +32,8 @@ public class AlertManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
+    private static final long MILLISECOND1MINUTE = 1000 * 60;
+
     @Autowired
     private ConsoleConfig consoleConfig;
 
@@ -37,6 +44,8 @@ public class AlertManager {
     private ScheduledExecutorService scheduled;
 
     private Set<String> alertClusterWhiteList;
+
+    private Map<String, Long> newlyAddedClusters = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void postConstruct(){
@@ -71,12 +80,33 @@ public class AlertManager {
             return;
         }
 
+
         logger.warn("[alert]{}, {}, {}, {}", cluster, shard, type, message);
         EventMonitor.DEFAULT.logAlertEvent(String.format("%s,%s,%s,%s", cluster, shard, type.simpleDesc(), message));
         notifier.addAlert(cluster, shard, hostPort, type, message);
     }
 
     private boolean shouldAlert(String cluster) {
-        return !alertClusterWhiteList.contains(cluster);
+        return !alertClusterWhiteList.contains(cluster) && !isNewlyAddedCluster(cluster);
+    }
+
+    private boolean isNewlyAddedCluster(String cluster) {
+        long longTimeAgo = -9999999L;
+        long clusterCreationTime = this.newlyAddedClusters.getOrDefault(cluster, longTimeAgo);
+        long duration = System.currentTimeMillis() - clusterCreationTime;
+        if(duration / MILLISECOND1MINUTE < 5) {
+            return true;
+        }
+        return false;
+    }
+
+    public void notifyNewlyAddedCluster(String cluster) {
+        this.newlyAddedClusters.put(cluster, System.currentTimeMillis());
+        scheduled.schedule(new Runnable() {
+            @Override
+            public void run() {
+                AlertManager.this.newlyAddedClusters.remove(cluster);
+            }
+        }, 5, TimeUnit.MINUTES);
     }
 }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.dao;
 
+import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -33,6 +34,9 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	private ShardDao shardDao;
 	@Autowired
 	private DcClusterDao dcClusterDao;
+
+	@Autowired
+	private AlertManager alertManager;
 	
 	@PostConstruct
 	private void postConstruct() {
@@ -69,6 +73,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	    protoDcCluster.setDcId(activeDc.getId())
 	    		.setClusterId(newCluster.getId());
 	    dcClusterTblDao.insert(protoDcCluster);
+	    alertManager.notifyNewlyAddedCluster(protoDcCluster.getClusterName());
 		return newCluster;
 	}
 	
