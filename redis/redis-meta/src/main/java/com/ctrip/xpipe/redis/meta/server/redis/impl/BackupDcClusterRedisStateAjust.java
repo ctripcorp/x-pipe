@@ -69,7 +69,7 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 				continue;
 			}
 			
-			logger.info("[doRun][change state]{}, {}", keeperActive, redisesNeedChange);
+			logger.info("[doRun][change state]{}, {}, {}", clusterId, keeperActive, redisesNeedChange);
 			new DefaultSlaveOfJob(redisesNeedChange, keeperActive.getIp(), keeperActive.getPort(), pool, scheduled, executors).
 			execute().addListener(new CommandFutureListener<Void>() {
 				

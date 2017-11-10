@@ -254,12 +254,12 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
 					for(RedisMeta redisMeta : shardMeta.getRedises()){
 						if(redisMeta.equalsWithIpPort(hostPort)){
-							return shardMeta;
+							return clone(shardMeta);
 						}
 					}
 					for(KeeperMeta keeperMeta: shardMeta.getKeepers()){
 						if(keeperMeta.equalsWithIpPort(hostPort)){
-							return shardMeta;
+							return clone(shardMeta);
 						}
 					}
 				}

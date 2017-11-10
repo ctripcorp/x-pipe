@@ -22,4 +22,8 @@ public class RedisComparator extends AbstractMetaComparator<Object, RedisChange>
 		
 	}
 
+	@Override
+	protected String desc() {
+		return current.desc();
+	}
 }

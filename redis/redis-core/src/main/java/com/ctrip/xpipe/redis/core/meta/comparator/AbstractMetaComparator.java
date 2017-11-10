@@ -66,15 +66,23 @@ public abstract class AbstractMetaComparator<T, C extends Enum<C>> implements Me
 	public Set<MetaComparator> getMofified() {
 		return modified;
 	}
-	
+
 	public List<ConfigChanged<C>> getConfigChanged() {
 		return new LinkedList<>(configChanged);
 	}
-	
+
 	protected boolean reflectionEquals(BaseEntity<?> currentMeta, BaseEntity<?> futureMeta) {
-		return EqualsBuilder.reflectionEquals(currentMeta, futureMeta, "hash");
+
+		if(currentMeta == null){
+			return futureMeta == null;
+		}
+		if(futureMeta == null){
+			return false;
+		}
+
+		return currentMeta.toString().equals(futureMeta.toString());
 	}
-	
+
 	@Override
 	public int totalChangedCount() {
 		return added.size() + removed.size() + modified.size();
@@ -100,7 +108,9 @@ public abstract class AbstractMetaComparator<T, C extends Enum<C>> implements Me
 	
 	@Override
 	public String toString() {
-		return String.format("added:%s, removed:%s, changed:%s", added, removed, modified);
+		return String.format("%s{added:%s, removed:%s, changed:%s}", desc(), added, removed, modified);
 	}
+
+	protected abstract String desc();
 
 }

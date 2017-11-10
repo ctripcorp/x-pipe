@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,7 +59,7 @@ public class DcMetaComparatorTest extends AbstractComparatorTest{
 	}
 
 	@Test
-	public void testDelted(){
+	public void testDeleted(){
 
 		ClusterMeta cluster = differentCluster(current);
 		current.addCluster(cluster);
@@ -88,10 +90,40 @@ public class DcMetaComparatorTest extends AbstractComparatorTest{
 		ClusterMetaComparator comparator = (ClusterMetaComparator) dcMetaComparator.getMofified().toArray()[0];
 		Assert.assertEquals(clusterMeta.getId(), comparator.getCurrent().getId());
 		Assert.assertEquals(1, comparator.getAdded().size());
-		
-		
 	}
 
-	
+	@Test
+	public void testModifyRedisConfig(){
+
+		ClusterMeta clusterMeta = (ClusterMeta) future.getClusters().values().toArray()[0];
+
+		ShardMeta shardMeta = (ShardMeta) clusterMeta.getShards().values().toArray()[0];
+
+		RedisMeta redisMeta = shardMeta.getRedises().get(0);
+		redisMeta.setPort(redisMeta.getPort() + 10000);
+
+		DcMetaComparator dcMetaComparator = new DcMetaComparator(current, future);
+		dcMetaComparator.compare();
+
+		Assert.assertEquals(0, dcMetaComparator.getRemoved().size());
+		Assert.assertEquals(0, dcMetaComparator.getAdded().size());
+		Assert.assertEquals(1, dcMetaComparator.getMofified().size());
+
+		ClusterMetaComparator comparator = (ClusterMetaComparator) dcMetaComparator.getMofified().toArray()[0];
+		Assert.assertEquals(clusterMeta.getId(), comparator.getCurrent().getId());
+		Assert.assertEquals(0, comparator.getAdded().size());
+		Assert.assertEquals(0, comparator.getRemoved().size());
+		Assert.assertEquals(1, comparator.getMofified().size());
+
+		ShardMetaComparator shardMetaComparator = (ShardMetaComparator) comparator.getMofified().toArray()[0];
+		Assert.assertEquals(1, shardMetaComparator.getAdded().size());
+		Assert.assertEquals(1, shardMetaComparator.getRemoved().size());
+		Assert.assertEquals(0, shardMetaComparator.getMofified().size());
+
+		logger.debug("{}", dcMetaComparator);
+	}
+
+
+
 
 }

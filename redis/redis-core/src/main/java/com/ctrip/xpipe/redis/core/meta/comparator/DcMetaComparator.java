@@ -79,4 +79,16 @@ public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta, DcChan
 			}
 		}
 	}
+
+	@Override
+	protected String desc() {
+
+		if(current != null){
+			return current.getId();
+		}
+		if(future != null){
+			return future.getId();
+		}
+		return null;
+	}
 }
