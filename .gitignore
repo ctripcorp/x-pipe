@@ -2,7 +2,6 @@
 *.iml
 target
 tmp
-bin
 
 TODO
 testbin
