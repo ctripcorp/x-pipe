@@ -107,9 +107,7 @@ public abstract class AbstractMetaComparator<T, C extends Enum<C>> implements Me
 	
 	@Override
 	public String toString() {
-		return String.format("%s{added:%s, removed:%s, changed:%s}", desc(), added, removed, modified);
+		return String.format("%s{added:%s, removed:%s, changed:%s}", idDesc(), added, removed, modified);
 	}
-
-	protected abstract String desc();
 
 }

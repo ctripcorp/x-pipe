@@ -2,6 +2,7 @@ package com.ctrip.xpipe.utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -52,7 +53,7 @@ public class StringUtil {
         return join(split, (obj) -> obj == null? "null" : obj.toString(), args);
     }
 
-    public static <T> String join(String split, Function<T, String> function, List<T> args) {
+    public static <T> String join(String split, Function<T, String> function, Collection<T> args) {
         StringBuilder sb = new StringBuilder();
         int i = 0;
 

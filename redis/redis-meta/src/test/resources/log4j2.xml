@@ -47,7 +47,7 @@
         <logger name="com.ctrip.xpipe.testutils.MemoryPrinter" level="WARN"/>
         <logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
         <logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
-        <logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="WARN"/>
+        <logger name="com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache" level="INFO"/>
 
         <logger name="org.apache.zookeeper" level="INFO" additivity="false">
             <appender-ref ref="zkLogFile"/>

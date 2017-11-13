@@ -80,7 +80,7 @@ public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta, DcChan
 	}
 
 	@Override
-	protected String desc() {
+	public String idDesc() {
 
 		if(current != null){
 			return current.getId();

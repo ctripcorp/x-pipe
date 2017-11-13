@@ -97,7 +97,7 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChan
 	}
 
 	@Override
-	protected String desc() {
+	public String idDesc() {
 		return current.getId();
 	}
 

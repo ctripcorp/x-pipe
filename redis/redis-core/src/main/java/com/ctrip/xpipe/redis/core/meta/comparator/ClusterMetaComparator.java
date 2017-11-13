@@ -54,7 +54,7 @@ public class ClusterMetaComparator extends AbstractMetaComparator<ShardMeta, Clu
 	}
 
 	@Override
-	protected String desc() {
+	public String idDesc() {
 		return current.getId();
 	}
 }
