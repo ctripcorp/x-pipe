@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>org.unidal.framework</groupId>
+  <artifactId>parent</artifactId>
+  <version>3.1.2-SNAPSHOT</version>
+  <versioning>
+    <snapshot>
+      <timestamp>20171109.061055</timestamp>
+      <buildNumber>3</buildNumber>
+    </snapshot>
+    <lastUpdated>20171109061055</lastUpdated>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>3.1.2-20171109.061055-3</value>
+        <updated>20171109061055</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+</metadata>
