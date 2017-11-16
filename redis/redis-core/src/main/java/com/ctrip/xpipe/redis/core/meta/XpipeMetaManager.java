@@ -33,7 +33,7 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	
 	List<KeeperMeta> getKeeperBackup(String dc, String clusterId, String shardId);
 
-	ShardMeta findShardMeta(HostPort hostPort);
+	ShardMeta findShardMetaWithParent(HostPort hostPort);
 	
 	/**
 	 * @param clusterId
