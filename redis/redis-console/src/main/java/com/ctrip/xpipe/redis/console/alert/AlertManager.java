@@ -32,7 +32,6 @@ public class AlertManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final long MILLISECOND1MINUTE = 1000 * 60;
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -44,8 +43,6 @@ public class AlertManager {
     private ScheduledExecutorService scheduled;
 
     private Set<String> alertClusterWhiteList;
-
-    private Map<String, Long> newlyAddedClusters = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void postConstruct(){
@@ -87,26 +84,7 @@ public class AlertManager {
     }
 
     private boolean shouldAlert(String cluster) {
-        return !alertClusterWhiteList.contains(cluster) && !isNewlyAddedCluster(cluster);
+        return !alertClusterWhiteList.contains(cluster);
     }
 
-    private boolean isNewlyAddedCluster(String cluster) {
-        long longTimeAgo = -9999999L;
-        long clusterCreationTime = this.newlyAddedClusters.getOrDefault(cluster, longTimeAgo);
-        long duration = System.currentTimeMillis() - clusterCreationTime;
-        if(duration / MILLISECOND1MINUTE < 5) {
-            return true;
-        }
-        return false;
-    }
-
-    public void notifyNewlyAddedCluster(String cluster) {
-        this.newlyAddedClusters.put(cluster, System.currentTimeMillis());
-        scheduled.schedule(new Runnable() {
-            @Override
-            public void run() {
-                AlertManager.this.newlyAddedClusters.remove(cluster);
-            }
-        }, 5, TimeUnit.MINUTES);
-    }
 }

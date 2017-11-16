@@ -34,9 +34,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	private ShardDao shardDao;
 	@Autowired
 	private DcClusterDao dcClusterDao;
-
-	@Autowired
-	private AlertManager alertManager;
 	
 	@PostConstruct
 	private void postConstruct() {
@@ -73,7 +70,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	    protoDcCluster.setDcId(activeDc.getId())
 	    		.setClusterId(newCluster.getId());
 	    dcClusterTblDao.insert(protoDcCluster);
-	    alertManager.notifyNewlyAddedCluster(protoDcCluster.getClusterName());
 		return newCluster;
 	}
 	
