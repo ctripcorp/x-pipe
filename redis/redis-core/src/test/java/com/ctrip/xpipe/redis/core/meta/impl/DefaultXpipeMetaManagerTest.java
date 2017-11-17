@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
@@ -32,6 +34,26 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 		metaManager = (DefaultXpipeMetaManager) DefaultXpipeMetaManager.buildFromFile("file-dao-test.xml");
 		add(metaManager);
+	}
+
+	@Test
+	public void findShard(){
+
+		ShardMeta shardMeta = metaManager.findShardMetaWithParent(new HostPort("127.0.0.1", 8000));
+
+		Assert.assertEquals("shard1", shardMeta.getId());
+		Assert.assertNotNull(shardMeta.parent());
+		Assert.assertEquals("cluster1", shardMeta.parent().getId());
+		Assert.assertNotNull(shardMeta.parent().parent());
+		Assert.assertEquals("jq", shardMeta.parent().parent().getId());
+
+
+		shardMeta = metaManager.findShardMetaWithParent(new HostPort("127.0.0.1", 6000));
+		Assert.assertEquals("shard1", shardMeta.getId());
+		Assert.assertNotNull(shardMeta.parent());
+		Assert.assertEquals("cluster1", shardMeta.parent().getId());
+		Assert.assertNotNull(shardMeta.parent().parent());
+		Assert.assertEquals("jq", shardMeta.parent().parent().getId());
 	}
 	
 	@Test

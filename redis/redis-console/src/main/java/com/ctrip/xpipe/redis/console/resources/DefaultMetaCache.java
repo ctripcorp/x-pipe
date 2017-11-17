@@ -120,7 +120,7 @@ public class DefaultMetaCache implements MetaCache {
         XpipeMeta xpipeMeta = getXpipeMeta();
 
         XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(xpipeMeta);
-        ShardMeta shardMeta = xpipeMetaManager.findShardMeta(hostPort);
+        ShardMeta shardMeta = xpipeMetaManager.findShardMetaWithParent(hostPort);
         if (shardMeta == null) {
             throw new IllegalStateException("unfound shard for instance:" + hostPort);
         }
@@ -134,7 +134,7 @@ public class DefaultMetaCache implements MetaCache {
 
         XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(getXpipeMeta());
 
-        ShardMeta currentShard = xpipeMetaManager.findShardMeta(hostPort);
+        ShardMeta currentShard = xpipeMetaManager.findShardMetaWithParent(hostPort);
         if (currentShard == null) {
             throw new IllegalStateException("unfound shard for instance:" + hostPort);
         }
@@ -152,7 +152,7 @@ public class DefaultMetaCache implements MetaCache {
 
         XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(getXpipeMeta());
 
-        ShardMeta currentShard = xpipeMetaManager.findShardMeta(hostPort);
+        ShardMeta currentShard = xpipeMetaManager.findShardMetaWithParent(hostPort);
         if (currentShard == null) {
             return null;
         }
