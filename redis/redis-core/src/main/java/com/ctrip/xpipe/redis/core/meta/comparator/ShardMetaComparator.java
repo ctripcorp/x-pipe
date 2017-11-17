@@ -95,7 +95,12 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChan
 	public ShardMeta getFuture() {
 		return future;
 	}
-	
+
+	@Override
+	public String idDesc() {
+		return current.getId();
+	}
+
 	public static class ShardUpstreamChanged implements ConfigChanged<ShardChange>{
 		
 		private String current, future;

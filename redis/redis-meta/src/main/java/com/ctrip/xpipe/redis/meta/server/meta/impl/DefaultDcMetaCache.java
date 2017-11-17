@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.meta.server.meta.impl;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -12,6 +13,8 @@ import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -35,7 +38,9 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 	public static String MEMORY_META_SERVER_DAO_KEY = "memory_meta_server_dao_file";
 
-	public static int META_DELETE_PROTECT_COUNT = 10;
+	public static int META_MODIFY_PROTECT_COUNT = 20;
+
+	public static final String META_CHANGE_TYPE = "MetaChange";
 
 	@Autowired(required = false)
 	private ConsoleService consoleService;
@@ -115,24 +120,36 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 				DcMeta future = consoleService.getDcMeta(currentDc);
 				DcMeta current = dcMetaManager.get().getDcMeta();
 
-				DcMetaComparator dcMetaComparator = new DcMetaComparator(current, future);
-				dcMetaComparator.compare();
-
-				if (dcMetaComparator.getRemoved().size() > META_DELETE_PROTECT_COUNT) {
-					logger.error("[run][removed count size too big]{}", META_DELETE_PROTECT_COUNT,
-							dcMetaComparator.getRemoved());
-					return;
-				}
-
-				logger.info("[run][change dc meta]");
-				dcMetaManager.set(DefaultDcMetaManager.buildFromDcMeta(future));
-				if (dcMetaComparator.totalChangedCount() > 0) {
-					logger.info("[run][change]{}", dcMetaComparator);
-					notifyObservers(dcMetaComparator);
-				}
+				changeDcMeta(current, future);
 			}
 		} catch (Throwable th) {
 			logger.error("[run]" + th.getMessage());
+		}
+	}
+
+	@VisibleForTesting
+	protected void changeDcMeta(DcMeta current, DcMeta future) {
+
+		DcMetaComparator dcMetaComparator = new DcMetaComparator(current, future);
+		dcMetaComparator.compare();
+
+		if (dcMetaComparator.totalChangedCount() > META_MODIFY_PROTECT_COUNT) {
+			logger.error("[run][modify count size too big]{}, {}, {}", META_MODIFY_PROTECT_COUNT,
+					dcMetaComparator.totalChangedCount(), dcMetaComparator);
+			EventMonitor.DEFAULT.logAlertEvent("remove too many:" + dcMetaComparator.totalChangedCount());
+			return;
+		}
+
+		logger.info("[run][change dc meta]");
+		dcMetaManager.set(DefaultDcMetaManager.buildFromDcMeta(future));
+		if (dcMetaComparator.totalChangedCount() > 0) {
+			logger.info("[run][change]{}", dcMetaComparator);
+			EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("[add:%s, del:%s, mod:%s]",
+					StringUtil.join(",", (clusterMeta) -> clusterMeta.getId(), dcMetaComparator.getAdded()),
+					StringUtil.join(",", (clusterMeta) -> clusterMeta.getId(), dcMetaComparator.getRemoved()),
+					StringUtil.join(",", (comparator) -> comparator.idDesc(), dcMetaComparator.getMofified()))
+			);
+			notifyObservers(dcMetaComparator);
 		}
 	}
 
@@ -160,11 +177,18 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		return dcMetaManager.get().getKeeperContainer(keeperMeta);
 	}
 
+	@Override
 	public void clusterAdded(ClusterMeta clusterMeta) {
+
+		EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("add:%s", clusterMeta.getId()));
+
 		clusterModified(clusterMeta);
 	}
 
+	@Override
 	public void clusterModified(ClusterMeta clusterMeta) {
+
+		EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("mod:%s", clusterMeta.getId()));
 
 		ClusterMeta current = dcMetaManager.get().getClusterMeta(clusterMeta.getId());
 		dcMetaManager.get().update(clusterMeta);
@@ -174,7 +198,10 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		notifyObservers(dcMetaComparator);
 	}
 
+	@Override
 	public void clusterDeleted(String clusterId) {
+
+		EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("del:%s", clusterId));
 
 		ClusterMeta clusterMeta = dcMetaManager.get().removeCluster(clusterId);
 		logger.info("[clusterDeleted]{}", clusterMeta);

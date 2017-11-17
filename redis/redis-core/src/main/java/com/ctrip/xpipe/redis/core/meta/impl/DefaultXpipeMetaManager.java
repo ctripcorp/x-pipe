@@ -237,25 +237,33 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
-	public ShardMeta findShardMeta(HostPort hostPort) {
+	public ShardMeta findShardMetaWithParent(HostPort hostPort) {
 
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
 			for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
 				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
 					for(RedisMeta redisMeta : shardMeta.getRedises()){
 						if(redisMeta.equalsWithIpPort(hostPort)){
-							return shardMeta;
+							return cloneWithParent(dcMeta, clusterMeta, shardMeta);
 						}
 					}
 					for(KeeperMeta keeperMeta: shardMeta.getKeepers()){
 						if(keeperMeta.equalsWithIpPort(hostPort)){
-							return shardMeta;
+							return cloneWithParent(dcMeta, clusterMeta, shardMeta);
 						}
 					}
 				}
 			}
 		}
 		return null;
+	}
+
+	private ShardMeta cloneWithParent(DcMeta dcMeta, ClusterMeta clusterMeta, ShardMeta shardMeta) {
+
+		ShardMeta result = clone(shardMeta);
+		result.setParent(clone(clusterMeta));
+		result.parent().setParent(clone(dcMeta));
+		return result;
 	}
 
 	@Override
