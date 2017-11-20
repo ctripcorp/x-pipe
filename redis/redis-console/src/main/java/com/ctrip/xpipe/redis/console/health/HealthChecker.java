@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,11 +41,13 @@ public class HealthChecker {
 	@Autowired
 	private HealthCheckVisitor healthCheckVisitor;
 
+	private Thread daemonHealthCheckThread;
+
 	@PostConstruct
 	public void start() {
 		log.info("Redis health checker started");
 
-		XpipeThreadFactory.create("RedisHealthChecker", true).newThread(new Runnable() {
+		daemonHealthCheckThread = XpipeThreadFactory.create("RedisHealthChecker", true).newThread(new Runnable() {
 
 			private boolean warmuped = false;
 
@@ -52,11 +55,13 @@ public class HealthChecker {
 			public void run() {
 
 				while (!Thread.currentThread().isInterrupted()) {
-					if(!warmuped) {
-						warmup();
-						warmuped = true;
-					}
+					long twoMinute = 1000 * 60 * 2;
 					try {
+						if(!warmuped) {
+							warmup();
+							warmuped = true;
+							Thread.sleep(twoMinute);
+						}
 						List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 						if(!dcsToCheck.isEmpty()){
 							sampleAll(dcsToCheck);
@@ -74,7 +79,8 @@ public class HealthChecker {
 				}
 			}
 
-		}).start();
+		});
+		daemonHealthCheckThread.start();
 	}
 
 	private void warmup() {
@@ -113,6 +119,11 @@ public class HealthChecker {
 				}
 			}
 		}
+	}
+
+	@PreDestroy
+	public void preDestroy() {
+		daemonHealthCheckThread.interrupt();
 	}
 
 }

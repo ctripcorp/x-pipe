@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 
+import javax.annotation.PreDestroy;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -117,5 +118,12 @@ public class HealthStatus extends AbstractObservable{
 
     public HEALTH_STATE getState() {
         return state.get();
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        if(scheduled.isShutdown()) {
+            scheduled.shutdown();
+        }
     }
 }

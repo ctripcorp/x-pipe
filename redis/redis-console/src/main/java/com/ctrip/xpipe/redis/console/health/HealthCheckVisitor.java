@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.concurrent.Executor;
 
+import static com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor.CHECK_CHANNEL;
+
 /**
  * @author chen.zhu
  * <p>
@@ -71,6 +73,17 @@ public class HealthCheckVisitor implements IVisitor {
                     @Override
                     public void fail(Throwable th) {
                         logger.debug("[visitRedis] fail {}", th);
+                    }
+                });
+                session.subscribeIfAbsent(CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
+                    @Override
+                    public void message(String channel, String message) {
+                        logger.debug("[visitRedis] subscribe health check channel");
+                    }
+
+                    @Override
+                    public void fail(Exception e) {
+                        logger.debug("[visitedRedis] subscribe health check channel fail");
                     }
                 });
             }
