@@ -37,10 +37,13 @@ public class HealthChecker {
 	@Autowired
 	private ConsoleConfig config;
 
+	@Autowired
+	private HealthCheckVisitor healthCheckVisitor;
+
 	@PostConstruct
 	public void start() {
 		log.info("Redis health checker started");
-
+		warmup();
 		XpipeThreadFactory.create("RedisHealthChecker", true).newThread(new Runnable() {
 
 			@Override
@@ -67,6 +70,22 @@ public class HealthChecker {
 			}
 
 		}).start();
+	}
+
+	private void warmup() {
+		int period = 2000;
+		try {
+			while(metaCache == null || metaCache.getXpipeMeta() == null) {
+				log.info("[warmup] waiting for metaCache initialized");
+				Thread.sleep(period);
+			}
+			List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
+			for(DcMeta dc : dcsToCheck) {
+				dc.accept(healthCheckVisitor);
+			}
+		} catch (Exception e) {
+			log.error("[warmup] error: {}", e);
+		}
 	}
 
 	private void sampleAll(List<DcMeta> dcMetas) {

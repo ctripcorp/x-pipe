@@ -1,0 +1,88 @@
+package com.ctrip.xpipe.redis.console.dal;
+
+import com.ctrip.xpipe.redis.core.IVisitor;
+import com.ctrip.xpipe.redis.core.entity.*;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Random;
+
+/**
+ * @author chen.zhu
+ * <p>
+ * Nov 20, 2017
+ */
+public class DataObjectAssemblyTakeOtherThreadsInfoTest {
+
+    private XpipeMeta meta1;
+
+    private XpipeMeta meta2;
+
+    @Before
+    public void beforeDoaTakeOtherThreadsInfoTest() {
+        meta1 = new XpipeMetaGenerator(2000).generateXpipeMeta();
+        meta2 = new XpipeMetaGenerator(2000).generateXpipeMeta();
+    }
+
+    @Test
+    public void testDOATakeOtherThreadsObject() {
+        XPipeMetaVisitor visitor = new XPipeMetaVisitor(meta1);
+        visitor.visitXpipe(meta1);
+    }
+
+
+    class XpipeMetaGenerator {
+
+        int clusterNum;
+
+        Random random;
+
+        XpipeMetaGenerator(int n) {
+            clusterNum = n;
+            random = new Random();
+        }
+
+        XpipeMeta generateXpipeMeta() {
+            XpipeMeta result = new XpipeMeta();
+            DcMeta dc1 = new DcMeta("1"), dc2 = new DcMeta("2");
+            result.addDc(dc1);
+            result.addDc(dc2);
+            for(int i = 0; i < clusterNum; i++) {
+                ClusterMeta cluster = new ClusterMeta("" + i);
+                String activeDc = (i & 1) == 0 ? "1" : "2";
+                String backupDcs = (i & 1) == 0 ? "2" : "1";
+                cluster.setActiveDc(activeDc);
+                cluster.setBackupDcs(backupDcs);
+                dc1.addCluster(cluster);
+                dc2.addCluster(cluster);
+                generateShard(cluster);
+            }
+            return result;
+        }
+
+        void generateShard(ClusterMeta cluster) {
+            ShardMeta shard = new ShardMeta(cluster.getId() + "1");
+            shard.addRedis(generateRedis(shard));
+            shard.setParent(cluster);
+            cluster.addShard(shard);
+        }
+
+        RedisMeta generateRedis(ShardMeta shard) {
+            RedisMeta redis = new RedisMeta();
+            redis.setIp(randomIP());
+            redis.setPort(random.nextInt(10000));
+            redis.setParent(shard);
+            redis.setId(shard.getId() + random.nextInt(10));
+            return redis;
+        }
+
+        String randomIP() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(random.nextInt(255)).append(".")
+                    .append(random.nextInt(255)).append(".")
+                    .append(random.nextInt(255)).append(".")
+                    .append(random.nextInt(255));
+            return sb.toString();
+        }
+    }
+}
