@@ -30,6 +30,8 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng
@@ -38,6 +40,8 @@ import java.util.List;
  */
 @Component
 public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver implements KeeperElectorManager, Observer, TopElement{
+
+	public static final int  FIRST_PATH_CHILDREN_CACHE_SLEEP_MILLI = 50;
 
 	@Autowired
 	private ZkClient zkClient;
@@ -66,8 +70,20 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
                 logger.info("[observerShardLeader][add PathChildrenCache]{}, {}", clusterId, shardId);
                 PathChildrenCache pathChildrenCache = new PathChildrenCache(client, leaderLatchPath, true, XpipeThreadFactory.create(String.format("PathChildrenCache:%s-%s", clusterId, shardId)));
                 pathChildrenCache.getListenable().addListener(new PathChildrenCacheListener() {
+
+                	private AtomicBoolean isFirst = new AtomicBoolean(true);
                     @Override
                     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
+
+                    	if(isFirst.get()){
+                    		isFirst.set(false);
+                    		try {
+								logger.info("[childEvent][first sleep]{}", FIRST_PATH_CHILDREN_CACHE_SLEEP_MILLI);
+								TimeUnit.MILLISECONDS.sleep(FIRST_PATH_CHILDREN_CACHE_SLEEP_MILLI);
+							}catch (Exception e){
+                    			logger.error("[childEvent]", e);
+							}
+						}
 
                     	logger.info("[childEvent]{}, {}, {}, {}", clusterId, shardId, event.getType(), ZkUtils.toString(event.getData()));
                         updateShardLeader(leaderLatchPath, pathChildrenCache.getCurrentData(), clusterId, shardId);
