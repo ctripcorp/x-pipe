@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.console.dal;
 
+import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.core.IVisitor;
 import com.ctrip.xpipe.redis.core.entity.*;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Random;
 
@@ -12,22 +15,26 @@ import java.util.Random;
  * <p>
  * Nov 20, 2017
  */
-public class DataObjectAssemblyTakeOtherThreadsInfoTest {
+public class DataObjectAssemblyTakeOtherThreadsInfoTest extends AbstractConsoleIntegrationTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(DataObjectAssemblyTakeOtherThreadsInfoTest.class);
 
     private XpipeMeta meta1;
 
     private XpipeMeta meta2;
 
     @Before
-    public void beforeDoaTakeOtherThreadsInfoTest() {
+    public void beforeDoaTakeOtherThreadsInfoTest() throws Exception {
         meta1 = new XpipeMetaGenerator(2000).generateXpipeMeta();
         meta2 = new XpipeMetaGenerator(2000).generateXpipeMeta();
+        startH2Server();
     }
 
     @Test
     public void testDOATakeOtherThreadsObject() {
         XPipeMetaVisitor visitor = new XPipeMetaVisitor(meta1);
-        visitor.visitXpipe(meta1);
+//        visitor.visitXpipe(meta1);
+        logger.info("[test] \n {}", meta1.toString());
     }
 
 
@@ -62,7 +69,8 @@ public class DataObjectAssemblyTakeOtherThreadsInfoTest {
 
         void generateShard(ClusterMeta cluster) {
             ShardMeta shard = new ShardMeta(cluster.getId() + "1");
-            shard.addRedis(generateRedis(shard));
+            for(int i = 0; i < 2; i ++)
+                shard.addRedis(generateRedis(shard));
             shard.setParent(cluster);
             cluster.addShard(shard);
         }

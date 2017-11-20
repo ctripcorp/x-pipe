@@ -43,14 +43,19 @@ public class HealthChecker {
 	@PostConstruct
 	public void start() {
 		log.info("Redis health checker started");
-		warmup();
+
 		XpipeThreadFactory.create("RedisHealthChecker", true).newThread(new Runnable() {
+
+			private boolean warmuped = false;
 
 			@Override
 			public void run() {
 
 				while (!Thread.currentThread().isInterrupted()) {
-
+					if(!warmuped) {
+						warmup();
+						warmuped = true;
+					}
 					try {
 						List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 						if(!dcsToCheck.isEmpty()){
