@@ -8,7 +8,14 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.zookeeper.CreateMode;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author wenchao.meng
@@ -17,62 +24,92 @@ import org.junit.Test;
  */
 public class TestPathChildren extends AbstractMetaServerTest {
 
-    @Test
-    public void testPathChildern() throws Exception {
+    private int count = 4;
+
+    private CuratorFramework client;
+
+    private String path;
+
+    @Before
+    public void beforeTestPathChildren() throws Exception {
 
         DefaultZkConfig zkConfig = new DefaultZkConfig();
         zkConfig.setZkConnectionTimeoutMillis(1000);
-        String path = "/" + getTestName();
 
+        path = "/" + getTestName();
         logger.info("[before create]");
-        CuratorFramework curatorFramework = zkConfig.create("10.2.38.87");
+        client = zkConfig.create("10.2.38.87");
         logger.info("[after create]");
-        PathChildrenCache pathChildrenCache = new PathChildrenCache(curatorFramework, path, true);
+
+        if (client.checkExists().forPath(path) != null) {
+            client.delete().deletingChildrenIfNeeded().forPath(path);
+        }
+    }
+
+    @Test
+    public void testPathChildernAlreadyExist() throws Exception {
+
+
+        createPath(client, path, 0, count);
+
+        CountDownLatch latch = new CountDownLatch(count);
+        List<String> result = new LinkedList<>();
+
+        PathChildrenCache pathChildrenCache = new PathChildrenCache(client, path, true);
         pathChildrenCache.getListenable().addListener(new PathChildrenCacheListener() {
+
             @Override
             public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
-                logger.info("{}", event);
-//                printAllData(pathChildrenCache);
+
+                try {
+                    sleep(50);
+                    logger.info("event");
+                    int realSize = pathChildrenCache.getCurrentData().size();
+                    if (count != realSize) {
+                        String desc = String.format("expected:%d, real:%d", count, realSize);
+                        result.add(desc);
+                        logger.info("expected:{}, real:{}", count, realSize);
+                    }
+                } finally {
+                    latch.countDown();
+                }
             }
         });
 
         try {
-            logger.info("[begin start]");
             pathChildrenCache.start();
         } catch (Exception e) {
             logger.error("[start]", e);
         }
 
-        createPath(curatorFramework, path, 3);
-        logger.info("[simple getChildren]{}", curatorFramework.getChildren().forPath(path));
+        latch.await();
+        Assert.assertEquals(0, result.size());
 
-        waitForAnyKey();
+
     }
 
-    private void createPath(CuratorFramework curatorFramework, String path, int count) {
+    private void createPath(CuratorFramework curatorFramework, String path, int start, int count) throws Exception {
+
+        curatorFramework.createContainers(path);
 
         for (int i = 0; i < count; i++) {
-
-            int finalI = i;
-            executors.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(String.format("%s/%d", path, finalI));
-                    } catch (Exception e) {
-                        logger.error("[run]", e);
-                    }
-                }
-            });
+            try {
+                curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(
+                        String.format("%s/%d", path, start + i),
+                        randomString(1 << 15).getBytes()
+                );
+            } catch (Exception e) {
+                logger.error("[run]", e);
+            }
         }
-
-
     }
 
     private void printAllData(PathChildrenCache pathChildrenCache) {
 
+        logger.info("[begin]-------------");
         for (ChildData childData : pathChildrenCache.getCurrentData()) {
-            logger.info("{}", childData);
+            logger.info("{}", childData.getPath());
         }
+        logger.info("[end]-------------");
     }
 }

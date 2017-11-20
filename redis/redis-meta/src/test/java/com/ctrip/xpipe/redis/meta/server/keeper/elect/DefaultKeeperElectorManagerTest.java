@@ -52,6 +52,8 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 	private DefaultKeeperElectorManager keeperElectorManager;
 	private ClusterMeta clusterMeta;
 	private ShardMeta shardMeta;
+
+	private int sleepForZkMilli = 150;
 	
 	@Before
 	public void beforeDefaultKeeperElectorManagerTest() throws Exception{
@@ -105,7 +107,6 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 			public void describeTo(Description description) {
 			}
 		}));
-
 	}
 
 	@Test
@@ -117,13 +118,13 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
 		keeperElectorManager.observerShardLeader(clusterId, shardId);
 		addKeeperZkNode(clusterId, shardId, getZkClient());
-		sleep(100);
+		sleep(sleepForZkMilli);
 		verify(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
 		verify(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
 
 		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(false);
 		keeperElectorManager.observerShardLeader(clusterId, shardId);
-		sleep(100);
+		sleep(sleepForZkMilli);
 		verify(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
 		verify(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
 	}
@@ -139,7 +140,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		//change notify
 		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
 		
-		sleep(100);
+		sleep(sleepForZkMilli);
 		verify(keeperActiveElectAlgorithm, times(1)).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 	}
 
@@ -163,21 +164,33 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		keeperElectorManager.update(new NodeAdded<>(clusterMeta), null);
 
 		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
-		sleep(100);
+		sleep(sleepForZkMilli);
 		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 
 		release.get().release();
 
 		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
-		sleep(100);
+		sleep(sleepForZkMilli);
 		verify(keeperActiveElectAlgorithm, times(1)).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 	}
-	
-	
+
+
 	private void addKeeperZkNode(String clusterId, String shardId, ZkClient zkClient) throws Exception {
+
+		addKeeperZkNode(clusterId, shardId, zkClient, 0);
+
+	}
+
+	private void addKeeperZkNode(String clusterId, String shardId, ZkClient zkClient, int idLen) throws Exception {
 		
 		String leaderElectionZKPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterId, shardId);
-		String leaderElectionID = MetaZkConfig.getKeeperLeaderElectionId(new KeeperMeta());
+		String leaderElectionID;
+		if(idLen == 0){
+			leaderElectionID = MetaZkConfig.getKeeperLeaderElectionId(new KeeperMeta());
+		}else{
+			leaderElectionID = MetaZkConfig.getKeeperLeaderElectionId(new KeeperMeta().setId(randomString(idLen)));
+		}
+
 		ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);
 		LeaderElector leaderElector = new DefaultLeaderElector(ctx, zkClient.get());
 		leaderElector.elect();
