@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +36,8 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 	protected RedisSessionManager redisSessionManager;
 
 	protected ConcurrentMap<Long, Sample<T>> samples = new ConcurrentHashMap<>();
+
+	protected Thread daemonThread;
 
 	protected abstract void notifyCollectors(Sample<T> sample);
 
@@ -82,7 +85,7 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 
 	@PostConstruct
 	public void scanSamples() {
-		XpipeThreadFactory.create("SampleMonitor-" + getClass().getSimpleName(), true).newThread(new Runnable() {
+		daemonThread = XpipeThreadFactory.create("SampleMonitor-" + getClass().getSimpleName(), true).newThread(new Runnable() {
 
 			@Override
 			public void run() {
@@ -119,7 +122,8 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 				}
 			}
 
-		}).start();
+		});
+		daemonThread.start();
 	}
 
 	@Override
@@ -159,4 +163,8 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 
 	protected abstract BaseSamplePlan<T> createPlan(String clusterId, String shardId);
 
+	@PreDestroy
+	public void preDestroy() {
+		daemonThread.interrupt();
+	}
 }

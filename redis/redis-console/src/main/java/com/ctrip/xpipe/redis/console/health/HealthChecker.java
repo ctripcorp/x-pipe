@@ -41,6 +41,9 @@ public class HealthChecker {
 	@Autowired
 	private HealthCheckVisitor healthCheckVisitor;
 
+	@Autowired
+	private RedisSessionManager sessionManager;
+
 	private Thread daemonHealthCheckThread;
 
 	@PostConstruct
@@ -124,6 +127,7 @@ public class HealthChecker {
 	@PreDestroy
 	public void preDestroy() {
 		daemonHealthCheckThread.interrupt();
+		sessionManager.closeAllConnections();
 	}
 
 }

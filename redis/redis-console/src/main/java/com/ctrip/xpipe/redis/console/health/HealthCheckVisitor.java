@@ -67,7 +67,7 @@ public class HealthCheckVisitor implements IVisitor {
                 session.ping(new PingCallback() {
                     @Override
                     public void pong(String pongMsg) {
-                        logger.debug("[visitRedis] Pong {}", pongMsg);
+                        //ignore
                     }
 
                     @Override
@@ -78,12 +78,12 @@ public class HealthCheckVisitor implements IVisitor {
                 session.subscribeIfAbsent(CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
                     @Override
                     public void message(String channel, String message) {
-                        logger.debug("[visitRedis] subscribe health check channel");
+                        // ignore
                     }
 
                     @Override
                     public void fail(Exception e) {
-                        logger.debug("[visitedRedis] subscribe health check channel fail");
+                        logger.debug("[visitedRedis] subscribe health check channel fail, {}", e);
                     }
                 });
             }

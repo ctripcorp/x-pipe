@@ -168,6 +168,22 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		return redis;
 	}
 
+	@Override
+	public void closeAllConnections() {
+		try {
+			executors.execute(new Runnable() {
+				@Override
+				public void run() {
+					for (RedisSession session : sessions.values()) {
+						session.closeConnection();
+					}
+				}
+			});
+		} catch (Exception e) {
+			logger.error("[closeAllConnections] {}", e);
+		}
+	}
+
 	@PreDestroy
 	public void preDestroy(){
 		scheduled.shutdownNow();

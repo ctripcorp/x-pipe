@@ -341,4 +341,11 @@ public class RedisSession {
             connection.close();
         }
     }
+
+    public void closeConnection() {
+        nonSubscribeConn.get().close();
+        for(PubSubConnectionWrapper connectionWrapper : subscribConns.values()) {
+            connectionWrapper.closeAndClean();
+        }
+    }
 }
