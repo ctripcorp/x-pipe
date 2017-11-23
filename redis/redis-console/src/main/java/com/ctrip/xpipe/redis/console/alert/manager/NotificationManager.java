@@ -78,11 +78,6 @@ public class NotificationManager {
     public void start() {
         logger.info("Alert Notification Manager started");
 
-        try {
-            Thread.sleep(MILLIS1MINUTE);
-        } catch (InterruptedException e) {
-            // ignore the error
-        }
         alertSender = XpipeThreadFactory.create("NotificationManager-alert-sender", true)
                 .newThread(new SendAlert());
         recoverAnnoucer = XpipeThreadFactory.create("NotificationManager-recover-annoucer", true)
@@ -194,7 +189,9 @@ public class NotificationManager {
     private class SendAlert implements Runnable {
         @Override
         public void run() {
+
             while (!Thread.currentThread().isInterrupted()) {
+
                 try {
                     AlertEntity alert = alerts.poll(5, TimeUnit.MILLISECONDS);
 
@@ -205,12 +202,6 @@ public class NotificationManager {
                     logger.error("Unexpected error when sending alert", e);
                 }
 
-                try {
-                    Thread.sleep(MILLIS1MINUTE);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
             }
         }
     }
@@ -219,6 +210,7 @@ public class NotificationManager {
         @Override
         public void run() {
             while (!Thread.currentThread().isInterrupted()) {
+
                 try {
                     long current = System.currentTimeMillis();
                     String currentStr = DateTimeUtils.currentTimeAsString();
@@ -265,12 +257,6 @@ public class NotificationManager {
                     logger.error("[AnnounceRecover][run] {}", e);
                 }
 
-                try {
-                    Thread.sleep(MILLIS1MINUTE);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
             }
         }
 

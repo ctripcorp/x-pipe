@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.migration;
 
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,11 +27,14 @@ public class MigrationResources {
     @Bean(name = MIGRATION_EXECUTOR)
     public ExecutorService getMigrationlExecutor() {
 
-        return new ThreadPoolExecutor(4,
-                maxThreads,
-                120L, TimeUnit.SECONDS,
-                new SynchronousQueue<>(),
-                XpipeThreadFactory.create(MIGRATION_EXECUTOR),
-                new ThreadPoolExecutor.CallerRunsPolicy());
+        return MoreExecutors.getExitingExecutorService(
+                new ThreadPoolExecutor(4,
+                    maxThreads,
+                    120L, TimeUnit.SECONDS,
+                    new SynchronousQueue<>(),
+                    XpipeThreadFactory.create(MIGRATION_EXECUTOR),
+                    new ThreadPoolExecutor.CallerRunsPolicy()),
+
+                AbstractSpringConfigContext.THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
     }
 }

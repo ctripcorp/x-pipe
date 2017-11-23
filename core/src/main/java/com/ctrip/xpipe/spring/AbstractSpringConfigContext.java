@@ -56,12 +56,14 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 
 	@Bean(name = GLOBAL_EXECUTOR)
 	public ExecutorService getGlobalExecutor() {
-		return new ThreadPoolExecutor(10,
-				maxGlobalThreads,
-				120L, TimeUnit.SECONDS,
-				new SynchronousQueue<>(),
-				XpipeThreadFactory.create(GLOBAL_EXECUTOR),
-				new ThreadPoolExecutor.CallerRunsPolicy());
+		return MoreExecutors.getExitingExecutorService(
+				new ThreadPoolExecutor(10,
+										maxGlobalThreads,
+										120L, TimeUnit.SECONDS,
+										new SynchronousQueue<>(),
+										XpipeThreadFactory.create(GLOBAL_EXECUTOR),
+										new ThreadPoolExecutor.CallerRunsPolicy()),
+				THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
 	}
 
 	@Bean
