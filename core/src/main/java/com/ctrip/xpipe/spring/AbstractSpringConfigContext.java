@@ -36,6 +36,7 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 	public static final String GLOBAL_EXECUTOR = "globalExecutor";
 	public static final int maxScheduledCorePoolSize = 8;
 	public static final int maxGlobalThreads = 512;
+	public static final int THREAD_POOL_TIME_OUT = 5;
 
 
 	@Bean(name = SCHEDULED_EXECUTOR)
@@ -46,7 +47,8 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 			corePoolSize = maxScheduledCorePoolSize;
 		}
 		return MoreExecutors.getExitingScheduledExecutorService(
-				new ScheduledThreadPoolExecutor(corePoolSize, XpipeThreadFactory.create(SCHEDULED_EXECUTOR))
+				new ScheduledThreadPoolExecutor(corePoolSize, XpipeThreadFactory.create(SCHEDULED_EXECUTOR)),
+				THREAD_POOL_TIME_OUT, TimeUnit.SECONDS
 		);
 	}
 
