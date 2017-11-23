@@ -81,20 +81,6 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 		
 		AbstractSpringConfigContext.applicationContext = applicationContext;
 	}
-
-	@PreDestroy
-	public void shutdown() {
-		ExecutorService executor = (ExecutorService)applicationContext.getBean(GLOBAL_EXECUTOR);
-		if(executor != null) {
-			executor.shutdownNow();
-		}
-
-		ScheduledExecutorService scheduled = (ScheduledExecutorService)applicationContext
-				.getBean(SCHEDULED_EXECUTOR);
-		if(scheduled != null) {
-			scheduled.shutdownNow();
-		}
-	}
 	
 	public static ApplicationContext getApplicationContext() {
 		return applicationContext;

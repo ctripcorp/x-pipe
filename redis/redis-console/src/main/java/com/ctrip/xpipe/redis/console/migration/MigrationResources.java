@@ -33,11 +33,4 @@ public class MigrationResources {
                 XpipeThreadFactory.create(MIGRATION_EXECUTOR),
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
-
-    @PreDestroy
-    public void shutdown() {
-        ExecutorService executor = (ExecutorService)AbstractSpringConfigContext
-                .applicationContext.getBean(MIGRATION_EXECUTOR);
-        executor.shutdownNow();
-    }
 }
