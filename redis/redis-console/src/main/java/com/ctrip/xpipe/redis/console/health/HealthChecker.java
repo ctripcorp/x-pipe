@@ -55,12 +55,13 @@ public class HealthChecker {
 			public void run() {
 
 				while (!Thread.currentThread().isInterrupted()) {
-					long twoMinute = 1000 * 60 * 2;
+					long oneMinute = 1000 * 60;
 					try {
 						if(!warmuped) {
+							Thread.sleep(oneMinute);
 							warmup();
 							warmuped = true;
-							Thread.sleep(twoMinute);
+							Thread.sleep(oneMinute);
 						}
 						List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 						if(!dcsToCheck.isEmpty()){
