@@ -168,8 +168,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		return redis;
 	}
 
-	@Override
-	public void closeAllConnections() {
+	private void closeAllConnections() {
 		try {
 			executors.execute(new Runnable() {
 				@Override
@@ -186,7 +185,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	@PreDestroy
 	public void preDestroy(){
-		scheduled.shutdownNow();
+		closeAllConnections();
 		clientResources.shutdown();
 	}
 }

@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.console.migration;
 
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -32,5 +34,10 @@ public class MigrationResources {
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
-
+    @PreDestroy
+    public void shutdown() {
+        ExecutorService executor = (ExecutorService)AbstractSpringConfigContext
+                .applicationContext.getBean(MIGRATION_EXECUTOR);
+        executor.shutdownNow();
+    }
 }

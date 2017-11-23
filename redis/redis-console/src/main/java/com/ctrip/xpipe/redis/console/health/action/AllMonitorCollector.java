@@ -68,6 +68,7 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
     @PreDestroy
     public void preDestroy(){
         scheduled.shutdownNow();
+        executors.shutdownNow();
     }
 
 

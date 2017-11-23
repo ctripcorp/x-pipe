@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.*;
@@ -58,12 +60,37 @@ public class NotificationManager {
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService schedule;
 
+    private Thread alertSender;
+
+    private Thread recoverAnnoucer;
+
+    @PreDestroy
+    public void shutdown() {
+        if(alertSender != null) {
+            alertSender.interrupt();
+        }
+        if(recoverAnnoucer != null) {
+            recoverAnnoucer.interrupt();
+        }
+    }
+
     @PostConstruct
     public void start() {
         logger.info("Alert Notification Manager started");
 
-        schedule.schedule(new SendAlert(), 1, TimeUnit.MINUTES);
-        schedule.schedule(new AnnounceRecover(), 1, TimeUnit.MINUTES);
+        try {
+            Thread.sleep(MILLIS1MINUTE);
+        } catch (InterruptedException e) {
+            // ignore the error
+        }
+        alertSender = XpipeThreadFactory.create("NotificationManager-alert-sender", true)
+                .newThread(new SendAlert());
+        recoverAnnoucer = XpipeThreadFactory.create("NotificationManager-recover-annoucer", true)
+                .newThread(new AnnounceRecover());
+
+        alertSender.start();
+        recoverAnnoucer.start();
+
         schedule.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 
             @Override
@@ -177,6 +204,13 @@ public class NotificationManager {
                 } catch (Throwable e) {
                     logger.error("Unexpected error when sending alert", e);
                 }
+
+                try {
+                    Thread.sleep(MILLIS1MINUTE);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         }
     }
@@ -184,7 +218,7 @@ public class NotificationManager {
     protected class AnnounceRecover implements Runnable {
         @Override
         public void run() {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
                     long current = System.currentTimeMillis();
                     String currentStr = DateTimeUtils.currentTimeAsString();
@@ -229,6 +263,13 @@ public class NotificationManager {
                     }
                 } catch (Exception e) {
                     logger.error("[AnnounceRecover][run] {}", e);
+                }
+
+                try {
+                    Thread.sleep(MILLIS1MINUTE);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
         }

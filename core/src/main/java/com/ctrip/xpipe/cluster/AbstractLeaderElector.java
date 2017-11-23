@@ -115,6 +115,7 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
     @Override
     protected void doStop() throws Exception {
         leaderLatch.close();
+        executors.shutdownNow();
     }
 
     @Override

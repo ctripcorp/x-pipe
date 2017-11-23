@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,12 @@ public class DefaultMigrationEventManager implements MigrationEventManager, Cros
 		}, 60, 60, TimeUnit.SECONDS);
 	}
 
+	@PreDestroy
+	public void shutdown() {
+		if(scheduled != null) {
+			scheduled.shutdownNow();
+		}
+	}
 
 	@Override
 	public void addEvent(MigrationEvent event) {

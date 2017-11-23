@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,6 +40,13 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 		fixedThreadPool = Executors.newFixedThreadPool(config.getConsoleNotifyThreads(),
 				XpipeThreadFactory.create("ConsoleNotifierThreadPool"));
 		retryPolicy = new MetaNotifyRetryPolicy(config.getConsoleNotifyRetryInterval());
+	}
+
+	@PreDestroy
+	public void shutdown() {
+		if(fixedThreadPool != null) {
+			fixedThreadPool.shutdownNow();
+		}
 	}
 
 	@Override
