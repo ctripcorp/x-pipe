@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.consoleapi.util;
+package com.ctrip.xpipe.redis.integratedtest.console.consoleapi.util;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

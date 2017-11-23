@@ -1,7 +1,7 @@
-package com.ctrip.xpipe.redis.integratedtest.consoleapi;
+package com.ctrip.xpipe.redis.integratedtest.console.consoleapi;
 
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.integratedtest.consoleapi.util.ApiTestExecitorPool;
+import com.ctrip.xpipe.redis.integratedtest.console.consoleapi.util.ApiTestExecitorPool;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.consoleapi.util;
+package com.ctrip.xpipe.redis.integratedtest.console.consoleapi.util;
 
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
