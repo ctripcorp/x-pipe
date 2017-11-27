@@ -11,6 +11,7 @@ import org.unidal.dal.jdbc.DalNotFoundException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
+import java.util.Date;
 
 /**
  * @author wenchao.meng
@@ -44,6 +45,19 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
 
     public synchronized void setKey(String key, String value) throws DalException {
 
+        set(key, value, null);
+    }
+
+    public synchronized void setKeyAndUntil(String key, String val, Date until) throws DalException {
+        set(key, val, until);
+
+    }
+
+    public ConfigTbl getByKey(String key) throws DalException {
+        return configTblDao.findByKey(key, ConfigTblEntity.READSET_FULL);
+    }
+
+    private void set(String key, String value, Date until) throws DalException {
         boolean insert = false;
 
         try{
@@ -56,12 +70,15 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
         ConfigTbl configTbl = new ConfigTbl();
         configTbl.setKey(key);
         configTbl.setValue(value);
+
+        if(until != null) {
+            configTbl.setUntil(until);
+        }
         if(!insert) {
-            configTblDao.updateByKey(configTbl, ConfigTblEntity.UPDATESET_FULL);
+            configTblDao.updateValAndUntilByKey(configTbl, ConfigTblEntity.UPDATESET_FULL);
         }else{
-            configTblDao.insert(new ConfigTbl().setKey(key).setValue(value).setDesc("insert automatically"));
+            configTblDao.insert(new ConfigTbl().setKey(key)
+                    .setValue(value).setDesc("insert automatically").setUntil(until));
         }
     }
-
-
 }

@@ -3,7 +3,9 @@ package com.ctrip.xpipe.redis.console.controller.api;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,19 +21,36 @@ import org.unidal.dal.jdbc.DalException;
 public class ChangeConfig extends AbstractConsoleController{
 
     @Autowired
-    private ConfigDao configDao;
+    private ConfigService configService;
 
     @RequestMapping(value = "/config/sentinel_auto_process/start", method = RequestMethod.POST)
     public void startSentinelAutoProcess() throws DalException {
 
-        configDao.setKey(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS, String.valueOf(true));
+        configService.startSentinelAutoProcess();
     }
 
     @RequestMapping(value = "/config/sentinel_auto_process/stop", method = RequestMethod.POST)
     public void stopSentinelAutoProcess() throws DalException {
-
-        configDao.setKey(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS, String.valueOf(false));
+        int hours = 8;
+        configService.stopSentinelAutoProcess(hours);
     }
 
+    @RequestMapping(value = "/config/alert_system/start", method = RequestMethod.POST)
+    public void startAlertSystem() throws DalException {
 
+        configService.startAlertSystem();
+    }
+
+    @RequestMapping(value = "/config/alert_system/stop", method = RequestMethod.POST)
+    public void stopAlertSystem() throws DalException {
+        int hours = 8;
+        configService.stopAlertSystem(hours);
+    }
+
+    @RequestMapping(value = "/config/alert_system/stop/{hours}", method = RequestMethod.POST)
+    public void stopAlertSystem(@PathVariable int hours) throws DalException {
+
+        hours = hours > 8 || hours < 1 ? 8 : hours;
+        configService.stopAlertSystem(hours);
+    }
 }

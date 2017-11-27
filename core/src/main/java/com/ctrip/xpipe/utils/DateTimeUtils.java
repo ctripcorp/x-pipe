@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.utils;
 
+import java.util.Calendar;
 import java.util.Date;
 
 import org.apache.commons.lang3.time.FastDateFormat;
@@ -25,4 +26,10 @@ public class DateTimeUtils {
 		return FastDateFormat.getInstance(format).format(new Date(timeMilli));
 	}
 
+	public static Date getHoursLaterDate(int hours) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(new Date());
+		cal.add(Calendar.HOUR_OF_DAY, hours);
+		return cal.getTime();
+	}
 }

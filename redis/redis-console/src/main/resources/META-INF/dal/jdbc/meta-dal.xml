@@ -1148,6 +1148,18 @@
 				</statement>
 			</query>
 
+			<query name="update-val-and-until-by-key" type="UPDATE" batch="false">
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='value'/> = ${value},
+					<FIELD name='until' /> = ${until}
+					WHERE <FIELD name='key'/> = ${key}
+					]]>
+				</statement>
+			</query>
+
+
 			<query name="find-by-key" type="SELECT" multiple="false">
 				<param name="key"/>
 				<statement>

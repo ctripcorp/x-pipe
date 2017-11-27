@@ -10,4 +10,6 @@ public interface ConsoleDbConfig {
 
     boolean isSentinelAutoProcess();
 
+    boolean isAlertSystemOn();
+
 }
