@@ -8,8 +8,12 @@ import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
+
+import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
@@ -19,6 +23,7 @@ import org.springframework.test.annotation.DirtiesContext;
 public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
+    @Mock
     NotificationManager notificationManager;
 
     String cluster, shard, message;
@@ -26,6 +31,7 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
 
     @Before
     public void beforeNotificationManagerTest() {
+        MockitoAnnotations.initMocks(this);
         cluster = "cluster-test";
         shard = "shard-test";
         message = "test-message";
@@ -53,13 +59,12 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
         notificationManager.addAlert(cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
         Thread.sleep(1000);
         Assert.assertTrue(notificationManager.isSuspend(alert.getKey(), 1000));
-        Thread.sleep(2000 * 60);
-        Assert.assertFalse(notificationManager.isSuspend(alert.getKey(), 1));
     }
 
     @Test
     @DirtiesContext
     public void send() throws Exception {
+        notificationManager.cleanup();
         AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
         Assert.assertTrue(notificationManager.send(alert));
         notificationManager.addAlert(cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
@@ -74,5 +79,4 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
         alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.MARK_INSTANCE_DOWN);
         notificationManager.sendRecoveryMessage(alert, DateTimeUtils.currentTimeAsString());
     }
-
 }

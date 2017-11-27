@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.config.impl;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,9 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
     @Autowired
     private ConfigDao configDao;
 
+    @Autowired
+    private ConfigService service;
+
     @Test
     public void test() throws DalException {
 
@@ -30,9 +34,18 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
 
         Assert.assertTrue(consoleDbConfig.isSentinelAutoProcess());
 
-        configDao.setKey(key, "false");
+        service.stopSentinelAutoProcess(3);
 
         Assert.assertFalse(consoleDbConfig.isSentinelAutoProcess());
+
+        service.stopSentinelAutoProcess(-1);
+        Assert.assertTrue(consoleDbConfig.isSentinelAutoProcess());
+
+        service.stopSentinelAutoProcess(8);
+        Assert.assertFalse(consoleDbConfig.isSentinelAutoProcess());
+
+        service.startSentinelAutoProcess();
+        Assert.assertTrue(consoleDbConfig.isSentinelAutoProcess());
     }
 
 
