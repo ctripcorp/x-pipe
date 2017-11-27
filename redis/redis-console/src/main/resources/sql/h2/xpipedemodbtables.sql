@@ -180,11 +180,13 @@ CREATE TABLE `config_tbl` (
   id bigint unsigned NOT NULL AUTO_INCREMENT primary key,
   key varchar(128) NOT NULL DEFAULT '' unique,
   value varchar(1024) DEFAULT '' ,
+  until TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   desc varchar(1024) NOT NULL DEFAULT '' ,
   DataChange_LastTime timestamp DEFAULT CURRENT_TIMESTAMP,
   deleted tinyint(4) NOT NULL DEFAULT 0,
 );
 INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('sentinel.auto.process', 'true', '自动增删哨兵');
+INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('alert.system.on', 'true', '邮件报警系统开关');
 
 -- Organization Table
 drop table if exists organization_tbl;

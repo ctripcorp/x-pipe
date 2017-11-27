@@ -11,7 +11,7 @@
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <member name="is-xpipe-interested" field="is_xpipe_interested" value-type="boolean" nullable="false" />
     <member name="cluster-org-id" field="cluster_org_id" value-type="long" length="20" nullable="false" />
-    <member name="cluster-admin-emails" field="cluster_admin_emails" value-type="String" length="128" />
+    <member name="cluster-admin-emails" field="cluster_admin_emails" value-type="String" length="1024" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="cluster_name" unique="true" members="cluster_name ASC" />
@@ -397,6 +397,7 @@
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="key" field="key" value-type="String" length="128" nullable="false" />
     <member name="value" field="value" value-type="String" length="1024" />
+    <member name="until" field="until" value-type="Date" nullable="false" />
     <member name="desc" field="desc" value-type="String" length="1024" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
@@ -523,7 +524,7 @@
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="migration-cluster-id" field="migration_cluster_id" value-type="long" length="20" nullable="false" />
     <member name="shard-id" field="shard_id" value-type="long" length="20" nullable="false" />
-    <member name="log" field="log" value-type="String" length="10240" nullable="false" />
+    <member name="log" field="log" value-type="String" length="20480" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
@@ -562,7 +563,7 @@
   <entity name="organization-tbl" table="organization_tbl" alias="ot">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="org-id" field="org_id" value-type="long" length="20" nullable="false" />
-    <member name="org-name" field="org_name" value-type="String" length="1024" nullable="false" />
+    <member name="org-name" field="org_name" value-type="String" length="250" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />

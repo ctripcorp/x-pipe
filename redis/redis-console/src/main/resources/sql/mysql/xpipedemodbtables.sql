@@ -221,6 +221,7 @@ CREATE TABLE `config_tbl` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `key` varchar(128) NOT NULL DEFAULT '' COMMENT 'key',
   `value` varchar(1024) DEFAULT '' COMMENT 'value',
+  `until` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'for potential use',
   `desc` varchar(1024) NOT NULL DEFAULT '' COMMENT 'desc',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
@@ -230,6 +231,7 @@ CREATE TABLE `config_tbl` (
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COMMENT='xpipe config';
 
 INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('sentinel.auto.process', 'true', '自动增删哨兵');
+INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('alert.system.on', 'true', '邮件报警系统开关');
 
 -- Organization Table
 drop table if exists organization_tbl;
