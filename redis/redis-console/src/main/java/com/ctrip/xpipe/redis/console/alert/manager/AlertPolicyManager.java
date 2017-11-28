@@ -74,7 +74,7 @@ public class AlertPolicyManager {
             List<AlertPolicy> alertPolicies = findAlertPolicies(alert);
             Set<String> result = new HashSet<>();
             for (AlertPolicy alertPolicy : alertPolicies) {
-                result.addAll(alertPolicy.queryRecipients());
+                result.addAll(alertPolicy.queryRecipients(alert));
             }
             return new ArrayList<>(result);
         } catch (Exception e) {

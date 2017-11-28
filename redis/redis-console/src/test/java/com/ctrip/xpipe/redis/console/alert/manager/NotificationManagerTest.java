@@ -13,8 +13,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
-import static org.mockito.Mockito.when;
-
 /**
  * @author chen.zhu
  * <p>
