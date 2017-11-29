@@ -24,12 +24,23 @@ public class AlertMessageEntity {
 
     private Map<String, Object> params;
 
+    private AlertEntity alert;
+
+    public AlertMessageEntity(AlertEntity alert) {
+        this(null, null, null, null, alert);
+    }
+
     public AlertMessageEntity(String title, EmailType type, String content, List<String> receivers) {
+        this(title, type, content, receivers, null);
+    }
+
+    public AlertMessageEntity(String title, EmailType type, String content, List<String> receivers, AlertEntity alert) {
         m_title = title;
         m_type = type;
         m_content = content;
         m_receivers = receivers;
         params = new HashMap<>();
+        this.alert = alert;
     }
 
     public <T> AlertMessageEntity addParam(String key, T val) {
@@ -85,5 +96,13 @@ public class AlertMessageEntity {
     @Override
     public String toString() {
         return "title: " + m_title + " content: " + m_content + " type: " + m_type + " receiver: " + getReceiverString();
+    }
+
+    public AlertEntity getAlert() {
+        return alert;
+    }
+
+    public void setAlert(AlertEntity alert) {
+        this.alert = alert;
     }
 }

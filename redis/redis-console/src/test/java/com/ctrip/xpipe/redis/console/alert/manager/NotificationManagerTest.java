@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.alert.manager;
 
+import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
@@ -8,10 +9,13 @@ import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
+
+import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
@@ -21,8 +25,11 @@ import org.springframework.test.annotation.DirtiesContext;
 public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
-    @Mock
+    @InjectMocks
     NotificationManager notificationManager;
+
+    @Mock
+    CrossDcClusterServer mockServer;
 
     String cluster, shard, message;
     HostPort hostPort;
@@ -34,24 +41,11 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
         shard = "shard-test";
         message = "test-message";
         hostPort = new HostPort("192.168.1.10", 6379);
-
+        when(mockServer.amILeader()).thenReturn(Boolean.TRUE);
     }
 
     @Test
-    public void addAlert() throws Exception {
-        notificationManager.addAlert(cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
-        // Sleep to see if email has been sent
-        Thread.sleep(3000);
-        // Only one should be sent
-        notificationManager.addAlert(cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
-        Thread.sleep(3000);
-        notificationManager.addAlert(cluster+2, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
-        Thread.sleep(3000);
-        notificationManager.addAlert(cluster+2, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
-        Thread.sleep(3000);
-    }
-
-    @Test
+    @DirtiesContext
     public void isSuspend() throws Exception {
         AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
         notificationManager.addAlert(cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
@@ -62,7 +56,6 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
     @Test
     @DirtiesContext
     public void send() throws Exception {
-        notificationManager.cleanup();
         AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
         Assert.assertTrue(notificationManager.send(alert));
         notificationManager.addAlert(cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
@@ -70,11 +63,12 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
+    @DirtiesContext
     public void sendRecoveryMessage() throws Exception {
         AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
-        Assert.assertTrue(notificationManager.sendRecoveryMessage(alert, DateTimeUtils.currentTimeAsString()));
+        Assert.assertTrue(notificationManager.sendRecoveryMessage(alert));
 
         alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.MARK_INSTANCE_DOWN);
-        notificationManager.sendRecoveryMessage(alert, DateTimeUtils.currentTimeAsString());
+        notificationManager.sendRecoveryMessage(alert);
     }
 }

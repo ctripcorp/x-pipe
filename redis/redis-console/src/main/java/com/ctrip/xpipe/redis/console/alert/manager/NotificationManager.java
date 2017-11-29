@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +61,6 @@ public class NotificationManager {
 
     @PreDestroy
     public void shutdown() {
-        cleanup();
         if(alertSender != null) {
             alertSender.interrupt();
         }
@@ -161,7 +159,7 @@ public class NotificationManager {
         return result;
     }
 
-    protected boolean sendRecoveryMessage(AlertEntity alert, String currentMinute) {
+    protected boolean sendRecoveryMessage(AlertEntity alert) {
 
         List<AlertChannel> channels = policyManager.queryChannels(alert);
         Pair<String, String> pair = decoratorManager.generateTitleAndContent(alert, false);
@@ -211,7 +209,6 @@ public class NotificationManager {
 
                 try {
                     long current = System.currentTimeMillis();
-                    String currentStr = DateTimeUtils.currentTimeAsString();
                     List<String> recoveredItems = new LinkedList<>();
 
                     for (Map.Entry<String, AlertEntity> entry : unrecoveredAlerts.entrySet()) {
@@ -225,7 +222,7 @@ public class NotificationManager {
                             if (alreadyMinutes >= recoverMinute) {
                                 recoveredItems.add(key);
                                 if(announceRecovery(alert.getAlertType())) {
-                                    sendRecoveryMessage(alert, currentStr);
+                                    sendRecoveryMessage(alert);
                                 }
                             }
                         } catch (Exception e) {
@@ -267,12 +264,8 @@ public class NotificationManager {
         }
 
         private ALERT_TYPE[] unAnnocedRecovers = {ALERT_TYPE.MARK_INSTANCE_DOWN,
-                ALERT_TYPE.MARK_INSTANCE_UP, ALERT_TYPE.QUORUM_DOWN_FAIL, ALERT_TYPE.ALERT_SYSTEM_OFF};
-    }
-
-    public void cleanup() {
-        unrecoveredAlerts.clear();
-        sendedAlerts.clear();
-        alerts.clear();
+                ALERT_TYPE.MARK_INSTANCE_UP, ALERT_TYPE.QUORUM_DOWN_FAIL,
+                ALERT_TYPE.ALERT_SYSTEM_OFF, ALERT_TYPE.SENTINEL_AUTO_PROCESS_OFF
+        };
     }
 }

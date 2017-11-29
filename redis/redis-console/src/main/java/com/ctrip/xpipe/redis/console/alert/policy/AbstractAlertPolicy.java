@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.alert.policy;
 
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
+import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.manager.SenderManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
@@ -31,17 +32,17 @@ public abstract class AbstractAlertPolicy implements AlertPolicy {
     protected ConfigService configService;
 
     @Override
-    public List<AlertChannel> queryChannels() {
+    public List<AlertChannel> queryChannels(AlertEntity alert) {
         return Arrays.asList(CHANNELS);
     }
 
     @Override
-    public int querySuspendMinute() {
+    public int querySuspendMinute(AlertEntity alert) {
         return consoleConfig.getAlertSystemSuspendMinute();
     }
 
     @Override
-    public int queryRecoverMinute() {
+    public int queryRecoverMinute(AlertEntity alert) {
         return consoleConfig.getAlertSystemRecoverMinute();
     }
 
@@ -61,7 +62,8 @@ public abstract class AbstractAlertPolicy implements AlertPolicy {
     }
 
     public boolean shouldAlert(ALERT_TYPE type) {
-        return configService.isAlertSystemOn() || type == ALERT_TYPE.ALERT_SYSTEM_OFF;
+        return configService.isAlertSystemOn()
+                || type == ALERT_TYPE.ALERT_SYSTEM_OFF;
     }
 
     protected List<String> splitCommaString2List(String str) {

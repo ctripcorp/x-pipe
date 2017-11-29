@@ -143,7 +143,7 @@ public class SenderManager {
         }
         Pair<String, String> pair = decoratorManager.generateTitleAndContent(alerts);
         String title = pair.getKey(), content = pair.getValue();
-        AlertMessageEntity message = new AlertMessageEntity(title, EmailType.CONSOLE_ALERT, content, receivers);
+        AlertMessageEntity message = new AlertMessageEntity(title, EmailType.CONSOLE_ALERT, content, receivers, null);
         return sendAlert(AlertChannel.MAIL, message);
     }
 }

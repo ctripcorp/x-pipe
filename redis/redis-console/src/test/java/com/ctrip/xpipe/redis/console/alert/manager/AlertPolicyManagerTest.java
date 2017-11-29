@@ -16,9 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.EMAIL_CLUSTER_ADMIN;
-import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.EMAIL_DBA;
-import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.EMAIL_XPIPE_ADMIN;
+import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.*;
 
 
 /**
