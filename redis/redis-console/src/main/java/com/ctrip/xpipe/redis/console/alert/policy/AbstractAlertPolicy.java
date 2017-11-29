@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.alert.policy;
 
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.manager.SenderManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -24,6 +26,9 @@ public abstract class AbstractAlertPolicy implements AlertPolicy {
 
     @Autowired
     protected ConsoleConfig consoleConfig;
+
+    @Autowired
+    protected ConfigService configService;
 
     @Override
     public List<AlertChannel> queryChannels() {
@@ -53,6 +58,10 @@ public abstract class AbstractAlertPolicy implements AlertPolicy {
     public List<String> getXPipeAdminEmails() {
         String emailsStr = consoleConfig.getXPipeAdminEmails();
         return splitCommaString2List(emailsStr);
+    }
+
+    public boolean shouldAlert(ALERT_TYPE type) {
+        return configService.isAlertSystemOn() || type == ALERT_TYPE.ALERT_SYSTEM_OFF;
     }
 
     protected List<String> splitCommaString2List(String str) {

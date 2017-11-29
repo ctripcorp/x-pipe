@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.alert.policy;
 
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
+import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
  */
 public class DefaultAlertPolicy implements AlertPolicy {
     @Override
-    public List<String> queryRecipients() {
+    public List<String> queryRecipients(AlertEntity alert) {
         return new LinkedList<>();
     }
 

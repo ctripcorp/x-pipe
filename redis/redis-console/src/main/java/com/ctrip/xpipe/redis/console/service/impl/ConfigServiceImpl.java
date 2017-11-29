@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
+import com.ctrip.xpipe.redis.console.health.console.AlertSystemOffChecker;
+import com.ctrip.xpipe.redis.console.health.console.SentinelAutoProcessChecker;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,13 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import java.util.Date;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -35,33 +28,12 @@ public class ConfigServiceImpl implements ConfigService {
     private ConfigDao configDao;
 
     @Autowired
-    private AlertManager alertManager;
+    AlertSystemOffChecker alertSystemOffChecker;
 
-    @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
-    private ScheduledExecutorService scheduled;
-
-    private Future future;
+    @Autowired
+    SentinelAutoProcessChecker sentinelAutoProcessChecker;
 
     private Logger logger = LoggerFactory.getLogger(ConfigServiceImpl.class);
-
-    @PreDestroy
-    public void whenShutDown() {
-        future.cancel(true);
-    }
-
-    @PostConstruct
-    public void startUp() {
-        future = scheduled.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                if(!isAlertSystemOn()) {
-                    String message = "Alert System will recover on " + getAlertSystemRecoverTime().toString();
-                    alertManager.alert(null, null, null, ALERT_TYPE.ALERT_SYSTEM_OFF, message);
-                }
-            }
-        }, 0, 1, TimeUnit.HOURS);
-    }
-
 
     @Override
     public void startAlertSystem() throws DalException {
@@ -76,7 +48,7 @@ public class ConfigServiceImpl implements ConfigService {
         logger.info("[stopAlertSystem] stop alert system");
         Date date = DateTimeUtils.getHoursLaterDate(hours);
         if(isAlertSystemOn()) {
-            alertManager.alert(null, null, null, ALERT_TYPE.ALERT_SYSTEM_OFF, ALERT_TYPE.ALERT_SYSTEM_OFF.simpleDesc());
+            alertSystemOffChecker.startAlert();
         }
         configDao.setKeyAndUntil(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON,
                 String.valueOf(false), date);
@@ -94,6 +66,9 @@ public class ConfigServiceImpl implements ConfigService {
 
         logger.info("[stopSentinelAutoProcess] stop sentinel auto process");
         Date date = DateTimeUtils.getHoursLaterDate(hours);
+        if(isSentinelAutoProcess()) {
+            sentinelAutoProcessChecker.startAlert();
+        }
         configDao.setKeyAndUntil(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS,
                 String.valueOf(false), date);
 
@@ -113,6 +88,16 @@ public class ConfigServiceImpl implements ConfigService {
     public Date getAlertSystemRecoverTime() {
         try {
             return configDao.getByKey(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON).getUntil();
+        } catch (DalException e) {
+            logger.error("[getAlertSystemRecovertIME] {}", e);
+            return null;
+        }
+    }
+
+    @Override
+    public Date getSentinelAutoProcessRecoverTime() {
+        try {
+            return configDao.getByKey(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS).getUntil();
         } catch (DalException e) {
             logger.error("[getAlertSystemRecovertIME] {}", e);
             return null;

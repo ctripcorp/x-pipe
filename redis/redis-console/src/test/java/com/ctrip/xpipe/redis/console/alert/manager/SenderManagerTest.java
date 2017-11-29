@@ -9,11 +9,17 @@ import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
 import com.ctrip.xpipe.redis.console.alert.sender.Sender;
+import io.netty.util.internal.ConcurrentSet;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author chen.zhu
@@ -24,6 +30,11 @@ public class SenderManagerTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     SenderManager senderManager;
+
+    @Before
+    public void beforeSenderManagerTest() {
+        MockitoAnnotations.initMocks(this);
+    }
 
     @Test
     public void querySender() throws Exception {
@@ -78,6 +89,31 @@ public class SenderManagerTest extends AbstractConsoleIntegrationTest {
                         )));
         logger.info("{}", alerts);
         senderManager.sendAlerts(alerts);
+    }
+
+    @Test
+    public void testSenderManager() {
+        HostPort hostPort = new HostPort("192.168.1.10", 6379);
+        Map<ALERT_TYPE, Set<AlertEntity>> alerts = new ConcurrentHashMap<>();
+        AlertEntity alert = new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.XREDIS_VERSION_NOT_VALID);
+        Set<AlertEntity> set = new ConcurrentSet<>();
+        set.add(alert);
+        alerts.put(ALERT_TYPE.XREDIS_VERSION_NOT_VALID, set);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                alerts.get(ALERT_TYPE.XREDIS_VERSION_NOT_VALID).remove(alert);
+            }
+        }).start();
+        List<Map<ALERT_TYPE, Set<AlertEntity>>> result = senderManager.getGroupedAlerts(alerts);
+        logger.info("result: {}", result.get(0));
+        if(!result.isEmpty()) {
+            Set<AlertEntity> alertEntities = result.get(0).getOrDefault(alert.getAlertType(), null);
+            if(alertEntities != null) {
+                Assert.assertFalse(alertEntities.isEmpty());
+            }
+        }
     }
 
 }

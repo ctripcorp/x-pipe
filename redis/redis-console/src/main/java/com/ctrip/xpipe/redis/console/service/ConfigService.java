@@ -24,4 +24,6 @@ public interface ConfigService {
     boolean isSentinelAutoProcess();
 
     Date getAlertSystemRecoverTime();
+
+    Date getSentinelAutoProcessRecoverTime();
 }
