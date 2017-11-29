@@ -21,6 +21,14 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
 public class LogTest extends AbstractTest {
 
 	@Test
+	public void testLevel(){
+		logger.info("info");
+		logger.debug("debug");
+		logger.trace("trace");
+
+	}
+
+	@Test
 	public void testLog() throws IOException {
 
 		logger.error("{}", "nihao");
