@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.dal;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.core.IVisitor;
 import com.ctrip.xpipe.redis.core.entity.*;
 import org.junit.Before;
 import org.junit.Test;

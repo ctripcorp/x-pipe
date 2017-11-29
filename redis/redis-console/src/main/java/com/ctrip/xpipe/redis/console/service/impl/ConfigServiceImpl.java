@@ -1,30 +1,19 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.api.email.EmailType;
-import com.ctrip.xpipe.redis.console.alert.*;
-import com.ctrip.xpipe.redis.console.alert.manager.SenderManager;
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
-import io.netty.util.HashedWheelTimer;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import javax.annotation.Resource;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.Date;
 
 
 /**

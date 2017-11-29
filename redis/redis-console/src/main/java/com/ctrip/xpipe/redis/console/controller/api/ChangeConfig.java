@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;

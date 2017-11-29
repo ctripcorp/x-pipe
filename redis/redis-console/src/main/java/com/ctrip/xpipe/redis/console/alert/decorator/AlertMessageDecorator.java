@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.console.alert.decorator;
 
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import org.apache.velocity.VelocityContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**

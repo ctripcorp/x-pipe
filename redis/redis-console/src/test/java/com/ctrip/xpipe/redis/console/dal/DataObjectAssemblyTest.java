@@ -8,8 +8,6 @@ import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -20,12 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.*;
-
-import static org.junit.Assert.assertNotNull;
 
 /**
  * @author chen.zhu
