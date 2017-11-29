@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.SendToDBAAlertPolicy;
 import com.ctrip.xpipe.redis.console.alert.sender.Sender;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,13 @@ public class SenderManager {
     @Autowired
     SendToDBAAlertPolicy policy;
 
+    @Autowired
+    ConfigService configService;
+
+    private boolean shouldAlert(ALERT_TYPE type) {
+        return configService.isAlertSystemOn() || type == ALERT_TYPE.ALERT_SYSTEM_OFF;
+    }
+
     public Sender querySender(String id) {
         return senders.get(id);
     }
@@ -58,13 +66,20 @@ public class SenderManager {
         Map<ALERT_TYPE, Set<AlertEntity>> sendToXPipeAdmin = new HashMap<>();
         Map<ALERT_TYPE, Set<AlertEntity>> sendToClusterAdmin = new HashMap<>();
         for(ALERT_TYPE type : alerts.keySet()) {
-            if((type.getAlertPolicy() & EMAIL_DBA) != 0) {
+            if(type == ALERT_TYPE.ALERT_SYSTEM_OFF) {
+                String message = "Alert System would be OK on " + configService.getAlertSystemRecoverTime();
+                Set<AlertEntity> alertEntities = alerts.get(type);
+                alertEntities.forEach(alert -> alert.setMessage(message));
+            }
+            if((type.getAlertPolicy() & EMAIL_DBA) != 0
+                    && shouldAlert(type)) {
                 sendToDBA.put(type, alerts.get(type));
             }
             if((type.getAlertPolicy() & EMAIL_XPIPE_ADMIN) != 0) {
                 sendToXPipeAdmin.put(type, alerts.get(type));
             }
-            if((type.getAlertPolicy() & EMAIL_CLUSTER_ADMIN) != 0) {
+            if((type.getAlertPolicy() & EMAIL_CLUSTER_ADMIN) != 0
+                    && shouldAlert(type)) {
                 sendToClusterAdmin.put(type, alerts.get(type));
             }
         }

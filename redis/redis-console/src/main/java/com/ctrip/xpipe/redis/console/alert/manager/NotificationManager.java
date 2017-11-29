@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import io.netty.util.HashedWheelTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,11 +54,9 @@ public class NotificationManager {
     @Autowired
     private DecoratorManager decoratorManager;
 
-    @Autowired
-    private ConfigService configService;
-
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService schedule;
+
 
     private Thread alertSender;
 
@@ -90,7 +89,6 @@ public class NotificationManager {
 
             @Override
             protected void doRun() {
-                if(!isAlertSystemOn())  return;
                 try {
                     senderManager.sendAlerts(scheduledAlerts);
                     scheduledAlerts = new ConcurrentHashMap<>();
@@ -101,15 +99,8 @@ public class NotificationManager {
         }, 1, 30, TimeUnit.MINUTES);
     }
 
-    boolean isAlertSystemOn() {
-        return configService.isAlertSystemOn();
-    }
-
 
     public void addAlert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message) {
-        if(!isAlertSystemOn()) {
-            return;
-        }
         AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, type);
         logger.debug("[addAlert] Add Alert Entity: {}", alert);
         alerts.offer(alert);
@@ -202,13 +193,6 @@ public class NotificationManager {
             while (!Thread.currentThread().isInterrupted()) {
 
                 try {
-                    if(!isAlertSystemOn()) {
-                        AlertEntity alert = new AlertEntity(null, null, null, "alert system is off",
-                                ALERT_TYPE.ALERT_SYSTEM_OFF);
-                        send(alert);
-                        TimeUnit.HOURS.sleep(1);
-                        continue;
-                    }
                     AlertEntity alert = alerts.poll(5, TimeUnit.MILLISECONDS);
 
                     if (alert != null) {
@@ -228,10 +212,6 @@ public class NotificationManager {
             while (!Thread.currentThread().isInterrupted()) {
 
                 try {
-                    if(!isAlertSystemOn()) {
-                        TimeUnit.HOURS.sleep(1);
-                        continue;
-                    }
                     long current = System.currentTimeMillis();
                     String currentStr = DateTimeUtils.currentTimeAsString();
                     List<String> recoveredItems = new LinkedList<>();
