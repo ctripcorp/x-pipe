@@ -67,7 +67,7 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
     @Test
     public void queryRecepients() throws Exception {
         AlertPolicy policy = policyManager.alertPolicyMap.get(SendToDBAAlertPolicy.ID);
-        List<String> expected = policy.queryRecipients();
+        List<String> expected = policy.queryRecipients(new AlertEntity(null, null, null, null, ALERT_TYPE.MARK_INSTANCE_UP));
         logger.info("[testQueryRecepients] emails: {}", expected);
         Assert.assertEquals(expected, policyManager.queryRecepients(alert));
     }

@@ -61,28 +61,54 @@ public class SenderManager {
         }
     }
 
-    public boolean sendAlerts(Map<ALERT_TYPE, Set<AlertEntity>> alerts) {
+    /*************************************************************************
+     * Ugly implement here, because a unit test is needed for a rarely occurred bug
+     * that will cause an mail was sent with specified alert type while missing alert details
+     * Which, obviously was caused by multi-thread, and the concurrenthashmap is not capable of
+     * controlling the situation that one "thief thread" trying to remove stuffs from its value(set, list, etc.)
+     *
+     * */
+    List<Map<ALERT_TYPE, Set<AlertEntity>>> getGroupedAlerts(Map<ALERT_TYPE, Set<AlertEntity>> alerts) {
+        List<Map<ALERT_TYPE, Set<AlertEntity>>> result = new ArrayList<>(3);
+        if(alerts == null || alerts.isEmpty())
+            return null;
+
         Map<ALERT_TYPE, Set<AlertEntity>> sendToDBA = new HashMap<>();
         Map<ALERT_TYPE, Set<AlertEntity>> sendToXPipeAdmin = new HashMap<>();
         Map<ALERT_TYPE, Set<AlertEntity>> sendToClusterAdmin = new HashMap<>();
         for(ALERT_TYPE type : alerts.keySet()) {
-            if(type == ALERT_TYPE.ALERT_SYSTEM_OFF) {
-                String message = "Alert System would be OK on " + configService.getAlertSystemRecoverTime();
-                Set<AlertEntity> alertEntities = alerts.get(type);
-                alertEntities.forEach(alert -> alert.setMessage(message));
-            }
+            Set<AlertEntity> alertEntities = new HashSet<>(alerts.get(type));
+            if(alertEntities == null || alertEntities.isEmpty())
+                continue;
+
+            logger.info("[email_dba] {}, {}, {}", alertEntities, alertEntities.isEmpty(), alertEntities.size());
             if((type.getAlertPolicy() & EMAIL_DBA) != 0
                     && shouldAlert(type)) {
-                sendToDBA.put(type, alerts.get(type));
+                sendToDBA.put(type, alertEntities);
             }
             if((type.getAlertPolicy() & EMAIL_XPIPE_ADMIN) != 0) {
-                sendToXPipeAdmin.put(type, alerts.get(type));
+                sendToXPipeAdmin.put(type, alertEntities);
             }
             if((type.getAlertPolicy() & EMAIL_CLUSTER_ADMIN) != 0
                     && shouldAlert(type)) {
-                sendToClusterAdmin.put(type, alerts.get(type));
+                sendToClusterAdmin.put(type, alertEntities);
             }
         }
+
+        result.add(sendToDBA);
+        result.add(sendToXPipeAdmin);
+        result.add(sendToClusterAdmin);
+        return result;
+    }
+
+    public boolean sendAlerts(Map<ALERT_TYPE, Set<AlertEntity>> alerts) {
+        List<Map<ALERT_TYPE, Set<AlertEntity>>> groupedAlerts = getGroupedAlerts(alerts);
+        if(groupedAlerts == null || groupedAlerts.isEmpty())
+            return false;
+
+        Map<ALERT_TYPE, Set<AlertEntity>> sendToDBA = groupedAlerts.get(0);
+        Map<ALERT_TYPE, Set<AlertEntity>> sendToXPipeAdmin = groupedAlerts.get(1);
+        Map<ALERT_TYPE, Set<AlertEntity>> sendToClusterAdmin = groupedAlerts.get(2);
         try {
             return sendToDBA(sendToDBA) &&
             sendToXPipeAdmin(sendToXPipeAdmin) &&
@@ -92,6 +118,8 @@ public class SenderManager {
             return false;
         }
     }
+    /***********************************************************************************/
+
 
     private boolean sendToClusterAdmin(Map<ALERT_TYPE, Set<AlertEntity>> sendToClusterAdmin) {
         List<String> emails = new LinkedList<>();
