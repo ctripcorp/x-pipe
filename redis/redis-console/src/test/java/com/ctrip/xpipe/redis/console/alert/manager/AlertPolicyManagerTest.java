@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;
 import com.ctrip.xpipe.redis.console.alert.policy.SendToDBAAlertPolicy;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,6 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.EMAIL_CLUSTER_ADMIN;
+import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.EMAIL_DBA;
+import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.EMAIL_XPIPE_ADMIN;
 
 
 /**
@@ -28,6 +33,8 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
     @Autowired
     private AlertPolicyManager policyManager;
 
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     @Before
     public void beforeAlertPolicyManagerTest() {
@@ -61,6 +68,7 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
     public void queryRecepients() throws Exception {
         AlertPolicy policy = policyManager.alertPolicyMap.get(SendToDBAAlertPolicy.ID);
         List<String> expected = policy.queryRecipients();
+        logger.info("[testQueryRecepients] emails: {}", expected);
         Assert.assertEquals(expected, policyManager.queryRecepients(alert));
     }
 
@@ -69,6 +77,25 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
         AlertPolicy policy = policyManager.alertPolicyMap.get(SendToDBAAlertPolicy.ID);
         List<String> expected = policy.queryCCers();
         Assert.assertEquals(expected, policyManager.queryCCers(alert));
+    }
+
+    @Test
+    public void testQueryRecepients() throws Exception {
+        AlertEntity entity = new AlertEntity(null, null, null, ALERT_TYPE.ALERT_SYSTEM_OFF.simpleDesc(), ALERT_TYPE.ALERT_SYSTEM_OFF);
+        ALERT_TYPE type = entity.getAlertType();
+        logger.info("type.getAlertPolicy() & EMAIL_DBA: {}", type.getAlertPolicy() & EMAIL_DBA);
+        logger.info("type.getAlertPolicy() & EMAIL_XPIPE_ADMIN: {}", type.getAlertPolicy() & EMAIL_XPIPE_ADMIN);
+        logger.info("type.getAlertPolicy() & EMAIL_CLUSTER_ADMIN: {}", type.getAlertPolicy() & EMAIL_CLUSTER_ADMIN);
+
+        List<String> recievers = policyManager.queryRecepients(entity);
+        logger.info("recievers: {}", recievers);
+        StringBuffer sb = new StringBuffer();
+        for(String emailAdr : recievers) {
+            sb.append(emailAdr).append(",");
+        }
+        sb.deleteCharAt(sb.length() - 1);
+
+        Assert.assertEquals(sb.toString(), consoleConfig.getDBAEmails()+","+consoleConfig.getXPipeAdminEmails());
     }
 
 }
