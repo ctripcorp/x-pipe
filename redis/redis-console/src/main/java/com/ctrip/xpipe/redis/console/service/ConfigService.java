@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.service;
 
 import org.unidal.dal.jdbc.DalException;
 
+import java.util.Date;
+
 /**
  * @author chen.zhu
  * <p>
@@ -21,4 +23,5 @@ public interface ConfigService {
 
     boolean isSentinelAutoProcess();
 
+    Date getAlertSystemRecoverTime();
 }
