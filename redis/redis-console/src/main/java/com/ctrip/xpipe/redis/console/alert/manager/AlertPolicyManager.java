@@ -48,7 +48,7 @@ public class AlertPolicyManager {
             List<AlertPolicy> alertPolicies = findAlertPolicies(alert);
             int result = alert.getAlertType().getRecoverTime();
             for (AlertPolicy alertPolicy : alertPolicies) {
-                result = Math.max(result, alertPolicy.queryRecoverMinute());
+                result = Math.max(result, alertPolicy.queryRecoverMinute(alert));
             }
             return result;
         } catch (Exception ex) {
@@ -61,7 +61,7 @@ public class AlertPolicyManager {
             List<AlertPolicy> alertPolicies = findAlertPolicies(alert);
             int result = 0;
             for (AlertPolicy alertPolicy : alertPolicies) {
-                result = Math.max(result, alertPolicy.querySuspendMinute());
+                result = Math.max(result, alertPolicy.querySuspendMinute(alert));
             }
             return result;
         } catch (Exception ex) {

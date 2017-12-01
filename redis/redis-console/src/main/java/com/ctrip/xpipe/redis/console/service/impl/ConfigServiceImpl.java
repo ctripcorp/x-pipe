@@ -47,11 +47,13 @@ public class ConfigServiceImpl implements ConfigService {
 
         logger.info("[stopAlertSystem] stop alert system");
         Date date = DateTimeUtils.getHoursLaterDate(hours);
-        if(isAlertSystemOn()) {
-            alertSystemOffChecker.startAlert();
-        }
+        boolean previousStateOn = isAlertSystemOn();
         configDao.setKeyAndUntil(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON,
                 String.valueOf(false), date);
+        if(previousStateOn) {
+            logger.info("[stopAlertSystem] Alert System was On, alert this operation");
+            alertSystemOffChecker.startAlert();
+        }
     }
 
     @Override
@@ -66,11 +68,12 @@ public class ConfigServiceImpl implements ConfigService {
 
         logger.info("[stopSentinelAutoProcess] stop sentinel auto process");
         Date date = DateTimeUtils.getHoursLaterDate(hours);
-        if(isSentinelAutoProcess()) {
-            sentinelAutoProcessChecker.startAlert();
-        }
+        boolean previousStateOn = isSentinelAutoProcess();
         configDao.setKeyAndUntil(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS,
                 String.valueOf(false), date);
+        if(previousStateOn) {
+            sentinelAutoProcessChecker.startAlert();
+        }
 
     }
 

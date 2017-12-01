@@ -16,10 +16,10 @@ public interface AlertPolicy {
 
     List<String> queryCCers();
 
-    List<AlertChannel> queryChannels();
+    List<AlertChannel> queryChannels(AlertEntity alert);
 
-    int querySuspendMinute();
+    int querySuspendMinute(AlertEntity alert);
 
-    int queryRecoverMinute();
+    int queryRecoverMinute(AlertEntity alert);
 
 }

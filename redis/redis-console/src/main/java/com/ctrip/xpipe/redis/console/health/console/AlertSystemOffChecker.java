@@ -22,6 +22,7 @@ public class AlertSystemOffChecker extends AbstractConsoleHealthChecker {
     void alert() {
         String message = String.format("Alert System will recover on %s",
                 configService.getAlertSystemRecoverTime().toString());
+        logger.info("[alert] sending alert: {}", message);
         alertManager.alert("", "", null, ALERT_TYPE.ALERT_SYSTEM_OFF, message);
     }
 }
