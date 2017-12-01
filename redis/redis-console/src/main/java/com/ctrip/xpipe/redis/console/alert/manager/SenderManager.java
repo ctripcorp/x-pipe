@@ -49,6 +49,10 @@ public class SenderManager {
     }
 
     public boolean sendAlert(AlertChannel channel, AlertMessageEntity message) {
+        if(message.getAlert() != null && !shouldAlert(message.getAlert().getAlertType())) {
+            logger.warn("[sendAlert] Alert System is off, won't send");
+            return false;
+        }
         String channelId = channel.getId();
         Sender sender = senders.get(channelId);
         try {
