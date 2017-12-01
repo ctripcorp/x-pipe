@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.alert.policy;
 
+
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import org.springframework.stereotype.Component;
 

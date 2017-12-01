@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.concurrent.Future;
@@ -79,7 +78,7 @@ public abstract class AbstractConsoleHealthChecker implements CrossDcLeaderAware
         logger.info("[startFuture] start sending alert of alert system down");
         int initDelay = 0, periodTime = 1;
         future = schedule.scheduleAtFixedRate(new OneHourPeriodTask(),
-                initDelay, periodTime, TimeUnit.MINUTES);
+                initDelay, periodTime, TimeUnit.HOURS);
     }
 
     abstract boolean stop();
@@ -98,6 +97,7 @@ public abstract class AbstractConsoleHealthChecker implements CrossDcLeaderAware
         public void run() {
             logger.info("[OneHourPeriodTask] do alert");
             if(stop()) {
+                logger.info("[OneHourPeriodTask] alert system is on, stop task");
                 future.cancel(true);
                 return;
             }
