@@ -74,12 +74,31 @@ public class AlertManager {
 
 
         logger.warn("[alert]{}, {}, {}, {}", cluster, shard, type, message);
-        EventMonitor.DEFAULT.logAlertEvent(String.format("%s,%s,%s,%s", cluster, shard, type.simpleDesc(), message));
+        EventMonitor.DEFAULT.logAlertEvent(generateAlertMessage(cluster, shard, type, message));
         notifier.addAlert(cluster, shard, hostPort, type, message);
     }
 
     private boolean shouldAlert(String cluster) {
         return !alertClusterWhiteList.contains(cluster);
+    }
+
+    String generateAlertMessage(String cluster, String shard, ALERT_TYPE type, String message) {
+        StringBuffer sb = new StringBuffer();
+        if(cluster != null && !cluster.isEmpty()) {
+            sb.append(cluster).append(",");
+        }
+        if(shard != null && !shard.isEmpty()) {
+            sb.append(shard).append(",");
+        }
+        if(type != null) {
+            sb.append(type.simpleDesc()).append(",");
+        }
+        if(message != null && !message.isEmpty()) {
+            sb.append(message);
+        } else {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        return sb.toString();
     }
 
 }

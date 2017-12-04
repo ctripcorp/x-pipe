@@ -18,7 +18,7 @@ public class SentinelAutoProcessChecker extends AbstractConsoleHealthChecker {
 
     @Override
     void alert() {
-        String message = String.format("Sentinel Auto Process will recover on %s",
+        String message = String.format("Sentinel Auto Process will be online %s",
                 configService.getSentinelAutoProcessRecoverTime().toString());
         alertManager.alert("", "", null, ALERT_TYPE.SENTINEL_AUTO_PROCESS_OFF, message);
     }

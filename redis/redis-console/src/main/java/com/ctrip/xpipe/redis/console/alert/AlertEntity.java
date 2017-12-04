@@ -76,7 +76,7 @@ public class AlertEntity {
         if(hostPort != null) {
             sb.append(":").append(hostPort.toString());
         }
-        if(message != null && message.isEmpty()) {
+        if(message != null && !message.isEmpty()) {
             sb.append(":").append(message);
         }
         return sb.toString();
