@@ -26,7 +26,8 @@
 </head>
 
 <body class="no-skin" ng-app="index">
-
+	<ul>
+		<li>
 	<div id="navbar" class="navbar navbar-default navbar-fixed-top">
 		<div class="navbar-container" id="navbar-container">
 			<div class="navbar-header pull-left">
@@ -91,17 +92,63 @@
 						</ul>
 					</li>
 				</ul>
+
+			</div>
+
+		</div>
+	</div>
+		</li>
+		<li>
+	<div class="navbar-form navbar-container">
+		<div class="page-content">
+			<div class="ace-settings-container" id="ace-settings-container">
+				<div class="btn btn-app btn-xs btn-warning ace-settings-btn" id="ace-settings-btn">
+					<i class="ace-icon fa fa-cog bigger-150"></i>
+				</div>
+
+				<div class="ace-settings-box clearfix" id="ace-settings-box">
+
+					<div class="pull-left width-50">
+						<!-- #section:basics/sidebar.options -->
+						<div class="ace-settings-item">
+							<label>
+								<input ng-model="isAlertSystemOn" ng-checked="isAlertSystemOn" ng-true-value='true' ng-false-value='false' ng-change="preChangeConfig('alert.system.on', isAlertSystemOn)" name="switch-field-1" class="ace ace-switch btn-rotate custom" type="checkbox">
+								<span class="lbl">alert system</span>
+							</label>
+						</div>
+
+						<div class="ace-settings-item">
+							<label>
+								<input ng-model="isSentinelAutoProcOn" ng-true-value='true' ng-false-value='false' ng-change="preChangeConfig('sentinel.auto.process', isSentinelAutoProcOn)" name="switch-field-1"  class="ace ace-switch btn-rotate custom" type="checkbox">
+								<span class="lbl"> sentinel auto process</span>
+							</label>
+						</div>
+
+						<!-- /section:basics/sidebar.options -->
+					</div><!-- /.pull-left -->
+				</div><!-- /.ace-settings-box -->
 			</div>
 		</div>
 	</div>
+		</li>
+	</ul>
 
 	<div class="main-container" ng-controller="IndexCtl">
-		<div class="main-content" style="padding-top: 25px;" ui-view></div>
+
+		<div class="main-content" style="padding-top: 25px;" ui-view>
+		</div>
 
 		<a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse"> 
 			<i class="ace-icon fa fa-angle-double-up icon-only bigger-110"></i>
 		</a>
 	</div>
+
+	<xpipeconfirmdialog xpipe-dialog-id="'changeConfigConfirm'" xpipe-title="'更改设置'"
+						xpipe-detail="'您确定对下面设置进行更改吗?'"
+						xpipe-show-cancel-btn="true"
+						xpipe-confirm="changeConfig"
+						xpipe-cancel="updateConfig"
+	></xpipeconfirmdialog>
 
 	<script src='./vendor/js/jquery.min.js'></script>
 	<script src="./vendor/js/ace-extra.min.js"></script>
@@ -139,6 +186,7 @@
 	<script src="./scripts/services/RedisService.js"></script>
 	<script src="./scripts/services/KeeperContainerService.js"></script>
 	<script src="./scripts/services/UserService.js"></script>
+	<script src="./scripts/services/ConfigService.js"></script>
 	<script src="./scripts/services/MigrationService.js"></script>
 	<script src="./scripts/services/SentinelService.js"></script>
 	<script src="./scripts/services/HealthCheckService.js"></script>
