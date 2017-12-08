@@ -11,7 +11,9 @@ import java.util.List;
 public interface RedisService {
 	
 	RedisTbl find(long id);
-	RedisTbl findWithIpPort(String ip, int port);
+
+	List<RedisTbl> findAllRedisWithSameIP(String ip);
+
 	List<RedisTbl> findAllByDcClusterShard(long dcClusterShardId);
 
 	List<RedisTbl> findAllRedisesByDcClusterName(String dcId, String clusterId);

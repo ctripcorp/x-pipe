@@ -1,14 +1,20 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedList;
-import java.util.List;
+import javax.annotation.Resource;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.function.BiPredicate;
 
 /**
@@ -24,6 +30,9 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
   @Autowired
   private RedisService redisService;
+
+  @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
+  ExecutorService executor;
 
   @Override
   public List<KeeperBasicInfo> findBestKeepers(String dcName, String clusterName) {
@@ -53,8 +62,11 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
   }
 
+
   private void fillInResult(List<KeepercontainerTbl> keeperCount, List<KeeperBasicInfo> result, int beginPort,
       BiPredicate<String, Integer> keeperGood, int returnCount) {
+
+    Map<String, Set<Integer>> ipAndPorts = getIpAndPortsWithSameIpAsKC(keeperCount);
     // find available port
     for (int i = 0; i < returnCount; i++) {
 
@@ -65,18 +77,21 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
       keeperSelected.setKeeperContainerId(keepercontainerTbl.getKeepercontainerId());
       keeperSelected.setHost(keepercontainerTbl.getKeepercontainerIp());
 
-      int port = findAvailablePort(keepercontainerTbl, beginPort, keeperGood, result);
+      int port = findAvailablePort(keepercontainerTbl, beginPort, keeperGood, result, ipAndPorts);
 
       keeperSelected.setPort(port);
       result.add(keeperSelected);
     }
   }
 
-  private int findAvailablePort(KeepercontainerTbl keepercontainerTbl, int beginPort,
-      BiPredicate<String, Integer> keeperGood, List<KeeperBasicInfo> result) {
+  @VisibleForTesting
+  int findAvailablePort(KeepercontainerTbl keepercontainerTbl, int beginPort,
+                        BiPredicate<String, Integer> keeperGood, List<KeeperBasicInfo> result, Map<String, Set<Integer>> ipAndPorts) {
 
     int port = beginPort;
     String ip = keepercontainerTbl.getKeepercontainerIp();
+
+    Set<Integer> existingPorts = ipAndPorts.get(ip);
 
     for (;; port++) {
 
@@ -87,7 +102,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
       if (!(keeperGood.test(ip, port))) {
         continue;
       }
-      if (existInDb(ip, port)) {
+      if (existingPorts.contains(port)) {
         continue;
       }
 
@@ -107,8 +122,24 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     return false;
   }
 
-  private boolean existInDb(String keepercontainerIp, int port) {
-    return redisService.findWithIpPort(keepercontainerIp, port) != null;
-  }
 
+  private Map<String, Set<Integer>> getIpAndPortsWithSameIpAsKC(List<KeepercontainerTbl> keeperCount) {
+
+    Map<String, Set<Integer>> map = Maps.newHashMap();
+    keeperCount.forEach(kc -> map.putIfAbsent(kc.getKeepercontainerIp(), new HashSet<Integer>()));
+
+    for(Map.Entry<String, Set<Integer>> entry : map.entrySet()) {
+
+      String ip = entry.getKey();
+      Set<Integer> existingPorts = entry.getValue();
+      executor.submit(new Runnable() {
+        @Override
+        public void run() {
+          List<RedisTbl> redisWithSameIP = redisService.findAllRedisWithSameIP(ip);
+          redisWithSameIP.forEach(redisTbl -> existingPorts.add(redisTbl.getRedisPort()));
+        }
+      });
+    }
+    return map;
+  }
 }

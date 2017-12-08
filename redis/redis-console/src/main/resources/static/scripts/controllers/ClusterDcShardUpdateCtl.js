@@ -146,7 +146,7 @@ index_module.controller('ClusterDcShardUpdateCtl',
 
                                          });
                                      }
-                                  })
+                                  });
 
                                  $('#createKeeperModal').modal('show');
                              }
