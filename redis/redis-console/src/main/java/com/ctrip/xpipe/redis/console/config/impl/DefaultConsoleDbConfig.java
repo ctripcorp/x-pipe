@@ -20,8 +20,6 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
 
     public static final String KEY_ALERT_SYSTEM_ON = "alert.system.on";
 
-    public static final int SHUT_DOWN_HOURS = 8;
-
     @Autowired
     private DbConfig dbConfig;
 

@@ -559,6 +559,13 @@
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct"/>
 		<relation name="dc-cluster-shard-info" entity-name="dc-cluster-shard-tbl" entity-alias="dcst"/>
 
+		<readsets>
+			<readset name="IP-AND-PORT">
+				<member name='redis-ip'/>
+				<member name="redis-port"/>
+			</readset>
+		</readsets>
+
 		<query-defs>
 
 			<query name="find-all-by-dc-cluster-name" type="SELECT" multiple="true">
@@ -631,6 +638,17 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='redis-ip' /> = ${redis-ip}
 					AND <FIELD name='redis-port' /> = ${redis-port}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='find-by-ip' type='SELECT' multiple="true">
+				<param name='redis-ip'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='redis-ip' /> = ${redis-ip}
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
