@@ -14,7 +14,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.function.BiPredicate;
 
 /**
@@ -128,17 +130,32 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     Map<String, Set<Integer>> map = Maps.newHashMap();
     keeperCount.forEach(kc -> map.putIfAbsent(kc.getKeepercontainerIp(), new HashSet<Integer>()));
 
+    List<Future> futures = new ArrayList<>(map.size());
     for(Map.Entry<String, Set<Integer>> entry : map.entrySet()) {
 
       String ip = entry.getKey();
       Set<Integer> existingPorts = entry.getValue();
-      executor.submit(new Runnable() {
+      Future future = executor.submit(new Runnable() {
         @Override
         public void run() {
           List<RedisTbl> redisWithSameIP = redisService.findAllRedisWithSameIP(ip);
           redisWithSameIP.forEach(redisTbl -> existingPorts.add(redisTbl.getRedisPort()));
         }
       });
+      futures.add(future);
+    }
+    for(Future future : futures) {
+      try {
+        future.get();
+      } catch (InterruptedException ignore) {
+      } catch (ExecutionException e) {
+        for(Future futureToCancel : futures) {
+          if(!futureToCancel.isDone() || !futureToCancel.isCancelled()) {
+            futureToCancel.cancel(true);
+          }
+        }
+        return getIpAndPortsWithSameIpAsKC(keeperCount);
+      }
     }
     return map;
   }
