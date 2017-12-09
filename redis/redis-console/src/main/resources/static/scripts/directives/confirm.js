@@ -10,8 +10,7 @@ directive_module.directive('xpipeconfirmdialog', function ($compile, $window) {
             title: '=xpipeTitle',
             detail: '=xpipeDetail',
             showCancelBtn: '=xpipeShowCancelBtn',
-            doConfirm: '=xpipeConfirm',
-            doCancel: '=xpipeCancel'
+            doConfirm: '=xpipeConfirm'
         },
         link: function (scope, element, attrs) {
 
@@ -19,12 +18,7 @@ directive_module.directive('xpipeconfirmdialog', function ($compile, $window) {
                 if (scope.doConfirm){
                     scope.doConfirm();
                 }
-            };
-            scope.cancel = function () {
-                if (scope.doCancel) {
-                    scope.doCancel();
-                }
-            };
+            }
 
         }
     }
