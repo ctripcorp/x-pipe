@@ -222,6 +222,8 @@ CREATE TABLE `config_tbl` (
   `key` varchar(128) NOT NULL DEFAULT '' COMMENT 'key',
   `value` varchar(1024) DEFAULT '' COMMENT 'value',
   `until` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'for potential use',
+  `latest_update_user` varchar(512) DEFAULT '' COMMENT 'latest person who update the config',
+  `latest_update_ip` varchar(128) DEFAULT '' COMMENT 'ip where latest update occurs',
   `desc` varchar(1024) NOT NULL DEFAULT '' COMMENT 'desc',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',

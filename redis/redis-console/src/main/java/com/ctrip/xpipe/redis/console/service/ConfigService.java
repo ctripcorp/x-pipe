@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.Date;
@@ -11,13 +12,13 @@ import java.util.Date;
  */
 public interface ConfigService {
 
-    void startAlertSystem() throws DalException;
+    void startAlertSystem(ConfigModel config) throws DalException;
 
-    void stopAlertSystem(int hours) throws DalException;
+    void stopAlertSystem(ConfigModel config, int hours) throws DalException;
 
-    void startSentinelAutoProcess() throws DalException;
+    void startSentinelAutoProcess(ConfigModel config) throws DalException;
 
-    void stopSentinelAutoProcess(int hours) throws DalException;
+    void stopSentinelAutoProcess(ConfigModel config, int hours) throws DalException;
 
     boolean isAlertSystemOn();
 
@@ -26,4 +27,6 @@ public interface ConfigService {
     Date getAlertSystemRecoverTime();
 
     Date getSentinelAutoProcessRecoverTime();
+
+    ConfigModel getConfig(String key);
 }

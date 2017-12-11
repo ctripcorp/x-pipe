@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,47 +17,54 @@ public class ConfigServiceTest extends AbstractConsoleIntegrationTest {
     @Autowired
     ConfigService service;
 
+    ConfigModel configModel;
+
+    @Before
+    public void beforeConfigServiceTest() {
+        configModel = new ConfigModel().setUpdateUser("System").setUpdateIP("localhost");
+    }
+
     @Test
     public void startAlertSystem() throws Exception {
-        service.startAlertSystem();
+        service.startAlertSystem(configModel);
         Assert.assertTrue(service.isAlertSystemOn());
     }
 
     @Test
     public void startAlertSystem2() throws Exception {
-        service.stopAlertSystem(1);
-        service.startAlertSystem();
+        service.stopAlertSystem(configModel, 1);
+        service.startAlertSystem(configModel);
         Assert.assertTrue(service.isAlertSystemOn());
     }
 
     @Test
     public void stopAlertSystem() throws Exception {
-        service.startAlertSystem();
-        service.stopAlertSystem(3);
+        service.startAlertSystem(configModel);
+        service.stopAlertSystem(configModel, 3);
         Assert.assertFalse(service.isAlertSystemOn());
     }
 
     @Test
     public void startSentinelAutoProcess() throws Exception {
-        service.startSentinelAutoProcess();
+        service.startSentinelAutoProcess(configModel);
         Assert.assertTrue(service.isSentinelAutoProcess());
     }
 
     @Test
     public void stopSentinelAutoProcess() throws Exception {
-        service.stopSentinelAutoProcess(2);
+        service.stopSentinelAutoProcess(configModel, 2);
         Assert.assertFalse(service.isSentinelAutoProcess());
     }
 
     @Test
     public void isAlertSystemOn() throws Exception {
-        service.stopAlertSystem(-2);
+        service.stopAlertSystem(configModel, -2);
         Assert.assertTrue(service.isAlertSystemOn());
     }
 
     @Test
     public void isSentinelAutoProcess() throws Exception {
-        service.stopSentinelAutoProcess(-7);
+        service.stopSentinelAutoProcess(configModel, -7);
         Assert.assertTrue(service.isSentinelAutoProcess());
     }
 

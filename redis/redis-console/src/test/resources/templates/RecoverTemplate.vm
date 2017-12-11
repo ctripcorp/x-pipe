@@ -10,10 +10,11 @@
 [项目: <span style="color:red">100004374 xpipe管理控制台</span>]<br/>
 [时间: <span style="color:red">${time}]<br/>
 
-XPipe相关事宜请联系 XPipe相关事宜请联系 [$xpipeAdminEmails] <br/>
+XPipe相关事宜请联系 [$xpipeAdminEmails] <br/>
 
 <div>
 
+    <h4>发送源 IP 地址： ${localIpAddr}</h4>
     -------------------
     <h4>错误已恢复</h4>
     <p>详情见下表</p>

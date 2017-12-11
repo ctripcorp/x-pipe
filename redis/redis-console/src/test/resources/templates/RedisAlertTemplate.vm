@@ -7,13 +7,14 @@
 [XPipe异常告警]<br/>
 [环境：<span style="color:red">${environment}</span>]<br/>
 [项目: <span style="color:red">100004374 xpipe管理控制台</span>]<br/>
-[异常名称:] ${title}<br/>
+[异常名称: ${title}]<br/>
 [时间: ${time}]<br/>
 XPipe相关事宜请联系 [$xpipeAdminEmails]
 <br/>
 
 
 <div>
+    <h4>发送源 IP 地址： ${localIpAddr}</h4>
     #if(${XREDIS_VERSION_NOT_VALID})
         -------------------
         <h4>从机房Redis版本错误</h4>
@@ -53,6 +54,16 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
         -------------------
         <h4>Redis CONF REWRITE 错误</h4>
         <p>说明：Redis CONF REWRITE 错误</p>
+    #end
+    #if(${MARK_INSTANCE_UP})
+        -------------------
+        <h4>CRedis Instance Mark UP</h4>
+        <p>说明：Redis 实例恢复之后，会调用CRedis API将Redis在CRedis服务端标记为"可读"状态</p>
+    #end
+    #if(${MARK_INSTANCE_DOWN})
+        -------------------
+        <h4>CRedis Instance Mark Down</h4>
+        <p>说明：Redis 实例故障之后(多数console认定Delay时间过长)，会调用CRedis API将Redis在CRedis服务端标记为"不可读"状态</p>
     #end
     <table border="1">
         <thead>

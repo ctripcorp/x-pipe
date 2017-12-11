@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.Assert;
@@ -66,7 +67,8 @@ public class ConfigDaoTest extends AbstractConsoleIntegrationTest {
         String localKey = "config.dao.test";
         String value = String.valueOf(false);
         Date date = DateTimeUtils.getHoursLaterDate(1);
-        configDao.setKeyAndUntil(localKey, value, date);
+        ConfigModel model = new ConfigModel().setKey(localKey).setVal(value);
+        configDao.setConfigAndUntil(model, date);
 
         ConfigTbl config = configDao.getByKey(localKey);
         logger.info("config: {}", config);
@@ -77,7 +79,7 @@ public class ConfigDaoTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testSetKeyAndUntil2() throws Exception {
+    public void testSetConfigAndUntil2() throws Exception {
         String localKey = "config.dao.test";
         String value = String.valueOf(true);
         Date date = DateTimeUtils.getHoursLaterDate(1);
@@ -85,7 +87,8 @@ public class ConfigDaoTest extends AbstractConsoleIntegrationTest {
         configDao.setKey(localKey, value);
 
         value = String.valueOf(false);
-        configDao.setKeyAndUntil(localKey, value, date);
+        ConfigModel model = new ConfigModel().setKey(localKey).setVal(value);
+        configDao.setConfigAndUntil(model, date);
 
         ConfigTbl config = configDao.getByKey(localKey);
         logger.info("config: {}", config);

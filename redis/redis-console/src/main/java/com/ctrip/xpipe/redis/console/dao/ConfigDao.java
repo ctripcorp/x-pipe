@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.exception.ServerException;
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.redis.console.model.ConfigTblDao;
 import com.ctrip.xpipe.redis.console.model.ConfigTblEntity;
@@ -43,33 +44,39 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
         return configTblDao.findByPK(id, ConfigTblEntity.READSET_FULL);
     }
 
-    public synchronized void setKey(String key, String value) throws DalException {
-
-        set(key, value, null);
+    public synchronized void setKey(String key, String val) throws DalException {
+        ConfigModel model = new ConfigModel().setKey(key).setVal(val);
+        setConfig(model);
     }
 
-    public synchronized void setKeyAndUntil(String key, String val, Date until) throws DalException {
-        set(key, val, until);
+    public synchronized void setConfig(ConfigModel config) throws DalException {
 
+        setConfig(config, null);
     }
 
-    public ConfigTbl getByKey(String key) throws DalException {
-        return configTblDao.findByKey(key, ConfigTblEntity.READSET_FULL);
+    public synchronized void setConfigAndUntil(ConfigModel config, Date until) throws DalException {
+        setConfig(config, until);
     }
 
-    private void set(String key, String value, Date until) throws DalException {
+    public void setConfig(ConfigModel config, Date until) throws DalException {
         boolean insert = false;
 
         try{
-            getKey(key);
-        }catch (DalNotFoundException e){
+            getKey(config.getKey());
+        } catch (DalException e){
             logger.info("[setKey][not exist, create]{}", e.getMessage());
             insert = true;
         }
 
         ConfigTbl configTbl = new ConfigTbl();
-        configTbl.setKey(key);
-        configTbl.setValue(value);
+        configTbl.setKey(config.getKey());
+        configTbl.setValue(config.getVal());
+        if(config.getUpdateIP() != null) {
+            configTbl.setLatestUpdateIp(config.getUpdateIP());
+        }
+        if(config.getUpdateUser() != null) {
+            configTbl.setLatestUpdateUser(config.getUpdateUser());
+        }
 
         if(until != null) {
             configTbl.setUntil(until);
@@ -77,8 +84,13 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
         if(!insert) {
             configTblDao.updateValAndUntilByKey(configTbl, ConfigTblEntity.UPDATESET_FULL);
         }else{
-            configTblDao.insert(new ConfigTbl().setKey(key)
-                    .setValue(value).setDesc("insert automatically").setUntil(until));
+            configTbl.setDesc("insert automatically");
+            configTblDao.insert(configTbl);
         }
     }
+
+    public ConfigTbl getByKey(String key) throws DalException {
+        return configTblDao.findByKey(key, ConfigTblEntity.READSET_FULL);
+    }
+
 }

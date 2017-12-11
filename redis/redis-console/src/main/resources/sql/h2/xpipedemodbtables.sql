@@ -181,6 +181,8 @@ CREATE TABLE `config_tbl` (
   key varchar(128) NOT NULL DEFAULT '' unique,
   value varchar(1024) DEFAULT '' ,
   until TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `latest_update_user` varchar(512) DEFAULT '',
+  `latest_update_ip` varchar(128) DEFAULT '',
   desc varchar(1024) NOT NULL DEFAULT '' ,
   DataChange_LastTime timestamp DEFAULT CURRENT_TIMESTAMP,
   deleted tinyint(4) NOT NULL DEFAULT 0,

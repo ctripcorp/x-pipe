@@ -9,21 +9,43 @@ public class ConfigModel {
 
     private String key;
     private String val;
+    private String updateUser;
+    private String updateIP;
+
+    public String getUpdateUser() {
+        return updateUser;
+    }
+
+    public ConfigModel setUpdateUser(String updateUser) {
+        this.updateUser = updateUser;
+        return this;
+    }
+
+    public String getUpdateIP() {
+        return updateIP;
+    }
+
+    public ConfigModel setUpdateIP(String updateIP) {
+        this.updateIP = updateIP;
+        return this;
+    }
 
     public String getKey() {
         return key;
     }
 
-    public void setKey(String key) {
+    public ConfigModel setKey(String key) {
         this.key = key;
+        return this;
     }
 
     public String getVal() {
         return val;
     }
 
-    public void setVal(String val) {
+    public ConfigModel setVal(String val) {
         this.val = val;
+        return this;
     }
 
     @Override

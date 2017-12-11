@@ -398,6 +398,8 @@
     <member name="key" field="key" value-type="String" length="128" nullable="false" />
     <member name="value" field="value" value-type="String" length="1024" />
     <member name="until" field="until" value-type="Date" nullable="false" />
+    <member name="latest-update-user" field="latest_update_user" value-type="String" length="512" />
+    <member name="latest-update-ip" field="latest_update_ip" value-type="String" length="128" />
     <member name="desc" field="desc" value-type="String" length="1024" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
