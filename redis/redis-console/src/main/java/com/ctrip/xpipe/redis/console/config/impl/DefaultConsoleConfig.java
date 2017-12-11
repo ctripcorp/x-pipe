@@ -50,6 +50,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_ALERT_MESSAGE_RECOVER_TIME = "alert.message.recover.time";
 
+    private static final String KEY_CONFIG_DEFAULT_RESTORE_HOUR = "console.config.default.restore.hour";
+
     @Override
     public int getAlertSystemRecoverMinute() {
         return getIntProperty(KEY_ALERT_MESSAGE_RECOVER_TIME, 5);
@@ -201,4 +203,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return JsonCodec.INSTANCE.decode(config, QuorumConfig.class);
     }
 
+    @Override
+    public int getConfigDefaultRestoreHours() {
+        return getIntProperty(KEY_CONFIG_DEFAULT_RESTORE_HOUR, 10);
+    }
 }

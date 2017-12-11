@@ -64,4 +64,9 @@ public class TestMetaCache implements MetaCache {
     public HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException {
         return null;
     }
+
+    @Override
+    public String getDc(HostPort hostPort) {
+        return null;
+    }
 }

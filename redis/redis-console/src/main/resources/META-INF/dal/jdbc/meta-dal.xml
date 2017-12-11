@@ -1171,7 +1171,9 @@
 					<![CDATA[
 					UPDATE <TABLE/>
 					SET <FIELD name='value'/> = ${value},
-					<FIELD name='until' /> = ${until}
+					<FIELD name='until' /> = ${until},
+					<FIELD name='latest-update-user' /> = ${latest-update-user},
+					<FIELD name='latest-update-ip' /> = ${latest-update-ip}
 					WHERE <FIELD name='key'/> = ${key}
 					]]>
 				</statement>

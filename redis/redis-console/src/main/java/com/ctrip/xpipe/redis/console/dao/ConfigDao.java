@@ -59,6 +59,7 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
     }
 
     public void setConfig(ConfigModel config, Date until) throws DalException {
+        logger.info("[setConfig] {}: {}", config, until);
         boolean insert = false;
 
         try{
@@ -87,6 +88,7 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
             configTbl.setDesc("insert automatically");
             configTblDao.insert(configTbl);
         }
+        logger.info("[setConfig] config update successfully, as {}", config.toString());
     }
 
     public ConfigTbl getByKey(String key) throws DalException {

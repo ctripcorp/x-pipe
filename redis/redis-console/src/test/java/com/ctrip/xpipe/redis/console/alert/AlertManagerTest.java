@@ -24,8 +24,8 @@ public class AlertManagerTest {
     public void testGenerateAlertMessage() throws Exception {
         String cluster = null, shard = "", message = "test message";
         ALERT_TYPE type = ALERT_TYPE.ALERT_SYSTEM_OFF;
-        String result = alertManager.generateAlertMessage(cluster, shard, type, message);
-        String expected = type.simpleDesc() + "," + message;
+        String result = alertManager.generateAlertMessage(cluster, "jq", shard, type, message);
+        String expected = "jq," + type.simpleDesc() + "," + message;
         Assert.assertEquals(expected, result);
     }
 

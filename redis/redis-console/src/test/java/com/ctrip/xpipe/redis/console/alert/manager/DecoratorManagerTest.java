@@ -23,7 +23,7 @@ public class DecoratorManagerTest extends AbstractConsoleIntegrationTest {
 
     @Before
     public void beforeAlertPolicyManagerTest() {
-        alert = new AlertEntity(new HostPort("192.168.1.10", 6379),
+        alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
                 "clusterId", "shardId", "test message", ALERT_TYPE.XREDIS_VERSION_NOT_VALID);
     }
 

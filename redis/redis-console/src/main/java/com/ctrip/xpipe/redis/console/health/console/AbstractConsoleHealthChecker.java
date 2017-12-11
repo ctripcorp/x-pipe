@@ -96,12 +96,16 @@ public abstract class AbstractConsoleHealthChecker implements CrossDcLeaderAware
         @Override
         public void run() {
             logger.info("[OneHourPeriodTask] do alert");
-            if(stop()) {
-                logger.info("[OneHourPeriodTask] alert system is on, stop task");
-                future.cancel(true);
-                return;
+            try {
+                if (stop()) {
+                    logger.info("[OneHourPeriodTask] alert system is on, stop task");
+                    future.cancel(true);
+                    return;
+                }
+                alert();
+            }catch (Exception e) {
+                logger.error("[run] {}", e);
             }
-            alert();
         }
     }
 }

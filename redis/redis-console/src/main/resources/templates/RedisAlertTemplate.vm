@@ -69,6 +69,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
         <thead>
         <tr>
             <th>报错类型</th>
+            <th>Redis DC</th>
             <th>Redis集群</th>
             <th>Redis分片</th>
             <th>机器IP</th>
@@ -79,6 +80,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
         <tbody>
         <tr>
             <td>$!redisAlert.getAlertType()</td>
+            <td>$!redisAlert.getDc()</td>
             <td>$!redisAlert.getClusterId()</td>
             <td>$!redisAlert.getShardId()</td>
             <td>$!redisAlert.getHostPort().getHost()</td>

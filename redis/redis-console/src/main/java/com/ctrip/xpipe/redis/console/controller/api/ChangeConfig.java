@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
@@ -22,6 +23,9 @@ public class ChangeConfig extends AbstractConsoleController{
     @Autowired
     private ConfigService configService;
 
+    @Autowired
+    private ConsoleConfig consoleConfig;
+
     @RequestMapping(value = "/config/sentinel_auto_process/start", method = RequestMethod.POST)
     public void startSentinelAutoProcess(HttpServletRequest request,
                                          @RequestBody(required = false) ConfigModel configModel) throws DalException {
@@ -33,7 +37,7 @@ public class ChangeConfig extends AbstractConsoleController{
     public void stopSentinelAutoProcess(HttpServletRequest request,
                                         @RequestBody(required = false) ConfigModel configModel) throws DalException {
         ConfigModel config = configModel(request, configModel);
-        configService.stopSentinelAutoProcess(config, DefaultConsoleDbConfig.SHUT_DOWN_HOURS);
+        configService.stopSentinelAutoProcess(config, consoleConfig.getConfigDefaultRestoreHours());
     }
 
     @RequestMapping(value = "/config/alert_system/start", method = RequestMethod.POST)
@@ -47,20 +51,21 @@ public class ChangeConfig extends AbstractConsoleController{
     public void stopAlertSystem(HttpServletRequest request,
                                 @RequestBody(required = false) ConfigModel configModel) throws DalException {
         ConfigModel config = configModel(request, configModel);
-        configService.stopAlertSystem(config, DefaultConsoleDbConfig.SHUT_DOWN_HOURS);
+        configService.stopAlertSystem(config, consoleConfig.getConfigDefaultRestoreHours());
     }
 
     @RequestMapping(value = "/config/alert_system/stop/{hours}", method = RequestMethod.POST)
     public void stopAlertSystem(HttpServletRequest request, @PathVariable int hours,
                                 @RequestBody(required = false) ConfigModel configModel) throws DalException {
         ConfigModel config = configModel(request, configModel);
-        hours = hours > DefaultConsoleDbConfig.SHUT_DOWN_HOURS || hours < 1 ? DefaultConsoleDbConfig.SHUT_DOWN_HOURS : hours;
+        int defaultHours = consoleConfig.getConfigDefaultRestoreHours();
+        hours = hours > defaultHours || hours < 1 ? defaultHours : hours;
         configService.stopAlertSystem(config, hours);
     }
 
     private ConfigModel configModel(HttpServletRequest request, ConfigModel configModel) {
 
-        ConfigModel config = new ConfigModel().setUpdateIP(request.getRequestURI())
+        ConfigModel config = new ConfigModel().setUpdateIP(request.getRemoteAddr())
                 .setUpdateUser(request.getRemoteUser());
 
         if(configModel != null && configModel.getUpdateUser() != null)

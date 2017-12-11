@@ -50,6 +50,6 @@ public class ConfigModel {
 
     @Override
     public String toString() {
-        return "{ key: " + key + ", value: " + val + "}";
+        return "{ key: " + key + ", value: " + val + ", updateUser: " + updateUser + ", updateIP: " + updateIP + "}";
     }
 }

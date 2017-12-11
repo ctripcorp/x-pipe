@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.clientconfig;
 
 import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.health.AbstractIntervalCheck;
@@ -12,6 +13,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -60,9 +62,9 @@ public class ClientConfigMonitor extends AbstractIntervalCheck {
 
         OuterClientService.ClusterInfo clusterInfo = outerClientService.getClusterInfo(clusterName);
         try {
-            clusterInfo.check();
+            checkClusterInfo(clusterInfo);
         } catch (Exception e) {
-            alertManager.alert(clusterName, null, null, ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, e.getMessage());
+            logger.error("[checkCluster] {}", e);
         }
 
         CheckCluster checkClusterInfo = fromInfo(clusterInfo, clusterName);
@@ -75,6 +77,32 @@ public class ClientConfigMonitor extends AbstractIntervalCheck {
             alertManager.alert(clusterName, e.getShardName(), null, ALERT_TYPE.CLIENT_INCONSIS, e.getMessage());
         }
 
+    }
+
+    private void checkClusterInfo(OuterClientService.ClusterInfo clusterInfo) {
+        if(clusterInfo.getGroups() == null || clusterInfo.getGroups().isEmpty())
+            return;
+        String clusterName = clusterInfo.getName(), shardName;
+
+        for(OuterClientService.GroupInfo group : clusterInfo.getGroups()) {
+            List<OuterClientService.InstanceInfo> instances = group.getInstances();
+            if(instances == null || instances.isEmpty())
+                continue;
+
+            shardName = group.getName();
+            for(OuterClientService.InstanceInfo instance : instances) {
+                if(!instance.isCanRead()) {
+                    alertManager.alert(clusterName, shardName,
+                            new HostPort(instance.getIPAddress(), instance.getPort()),
+                            ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, "instance cannot read");
+                }
+                if(!instance.isStatus()) {
+                    alertManager.alert(clusterName, shardName,
+                            new HostPort(instance.getIPAddress(), instance.getPort()),
+                            ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, "instance is not valid");
+                }
+            }
+        }
     }
 
     private CheckCluster fromInfo(OuterClientService.ClusterInfo clusterInfo, String checkCluster) {

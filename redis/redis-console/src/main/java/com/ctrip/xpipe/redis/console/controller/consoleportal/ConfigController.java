@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
@@ -28,10 +29,13 @@ public class ConfigController extends AbstractConsoleController{
     @Autowired
     private ConfigService configService;
 
+    @Autowired
+    private ConsoleConfig consoleConfig;
+
     @RequestMapping(value = "/config/change_config", method = RequestMethod.POST)
     public RetMessage changeConfig(HttpServletRequest request, @RequestBody ConfigModel config) {
-        logger.info("[changeConfig] Config Change To: {}", config);
-        String uri = request.getRequestURI();
+        logger.info("[changeConfig] Request IP: {}, Config Change To: {}", request.getRemoteAddr(), config);
+        String uri = request.getRemoteAddr();
         return changeConfig(config.getKey(), config.getVal(), uri);
     }
 
@@ -59,19 +63,20 @@ public class ConfigController extends AbstractConsoleController{
         ConfigModel configModel = new ConfigModel();
         configModel.setUpdateUser(userId);
         configModel.setUpdateIP(uri);
+        logger.info("[changeConfig] Config changed by user: {} and ip: {}", userId, uri);
         try {
             boolean target = Boolean.parseBoolean(val);
             if(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON.equalsIgnoreCase(key)) {
                 if(target) {
                     configService.startAlertSystem(configModel);
                 } else {
-                    configService.stopAlertSystem(configModel, DefaultConsoleDbConfig.SHUT_DOWN_HOURS);
+                    configService.stopAlertSystem(configModel, consoleConfig.getConfigDefaultRestoreHours());
                 }
             } else if(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS.equalsIgnoreCase(key)) {
                 if(target) {
                     configService.startSentinelAutoProcess(configModel);
                 } else {
-                    configService.stopSentinelAutoProcess(configModel, DefaultConsoleDbConfig.SHUT_DOWN_HOURS);
+                    configService.stopSentinelAutoProcess(configModel, consoleConfig.getConfigDefaultRestoreHours());
                 }
             } else {
                 return RetMessage.createFailMessage("Unknown config key: " + key);

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.manager.NotificationManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,9 @@ public class AlertManager {
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
+    @Autowired
+    private MetaCache metaCache;
+
     private Set<String> alertClusterWhiteList;
 
     @PostConstruct
@@ -52,20 +56,13 @@ public class AlertManager {
 
     }
 
-
-    public void forceAlert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message){
-
-        doAlert(cluster, shard, hostPort, type, message, true);
-
-    }
-
-
     public void alert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message){
 
-        doAlert(cluster, shard, hostPort, type, message, false);
+        String dc = findDc(hostPort);
+        doAlert(dc, cluster, shard, hostPort, type, message, false);
     }
 
-    private void doAlert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message, boolean force) {
+    private void doAlert(String dc, String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message, boolean force) {
 
         if(!force && !shouldAlert(cluster)){
             logger.warn("[alert][skip]{}, {}, {}, {}", cluster, shard, type, message);
@@ -74,16 +71,31 @@ public class AlertManager {
 
 
         logger.warn("[alert]{}, {}, {}, {}", cluster, shard, type, message);
-        EventMonitor.DEFAULT.logAlertEvent(generateAlertMessage(cluster, shard, type, message));
-        notifier.addAlert(cluster, shard, hostPort, type, message);
+        EventMonitor.DEFAULT.logAlertEvent(generateAlertMessage(dc, cluster, shard, type, message));
+        notifier.addAlert(dc, cluster, shard, hostPort, type, message);
     }
 
     private boolean shouldAlert(String cluster) {
         return !alertClusterWhiteList.contains(cluster);
     }
 
-    String generateAlertMessage(String cluster, String shard, ALERT_TYPE type, String message) {
-        StringBuffer sb = new StringBuffer();
+    private String findDc(HostPort hostPort) {
+        try {
+            if (hostPort != null && hostPort.getHost() != null) {
+                return metaCache.getDc(hostPort);
+            }
+            return null;
+        } catch (Exception e) {
+            logger.error("[findDc] error: {}", e);
+            return null;
+        }
+    }
+
+    String generateAlertMessage(String dc, String cluster, String shard, ALERT_TYPE type, String message) {
+        StringBuilder sb = new StringBuilder();
+        if(dc != null && !dc.isEmpty()) {
+            sb.append(dc).append(",");
+        }
         if(cluster != null && !cluster.isEmpty()) {
             sb.append(cluster).append(",");
         }

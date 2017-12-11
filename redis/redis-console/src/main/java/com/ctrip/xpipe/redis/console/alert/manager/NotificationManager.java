@@ -96,8 +96,8 @@ public class NotificationManager {
     }
 
 
-    public void addAlert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message) {
-        AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, type);
+    public void addAlert(String dc, String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message) {
+        AlertEntity alert = new AlertEntity(hostPort, dc, cluster, shard, message, type);
         logger.debug("[addAlert] Add Alert Entity: {}", alert);
         alerts.offer(alert);
     }

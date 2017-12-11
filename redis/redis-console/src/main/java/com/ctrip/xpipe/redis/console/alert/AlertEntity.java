@@ -14,6 +14,8 @@ public class AlertEntity {
 
     private Date date;
 
+    private String dc;
+
     private String clusterId;
 
     private String shardId;
@@ -24,7 +26,9 @@ public class AlertEntity {
 
     private ALERT_TYPE alertType;
 
-    public AlertEntity(HostPort hostPort, String clusterId, String shardId, String message, ALERT_TYPE alertType) {
+    public AlertEntity(HostPort hostPort, String dc, String clusterId, String shardId,
+                       String message, ALERT_TYPE alertType) {
+        this.dc = dc;
         this.hostPort = hostPort;
         this.clusterId = clusterId;
         this.shardId = shardId;
@@ -82,6 +86,14 @@ public class AlertEntity {
         return sb.toString();
     }
 
+    public String getDc() {
+        return dc;
+    }
+
+    public void setDc(String dc) {
+        this.dc = dc;
+    }
+
     public ALERT_TYPE getAlertType() {
         return alertType;
     }
@@ -136,11 +148,17 @@ public class AlertEntity {
     }
 
     public static class RedisAlertBuilder {
+        private String dc;
         private HostPort hostPort;
         private String clusterId;
         private String shardId;
         private String message;
         private ALERT_TYPE alertType;
+
+        public RedisAlertBuilder dc(String dc) {
+            this.dc = dc;
+            return this;
+        }
 
         public RedisAlertBuilder hostPort(HostPort hostPort) {
             this.hostPort = hostPort;
@@ -168,7 +186,7 @@ public class AlertEntity {
         }
 
         public AlertEntity createRedisAlert() {
-            return new AlertEntity(this.hostPort, this.clusterId, this.shardId, this.message, this.alertType);
+            return new AlertEntity(this.hostPort, this.dc, this.clusterId, this.shardId, this.message, this.alertType);
         }
     }
 }

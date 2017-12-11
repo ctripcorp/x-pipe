@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.config.AbstractConfigBean;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +20,6 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
     public static final String KEY_SENTINEL_AUTO_PROCESS = "sentinel.auto.process";
 
     public static final String KEY_ALERT_SYSTEM_ON = "alert.system.on";
-
-    public static final int SHUT_DOWN_HOURS = 10;
 
     @Autowired
     private DbConfig dbConfig;

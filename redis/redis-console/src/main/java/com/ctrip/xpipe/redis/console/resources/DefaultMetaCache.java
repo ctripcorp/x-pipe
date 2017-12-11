@@ -132,7 +132,7 @@ public class DefaultMetaCache implements MetaCache {
         if (shardMeta == null) {
             throw new IllegalStateException("unfound shard for instance:" + hostPort);
         }
-        String instanceInDc = shardMeta.parent().parent().getId();
+        String instanceInDc = getDc(hostPort);
         String activeDc = shardMeta.getActiveDc();
         return !activeDc.equalsIgnoreCase(instanceInDc);
     }
@@ -225,4 +225,15 @@ public class DefaultMetaCache implements MetaCache {
         return new HostPort(redisMaster.getValue().getIp(), redisMaster.getValue().getPort());
     }
 
+    @Override
+    public String getDc(HostPort hostPort) {
+        XpipeMeta xpipeMeta = getXpipeMeta();
+
+        XpipeMetaManager xpipeMetaManager = new DefaultXpipeMetaManager(xpipeMeta);
+        ShardMeta shardMeta = xpipeMetaManager.findShardMetaWithParent(hostPort);
+        if (shardMeta == null) {
+            throw new IllegalStateException("unfound shard for instance:" + hostPort);
+        }
+        return shardMeta.parent().parent().getId();
+    }
 }

@@ -28,4 +28,6 @@ public interface MetaCache {
     Set<HostPort> getActiveDcSentinels(String clusterId, String shardId);
 
     HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException;
+
+    String getDc(HostPort hostPort);
 }

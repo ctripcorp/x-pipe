@@ -64,4 +64,6 @@ public interface ConsoleConfig extends CoreConfig {
 	int getAlertSystemSuspendMinute();
 
 	int getAlertSystemRecoverMinute();
+
+	int getConfigDefaultRestoreHours();
 }

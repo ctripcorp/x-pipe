@@ -47,8 +47,8 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
     @Test
     @DirtiesContext
     public void isSuspend() throws Exception {
-        AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
-        notificationManager.addAlert(cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
+        AlertEntity alert = new AlertEntity(hostPort, dcNames[0], cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
+        notificationManager.addAlert(cluster, dcNames[0], shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
         Thread.sleep(1000);
         Assert.assertTrue(notificationManager.isSuspend(alert.getKey(), 1000));
     }
@@ -56,19 +56,19 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
     @Test
     @DirtiesContext
     public void send() throws Exception {
-        AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
+        AlertEntity alert = new AlertEntity(hostPort, dcNames[0], cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
         Assert.assertTrue(notificationManager.send(alert));
-        notificationManager.addAlert(cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
+        notificationManager.addAlert(dcNames[0], cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
         Assert.assertFalse(notificationManager.send(alert));
     }
 
     @Test
     @DirtiesContext
     public void sendRecoveryMessage() throws Exception {
-        AlertEntity alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
+        AlertEntity alert = new AlertEntity(hostPort, dcNames[0], cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
         Assert.assertTrue(notificationManager.sendRecoveryMessage(alert));
 
-        alert = new AlertEntity(hostPort, cluster, shard, message, ALERT_TYPE.MARK_INSTANCE_DOWN);
+        alert = new AlertEntity(hostPort, dcNames[0], cluster, shard, message, ALERT_TYPE.MARK_INSTANCE_DOWN);
         notificationManager.sendRecoveryMessage(alert);
     }
 }

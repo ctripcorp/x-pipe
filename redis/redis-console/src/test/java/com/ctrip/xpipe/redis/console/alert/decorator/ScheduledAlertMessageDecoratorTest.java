@@ -34,11 +34,11 @@ public class ScheduledAlertMessageDecoratorTest extends AbstractConsoleIntegrati
         Map<ALERT_TYPE, Set<AlertEntity>> alerts = new HashMap<>();
         alerts.put(ALERT_TYPE.CLIENT_INCONSIS,
                 Collections.singleton(
-                        new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.CLIENT_INCONSIS
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.CLIENT_INCONSIS
                         )));
         alerts.put(ALERT_TYPE.XREDIS_VERSION_NOT_VALID,
                 Collections.singleton(
-                        new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.XREDIS_VERSION_NOT_VALID
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.XREDIS_VERSION_NOT_VALID
                         )));
         String body = decorator.generateBody(alerts);
         logger.info("{}", body);

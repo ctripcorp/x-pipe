@@ -38,7 +38,7 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
 
     @Before
     public void beforeAlertPolicyManagerTest() {
-        alert = new AlertEntity(new HostPort("192.168.1.10", 6379),
+        alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
                 "clusterId", "shardId", "test message", ALERT_TYPE.XREDIS_VERSION_NOT_VALID);
     }
 
@@ -67,7 +67,7 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
     @Test
     public void queryRecepients() throws Exception {
         AlertPolicy policy = policyManager.alertPolicyMap.get(SendToDBAAlertPolicy.ID);
-        List<String> expected = policy.queryRecipients(new AlertEntity(null, null, null, null, ALERT_TYPE.MARK_INSTANCE_UP));
+        List<String> expected = policy.queryRecipients(new AlertEntity(null, null, null, null, null, ALERT_TYPE.MARK_INSTANCE_UP));
         logger.info("[testQueryRecepients] emails: {}", expected);
         Assert.assertEquals(expected, policyManager.queryRecepients(alert));
     }
@@ -81,7 +81,8 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testQueryRecepients() throws Exception {
-        AlertEntity entity = new AlertEntity(null, null, null, ALERT_TYPE.ALERT_SYSTEM_OFF.simpleDesc(), ALERT_TYPE.ALERT_SYSTEM_OFF);
+        AlertEntity entity = new AlertEntity(null, null, null, null,
+                ALERT_TYPE.ALERT_SYSTEM_OFF.simpleDesc(), ALERT_TYPE.ALERT_SYSTEM_OFF);
         ALERT_TYPE type = entity.getAlertType();
         logger.info("type.getAlertPolicy() & EMAIL_DBA: {}", type.getAlertPolicy() & EMAIL_DBA);
         logger.info("type.getAlertPolicy() & EMAIL_XPIPE_ADMIN: {}", type.getAlertPolicy() & EMAIL_XPIPE_ADMIN);

@@ -59,31 +59,31 @@ public class SenderManagerTest extends AbstractConsoleIntegrationTest {
         Map<ALERT_TYPE, Set<AlertEntity>> alerts = new HashMap<>();
         alerts.put(ALERT_TYPE.CLIENT_INCONSIS,
                 Collections.singleton(
-                        new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.CLIENT_INCONSIS
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.CLIENT_INCONSIS
                         )));
         alerts.put(ALERT_TYPE.XREDIS_VERSION_NOT_VALID,
                 Collections.singleton(
-                        new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.XREDIS_VERSION_NOT_VALID
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.XREDIS_VERSION_NOT_VALID
                         )));
         alerts.put(ALERT_TYPE.QUORUM_DOWN_FAIL,
                 Collections.singleton(
-                        new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.QUORUM_DOWN_FAIL
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.QUORUM_DOWN_FAIL
                         )));
         alerts.put(ALERT_TYPE.SENTINEL_RESET,
                 Collections.singleton(
-                        new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.SENTINEL_RESET
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.SENTINEL_RESET
                         )));
         alerts.put(ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE,
                 Collections.singleton(
-                        new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE
                         )));
         alerts.put(ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR,
                 Collections.singleton(
-                        new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR
                         )));
         alerts.put(ALERT_TYPE.MIGRATION_MANY_UNFINISHED,
                 Collections.singleton(
-                        new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.MIGRATION_MANY_UNFINISHED
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.MIGRATION_MANY_UNFINISHED
                         )));
         logger.info("{}", alerts);
         senderManager.sendAlerts(alerts);
@@ -93,7 +93,7 @@ public class SenderManagerTest extends AbstractConsoleIntegrationTest {
     public void testSenderManager() {
         HostPort hostPort = new HostPort("192.168.1.10", 6379);
         Map<ALERT_TYPE, Set<AlertEntity>> alerts = new ConcurrentHashMap<>();
-        AlertEntity alert = new AlertEntity(hostPort, "cluster-test", "shard-test", "", ALERT_TYPE.XREDIS_VERSION_NOT_VALID);
+        AlertEntity alert = new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.XREDIS_VERSION_NOT_VALID);
         Set<AlertEntity> set = new ConcurrentSet<>();
         set.add(alert);
         alerts.put(ALERT_TYPE.XREDIS_VERSION_NOT_VALID, set);

@@ -39,7 +39,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public void startAlertSystem(ConfigModel config) throws DalException {
 
-        logger.info("[startAlertSystem] start alert system");
+        logger.info("[startAlertSystem] start alert system, config: {}", config);
         config.setKey(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON).setVal(String.valueOf(true));
         configDao.setConfig(config);
     }
@@ -47,11 +47,13 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public void stopAlertSystem(ConfigModel config, int hours) throws DalException {
 
-        logger.info("[stopAlertSystem] stop alert system");
+
         Date date = DateTimeUtils.getHoursLaterDate(hours);
         boolean previousStateOn = isAlertSystemOn();
 
         config.setKey(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON).setVal(String.valueOf(false));
+        logger.info("[stopAlertSystem] stop alert system, config: {}", config);
+
         configDao.setConfigAndUntil(config, date);
         if(previousStateOn) {
             logger.info("[stopAlertSystem] Alert System was On, alert this operation");
@@ -62,7 +64,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public void startSentinelAutoProcess(ConfigModel config) throws DalException {
 
-        logger.info("[startSentinelAutoProcess] start sentinel auto process");
+        logger.info("[startSentinelAutoProcess] start sentinel auto process, config: {}", config);
         config.setKey(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS).setVal(String.valueOf(true));
         configDao.setConfig(config);
     }
@@ -70,7 +72,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public void stopSentinelAutoProcess(ConfigModel config, int hours) throws DalException {
 
-        logger.info("[stopSentinelAutoProcess] stop sentinel auto process");
+        logger.info("[stopSentinelAutoProcess] stop sentinel auto process, config: {}", config);
         Date date = DateTimeUtils.getHoursLaterDate(hours);
         boolean previousStateOn = isSentinelAutoProcess();
 

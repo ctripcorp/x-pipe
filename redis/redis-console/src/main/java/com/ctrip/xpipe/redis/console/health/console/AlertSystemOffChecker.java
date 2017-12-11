@@ -22,10 +22,13 @@ public class AlertSystemOffChecker extends AbstractConsoleHealthChecker {
 
     @Override
     void alert() {
+        logger.info("[alert] Alert System Off");
         ConfigModel config = configService.getConfig(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON);
-        String message = String.format("Alert System will be online %s, latest updated by %s or ip %s or ip %s",
+        String user = config.getUpdateUser() == null ? "unkown" : config.getUpdateUser();
+        String ip = config.getUpdateIP() == null ? "unkown" : config.getUpdateIP();
+        String message = String.format("Alert System will be online %s, latest updated by user %s or ip %s",
                 configService.getAlertSystemRecoverTime().toString(),
-                config.getUpdateUser(), config.getUpdateIP());
+                user, ip);
         logger.info("[alert] sending alert: {}", message);
         alertManager.alert("", "", null, ALERT_TYPE.ALERT_SYSTEM_OFF, message);
     }

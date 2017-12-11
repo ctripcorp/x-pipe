@@ -22,6 +22,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
             <thead>
             <tr>
                 <th>报错类型</th>
+                <th>Redis DC</th>
                 <th>Redis集群</th>
                 <th>Redis分片</th>
                 <th>机器IP</th>
@@ -32,7 +33,8 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
             <tbody>
             #foreach($redisAlert in $redisAlerts.get(${XREDIS_VERSION_NOT_VALID}))
             <tr>
-            <td>$!redisAlert.getAlertType()</td>
+                <td>$!redisAlert.getAlertType()</td>
+                <td>$!redisAlert.getDc()</td>
                 <td>$!redisAlert.getClusterId()</td>
                 <td>$!redisAlert.getShardId()</td>
                 <td>$!redisAlert.getHostPort().getHost()</td>
@@ -51,6 +53,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
             <thead>
             <tr>
                 <th>报错类型</th>
+                <th>Redis DC</th>
                 <th>Redis集群</th>
                 <th>Redis分片</th>
                 <th>机器IP</th>
@@ -62,6 +65,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
                 #foreach($redisAlert in $redisAlerts.get(${REDIS_REPL_DISKLESS_SYNC_ERROR}))
                 <tr>
                     <td>$!redisAlert.getAlertType()</td>
+                    <td>$!redisAlert.getDc()</td>
                     <td>$!redisAlert.getClusterId()</td>
                     <td>$!redisAlert.getShardId()</td>
                     <td>$!redisAlert.getHostPort().getHost()</td>
@@ -80,6 +84,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
             <thead>
             <tr>
                 <th>报错类型</th>
+                <th>Redis DC</th>
                 <th>Redis集群</th>
                 <th>Redis分片</th>
                 <th>机器IP</th>
@@ -91,6 +96,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
                 #foreach($redisAlert in $redisAlerts.get(${CLIENT_INCONSIS}))
                 <tr>
                     <td>$!redisAlert.getAlertType()</td>
+                    <td>$!redisAlert.getDc()</td>
                     <td>$!redisAlert.getClusterId()</td>
                     <td>$!redisAlert.getShardId()</td>
                     <td>$!redisAlert.getHostPort().getHost()</td>
@@ -109,6 +115,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
             <thead>
             <tr>
                 <th>报错类型</th>
+                <th>Redis DC</th>
                 <th>Redis集群</th>
                 <th>Redis分片</th>
                 <th>机器IP</th>
@@ -120,6 +127,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
                 #foreach($redisAlert in $redisAlerts.get(${CLIENT_INSTANCE_NOT_OK}))
                 <tr>
                     <td>$!redisAlert.getAlertType()</td>
+                    <td>$!redisAlert.getDc()</td>
                     <td>$!redisAlert.getClusterId()</td>
                     <td>$!redisAlert.getShardId()</td>
                     <td>$!redisAlert.getHostPort().getHost()</td>
@@ -138,6 +146,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
             <thead>
             <tr>
                 <th>报错类型</th>
+                <th>Redis DC</th>
                 <th>Redis集群</th>
                 <th>Redis分片</th>
                 <th>机器IP</th>
@@ -149,6 +158,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
                 #foreach($redisAlert in $redisAlerts.get(${REDIS_CONF_REWRITE_FAILURE}))
                 <tr>
                     <td>$!redisAlert.getAlertType()</td>
+                    <td>$!redisAlert.getDc()</td>
                     <td>$!redisAlert.getClusterId()</td>
                     <td>$!redisAlert.getShardId()</td>
                     <td>$!redisAlert.getHostPort().getHost()</td>
@@ -167,6 +177,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
             <thead>
             <tr>
                 <th>报错类型</th>
+                <th>Redis DC</th>
                 <th>Redis集群</th>
                 <th>Redis分片</th>
                 <th>机器IP</th>
@@ -178,6 +189,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
                 #foreach($redisAlert in $redisAlerts.get(${QUORUM_DOWN_FAIL}))
                 <tr>
                     <td>$!redisAlert.getAlertType()</td>
+                    <td>$!redisAlert.getDc()</td>
                     <td>$!redisAlert.getClusterId()</td>
                     <td>$!redisAlert.getShardId()</td>
                     <td>$!redisAlert.getHostPort().getHost()</td>
@@ -196,6 +208,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
             <thead>
             <tr>
                 <th>报错类型</th>
+                <th>Redis DC</th>
                 <th>Redis集群</th>
                 <th>Redis分片</th>
                 <th>机器IP</th>
@@ -207,6 +220,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
                 #foreach($redisAlert in $redisAlerts.get(${MIGRATION_MANY_UNFINISHED}))
                 <tr>
                     <td>$!redisAlert.getAlertType()</td>
+                    <td>$!redisAlert.getDc()</td>
                     <td>$!redisAlert.getClusterId()</td>
                     <td>$!redisAlert.getShardId()</td>
                     <td>$!redisAlert.getHostPort().getHost()</td>
@@ -222,6 +236,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
         <thead>
         <tr>
             <th>报错类型</th>
+            <th>Redis DC</th>
             <th>Redis集群</th>
             <th>Redis分片</th>
             <th>机器IP</th>
@@ -233,6 +248,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
             #foreach($redisAlert in $redisAlerts.get(${MIGRATION_MANY_UNFINISHED}))
             <tr>
                 <td>$!redisAlert.getAlertType()</td>
+                <td>$!redisAlert.getDc()</td>
                 <td>$!redisAlert.getClusterId()</td>
                 <td>$!redisAlert.getShardId()</td>
                 <td>$!redisAlert.getHostPort().getHost()</td>
