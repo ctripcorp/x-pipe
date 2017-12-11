@@ -13,6 +13,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
 
 
 <div>
+    <h4>发送源 IP 地址： ${localIpAddr}</h4>
     #if(${XREDIS_VERSION_NOT_VALID})
         -------------------
         <h4>从机房Redis版本错误</h4>

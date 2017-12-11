@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.alert.decorator;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -28,6 +29,8 @@ public abstract class Decorator {
     @Autowired
     protected ConsoleConfig consoleConfig;
 
+    private FoundationService foundationService = FoundationService.DEFAULT;
+
 
     public String generateContent(AlertEntity alert) {
         VelocityContext context = generateCommonContext();
@@ -41,6 +44,7 @@ public abstract class Decorator {
         context.put("time", DateTimeUtils.currentTimeAsString());
         context.put("environment", consoleConfig.getXpipeRuntimeEnvironmentEnvironment());
         context.put("xpipeAdminEmails", consoleConfig.getXPipeAdminEmails());
+        context.put("localIpAddr", foundationService.getLocalIp());
         return context;
     }
 
