@@ -1,14 +1,18 @@
 package com.ctrip.xpipe.service.metric;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.*;
+import com.ctrip.xpipe.service.foundation.CtripFoundationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,12 +127,16 @@ public class HickwallMetric implements MetricProxy {
 
 		HostPort hostPort = md.getHostPort();
 		String metricNamePrefix = toMetricNamePrefix(md);
-		String metricName = metricNamePrefix + "." + hostPort.getHost() + "." + hostPort.getPort();
+		String metricName = metricNamePrefix + "." + hostPort.getHost() + "." + hostPort.getPort() + "." + getLocalIP();
 		return metricName;
 	}
 
 	private String toMetricNamePrefix(MetricData metricData) {
 		return "fx.xpipe.delay." + metricData.getClusterName() + "." + metricData.getShardName();
+	}
+
+	private String getLocalIP() {
+		return Foundation.net().getHostAddress();
 	}
 
 	@Override

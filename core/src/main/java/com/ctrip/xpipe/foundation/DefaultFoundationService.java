@@ -3,6 +3,8 @@
  */
 package com.ctrip.xpipe.foundation;
 
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctrip.xpipe.api.config.Config;
@@ -57,6 +59,15 @@ public class DefaultFoundationService implements FoundationService {
 	
 	public void setAppId(String appId) {
 		this.appId = appId;
+	}
+
+	@Override
+	public String getLocalIp() {
+		try {
+			return Inet4Address.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e) {
+			return "127.0.0.1";
+		}
 	}
 
 	@Override

@@ -24,6 +24,11 @@ public class CtripFoundationService implements FoundationService{
 	}
 
 	@Override
+	public String getLocalIp() {
+		return Foundation.net().getHostAddress();
+	}
+
+	@Override
 	public int getOrder() {
 		return HIGHEST_PRECEDENCE;
 	}
