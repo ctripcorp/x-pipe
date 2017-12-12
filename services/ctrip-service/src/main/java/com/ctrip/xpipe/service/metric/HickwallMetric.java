@@ -128,7 +128,7 @@ public class HickwallMetric implements MetricProxy {
 
 		HostPort hostPort = md.getHostPort();
 		String metricNamePrefix = toMetricNamePrefix(md);
-		String metricName = metricNamePrefix + "." + hostPort.getHost() + "." + hostPort.getPort();
+		String metricName = metricNamePrefix + "." + hostPort.getHost() + "." + hostPort.getPort() + "." + getLocalIP();
 		return metricName;
 	}
 

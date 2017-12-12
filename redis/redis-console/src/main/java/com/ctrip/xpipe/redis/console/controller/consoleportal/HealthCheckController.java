@@ -47,6 +47,6 @@ public class HealthCheckController extends AbstractConsoleController {
         if (Strings.isEmpty(addr)) {
             return ImmutableMap.of("addr", "");
         }
-        return ImmutableMap.of("addr", String.format("%s.%s.%s.%s.%s", addr, clusterName, shardName, redisIp, redisPort));
+        return ImmutableMap.of("addr", String.format("%s.%s.%s.%s.%s*", addr, clusterName, shardName, redisIp, redisPort));
     }
 }
