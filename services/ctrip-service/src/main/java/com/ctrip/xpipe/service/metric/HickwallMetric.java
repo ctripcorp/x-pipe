@@ -117,6 +117,7 @@ public class HickwallMetric implements MetricProxy {
 		for(MetricData md : datas) {
 			DataPoint dp = new DataPoint(metricName(md), (double) md.getValue(), md.getTimestampMilli() * 1000000);
 			dp.setEndpoint("fx");
+			dp.getTag().put("MetricSource", getLocalIP());
 			dps.add(dp);
 		}
 		
@@ -127,7 +128,7 @@ public class HickwallMetric implements MetricProxy {
 
 		HostPort hostPort = md.getHostPort();
 		String metricNamePrefix = toMetricNamePrefix(md);
-		String metricName = metricNamePrefix + "." + hostPort.getHost() + "." + hostPort.getPort() + "." + getLocalIP();
+		String metricName = metricNamePrefix + "." + hostPort.getHost() + "." + hostPort.getPort();
 		return metricName;
 	}
 

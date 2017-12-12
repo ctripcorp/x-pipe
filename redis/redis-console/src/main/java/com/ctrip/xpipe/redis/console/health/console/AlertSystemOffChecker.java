@@ -26,7 +26,7 @@ public class AlertSystemOffChecker extends AbstractConsoleHealthChecker {
         ConfigModel config = configService.getConfig(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON);
         String user = config.getUpdateUser() == null ? "unkown" : config.getUpdateUser();
         String ip = config.getUpdateIP() == null ? "unkown" : config.getUpdateIP();
-        String message = String.format("Alert System will be online %s, latest updated by user %s or ip %s",
+        String message = String.format("Alert System will be online %s, </br> Recent update by： %s <br/> and from IP： %s",
                 configService.getAlertSystemRecoverTime().toString(),
                 user, ip);
         logger.info("[alert] sending alert: {}", message);

@@ -14,7 +14,7 @@ XPipe相关事宜请联系 [$xpipeAdminEmails] <br/>
 
 <div>
 
-    <h4>发送源 IP 地址： ${localIpAddr}</h4>
+    <h4>发送自XPipe Console源 IP 地址： ${localIpAddr}</h4>
     -------------------
     <h4>错误已恢复</h4>
     <p>详情见下表</p>

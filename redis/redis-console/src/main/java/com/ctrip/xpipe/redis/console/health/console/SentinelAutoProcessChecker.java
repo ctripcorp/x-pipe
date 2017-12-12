@@ -23,9 +23,13 @@ public class SentinelAutoProcessChecker extends AbstractConsoleHealthChecker {
     @Override
     void alert() {
         ConfigModel config = configService.getConfig(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS);
-        String message = String.format("Sentinel Auto Process will be online %s, latest updated by %s or ip %s",
-                configService.getSentinelAutoProcessRecoverTime().toString(),
-                config.getUpdateUser(), config.getUpdateIP());
+
+        String user = config.getUpdateUser() == null ? "unkown" : config.getUpdateUser();
+        String ip = config.getUpdateIP() == null ? "unkown" : config.getUpdateIP();
+        String message = String.format("Sentinel Auto Process will be online %s, </br> " +
+                        "Recent update by： %s <br/> and from IP： %s",
+                configService.getAlertSystemRecoverTime().toString(),
+                user, ip);
         alertManager.alert("", "", null, ALERT_TYPE.SENTINEL_AUTO_PROCESS_OFF, message);
     }
 }
