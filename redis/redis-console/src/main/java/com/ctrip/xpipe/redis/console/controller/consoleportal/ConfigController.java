@@ -35,8 +35,11 @@ public class ConfigController extends AbstractConsoleController{
     @RequestMapping(value = "/config/change_config", method = RequestMethod.POST)
     public RetMessage changeConfig(HttpServletRequest request, @RequestBody ConfigModel config) {
         logger.info("[changeConfig] Request IP: {}, Config Change To: {}", request.getRemoteAddr(), config);
-        String uri = request.getRemoteAddr();
-        return changeConfig(config.getKey(), config.getVal(), uri);
+        String sourceIp = request.getHeader("X-FORWARDED-FOR");
+        if(sourceIp == null) {
+            sourceIp = request.getRemoteAddr();
+        }
+        return changeConfig(config.getKey(), config.getVal(), sourceIp);
     }
 
     @RequestMapping(value = "/config/alert_system", method = RequestMethod.GET)

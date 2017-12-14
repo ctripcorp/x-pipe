@@ -65,7 +65,11 @@ public class ChangeConfig extends AbstractConsoleController{
 
     private ConfigModel configModel(HttpServletRequest request, ConfigModel configModel) {
 
-        ConfigModel config = new ConfigModel().setUpdateIP(request.getRemoteAddr())
+        String sourceIp = request.getHeader("X-FORWARDED-FOR");
+        if(sourceIp == null) {
+            sourceIp = request.getRemoteAddr();
+        }
+        ConfigModel config = new ConfigModel().setUpdateIP(sourceIp)
                 .setUpdateUser(request.getRemoteUser());
 
         if(configModel != null && configModel.getUpdateUser() != null)

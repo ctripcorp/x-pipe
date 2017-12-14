@@ -1,13 +1,24 @@
 package com.ctrip.xpipe.redis.console.dal;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * @author chen.zhu
@@ -20,20 +31,141 @@ public class DataObjectAssemblyTakeOtherThreadsInfoTest extends AbstractConsoleI
 
     private XpipeMeta meta1;
 
-    private XpipeMeta meta2;
+    private static final int N = 20;
+
+    @Autowired
+    private DcMetaService dcMetaService;
+
+    @Autowired
+    private DcService dcService;
+
+    @Autowired
+    private ClusterService clusterService;
+
+    @Autowired
+    private ShardService shardService;
+
+    @Autowired
+    private RedisService redisService;
+
 
     @Before
     public void beforeDoaTakeOtherThreadsInfoTest() throws Exception {
         meta1 = new XpipeMetaGenerator(2000).generateXpipeMeta();
-        meta2 = new XpipeMetaGenerator(2000).generateXpipeMeta();
-        startH2Server();
     }
 
     @Test
-    public void testDOATakeOtherThreadsObject() {
-        XPipeMetaVisitor visitor = new XPipeMetaVisitor(meta1);
-//        visitor.visitXpipe(meta1);
-        logger.info("[test] \n {}", meta1.toString());
+    public void testDOATakeOtherThreadsObject() throws Exception {
+        insertXPipeMetaIntoDataBase(meta1);
+        DcMeta dcMeta = dcMetaService.getDcMeta(dcNames[0]);
+        logger.info("[test] \n {}", dcMeta.toString());
+
+        CyclicBarrier barrier = new CyclicBarrier(N);
+        List<Future<DcMeta>> futures = new LinkedList<>();
+        for(int i = 0; i < N; i ++) {
+            futures.add(getDcMetas(barrier));
+        }
+
+        for(Future<DcMeta> future : futures) {
+            DcMeta meta = future.get();
+            logger.info("{}", meta);
+            Assert.assertTrue(meta.equals(dcMeta));
+            Assert.assertEquals(meta.getClusters().size(), dcMeta.getClusters().size());
+
+            for(ClusterMeta cluster : meta.getClusters().values()) {
+                Assert.assertTrue(cluster.equals(dcMeta.findCluster(cluster.getId())));
+                Assert.assertEquals(cluster.getShards().size(), dcMeta.findCluster(cluster.getId()).getShards().size());
+
+                for(ShardMeta shard : cluster.getShards().values()) {
+                    ShardMeta sampleShard = dcMeta.findCluster(cluster.getId()).findShard(shard.getId());
+
+                    Assert.assertTrue(shard.equals(sampleShard));
+                    Assert.assertEquals(sampleShard.getRedises().size(), shard.getRedises().size());
+
+                    List<RedisMeta> sampleRedises = sampleShard.getRedises();
+
+                    for(RedisMeta redisMeta : shard.getRedises()) {
+                        if(!isIn(redisMeta, sampleRedises)) {
+                            logger.info("{}", shard);
+                            logger.info("{}", sampleShard);
+                        }
+                        Assert.assertTrue(isIn(redisMeta, sampleRedises));
+                    }
+                }
+            }
+        }
+    }
+
+    boolean isIn(RedisMeta redisMeta, List<RedisMeta> redisMetas) {
+        for(RedisMeta meta : redisMetas) {
+            if(redisMeta.getIp().equalsIgnoreCase(meta.getIp()) && redisMeta.getPort().equals(meta.getPort()))
+                return true;
+        }
+        return false;
+    }
+
+
+    private Future<DcMeta> getDcMetas(CyclicBarrier barrier) {
+        ExecutorService executor = Executors.newFixedThreadPool(N);
+        Future<DcMeta> future_allDetails = executor.submit(new Callable<DcMeta>() {
+            @Override
+            public DcMeta call() throws Exception {
+                barrier.await();
+                return dcMetaService.getDcMeta(dcNames[0]);
+            }
+        });
+        return future_allDetails;
+    }
+
+
+    private void insertXPipeMetaIntoDataBase(XpipeMeta xpipeMeta) throws Exception {
+        for(Map.Entry<String, DcMeta> dcEntry : xpipeMeta.getDcs().entrySet()) {
+            DcMeta dcMeta = dcEntry.getValue();
+            for(Map.Entry<String, ClusterMeta> clusterMetaEntry : dcMeta.getClusters().entrySet()) {
+                ClusterMeta clusterMeta = clusterMetaEntry.getValue();
+                ClusterTbl clusterTbl1 = clusterService.find(clusterMeta.getId());
+                if(clusterTbl1 != null) {
+                    continue;
+                }
+                ClusterTbl clusterTbl = clusterService.createCluster(buildClusterModel(clusterMeta));
+                for(Map.Entry<String, ShardMeta> shardMetaEntry : clusterMeta.getShards().entrySet()) {
+                    ShardMeta shardMeta = shardMetaEntry.getValue();
+                    shardService.createShard(clusterMeta.getId(), buildShardTbl(shardMeta, clusterTbl), null);
+                    List<Pair<String, Integer>> pairs = new ArrayList<>();
+                    for(RedisMeta redisMeta : shardMeta.getRedises()) {
+                        pairs.add(new Pair<> (redisMeta.getIp(), redisMeta.getPort()));
+                    }
+                    redisService.insertRedises(dcMeta.getId(), clusterMeta.getId(), shardMeta.getId(), pairs);
+                }
+
+            }
+        }
+    }
+
+    private ClusterModel buildClusterModel(ClusterMeta clusterMeta) {
+        ClusterModel clusterModel = new ClusterModel();
+        DcTbl dcTbl0 = dcService.find(dcNames[0]);
+        DcTbl dcTbl1 = dcService.find(dcNames[1]);
+        clusterModel.setClusterTbl(new ClusterTbl()
+                .setActivedcId(clusterMeta.getActiveDc().equalsIgnoreCase(dcNames[0]) ? dcTbl0.getId() : dcTbl1.getId())
+                .setClusterName(clusterMeta.getId())
+                .setClusterDescription("test")
+                .setClusterAdminEmails("admin@ctrip.com")
+                .setOrganizationInfo(new OrganizationTbl().setId(2L).setOrgId(3))
+                .setClusterOrgName("org-2"));
+        List<DcTbl> slaveDcs = clusterMeta.getActiveDc().equalsIgnoreCase(dcNames[0]) ? Arrays.asList(dcTbl1) : Arrays.asList(dcTbl0);
+        clusterModel.setSlaveDcs(slaveDcs);
+        return clusterModel;
+    }
+
+    private ShardTbl buildShardTbl(ShardMeta shardMeta, ClusterTbl clusterTbl) {
+        ShardTbl shardTbl = new ShardTbl();
+        shardTbl.setClusterId(clusterTbl.getId())
+                .setClusterName(clusterTbl.getClusterName())
+                .setShardName(shardMeta.getId())
+                .setDeleted(false)
+                .setSetinelMonitorName(clusterTbl.getClusterName() + shardMeta.getId());
+        return shardTbl;
     }
 
 
@@ -50,7 +182,7 @@ public class DataObjectAssemblyTakeOtherThreadsInfoTest extends AbstractConsoleI
 
         XpipeMeta generateXpipeMeta() {
             XpipeMeta result = new XpipeMeta();
-            DcMeta dc1 = new DcMeta("1"), dc2 = new DcMeta("2");
+            DcMeta dc1 = new DcMeta(dcNames[0]), dc2 = new DcMeta(dcNames[1]);
             result.addDc(dc1);
             result.addDc(dc2);
             for(int i = 0; i < clusterNum; i++) {
