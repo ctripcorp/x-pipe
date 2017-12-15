@@ -72,7 +72,7 @@ public class HealthStatus extends AbstractObservable{
 
     void delay(long delayMilli){
 
-        logger.debug("[delay]{}, {}", hostPort, delayMilli);
+        logger.debug("{}, {}", hostPort, delayMilli);
         if(delayMilli >=0 && delayMilli <= healthyDelayMilli.getAsInt()){
             lastHealthDelayTime.set(System.currentTimeMillis());
             setUp();

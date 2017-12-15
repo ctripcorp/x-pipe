@@ -42,7 +42,7 @@
             </DefaultRolloverStrategy>
         </RollingFile>
 
-        <RollingFile name="rollingRedisDelay" fileName="${baseDir}/${delayLogName}"
+        <RollingFile name="rollingRedisDelay" fileName="${baseDir}/${delayLogName}.log"
                      filePattern="${baseDir}/${delayLogName}-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}]%m%xpEx%n"/>
             <Policies>
