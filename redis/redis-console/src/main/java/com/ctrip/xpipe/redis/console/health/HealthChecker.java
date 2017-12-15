@@ -15,6 +15,7 @@ import javax.annotation.PreDestroy;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author marsqing
@@ -55,13 +56,12 @@ public class HealthChecker {
 			public void run() {
 
 				while (!Thread.currentThread().isInterrupted()) {
-					long oneMinute = 1000 * 60;
 					try {
 						if(!warmuped) {
-							Thread.sleep(oneMinute);
+							TimeUnit.SECONDS.sleep(2);
 							warmup();
 							warmuped = true;
-							Thread.sleep(oneMinute);
+							TimeUnit.SECONDS.sleep(2);
 						}
 						List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 						if(!dcsToCheck.isEmpty()){
