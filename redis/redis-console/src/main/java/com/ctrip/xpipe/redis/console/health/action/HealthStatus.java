@@ -4,6 +4,8 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.PreDestroy;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,6 +33,8 @@ public class HealthStatus extends AbstractObservable{
 
     private final ScheduledExecutorService scheduled;
     private ScheduledFuture<?> future;
+
+    private Logger delayLogger = LoggerFactory.getLogger(HealthStatus.class.getName() + ".delay");
 
     public HealthStatus(HostPort hostPort, IntSupplier downAfterMilli, IntSupplier healthyDelayMilli, ScheduledExecutorService scheduled){
         this.hostPort = hostPort;
@@ -72,7 +76,7 @@ public class HealthStatus extends AbstractObservable{
 
     void delay(long delayMilli){
 
-        logger.debug("{}, {}", hostPort, delayMilli);
+        delayLogger.debug("{}, {}", hostPort, delayMilli);
         if(delayMilli >=0 && delayMilli <= healthyDelayMilli.getAsInt()){
             lastHealthDelayTime.set(System.currentTimeMillis());
             setUp();
