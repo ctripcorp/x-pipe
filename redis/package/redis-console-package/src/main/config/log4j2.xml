@@ -47,9 +47,9 @@
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}]%m%xpEx%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="500 MB"/>
+                <SizeBasedTriggeringPolicy size="1 GB"/>
             </Policies>
-            <DefaultRolloverStrategy max="5">
+            <DefaultRolloverStrategy max="15">
                 <Delete basePath="${baseDir}" maxDepth="2">
                     <IfFileName glob="${delayLogName}*.log.gz"/>
                     <IfLastModified age="7d"/>
@@ -86,7 +86,7 @@
             <appender-ref ref="catAppender4Log4j2"/>
         </logger>
 
-        <logger name="com.ctrip.xpipe.redis.console.health.action.HealthStatus" level="DEBUG" additivity="false">
+        <logger name="com.ctrip.xpipe.redis.console.health.action.HealthStatus.delay" level="DEBUG" additivity="false">
             <appender-ref ref="rollingRedisDelay"/>
         </logger>
 
