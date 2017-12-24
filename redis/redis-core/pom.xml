@@ -55,26 +55,8 @@
 			<groupId>org.apache.curator</groupId>
 			<artifactId>curator-test</artifactId>
 			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<artifactId>log4j</artifactId>
-					<groupId>log4j</groupId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 	</dependencies>
-
-	<profiles>
-		<profile>
-			<id>services</id>
-			<dependencies>
-				<dependency>
-					<groupId>com.ctrip.framework.xpipe</groupId>
-					<artifactId>ctrip-service</artifactId>
-				</dependency>
-			</dependencies>
-		</profile>
-	</profiles>
 
 	<build>
 		<plugins>
