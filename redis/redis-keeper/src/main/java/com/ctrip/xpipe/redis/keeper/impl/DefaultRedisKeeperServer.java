@@ -82,7 +82,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
     private EventLoopGroup bossGroup ;
     private EventLoopGroup workerGroup;
-    
+    private NioEventLoopGroup masterEventLoopGroup;
+
+
     public static String KEY_DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT = "DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT";
     public static int DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT = Integer.parseInt(System.getProperty(KEY_DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, "5"));   
 
@@ -146,6 +148,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
 		bossGroup = new NioEventLoopGroup(1, ClusterShardAwareThreadFactory.create(clusterId, shardId, "boss:" + threadPoolName));
 		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, ClusterShardAwareThreadFactory.create(clusterId, shardId, threadPoolName));
+		masterEventLoopGroup = new NioEventLoopGroup(2, ClusterShardAwareThreadFactory.create(clusterId, shardId, String.format("master")));
+
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = initKeeperServerState();
@@ -218,6 +222,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
 		this.leaderElector.dispose();
+		masterEventLoopGroup.shutdownGracefully();
 		bossGroup.shutdownGracefully();
 		workerGroup.shutdownGracefully();
 		replicationStoreManager.dispose();
@@ -250,7 +255,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private void initAndStartMaster(Endpoint target) {
 		try {
-			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, replicationStoreManager, scheduled);
+			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, masterEventLoopGroup, replicationStoreManager, scheduled);
 			
 			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
 				logger.info("[initAndStartMaster][stopped, exit]{}, {}", target, this);

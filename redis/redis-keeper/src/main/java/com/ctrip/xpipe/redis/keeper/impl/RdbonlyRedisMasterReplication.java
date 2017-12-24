@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,8 +27,8 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	private RdbOnlyReplicationStore rdbOnlyReplicationStore;
 	private DumpedRdbStore dumpedRdbStore;
 	
-	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, ScheduledExecutorService scheduled, RdbDumper rdbDumper) {
-		super(redisKeeperServer, redisMaster, scheduled);
+	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled, RdbDumper rdbDumper) {
+		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled);
 		setRdbDumper(rdbDumper);
 	}
 	

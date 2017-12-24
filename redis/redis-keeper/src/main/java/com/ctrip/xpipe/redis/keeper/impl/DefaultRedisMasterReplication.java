@@ -17,6 +17,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,12 +37,12 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	
 	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));
 
-	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled, int replTimeoutSeconds) {
-		super(redisKeeperServer, redisMaster, scheduled, replTimeoutSeconds);
+	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled, int replTimeoutSeconds) {
+		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutSeconds);
 	}
 
-	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled) {
-		this(redisMaster, redisKeeperServer, scheduled, DEFAULT_REPLICATION_TIMEOUT);
+	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled) {
+		this(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT);
 	}
 
 	@Override

@@ -146,6 +146,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 
 		waitConditionUntilTimeOut(() -> server1.getConnected() == 1);
 
+		sleep(100);
 		redisKeeperServer.stop();
 
 		redisKeeperServer.setRedisKeeperServerState(
