@@ -18,4 +18,6 @@ public interface SentinelService {
 	Map<Long, SetinelTbl> findByShard(long shardId);
 
 	SetinelTbl insert(SetinelTbl setinelTbl);
+
+	List<String> reBalanceSentinels(String dcName, int numOfClusters);
 }

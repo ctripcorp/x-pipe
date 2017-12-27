@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -78,7 +79,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		});
 
-		List<String> clusterNames = new LinkedList<>();
+		List<String> clusterNames = new ArrayList<>(clusterTbls.size());
 
 		clusterTbls.forEach( clusterTbl -> clusterNames.add(clusterTbl.getClusterName()));
 
