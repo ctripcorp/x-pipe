@@ -31,6 +31,7 @@ public abstract class Decorator {
 
     private FoundationService foundationService = FoundationService.DEFAULT;
 
+    private static final int MAX_LENGTH = 128;
 
     public String generateContent(AlertEntity alert) {
         VelocityContext context = generateCommonContext();
@@ -68,7 +69,18 @@ public abstract class Decorator {
 
     protected abstract String getTemplateName();
 
-    public abstract String generateTitle(AlertEntity alert);
+    public String generateTitle(AlertEntity alert) {
+        return shorten(doGenerateTitle(alert));
+    }
+
+    private String shorten(String title) {
+        if(title.length() > MAX_LENGTH) {
+            return title.substring(0, MAX_LENGTH) + "...";
+        }
+        return title;
+    }
+
+    protected abstract String doGenerateTitle(AlertEntity alert);
 
     protected abstract VelocityContext fillInContext(AlertEntity alert, VelocityContext context);
 }

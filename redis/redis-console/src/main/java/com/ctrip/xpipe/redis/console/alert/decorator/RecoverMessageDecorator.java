@@ -22,7 +22,7 @@ public class RecoverMessageDecorator extends Decorator {
     }
 
     @Override
-    public String generateTitle(AlertEntity alert) {
+    public String doGenerateTitle(AlertEntity alert) {
         return String.format("[%s][XPipe 恢复]%s",
                 consoleConfig.getXpipeRuntimeEnvironmentEnvironment(),
                 alert.getKey());

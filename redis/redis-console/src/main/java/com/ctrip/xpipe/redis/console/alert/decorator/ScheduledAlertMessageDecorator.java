@@ -26,7 +26,7 @@ public class ScheduledAlertMessageDecorator extends Decorator {
     }
 
     @Override
-    public String generateTitle(AlertEntity alert) {
+    public String doGenerateTitle(AlertEntity alert) {
         return String.format("[%s][XPipe 报警]%s",
                 consoleConfig.getXpipeRuntimeEnvironmentEnvironment(),
                 alert.getKey());

@@ -19,5 +19,4 @@ public interface SentinelService {
 
 	SetinelTbl insert(SetinelTbl setinelTbl);
 
-	List<String> reBalanceSentinels(String dcName, int numOfClusters);
 }

@@ -148,31 +148,4 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 
 		return setinelTbl;
 	}
-
-	@Override
-	public List<String> reBalanceSentinels(String dcName, int numOfClusters) {
-		List<String> clusters = randomlyChosenClusters(clusterService.findAllClusterNames(), numOfClusters);
-		logger.info("[reBalanceSentinels] pick up clusters: {}", clusters);
-		doReBalance(dcName, clusters);
-		return clusters;
-	}
-
-	private List<String> randomlyChosenClusters(List<String> clusters, int num) {
-	    if(num < 1 || clusters == null || clusters.isEmpty()) return clusters;
-	    if(random == null) {
-	        random = new Random();
-        }
-        int bound = clusters.size(), index = random.nextInt(bound);
-	    Set<String> result = new HashSet<>();
-	    for(int count = 0; count < num; count++) {
-	        while (!result.add(clusters.get(index))) {
-                index = random.nextInt(bound);
-            }
-        }
-        return new LinkedList<>(result);
-    }
-
-    private void doReBalance(String dcName, List<String> cluster) {
-
-    }
 }
