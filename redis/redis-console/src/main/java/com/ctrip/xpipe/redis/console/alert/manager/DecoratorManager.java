@@ -24,14 +24,13 @@ public class DecoratorManager {
     @Autowired
     Map<String, Decorator> decorators;
 
-    private static final int MAX_LENGTH = 128;
     /* There's another option to generate content for recover message
     So the @param isAlertMessage is the pivot to switch between two phases
     */
     public Pair<String, String> generateTitleAndContent(AlertEntity alert, boolean isAlertMessage) {
         Decorator decorator = getDecorator(isAlertMessage);
         String content = decorator.generateContent(alert);
-        String title = shorten(decorator.generateTitle(alert));
+        String title = decorator.generateTitle(alert);
         return new Pair<>(title, content);
     }
 
@@ -47,14 +46,9 @@ public class DecoratorManager {
         Decorator decorator = decorators.get(ScheduledAlertMessageDecorator.ID);
         ScheduledAlertMessageDecorator scheduledDecorator = (ScheduledAlertMessageDecorator) decorator;
         String content = scheduledDecorator.generateBody(alerts);
-        String title = shorten(scheduledDecorator.generateTitle());
+        String title = scheduledDecorator.generateTitle();
         return new Pair<>(title, content);
     }
 
-    private String shorten(String title) {
-        if(title.length() > MAX_LENGTH) {
-            return title.substring(0, MAX_LENGTH) + "...";
-        }
-        return title;
-    }
+
 }
