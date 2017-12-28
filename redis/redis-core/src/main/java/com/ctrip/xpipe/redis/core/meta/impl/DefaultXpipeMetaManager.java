@@ -27,14 +27,17 @@ import java.util.*;
 public class DefaultXpipeMetaManager extends AbstractMetaManager implements XpipeMetaManager{
 	
 	private String fileName = null;
-	protected XpipeMeta xpipeMeta;
-	
-	protected DefaultXpipeMetaManager(){
-		
-	}
+
+	protected final XpipeMeta xpipeMeta;
+	private Map<HostPort, MetaDesc> inverseMap;
 	
 	public DefaultXpipeMetaManager(XpipeMeta xpipeMeta){
 		this.xpipeMeta = xpipeMeta;
+	}
+
+	private DefaultXpipeMetaManager(String fileName) {
+		this.fileName = fileName;
+		xpipeMeta = load(fileName);
 	}
 
 	public static XpipeMetaManager buildFromFile(String fileName){
@@ -45,16 +48,11 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return new DefaultXpipeMetaManager(xpipeMeta);
 	}
 
-	private DefaultXpipeMetaManager(String fileName) {
-		this.fileName = fileName;
-		load(fileName);
-	}
-	
-	public void load(String fileName) {
+	public XpipeMeta load(String fileName) {
 		
 		try {
 			InputStream ins = FileUtils.getFileInputStream(fileName);
-			xpipeMeta = DefaultSaxParser.parse(ins);
+			return DefaultSaxParser.parse(ins);
 		} catch (SAXException | IOException e) {
 			logger.error("[load]" + fileName, e);
 			throw new IllegalStateException("load " + fileName + " failed!", e);
@@ -237,25 +235,19 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
-	public ShardMeta findShardMetaWithParent(HostPort hostPort) {
+	public MetaDesc findMetaDesc(HostPort hostPort) {
 
-		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
-			for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
-				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-					for(RedisMeta redisMeta : shardMeta.getRedises()){
-						if(redisMeta.equalsWithIpPort(hostPort)){
-							return cloneWithParent(dcMeta, clusterMeta, shardMeta);
-						}
-					}
-					for(KeeperMeta keeperMeta: shardMeta.getKeepers()){
-						if(keeperMeta.equalsWithIpPort(hostPort)){
-							return cloneWithParent(dcMeta, clusterMeta, shardMeta);
-						}
-					}
-				}
+		if(inverseMap != null){
+			return inverseMap.get(hostPort);
+		}
+
+		synchronized (this){
+			if(inverseMap == null){
+				inverseMap = InverseHostPortMapBuilder.build(xpipeMeta);
 			}
 		}
-		return null;
+
+		return inverseMap.get(hostPort);
 	}
 
 	private ShardMeta cloneWithParent(DcMeta dcMeta, ClusterMeta clusterMeta, ShardMeta shardMeta) {
@@ -270,19 +262,20 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	public Pair<String, RedisMeta> getRedisMaster(String clusterId, String shardId) {
 		
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
-			for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
-				if(!clusterId.equals(clusterMeta.getId())){
-					continue;
-				}
-				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-					if(!shardId.equals(shardMeta.getId())){
-						continue;
-					}
-					for(RedisMeta redisMeta : shardMeta.getRedises()){
-						if(redisMeta.isMaster()){
-							return new Pair<>(dcMeta.getId(), clone(redisMeta));
-						}
-					}
+
+			ClusterMeta clusterMeta = dcMeta.findCluster(clusterId);
+			if( clusterMeta == null ){
+				continue;
+			}
+
+			ShardMeta shardMeta = clusterMeta.findShard(shardId);
+			if(shardMeta == null){
+				continue;
+			}
+
+			for(RedisMeta redisMeta : shardMeta.getRedises()){
+				if(redisMeta.isMaster()){
+					return new Pair<>(dcMeta.getId(), clone(redisMeta));
 				}
 			}
 		}

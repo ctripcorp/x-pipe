@@ -29,7 +29,7 @@
             </Policies>
         </RollingFile>
 
-        <RollingFile name="rollingRedisDelay" fileName="${baseDir}/${delayLogName}.log"
+        <RollingFile name="rollingRedisDelay" fileName="target/applogs/${delayLogName}.log"
                      filePattern="${baseDir}/${delayLogName}-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}]%m%xpEx%n"/>
             <Policies>
