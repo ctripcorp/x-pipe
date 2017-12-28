@@ -14,6 +14,42 @@ import java.util.Set;
  * Jul 7, 2016
  */
 public interface XpipeMetaManager extends MetaUpdateOperation{
+
+
+	public static class MetaDesc extends ShardMeta {
+
+		private DcMeta dcMeta;
+		private ClusterMeta clusterMeta;
+		private ShardMeta shardMeta;
+		private Redis redis;
+
+		public MetaDesc(DcMeta dcMeta, ClusterMeta clusterMeta, ShardMeta shardMeta, Redis redis){
+			this.dcMeta = dcMeta;
+			this.clusterMeta = clusterMeta;
+			this.shardMeta = shardMeta;
+			this.redis = redis;
+		}
+
+		public String getDcId() {
+			return dcMeta != null ? dcMeta.getId() : null;
+		}
+
+		public String getClusterId() {
+			return clusterMeta != null ? clusterMeta.getId() : null;
+		}
+
+		public String getShardId() {
+			return shardMeta != null ? shardMeta.getId() : null;
+		}
+
+		public String getActiveDc(){
+			return shardMeta != null ? shardMeta.getActiveDc() : null;
+		}
+
+		public Redis getRedis() {
+			return redis;
+		}
+	}
 	
 	boolean dcExists(String dc);
 	
@@ -33,7 +69,7 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	
 	List<KeeperMeta> getKeeperBackup(String dc, String clusterId, String shardId);
 
-	ShardMeta findShardMetaWithParent(HostPort hostPort);
+	MetaDesc findMetaDesc(HostPort hostPort);
 	
 	/**
 	 * @param clusterId
