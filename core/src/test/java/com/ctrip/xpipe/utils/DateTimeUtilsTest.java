@@ -14,7 +14,7 @@ import static org.junit.Assert.*;
  *         <p>
  *         Nov 27, 2017
  */
-public class DateTimeUtilsTest extends AbstractTest{
+public class DateTimeUtilsTest extends AbstractTest {
 
     @Test
     public void testGetHoursLaterDate1() throws Exception {
@@ -37,6 +37,14 @@ public class DateTimeUtilsTest extends AbstractTest{
 
 
     @Test
+    public void testFormat() {
+
+        logger.info(DateTimeUtils.timeAsString(0));
+        logger.info(DateTimeUtils.timeAsString(1));
+        logger.info(DateTimeUtils.timeAsString(-1));
+    }
+
+    @Test
     public void test() {
 
         long begin = System.currentTimeMillis();
@@ -51,7 +59,7 @@ public class DateTimeUtilsTest extends AbstractTest{
 
         long end = System.currentTimeMillis();
 
-        logger.info("{} ns", (end - begin)*1000000/count);
+        logger.info("{} ns", (end - begin) * 1000000 / count);
 
 
     }

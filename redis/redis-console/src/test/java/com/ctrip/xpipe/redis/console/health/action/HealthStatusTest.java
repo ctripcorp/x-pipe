@@ -60,7 +60,7 @@ public class HealthStatusTest extends AbstractConsoleTest {
     @Test
     public void testSetUp() {
 
-        int count = 3000;
+        int count = 20000;
         List<HealthStatus> allHealth = new LinkedList<>();
 
         long begin = System.nanoTime();
@@ -71,7 +71,7 @@ public class HealthStatusTest extends AbstractConsoleTest {
         }
 
         long end = System.nanoTime();
-        logger.info("{} us", (end - begin) / 1000);
+        logger.info("{} ms", (end - begin) / 1000000);
     }
 
     @Test

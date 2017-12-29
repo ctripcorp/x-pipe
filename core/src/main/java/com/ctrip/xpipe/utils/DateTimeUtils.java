@@ -23,6 +23,9 @@ public class DateTimeUtils {
 	}
 
 	public static String timeAsString(long timeMilli) {
+		if(timeMilli < 0){
+			return String.format("wrong time: %d", timeMilli);
+		}
 		return FastDateFormat.getInstance(format).format(new Date(timeMilli));
 	}
 

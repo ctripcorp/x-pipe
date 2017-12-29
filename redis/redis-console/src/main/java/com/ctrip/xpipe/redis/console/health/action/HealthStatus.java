@@ -21,7 +21,7 @@ import java.util.function.IntSupplier;
  */
 public class HealthStatus extends AbstractObservable{
 
-    private static long UNSET_TIME = Long.MIN_VALUE;
+    private static long UNSET_TIME = -1L;
 
     private AtomicLong lastPongTime = new AtomicLong(UNSET_TIME);
     private AtomicLong lastHealthDelayTime = new AtomicLong(UNSET_TIME);
