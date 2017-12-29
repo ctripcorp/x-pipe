@@ -18,9 +18,9 @@ import java.util.Map.Entry;
  *         Dec 2, 2016 4:39:39 PM
  */
 @Component
-public class HickwallDelayCollector implements DelayCollector {
+public class MetricDelayCollector implements DelayCollector {
 
-    private static Logger log = LoggerFactory.getLogger(HickwallDelayCollector.class);
+    private static Logger log = LoggerFactory.getLogger(MetricDelayCollector.class);
 
     private MetricProxy proxy = ServicesUtil.getMetricProxy();
 

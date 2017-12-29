@@ -39,7 +39,7 @@ public abstract class AbstractMetaService implements MetaServerService {
 
 		this.retryTimes = retryTimes;
 		this.retryIntervalMilli = retryIntervalMilli;
-		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(this.retryTimes, this.retryIntervalMilli);
+		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplateWithRetry(this.retryTimes, this.retryIntervalMilli);
 	}
 
 	protected <T> T pollMetaServer(Function<String, T> fun) {
