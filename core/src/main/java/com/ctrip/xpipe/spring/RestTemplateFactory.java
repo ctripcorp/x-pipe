@@ -37,7 +37,13 @@ public class RestTemplateFactory {
         return new RestTemplate();
     }
 
-    public static RestOperations createCommonsHttpRestTemplate(int retryTimes, int retryIntervalMilli) {
+    public static RestOperations createCommonsHttpRestTemplateWithRetry(int retryTimes, int retryIntervalMilli, int connectionTimeout, int soTimeout) {
+        return createCommonsHttpRestTemplate(100, 1000, connectionTimeout, soTimeout, retryTimes,
+                RetryPolicyFactories.newRestOperationsRetryPolicyFactory(retryIntervalMilli));
+    }
+
+
+    public static RestOperations createCommonsHttpRestTemplateWithRetry(int retryTimes, int retryIntervalMilli) {
         return createCommonsHttpRestTemplate(100, 1000, 5000, 5000, retryTimes,
                 RetryPolicyFactories.newRestOperationsRetryPolicyFactory(retryIntervalMilli));
     }
@@ -45,7 +51,7 @@ public class RestTemplateFactory {
 
     public static RestOperations createCommonsHttpRestTemplate() {
 
-        return createCommonsHttpRestTemplate(0, 10);
+        return createCommonsHttpRestTemplateWithRetry(0, 10);
     }
 
     public static RestOperations createCommonsHttpRestTemplate(int maxConnPerRoute, int maxConnTotal,

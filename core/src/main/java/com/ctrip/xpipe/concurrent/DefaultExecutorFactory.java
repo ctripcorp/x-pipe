@@ -13,34 +13,51 @@ import java.util.concurrent.*;
  */
 public class DefaultExecutorFactory implements ExecutorFactory{
 
-    private int corePoolSize = OsUtils.getCpuCount();
+    private static final int DEFAULT_MAX_QUEUE_SIZE = 1 << 20;
+    private static final RejectedExecutionHandler DEFAULT_HANDLER = new ThreadPoolExecutor.CallerRunsPolicy();
+    private static final int DEFAULT_CORE_POOL_SIZE = OsUtils.getCpuCount();
+    private static final int DEFAULT_KEEPER_ALIVE_TIME_SECONDS = 60;
 
-    private int maxPoolSize = 2 * OsUtils.getCpuCount();
+    private int corePoolSize = DEFAULT_CORE_POOL_SIZE;
+
+    private int maxPoolSize = 2 * DEFAULT_CORE_POOL_SIZE;
 
     private int keepAliveTime = 60;
 
     private TimeUnit keepAliveTimeUnit = TimeUnit.SECONDS;
 
-    private BlockingQueue<Runnable> workQueue = new LinkedBlockingDeque<>();
+    private final int maxQueueSize;
 
-    private RejectedExecutionHandler rejectedExecutionHandler = new ThreadPoolExecutor.CallerRunsPolicy();
+    private final BlockingQueue<Runnable> workQueue;
+
+    private final RejectedExecutionHandler rejectedExecutionHandler;
 
     private boolean allowCoreThreadTimeOut = true;
 
-    private String threadNamePrefix;
+    private final String threadNamePrefix;
 
     private ThreadFactory threadFactory;
 
     public DefaultExecutorFactory(String threadNamePrefix, int corePoolSize, boolean allowCoreThreadTimeOut){
-        this(threadNamePrefix, corePoolSize, allowCoreThreadTimeOut, 60, TimeUnit.SECONDS);
+        this(threadNamePrefix, corePoolSize, allowCoreThreadTimeOut,
+                DEFAULT_MAX_QUEUE_SIZE, 60, TimeUnit.SECONDS, DEFAULT_HANDLER);
     }
 
-    public DefaultExecutorFactory(String threadNamePrefix, int corePoolSize, boolean allowCoreThreadTimeOut, int keepAliveTime, TimeUnit keepAliveTimeUnit){
+    public DefaultExecutorFactory(String threadNamePrefix, int corePoolSize, boolean allowCoreThreadTimeOut,
+                                  int maxQueueSize, int keepAliveTime, TimeUnit keepAliveTimeUnit, RejectedExecutionHandler rejectedExecutionHandler){
         this.threadNamePrefix = threadNamePrefix;
         this.corePoolSize = corePoolSize;
         this.allowCoreThreadTimeOut = allowCoreThreadTimeOut;
+        this.maxQueueSize = maxQueueSize;
         this.keepAliveTime = keepAliveTime;
         this.keepAliveTimeUnit = keepAliveTimeUnit;
+        this.workQueue = new LinkedBlockingDeque<>(maxQueueSize);
+        this.rejectedExecutionHandler = rejectedExecutionHandler;
+    }
+
+    public static DefaultExecutorFactory createAllowCoreTimeout(String threadNamePrefix){
+
+        return new DefaultExecutorFactory(threadNamePrefix, DEFAULT_CORE_POOL_SIZE, true);
     }
 
     public static DefaultExecutorFactory createAllowCoreTimeout(String threadNamePrefix, int corePoolSize){
@@ -50,7 +67,39 @@ public class DefaultExecutorFactory implements ExecutorFactory{
 
     public static DefaultExecutorFactory createAllowCoreTimeout(String threadNamePrefix, int corePoolSize, int keepAliveTimeSeconds){
 
-        return new DefaultExecutorFactory(threadNamePrefix, corePoolSize, true, keepAliveTimeSeconds, TimeUnit.SECONDS);
+        return new DefaultExecutorFactory(threadNamePrefix,
+                corePoolSize,
+true,
+                DEFAULT_MAX_QUEUE_SIZE,
+                keepAliveTimeSeconds, TimeUnit.SECONDS, DEFAULT_HANDLER);
+    }
+
+    public static DefaultExecutorFactory createAllowCoreTimeoutAbortPolicy(String threadNamePrefix){
+
+        return new DefaultExecutorFactory(threadNamePrefix,
+                DEFAULT_CORE_POOL_SIZE,
+                true,
+                DEFAULT_MAX_QUEUE_SIZE,
+                DEFAULT_KEEPER_ALIVE_TIME_SECONDS, TimeUnit.SECONDS, new ThreadPoolExecutor.AbortPolicy());
+    }
+
+    public static DefaultExecutorFactory createAllowCoreTimeoutAbortPolicy(String threadNamePrefix, int corePoolSize){
+
+        return new DefaultExecutorFactory(threadNamePrefix,
+                corePoolSize,
+                true,
+                DEFAULT_MAX_QUEUE_SIZE,
+                DEFAULT_KEEPER_ALIVE_TIME_SECONDS, TimeUnit.SECONDS, new ThreadPoolExecutor.AbortPolicy());
+    }
+
+
+    public static DefaultExecutorFactory createAllowCoreTimeoutAbortPolicy(String threadNamePrefix, int corePoolSize, int keepAliveTimeSeconds){
+
+        return new DefaultExecutorFactory(threadNamePrefix,
+                corePoolSize,
+                true,
+                DEFAULT_MAX_QUEUE_SIZE,
+                keepAliveTimeSeconds, TimeUnit.SECONDS, new ThreadPoolExecutor.AbortPolicy());
     }
 
 
