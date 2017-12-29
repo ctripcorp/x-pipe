@@ -8,6 +8,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -56,6 +58,23 @@ public class HealthStatusTest extends AbstractConsoleTest {
     }
 
     @Test
+    public void testSetUp() {
+
+        int count = 3000;
+        List<HealthStatus> allHealth = new LinkedList<>();
+
+        long begin = System.nanoTime();
+
+        for (int i = 0; i < count; i++) {
+            HealthStatus healthStatus = new HealthStatus(hostPort, () -> 10000, () -> healthDelayMilli, scheduled);
+            healthStatus.delay(1);
+        }
+
+        long end = System.nanoTime();
+        logger.info("{} us", (end - begin) / 1000);
+    }
+
+    @Test
     public void testToString() {
 
         HealthStatus healthStatus = new HealthStatus(hostPort, () -> downAfterMilli, () -> healthDelayMilli, scheduled);
@@ -70,9 +89,23 @@ public class HealthStatusTest extends AbstractConsoleTest {
         }
 
         long end = System.currentTimeMillis();
-        logger.info("{} us", (end - begin)*1000/count);
+        logger.info("{} us", (end - begin) * 1000 / count);
 
     }
 
+
+    @Test
+    public void testCalculateFromFistDelay(){
+
+        HealthStatus healthStatus = new HealthStatus(hostPort, () -> downAfterMilli, () -> healthDelayMilli, scheduled);
+        sleep((int) (downAfterMilli * 1.5));
+        Assert.assertEquals(HEALTH_STATE.UNKNOWN, healthStatus.getState());
+
+        healthStatus.delay(healthDelayMilli);
+        Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
+        sleep((int) (downAfterMilli * 1.5));
+        Assert.assertEquals(HEALTH_STATE.DOWN, healthStatus.getState());
+
+    }
 
 }
