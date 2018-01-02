@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
+import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
@@ -39,21 +40,17 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	@Test
 	public void findShard(){
 
-		ShardMeta shardMeta = metaManager.findShardMetaWithParent(new HostPort("127.0.0.1", 8000));
+		XpipeMetaManager.MetaDesc metaDesc = metaManager.findMetaDesc(new HostPort("127.0.0.1", 8000));
 
-		Assert.assertEquals("shard1", shardMeta.getId());
-		Assert.assertNotNull(shardMeta.parent());
-		Assert.assertEquals("cluster1", shardMeta.parent().getId());
-		Assert.assertNotNull(shardMeta.parent().parent());
-		Assert.assertEquals("jq", shardMeta.parent().parent().getId());
+		Assert.assertEquals("jq", metaDesc.getDcId());
+		Assert.assertEquals("cluster1", metaDesc.getClusterId());
+		Assert.assertEquals("shard1", metaDesc.getShardId());
 
 
-		shardMeta = metaManager.findShardMetaWithParent(new HostPort("127.0.0.1", 6000));
-		Assert.assertEquals("shard1", shardMeta.getId());
-		Assert.assertNotNull(shardMeta.parent());
-		Assert.assertEquals("cluster1", shardMeta.parent().getId());
-		Assert.assertNotNull(shardMeta.parent().parent());
-		Assert.assertEquals("jq", shardMeta.parent().parent().getId());
+		metaDesc = metaManager.findMetaDesc(new HostPort("127.0.0.1", 6000));
+		Assert.assertEquals("jq", metaDesc.getDcId());
+		Assert.assertEquals("cluster1", metaDesc.getClusterId());
+		Assert.assertEquals("shard1", metaDesc.getShardId());
 	}
 	
 	@Test
@@ -61,6 +58,13 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		
 		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId, shardId));
 		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId, null));
+	}
+
+	@Test
+	public void testGetRedisMaster(){
+
+		Pair<String, RedisMeta> redisMaster = metaManager.getRedisMaster("cluster1", "shard1");
+		Assert.assertEquals("jq", redisMaster.getKey());
 	}
 	
 	@Test
