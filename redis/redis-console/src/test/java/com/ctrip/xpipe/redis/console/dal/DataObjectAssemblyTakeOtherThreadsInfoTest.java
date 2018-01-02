@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
