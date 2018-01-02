@@ -2,8 +2,6 @@ package com.ctrip.xpipe.redis.console.health.console;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.junit.Assert;
 import org.junit.Before;
@@ -13,10 +11,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
-
-import java.util.Date;
-
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**

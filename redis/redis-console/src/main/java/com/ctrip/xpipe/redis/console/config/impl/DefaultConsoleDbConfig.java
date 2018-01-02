@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.config.AbstractConfigBean;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
