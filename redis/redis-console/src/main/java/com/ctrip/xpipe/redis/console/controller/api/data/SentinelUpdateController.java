@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,15 +25,15 @@ import java.util.List;
 public class SentinelUpdateController {
 
     @Autowired
-    private SentinelService sentinelService;
+    private ClusterService clusterService;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    @RequestMapping(value = "/dc/{dcName}/reBalance/sentinels/{num}", method = RequestMethod.POST)
-    public RetMessage reBalanceSentinels(@PathVariable String dcName, @PathVariable int numOfClusters) {
+    @RequestMapping(value = "/reBalance/sentinels/{numOfClusters}", method = RequestMethod.POST)
+    public RetMessage reBalanceSentinels(@PathVariable int numOfClusters) {
         logger.info("[reBalanceSentinels] Start re-balance sentinels for {} clusters", numOfClusters);
         try {
-            List<String> modifiedClusters = sentinelService.reBalanceSentinels(dcName, numOfClusters);
+            List<String> modifiedClusters = clusterService.reBalanceSentinels(numOfClusters);
             logger.info("[reBalanceSentinels] Successfully balanced {} clusters", numOfClusters);
             return RetMessage.createSuccessMessage("clusters: " + JSON.toJSONString(modifiedClusters));
         } catch (Exception e) {
@@ -41,9 +42,9 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = "/dc/{dcName}/reBalance/sentinels", method = RequestMethod.POST)
-    public RetMessage reBalanceSentinels(@PathVariable String dcName) {
+    @RequestMapping(value = "/reBalance/sentinels", method = RequestMethod.POST)
+    public RetMessage reBalanceSentinels() {
         logger.info("[reBalanceSentinels] Re-balance all clusters");
-        return reBalanceSentinels(dcName, 0);
+        return reBalanceSentinels(0);
     }
 }

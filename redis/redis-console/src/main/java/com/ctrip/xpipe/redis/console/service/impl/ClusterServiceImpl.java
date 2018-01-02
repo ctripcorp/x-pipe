@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
@@ -10,7 +11,9 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -39,7 +42,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     @Autowired
     private SentinelService sentinelService;
 
-	private Random random;
+	private Random random = new Random();
 	
 	@Override
 	public ClusterTbl find(final String clusterName) {
@@ -343,15 +346,21 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return matcher.find();
 	}
 
+
+	/**
+	 * Randomly re-balance sentinel assignment for clusters among dcs
+	 * Pick all clusters if @param numOfClusters is 0*/
 	@Override
-	public List<String> reBalanceSentinels(int numOfClusters) {
+	public List<String> reBalanceSentinels(final int numOfClusters) {
 		List<String> clusters = randomlyChosenClusters(findAllClusterNames(), numOfClusters);
 		logger.info("[reBalanceSentinels] pick up clusters: {}", clusters);
 		doReBalance(clusters);
+		announceReBalance(clusters);
 		return clusters;
 	}
 
-	private List<String> randomlyChosenClusters(List<String> clusters, int num) {
+	// randomly get 'numOfClusters' cluster names, return all if 'numOfClusters' is 0, or clusters is empty
+	private List<String> randomlyChosenClusters(final List<String> clusters, final int num) {
 		if(num < 1 || clusters == null || clusters.isEmpty()) return clusters;
 		if(random == null) {
 			random = new Random();
@@ -366,7 +375,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return new LinkedList<>(result);
 	}
 
-	private void doReBalance(List<String> clusters) {
+	@VisibleForTesting
+	protected void doReBalance(final List<String> clusters) {
         List<String> dcNames = dcService.findAllDcNames().stream()
                 .map(dcTbl -> dcTbl.getDcName()).collect(Collectors.toList());
         Map<String, List<SetinelTbl>> dcToSentinels = getDcNameMappedSentinels(dcNames);
@@ -375,7 +385,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
 	}
 
-	private Map<String, List<SetinelTbl>> getDcNameMappedSentinels(List<String> dcNames) {
+	// Cache {dc name} -> List {SentinelTbl}
+	private Map<String, List<SetinelTbl>> getDcNameMappedSentinels(final List<String> dcNames) {
 	    Map<String, List<SetinelTbl>> map = Maps.newHashMap();
 	    for(String dc : dcNames) {
             List<SetinelTbl> sentinels = sentinelService.findAllByDcName(dc);
@@ -384,11 +395,44 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         return map;
     }
 
+    // Add transaction for one cluster update, rollback if one 'DcClusterShard' update fails
+	@VisibleForTesting
 	@DalTransaction
-	private void balanceCluster(Map<String, List<SetinelTbl>> dcToSentinels, String cluster) {
+	protected void balanceCluster(Map<String, List<SetinelTbl>> dcToSentinels, final String cluster) {
+
 		for(String dcName : dcToSentinels.keySet()) {
 			List<DcClusterShardTbl> dcClusterShards = dcClusterShardService.findAllByDcCluster(dcName, cluster);
-			
+			List<SetinelTbl> sentinels = dcToSentinels.get(dcName);
+			if(dcClusterShards == null || sentinels == null) {
+				throw new XpipeRuntimeException("DcClusterShard | Sentinels should not be null");
+			}
+            long randomlySelectedSentinelId = randomlyChoseSentinels(sentinels);
+			dcClusterShards.forEach(dcClusterShard -> {
+				dcClusterShard.setSetinelId(randomlySelectedSentinelId);
+				try {
+					dcClusterShardService.updateDcClusterShard(dcClusterShard);
+				} catch (DalException e) {
+					throw new XpipeRuntimeException(e.getMessage());
+				}
+			});
+		}
+	}
+
+	@VisibleForTesting
+	protected long randomlyChoseSentinels(List<SetinelTbl> sentinels) {
+		int randomNum = Math.abs(random.nextInt());
+		int randomIndex = randomNum % sentinels.size();
+		return sentinels.get(randomIndex).getSetinelId();
+	}
+
+	// update info with meta server, update sentinel changes
+	private void announceReBalance(final List<String> clusters) {
+		List<String> dcNames = dcService.findAllDcNames().stream()
+				.map(dcTbl -> dcTbl.getDcName()).collect(Collectors.toList());
+		for(String dc : dcNames) {
+			for(String cluster : clusters) {
+				notifier.notifyClusterUpdate(dc, cluster);
+			}
 		}
 	}
 }
