@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.health.redismaster;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -16,12 +17,11 @@ public class RedisMasterSamplePlan extends BaseSamplePlan<InstanceRedisMasterRes
     private int masterPort;
     private String dcName;
 
-    private List<RedisMeta> redises;
+    private List<RedisMeta> redises = new LinkedList<>();
 
-    public RedisMasterSamplePlan(String dcName, String clusterId, String shardId, List<RedisMeta> redises) {
+    public RedisMasterSamplePlan(String dcName, String clusterId, String shardId) {
         super(clusterId, shardId);
         this.dcName = dcName;
-        this.redises = redises;
     }
 
     public void addRedis(String dcId, RedisMeta redisMeta, InstanceRedisMasterResult result) {
@@ -32,6 +32,7 @@ public class RedisMasterSamplePlan extends BaseSamplePlan<InstanceRedisMasterRes
             super.addRedis(dcId, redisMeta, result);
         }
 
+        redises.add(redisMeta);
     }
 
     public String getDcName() {

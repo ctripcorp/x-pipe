@@ -110,7 +110,7 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 	}
 
 	@Override
-	protected BaseSamplePlan<InstanceDelayResult> createPlan(String clusterId, String shardId) {
+	protected BaseSamplePlan<InstanceDelayResult> createPlan(String dcId, String clusterId, String shardId) {
 		return new DelaySamplePlan(clusterId, shardId);
 	}
 

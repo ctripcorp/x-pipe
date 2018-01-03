@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.health.redismaster;
 
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
@@ -17,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -39,7 +42,12 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
     @Autowired
     private RedisService redisService;
 
-    private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("RedisMasterCorrector"));
+    private ExecutorService executors;
+
+    @PostConstruct
+    public void postConstructDefaultRedisMasterCollector(){
+        executors = DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("RedisMasterCorrector").createExecutorService();
+    }
 
     @Override
     public void collect(Sample<InstanceRedisMasterResult> sample) {
@@ -51,7 +59,7 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
             correct(plan);
         }else {
             Map.Entry<HostPort, InstanceRedisMasterResult> next = hostPort2SampleResult.entrySet().iterator().next();
-            if(!next.getValue().roleIsMaster()){
+            if(next.getValue().roleIsSlave()){
                 logger.info("[collect][role not right]{}, {}", plan, next);
                 correct(plan);
             }
@@ -129,4 +137,10 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
         }
         return  false;
     }
+
+    @PreDestroy
+    public void preDestroyDefaultRedisMasterCollector(){
+        executors.shutdown();
+    }
+
 }

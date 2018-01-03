@@ -3,18 +3,10 @@ package com.ctrip.xpipe.redis.console.health.redismaster;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -23,7 +15,7 @@ import java.util.Map;
  */
 @Component
 @Lazy
-public class DefaultRedisMasterMonitor extends BaseSampleMonitor<InstanceRedisMasterResult>{
+public class DefaultRedisMasterMonitor extends AbstractRedisConfMonitor<InstanceRedisMasterResult>{
 
     @Autowired
     private RedisMasterCollector redisMasterCollector;
@@ -34,8 +26,7 @@ public class DefaultRedisMasterMonitor extends BaseSampleMonitor<InstanceRedisMa
     }
 
     @Override
-    public void startSample(BaseSamplePlan<InstanceRedisMasterResult> rawPlan) throws SampleException {
-
+    protected void doStartSample(BaseSamplePlan<InstanceRedisMasterResult> rawPlan) {
         RedisMasterSamplePlan plan = (RedisMasterSamplePlan) rawPlan;
         long startNanoTime = recordSample(plan);
         try{
@@ -44,6 +35,7 @@ public class DefaultRedisMasterMonitor extends BaseSampleMonitor<InstanceRedisMa
             addInstanceSuccess(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), Server.SERVER_ROLE.UNKNOWN.toString());
             log.error("[startSample]" + plan, e);
         }
+
     }
 
     private void sampleRole(final long startNanoTime, RedisMasterSamplePlan plan) {
@@ -65,42 +57,18 @@ public class DefaultRedisMasterMonitor extends BaseSampleMonitor<InstanceRedisMa
     }
 
     @Override
-    public Collection<BaseSamplePlan<InstanceRedisMasterResult>> generatePlan(List<DcMeta> dcMetas) {
-
-        Map<Pair<String, String>, BaseSamplePlan<InstanceRedisMasterResult>> plans = new HashMap<>();
-
-        for (DcMeta dcMeta : dcMetas) {
-            for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-
-                if(!isActiveDc(dcMeta.getId(), clusterMeta.getActiveDc())){
-                    continue;
-                }
-
-                for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
-                    Pair<String, String> cs = new Pair<>(clusterMeta.getId(), shardMeta.getId());
-                    RedisMasterSamplePlan plan = (RedisMasterSamplePlan) plans.get(cs);
-                    if (plan == null) {
-                        plan = new RedisMasterSamplePlan(dcMeta.getId(), clusterMeta.getId(), shardMeta.getId(), shardMeta.getRedises());
-                        plans.put(cs, plan);
-                    }
-
-                    for (RedisMeta redisMeta : shardMeta.getRedises()) {
-                        plan.addRedis(dcMeta.getId(), redisMeta, new InstanceRedisMasterResult());
-                    }
-                }
-            }
-        }
-        return plans.values();
+    protected boolean addCluster(String dcName, ClusterMeta clusterMeta) {
+        return isActiveDc(dcName, clusterMeta.getActiveDc());
     }
 
     @Override
     protected void addRedis(BaseSamplePlan<InstanceRedisMasterResult> plan, String dcId, RedisMeta redisMeta) {
-        throw new UnsupportedOperationException();
+        plan.addRedis(dcId, redisMeta, new InstanceRedisMasterResult());
     }
 
     @Override
-    protected BaseSamplePlan<InstanceRedisMasterResult> createPlan(String clusterId, String shardId) {
-        throw new UnsupportedOperationException();
+    protected BaseSamplePlan<InstanceRedisMasterResult> createPlan(String dcId, String clusterId, String shardId) {
+        return new RedisMasterSamplePlan(dcId, clusterId, shardId);
     }
 
     private boolean isActiveDc(String currentDc, String clusterActiveDc) {

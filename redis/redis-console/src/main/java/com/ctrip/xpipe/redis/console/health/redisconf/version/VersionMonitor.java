@@ -62,7 +62,7 @@ public class VersionMonitor extends AbstractRedisConfMonitor<VersionInstanceResu
     }
 
     @Override
-    protected BaseSamplePlan<VersionInstanceResult> createPlan(String clusterId, String shardId) {
+    protected BaseSamplePlan<VersionInstanceResult> createPlan(String dcId, String clusterId, String shardId) {
         return new VersionSamplePlan(clusterId, shardId);
     }
 
