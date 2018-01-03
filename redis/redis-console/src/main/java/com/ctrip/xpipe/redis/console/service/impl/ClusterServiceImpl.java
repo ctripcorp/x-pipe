@@ -360,7 +360,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
     // randomly get 'numOfClusters' cluster names
 	private List<String> randomlyChosenClusters(final List<String> clusters, final int num) {
-		if(clusters == null || clusters.isEmpty() || num <= clusters.size()) return clusters;
+		if(clusters == null || clusters.isEmpty() || num >= clusters.size()) return clusters;
 		if(random == null) {
 			random = new Random();
 		}
