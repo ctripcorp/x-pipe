@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.google.common.collect.Maps;
@@ -32,15 +33,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     @Autowired
     private ShardService shardService;
 
+    @Autowired
+    private DcService dcService;
+
     private ClusterServiceImpl clusterServiceImpl = new ClusterServiceImpl();
 
     @Autowired
     private DcClusterShardServiceImpl dcClusterShardService;
-
-    @Before
-    public void beforeClusterServiceImplTest() {
-        MockitoAnnotations.initMocks(this);
-    }
 
     @Test
     public void testCreateCluster(){
@@ -170,17 +169,20 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         map.put(dcNames[1], setinelTbls2);
         ClusterTbl clusterTbl = clusterService.find(clusterName);
 
+        List<DcTbl> dcTbls = dcService.findAllDcs();
+        logger.info("dcTbls: {}", dcTbls);
+        long []dcIds = new long[] {dcTbls.get(0).getId(), dcTbls.get(1).getId()};
 
         Map<Long, SetinelTbl> dcToSentinel = Maps.newHashMap();
-        dcToSentinel.put(0L, setinelTbls1.get(0));
-        dcToSentinel.put(1L, setinelTbls2.get(0));
+        dcToSentinel.put(dcIds[0], setinelTbls1.get(0));
+        dcToSentinel.put(dcIds[1], setinelTbls2.get(0));
         ShardTbl shard1 = new ShardTbl().setShardName("cluster1shard1test").setSetinelMonitorName("cluster1shard1monitor")
                 .setClusterId(clusterTbl.getId()).setDeleted(false).setClusterInfo(clusterTbl);
         ShardTbl shard2 = new ShardTbl().setShardName("cluster1shard2test").setSetinelMonitorName("cluster1shard2monitor")
                 .setClusterId(clusterTbl.getId()).setDeleted(false).setClusterInfo(clusterTbl);
         shardService.createShard(clusterName, shard1, dcToSentinel);
-        dcToSentinel.put(0L, setinelTbls1.get(1));
-        dcToSentinel.put(1L, setinelTbls2.get(1));
+        dcToSentinel.put(dcIds[0], setinelTbls1.get(1));
+        dcToSentinel.put(dcIds[1], setinelTbls2.get(1));
         shardService.createShard(clusterName, shard2, dcToSentinel);
 
         int checkTimes = 10;

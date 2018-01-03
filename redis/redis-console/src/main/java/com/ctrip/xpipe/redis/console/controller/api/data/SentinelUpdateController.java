@@ -28,6 +28,8 @@ public class SentinelUpdateController {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
+    private static final int DEFAULT_NUM_OF_CLUSTERS = 10;
+
     @RequestMapping(value = "/reBalance/sentinels/{numOfClusters}", method = RequestMethod.POST)
     public RetMessage reBalanceSentinels(@PathVariable int numOfClusters) {
         logger.info("[reBalanceSentinels] Start re-balance sentinels for {} clusters", numOfClusters);
@@ -44,6 +46,6 @@ public class SentinelUpdateController {
     @RequestMapping(value = "/reBalance/sentinels", method = RequestMethod.POST)
     public RetMessage reBalanceSentinels() {
         logger.info("[reBalanceSentinels] Re-balance all clusters");
-        return reBalanceSentinels(0);
+        return reBalanceSentinels(DEFAULT_NUM_OF_CLUSTERS);
     }
 }
