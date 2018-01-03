@@ -16,7 +16,9 @@ public class DefaultExecutorFactory implements ExecutorFactory{
     private static final int DEFAULT_MAX_QUEUE_SIZE = 1 << 20;
     private static final RejectedExecutionHandler DEFAULT_HANDLER = new ThreadPoolExecutor.CallerRunsPolicy();
     private static final int DEFAULT_CORE_POOL_SIZE = OsUtils.getCpuCount();
+    private static final int DEFAULT_MAX_POOL_SIZE = 5 * OsUtils.getCpuCount();
     private static final int DEFAULT_KEEPER_ALIVE_TIME_SECONDS = 60;
+    private static final boolean DEFAULT_ALLOW_CORE_THREAD_TIMEOUT = true;
 
     private int corePoolSize = DEFAULT_CORE_POOL_SIZE;
 
@@ -38,16 +40,29 @@ public class DefaultExecutorFactory implements ExecutorFactory{
 
     private ThreadFactory threadFactory;
 
+    public DefaultExecutorFactory(String threadNamePrefix, int corePoolSize, int maxPoolSize){
+        this(threadNamePrefix, corePoolSize, DEFAULT_ALLOW_CORE_THREAD_TIMEOUT, maxPoolSize,
+                DEFAULT_MAX_QUEUE_SIZE, 60, TimeUnit.SECONDS, DEFAULT_HANDLER);
+    }
+
+    public DefaultExecutorFactory(String threadNamePrefix, int corePoolSize, int maxPoolSize, RejectedExecutionHandler rejectedExecutionHandler){
+        this(threadNamePrefix, corePoolSize, DEFAULT_ALLOW_CORE_THREAD_TIMEOUT, maxPoolSize,
+                DEFAULT_MAX_QUEUE_SIZE, 60, TimeUnit.SECONDS, rejectedExecutionHandler);
+    }
+
+
     public DefaultExecutorFactory(String threadNamePrefix, int corePoolSize, boolean allowCoreThreadTimeOut){
-        this(threadNamePrefix, corePoolSize, allowCoreThreadTimeOut,
+        this(threadNamePrefix, corePoolSize, allowCoreThreadTimeOut, DEFAULT_MAX_POOL_SIZE,
                 DEFAULT_MAX_QUEUE_SIZE, 60, TimeUnit.SECONDS, DEFAULT_HANDLER);
     }
 
     public DefaultExecutorFactory(String threadNamePrefix, int corePoolSize, boolean allowCoreThreadTimeOut,
+                                  int maxPoolSize,
                                   int maxQueueSize, int keepAliveTime, TimeUnit keepAliveTimeUnit, RejectedExecutionHandler rejectedExecutionHandler){
         this.threadNamePrefix = threadNamePrefix;
         this.corePoolSize = corePoolSize;
         this.allowCoreThreadTimeOut = allowCoreThreadTimeOut;
+        this.maxPoolSize = maxPoolSize;
         this.maxQueueSize = maxQueueSize;
         this.keepAliveTime = keepAliveTime;
         this.keepAliveTimeUnit = keepAliveTimeUnit;
@@ -70,6 +85,7 @@ public class DefaultExecutorFactory implements ExecutorFactory{
         return new DefaultExecutorFactory(threadNamePrefix,
                 corePoolSize,
 true,
+                DEFAULT_MAX_POOL_SIZE,
                 DEFAULT_MAX_QUEUE_SIZE,
                 keepAliveTimeSeconds, TimeUnit.SECONDS, DEFAULT_HANDLER);
     }
@@ -79,6 +95,7 @@ true,
         return new DefaultExecutorFactory(threadNamePrefix,
                 DEFAULT_CORE_POOL_SIZE,
                 true,
+                DEFAULT_MAX_POOL_SIZE,
                 DEFAULT_MAX_QUEUE_SIZE,
                 DEFAULT_KEEPER_ALIVE_TIME_SECONDS, TimeUnit.SECONDS, new ThreadPoolExecutor.AbortPolicy());
     }
@@ -88,6 +105,7 @@ true,
         return new DefaultExecutorFactory(threadNamePrefix,
                 corePoolSize,
                 true,
+                DEFAULT_MAX_POOL_SIZE,
                 DEFAULT_MAX_QUEUE_SIZE,
                 DEFAULT_KEEPER_ALIVE_TIME_SECONDS, TimeUnit.SECONDS, new ThreadPoolExecutor.AbortPolicy());
     }
@@ -98,6 +116,7 @@ true,
         return new DefaultExecutorFactory(threadNamePrefix,
                 corePoolSize,
                 true,
+                DEFAULT_MAX_POOL_SIZE,
                 DEFAULT_MAX_QUEUE_SIZE,
                 keepAliveTimeSeconds, TimeUnit.SECONDS, new ThreadPoolExecutor.AbortPolicy());
     }
