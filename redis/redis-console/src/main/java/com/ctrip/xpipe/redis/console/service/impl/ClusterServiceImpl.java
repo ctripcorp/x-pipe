@@ -336,4 +336,87 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(email);
 		return matcher.find();
 	}
+<<<<<<< HEAD
+=======
+
+
+	/**
+	 * Randomly re-balance sentinel assignment for clusters among dcs
+     * */
+	@Override
+	public List<String> reBalanceSentinels(final int numOfClusters) {
+		List<String> clusters = randomlyChosenClusters(findAllClusterNames(), numOfClusters);
+		logger.info("[reBalanceSentinels] pick up clusters: {}", clusters);
+
+		doReBalance(clusters);
+		return clusters;
+	}
+
+    // randomly get 'numOfClusters' cluster names
+	private List<String> randomlyChosenClusters(final List<String> clusters, final int num) {
+		if(clusters == null || clusters.isEmpty() || num >= clusters.size()) return clusters;
+		if(random == null) {
+			random = new Random();
+		}
+		int bound = clusters.size(), index = random.nextInt(bound);
+		Set<String> result = new HashSet<>();
+		for(int count = 0; count < num; count++) {
+			while (index < 0 || !result.add(clusters.get(index))) {
+				index = random.nextInt(bound);
+			}
+		}
+		return new LinkedList<>(result);
+	}
+
+	@VisibleForTesting
+	protected void doReBalance(final List<String> clusters) {
+        List<String> dcNames = dcService.findAllDcNames().stream()
+                .map(dcTbl -> dcTbl.getDcName()).collect(Collectors.toList());
+        Map<String, List<SetinelTbl>> dcToSentinels = getDcNameMappedSentinels(dcNames);
+        for(String cluster : clusters) {
+            balanceCluster(dcToSentinels, cluster);
+        }
+	}
+
+	// Cache {dc name} -> List {SentinelTbl}
+	private Map<String, List<SetinelTbl>> getDcNameMappedSentinels(final List<String> dcNames) {
+	    Map<String, List<SetinelTbl>> map = Maps.newHashMap();
+	    for(String dc : dcNames) {
+            List<SetinelTbl> sentinels = sentinelService.findAllByDcName(dc);
+            map.put(dc, sentinels);
+        }
+        return map;
+    }
+
+    // Add transaction for one cluster update, rollback if one 'DcClusterShard' update fails
+	@VisibleForTesting
+	@DalTransaction
+	protected void balanceCluster(Map<String, List<SetinelTbl>> dcToSentinels, final String cluster) {
+
+		for(String dcName : dcToSentinels.keySet()) {
+			List<DcClusterShardTbl> dcClusterShards = dcClusterShardService.findAllByDcCluster(dcName, cluster);
+			List<SetinelTbl> sentinels = dcToSentinels.get(dcName);
+			if(dcClusterShards == null || sentinels == null) {
+				throw new XpipeRuntimeException("DcClusterShard | Sentinels should not be null");
+			}
+            long randomlySelectedSentinelId = randomlyChoseSentinels(sentinels);
+			dcClusterShards.forEach(dcClusterShard -> {
+				dcClusterShard.setSetinelId(randomlySelectedSentinelId);
+				try {
+					dcClusterShardService.updateDcClusterShard(dcClusterShard);
+				} catch (DalException e) {
+					throw new XpipeRuntimeException(e.getMessage());
+				}
+			});
+		}
+	}
+
+	@VisibleForTesting
+	protected long randomlyChoseSentinels(List<SetinelTbl> sentinels) {
+		int randomNum = Math.abs(random.nextInt());
+		int randomIndex = randomNum % sentinels.size();
+		return sentinels.get(randomIndex).getSetinelId();
+	}
+
+>>>>>>> a13b60e6... modify default value for non-input of numOfClusters
 }
