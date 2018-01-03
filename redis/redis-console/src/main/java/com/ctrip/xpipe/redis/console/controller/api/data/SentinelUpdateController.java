@@ -45,7 +45,6 @@ public class SentinelUpdateController {
 
     @RequestMapping(value = "/reBalance/sentinels", method = RequestMethod.POST)
     public RetMessage reBalanceSentinels() {
-        logger.info("[reBalanceSentinels] Re-balance all clusters");
         return reBalanceSentinels(DEFAULT_NUM_OF_CLUSTERS);
     }
 }

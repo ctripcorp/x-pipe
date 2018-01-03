@@ -145,7 +145,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     @Test
     public void testReBalanceSentinels2() {
-        List<String> clusters = clusterService.reBalanceSentinels(0);
+        List<String> clusters = clusterService.reBalanceSentinels(10);
         Assert.assertEquals(clusterService.findAllClusterNames().size(), clusters.size());
         logger.info("Changed clusters: {}", clusters);
     }
@@ -187,7 +187,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
         int checkTimes = 10;
         while(checkTimes -- > 0) {
-            clusterService.reBalanceSentinels(0);
+            clusterService.reBalanceSentinels(10);
             DcClusterShardTbl dcClusterShardTbl1 = dcClusterShardService.find(dcNames[0], clusterName, shard1.getShardName());
             DcClusterShardTbl dcClusterShardTbl2 = dcClusterShardService.find(dcNames[0], clusterName, shard2.getShardName());
             Assert.assertEquals(dcClusterShardTbl1.getSetinelId(), dcClusterShardTbl2.getSetinelId());
