@@ -348,19 +348,19 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	/**
 	 * Randomly re-balance sentinel assignment for clusters among dcs
-	 * Pick all clusters if @param numOfClusters is 0*/
+     * */
 	@Override
 	public List<String> reBalanceSentinels(final int numOfClusters) {
 		List<String> clusters = randomlyChosenClusters(findAllClusterNames(), numOfClusters);
 		logger.info("[reBalanceSentinels] pick up clusters: {}", clusters);
+
 		doReBalance(clusters);
-		announceReBalance(clusters);
 		return clusters;
 	}
 
-	// randomly get 'numOfClusters' cluster names, return all if 'numOfClusters' is 0, or clusters is empty
+    // randomly get 'numOfClusters' cluster names
 	private List<String> randomlyChosenClusters(final List<String> clusters, final int num) {
-		if(num < 1 || clusters == null || clusters.isEmpty()) return clusters;
+		if(clusters == null || clusters.isEmpty() || num <= clusters.size()) return clusters;
 		if(random == null) {
 			random = new Random();
 		}
@@ -424,14 +424,4 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return sentinels.get(randomIndex).getSetinelId();
 	}
 
-	// update info with meta server, update sentinel changes
-	private void announceReBalance(final List<String> clusters) {
-		List<String> dcNames = dcService.findAllDcNames().stream()
-				.map(dcTbl -> dcTbl.getDcName()).collect(Collectors.toList());
-		for(String dc : dcNames) {
-			for(String cluster : clusters) {
-				notifier.notifyClusterUpdate(dc, cluster);
-			}
-		}
-	}
 }
