@@ -110,7 +110,7 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
     }
 
     @Override
-    protected BaseSamplePlan<InstanceSentinelResult> createPlan(String clusterId, String shardId) {
+    protected BaseSamplePlan<InstanceSentinelResult> createPlan(String dcId, String clusterId, String shardId) {
         return new SentinelSamplePlan(clusterId, shardId);
     }
 

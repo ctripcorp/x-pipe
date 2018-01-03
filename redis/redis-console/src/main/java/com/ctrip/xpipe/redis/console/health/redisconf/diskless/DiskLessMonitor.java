@@ -72,7 +72,7 @@ public class DiskLessMonitor extends AbstractRedisConfMonitor<DiskLessInstanceRe
     }
 
     @Override
-    protected BaseSamplePlan<DiskLessInstanceResult> createPlan(String clusterId, String shardId) {
+    protected BaseSamplePlan<DiskLessInstanceResult> createPlan(String dcId, String clusterId, String shardId) {
         return new DiskLessSamplePlan(clusterId, shardId);
     }
 

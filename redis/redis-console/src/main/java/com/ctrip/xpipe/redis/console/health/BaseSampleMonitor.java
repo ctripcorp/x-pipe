@@ -149,7 +149,10 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 					}
 				}
 				long end = System.currentTimeMillis();
-				log.info("[scan end]count:{}, cost: {} ms", count, end - start);
+				long cost = end - start;
+				if(cost > 10){
+					log.info("[scan end][cost > 10 ms]count:{}, cost: {} ms", count, end - start);
+				}
 
 			}
 
@@ -171,7 +174,7 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 					Pair<String, String> cs = new Pair<>(clusterMeta.getId(), shardMeta.getId());
 					BaseSamplePlan<T> plan = plans.get(cs);
 					if (plan == null) {
-						plan = createPlan(clusterMeta.getId(), shardMeta.getId());
+						plan = createPlan(dcMeta.getId(), clusterMeta.getId(), shardMeta.getId());
 						plans.put(cs, plan);
 					}
 
@@ -192,7 +195,7 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 
 	protected abstract void addRedis(BaseSamplePlan<T> plan, String dcId, RedisMeta redisMeta);
 
-	protected abstract BaseSamplePlan<T> createPlan(String clusterId, String shardId);
+	protected abstract BaseSamplePlan<T> createPlan(String dcId, String clusterId, String shardId);
 
 	@VisibleForTesting
 	public void setSamples(Map<Long, Sample<T>> samples) {

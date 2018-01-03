@@ -51,9 +51,14 @@ public class AppTest extends AbstratAppTest {
 	@Test
 	public void startConsoleWithHealthCheck8080() throws IOException, SQLException {
 
-		System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_PRODUCTION);
-		System.setProperty("server.port", "8080");
-		start();
+		try {
+			startZk(2181);
+			System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_PRODUCTION);
+			System.setProperty("server.port", "8080");
+			start();
+		}catch (Throwable e){
+			logger.error("[]", e);
+		}
 
 	}
 
