@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.servlet.http.HttpServletRequest;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
 
 /**

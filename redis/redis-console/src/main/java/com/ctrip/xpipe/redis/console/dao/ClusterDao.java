@@ -190,4 +190,8 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			}
 		});
 	}
+
+	public void updateDcClusterShards(String dcName, String clusterName) {
+
+	}
 }

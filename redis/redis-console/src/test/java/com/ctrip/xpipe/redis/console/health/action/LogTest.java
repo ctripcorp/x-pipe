@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.console.health.action;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.controller.Health;
-import com.ctrip.xpipe.redis.console.health.action.HealthStatus;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
