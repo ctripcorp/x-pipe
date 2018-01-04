@@ -85,7 +85,7 @@ public class DefaultPingMonitor extends BaseSampleMonitor<InstancePingResult> im
 	}
 
 	@Override
-	protected BaseSamplePlan<InstancePingResult> createPlan(String clusterId, String shardId) {
+	protected BaseSamplePlan<InstancePingResult> createPlan(String dcId, String clusterId, String shardId) {
 
 		return new PingSamplePlan(clusterId, shardId);
 	}

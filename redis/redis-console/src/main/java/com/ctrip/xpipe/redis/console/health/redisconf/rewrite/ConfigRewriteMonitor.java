@@ -67,7 +67,7 @@ public class ConfigRewriteMonitor extends AbstractRedisConfMonitor<InstanceRedis
     }
 
     @Override
-    protected BaseSamplePlan<InstanceRedisConfResult> createPlan(String clusterId, String shardId) {
+    protected BaseSamplePlan<InstanceRedisConfResult> createPlan(String dcId, String clusterId, String shardId) {
 
         return new RedisConfSamplePlan(clusterId, shardId);
     }
