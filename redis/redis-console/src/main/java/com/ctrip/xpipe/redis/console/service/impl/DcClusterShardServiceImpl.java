@@ -54,4 +54,9 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
     	});
 	}
 
+	@Override
+	public void updateDcClusterShard(DcClusterShardTbl dcClusterShardTbl) throws DalException{
+		dao.updateByPK(dcClusterShardTbl, DcClusterShardTblEntity.UPDATESET_FULL);
+	}
+
 }

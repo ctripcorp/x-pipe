@@ -1,14 +1,16 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterModel;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.OrganizationService;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.*;
+import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -22,6 +24,15 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     private OrganizationService organizationService;
+
+    @Autowired
+    private DcClusterShardService dcClusterShardService;
+
+    @Autowired
+    private DcService dcService;
+
+    @Autowired
+    private ShardService shardService;
 
     @Test
     public void testCreateCluster(){
@@ -116,8 +127,6 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         emails = "tetsataemail@";
         Assert.assertFalse(service.checkEmails(emails));
     }
-<<<<<<< HEAD
-=======
 
 
     @Test
@@ -138,6 +147,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     public void testRandomlyChoseSentinels() {
         List<SetinelTbl> setinelTbls = Arrays.asList(new SetinelTbl().setSetinelId(999L),
                 new SetinelTbl().setSetinelId(1000L), new SetinelTbl().setSetinelId(9999L));
+        ClusterServiceImpl clusterServiceImpl = new ClusterServiceImpl();
         long id = clusterServiceImpl.randomlyChoseSentinels(setinelTbls);
         logger.info("id: {}", id);
     }
@@ -177,5 +187,4 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
             Assert.assertEquals(dcClusterShardTbl1.getSetinelId(), dcClusterShardTbl2.getSetinelId());
         }
     }
->>>>>>> a13b60e6... modify default value for non-input of numOfClusters
 }

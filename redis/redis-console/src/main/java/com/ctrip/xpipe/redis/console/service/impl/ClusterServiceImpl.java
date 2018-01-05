@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
@@ -11,15 +12,16 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> implements ClusterService {
@@ -34,6 +36,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private ShardService shardService;
 	@Autowired
 	private OrganizationService organizationService;
+	@Autowired
+	private DcClusterShardService dcClusterShardService;
+	@Autowired
+	private SentinelService sentinelService;
+
+	Random random = new Random();
 	
 	@Override
 	public ClusterTbl find(final String clusterName) {
@@ -336,9 +344,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(email);
 		return matcher.find();
 	}
-<<<<<<< HEAD
-=======
-
 
 	/**
 	 * Randomly re-balance sentinel assignment for clusters among dcs
@@ -417,6 +422,4 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		int randomIndex = randomNum % sentinels.size();
 		return sentinels.get(randomIndex).getSetinelId();
 	}
-
->>>>>>> a13b60e6... modify default value for non-input of numOfClusters
 }
