@@ -8,9 +8,7 @@ import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
@@ -31,15 +29,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     private OrganizationService organizationService;
 
     @Autowired
-    private ShardService shardService;
-
-    @Autowired
     private DcService dcService;
-
-    private ClusterServiceImpl clusterServiceImpl = new ClusterServiceImpl();
 
     @Autowired
     private DcClusterShardServiceImpl dcClusterShardService;
+
+    @Autowired
+    private ShardService shardService;
 
     @Test
     public void testCreateCluster(){
@@ -154,6 +150,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     public void testRandomlyChoseSentinels() {
         List<SetinelTbl> setinelTbls = Arrays.asList(new SetinelTbl().setSetinelId(999L),
                 new SetinelTbl().setSetinelId(1000L), new SetinelTbl().setSetinelId(9999L));
+        ClusterServiceImpl clusterServiceImpl = new ClusterServiceImpl();
         long id = clusterServiceImpl.randomlyChoseSentinels(setinelTbls);
         logger.info("id: {}", id);
     }
