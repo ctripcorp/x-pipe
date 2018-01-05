@@ -38,17 +38,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private OrganizationService organizationService;
 	@Autowired
 	private DcClusterShardService dcClusterShardService;
-<<<<<<< HEAD
-    @Autowired
-    private SentinelService sentinelService;
 
 	private Random random = new Random();
-=======
+
 	@Autowired
 	private SentinelService sentinelService;
-
-	Random random = new Random();
->>>>>>> bugfix/hickwall-alert-much
 	
 	@Override
 	public ClusterTbl find(final String clusterName) {
@@ -352,10 +346,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return matcher.find();
 	}
 
-<<<<<<< HEAD
-
-=======
->>>>>>> bugfix/hickwall-alert-much
 	/**
 	 * Randomly re-balance sentinel assignment for clusters among dcs
      * */
@@ -433,8 +423,4 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		int randomIndex = randomNum % sentinels.size();
 		return sentinels.get(randomIndex).getSetinelId();
 	}
-<<<<<<< HEAD
-
-=======
->>>>>>> bugfix/hickwall-alert-much
 }

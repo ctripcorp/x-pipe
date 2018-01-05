@@ -9,10 +9,6 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.tuple.Pair;
-<<<<<<< HEAD
-=======
-import com.ctrip.xpipe.utils.OsUtils;
->>>>>>> bugfix/hickwall-alert-much
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
@@ -24,10 +20,6 @@ import javax.annotation.PreDestroy;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-<<<<<<< HEAD
-=======
-import java.util.concurrent.ConcurrentMap;
->>>>>>> bugfix/hickwall-alert-much
 import java.util.concurrent.ExecutorService;
 
 /**
