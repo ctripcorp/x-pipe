@@ -1,8 +1,14 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.alibaba.fastjson.JSON;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.SentinelModel;
+import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.SentinelService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,10 +16,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 /**
@@ -25,6 +34,12 @@ public class SentinelUpdateControllerTest {
 
     @Mock
     private ClusterService clusterService;
+
+    @Mock
+    private SentinelService sentinelService;
+
+    @Mock
+    private DcService dcService;
 
     @InjectMocks
     SentinelUpdateController controller = new SentinelUpdateController();
@@ -63,5 +78,17 @@ public class SentinelUpdateControllerTest {
         RetMessage message = controller.reBalanceSentinels(-1);
         Assert.assertEquals(-1, message.getState());
         Assert.assertEquals(expectedMessage, message.getMessage());
+    }
+
+    @Test
+    public void testConvert2SentinelTbl() throws Exception {
+        when(dcService.find(anyString())).thenReturn(new DcTbl().setId(1));
+        SentinelModel sentinelModel = new SentinelModel().setDcName("JQ")
+                .setDesc("test").setSentinels(Arrays.asList(new HostPort("127.0.0.1", 6379),
+                        new HostPort("127.0.0.1", 6380), new HostPort("127.0.0.1", 6381)));
+        SetinelTbl setinelTbl = controller.convert2SentinelTbl(sentinelModel);
+        Assert.assertEquals(1, setinelTbl.getDcId());
+        Assert.assertEquals("test", setinelTbl.getSetinelDescription());
+        Assert.assertEquals("127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381", setinelTbl.getSetinelAddress());
     }
 }
