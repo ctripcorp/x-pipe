@@ -27,7 +27,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
 
     private RedisSession redisSession;
 
-    private static final int COUNT = 200;
+    private static final int COUNT = 2000;
 
     private static final int TIMEOUT = 1000;
 
@@ -39,14 +39,14 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
     @Before
     public void beforeRedisSessionTest() throws Exception {
         int BLOCKED_PORT = 55555;
-        int BLOCK_TIME = 1000 * 20;
+        int BLOCK_TIME = 800;
         String HOST = "127.0.0.1";
         server = startServer(BLOCKED_PORT, new Callable<String>() {
 
             @Override
             public String call() throws Exception {
                 sleep(BLOCK_TIME);
-                return "+OK\r\n";
+                return "+PONG\r\n";
             }
         });
         redisSession = new RedisSession(createRedisClient(HOST, BLOCKED_PORT),
@@ -154,7 +154,30 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         return redis;
     }
 
+    @Test
+    public void testThreadPoolDelay() throws Exception {
+        long timeoutForDelay = 2000L; //ms
+        long begin = System.currentTimeMillis();
+        for(int i = 0; i < COUNT; i++) {
+            redisSession.ping(new PingCallback() {
+                @Override
+                public void pong(String pongMsg) {
+                    System.out.println(System.currentTimeMillis() - begin);
+                    Assert.assertTrue(System.currentTimeMillis() - begin < timeoutForDelay);
+                }
 
+                @Override
+                public void fail(Throwable th) {
+
+                }
+            });
+        }
+        long after = System.currentTimeMillis();
+        Assert.assertTrue(after - begin < TIMEOUT);
+        while(!Thread.currentThread().isInterrupted()) {
+            TimeUnit.SECONDS.sleep(10);
+        }
+    }
 
 
     @After
