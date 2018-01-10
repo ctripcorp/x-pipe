@@ -86,7 +86,7 @@
             <appender-ref ref="catAppender4Log4j2"/>
         </logger>
 
-        <logger name="com.ctrip.xpipe.redis.console.health.action.HealthStatus.delay" level="INFO" additivity="false">
+        <logger name="com.ctrip.xpipe.redis.console.health.action.HealthStatus.delay" level="DEBUG" additivity="false">
             <appender-ref ref="rollingRedisDelay"/>
         </logger>
 
