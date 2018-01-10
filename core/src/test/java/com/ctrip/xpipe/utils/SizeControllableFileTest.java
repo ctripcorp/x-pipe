@@ -13,7 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.FileSize;
 
 /**
@@ -32,36 +31,6 @@ public class SizeControllableFileTest extends AbstractTest {
 	public void beforeSizeControllableFileTest() {
 
 		file = new File(String.format("%s/%s.data", getTestFileDir(), getTestName()));
-	}
-	
-	@Test
-	public void testCloseSize() throws IOException{
-		
-		int dataLen = 1024;
-		AtomicInteger count = new AtomicInteger();
-		
-		ControllableFile controllableFile = new DefaultControllableFile(file){
-			
-			@Override
-			protected void doOpen() throws IOException {
-				super.doOpen();
-				int current = count.incrementAndGet();
-				if(current == 2){
-					getFileChannel().close();
-				}
-				
-			}
-		};
-		
-		controllableFile.getFileChannel().write(ByteBuffer.wrap(randomString(dataLen).getBytes()));
-		
-		Assert.assertEquals(dataLen, controllableFile.size());
-		
-		controllableFile.close();
-		
-		Assert.assertEquals(dataLen, controllableFile.size());
-
-		
 	}
 
 	@Test
