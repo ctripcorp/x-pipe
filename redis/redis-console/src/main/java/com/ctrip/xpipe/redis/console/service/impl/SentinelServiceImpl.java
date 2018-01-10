@@ -5,9 +5,11 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.utils.MapUtils;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -19,6 +21,11 @@ import java.util.*;
 public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> implements SentinelService {
 
 	private DcClusterShardTblDao dcClusterShardTblDao;
+
+	@Autowired
+    private ClusterService clusterService;
+
+	private Random random;
 	
 	@PostConstruct
 	private void postConstruct() {
@@ -141,6 +148,4 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 
 		return setinelTbl;
 	}
-
-
 }

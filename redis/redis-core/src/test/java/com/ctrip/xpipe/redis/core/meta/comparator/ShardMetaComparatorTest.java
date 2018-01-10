@@ -81,6 +81,23 @@ public class ShardMetaComparatorTest extends AbstractComparatorTest{
 		Assert.assertEquals(0, comparator.getRemoved().size());
 		Assert.assertEquals(0, comparator.getMofified().size());
 	}
-	
-	
+
+
+	@Test
+	public void testEqualsWithSentinelIdChanged(){
+
+		//equal
+
+		long currentSentinelId = future.getSentinelId() == null ? 0 : future.getSentinelId();
+		future.setSentinelId( currentSentinelId + 100 );
+
+		ShardMetaComparator comparator = new ShardMetaComparator(current, future);
+		comparator.compare();
+
+		Assert.assertEquals(0, comparator.getAdded().size());
+		Assert.assertEquals(0, comparator.getRemoved().size());
+		Assert.assertEquals(0, comparator.getMofified().size());
+	}
+
+
 }

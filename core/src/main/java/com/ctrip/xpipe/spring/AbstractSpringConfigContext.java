@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.spring;
 
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -36,7 +37,6 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 	public static final String SCHEDULED_EXECUTOR = "scheduledExecutor";
 	public static final String GLOBAL_EXECUTOR = "globalExecutor";
 	public static final int maxScheduledCorePoolSize = 8;
-	public static final int maxGlobalThreads = 512;
 	public static final int THREAD_POOL_TIME_OUT = 5;
 
 
@@ -56,14 +56,11 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 
 	@Bean(name = GLOBAL_EXECUTOR)
 	public ExecutorService getGlobalExecutor() {
-		return MoreExecutors.getExitingExecutorService(
-				new ThreadPoolExecutor(10,
-										maxGlobalThreads,
-										120L, TimeUnit.SECONDS,
-										new SynchronousQueue<>(),
-										XpipeThreadFactory.create(GLOBAL_EXECUTOR),
-										new ThreadPoolExecutor.CallerRunsPolicy()),
-				THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
+
+		int corePoolSize = 5 * OsUtils.getCpuCount();
+		int maxPoolSize =  20 * OsUtils.getCpuCount();
+		DefaultExecutorFactory executorFactory = new DefaultExecutorFactory(GLOBAL_EXECUTOR, corePoolSize, maxPoolSize, new ThreadPoolExecutor.AbortPolicy());
+		return executorFactory.createExecutorService();
 	}
 
 	@Bean

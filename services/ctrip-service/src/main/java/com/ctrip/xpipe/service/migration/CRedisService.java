@@ -26,7 +26,7 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
  */
 public class CRedisService extends AbstractOuterClientService {
 
-	RestOperations restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(3, 100);
+	RestOperations restOperations = RestTemplateFactory.createCommonsHttpRestTemplateWithRetry(3, 100);
 
 	private CatTransactionMonitor catTransactionMonitor = new CatTransactionMonitor();
 

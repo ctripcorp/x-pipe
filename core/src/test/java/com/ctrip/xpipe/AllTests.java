@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.sso.SsoConfigTest;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactoryTest;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManagerTest;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPortTest;
+import com.ctrip.xpipe.lifecycle.*;
 import com.ctrip.xpipe.spring.RestTemplateFactoryTest;
 import com.ctrip.xpipe.tuple.PairTest;
 import com.ctrip.xpipe.utils.*;
@@ -19,11 +20,6 @@ import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutorTest;
 import com.ctrip.xpipe.concurrent.OneThreadTaskExecutorTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
-import com.ctrip.xpipe.lifecycle.CreatedComponentRedistryTest;
-import com.ctrip.xpipe.lifecycle.DefaultLifecycleControllerTest;
-import com.ctrip.xpipe.lifecycle.DefaultLifecycleStateTest;
-import com.ctrip.xpipe.lifecycle.DefaultRegistryTest;
-import com.ctrip.xpipe.lifecycle.SpringComponentRegistryTest;
 import com.ctrip.xpipe.netty.commands.RequestResponseCommandTest;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannelTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
@@ -53,6 +49,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	CreatedComponentRedistryTest.class,
 	SpringComponentRegistryTest.class,
 	DefaultRegistryTest.class,
+	LifecycleObservableAbstractTest.class,
 	OffsetNotifierTest.class,
 	RequestResponseCommandTest.class,
 	CommandRetryWrapperTest.class,

@@ -18,7 +18,12 @@ public class InstanceRedisMasterResult extends BaseInstanceResult<String>{
 
     public boolean roleIsMaster(){
 
-        return Server.SERVER_ROLE.MASTER.toString().equalsIgnoreCase(context);
+        return Server.SERVER_ROLE.MASTER.sameRole(context);
+    }
+
+    public boolean roleIsSlave(){
+
+        return Server.SERVER_ROLE.SLAVE.sameRole(context);
     }
 
 

@@ -17,9 +17,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class SimpleTest extends AbstractSimpleTest {
 
-
     @Test
-    public void testCat(){
+    public void testCat() {
 
         logger.info("begin:{}");
         Cat.newTransaction("type", "name");
@@ -47,7 +46,6 @@ public class SimpleTest extends AbstractSimpleTest {
 
 
         System.out.println("nihaoma");
-
     }
 
     @Test

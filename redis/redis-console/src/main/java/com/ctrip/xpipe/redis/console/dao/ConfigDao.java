@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.console.model.ConfigTblEntity;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
-import org.unidal.dal.jdbc.DalNotFoundException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;

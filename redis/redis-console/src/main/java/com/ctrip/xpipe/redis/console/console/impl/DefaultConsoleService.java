@@ -24,7 +24,7 @@ public class DefaultConsoleService implements ConsoleService{
             this.address = "http://" + this.address;
         }
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
-        this.restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(3, 10);
+        this.restOperations = RestTemplateFactory.createCommonsHttpRestTemplateWithRetry(3, 10, 100, 200);
     }
 
     @Override

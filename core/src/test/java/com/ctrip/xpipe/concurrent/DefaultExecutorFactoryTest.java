@@ -7,8 +7,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 /**
  * @author wenchao.meng
@@ -44,5 +43,33 @@ public class DefaultExecutorFactoryTest extends AbstractTest{
         for(Thread thread : threadList){
             Assert.assertFalse(thread.isAlive());
         }
+    }
+
+    @Test
+    public void testArgument(){
+
+        int maxPoolSize = randomInt(100, 1000);
+        int maxQueueSize = randomInt(100, 1000);
+        int keeperAliveTime = randomInt(30, 60);
+
+        RejectedExecutionHandler rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
+        DefaultExecutorFactory executorFactory = new DefaultExecutorFactory(getTestName(), 2, true, maxPoolSize, maxQueueSize, keeperAliveTime, TimeUnit.SECONDS, rejectedExecutionHandler);
+        ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) executorFactory.createExecutorService();
+
+        Assert.assertEquals(2, threadPoolExecutor.getCorePoolSize());
+        Assert.assertEquals(maxPoolSize, threadPoolExecutor.getMaximumPoolSize());
+        Assert.assertEquals(maxQueueSize, threadPoolExecutor.getQueue().remainingCapacity());
+        Assert.assertEquals(keeperAliveTime, threadPoolExecutor.getKeepAliveTime(TimeUnit.SECONDS));
+        Assert.assertEquals(rejectedExecutionHandler, threadPoolExecutor.getRejectedExecutionHandler());
+    }
+
+    @Test
+    public void testCoreLessThanMax(){
+
+        DefaultExecutorFactory executorFactory = new DefaultExecutorFactory(getTestName(), 2, 1);
+        ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) executorFactory.createExecutorService();
+
+        Assert.assertEquals(2, threadPoolExecutor.getCorePoolSize());
+        Assert.assertEquals(2, threadPoolExecutor.getMaximumPoolSize());
     }
 }

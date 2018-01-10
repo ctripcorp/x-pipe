@@ -49,4 +49,6 @@ public class DecoratorManager {
         String title = scheduledDecorator.generateTitle();
         return new Pair<>(title, content);
     }
+
+
 }
