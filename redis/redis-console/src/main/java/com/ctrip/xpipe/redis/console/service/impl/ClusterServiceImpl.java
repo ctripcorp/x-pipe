@@ -38,11 +38,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private OrganizationService organizationService;
 	@Autowired
 	private DcClusterShardService dcClusterShardService;
-    @Autowired
-    private SentinelService sentinelService;
 
 	private Random random = new Random();
-	
+
+	@Autowired
+	private SentinelService sentinelService;
+
 	@Override
 	public ClusterTbl find(final String clusterName) {
 		return queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
@@ -345,7 +346,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return matcher.find();
 	}
 
-
 	/**
 	 * Randomly re-balance sentinel assignment for clusters among dcs
      * */
@@ -423,5 +423,4 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		int randomIndex = randomNum % sentinels.size();
 		return sentinels.get(randomIndex).getSetinelId();
 	}
-
 }
