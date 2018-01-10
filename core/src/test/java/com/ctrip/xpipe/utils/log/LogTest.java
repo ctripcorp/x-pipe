@@ -14,12 +14,54 @@ import org.springframework.web.client.RestOperations;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+
 /**
  * @author wenchao.meng
  *         <p>
  *         Nov 1, 2016
  */
 public class LogTest extends AbstractTest {
+
+    @Test
+    public void testScript() throws InterruptedException {
+
+        scheduled.scheduleWithFixedDelay(new Runnable() {
+
+            @Override
+            public void run() {
+                logger.info("{}", 1);
+            }
+        }, 0, 1, TimeUnit.MILLISECONDS);
+
+        logger.info("{}", randomString(10));
+        TimeUnit.DAYS.sleep(1);
+    }
+
+    @Test
+    public void testGroovy() throws ScriptException, InterruptedException {
+
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("js");
+
+        scheduled.scheduleAtFixedRate(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    Object result = engine.eval("java.lang.System.getProperty('log.console.close') == 'true'");
+                } catch (ScriptException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }, 0, 1, TimeUnit.MICROSECONDS);
+
+        TimeUnit.DAYS.sleep(1);
+
+    }
 
     @Test
     public void testAsyncLog() throws InterruptedException {
