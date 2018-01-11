@@ -29,13 +29,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     private OrganizationService organizationService;
 
     @Autowired
+    private ShardService shardService;
+
+    @Autowired
     private DcService dcService;
 
     @Autowired
     private DcClusterShardServiceImpl dcClusterShardService;
-
-    @Autowired
-    private ShardService shardService;
 
     @Test
     public void testCreateCluster(){

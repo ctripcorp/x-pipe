@@ -221,6 +221,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
                 HostPort sentinelAddr = hello.getSentinelAddr();
                 RedisClient redisConnection = null;
                 try {
+                    // TODO: Re-use connection instead of creating them each time
                     redisConnection = sessionManager.findRedisConnection(sentinelAddr.getHost(), sentinelAddr.getPort());
 
                     boolean doAdd = true;
