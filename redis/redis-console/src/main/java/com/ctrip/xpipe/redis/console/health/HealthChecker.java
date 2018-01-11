@@ -61,7 +61,7 @@ public class HealthChecker {
 							TimeUnit.SECONDS.sleep(2);
 							warmup();
 							warmuped = true;
-							TimeUnit.SECONDS.sleep(2);
+							TimeUnit.SECONDS.sleep(6);
 						}
 						List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 						if(!dcsToCheck.isEmpty()){
