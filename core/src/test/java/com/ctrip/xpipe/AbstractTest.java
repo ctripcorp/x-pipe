@@ -87,6 +87,7 @@ public class AbstractTest {
     public void beforeAbstractTest() throws Exception {
 
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
+        Thread.interrupted();//clear interrupt
 
         executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(getTestName()));
         scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(getTestName()));

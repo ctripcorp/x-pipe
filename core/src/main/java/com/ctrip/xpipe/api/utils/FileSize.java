@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.api.utils;
 
-import java.io.IOException;
-import java.nio.channels.FileChannel;
+import java.util.function.LongSupplier;
 
 /**
  * control the size returned
@@ -11,6 +10,6 @@ import java.nio.channels.FileChannel;
  */
 public interface FileSize {
 	
-	long getSize(FileChannel fileChannel) throws IOException;
+	long getSize(LongSupplier realSizeProvider) ;
 
 }

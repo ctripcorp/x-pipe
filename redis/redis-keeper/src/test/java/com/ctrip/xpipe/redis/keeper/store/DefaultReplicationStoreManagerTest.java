@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.redis.core.protocal.cmd.transaction.TransactionalCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
@@ -41,11 +42,42 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		keeperConfig.setReplicationStoreGcIntervalSeconds(replicationStoreGcIntervalSeconds);
 		keeperConfig.setMinTimeMilliToGcAfterCreate(minTimeMilliToGcAfterCreate);
 	}
-	
 
 
 	@Test
-	public void testMultiManagerGc() throws InterruptedException, IOException {
+	public void testNotCreateWhileNotInitialized() throws Exception {
+
+		DefaultReplicationStoreManager replicationStoreManager = (DefaultReplicationStoreManager) createReplicationStoreManager(
+				keeperConfig);
+		try{
+			replicationStoreManager.createIfNotExist();
+			Assert.fail();
+		}catch (Exception e){
+			logger.warn(e.getMessage());
+		}
+
+		LifecycleHelper.initializeIfPossible(replicationStoreManager);
+		replicationStoreManager.createIfNotExist();
+		LifecycleHelper.startIfPossible(replicationStoreManager);
+		replicationStoreManager.createIfNotExist();
+		LifecycleHelper.stopIfPossible(replicationStoreManager);
+		replicationStoreManager.createIfNotExist();
+		LifecycleHelper.disposeIfPossible(replicationStoreManager);
+
+		replicationStoreManager.createIfNotExist();
+
+		logger.info("calling after dispose");
+		try{
+			replicationStoreManager.create();
+			Assert.fail();
+		}catch (Exception e){
+			logger.warn(e.getMessage());
+		}
+	}
+
+
+	@Test
+	public void testMultiManagerGc() throws Exception {
 		
 		String keeperRunid = RunidGenerator.DEFAULT.generateRunid();
 
@@ -53,6 +85,10 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 				keeperConfig);
 		final DefaultReplicationStoreManager replicationStoreManager2 = (DefaultReplicationStoreManager) createReplicationStoreManager(keeperRunid,
 				keeperConfig);
+
+		LifecycleHelper.initializeIfPossible(replicationStoreManager1);
+		LifecycleHelper.initializeIfPossible(replicationStoreManager2);
+
 		final AtomicReference<DefaultReplicationStore> store = new AtomicReference<DefaultReplicationStore>(null);
 
 		for(int i = 0; i < 10; i++){
@@ -149,9 +185,12 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 	
 	
 	@Test
-	public void testConcurrentGc() throws IOException, InterruptedException {
+	public void testConcurrentGc() throws Exception {
 
 		final DefaultReplicationStoreManager mgr = (DefaultReplicationStoreManager) createReplicationStoreManager();
+
+		LifecycleHelper.initializeIfPossible(mgr);
+
 		for (int i = 0; i < 10; i++) {
 
 			logger.info("[testGc]{}", i);
@@ -205,6 +244,8 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		String shardId = "shard1";
 		DefaultReplicationStoreManager mgr = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,
 				shardId, keeperRunid, baseDir);
+
+		LifecycleHelper.initializeIfPossible(mgr);
 
 		ReplicationStore currentStore = mgr.getCurrent();
 		assertNull(currentStore);

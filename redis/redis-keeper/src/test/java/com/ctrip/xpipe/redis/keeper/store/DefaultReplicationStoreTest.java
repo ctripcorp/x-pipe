@@ -33,12 +33,36 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Before
 	public void beforeDefaultReplicationStoreTest() throws IOException{
 		baseDir = new File(getTestFileDir());
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor());
-		store.getMetaStore().becomeActive();
+	}
+
+	@Test
+	public void testInterruptedException() throws IOException {
+
+		String keeperRunid = randomKeeperRunid();
+		int dataLen = 100;
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor());
+		RdbStore rdbStore = store.beginRdb(randomKeeperRunid(), -1, new LenEofType(dataLen));
+
+		rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
+		rdbStore.endRdb();
+
+		Thread.currentThread().interrupt();
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor());
+
+
+		//clear interrupt
+		Thread.interrupted();
+
+		store.appendCommands(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor());
+
 	}
 	
 	@Test
 	public void testReadWhileDestroy() throws Exception{
+
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor());
+		store.getMetaStore().becomeActive();
 
 		int dataLen = 1000;
 		RdbStore rdbStore = store.beginRdb(randomKeeperRunid(), -1, new LenEofType(dataLen));
@@ -127,7 +151,11 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	
 	@Test
 	public void testReadWrite() throws Exception {
-		
+
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor());
+		store.getMetaStore().becomeActive();
+
+
 		StringBuffer exp = new StringBuffer();
 
 		int cmdCount = 4;

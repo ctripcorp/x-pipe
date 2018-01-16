@@ -39,11 +39,7 @@ public class CommandFileContext {
 	
 	
 	public long fileLength(){
-		try {
-			return controllableFile.size();
-		}catch (IOException e) {
-			throw new XpipeRuntimeException(String.format("%s", controllableFile), e);
-		}
+		return controllableFile.size();
 	}
 
 	public long totalLength() {

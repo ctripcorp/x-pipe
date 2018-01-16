@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
@@ -45,6 +46,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		
 		masterOffset = (long) randomInt(0, Integer.MAX_VALUE - 1);
 		replicationStoreManager = createReplicationStoreManager();
+		LifecycleHelper.initializeIfPossible(replicationStoreManager);
 		replicationStore = (DefaultReplicationStore) replicationStoreManager.create();
 		
 		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress("127.0.0.1", 1234));

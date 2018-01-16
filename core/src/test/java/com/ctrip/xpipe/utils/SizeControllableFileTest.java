@@ -4,8 +4,8 @@ package com.ctrip.xpipe.utils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.LongSupplier;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -39,8 +39,8 @@ public class SizeControllableFileTest extends AbstractTest {
 		sizeControllableFile = new SizeControllableFile(file, new FileSize() {
 
 			@Override
-			public long getSize(FileChannel fileChannel) throws IOException {
-				return fileChannel.size() - 100;
+			public long getSize(LongSupplier realSizeProvider) {
+				return realSizeProvider.getAsLong() - 100;
 			}
 		});
 
@@ -61,8 +61,8 @@ public class SizeControllableFileTest extends AbstractTest {
 		sizeControllableFile = new SizeControllableFile(file, new FileSize() {
 
 			@Override
-			public long getSize(FileChannel fileChannel) throws IOException {
-				return fileChannel.size();
+			public long getSize(LongSupplier realSizeProvider) {
+				return realSizeProvider.getAsLong();
 			}
 		}) {
 

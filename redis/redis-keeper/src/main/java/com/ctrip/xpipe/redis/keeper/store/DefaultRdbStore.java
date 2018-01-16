@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongSupplier;
 
 public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
@@ -283,11 +284,11 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 			return new SizeControllableFile(file, new FileSize() {
 				
 				@Override
-				public long getSize(FileChannel fileChannel) throws IOException {
+				public long getSize(LongSupplier realSizeProvider) {
 					
 					long realSize = 0;
 					synchronized (truncateLock) {//truncate may make size wrong
-						realSize = fileChannel.size();
+						realSize = realSizeProvider.getAsLong();
 					}
 					
 					if(status.get() == Status.Writing){

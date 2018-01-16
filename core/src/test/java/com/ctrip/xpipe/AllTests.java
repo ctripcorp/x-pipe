@@ -56,6 +56,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	SequenceCommandChainTest.class,
 	ParallelCommandChainTest.class,
 	RestTemplateFactoryTest.class,
+	ControllableFileAbstractTest.class,
 	FileUtilsTest.class,
 	MathUtilTest.class,
 	FinalStateSetterManagerTest.class,

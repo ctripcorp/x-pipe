@@ -115,6 +115,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 	@Override
 	public synchronized ReplicationStore createIfNotExist() throws IOException {
 
+
+
 		ReplicationStore currentReplicationStore = null;
 		
 		try{
@@ -132,6 +134,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 	
 	@Override
 	public synchronized ReplicationStore create() throws IOException {
+
+		if(!getLifecycleState().isInitialized()){
+			throw new ReplicationStoreManagerStateException("can not create", toString(), getLifecycleState().getPhaseName());
+		}
 		
 		keeperMonitor.getReplicationStoreStats().increateReplicationStoreCreateCount();
 
@@ -152,10 +158,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 		return currentStore.get();
 	}
 
-	/**
-	 * @param name
-	 * @throws IOException
-	 */
 	private void recrodLatestStore(String storeDir) throws IOException {
 		Properties meta = currentMeta();
 		if (meta == null) {

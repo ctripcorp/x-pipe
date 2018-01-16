@@ -20,7 +20,7 @@ public class SizeControllableFile extends AbstractControllableFile{
 	}
 
 	@Override
-	public long size() throws IOException {
-		return fileSize.getSize(getFileChannel());
+	public long size() {
+		return fileSize.getSize(() -> super.size());
 	}
 }

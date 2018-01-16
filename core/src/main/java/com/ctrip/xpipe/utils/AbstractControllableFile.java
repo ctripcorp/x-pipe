@@ -4,8 +4,6 @@ package com.ctrip.xpipe.utils;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,26 +57,17 @@ public abstract class AbstractControllableFile implements ControllableFile{
 	}
 
 	@Override
-	public long size() throws IOException {
-		
-		return size(0);
+	public long size() {
+
+		try {
+			return getFileChannel().size();
+		} catch (IOException e) {
+			logger.warn("error get file size, use file.length:" + file, e);
+		}
+
+		return file.length();
 	}
 	
-	private long size(int depth) throws IOException {
-		
-		try{
-			return getFileChannel().size();
-		}catch (ClosedByInterruptException e){
-			throw e;
-		}catch(ClosedChannelException e){
-			if(depth < 2){
-				logger.info("[size][closed, reopen]" + Thread.interrupted(), e);
-				return size(depth + 1);
-			}
-			throw e;
-		}
-	}
-
 	protected void tryOpen() throws IOException{
 		
 		if(randomAccessFile.get() == null){

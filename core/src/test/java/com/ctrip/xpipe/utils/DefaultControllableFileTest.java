@@ -41,7 +41,7 @@ public class DefaultControllableFileTest extends AbstractTest {
         AtomicInteger count = new AtomicInteger();
         ControllableFile controllableFile = new DefaultControllableFile(file){
             @Override
-            public long size() throws IOException {
+            public long size() {
                 count.incrementAndGet();
                 return super.size();
             }
@@ -53,6 +53,9 @@ public class DefaultControllableFileTest extends AbstractTest {
         }catch (Exception e){
             //ignore
         }
+
+        Thread.interrupted();//clear interrupt
+
         Assert.assertEquals(1, count.get());
     }
 
@@ -88,13 +91,14 @@ public class DefaultControllableFileTest extends AbstractTest {
     public void testInterrupt() {
 
         Thread.currentThread().interrupt();
-
         try {
             long size = controllableFile.size();
             logger.info("{}", size);
         } catch (Exception e) {
             logger.error("[testInterrupt]", e);
         }
+
+        Thread.interrupted();//clear interrupt
     }
 
 
