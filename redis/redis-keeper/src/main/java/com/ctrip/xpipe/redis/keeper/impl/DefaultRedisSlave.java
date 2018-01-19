@@ -12,9 +12,9 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
-import com.ctrip.xpipe.utils.ChannelUtil;
-import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
-import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.utils.*;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -38,7 +38,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRedisSlave.class);
 	
 	public static final String KEY_RDB_DUMP_MAX_WAIT_MILLI = "rdbDumpMaxWaitMilli";
-	
+
 	private Long replAckOff;
 	
 	private Long replAckTime = System.currentTimeMillis();
@@ -52,8 +52,11 @@ public class DefaultRedisSlave implements RedisSlave {
 		
 	private ScheduledExecutorService scheduled;
 	private ScheduledFuture<?> 		  pingFuture, waitDumpTimeoutFuture;
-	private final int pingIntervalMilli = 1000;
-	private final int rdbDumpMaxWaitMilli = Integer.parseInt(System.getProperty(KEY_RDB_DUMP_MAX_WAIT_MILLI, "1800000"));//half an hour
+
+	private static final int pingIntervalMilli = 1000;
+
+	private int rdbDumpMaxWaitMilli = Integer.parseInt(System.getProperty(KEY_RDB_DUMP_MAX_WAIT_MILLI, "1800000"));//half an hour
+	private int waitForPsyncProcessedTimeoutMilli = 10000;
 	
 	private volatile boolean putOnLineOnAck = false; 
 
@@ -71,9 +74,10 @@ public class DefaultRedisSlave implements RedisSlave {
 			}
 		}
 	};
-	
-	private AtomicBoolean closed = new AtomicBoolean(false);
-	
+
+	private CloseState closeState = new CloseState();
+	private SettableFuture<Boolean> psyncProcessed = SettableFuture.create();
+
 	public DefaultRedisSlave(RedisClient redisClient){
 		this.redisClient = redisClient;
 		this.setSlaveListeningPort(redisClient.getSlaveListeningPort());
@@ -154,7 +158,9 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	private ChannelFuture doWriteFile(ReferenceFileRegion referenceFileRegion) {
-		
+
+		closeState.makeSureNotClosed();
+
 		ChannelFuture future = channel().writeAndFlush(referenceFileRegion);
 		future.addListener(writeExceptionListener);
 		return future;
@@ -172,9 +178,11 @@ public class DefaultRedisSlave implements RedisSlave {
 	
 	@Override
 	public void beginWriteRdb(EofType eofType, long rdbFileOffset) {
-		
+
+
 		logger.info("[beginWriteRdb]{}, {}", eofType, rdbFileOffset);
-		
+		closeState.makeSureOpen();
+
 		if(!eofType.support(getCapas())){
 			logger.warn("[beginWriteRdb][eoftype not supported]{}, {}, {}", this, eofType, getCapas());
 		}
@@ -231,8 +239,11 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	@Override
 	public void beginWriteCommands(long beginOffset) {
-		
+
+		closeState.makeSureOpen();
+
 		try {
+
 			if(partialState == PARTIAL_STATE.UNKNOWN){
 				partialState = PARTIAL_STATE.PARTIAL;
 			}
@@ -260,7 +271,8 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	@Override
 	public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
-		
+
+		closeState.makeSureOpen();
 		logger.debug("[onCommand]{}, {}", this, referenceFileRegion);
 		return doWriteFile(referenceFileRegion);
 	}
@@ -294,14 +306,50 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
+	public void markPsyncProcessed() {
+
+		logger.info("[markPsyncProcessed]{}", this);
+		psyncProcessed.set(true);
+	}
+
+	@Override
 	public boolean isOpen() {
-		return !closed.get();
+		return closeState.isOpen();
 	}
 	
 	public void close() throws IOException {
 		
 		logger.info("[close]{}", this);
-		closed.set(true);
+		if(closeState.isClosed()){
+			logger.info("[close][already closed]{}", this);
+			return;
+		}
+
+		closeState.setClosing();
+		psyncProcessed.addListener(new AbstractExceptionLogTask() {
+			@Override
+			protected void doRun() throws Exception {
+				doRealClose();
+			}
+		}, MoreExecutors.directExecutor());
+
+
+		if(closeState.isClosing()){
+			scheduled.schedule(new AbstractExceptionLogTask() {
+				@Override
+				protected void doRun() throws Exception {
+					logger.info("[wait for psync processed timeout close slave]{}", DefaultRedisSlave.this);
+					doRealClose();
+				}
+			}, waitForPsyncProcessedTimeoutMilli, TimeUnit.MILLISECONDS);
+		}
+
+	}
+
+	protected void doRealClose() throws IOException {
+
+		logger.info("[doRealClose]{}", this);
+		closeState.setClosed();
 		redisClient.close();
 		psyncExecutor.shutdownNow();
 		scheduled.shutdownNow();
@@ -355,10 +403,12 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	public void sendMessage(ByteBuf byteBuf) {
+		closeState.makeSureNotClosed();
 		redisClient.sendMessage(byteBuf);
 	}
 
 	public void sendMessage(byte[] bytes) {
+		closeState.makeSureNotClosed();
 		redisClient.sendMessage(bytes);
 	}
 
@@ -379,8 +429,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	@Override
 	public void release() throws Exception {
 		logger.info("[release]{}", this);
-		closed.set(true);
-		psyncExecutor.shutdownNow();
+		close();
 	}
 
 	@Override
@@ -398,4 +447,18 @@ public class DefaultRedisSlave implements RedisSlave {
 		redisClient.setKeeper();
 	}
 
+	@VisibleForTesting
+	protected void setRdbDumpMaxWaitMilli(int rdbDumpMaxWaitMilli) {
+		this.rdbDumpMaxWaitMilli = rdbDumpMaxWaitMilli;
+	}
+
+	@VisibleForTesting
+	protected void setWaitForPsyncProcessedTimeoutMilli(int waitForPsyncProcessedTimeoutMilli) {
+		this.waitForPsyncProcessedTimeoutMilli = waitForPsyncProcessedTimeoutMilli;
+	}
+
+	@VisibleForTesting
+	protected CloseState getCloseState() {
+		return closeState;
+	}
 }

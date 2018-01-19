@@ -2,12 +2,14 @@ package com.ctrip.xpipe.utils;
 
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,10 +63,15 @@ public abstract class AbstractControllableFile implements ControllableFile{
 
 		try {
 			return getFileChannel().size();
+		} catch (FileNotFoundException e){
+			throw new XpipeRuntimeException(String.format("file not found:%s", file), e);
 		} catch (IOException e) {
 			logger.warn("error get file size, use file.length:" + file, e);
 		}
 
+		if(!file.exists()){
+			throw new XpipeRuntimeException(String.format("file not found:%s", file));
+		}
 		return file.length();
 	}
 	

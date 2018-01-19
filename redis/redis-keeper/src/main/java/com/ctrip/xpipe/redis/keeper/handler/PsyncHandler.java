@@ -56,9 +56,11 @@ public class PsyncHandler extends AbstractCommandHandler{
 				try{
 					innerDoHandle(args, redisSlave, redisKeeperServer);
 				}catch(Throwable th){
-					logger.error("[run]" + redisClient, th);
 					try {
-						redisSlave.close();
+						logger.error("[run]" + redisClient, th);
+						if(redisSlave.isOpen()){
+							redisSlave.close();
+						}
 					} catch (IOException e) {
 						logger.error("[run][close]" + redisSlave, th);
 					}
@@ -156,15 +158,19 @@ public class PsyncHandler extends AbstractCommandHandler{
 		}
 		
 		redisSlave.sendMessage(simpleStringParser.format());
+		redisSlave.markPsyncProcessed();
+
 		redisSlave.beginWriteCommands(offset);
 		redisSlave.partialSync();
-		
+
 		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();
 	}
 
 	protected void doFullSync(RedisSlave redisSlave) {
 
 		try {
+			redisSlave.markPsyncProcessed();
+
 			if(logger.isInfoEnabled()){
 				logger.info("[doFullSync]" + redisSlave);
 			}

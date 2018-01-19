@@ -36,4 +36,9 @@ public interface RedisSlave extends RedisClient, PartialAware, CommandsListener{
 	
 	void processPsyncSequentially(Runnable runnable);
 
+	/**
+	 * if partial sync, do real close after continue sent
+	 */
+	void markPsyncProcessed();
+
 }

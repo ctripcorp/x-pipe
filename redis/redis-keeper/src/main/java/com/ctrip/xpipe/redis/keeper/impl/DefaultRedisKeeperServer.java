@@ -306,13 +306,18 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			public void update(Object args, Observable observable) {
 				
 				if(args instanceof RedisSlave){
-					logger.info("[update][redis client become slave]" + observable);
-					redisClients.put(((RedisClient)observable).channel(), (RedisSlave)args);
+					becomeSlave(((RedisClient)observable).channel(), (RedisSlave)args);
 				}
 			}
 		});
 		
 		return redisClient;
+	}
+
+	protected void becomeSlave(Channel channel, RedisSlave redisSlave) {
+
+		logger.info("[update][redis client become slave]{}",channel);
+		redisClients.put(channel, redisSlave);
 	}
 
 	@Override

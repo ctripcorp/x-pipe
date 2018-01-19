@@ -17,6 +17,19 @@ import com.ctrip.xpipe.AbstractTest;
  * Aug 8, 2016
  */
 public class FileUtilsTest extends AbstractTest{
+
+	@Test
+	public void testLength(){
+
+		File file = new File("/tmp/notexist");
+		if(file.exists()){
+			logger.info("exist");
+			return;
+		}
+
+		logger.info("{}", file.length());
+
+	}
 	
 	@Test
 	public void test() throws FileNotFoundException{

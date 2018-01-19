@@ -22,10 +22,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ResourceLeakDetector;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,6 +155,17 @@ public class AbstractTest {
     protected String getTestName() {
         return name.getMethodName();
     }
+
+    protected void shouldThrowException(Runnable runnable) {
+        try{
+            runnable.run();
+            Assert.fail();
+        }catch (Exception e){
+            logger.info("shouldThrowException: {}", e.getMessage());
+        }
+    }
+
+
 
     protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier) throws TimeoutException {
 

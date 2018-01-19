@@ -28,7 +28,7 @@ public class GivenDataKeeper extends AbstractKeeperIntegratedSingleDc {
 
     private volatile boolean done = false;
 
-    private String commandFile = "~/Documents/tmp/casClientPrincipalGroup1/31b19523-70cb-4754-b206-10d45cc15be2/cmd_cc237d76-0fc7-4b1b-8985-42e1c9027e6a_0";
+    private String commandFile = "~/Documents/tmp/cmd_1ed85806-4c31-4f01-a06e-6334367c99ac_0";
 
     @Override
     protected void doBeforeIntegratedTest() throws Exception {
