@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
+import com.ctrip.xpipe.utils.OsUtils;
 import com.lambdaworks.redis.RedisChannelHandler;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnectionStateListener;
@@ -46,11 +48,14 @@ public class RedisSession {
 
     private Executor executors;
 
-    public RedisSession(RedisClient redisClient, HostPort hostPort, Executor executors) {
+    private Executor pingAndDelayExecutor;
+
+    public RedisSession(RedisClient redisClient, HostPort hostPort, Executor executors, Executor pingDelayExecutor) {
         this.redis = redisClient;
         redis.addListener(channelListener());
         this.hostPort = hostPort;
         this.executors = executors;
+        this.pingAndDelayExecutor = pingDelayExecutor;
     }
 
     public void check() {
@@ -123,7 +128,7 @@ public class RedisSession {
                         log.warn("Error subscribe to redis {}", hostPort);
                     }
                 }
-            }, executors);
+            }, pingAndDelayExecutor);
         }
     }
 
@@ -161,6 +166,19 @@ public class RedisSession {
     }
 
     public void ping(final PingCallback callback) {
+        // if connect has been established
+        if(nonSubscribeConn.get() != null) {
+            final CompletableFuture<String> future = nonSubscribeConn.get().async().ping().toCompletableFuture();
+
+            future.whenCompleteAsync((pong, th) -> {
+                if(th != null){
+                    callback.fail(th);
+                }else{
+                    callback.pong(pong);
+                }
+            }, pingAndDelayExecutor);
+            return;
+        }
         Consumer<StatefulRedisConnection> connectionConsumer = new Consumer<StatefulRedisConnection>() {
             @Override
             public void accept(StatefulRedisConnection statefulRedisConnection) {
@@ -172,7 +190,7 @@ public class RedisSession {
                     }else{
                         callback.pong(pong);
                     }
-                }, executors);
+                }, pingAndDelayExecutor);
             }
         };
         Consumer<Throwable> throwableConsumer = new Consumer<Throwable>() {
@@ -276,7 +294,7 @@ public class RedisSession {
                     } else {
                         connectionConsumer.accept(connection);
                     }
-                }, executors);
+                }, pingAndDelayExecutor);
     }
 
     @Override

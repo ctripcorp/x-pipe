@@ -58,6 +58,8 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	private ExecutorService executors;
 
+	private ExecutorService pingAndDelayExecutor;
+
 	public DefaultRedisSessionManager() {
 		this(1);
 	}
@@ -76,6 +78,10 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		DefaultExecutorFactory executorFactory = new DefaultExecutorFactory("RedisSession", corePoolSize, maxPoolSize,
 				new ThreadPoolExecutor.AbortPolicy());
 		executors = executorFactory.createExecutorService();
+
+		int fixedPoolSize = OsUtils.getCpuCount();
+		pingAndDelayExecutor = new DefaultExecutorFactory("Ping-Delay-Executor", fixedPoolSize, fixedPoolSize,
+				new ThreadPoolExecutor.CallerRunsPolicy()).createExecutorService();
 
 		scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 			@Override
@@ -151,7 +157,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			synchronized (this) {
 				session = sessions.get(hostPort);
 				if (session == null) {
-					session = new RedisSession(findRedisConnection(host, port), hostPort, executors);
+					session = new RedisSession(findRedisConnection(host, port), hostPort, executors, pingAndDelayExecutor);
 					sessions.put(hostPort, session);
 				}
 			}
