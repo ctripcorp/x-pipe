@@ -88,14 +88,13 @@ public class HealthChecker {
 				int retryTimes = 3;
 				while(retryTimes > 0) {
 					retryTimes --;
+					try {
+						TimeUnit.SECONDS.sleep(6);
+					} catch (InterruptedException ignore) {
+					}
 					ThreadPoolExecutor executor = (ThreadPoolExecutor)sessionManager.getExecutors();
-					if(executor.getQueue().size() == 0) {
+					if(executor.getActiveCount() != 0 && executor.getQueue().size() == 0) {
 						break;
-					} else {
-						try {
-							TimeUnit.SECONDS.sleep(6);
-						} catch (InterruptedException ignore) {
-						}
 					}
 				}
 			}
