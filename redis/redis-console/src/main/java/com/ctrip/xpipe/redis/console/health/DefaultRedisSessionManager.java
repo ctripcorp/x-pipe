@@ -56,7 +56,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Autowired
 	private MetaCache metaCache;
 
-	ExecutorService executors;
+	private ExecutorService executors;
 
 	public DefaultRedisSessionManager() {
 		this(1);
@@ -71,16 +71,11 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@PostConstruct
 	public void postConstruct(){
 
-		int corePoolSize = 5 * OsUtils.getCpuCount();
-		int maxPoolSize = Integer.MAX_VALUE;
-
-		executors = new ThreadPoolExecutor(
-				corePoolSize,
-				maxPoolSize,
-				60L, TimeUnit.SECONDS,
-				new SynchronousQueue<>(),
-				XpipeThreadFactory.create("RedisSessionManager"),
-				new ThreadPoolExecutor.CallerRunsPolicy());
+		int corePoolSize = 30 * OsUtils.getCpuCount();
+		int maxPoolSize =  50 * OsUtils.getCpuCount();
+		DefaultExecutorFactory executorFactory = new DefaultExecutorFactory("RedisSession", corePoolSize, maxPoolSize,
+				new ThreadPoolExecutor.AbortPolicy());
+		executors = executorFactory.createExecutorService();
 
 		scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 			@Override
@@ -194,6 +189,10 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		} catch (Exception e) {
 			logger.error("[closeAllConnections] {}", e);
 		}
+	}
+
+	public ExecutorService getExecutors() {
+		return executors;
 	}
 
 	@PreDestroy

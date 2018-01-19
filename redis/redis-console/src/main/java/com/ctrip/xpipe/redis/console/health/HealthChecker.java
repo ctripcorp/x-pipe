@@ -15,6 +15,7 @@ import javax.annotation.PreDestroy;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,6 +43,9 @@ public class HealthChecker {
 	@Autowired
 	private HealthCheckVisitor healthCheckVisitor;
 
+	@Autowired
+	private DefaultRedisSessionManager sessionManager;
+
 	private Thread daemonHealthCheckThread;
 
 	@PostConstruct
@@ -61,7 +65,7 @@ public class HealthChecker {
 							TimeUnit.SECONDS.sleep(2);
 							warmup();
 							warmuped = true;
-							TimeUnit.SECONDS.sleep(6);
+							waitAndRetry();
 						}
 						List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 						if(!dcsToCheck.isEmpty()){
@@ -76,6 +80,22 @@ public class HealthChecker {
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
 						break;
+					}
+				}
+			}
+
+			public void waitAndRetry() {
+				int retryTimes = 3;
+				while(retryTimes > 0) {
+					retryTimes --;
+					ThreadPoolExecutor executor = (ThreadPoolExecutor)sessionManager.getExecutors();
+					if(executor.getQueue().size() == 0) {
+						break;
+					} else {
+						try {
+							TimeUnit.SECONDS.sleep(6);
+						} catch (InterruptedException ignore) {
+						}
 					}
 				}
 			}
