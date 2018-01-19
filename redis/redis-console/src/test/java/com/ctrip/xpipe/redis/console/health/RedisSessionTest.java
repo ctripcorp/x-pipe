@@ -50,7 +50,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
             }
         });
         redisSession = new RedisSession(createRedisClient(HOST, BLOCKED_PORT),
-                new HostPort(HOST, BLOCKED_PORT), executors);
+                new HostPort(HOST, BLOCKED_PORT), executors, executors);
     }
 
     @Test
