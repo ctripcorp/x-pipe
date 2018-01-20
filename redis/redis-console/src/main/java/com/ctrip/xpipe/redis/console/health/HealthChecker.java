@@ -96,6 +96,7 @@ public class HealthChecker {
 					if(executor.getActiveCount() != 0 && executor.getQueue().size() == 0) {
 						break;
 					}
+					log.info("[warmup] redis connection thread pool: {}", executor.toString());
 				}
 			}
 
