@@ -74,7 +74,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	public void postConstruct(){
 
 		int corePoolSize = 30 * OsUtils.getCpuCount();
-		int maxPoolSize =  50 * OsUtils.getCpuCount();
+		int maxPoolSize =  512;
 		DefaultExecutorFactory executorFactory = new DefaultExecutorFactory("RedisSession", corePoolSize, maxPoolSize,
 				new ThreadPoolExecutor.AbortPolicy());
 		executors = executorFactory.createExecutorService();

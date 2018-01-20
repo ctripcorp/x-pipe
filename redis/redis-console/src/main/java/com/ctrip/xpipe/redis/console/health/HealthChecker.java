@@ -85,7 +85,7 @@ public class HealthChecker {
 			}
 
 			public void waitAndRetry() {
-				int retryTimes = 3;
+				int retryTimes = 4;
 				while(retryTimes > 0) {
 					retryTimes --;
 					try {
@@ -93,10 +93,10 @@ public class HealthChecker {
 					} catch (InterruptedException ignore) {
 					}
 					ThreadPoolExecutor executor = (ThreadPoolExecutor)sessionManager.getExecutors();
+					log.info("[warmup] redis connection thread pool: {}", executor.toString());
 					if(executor.getActiveCount() != 0 && executor.getQueue().size() == 0) {
 						break;
 					}
-					log.info("[warmup] redis connection thread pool: {}", executor.toString());
 				}
 			}
 

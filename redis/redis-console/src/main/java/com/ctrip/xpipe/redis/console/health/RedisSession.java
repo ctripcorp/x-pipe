@@ -170,13 +170,13 @@ public class RedisSession {
         if(nonSubscribeConn.get() != null) {
             final CompletableFuture<String> future = nonSubscribeConn.get().async().ping().toCompletableFuture();
 
-            future.whenCompleteAsync((pong, th) -> {
+            future.whenComplete((pong, th) -> {
                 if(th != null){
                     callback.fail(th);
                 }else{
                     callback.pong(pong);
                 }
-            }, pingAndDelayExecutor);
+            });
             return;
         }
         Consumer<StatefulRedisConnection> connectionConsumer = new Consumer<StatefulRedisConnection>() {
@@ -294,7 +294,7 @@ public class RedisSession {
                     } else {
                         connectionConsumer.accept(connection);
                     }
-                }, pingAndDelayExecutor);
+                }, executors);
     }
 
     @Override
