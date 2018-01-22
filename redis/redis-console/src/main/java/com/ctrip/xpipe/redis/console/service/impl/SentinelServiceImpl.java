@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -151,15 +152,22 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 	}
 
 	@Override
-	public Map<String, Long> getAllSentinelsUsage() {
+	public Map<String, SentinelUsageModel> getAllSentinelsUsage() {
 		List<SetinelTbl> sentinels = queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
 			@Override
 			public List<SetinelTbl> doQuery() throws DalException {
 				return dao.findSentinelUsage(SetinelTblEntity.READSET_SENTINEL_USAGE);
 			}
 		});
-		Map<String, Long> result = Maps.newHashMapWithExpectedSize(sentinels.size());
-		sentinels.forEach(sentienlTbl -> result.put(sentienlTbl.getSetinelAddress(), sentienlTbl.getCount()));
+		Map<String, SentinelUsageModel> result = Maps.newHashMapWithExpectedSize(sentinels.size());
+		for(SetinelTbl sentinelTbl : sentinels) {
+			if(StringUtil.isEmpty(sentinelTbl.getSetinelAddress()))
+				continue;
+			String dcName = sentinelTbl.getDcInfo().getDcName();
+			result.putIfAbsent(dcName, new SentinelUsageModel(dcName));
+			SentinelUsageModel usage = result.get(dcName);
+			usage.addSentinelUsage(sentinelTbl.getSetinelAddress(), sentinelTbl.getCount());
+		}
 		return result;
 	}
 }

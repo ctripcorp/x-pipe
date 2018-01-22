@@ -786,10 +786,13 @@
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
 
 		<readsets>
+            <readset name="COUNT">
+                <member name="count"/>
+            </readset>
 			<readset name="SENTINEL-USAGE">
-				<member name='setinel-id'/>
-				<member name='setinel-address'/>
-				<member name="count"/>
+                <readset-ref name="FULL"/>
+                <readset-ref name="COUNT"/>
+                <readset-ref name="FULL" relation-name="dc-info"/>
 			</readset>
 		</readsets>
 
@@ -832,9 +835,10 @@
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/> left join <TABLE name='dc-cluster-shard-info'/>
-					on <FIELD name='setinel-id'/> = dcst.setinel_id
+					on <FIELD name='setinel-id'/> = dcst.setinel_id, <TABLE name='dc-info'/>
 					WHERE <FIELD name='deleted'/> = 0
 					AND dcst.deleted = 0
+					AND dt.id = <FIELD name='dc-id'/>
 					GROUP BY <FIELD name='setinel-id'/>
 					]]>
 				</statement>
