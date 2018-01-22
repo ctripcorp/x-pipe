@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.alibaba.fastjson.JSON;
 
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -10,6 +12,7 @@ import com.ctrip.xpipe.redis.console.model.SentinelModel;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
+import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
@@ -88,5 +92,20 @@ public class SentinelUpdateControllerTest {
         Assert.assertEquals(1, setinelTbl.getDcId());
         Assert.assertEquals("test", setinelTbl.getSetinelDescription());
         Assert.assertEquals("127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381", setinelTbl.getSetinelAddress());
+    }
+
+    @Test
+    public void testJsonShow() {
+        SentinelUsageModel usageModel1 = new SentinelUsageModel("SHAJQ", 2)
+                                            .addSentinelUsage("127.0.0.1:6379,127.0.0.1:6380", 100)
+                                            .addSentinelUsage("192.168.0.1:6379,192.168.0.1:6380", 200);
+        SentinelUsageModel usageModel2 = new SentinelUsageModel("SHAOY", 2)
+                                            .addSentinelUsage("127.0.0.2:6381,127.0.0.1:6382", 150)
+                                            .addSentinelUsage("192.168.0.2:6381,192.168.0.1:6382", 150);
+        Map<String, SentinelUsageModel> map = Maps.newHashMapWithExpectedSize(2);
+        map.put("SHAJQ", usageModel1);
+        map.put("SHAOY", usageModel2);
+        JsonCodec jsonTool = new JsonCodec(true, true);
+        System.out.println(jsonTool.encode(map));
     }
 }
