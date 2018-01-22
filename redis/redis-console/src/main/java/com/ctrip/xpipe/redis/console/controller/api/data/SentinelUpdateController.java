@@ -21,6 +21,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author chen.zhu
@@ -57,11 +58,6 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = "/reBalance/sentinels", method = RequestMethod.POST)
-    public RetMessage reBalanceSentinels() {
-        return reBalanceSentinels(DEFAULT_NUM_OF_CLUSTERS);
-    }
-
     @RequestMapping(value = "/sentinels", method = RequestMethod.POST)
     public RetMessage addSentinel(@RequestBody SentinelModel sentinelModel) {
         try {
@@ -69,6 +65,33 @@ public class SentinelUpdateController {
             sentinelService.insert(sentinel);
             return RetMessage.createSuccessMessage("Successfully create Sentinel");
         } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/reBalance/sentinels", method = RequestMethod.POST)
+    public RetMessage reBalanceSentinels(@RequestBody(required = false) List<String> clusterNames) {
+        if(clusterNames == null || clusterNames.isEmpty())
+            return reBalanceSentinels(DEFAULT_NUM_OF_CLUSTERS);
+        logger.info("[reBalanceSentinels] Start re-balance clusters: {}", clusterNames);
+        try {
+            clusterService.reBalanceClusterSentinels(clusterNames);
+            logger.info("[reBalanceSentinels] Successfully balanced clusters: {}", clusterNames);
+            return RetMessage.createSuccessMessage("clusters: " + JSON.toJSONString(clusterNames));
+        } catch (Exception e) {
+            logger.error("[reBalanceSentinels] {}", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/sentinels/usage", method = RequestMethod.GET)
+    public RetMessage sentinelUsage() {
+        logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");
+        try {
+            Map<String, Long> sentienlUsage = sentinelService.getAllSentinelsUsage();
+            return RetMessage.createSuccessMessage(JSON.toJSONString(sentienlUsage));
+        } catch (Exception e) {
+            logger.error("[reBalanceSentinels] {}", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }

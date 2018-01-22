@@ -66,7 +66,7 @@ public class SentinelUpdateControllerTest {
     @Test
     public void reBalanceSentinels1() throws Exception {
         RetMessage message = RetMessage.createSuccessMessage("clusters: " + JSON.toJSONString(Collections.emptyList()));
-        Assert.assertEquals(message.getMessage(), controller.reBalanceSentinels().getMessage());
+        Assert.assertEquals(message.getMessage(), controller.reBalanceSentinels(null).getMessage());
     }
 
     @Test

@@ -19,4 +19,5 @@ public interface SentinelService {
 
 	SetinelTbl insert(SetinelTbl setinelTbl);
 
+	Map<String, Long> getAllSentinelsUsage();
 }

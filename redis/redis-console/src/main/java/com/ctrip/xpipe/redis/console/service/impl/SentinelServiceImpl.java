@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.google.common.collect.Maps;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -147,5 +148,18 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 		});
 
 		return setinelTbl;
+	}
+
+	@Override
+	public Map<String, Long> getAllSentinelsUsage() {
+		List<SetinelTbl> sentinels = queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
+			@Override
+			public List<SetinelTbl> doQuery() throws DalException {
+				return dao.findSentinelUsage(SetinelTblEntity.READSET_SENTINEL_USAGE);
+			}
+		});
+		Map<String, Long> result = Maps.newHashMapWithExpectedSize(sentinels.size());
+		sentinels.forEach(sentienlTbl -> result.put(sentienlTbl.getSetinelAddress(), sentienlTbl.getCount()));
+		return result;
 	}
 }

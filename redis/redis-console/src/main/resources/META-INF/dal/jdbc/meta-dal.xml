@@ -781,6 +781,17 @@
 		<var name="dc-name" value-type="String"/>
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
+		<relation name="dc-cluster-shard-info" entity-name="dc-cluster-shard-tbl" entity-alias="dcst"/>
+
+		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
+
+		<readsets>
+			<readset name="SENTINEL-USAGE">
+				<member name='setinel-id'/>
+				<member name='setinel-address'/>
+				<member name="count"/>
+			</readset>
+		</readsets>
 
 		<query-defs>
 			<query name="find-by-dc-id" type="SELECT" multiple="true">
@@ -813,6 +824,18 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-sentinel-usage" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join <TABLE name='dc-cluster-shard-info'/>
+					on <FIELD name='setinel-id'/> = dcst.setinel_id
+					WHERE <FIELD name='deleted'/> = 0
+					AND dcst.deleted = 0
+					GROUP BY <FIELD name='setinel-id'/>
 					]]>
 				</statement>
 			</query>
