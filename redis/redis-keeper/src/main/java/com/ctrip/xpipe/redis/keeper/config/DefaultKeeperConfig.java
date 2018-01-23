@@ -73,6 +73,6 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
     @Override
     public long getTrafficReportIntervalMillis() {
-        return getLongProperty(KEY_TRAFFIC_REPORT_INTERVAL, 5000L);
+        return getLongProperty(KEY_TRAFFIC_REPORT_INTERVAL, DEFAULT_TRAFFIC_REPORT_INTERVAL_MILLIS);
     }
 }

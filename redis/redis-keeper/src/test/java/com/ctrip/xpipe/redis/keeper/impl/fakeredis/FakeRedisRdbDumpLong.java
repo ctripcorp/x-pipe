@@ -13,25 +13,25 @@ import org.junit.Test;
  */
 public class FakeRedisRdbDumpLong extends AbstractFakeRedisTest {
 
-	private int replicationTimeout = 1;
+	private int replicationTimeoutMilli = 200;
 
 	@Override
 	public void beforeAbstractTest() throws Exception {
 		super.beforeAbstractTest();
-		AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT = replicationTimeout;
+		AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI = replicationTimeoutMilli;
 	}
 
 	@Test
 	public void testRedisWithLf() throws Exception {
 
-		int sleepBeforeSendRdb = replicationTimeout * 2000;
+		int sleepBeforeSendRdb = replicationTimeoutMilli * 2;
 		fakeRedisServer.setSleepBeforeSendRdb(sleepBeforeSendRdb);
 
 		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis();
 
 		waitConditionUntilTimeOut(
 				() -> MASTER_STATE.REDIS_REPL_CONNECTED == redisKeeperServer.getRedisMaster().getMasterState(),
-				replicationTimeout * 5000
+				replicationTimeoutMilli * 5
 		);
 
 	}
@@ -39,13 +39,13 @@ public class FakeRedisRdbDumpLong extends AbstractFakeRedisTest {
 	@Test
 	public void testRedisNoLf() throws Exception {
 
-		int sleepBeforeSendRdb = replicationTimeout * 3000;
+		int sleepBeforeSendRdb = replicationTimeoutMilli * 3;
 		fakeRedisServer.setSleepBeforeSendRdb(sleepBeforeSendRdb);
 		fakeRedisServer.setSendLFBeforeSendRdb(false);
 
 		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis();
 
-		sleep(replicationTimeout * 3000);
+		sleep(replicationTimeoutMilli * 3);
 
 		Assert.assertEquals(MASTER_STATE.REDIS_REPL_HANDSHAKE, redisKeeperServer.getRedisMaster().getMasterState());
 

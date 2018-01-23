@@ -29,6 +29,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	RedisKeeperServerStateBackupTest.class,
 	RedisKeeperServerStateActiveTest.class,
 	RedisKeeperServerStateUnknownTest.class,
+	DefaultRedisMasterReplicationTest.class,
 	KeeperContainerServiceTest.class,
 	DefaultReplicationStoreManagerTest.class,
 	DefaultRedisKeeperServerTest.class,

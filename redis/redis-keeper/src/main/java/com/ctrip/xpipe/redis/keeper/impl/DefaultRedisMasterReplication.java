@@ -37,12 +37,12 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	
 	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));
 
-	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled, int replTimeoutSeconds) {
-		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutSeconds);
+	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled, int replTimeoutMilli) {
+		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutMilli);
 	}
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled) {
-		this(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT);
+		this(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI);
 	}
 
 	@Override
