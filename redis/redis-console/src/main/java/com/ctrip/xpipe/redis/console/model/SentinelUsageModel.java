@@ -14,7 +14,7 @@ public class SentinelUsageModel {
     private String dcName;
 
     private Map<String, Long> sentinelUsages;
-    
+
     public SentinelUsageModel(String dcName) {
         this.dcName = dcName;
         sentinelUsages = Maps.newHashMap();
