@@ -48,7 +48,7 @@ public class SentinelUpdateController {
 
     private static final int DEFAULT_NUM_OF_CLUSTERS = 10;
 
-    private static final JsonCodec jsonTool = new JsonCodec(false, true);
+    private static final JsonCodec jsonTool = new JsonCodec(true, true);
 
     @RequestMapping(value = "/rebalance/sentinels/{numOfClusters}", method = RequestMethod.POST)
     public RetMessage reBalanceSentinels(@PathVariable int numOfClusters) {
