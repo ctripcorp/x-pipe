@@ -40,6 +40,22 @@ public class OneDcKeepers extends AbstractKeeperIntegratedSingleDc {
         waitForAnyKeyToExit();
     }
 
+    @Test
+    public void sendMessageForever() throws IOException {
+
+        executors.execute(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() throws Exception {
+
+                while (!Thread.interrupted()){
+                    sendMessageToMaster();
+                }
+            }
+        });
+
+        waitForAnyKeyToExit();
+    }
+
     @Override
     protected void doAfterAbstractTest() throws Exception {
         super.doAfterAbstractTest();

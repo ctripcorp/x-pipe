@@ -27,6 +27,7 @@ import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author wenchao.meng
@@ -65,12 +66,18 @@ public class DefaultRedisSlave implements RedisSlave {
 	private RedisClient redisClient;
 	
 	private ChannelFutureListener writeExceptionListener = new ChannelFutureListener() {
-		
+
+		private AtomicLong atomicLong = new AtomicLong(0);
+
 		@Override
 		public void operationComplete(ChannelFuture future) throws Exception {
 			
 			if(!future.isSuccess()){
-				logger.error("[operationComplete][write fail]" + DefaultRedisSlave.this, future.cause());
+				long failCount = atomicLong.incrementAndGet();
+				//avoid write too much error msg
+				if((failCount & (failCount -1)) == 0){
+					logger.error("[operationComplete][write fail]" +failCount + "," + DefaultRedisSlave.this, future.cause());
+				}
 			}
 		}
 	};
