@@ -141,7 +141,7 @@ public class DefaultCommandDelayTest extends AbstractRedisKeeperTest {
 	public class TestCommandDelay extends DefaultCommandStoreDelay {
 
 		public TestCommandDelay(CommandStore commandStore, int delayLogLimitMicro) {
-			super(commandStore, delayLogLimitMicro);
+			super(commandStore, () -> delayLogLimitMicro);
 		}
 
 		@Override

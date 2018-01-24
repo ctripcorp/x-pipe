@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntSupplier;
 
 /**
  * @author qing.gu
@@ -43,7 +44,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 
 	private final int maxFileSize;
 	
-	private final int fileNumToKeep;
+	private final IntSupplier fileNumToKeep;
 	private final int minTimeMilliToGcAfterModified; 
 
 	private final FilenameFilter fileFilter;
@@ -58,10 +59,10 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	private CommandStoreDelay commandStoreDelay;
 
 	public DefaultCommandStore(File file, int maxFileSize, KeeperMonitor keeperMonitor) throws IOException {
-		this(file, maxFileSize, 3600*1000, 20, keeperMonitor);
+		this(file, maxFileSize, 3600*1000, () -> 20, keeperMonitor);
 	}
 
-	public DefaultCommandStore(File file, int maxFileSize, int minTimeMilliToGcAfterModified, int fileNumToKeep, KeeperMonitor keeperMonitor) throws IOException {
+	public DefaultCommandStore(File file, int maxFileSize, int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, KeeperMonitor keeperMonitor) throws IOException {
 		
 		this.baseDir = file.getParentFile();
 		this.fileNamePrefix = file.getName();
@@ -422,7 +423,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 		}
 	}
 	
-	private boolean canDeleteCmdFile(long lowestReadingOffset, long fileStartOffset, long fileSize, long lastModified) {
+	protected boolean canDeleteCmdFile(long lowestReadingOffset, long fileStartOffset, long fileSize, long lastModified) {
 		
 		boolean lowestReading = (fileStartOffset + fileSize < lowestReadingOffset);
 		
@@ -440,7 +441,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 		}
 
 		long totalLength = totalLength();
-		long totalKeep = (long)fileSize * fileNumToKeep;
+		long totalKeep = (long)fileSize * fileNumToKeep.getAsInt();
 		boolean fileKeep = totalLength - (fileStartOffset + fileSize) > totalKeep;
 		
 		logger.debug("[canDeleteCmdFile][fileKeep]{}, {} - {} > {}({}*{})", fileKeep, totalLength, (fileStartOffset + fileSize), totalKeep, fileSize, fileNumToKeep);

@@ -45,6 +45,31 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	}
 
 	@Test
+	public void testDynamicConfig() throws IOException {
+
+		final int initDataKeep = 20;
+		final AtomicInteger dataKeep = new AtomicInteger(initDataKeep);
+		int gcAfterCreateMilli = 60000;
+		File commandTemplate = new File(getTestFileDir(), getTestName());
+
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, gcAfterCreateMilli, () -> dataKeep.get(), createkeeperMonitor()){
+			@Override
+			public long totalLength() {
+				return initDataKeep * maxFileSize;
+			}
+		};
+
+		Assert.assertFalse(commandStore.canDeleteCmdFile(maxFileSize * 10, 0, maxFileSize, 0));
+
+		dataKeep.set(19);
+		Assert.assertFalse(commandStore.canDeleteCmdFile(maxFileSize * 10, 0, maxFileSize, 0));
+
+		dataKeep.set(18);
+		Assert.assertTrue(commandStore.canDeleteCmdFile(maxFileSize * 10, 0, maxFileSize, 0));
+
+	}
+
+	@Test
 	public void testInterruptClose() throws InterruptedException{
 		
 		Thread thread = new Thread(new AbstractExceptionLogTask() {

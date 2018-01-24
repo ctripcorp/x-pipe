@@ -26,7 +26,7 @@ public class DefaultKeeperMonitor implements KeeperMonitor{
 	
 	@Override
 	public CommandStoreDelay createCommandStoreDelay(CommandStore commandStore) {
-		return new DefaultCommandStoreDelay(commandStore, redisKeeperServer.getKeeperConfig().getDelayLogLimitMicro());
+		return new DefaultCommandStoreDelay(commandStore, () -> redisKeeperServer.getKeeperConfig().getDelayLogLimitMicro());
 	}
 
 	@Override

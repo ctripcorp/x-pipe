@@ -70,7 +70,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getRdbLastOffset(), initEofType(meta)));
 				cmdStore = new DefaultCommandStore(new File(baseDir, meta.getCmdFilePrefix()), cmdFileSize, 
 						config.getReplicationStoreMinTimeMilliToGcAfterCreate(), 
-						config.getReplicationStoreCommandFileNumToKeep(), 
+						() -> config.getReplicationStoreCommandFileNumToKeep(),
 						keeperMonitor);
 			}
 		}
@@ -118,7 +118,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		rdbStoreRef.set(rdbStore);
 		cmdStore = new DefaultCommandStore(new File(baseDir, newMeta.getCmdFilePrefix()), cmdFileSize,
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(), 
-				config.getReplicationStoreCommandFileNumToKeep(), 
+				() -> config.getReplicationStoreCommandFileNumToKeep(),
 				keeperMonitor);
 
 		return rdbStoreRef.get();
