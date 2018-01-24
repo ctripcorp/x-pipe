@@ -17,6 +17,10 @@ public class DefaultKeeperStats implements KeeperStats{
 
 	private AtomicLong partialSyncErrorCount = new AtomicLong();
 
+	private AtomicLong waitOffsetSucceed = new AtomicLong();
+
+	private AtomicLong waitOffsetFail = new AtomicLong();
+
 	@Override
 	public void increaseFullSync() {
 		fullSyncCount.incrementAndGet();
@@ -45,5 +49,25 @@ public class DefaultKeeperStats implements KeeperStats{
 	@Override
 	public long getPartialSyncErrorCount() {
 		return partialSyncErrorCount.get();
+	}
+
+	@Override
+	public long increaseWaitOffsetSucceed() {
+		return waitOffsetSucceed.incrementAndGet();
+	}
+
+	@Override
+	public long increasWaitOffsetFail() {
+		return waitOffsetFail.incrementAndGet();
+	}
+
+	@Override
+	public long getWaitOffsetSucceed() {
+		return waitOffsetSucceed.get();
+	}
+
+	@Override
+	public long getWaitOffsetFail() {
+		return waitOffsetFail.get();
 	}
 }

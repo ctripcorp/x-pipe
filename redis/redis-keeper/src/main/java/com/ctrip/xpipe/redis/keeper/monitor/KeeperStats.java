@@ -19,4 +19,12 @@ public interface KeeperStats {
 
 	long getPartialSyncErrorCount();
 
+	long increaseWaitOffsetSucceed();
+
+	long increasWaitOffsetFail();
+
+	long getWaitOffsetSucceed();
+
+	long getWaitOffsetFail();
+
 }

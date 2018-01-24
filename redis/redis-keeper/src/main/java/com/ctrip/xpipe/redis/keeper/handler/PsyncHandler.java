@@ -106,42 +106,34 @@ public class PsyncHandler extends AbstractCommandHandler{
 		}
 	}
 
-	/**
-	 * wait until the request offset received
-	 * @param redisClient 
-	 * @param args 
-	 * @param string 
-	 * @param offset
-	 */
 	protected void waitForoffset(final String[] args, final RedisSlave redisSlave, String replId, final Long offsetRequest) {
 		
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				
-				try {
-					ReplicationStore replicationStore = redisSlave.getRedisKeeperServer().getReplicationStore();
-					boolean result = replicationStore.awaitCommandsOffset(offsetRequest - replicationStore.beginOffsetWhenCreated() - 1, WAIT_OFFSET_TIME_MILLI);
-					if(result){
-						logger.info("[waitForoffset][wait succeed]{}", redisSlave);
-						doPartialSync(redisSlave, replId, offsetRequest);
-						return;
-					}
-				} catch (InterruptedException e) {
-				}catch(Exception e){
-					logger.error("[waitForoffset][failed]", e);
-					try {
-						redisSlave.close();
-					} catch (IOException e1) {
-						logger.error("[waitForoffset][close slave]" + redisSlave, e);
-					}
-					return;
-				}
-				logger.info("[run][offset wait failed]{}", redisSlave);
-				redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
-				doFullSync(redisSlave);
+		try {
+			ReplicationStore replicationStore = redisSlave.getRedisKeeperServer().getReplicationStore();
+
+			logger.info("[waitForoffset][begin wait]{}", redisSlave);
+			boolean result = replicationStore.awaitCommandsOffset(offsetRequest - replicationStore.beginOffsetWhenCreated() - 1, WAIT_OFFSET_TIME_MILLI);
+			if(result){
+				logger.info("[waitForoffset][wait succeed]{}", redisSlave);
+				redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increaseWaitOffsetSucceed();
+				doPartialSync(redisSlave, replId, offsetRequest);
+				return;
 			}
-		}).start();
+		} catch (InterruptedException e) {
+			logger.error("[waitForoffset]" + redisSlave, e);
+		}catch(Exception e){
+			logger.error("[waitForoffset][failed]", e);
+			try {
+				redisSlave.close();
+			} catch (IOException e1) {
+				logger.error("[waitForoffset][close slave]" + redisSlave, e);
+			}
+			return;
+		}
+		logger.info("[run][offset wait failed]{}", redisSlave);
+		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increasWaitOffsetFail();
+		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+		doFullSync(redisSlave);
 	}
 
 	protected void doPartialSync(RedisSlave redisSlave, String replId, Long offset) {
