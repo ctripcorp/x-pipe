@@ -107,7 +107,7 @@ public class PsyncHandler extends AbstractCommandHandler{
 	}
 
 	protected void waitForoffset(final String[] args, final RedisSlave redisSlave, String replId, final Long offsetRequest) {
-		
+
 		try {
 			ReplicationStore replicationStore = redisSlave.getRedisKeeperServer().getReplicationStore();
 
@@ -183,6 +183,6 @@ public class PsyncHandler extends AbstractCommandHandler{
 	@Override
 	public String[] getCommands() {
 		
-		return new String[]{"psync", "sync"};
+		return new String[]{"psync"};
 	}
 }
