@@ -4,14 +4,13 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
-import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.lambdaworks.redis.ClientOptions;
 import com.lambdaworks.redis.ClientOptions.DisconnectedBehavior;
@@ -28,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -56,9 +54,11 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Autowired
 	private MetaCache metaCache;
 
-	private ExecutorService executors;
+	@VisibleForTesting
+	protected ExecutorService executors;
 
-	private ExecutorService pingAndDelayExecutor;
+	@VisibleForTesting
+	protected ExecutorService pingAndDelayExecutor;
 
 	public DefaultRedisSessionManager() {
 		this(1);
@@ -103,7 +103,8 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		}, 5, 5, TimeUnit.SECONDS);
 	}
 
-	private void removeUnusedRedises() {
+	@VisibleForTesting
+	protected void removeUnusedRedises() {
 		Set<HostPort> currentStoredRedises = sessions.keySet();
 		if(currentStoredRedises.isEmpty())
 			return;
@@ -124,11 +125,12 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			RedisSession redisSession = sessions.getOrDefault(hostPort, null);
 			if(redisSession != null) {
 				logger.info("[removeUnusedRedises]Redis: {} not in use, remove from session manager", hostPort);
-				redisSession.closeSubscribedChannel(DefaultDelayMonitor.CHECK_CHANNEL);
+				redisSession.closeConnection();
 				sessions.remove(hostPort);
 			}
 		});
 	}
+
 
 	private Set<HostPort> getInUseRedises() {
 		Set<HostPort> redisInUse = new HashSet<>();
