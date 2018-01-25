@@ -1,18 +1,18 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.api.GenericRetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
+import com.ctrip.xpipe.redis.console.service.KeeperService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -31,6 +31,9 @@ public class KeeperUpdateController extends AbstractConsoleController {
 
   @Autowired
   private KeeperAdvancedService keeperAdvancedService;
+
+  @Autowired
+  private KeeperService keeperService;
 
   @RequestMapping(value = "/keepers/{dcId}/{clusterId}/{shardId}", method = RequestMethod.GET)
   public List<String> getKeepers(@PathVariable String dcId, @PathVariable String clusterId,
@@ -107,6 +110,18 @@ public class KeeperUpdateController extends AbstractConsoleController {
     } catch (Exception e) {
       logger.error("[deleteKeepers]", e);
       return RetMessage.createFailMessage(e.getMessage());
+    }
+  }
+
+  @RequestMapping(value = "/keepers/check", method = RequestMethod.POST)
+  public RetMessage isKeeper(@RequestBody HostPort hostPort) {
+    logger.info("[isKeeper] check {} keeper or not", hostPort);
+    try {
+        boolean result = keeperService.isKeeper(hostPort);
+        return GenericRetMessage.createGenericRetMessage(result);
+    } catch (Exception e) {
+        logger.error("[isKeeper]{}", e);
+        return RetMessage.createFailMessage(e.getMessage());
     }
   }
 }
