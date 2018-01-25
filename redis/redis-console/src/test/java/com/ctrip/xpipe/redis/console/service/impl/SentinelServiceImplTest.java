@@ -69,4 +69,10 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         Assert.assertEquals(sentinels.size(), all.size());
 
     }
+
+    @Test
+    public void testGetSentinelUsage() {
+        logger.info("{}", sentinelService.allSentinelsByDc());
+        logger.info("{}", sentinelService.getAllSentinelsUsage());
+    }
 }

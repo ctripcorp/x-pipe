@@ -49,7 +49,7 @@ public class DefaultVersionCollector implements VersionCollector {
         samplePlan.getHostPort2SampleResult().forEach((hostPort, sampleResult) -> {
             if(sampleResult.isSuccess()) {
                 String context = sampleResult.getContext();
-                if(context == null) {
+                if(context == null || StringUtil.isEmpty(context)) {
                     logger.warn("[collect]Null String of Redis info, {} {} {}", clusterId, shardId, hostPort);
                     return;
                 }

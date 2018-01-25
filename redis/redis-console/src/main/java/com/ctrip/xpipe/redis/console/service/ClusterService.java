@@ -27,5 +27,5 @@ public interface ClusterService {
 	void unbindDc(String clusterName, String dcName);
 	void update(ClusterTbl cluster);
 	List<String> reBalanceSentinels(int numOfClusters);
-
+	void reBalanceClusterSentinels(List<String> clusterNames);
 }
