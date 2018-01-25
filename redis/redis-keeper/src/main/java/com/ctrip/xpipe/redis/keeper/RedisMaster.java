@@ -31,4 +31,7 @@ public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, 
 	MASTER_STATE getMasterState();
 	
 	void setMasterState(MASTER_STATE masterState);
+
+	String metaInfo();
+
 }

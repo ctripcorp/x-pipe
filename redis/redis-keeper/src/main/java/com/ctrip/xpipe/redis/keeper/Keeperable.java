@@ -10,7 +10,7 @@ public interface Keeperable {
 	boolean isKeeper();
 	
 	void setKeeper();
-	
+
 	default String roleDesc(){
 		if(isKeeper()){
 			return "keeper";

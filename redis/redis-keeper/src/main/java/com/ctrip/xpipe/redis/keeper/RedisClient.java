@@ -38,6 +38,8 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole,
 	String []readCommands(ByteBuf byteBuf);
 
 	String info();
+
+	String ip();
 	
 	Channel channel();
 

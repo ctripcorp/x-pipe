@@ -41,4 +41,6 @@ public interface RedisSlave extends RedisClient, PartialAware, CommandsListener{
 	 */
 	void markPsyncProcessed();
 
+	String metaInfo();
+
 }

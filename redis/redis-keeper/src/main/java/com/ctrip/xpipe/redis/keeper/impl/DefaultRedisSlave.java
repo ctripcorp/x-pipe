@@ -293,8 +293,13 @@ public class DefaultRedisSlave implements RedisSlave {
 				"ip=%s,port=%d,state=%s,offset=%d,lag=%d,remotePort=%d" ,
 				IpUtils.getIp(channel().remoteAddress()), getSlaveListeningPort(), 
 				slaveState != null ? slaveState.getDesc() : "null",
-				replAckOff, lag/1000, ((InetSocketAddress)channel().remoteAddress()).getPort());
+				replAckOff, lag/1000, remotePort());
 		return info;
+	}
+
+	@Override
+	public String ip() {
+		return redisClient.ip();
 	}
 
 	@Override
@@ -317,6 +322,16 @@ public class DefaultRedisSlave implements RedisSlave {
 
 		logger.info("[markPsyncProcessed]{}", this);
 		psyncProcessed.set(true);
+	}
+
+	@Override
+	public String metaInfo() {
+		return String.format("%s(%s:%d)", roleDesc(), ip(), getSlaveListeningPort());
+	}
+
+	private int remotePort() {
+		Channel channel = channel();
+		return channel == null? 0: ((InetSocketAddress)channel.remoteAddress()).getPort();
 	}
 
 	@Override

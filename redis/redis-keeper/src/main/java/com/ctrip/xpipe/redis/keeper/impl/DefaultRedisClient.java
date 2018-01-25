@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
+import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -203,6 +204,12 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	@Override
 	public String info() {
 		return "";
+	}
+
+	@Override
+	public String ip() {
+		Channel channel = channel();
+		return channel == null? "null": IpUtils.getIp(channel.remoteAddress());
 	}
 
 	@Override

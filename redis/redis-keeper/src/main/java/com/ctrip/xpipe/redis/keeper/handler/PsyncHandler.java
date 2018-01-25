@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.error.NoMasterlinkRedisError;
@@ -161,14 +162,18 @@ public class PsyncHandler extends AbstractCommandHandler{
 	protected void doFullSync(RedisSlave redisSlave) {
 
 		try {
-			redisSlave.markPsyncProcessed();
-
 			if(logger.isInfoEnabled()){
 				logger.info("[doFullSync]" + redisSlave);
 			}
+
+			redisSlave.markPsyncProcessed();
 			RedisKeeperServer redisKeeperServer = redisSlave.getRedisKeeperServer();
+
+			//alert full sync
+			String alert = String.format("FULL(M)<-%s[%s,%s]", redisSlave.metaInfo(), redisKeeperServer.getClusterId(), redisKeeperServer.getShardId());
+			EventMonitor.DEFAULT.logAlertEvent(alert);
+
 			redisKeeperServer.fullSyncToSlave(redisSlave);
-			
 			redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();
 		} catch (IOException e) {
 			logger.error("[doFullSync][close client]" + redisSlave, e);

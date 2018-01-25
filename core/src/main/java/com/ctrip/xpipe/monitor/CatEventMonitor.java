@@ -4,6 +4,8 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.dianping.cat.Cat;
 import com.dianping.cat.message.Event;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author leoliang
@@ -14,6 +16,7 @@ public class CatEventMonitor implements EventMonitor {
 
     private final String FAIL = "fail";
     private final int typeMaxLen = 128;
+    private static final Logger logger = LoggerFactory.getLogger(CatEventMonitor.class);
 
     @Override
     public void logEvent(String type, String name, long count) {
@@ -28,6 +31,7 @@ public class CatEventMonitor implements EventMonitor {
     @Override
     public void logAlertEvent(String simpleAlertMessage) {
 
+        logger.info("{}", simpleAlertMessage);
         Cat.logEvent(ALERT_TYPE, shorten(simpleAlertMessage), FAIL, "");
     }
 
