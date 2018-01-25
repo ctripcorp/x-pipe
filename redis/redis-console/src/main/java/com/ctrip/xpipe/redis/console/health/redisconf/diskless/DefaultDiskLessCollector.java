@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConf;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfManager;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +52,7 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         });
     }
 
-    void checkRedisDiskLess(HostPort hostPort, List<String> serverConf, String clusterId, String shardId) {
+    private void checkRedisDiskLess(HostPort hostPort, List<String> serverConf, String clusterId, String shardId) {
         if(versionMatches(hostPort) && isReplDiskLessSync(serverConf)) {
             String message = String.format("Redis %s should not set %s as YES",
                     hostPort.toString(), DiskLessMonitor.REPL_DISKLESS_SYNC);
@@ -59,7 +60,8 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         }
     }
 
-    private boolean isReplDiskLessSync(List<String> serverConf) {
+    @VisibleForTesting
+    protected boolean isReplDiskLessSync(List<String> serverConf) {
         logger.debug("[isReplDiskLessSync]config is as: {}", serverConf);
         try {
             String key = serverConf.get(0);
@@ -75,7 +77,8 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         return false;
     }
 
-    private boolean versionMatches(HostPort hostPort) {
+    @VisibleForTesting
+    protected boolean versionMatches(HostPort hostPort) {
         RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
         String targetVersion = consoleConfig.getReplDisklessMinRedisVersion();
         String version = redisConf.getRedisVersion();

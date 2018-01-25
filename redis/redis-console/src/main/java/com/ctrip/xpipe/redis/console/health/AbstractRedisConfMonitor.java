@@ -16,6 +16,7 @@ import java.util.List;
  */
 public abstract class AbstractRedisConfMonitor<T extends BaseInstanceResult> extends BaseSampleMonitor<T>{
 
+    private long INIT_TIME = -1;
     private long lastPlanTime = 0;
 
     @Autowired
@@ -26,11 +27,18 @@ public abstract class AbstractRedisConfMonitor<T extends BaseInstanceResult> ext
 
     @PostConstruct
     public void postUpdateLastPlanTime() {
-        lastPlanTime = System.currentTimeMillis();
+        lastPlanTime = INIT_TIME;
     }
 
     @Override
     public Collection<BaseSamplePlan<T>> generatePlan(List<DcMeta> dcMetas) {
+
+        // do not generate plan at the start time
+        if(lastPlanTime == INIT_TIME) {
+            log.debug("[generatePlan][first time load, wait]");
+            lastPlanTime = System.currentTimeMillis();
+            return null;
+        }
 
         if(!shouldStart()){
             return null;
