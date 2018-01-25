@@ -125,7 +125,12 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			RedisSession redisSession = sessions.getOrDefault(hostPort, null);
 			if(redisSession != null) {
 				logger.info("[removeUnusedRedises]Redis: {} not in use, remove from session manager", hostPort);
-				redisSession.closeConnection();
+				// add try logic to continue working on others
+				try {
+					redisSession.closeConnection();
+				} catch (Exception ignore) {
+
+				}
 				sessions.remove(hostPort);
 			}
 		});
