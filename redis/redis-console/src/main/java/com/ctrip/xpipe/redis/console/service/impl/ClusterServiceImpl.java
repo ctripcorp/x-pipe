@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
@@ -11,6 +12,7 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -18,7 +20,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
+import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -43,7 +48,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private SentinelService sentinelService;
-	
+
+	@Autowired
+	private ConsoleConfig consoleConfig;
+
+	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
+	private ScheduledExecutorService scheduled;
+
 	@Override
 	public ClusterTbl find(final String clusterName) {
 		return queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
@@ -354,7 +365,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		List<String> clusters = randomlyChosenClusters(findAllClusterNames(), numOfClusters);
 		logger.info("[reBalanceSentinels] pick up clusters: {}", clusters);
 
-		doReBalance(clusters);
+		reBalanceClusterSentinels(clusters);
 		return clusters;
 	}
 
@@ -374,14 +385,25 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return new LinkedList<>(result);
 	}
 
-	@VisibleForTesting
-	protected void doReBalance(final List<String> clusters) {
+	public void reBalanceClusterSentinels(final List<String> clusters) {
         List<String> dcNames = dcService.findAllDcNames().stream()
                 .map(dcTbl -> dcTbl.getDcName()).collect(Collectors.toList());
         Map<String, List<SetinelTbl>> dcToSentinels = getDcNameMappedSentinels(dcNames);
-        for(String cluster : clusters) {
-            balanceCluster(dcToSentinels, cluster);
-        }
+
+		// maxChangeOnce must be smaller than DefaultDcMetaCache.META_MODIFY_PROTECT_COUNT
+		int maxChangeOnce = consoleConfig.getRebalanceSentinelMaxNumOnce(),
+				changingPeriod = consoleConfig.getRebalanceSentinelInterval();
+		if(clusters.size() < maxChangeOnce) {
+			for (String cluster : clusters) {
+				balanceCluster(dcToSentinels, cluster);
+			}
+		} else {
+			List<String> nextExecutionClusters = clusters.subList(maxChangeOnce, clusters.size());
+			for(int i = 0; i < maxChangeOnce; i++) {
+				balanceCluster(dcToSentinels, clusters.get(i));
+			}
+			scheduled.schedule(() -> reBalanceClusterSentinels(nextExecutionClusters), changingPeriod, TimeUnit.SECONDS);
+		}
 	}
 
 	// Cache {dc name} -> List {SentinelTbl}

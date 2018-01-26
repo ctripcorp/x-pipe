@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
  */
 public abstract class AbstractRedisConfMonitor<T extends BaseInstanceResult> extends BaseSampleMonitor<T>{
 
+    private long INIT_TIME = -1;
     private long lastPlanTime = 0;
 
     @Autowired
@@ -23,9 +25,20 @@ public abstract class AbstractRedisConfMonitor<T extends BaseInstanceResult> ext
     @Autowired(required = false)
     private CrossDcClusterServer clusterServer;
 
+    @PostConstruct
+    public void postUpdateLastPlanTime() {
+        lastPlanTime = INIT_TIME;
+    }
 
     @Override
     public Collection<BaseSamplePlan<T>> generatePlan(List<DcMeta> dcMetas) {
+
+        // do not generate plan at the start time
+        if(lastPlanTime == INIT_TIME) {
+            log.debug("[generatePlan][first time load, wait]");
+            lastPlanTime = System.currentTimeMillis();
+            return null;
+        }
 
         if(!shouldStart()){
             return null;

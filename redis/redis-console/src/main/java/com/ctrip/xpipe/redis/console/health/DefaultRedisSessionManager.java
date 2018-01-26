@@ -1,15 +1,16 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
-import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.lambdaworks.redis.ClientOptions;
 import com.lambdaworks.redis.ClientOptions.DisconnectedBehavior;
@@ -26,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,13 +48,17 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	private ClientResources clientResources;
 
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create(getClass().getSimpleName()));
+	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
+			XpipeThreadFactory.create(getClass().getSimpleName()));
 
 	@Autowired
 	private MetaCache metaCache;
 
-	@Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
-	Executor executors;
+	@VisibleForTesting
+	protected ExecutorService executors;
+
+	@VisibleForTesting
+	protected ExecutorService pingAndDelayExecutor;
 
 	public DefaultRedisSessionManager() {
 		this(1);
@@ -68,6 +72,16 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	@PostConstruct
 	public void postConstruct(){
+
+		int corePoolSize = 30 * OsUtils.getCpuCount();
+		int maxPoolSize =  512;
+		DefaultExecutorFactory executorFactory = new DefaultExecutorFactory("RedisSession", corePoolSize, maxPoolSize,
+				new ThreadPoolExecutor.AbortPolicy());
+		executors = executorFactory.createExecutorService();
+
+		int fixedPoolSize = OsUtils.getCpuCount();
+		pingAndDelayExecutor = new DefaultExecutorFactory("Ping-Delay-Executor", fixedPoolSize, fixedPoolSize,
+				new ThreadPoolExecutor.CallerRunsPolicy()).createExecutorService();
 
 		scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 			@Override
@@ -89,7 +103,8 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		}, 5, 5, TimeUnit.SECONDS);
 	}
 
-	private void removeUnusedRedises() {
+	@VisibleForTesting
+	protected void removeUnusedRedises() {
 		Set<HostPort> currentStoredRedises = sessions.keySet();
 		if(currentStoredRedises.isEmpty())
 			return;
@@ -110,11 +125,17 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			RedisSession redisSession = sessions.getOrDefault(hostPort, null);
 			if(redisSession != null) {
 				logger.info("[removeUnusedRedises]Redis: {} not in use, remove from session manager", hostPort);
-				redisSession.closeSubscribedChannel(DefaultDelayMonitor.CHECK_CHANNEL);
+				// add try logic to continue working on others
+				try {
+					redisSession.closeConnection();
+				} catch (Exception ignore) {
+
+				}
 				sessions.remove(hostPort);
 			}
 		});
 	}
+
 
 	private Set<HostPort> getInUseRedises() {
 		Set<HostPort> redisInUse = new HashSet<>();
@@ -143,7 +164,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			synchronized (this) {
 				session = sessions.get(hostPort);
 				if (session == null) {
-					session = new RedisSession(findRedisConnection(host, port), hostPort, executors);
+					session = new RedisSession(findRedisConnection(host, port), hostPort, executors, pingAndDelayExecutor);
 					sessions.put(hostPort, session);
 				}
 			}
@@ -183,9 +204,14 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		}
 	}
 
+	public ExecutorService getExecutors() {
+		return executors;
+	}
+
 	@PreDestroy
 	public void preDestroy(){
 		closeAllConnections();
 		clientResources.shutdown();
+		executors.shutdownNow();
 	}
 }

@@ -59,7 +59,8 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 
 		int corePoolSize = 5 * OsUtils.getCpuCount();
 		int maxPoolSize =  20 * OsUtils.getCpuCount();
-		DefaultExecutorFactory executorFactory = new DefaultExecutorFactory(GLOBAL_EXECUTOR, corePoolSize, maxPoolSize, new ThreadPoolExecutor.AbortPolicy());
+		DefaultExecutorFactory executorFactory = new DefaultExecutorFactory(GLOBAL_EXECUTOR, corePoolSize, maxPoolSize,
+				new ThreadPoolExecutor.AbortPolicy());
 		return executorFactory.createExecutorService();
 	}
 
