@@ -2,12 +2,15 @@ package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.exception.ErrorMessage;
+import com.ctrip.xpipe.netty.TcpPortCheckCommand;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
-import com.ctrip.xpipe.utils.TcpPortCheck;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -57,33 +60,49 @@ public class DeleteKeeperCommand extends AbstractKeeperCommand<Void>{
 
 	@Override
 	protected Command<Void> createCheckStateCommand() {
-		return new AbstractCommand<Void>() {
-
-			@Override
-			public String getName() {
-				return "[check keeper deleted]" + DeleteKeeperCommand.this;
-			}
-
-			@Override
-			protected void doExecute() throws Exception {
-				
-				boolean result = new TcpPortCheck(keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort()).checkOpen();
-				if(result){
-					future().setFailure(new DeleteKeeperStillAliveException(keeperTransMeta.getKeeperMeta()));
-				}else{
-					future().setSuccess();
-				}
-			}
-
-			@Override
-			protected void doReset() {
-				
-			}
-		};
+		return new DeleteCheckPortCommand(keeperTransMeta.getKeeperMeta());
 	}
 
 	@Override
 	protected void doReset() {
 		
 	}
+
+	public static class DeleteCheckPortCommand extends 	AbstractCommand<Void> {
+
+		private KeeperMeta keeperMeta;
+
+		public DeleteCheckPortCommand(KeeperMeta keeperMeta){
+			this.keeperMeta = keeperMeta;
+		}
+
+		@Override
+		public String getName() {
+			return "[check keeper deleted]" + keeperMeta.desc();
+		}
+
+		@Override
+		protected void doExecute() throws Exception {
+
+			CommandFuture<Boolean> future = new TcpPortCheckCommand(keeperMeta.getIp(), keeperMeta.getPort()).execute();
+			future.addListener(new CommandFutureListener<Boolean>() {
+				@Override
+				public void operationComplete(CommandFuture<Boolean> commandFuture) throws Exception {
+					if(commandFuture.isSuccess()){
+						future().setFailure(new DeleteKeeperStillAliveException(keeperMeta));
+					}else {
+						future().setSuccess();
+					}
+				}
+			});
+		}
+
+		@Override
+		protected void doReset() {
+
+		}
+	};
+
+
+
 }
