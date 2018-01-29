@@ -38,6 +38,8 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 	public static final String GLOBAL_EXECUTOR = "globalExecutor";
 	public static final int maxScheduledCorePoolSize = 8;
 	public static final int THREAD_POOL_TIME_OUT = 5;
+	public static final int GLOBAL_THREAD_MULTI_CORE = 100;
+	public static final int GLOBAL_THREAD_MAX = 100;
 
 
 	@Bean(name = SCHEDULED_EXECUTOR)
@@ -57,8 +59,8 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 	@Bean(name = GLOBAL_EXECUTOR)
 	public ExecutorService getGlobalExecutor() {
 
-		int corePoolSize = 5 * OsUtils.getCpuCount();
-		int maxPoolSize =  20 * OsUtils.getCpuCount();
+		int corePoolSize = OsUtils.getMultiCpuOrMax(GLOBAL_THREAD_MULTI_CORE, GLOBAL_THREAD_MAX);
+		int maxPoolSize =  2 * OsUtils.getCpuCount();
 		DefaultExecutorFactory executorFactory = new DefaultExecutorFactory(GLOBAL_EXECUTOR, corePoolSize, maxPoolSize,
 				new ThreadPoolExecutor.AbortPolicy());
 		return executorFactory.createExecutorService();

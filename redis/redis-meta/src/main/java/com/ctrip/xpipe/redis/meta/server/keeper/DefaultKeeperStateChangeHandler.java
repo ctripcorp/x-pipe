@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.keeper;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -15,6 +16,8 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +28,8 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -43,8 +48,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 
-	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
-	private Executor executors;
+	private ExecutorService executors;
 
 	private KeyedOneThreadTaskExecutor<Pair<String, String>> keyedOneThreadTaskExecutor;
 
@@ -57,6 +61,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
+		executors = DefaultExecutorFactory.createAllowCoreTimeout("KeeperStateChangeHandler", OsUtils.defaultMaxCoreThreadCount()).createExecutorService();
 		keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<>(executors);
 	}
 	
@@ -109,6 +114,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	protected void doDispose() throws Exception {
 		
 		keyedOneThreadTaskExecutor.destroy();
+		executors.shutdown();
 		super.doDispose();
 	}
 	
@@ -128,7 +134,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		this.scheduled = scheduled;
 	}
 
-	public void setExecutors(Executor executors) {
+	public void setExecutors(ExecutorService executors) {
 		this.executors = executors;
 	}
 }
