@@ -1,21 +1,29 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
+import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
+import com.ctrip.xpipe.redis.console.health.delay.DelayService;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+import com.ctrip.xpipe.redis.core.IVisitor;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -43,6 +51,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private OrganizationService organizationService;
 	@Autowired
 	private DcClusterShardService dcClusterShardService;
+	@Autowired
+	private DelayService delayService;
+	@Autowired
+	private MetaCache metaCache;
 
 	private Random random = new Random();
 
@@ -444,5 +456,47 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		int randomNum = Math.abs(random.nextInt());
 		int randomIndex = randomNum % sentinels.size();
 		return sentinels.get(randomIndex).getSetinelId();
+	}
+
+	@Override
+	public List<ClusterTbl> findUnhealthyClusters() {
+		try {
+			XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+			if(xpipeMeta == null || xpipeMeta.getDcs() == null) {
+				return Collections.emptyList();
+			}
+
+			Set<ClusterMeta> unhealthyClusterMetas = Sets.newHashSet();
+			for(DcMeta dcMeta: xpipeMeta.getDcs().values()) {
+				for(ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+					loop:
+					for(ShardMeta shardMeta : clusterMeta.getShards().values()) {
+						for(RedisMeta redisMeta : shardMeta.getRedises()) {
+							HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
+							long delay = delayService.getDelay(hostPort);
+							if(delay == DefaultDelayMonitor.SAMPLE_LOST_AND_NO_PONG
+									|| delay == DefaultDelayMonitor.SAMPLE_LOST_BUT_PONG) {
+
+								unhealthyClusterMetas.add(clusterMeta);
+								break loop;
+							}
+						}
+					}
+				}
+			}
+			return convert2ClusterTbls(unhealthyClusterMetas);
+		} catch (Exception e) {
+			logger.error("[findUnhealthyClusters]{}", e);
+			return Collections.emptyList();
+		}
+	}
+
+	protected List<ClusterTbl> convert2ClusterTbls(Set<ClusterMeta> clusterMetas) {
+		if(clusterMetas.isEmpty()) {
+			return Collections.emptyList();
+		}
+		for(ClusterMeta clusterMeta : clusterMetas) {
+			ClusterTbl proto = new ClusterTbl().setActivedcId();
+		}
 	}
 }

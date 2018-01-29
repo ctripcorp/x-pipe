@@ -191,4 +191,21 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
             Assert.assertEquals(dcClusterShardTbl1.getSetinelId(), dcClusterShardTbl2.getSetinelId());
         }
     }
+
+    @Test
+    public void testBreakLoop() {
+        for(int i = 0; i < 10; i++) {
+            loop:
+            for(int j = 0; j < 10; j++) {
+                for(int k = 0; k < 10; k++) {
+                    if(k == 1) {
+                        break loop;
+                    }
+                    System.out.println("k: " + k);
+                }
+                System.out.println("j: " + j);
+            }
+            System.out.println("i: " + i);
+        }
+    }
 }

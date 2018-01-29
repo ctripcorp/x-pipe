@@ -28,4 +28,6 @@ public interface ClusterService {
 	void update(ClusterTbl cluster);
 	List<String> reBalanceSentinels(int numOfClusters);
 	void reBalanceClusterSentinels(List<String> clusterNames);
+
+	List<ClusterTbl> findUnhealthyClusters();
 }
