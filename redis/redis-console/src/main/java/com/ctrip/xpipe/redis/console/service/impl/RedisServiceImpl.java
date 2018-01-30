@@ -137,7 +137,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     @Override
-    public void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> redisAddresses) throws DalException, ResourceNotFoundException {
+    public synchronized void insertRedises(String dcId, String clusterId, String shardId,
+                                           List<Pair<String, Integer>> redisAddresses)
+            throws DalException, ResourceNotFoundException {
 
         doInsertInstances(XPipeConsoleConstant.ROLE_REDIS, dcId, clusterId, shardId, redisAddresses);
 
@@ -145,7 +147,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     @Override
-    public int insertKeepers(String dcId, String clusterId, String shardId, List<KeeperBasicInfo> keepers) throws DalException, ResourceNotFoundException {
+    public synchronized int insertKeepers(String dcId, String clusterId, String shardId,
+                                          List<KeeperBasicInfo> keepers) throws DalException, ResourceNotFoundException {
 
         logger.info("[insertKeepers]{}, {}, {}, {}", dcId, clusterId, shardId, keepers);
 

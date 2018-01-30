@@ -365,6 +365,9 @@
 			<readset name="NAME">
 				<member name='shard-name'/>
 			</readset>
+			<readset name="MONITOR_NAME">
+				<member name="setinel-monitor-name"/>
+			</readset>
 		</readsets>
 
 		<query-defs>
@@ -429,6 +432,15 @@
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>
+				</statement>
+			</query>
+			<query name="query-all-monitor-names" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
 				</statement>
 			</query>
 		</query-defs>

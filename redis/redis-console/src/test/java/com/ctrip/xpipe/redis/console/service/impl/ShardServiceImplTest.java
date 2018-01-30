@@ -13,6 +13,9 @@ import java.util.List;
  *         Jul 17, 2017
  */
 public class ShardServiceImplTest extends AbstractServiceImplTest{
+    @Test
+    public void findOrCreateShardIfNotExist() throws Exception {
+    }
 
     @Autowired
     private ShardServiceImpl shardService;
