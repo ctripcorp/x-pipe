@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.utils.ObjectUtils;
+import com.google.common.collect.Sets;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -15,6 +17,7 @@ import javax.annotation.PostConstruct;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -43,39 +46,34 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			throw new ServerException("Cannot construct dao.", e);
 		}
 	}
-	
-	@DalTransaction
+
 	public ShardTbl createShard(String clusterName, ShardTbl shard, Map<Long, SetinelTbl> sentinels) throws DalException{
 		// shard basic
 		validateShard(clusterName, shard);
-		final ClusterTbl cluster = clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
-		shard.setClusterId(cluster.getId());
-		shardTblDao.insert(shard);
-
-		// dc-cluster-shards
-		List<DcClusterTbl> dcClusters = queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
-			@Override
-			public List<DcClusterTbl> doQuery() throws DalException {
-				return dcClusterTblDao.findAllByClusterId(cluster.getId(), DcClusterTblEntity.READSET_FULL);
-			}
-		});
-		
-		if(null != dcClusters) {
-			List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
-			for(DcClusterTbl dcCluster : dcClusters) {
-				DcClusterShardTbl dcClusterShardProto = dcClusterShardTblDao.createLocal();
-				dcClusterShardProto.setDcClusterId(dcCluster.getDcClusterId())
-					.setShardId(shard.getId());
-				if(sentinels != null && null != sentinels.get(dcCluster.getDcId())) {
-					dcClusterShardProto.setSetinelId(sentinels.get(dcCluster.getDcId()).getSetinelId());
-				}
-				dcClusterShards.add(dcClusterShardProto);
-			}
-			dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
-			
-		}
-		return shard;
+		return insertShard(clusterName, shard, sentinels);
 	}
+
+	public List<ShardTbl> queryAllShardsByClusterName(String clusterName) {
+        return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>(){
+            @Override
+            public List<ShardTbl> doQuery() throws DalException {
+                return shardTblDao.findAllByClusterName(clusterName, ShardTblEntity.READSET_FULL);
+            }
+        });
+    }
+
+    public Set<String> queryAllShardMonitorNames() {
+        List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+            @Override
+            public List<ShardTbl> doQuery() throws DalException {
+                return shardTblDao.queryAllMonitorNames(ShardTblEntity.READSET_MONITOR_NAME);
+            }
+        });
+        Set<String> monitorNames = Sets.newHashSetWithExpectedSize(shards.size());
+        shards.forEach(shardTbl -> monitorNames.add(shardTbl.getSetinelMonitorName()));
+
+        return monitorNames;
+    }
 	
 	@DalTransaction
 	public void deleteShardsBatch(List<ShardTbl> shards) throws DalException {
@@ -140,5 +138,36 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			}
 		}
 	}
-	
+
+	@DalTransaction
+	public ShardTbl insertShard(String clusterName, ShardTbl shard, Map<Long, SetinelTbl> sentinels) throws DalException{
+
+		final ClusterTbl cluster = clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
+		shard.setClusterId(cluster.getId());
+		shardTblDao.insert(shard);
+
+		// dc-cluster-shards
+		List<DcClusterTbl> dcClusters = queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
+			@Override
+			public List<DcClusterTbl> doQuery() throws DalException {
+				return dcClusterTblDao.findAllByClusterId(cluster.getId(), DcClusterTblEntity.READSET_FULL);
+			}
+		});
+
+		if(null != dcClusters) {
+			List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
+			for(DcClusterTbl dcCluster : dcClusters) {
+				DcClusterShardTbl dcClusterShardProto = dcClusterShardTblDao.createLocal();
+				dcClusterShardProto.setDcClusterId(dcCluster.getDcClusterId())
+						.setShardId(shard.getId());
+				if(sentinels != null && null != sentinels.get(dcCluster.getDcId())) {
+					dcClusterShardProto.setSetinelId(sentinels.get(dcCluster.getDcId()).getSetinelId());
+				}
+				dcClusterShards.add(dcClusterShardProto);
+			}
+			dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
+
+		}
+		return shard;
+	}
 }

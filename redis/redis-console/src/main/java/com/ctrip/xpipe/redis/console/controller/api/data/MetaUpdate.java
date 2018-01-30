@@ -1,20 +1,28 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardNRedisCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
 
@@ -28,22 +36,28 @@ import java.util.*;
 public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
-    private ClusterService clusterService;
+    protected ClusterService clusterService;
 
     @Autowired
-    private DcService dcService;
+    protected DcService dcService;
 
     @Autowired
-    private SentinelService sentinelService;
+    protected SentinelService sentinelService;
 
     @Autowired
-    private ShardService shardService;
+    protected ShardService shardService;
 
     @Autowired
-    private MetaCache metaCache;
+    protected MetaCache metaCache;
 
     @Autowired
-    private OrganizationService organizationService;
+    protected OrganizationService organizationService;
+
+    @Autowired
+    protected RedisService redisService;
+
+    @Autowired
+    protected KeeperAdvancedService keeperAdvancedService;
 
     @RequestMapping(value = "/stats", method = RequestMethod.GET)
     public Map<String, Integer> getStats() {
@@ -293,8 +307,121 @@ public class MetaUpdate extends AbstractConsoleController {
         List<ShardTbl> allByClusterName = shardService.findAllByClusterName(clusterName);
         List<ShardCreateInfo> result = new LinkedList<>();
 
-        allByClusterName.forEach(shardTbl -> result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName())));
+        allByClusterName.forEach(shardTbl -> result.add(
+                new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName())));
         return result;
     }
 
+
+    @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE,
+            method = RequestMethod.POST)
+    public RetMessage createShard(@PathVariable String clusterName, @PathVariable String shardName,
+                                  @RequestBody ShardNRedisCreateInfo createInfo) {
+
+        logger.info("[createShard] Create Shard with redises: {} - {}", clusterName, createInfo);
+
+        try {
+            createShardWithOnePost(clusterName, shardName, null, createInfo);
+            return RetMessage.createSuccessMessage("Successfully created shard");
+        } catch (Exception e) {
+            logger.error("[createShard]" + clusterName + "," + createInfo.getShardName(), e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+
+    }
+
+    @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{monitor}",
+            method = RequestMethod.POST)
+    public RetMessage createShard(@PathVariable String clusterName, @PathVariable String shardName,
+                                  @PathVariable String monitorName,
+                                  @RequestBody ShardNRedisCreateInfo createInfo) {
+
+        logger.info("[createShard] Create Shard with redises: {} - {}", clusterName, createInfo);
+
+        try {
+            createShardWithOnePost(clusterName, shardName, monitorName, createInfo);
+            return RetMessage.createSuccessMessage("Successfully created shard");
+        } catch (Exception e) {
+            logger.error("[createShard]" + clusterName + "," + createInfo.getShardName(), e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+
+    }
+
+    @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE,
+            method = RequestMethod.DELETE)
+    public RetMessage deleteShard(@PathVariable String clusterName, @PathVariable String shardName) {
+        logger.info("[deleteShard] Delete Shard {} - {}", clusterName, shardName);
+        try {
+            shardService.deleteShard(clusterName, shardName);
+            return RetMessage.createSuccessMessage("Successfully deleted shard");
+        } catch (Exception e) {
+            logger.error("[deleteShard] {}", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @DalTransaction
+    private void createShardWithOnePost(String clusterName, String shardName, String monitorName,
+                                          ShardNRedisCreateInfo createInfo) throws Exception {
+
+        // Pre-validate
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if (clusterTbl == null) {
+            throw new CheckFailException("Cluster could not be found");
+        }
+
+        // Create shard
+        Map<Long, SetinelTbl> randomSentinelByDc = sentinelService.eachRandomSentinelByDc();
+
+        ShardTbl proto = new ShardTbl()
+                .setSetinelMonitorName(monitorName)
+                .setShardName(shardName);
+        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, randomSentinelByDc);
+
+        // Fill in redis, keeper
+        Map<String, List<Pair<String, Integer>>> dc2Redis = createInfo.getDcMappedRedisAddr();
+        for(Map.Entry<String, List<Pair<String, Integer>>> entry : dc2Redis.entrySet()) {
+            String dcId = outerDcToInnerDc(entry.getKey());
+            redisService.insertRedises(dcId, clusterName, shardName, entry.getValue());
+            addKeepers(dcId, clusterName, shardTbl);
+        }
+    }
+
+    @VisibleForTesting
+    protected int addKeepers(String dcId, String clusterId, ShardTbl shardTbl) throws DalException {
+
+        List<RedisTbl> keepers = null;
+        try {
+            keepers = redisService.findKeepersByDcClusterShard(dcId, clusterId, shardTbl.getShardName());
+        } catch (ResourceNotFoundException e) {
+            logger.info("[addKeepers] no keepers on shard {}: {}", clusterId, shardTbl.getShardName());
+        }
+
+        if(keepers != null && !keepers.isEmpty()) {
+            if (keepers.size() > 2) {
+                throw new IllegalStateException("Keeper numbers should not be greater than 2");
+            } else if (keepers.size() == 1) {
+                try {
+                    redisService.deleteKeepers(dcId, clusterId, shardTbl.getShardName());
+                } catch (ResourceNotFoundException ignore) {
+                    // should not catch this, as we already get keepers
+                }
+            } else {
+                // if size == 2, do nothing
+                return 0;
+            }
+        }
+
+        List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(dcId,
+                RedisProtocol.REDIS_PORT_DEFAULT, (ip, port) -> true, clusterId);
+
+        logger.info("[addKeepers]{},{},{},{}, {}", dcId, clusterId, shardTbl.getShardName(), bestKeepers);
+        try {
+            return redisService.insertKeepers(dcId, clusterId, shardTbl.getShardName(), bestKeepers);
+        } catch (ResourceNotFoundException e) {
+            logger.warn("[addKeepers] {}", e);
+        }
+        return 0;
+    }
 }
