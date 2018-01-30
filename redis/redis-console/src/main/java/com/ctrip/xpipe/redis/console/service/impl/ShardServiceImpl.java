@@ -69,7 +69,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	}
 
 	@Override
-	public ShardTbl createShard(final String clusterName, final ShardTbl shard, final Map<Long, SetinelTbl> sentinels) {
+	public synchronized ShardTbl createShard(final String clusterName, final ShardTbl shard,
+											 final Map<Long, SetinelTbl> sentinels) {
 		return queryHandler.handleQuery(new DalQuery<ShardTbl>() {
 			@Override
 			public ShardTbl doQuery() throws DalException {
@@ -79,7 +80,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	}
 
 	@Override
-	public ShardTbl findOrCreateShardIfNotExist(String clusterName, ShardTbl shard, Map<Long, SetinelTbl> sentinels) {
+	public synchronized ShardTbl findOrCreateShardIfNotExist(String clusterName, ShardTbl shard,
+															 Map<Long, SetinelTbl> sentinels) {
 
 		logger.info("[findOrCreateShardIfNotExist] Begin find or create shard: {}", shard);
 		String monitorName = shard.getSetinelMonitorName();

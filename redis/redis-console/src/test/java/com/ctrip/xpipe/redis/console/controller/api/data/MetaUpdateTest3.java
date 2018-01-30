@@ -56,7 +56,6 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    @DirtiesContext
     public void createShard() throws Exception {
         ShardNRedisCreateInfo createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
                                                         Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
@@ -162,8 +161,6 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
         RetMessage result = metaUpdate.createShard(clusterName, shardName, createInfo);
         Assert.assertEquals(RetMessage.SUCCESS_STATE, result.getState());
-        Assert.assertEquals(String.format("Both %s and %s is assigned as sentinel monitor name",
-                shardName, clusterName + "-" + shardName), result.getMessage());
     }
 
     @Test
