@@ -19,6 +19,12 @@ public abstract class AbstractCommandHandler implements CommandHandler{
 		doHandle(args, redisClient);
 	}
 
+	/**
+	 * when implements this method, should not block or sleep
+	 * @param args
+	 * @param redisClient
+	 * @throws Exception
+	 */
 	protected abstract void doHandle(String[] args, RedisClient redisClient) throws Exception;
 	
 	@Override

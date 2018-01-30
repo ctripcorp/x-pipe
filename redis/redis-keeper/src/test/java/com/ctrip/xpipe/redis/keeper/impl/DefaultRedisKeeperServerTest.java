@@ -28,6 +28,16 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 	}
 
 	@Test
+	public void testLongTask() throws Exception {
+
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		redisKeeperServer.processCommandSequentially(() -> sleep(1100));
+
+	}
+
+	@Test
 	public void testStopGetReplicationStore() throws Exception {
 
 		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();

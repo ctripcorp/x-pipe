@@ -438,11 +438,6 @@ public class DefaultRedisSlave implements RedisSlave {
 		redisClient.addChannelCloseReleaseResources(releasable);
 	}
 
-	public void processCommandSequentially(Runnable runnable) {
-		redisClient.processCommandSequentially(runnable);
-	}
-	// delegate methods end
-	
 	@Override
 	public String toString() {
 		return this.redisClient.toString();

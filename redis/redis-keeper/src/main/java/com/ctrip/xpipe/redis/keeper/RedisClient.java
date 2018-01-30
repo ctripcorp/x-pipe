@@ -49,6 +49,4 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole,
 	
 	void addChannelCloseReleaseResources(Releasable releasable);
 
-	void processCommandSequentially(Runnable runnable);
-
 }

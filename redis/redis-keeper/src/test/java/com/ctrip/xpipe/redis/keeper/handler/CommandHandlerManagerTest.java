@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import io.netty.buffer.ByteBuf;
 import org.junit.Assert;
 import org.junit.Before;
@@ -19,6 +20,7 @@ import java.util.concurrent.Executors;
 
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 
 /**
  * @author wenchao.meng
@@ -34,6 +36,9 @@ public class CommandHandlerManagerTest extends AbstractRedisKeeperTest {
 
 	@Mock
 	private RedisClient redisClient;
+
+	@Mock
+	private RedisKeeperServer redisKeeperServer;
 
 	@Before
 	public void beforeCommandHandlerManagerTest() {
@@ -64,7 +69,9 @@ public class CommandHandlerManagerTest extends AbstractRedisKeeperTest {
 			}
 		}));
 
-		doNothing().when(redisClient).processCommandSequentially(argThat(new ArgumentMatcher<Runnable>() {
+		doReturn(redisKeeperServer).when(redisClient).getRedisKeeperServer();
+
+		doNothing().when(redisKeeperServer).processCommandSequentially(argThat(new ArgumentMatcher<Runnable>() {
 
 			@Override
 			public boolean matches(Object argument) {

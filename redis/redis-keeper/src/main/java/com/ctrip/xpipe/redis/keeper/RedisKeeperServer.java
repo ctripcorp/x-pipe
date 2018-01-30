@@ -86,4 +86,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	RdbDumper rdbDumper();
 	
 	KeeperMonitor getKeeperMonitor();
+
+	void processCommandSequentially(Runnable runnable);
 }

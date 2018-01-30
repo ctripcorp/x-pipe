@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.util.NonFinalizeFileInputStream;
 import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -78,7 +79,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		
-		scheduled =  Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("gc", true));
+		scheduled =  Executors.newScheduledThreadPool(1,
+				ClusterShardAwareThreadFactory.create(clusterName, shardName, "gc-" + String.format("%s-%s", clusterName, shardName)));
 		gcFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 			
 			@Override
