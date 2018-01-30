@@ -2,15 +2,19 @@ package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.retry.RetryDelay;
 
@@ -61,31 +65,9 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 
 	@Override
 	protected Command<SlaveRole> createCheckStateCommand() {
-		return new AbstractCommand<SlaveRole>() {
-
-			@Override
-			public String getName() {
-				return "[role check right command]";
-			}
-
-			@Override
-			protected void doExecute() throws Exception {
-				
-				SlaveRole keeperRole = (SlaveRole) new RoleCommand(keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort(), true, scheduled).execute().get();
-				if(keeperRole.getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED){
-					logger.info("[doExecute][success]{}", keeperRole);
-					future().setSuccess(keeperRole);
-				}else{
-					future().setFailure(new KeeperMasterStateNotAsExpectedException(keeperTransMeta.getKeeperMeta(), keeperRole, MASTER_STATE.REDIS_REPL_CONNECTED));
-				}
-			}
-			@Override
-			protected void doReset() {
-				
-			}
-		};
+		return new CheckStateCommand(keeperTransMeta.getKeeperMeta(), scheduled);
 	}
-	
+
 	@Override
 	protected RetryPolicy createRetryPolicy() {
 		return new RetryDelay(checkIntervalMilli){
@@ -103,4 +85,49 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 	protected void doReset() {
 		
 	}
+
+
+	public static class CheckStateCommand extends AbstractCommand<SlaveRole> {
+
+		private KeeperMeta keeperMeta;
+		private ScheduledExecutorService scheduled;
+
+		public CheckStateCommand(KeeperMeta keeperMeta, ScheduledExecutorService scheduled){
+			this.keeperMeta = keeperMeta;
+			this.scheduled = scheduled;
+		}
+
+			@Override
+			public String getName() {
+				return "[role check right command]";
+			}
+
+			@Override
+			protected void doExecute() throws Exception {
+
+				CommandFuture<Role> future = new RoleCommand(keeperMeta.getIp(), keeperMeta.getPort(), true, scheduled).execute();
+
+				future.addListener(new CommandFutureListener<Role>() {
+					@Override
+					public void operationComplete(CommandFuture<Role> commandFuture) throws Exception {
+
+						if(commandFuture.isSuccess()){
+							SlaveRole keeperRole = (SlaveRole)commandFuture.getNow();
+							if(keeperRole.getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED){
+								logger.info("[doExecute][success]{}", keeperRole);
+								future().setSuccess(keeperRole);
+							}else{
+								future().setFailure(new KeeperMasterStateNotAsExpectedException(keeperMeta, keeperRole, MASTER_STATE.REDIS_REPL_CONNECTED));
+							}
+						}else {
+							future().setFailure(commandFuture.cause());
+						}
+					}
+				});
+			}
+			@Override
+			protected void doReset() {
+
+			}
+		}
 }

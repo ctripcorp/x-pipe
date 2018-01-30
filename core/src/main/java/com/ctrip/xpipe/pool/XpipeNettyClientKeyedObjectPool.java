@@ -25,6 +25,11 @@ import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
 public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 		implements TopElement, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> {
 
+	public static final long DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS = 30000;
+	public static final long DEFAULT_MIN_EVICTABLE_IDLE_TIME_MILLIS = 1000L * 60L * 30L;
+	public static final long DEFAULT_TIME_BETWEEN_EVICTION_RUNS_MILLIS = 5000L;
+
+
 	private KeyedObjectPool<InetSocketAddress, NettyClient> objectPool;
 	private NettyKeyedPoolClientFactory pooledObjectFactory;
 	private GenericKeyedObjectPoolConfig config;
@@ -59,9 +64,28 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 				pooledObjectFactory, config);
 		genericKeyedObjectPool.setTestOnBorrow(true);
 		genericKeyedObjectPool.setTestOnCreate(true);
+		genericKeyedObjectPool.setSoftMinEvictableIdleTimeMillis(DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS);
+		genericKeyedObjectPool.setMinEvictableIdleTimeMillis(DEFAULT_MIN_EVICTABLE_IDLE_TIME_MILLIS);
+		genericKeyedObjectPool.setTimeBetweenEvictionRunsMillis(DEFAULT_TIME_BETWEEN_EVICTION_RUNS_MILLIS);
 		this.objectPool = genericKeyedObjectPool;
 	}
-	
+
+	public final void setKeyPooConfig(int minIdlePerKey, long softMinEvictableIdleTimeMillis, long minEvictableIdleTimeMillis, long timeBetweenEvictionRunsMillis) {
+
+		if(objectPool instanceof GenericKeyedObjectPool){
+			logger.info("[setKeyPooConfig]{}, {}, {}, {}", minIdlePerKey, softMinEvictableIdleTimeMillis, minEvictableIdleTimeMillis, timeBetweenEvictionRunsMillis);
+			GenericKeyedObjectPool genericKeyedObjectPool = (GenericKeyedObjectPool) objectPool;
+			genericKeyedObjectPool.setMinIdlePerKey(minIdlePerKey);
+			genericKeyedObjectPool.setSoftMinEvictableIdleTimeMillis(softMinEvictableIdleTimeMillis);
+			genericKeyedObjectPool.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
+			genericKeyedObjectPool.setTimeBetweenEvictionRunsMillis(timeBetweenEvictionRunsMillis);
+		}else {
+			logger.warn("[setKeyPooConfig][not generickeyedobjectpool]");
+		}
+	}
+
+
+
 	@Override
 	public SimpleObjectPool<NettyClient> getKeyPool(InetSocketAddress key){
 		return new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(this, key);

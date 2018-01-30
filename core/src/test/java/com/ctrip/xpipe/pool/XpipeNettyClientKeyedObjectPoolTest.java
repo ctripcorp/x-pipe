@@ -48,7 +48,29 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 			sleep(10);
 		}
 	}
-	
+
+	@Test
+	public void testIdleClose() throws Exception {
+
+		Server  echoServer = startEchoServer();
+		InetSocketAddress key = new InetSocketAddress("localhost", echoServer.getPort());
+
+		pool.setKeyPooConfig(0, 200, 500, 100);
+
+		SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(key);
+
+		NettyClient nettyClient1 = objectPool.borrowObject();
+		NettyClient nettyClient2 = objectPool.borrowObject();
+
+		waitConditionUntilTimeOut(() -> echoServer.getConnected() == 2);
+
+		objectPool.returnObject(nettyClient1);
+		objectPool.returnObject(nettyClient2);
+
+		waitConditionUntilTimeOut(() -> echoServer.getConnected() == 0, 60000);
+
+	}
+
 	@Test
 	public void testKeyPoolReuse() throws Exception{
 		

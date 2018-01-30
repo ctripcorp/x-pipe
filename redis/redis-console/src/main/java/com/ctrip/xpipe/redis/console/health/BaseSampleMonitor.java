@@ -181,6 +181,11 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 						log.debug("[generatePlan]{}", redisMeta.desc());
 						addRedis(plan, dcMeta.getId(), redisMeta);
 					}
+
+					// drop empty plans
+					if(plan.getHostPort2SampleResult().size() == 0) {
+						plans.remove(cs);
+					}
 				}
 			}
 		}

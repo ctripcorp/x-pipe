@@ -5,6 +5,7 @@ import com.ctrip.xpipe.concurrent.DefaultExecutorFactoryTest;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManagerTest;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPortTest;
 import com.ctrip.xpipe.lifecycle.*;
+import com.ctrip.xpipe.netty.TcpPortCheckCommandTest;
 import com.ctrip.xpipe.spring.RestTemplateFactoryTest;
 import com.ctrip.xpipe.tuple.PairTest;
 import com.ctrip.xpipe.utils.*;
@@ -51,6 +52,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	DefaultRegistryTest.class,
 	LifecycleObservableAbstractTest.class,
 	OffsetNotifierTest.class,
+	TcpPortCheckCommandTest.class,
 	RequestResponseCommandTest.class,
 	CommandRetryWrapperTest.class,
 	SequenceCommandChainTest.class,

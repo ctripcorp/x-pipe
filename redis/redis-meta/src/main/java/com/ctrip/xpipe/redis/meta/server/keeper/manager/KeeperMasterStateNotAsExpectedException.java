@@ -22,6 +22,10 @@ public class KeeperMasterStateNotAsExpectedException extends MetaServerException
 		setOnlyLogMessage(true);
 	}
 
+	public KeeperMasterStateNotAsExpectedException(KeeperMeta keeperMeta, Throwable th){
+		super(String.format("keeper:%s:%d, exception happen", keeperMeta.getIp(), keeperMeta.getPort()), th);
+	}
+
 	public SlaveRole getKeeperRole() {
 		return keeperRole;
 	}
