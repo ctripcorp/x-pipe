@@ -1,29 +1,23 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardNRedisCreateInfo;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu
@@ -57,7 +51,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
     @Test
     public void createShard() throws Exception {
-        ShardNRedisCreateInfo createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
+        List<RedisCreateInfo> createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
                                                         Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
         metaUpdate.createShard(clusterName, shardName, createInfo);
 
@@ -74,7 +68,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         logger.info("{}", redisTbls);
 
         Assert.assertTrue(listEquals(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
-                redisTbls.stream().map((redisTbl)-> { return new String(redisTbl.getRedisIp() + ":" + redisTbl.getRedisPort());})
+                redisTbls.stream().map((redisTbl)-> { return redisTbl.getRedisIp() + ":" + redisTbl.getRedisPort();})
             .collect(Collectors.toList())));
 
         Assert.assertEquals(2, keepers.size());
@@ -87,7 +81,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         shardCreateInfo.setShardName(shardName);
         metaUpdate.createShards(clusterName, Lists.newArrayList(new ShardCreateInfo()));
 
-        ShardNRedisCreateInfo createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
+        List<RedisCreateInfo> createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
                 Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
         metaUpdate.createShard(clusterName, shardName, createInfo);
 
@@ -104,7 +98,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         logger.info("{}", redisTbls);
 
         Assert.assertTrue(listEquals(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
-                redisTbls.stream().map((redisTbl)-> { return new String(redisTbl.getRedisIp() + ":" + redisTbl.getRedisPort());})
+                redisTbls.stream().map((redisTbl)-> { return redisTbl.getRedisIp() + ":" + redisTbl.getRedisPort();})
                         .collect(Collectors.toList())));
 
         Assert.assertEquals(2, keepers.size());
@@ -118,7 +112,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         shardCreateInfo.setShardName(shardName);
         metaUpdate.createShards(clusterName, Lists.newArrayList(shardCreateInfo));
 
-        ShardNRedisCreateInfo createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
+        List<RedisCreateInfo> createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
                 Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
 
         RetMessage result = metaUpdate.createShard(clusterName, shardName, clusterName + "-" + shardName, createInfo);
@@ -139,7 +133,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
         metaUpdate.createShards(clusterName, Lists.newArrayList(shardCreateInfo1, shardCreateInfo2));
 
-        ShardNRedisCreateInfo createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
+        List<RedisCreateInfo> createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
                 Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
 
         RetMessage result = metaUpdate.createShard(clusterName, shardName, createInfo);
@@ -156,7 +150,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
         metaUpdate.createShards(clusterName, Lists.newArrayList(shardCreateInfo1));
 
-        ShardNRedisCreateInfo createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
+        List<RedisCreateInfo> createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
                 Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
 
         RetMessage result = metaUpdate.createShard(clusterName, shardName, createInfo);
@@ -175,7 +169,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
             executorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    ShardNRedisCreateInfo createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
+                    List<RedisCreateInfo> createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
                             Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
 
                     RetMessage result = metaUpdate.createShard(clusterName, shardName, createInfo);
@@ -228,13 +222,9 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(1, shards.size());
     }
 
-    private ShardNRedisCreateInfo createInfo(List<String> activeDcRedis, List<String> backupDcRedis) {
-        ShardNRedisCreateInfo createInfo = new ShardNRedisCreateInfo();
-        Map<String, List<String>> redis = Maps.newConcurrentMap();
-        redis.put(activeDC, activeDcRedis);
-        redis.put(backupDC, backupDcRedis);
-        createInfo.setDc2Redis(redis);
-        return createInfo;
+    private List<RedisCreateInfo> createInfo(List<String> activeDcRedis, List<String> backupDcRedis) {
+        return Lists.newArrayList(new RedisCreateInfo().setDcId(activeDC).setRedises(StringUtil.join(", ", activeDcRedis.toArray())),
+                new RedisCreateInfo().setDcId(backupDC).setRedises(StringUtil.join(", ", backupDcRedis.toArray())));
     }
 
 

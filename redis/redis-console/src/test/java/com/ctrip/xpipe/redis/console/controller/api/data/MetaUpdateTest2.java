@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
@@ -15,7 +16,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -85,6 +85,15 @@ public class MetaUpdateTest2 {
                 .thenReturn(2 - keepers.size());
         Assert.assertEquals(1, metaUpdate.addKeepers(dc, cluster, new ShardTbl().setShardName(shard)));
 
+
+    }
+
+    @Test(expected = java.lang.IllegalArgumentException.class)
+    public void valvalidateRedisCreateInfo() throws Exception {
+
+        metaUpdate.validateRedisCreateInfo(Lists.newArrayList(
+                new RedisCreateInfo().setDcId("jq").setRedises("127.0.0.1:6379"),
+                new RedisCreateInfo().setDcId("jq").setRedises("127.0.0.2:6380")));
 
     }
 

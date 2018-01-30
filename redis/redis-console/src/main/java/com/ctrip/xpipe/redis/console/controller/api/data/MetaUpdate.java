@@ -5,10 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardNRedisCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -19,6 +16,8 @@ import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -316,15 +315,15 @@ public class MetaUpdate extends AbstractConsoleController {
     @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE,
             method = RequestMethod.POST)
     public RetMessage createShard(@PathVariable String clusterName, @PathVariable String shardName,
-                                  @RequestBody ShardNRedisCreateInfo createInfo) {
+                                  @RequestBody List<RedisCreateInfo> redisCreateInfos) {
 
-        logger.info("[createShard] Create Shard with redises: {} - {}", clusterName, createInfo);
+        logger.info("[createShard] Create Shard with redises: {} - {}", clusterName, shardName);
 
         try {
-            createShardWithOnePost(clusterName, shardName, null, createInfo);
+            createShardWithOnePost(clusterName, shardName, null, redisCreateInfos);
             return RetMessage.createSuccessMessage("Successfully created shard");
         } catch (Exception e) {
-            logger.error("[createShard]" + clusterName + "," + createInfo.getShardName(), e);
+            logger.error("[createShard]" + clusterName + "," + shardName, e);
             return RetMessage.createFailMessage(e.getMessage());
         }
 
@@ -334,15 +333,15 @@ public class MetaUpdate extends AbstractConsoleController {
             method = RequestMethod.POST)
     public RetMessage createShard(@PathVariable String clusterName, @PathVariable String shardName,
                                   @PathVariable String monitorName,
-                                  @RequestBody ShardNRedisCreateInfo createInfo) {
+                                  @RequestBody List<RedisCreateInfo> redisCreateInfos) {
 
-        logger.info("[createShard] Create Shard with redises: {} - {}", clusterName, createInfo);
+        logger.info("[createShard] Create Shard with redises: {} - {}", clusterName, shardName);
 
         try {
-            createShardWithOnePost(clusterName, shardName, monitorName, createInfo);
+            createShardWithOnePost(clusterName, shardName, monitorName, redisCreateInfos);
             return RetMessage.createSuccessMessage("Successfully created shard");
         } catch (Exception e) {
-            logger.error("[createShard]" + clusterName + "," + createInfo.getShardName(), e);
+            logger.error("[createShard]" + clusterName + "," + shardName, e);
             return RetMessage.createFailMessage(e.getMessage());
         }
 
@@ -363,13 +362,15 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @DalTransaction
     private void createShardWithOnePost(String clusterName, String shardName, String monitorName,
-                                          ShardNRedisCreateInfo createInfo) throws Exception {
+                                          List<RedisCreateInfo> redisCreateInfos) throws Exception {
 
         // Pre-validate
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (clusterTbl == null) {
             throw new CheckFailException("Cluster could not be found");
         }
+
+        validateRedisCreateInfo(redisCreateInfos);
 
         // Create shard
         Map<Long, SetinelTbl> randomSentinelByDc = sentinelService.eachRandomSentinelByDc();
@@ -380,10 +381,10 @@ public class MetaUpdate extends AbstractConsoleController {
         ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, randomSentinelByDc);
 
         // Fill in redis, keeper
-        Map<String, List<Pair<String, Integer>>> dc2Redis = createInfo.getDcMappedRedisAddr();
-        for(Map.Entry<String, List<Pair<String, Integer>>> entry : dc2Redis.entrySet()) {
-            String dcId = outerDcToInnerDc(entry.getKey());
-            redisService.insertRedises(dcId, clusterName, shardName, entry.getValue());
+        for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {
+            String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
+            redisService.insertRedises(dcId, clusterName, shardName,
+                    redisCreateInfo.getRedisAddresses());
             addKeepers(dcId, clusterName, shardTbl);
         }
     }
@@ -423,5 +424,16 @@ public class MetaUpdate extends AbstractConsoleController {
             logger.warn("[addKeepers] {}", e);
         }
         return 0;
+    }
+
+    @VisibleForTesting
+    protected void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos) {
+        Set<String> dcIds = Sets.newHashSetWithExpectedSize(redisCreateInfos.size());
+        for(RedisCreateInfo createInfo : redisCreateInfos) {
+            if(!dcIds.add(createInfo.getDcId())) {
+                throw new IllegalArgumentException(String.format("dc: %s appears more than two times",
+                        createInfo.getDcId()));
+            }
+        }
     }
 }
