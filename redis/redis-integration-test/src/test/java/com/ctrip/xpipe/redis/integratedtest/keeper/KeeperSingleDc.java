@@ -25,7 +25,7 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 	public void testSignleKeeperSync() throws IOException{
 
 		sendMessageToMasterAndTestSlaveRedis();
-}
+	}
 	
 	@Test
 	public void testMakeBackupActive() throws Exception{

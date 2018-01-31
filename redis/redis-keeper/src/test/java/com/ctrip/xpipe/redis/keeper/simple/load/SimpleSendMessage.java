@@ -39,7 +39,7 @@ public class SimpleSendMessage extends AbstractLoadRedis {
     protected void doStart() throws Exception {
         super.doStart();
 
-        int concurrent = 10;
+        int concurrent = 20;
         CountDownLatch latch = new CountDownLatch(concurrent);
 
         for (int i = 0; i < concurrent; i++) {

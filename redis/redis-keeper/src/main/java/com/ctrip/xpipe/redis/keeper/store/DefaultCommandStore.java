@@ -122,16 +122,24 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 		CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
 
 		//delay monitor
-		delayTraceLogger.debug("[appendCommands][begin]{}");
+		if(delayTraceLogger.isDebugEnabled()) {
+			delayTraceLogger.debug("[appendCommands][begin]{}");
+		}
+
 		commandStoreDelay.beginWrite();
 		
 		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.getChannel(), delayTraceLogger);
-		logger.debug("[appendCommands]{}, {}, {}", cmdFileCtx, byteBuf.readableBytes(), cmdFileCtx.fileLength());
+
+		if(delayTraceLogger.isDebugEnabled()){
+			logger.debug("[appendCommands]{}, {}, {}", cmdFileCtx, byteBuf.readableBytes(), cmdFileCtx.fileLength());
+		}
 
 		long offset = cmdFileCtx.totalLength() - 1;
 		
 		//delay monitor
-		delayTraceLogger.debug("[appendCommands][ end ]{}", offset + 1);
+		if(delayTraceLogger.isDebugEnabled()){
+			delayTraceLogger.debug("[appendCommands][ end ]{}", offset + 1);
+		}
 		commandStoreDelay.endWrite(offset + 1);
 
 		offsetNotifier.offsetIncreased(offset);
@@ -328,7 +336,9 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 
 				logger.debug("[addCommandsListener] {}", referenceFileRegion);
 
-				delayTraceLogger.debug("[write][begin]{}, {}", listener, referenceFileRegion.getTotalPos());
+				if(delayTraceLogger.isDebugEnabled()){
+					delayTraceLogger.debug("[write][begin]{}, {}", listener, referenceFileRegion.getTotalPos());
+				}
 				commandStoreDelay.beginSend(listener, referenceFileRegion.getTotalPos());
 				
 				ChannelFuture future = listener.onCommand(referenceFileRegion);
@@ -339,7 +349,9 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 						public void operationComplete(ChannelFuture future) throws Exception {
 							
 							commandStoreDelay.flushSucceed(listener, referenceFileRegion.getTotalPos());
-							delayTraceLogger.debug("[write][ end ]{}, {}", listener, referenceFileRegion.getTotalPos());
+							if(logger.isDebugEnabled()){
+								delayTraceLogger.debug("[write][ end ]{}, {}", listener, referenceFileRegion.getTotalPos());
+							}
 						}
 					});
 				}
