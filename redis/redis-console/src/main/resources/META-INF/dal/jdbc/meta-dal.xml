@@ -119,6 +119,7 @@
 	<entity name="cluster-tbl" table="CLUSTER_TBL" alias="ct">
 		<member name="count" value-type="long" select-expr="COUNT(*)" all="false" />
 		<var name="cluster-org-name" value-type="String"/>
+		<var name="cluster-names" value-type="java.util.List&lt;String&gt;" />
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt" multiple="true"/>
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct" multiple="true"/>
@@ -212,6 +213,17 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='cluster-name'/> = ${cluster-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-clusters-and-org-with-cluster-names" type="SELECT" multiple="true">
+				<param name="cluster-names"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
+					WHERE <FIELD name='cluster-name'/> IN <IN>${cluster-names}</IN>
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
@@ -365,6 +377,9 @@
 			<readset name="NAME">
 				<member name='shard-name'/>
 			</readset>
+			<readset name="MONITOR_NAME">
+				<member name="setinel-monitor-name"/>
+			</readset>
 		</readsets>
 
 		<query-defs>
@@ -429,6 +444,15 @@
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>
+				</statement>
+			</query>
+			<query name="query-all-monitor-names" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
 				</statement>
 			</query>
 		</query-defs>

@@ -23,11 +23,6 @@ import java.util.*;
 public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> implements SentinelService {
 
 	private DcClusterShardTblDao dcClusterShardTblDao;
-
-	@Autowired
-    private ClusterService clusterService;
-
-	private Random random;
 	
 	@PostConstruct
 	private void postConstruct() {

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.schedule;
 
+import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -18,16 +19,30 @@ import org.springframework.stereotype.Component;
  */
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 @Component
-public class ScheduledOrganizationService {
+public class ScheduledOrganizationService implements CrossDcLeaderAware {
 
-    protected Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
+    private boolean trigger = false;
 
     @Autowired
     OrganizationService organizationService;
 
+    @Override
+    public void isCrossDcLeader() {
+        trigger = true;
+    }
+
+    @Override
+    public void notCrossDcLeader() {
+        trigger = false;
+    }
 
     @Scheduled(fixedRate = XPipeConsoleConstant.SCHEDULED_ORGANIZATION_SERVICE)
     public void updateOrganizations() {
+        if(!trigger) {
+            return;
+        }
         logger.info("[updateOrganizations] update organization table @ {}", DateTimeUtils.currentTimeAsString());
         organizationService.updateOrganizations();
     }

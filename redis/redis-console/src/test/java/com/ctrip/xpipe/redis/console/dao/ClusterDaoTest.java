@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -73,6 +74,22 @@ public class ClusterDaoTest  extends AbstractConsoleIntegrationTest {
     public void testDeleteCluster() throws Exception {
         clusterDao.createCluster(clusterTbl);
         clusterDao.deleteCluster(clusterTbl);
+    }
+
+    @Test
+    public void testFindClustersWithName() throws Exception {
+        List<ClusterTbl> clusters = clusterDao.findClustersWithName(Lists.newArrayList());
+        Assert.assertTrue(clusters.isEmpty());
+
+        clusters = clusterDao.findClustersWithName(Lists.newArrayList("cluster2"));
+        logger.info("clusters: {}", clusters);
+        Assert.assertEquals(1, clusters.size());
+
+        clusters = clusterDao.findClustersWithName(Lists.newArrayList("cluster2", "cluster-not-exist"));
+        logger.info("clusters: {}", clusters);
+        Assert.assertEquals(1, clusters.size());
+
+        logger.info("{}", clusterDao.findAllClusterWithOrgInfo());
     }
 
     @Override

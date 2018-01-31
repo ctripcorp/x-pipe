@@ -2,7 +2,15 @@
     <div class="panel panel-primary">
         <header class="panel-heading">
             <div class="row">
-                <div class="col-md-6">Clusters</div>
+                <div class="col-md-6">
+                    <span class="col-sm-2"> Clusters </span>
+                    <div class="col-sm-3">
+                        <input type="checkbox" class="ace ace-checkbox-2" id="ace-settings-navbar"
+                               ng-model="showUnhealthyClusterOnly" ng-change="refresh()"/>
+                        <label class="lbl" for="ace-settings-navbar">显示问题Cluster</label>
+                    </div>
+                </div>
+
                 <div class="col-md-6 text-right">
                     <a type="button" class="btn btn-primary btn-sm"
                     href="/#/cluster_form?clusterName=&type=create">创建Cluster</a>

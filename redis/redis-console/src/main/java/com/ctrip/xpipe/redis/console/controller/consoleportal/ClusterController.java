@@ -62,6 +62,11 @@ public class ClusterController extends AbstractConsoleController {
         }
     }
 
+    @RequestMapping(value = "/clusters/unhealthy", method = RequestMethod.GET)
+    public List<ClusterTbl> findUnhealthyClusters() {
+        return valueOrEmptySet(ClusterTbl.class, clusterService.findUnhealthyClusters());
+    }
+
     private List<ClusterTbl> joinClusterAndDcCluster(List<ClusterTbl> clusters, List<DcClusterTbl> dcClusters) {
         Map<Long, ClusterTbl> id2Cluster = new HashMap<>();
         for (ClusterTbl c : clusters) {

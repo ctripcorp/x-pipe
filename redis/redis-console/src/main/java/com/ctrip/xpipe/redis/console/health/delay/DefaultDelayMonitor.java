@@ -24,7 +24,7 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 
 	public static final long SAMPLE_LOST_AND_NO_PONG = -99999L * 1000 * 1000;
 
-	private static final long SAMPLE_LOST_BUT_PONG = 99999L * 1000 * 1000;
+	public static final long SAMPLE_LOST_BUT_PONG = 99999L * 1000 * 1000;
 
 	@Autowired
 	private List<DelayCollector> delayCollectors;

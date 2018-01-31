@@ -107,7 +107,7 @@ public class DefaultMetaCache implements MetaCache {
 
     @Override
     public XpipeMeta getXpipeMeta() {
-        return meta == null ? null : meta.getKey();
+        return meta.getKey();
     }
 
 

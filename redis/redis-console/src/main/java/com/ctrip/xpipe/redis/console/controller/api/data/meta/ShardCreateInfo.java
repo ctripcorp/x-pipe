@@ -10,9 +10,9 @@ import com.ctrip.xpipe.utils.StringUtil;
  */
 public class ShardCreateInfo extends AbstractCreateInfo{
 
-    private String shardName;
+    protected String shardName;
 
-    private String shardMonitorName;
+    protected String shardMonitorName;
 
     public ShardCreateInfo(){
 

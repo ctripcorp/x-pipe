@@ -57,6 +57,11 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
             method: 'GET',
             url: '/console/involved/organizations',
             isArray : true
+        },
+        get_unhealthy_clusters: {
+            method: 'GET',
+            url: '/console/clusters/unhealthy',
+            isArray: true
         }
     });
     function getInvolvedOrgs() {
@@ -223,6 +228,16 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         return d.promise;
     }
 
+    function getUnhealthyClusters() {
+        var d = $q.defer();
+        resource.get_unhealthy_clusters({},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
     return {
         load_cluster: loadCluster,
         findClusterDCs: findClusterDCs,
@@ -236,6 +251,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         bindDc: bindDc,
         unbindDc: unbindDc,
         getOrganizations: getOrganizations,
-        getInvolvedOrgs: getInvolvedOrgs
+        getInvolvedOrgs: getInvolvedOrgs,
+        getUnhealthyClusters: getUnhealthyClusters
     }
 }]);
