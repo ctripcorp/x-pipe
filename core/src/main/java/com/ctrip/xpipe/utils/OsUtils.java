@@ -26,6 +26,17 @@ public class OsUtils {
 		return CPU_COUNT;
 	}
 
+	public static int defaultMaxCoreThreadCount(){
+		return getMultiCpuOrMax(100, 200);
+	}
+
+
+	public static int getMultiCpuOrMax(int multi, int max){
+		return Math.min(getCpuCount() * multi, max);
+	}
+
+
+
 	public static String osInfo(){
 		
 		Properties props=System.getProperties();   

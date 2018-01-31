@@ -129,7 +129,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	@DalTransaction
-	public ClusterTbl createCluster(ClusterModel clusterModel) {
+	public synchronized ClusterTbl createCluster(ClusterModel clusterModel) {
 		ClusterTbl cluster = clusterModel.getClusterTbl();
     	List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
     	List<ShardModel> shards = clusterModel.getShards();

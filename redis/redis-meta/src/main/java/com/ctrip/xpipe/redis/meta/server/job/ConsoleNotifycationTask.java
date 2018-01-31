@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.retry.RetryTemplate;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.OneThreadTaskExecutor;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
@@ -14,10 +15,12 @@ import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.retry.RetryNTimes;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.OsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author wenchao.meng
@@ -31,8 +34,7 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	@Autowired
 	private ConsoleService consoleService;
 
-	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
-	private Executor executors;
+	private ExecutorService executors;
 	
 	private String dc = FoundationService.DEFAULT.getDataCenter();
 	
@@ -49,12 +51,14 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
+		executors = DefaultExecutorFactory.createAllowCoreTimeout("ConsoleNotifycationTask", OsUtils.defaultMaxCoreThreadCount()).createExecutorService();
 		oneThreadTaskExecutor = new OneThreadTaskExecutor(getRetryTemplate(), executors);
 	}
 	
 	@Override
 	protected void doDispose() throws Exception {
 		oneThreadTaskExecutor.destroy();
+		executors.shutdown();
 		super.doDispose();
 	}
 	
