@@ -352,6 +352,12 @@ public class MetaUpdate extends AbstractConsoleController {
     public RetMessage deleteShard(@PathVariable String clusterName, @PathVariable String shardName) {
         logger.info("[deleteShard] Delete Shard {} - {}", clusterName, shardName);
         try {
+            if(clusterService.find(clusterName) == null) {
+                RetMessage.createSuccessMessage("Cluster already not exist");
+            }
+            if(shardService.find(clusterName, shardName) == null) {
+                RetMessage.createSuccessMessage("Shard already not exist");
+            }
             shardService.deleteShard(clusterName, shardName);
             return RetMessage.createSuccessMessage("Successfully deleted shard");
         } catch (Exception e) {

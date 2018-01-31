@@ -54,10 +54,4 @@ public class HealthCheckController extends AbstractConsoleController {
         }
         return ImmutableMap.of("addr", String.format("%s.%s.%s.%s.%s*", addr, clusterName, shardName, redisIp, redisPort));
     }
-
-    @RequestMapping(value = "/clusters/unhealthy", method = RequestMethod.GET)
-    public List<ClusterTbl> findAllUnhealthyClusters() {
-        logger.info("[findAllUnhealthyClusters] Retrieve all unhealthy clusters");
-        return clusterService.findUnhealthyClusters();
-    }
 }

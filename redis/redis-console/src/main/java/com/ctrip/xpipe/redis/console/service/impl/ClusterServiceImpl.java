@@ -491,12 +491,20 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 	}
 
+	@VisibleForTesting
 	protected List<ClusterTbl> convert2ClusterTbls(Set<ClusterMeta> clusterMetas) {
 		if(clusterMetas.isEmpty()) {
 			return Collections.emptyList();
 		}
+		List<String> clusterNames = Lists.newArrayListWithExpectedSize(clusterMetas.size());
 		for(ClusterMeta clusterMeta : clusterMetas) {
-			ClusterTbl proto = new ClusterTbl().setActivedcId();
+			clusterNames.add(clusterMeta.getId());
 		}
+		return clusterDao.findClustersWithName(clusterNames);
+	}
+
+	@VisibleForTesting
+	protected void setClusterDao(ClusterDao clusterDao) {
+		this.clusterDao = clusterDao;
 	}
 }

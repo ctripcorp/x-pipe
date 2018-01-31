@@ -1,12 +1,15 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +39,9 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     private ShardService shardService;
+
+    @Autowired
+    private ClusterDao clusterDao;
 
 
     @Test
@@ -194,18 +200,38 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     @Test
     public void testBreakLoop() {
+        int kCounter = 0, jCounter = 0, iCounter = 0;
         for(int i = 0; i < 10; i++) {
+            iCounter ++;
             loop:
             for(int j = 0; j < 10; j++) {
+                jCounter ++;
                 for(int k = 0; k < 10; k++) {
+                    kCounter ++;
                     if(k == 1) {
                         break loop;
                     }
-                    System.out.println("k: " + k);
                 }
-                System.out.println("j: " + j);
             }
-            System.out.println("i: " + i);
         }
+        Assert.assertEquals(10, iCounter);
+        Assert.assertEquals(10, jCounter);
+        Assert.assertEquals(20, kCounter);
     }
+
+    @Test
+    public void testConvert2ClusterTbls() throws Exception {
+        ClusterServiceImpl service = new ClusterServiceImpl();
+        service.setClusterDao(clusterDao);
+
+        List<ClusterTbl> clusterTbls = service.convert2ClusterTbls(
+                Sets.newHashSet(new ClusterMeta().setId(clusterName)));
+
+        ClusterTbl clusterTbl = clusterService.findClusterAndOrg(clusterName);
+
+        Assert.assertEquals(1, clusterTbls.size());
+
+        Assert.assertEquals(clusterTbl.getId(), clusterTbls.get(0).getId());
+    }
+
 }
