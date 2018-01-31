@@ -474,8 +474,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 						for(RedisMeta redisMeta : shardMeta.getRedises()) {
 							HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
 							long delay = delayService.getDelay(hostPort);
-							if(delay == DefaultDelayMonitor.SAMPLE_LOST_AND_NO_PONG
-									|| delay == DefaultDelayMonitor.SAMPLE_LOST_BUT_PONG) {
+							if(delay == TimeUnit.NANOSECONDS.toMillis(DefaultDelayMonitor.SAMPLE_LOST_AND_NO_PONG)
+									|| delay == TimeUnit.NANOSECONDS.toMillis(DefaultDelayMonitor.SAMPLE_LOST_BUT_PONG)) {
 
 								unhealthyClusterMetas.add(clusterMeta);
 								break loop;
