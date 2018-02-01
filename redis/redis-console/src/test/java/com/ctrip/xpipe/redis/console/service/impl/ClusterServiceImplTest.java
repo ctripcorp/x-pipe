@@ -219,19 +219,4 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(20, kCounter);
     }
 
-    @Test
-    public void testConvert2ClusterTbls() throws Exception {
-        ClusterServiceImpl service = new ClusterServiceImpl();
-        service.setClusterDao(clusterDao);
-
-        List<ClusterTbl> clusterTbls = service.convert2ClusterTbls(
-                Sets.newHashSet(new ClusterMeta().setId(clusterName)));
-
-        ClusterTbl clusterTbl = clusterService.findClusterAndOrg(clusterName);
-
-        Assert.assertEquals(1, clusterTbls.size());
-
-        Assert.assertEquals(clusterTbl.getId(), clusterTbls.get(0).getId());
-    }
-
 }
