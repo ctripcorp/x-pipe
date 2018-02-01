@@ -182,8 +182,7 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 						addRedis(plan, dcMeta.getId(), redisMeta);
 					}
 
-					// drop empty plans
-					if(plan.getHostPort2SampleResult().size() == 0) {
+					if(plan.isEmpty()) {
 						plans.remove(cs);
 					}
 				}

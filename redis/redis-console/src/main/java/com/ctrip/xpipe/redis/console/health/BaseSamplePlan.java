@@ -47,4 +47,8 @@ public abstract class BaseSamplePlan<T> {
 	public String toString() {
 		return String.format("cluster:%s, shard:%s, hosts:%s", clusterId, shardId, hostPort2SampleResult.keySet());
 	}
+
+	public boolean isEmpty() {
+		return hostPort2SampleResult.isEmpty();
+	}
 }
