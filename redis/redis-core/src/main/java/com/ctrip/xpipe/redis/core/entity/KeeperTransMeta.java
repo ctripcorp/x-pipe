@@ -85,6 +85,6 @@ public class KeeperTransMeta implements ClusterAware{
 	
 	@Override
 	public String toString() {
-		return Codec.DEFAULT.encode(this);
+		return String.format("[%s,%s-%s:%d]", clusterId, shardId, keeperMeta.getIp(), keeperMeta.getPort());
 	}
 }

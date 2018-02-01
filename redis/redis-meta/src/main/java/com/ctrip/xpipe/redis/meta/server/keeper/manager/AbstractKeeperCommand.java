@@ -70,10 +70,10 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 			public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
 				
 				if(commandFuture.isSuccess()){
-					logger.info("[checkUntilStateOk][ok]{}",this);
+					logger.info("[checkUntilStateOk][ok]{}", AbstractKeeperCommand.this);
 					future().setSuccess(commandFuture.get());
 				}else{
-					logger.info("[checkUntilStateOk][fail]{}",this);
+					logger.info("[checkUntilStateOk][fail]{}, {}", AbstractKeeperCommand.this, commandFuture.cause());
 					future().setFailure(commandFuture.cause());
 				}
 			}
@@ -93,7 +93,7 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 	
 	@Override
 	public String getName() {
-		return String.format("[%s(%s:%d)]", getClass().getSimpleName(), keeperTransMeta.getKeeperMeta().getIp(), keeperTransMeta.getKeeperMeta().getPort());
+		return String.format("[%s(%s)]", getClass().getSimpleName(), keeperTransMeta);
 	}
 }
 
