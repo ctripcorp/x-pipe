@@ -23,7 +23,7 @@
                 <td data-title="'cluster'" filter="{ clusterName : 'text' }">
                     <a href="/#/cluster_dc_shards/{{cluster.clusterName}}/">{{ cluster.clusterName }}</a>
                 </td>
-                <td ng-if="showUnhealthyClusterOnly" data-title="'详情'" ng-bind="getDcName({{cluster.activedcId}})"></td>
+                <td ng-if="showUnhealthyClusterOnly" data-title="'详情'"><div title="{{cluster.message}}">详情</div></td>
                 <td ng-if="true" data-title="'主数据中心'" ng-bind="getDcName({{cluster.activedcId}})"></td>
                 <td ng-if="true" data-title="'描述'" ng-bind="cluster.clusterDescription | limitTo:50" ></td>
                 <td ng-if="true" data-title="'组织'" ng-bind="cluster.clusterOrgName" ></td>

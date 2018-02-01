@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
 import com.ctrip.xpipe.redis.console.health.delay.DelayService;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -64,7 +65,7 @@ public class ClusterServiceImplTest2 {
         when(clusterDao.findClustersWithName(Lists.newArrayList("cluster1")))
                 .thenReturn(Lists.newArrayList(new ClusterTbl().setClusterName("cluster1")));
 
-        List<ClusterTbl> clusterTbls = clusterService.findUnhealthyClusters();
+        List<ClusterListClusterModel> clusterTbls = clusterService.findUnhealthyClusters();
 
         Assert.assertEquals(1, clusterTbls.size());
 
@@ -91,7 +92,7 @@ public class ClusterServiceImplTest2 {
         });
 
 
-        List<ClusterTbl> clusterTbls = clusterService.findUnhealthyClusters();
+        List<ClusterListClusterModel> clusterTbls = clusterService.findUnhealthyClusters();
 
         Assert.assertEquals(2, clusterTbls.size());
 
