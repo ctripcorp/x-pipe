@@ -113,10 +113,11 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
 
     @Override
     public void collect(DelaySampleResult result) {
-
-        HealthStatus healthStatus = createOrGet(result.getMasterHostPort());
-        healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(result.getMasterDelayNanos()));
-
+        HealthStatus healthStatus;
+        if(result.getMasterHostPort() != null) {
+            healthStatus = createOrGet(result.getMasterHostPort());
+            healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(result.getMasterDelayNanos()));
+        }
         for (Map.Entry<HostPort, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
 
             healthStatus = createOrGet(entry.getKey());

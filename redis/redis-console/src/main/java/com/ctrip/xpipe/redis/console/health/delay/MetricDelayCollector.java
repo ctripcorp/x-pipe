@@ -36,8 +36,10 @@ public class MetricDelayCollector implements DelayCollector {
             }
 
             HostPort masterHostPort = result.getMasterHostPort();
-            MetricData point = getPoint(masterHostPort, result.getMasterDelayNanos(), result);
-            data.add(point);
+            if(masterHostPort != null) {
+                MetricData point = getPoint(masterHostPort, result.getMasterDelayNanos(), result);
+                data.add(point);
+            }
 
             proxy.writeBinMultiDataPoint(data);
         } catch (Exception e) {

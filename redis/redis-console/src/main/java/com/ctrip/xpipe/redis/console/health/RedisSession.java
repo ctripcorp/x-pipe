@@ -361,9 +361,13 @@ public class RedisSession {
     }
 
     public void closeConnection() {
-        nonSubscribeConn.get().close();
+        try {
+            nonSubscribeConn.get().close();
+        } catch (Exception ignore) {}
         for(PubSubConnectionWrapper connectionWrapper : subscribConns.values()) {
-            connectionWrapper.closeAndClean();
+            try {
+                connectionWrapper.closeAndClean();
+            } catch (Exception ignore) {}
         }
     }
 }
