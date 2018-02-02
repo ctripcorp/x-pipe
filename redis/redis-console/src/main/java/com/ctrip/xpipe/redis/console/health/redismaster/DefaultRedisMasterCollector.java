@@ -83,7 +83,7 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
 
         //check redis master again
 
-        if(isMaster(plan.getMasterHost(), plan.getMasterPort())){
+        if(plan.getMasterHost() != null && isMaster(plan.getMasterHost(), plan.getMasterPort())){
             logger.info("[doCorrection][still master]{}", plan);
             return;
         }

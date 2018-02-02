@@ -148,6 +148,10 @@ public class DefaultMetaCache implements MetaCache {
         String shardName = metaDesc.getShardId();
 
         Pair<String, RedisMeta> redisMaster = xpipeMetaManager.getRedisMaster(clusterName, shardName);
+        // could be null if no master in a shard
+        if(redisMaster == null) {
+            return null;
+        }
         RedisMeta redisMeta = redisMaster.getValue();
         return new HostPort(redisMeta.getIp(), redisMeta.getPort());
     }
