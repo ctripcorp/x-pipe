@@ -56,6 +56,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_REBALANCE_SENTINEL_MAX_NUM_ONCE = "rebalance.sentinel.max.num.once";
 
+    private static final String KEY_NO_ALARM_MUNITE_FOR_NEW_CLUSTER = "no.alarm.minute.for.new.cluster";
+
     @Override
     public int getAlertSystemRecoverMinute() {
         return getIntProperty(KEY_ALERT_MESSAGE_RECOVER_TIME, 5);
@@ -220,5 +222,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int getRebalanceSentinelMaxNumOnce() {
         return getIntProperty(KEY_REBALANCE_SENTINEL_MAX_NUM_ONCE, 15);
+    }
+
+    @Override
+    public int getNoAlarmMinutesForNewCluster() {
+        return getIntProperty(KEY_NO_ALARM_MUNITE_FOR_NEW_CLUSTER, 15);
     }
 }

@@ -70,4 +70,6 @@ public interface ConsoleConfig extends CoreConfig {
 	int getRebalanceSentinelInterval();
 
 	int getRebalanceSentinelMaxNumOnce();
+
+	int getNoAlarmMinutesForNewCluster();
 }

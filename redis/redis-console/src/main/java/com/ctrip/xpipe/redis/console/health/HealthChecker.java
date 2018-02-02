@@ -120,7 +120,7 @@ public class HealthChecker {
 			}
 		}
 		try {
-			List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
+			List<DcMeta> dcsToCheck = new LinkedList<>(xpipeMeta.getDcs().values());
 			for(DcMeta dc : dcsToCheck) {
 				dc.accept(healthCheckVisitor);
 			}

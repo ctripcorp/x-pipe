@@ -55,7 +55,8 @@ create table CLUSTER_TBL
 	deleted tinyint(1) not null default 0,
 	is_xpipe_interested tinyint(1) default 0,
 	cluster_org_id bigint unsigned not null default 0,
-    cluster_admin_emails varchar(250) default ' '
+    cluster_admin_emails varchar(250) default ' ',
+    `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'cluster create time',
 );
 
 
