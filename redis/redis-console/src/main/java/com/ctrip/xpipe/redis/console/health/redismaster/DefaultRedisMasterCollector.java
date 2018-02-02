@@ -129,8 +129,8 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
 
     @VisibleForTesting
     protected boolean isMaster(String host, int port) {
-        RedisSession redisSession = redisSessionManager.findOrCreateSession(host, port);
         try {
+            RedisSession redisSession = redisSessionManager.findOrCreateSession(host, port);
             String role = redisSession.roleSync();
             if(Server.SERVER_ROLE.MASTER.sameRole(role)){
                 return true;
