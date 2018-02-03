@@ -108,11 +108,12 @@ public class HealthChecker {
 
 	@VisibleForTesting
 	protected void warmup() {
-		int period = 2000;
+		int period = 1000;
 		XpipeMeta xpipeMeta = null;
 		while(xpipeMeta == null) {
 			log.info("[warmup] waiting for metaCache initialized");
 			try {
+				Thread.sleep(period);
 				xpipeMeta = metaCache.getXpipeMeta();
 				Thread.sleep(period);
 			} catch (Exception e) {
@@ -120,7 +121,7 @@ public class HealthChecker {
 			}
 		}
 		try {
-			List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
+			List<DcMeta> dcsToCheck = new LinkedList<>(xpipeMeta.getDcs().values());
 			for(DcMeta dc : dcsToCheck) {
 				dc.accept(healthCheckVisitor);
 			}
