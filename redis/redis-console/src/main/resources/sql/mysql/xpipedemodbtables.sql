@@ -65,6 +65,7 @@ CREATE TABLE `CLUSTER_TBL` (
   `is_xpipe_interested` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'is xpipe interested',
   `cluster_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of cluster',
   `cluster_admin_emails` varchar(1024) DEFAULT ' ' COMMENT 'persons email who in charge of this cluster',
+  `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'cluster create time',
 
   PRIMARY KEY (`id`),
   UNIQUE KEY `cluster_name` (`cluster_name`),

@@ -29,10 +29,17 @@ public class DateTimeUtils {
 		return FastDateFormat.getInstance(format).format(new Date(timeMilli));
 	}
 
-	public static Date getHoursLaterDate(int hours) {
+	public synchronized static Date getHoursLaterDate(int hours) {
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(new Date());
 		cal.add(Calendar.HOUR_OF_DAY, hours);
+		return cal.getTime();
+	}
+
+	public synchronized static Date getMinutesLaterThan(Date date, int minute) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		cal.add(Calendar.MINUTE, minute);
 		return cal.getTime();
 	}
 }

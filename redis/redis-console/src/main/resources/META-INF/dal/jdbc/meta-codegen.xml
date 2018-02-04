@@ -12,6 +12,7 @@
     <member name="is-xpipe-interested" field="is_xpipe_interested" value-type="boolean" nullable="false" />
     <member name="cluster-org-id" field="cluster_org_id" value-type="long" length="20" nullable="false" />
     <member name="cluster-admin-emails" field="cluster_admin_emails" value-type="String" length="1024" />
+    <member name="create-time" field="create_time" value-type="Date" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="cluster_name" unique="true" members="cluster_name ASC" />

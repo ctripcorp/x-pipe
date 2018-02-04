@@ -35,6 +35,18 @@ public class DateTimeUtilsTest extends AbstractTest {
         Assert.assertTrue(Math.abs(TimeUnit.HOURS.toMillis(1) - duration) < TimeUnit.SECONDS.toMillis(1));
     }
 
+    @Test
+    public void testGetMinutesLasterDate() throws Exception {
+        Date now = new Date();
+        Date after = DateTimeUtils.getMinutesLaterThan(new Date(), 1);
+        long duration = after.getTime() - now.getTime();
+        Assert.assertTrue((Math.abs(TimeUnit.MINUTES.toMillis(1L) - duration) < TimeUnit.SECONDS.toMillis(1)));
+
+        after = DateTimeUtils.getMinutesLaterThan(new Date(), 15);
+        duration = after.getTime() - now.getTime();
+        Assert.assertTrue((Math.abs(TimeUnit.MINUTES.toMillis(15L) - duration) < TimeUnit.SECONDS.toMillis(1)));
+    }
+
 
     @Test
     public void testFormat() {
