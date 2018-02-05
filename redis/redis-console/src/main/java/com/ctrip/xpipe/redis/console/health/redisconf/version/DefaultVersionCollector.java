@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConf;
 import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfManager;
-import com.ctrip.xpipe.redis.console.health.redisconf.RedisInfoServerUtils;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisInfoUtils;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
@@ -68,7 +68,7 @@ public class DefaultVersionCollector implements VersionCollector {
         }
         logger.debug("[checkRedisVersion]Redis {}: Server Info: \n{}", hostPort, message);
         String targetVersion = consoleConfig.getXRedisMinimumRequestVersion();
-        String version = RedisInfoServerUtils.getXRedisVersion(message);
+        String version = RedisInfoUtils.getXRedisVersion(message);
         logger.debug("[checkRedisVersion]Current Redis {} xredis_version: {}", hostPort, version);
         if(version == null || StringUtil.compareVersion(version, targetVersion) < 0) {
             String alertMessage = String.format("Redis %s should be XRedis 0.0.3 or above",  hostPort.toString());
@@ -78,8 +78,8 @@ public class DefaultVersionCollector implements VersionCollector {
     }
 
     private void cacheRedisInfo(HostPort hostPort, String info) {
-        String redisVersion = RedisInfoServerUtils.getRedisVersion(info);
-        String xredisVersion = RedisInfoServerUtils.getXRedisVersion(info);
+        String redisVersion = RedisInfoUtils.getRedisVersion(info);
+        String xredisVersion = RedisInfoUtils.getXRedisVersion(info);
         logger.debug("[cacheRedisInfo] Cache Redis {}, Redis Version: {}, XRedis Version: {}",
                 hostPort, redisVersion, xredisVersion);
         RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());

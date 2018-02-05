@@ -110,7 +110,7 @@ public class AlertManager {
                 logger.error("[getClusterCreateTime] cluster not found: {}", clusterName);
             } else {
                 date = clusterTbl.getCreateTime();
-                if(date != null && date.getTime() > 0L) {
+                if(date != null) {
                     clusterCreateTime.put(clusterName, date);
                 }
             }
