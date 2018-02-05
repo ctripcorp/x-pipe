@@ -12,6 +12,7 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -58,7 +59,8 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			}
 		});
 		if(null != clusterWithSameName) throw new BadRequestException("Duplicated cluster name");
-		
+
+		cluster.setCreateTime(new Date());
 		// cluster meta
 		clusterTblDao.insert(cluster);
 	    
