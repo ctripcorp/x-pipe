@@ -64,7 +64,7 @@ public class DefaultBacklogActiveCollector implements BacklogActiveCollector {
         boolean isBacklogActive = RedisInfoUtils.getReplBacklogActive(infoReplication);
         if(!isBacklogActive) {
             RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
-            if(StringUtil.compareVersion(redisConf.getRedisVersion(), "4.0.0") > 0
+            if(StringUtil.compareVersion(redisConf.getRedisVersion(), "4.0.0") >= 0
                     || !StringUtil.isEmpty(redisConf.getXredisVersion())) {
 
                 String message = "Redis replication backlog not active";
