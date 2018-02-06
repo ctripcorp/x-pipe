@@ -50,4 +50,9 @@ public class RedisMasterSamplePlan extends BaseSamplePlan<InstanceRedisMasterRes
     public List<RedisMeta> getRedises() {
         return redises;
     }
+
+    @Override
+    public boolean isEmpty() {
+        return redises.isEmpty();
+    }
 }

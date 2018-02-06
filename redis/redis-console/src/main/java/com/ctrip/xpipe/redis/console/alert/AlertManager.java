@@ -1,12 +1,23 @@
 package com.ctrip.xpipe.redis.console.alert;
 
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.concurrent.OneThreadTaskExecutor;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.manager.NotificationManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.retry.RetryDelay;
+import com.ctrip.xpipe.retry.RetryNTimes;
+import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +25,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -28,6 +40,8 @@ public class AlertManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
+    @Autowired
+    private ClusterService clusterService;
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -43,8 +57,12 @@ public class AlertManager {
 
     private Set<String> alertClusterWhiteList;
 
+    private Map<String, Date> clusterCreateTime = new HashMap<>();
+
     @PostConstruct
     public void postConstruct(){
+
+        int retryDelayBase = 10000, retryTimes = 3;
 
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
@@ -54,6 +72,50 @@ public class AlertManager {
             }
         }, 0, 30, TimeUnit.SECONDS);
 
+        new OneThreadTaskExecutor(new RetryNTimes<>(retryTimes, retryDelayBase), scheduled)
+                .executeCommand(new AbstractCommand<Void>() {
+
+                    @Override
+                    public String getName() {
+                        return "[clusterCreateTimeMapper]";
+                    }
+
+                    @Override
+                    protected void doExecute() throws Exception {
+                        logger.info("[clusterCreateTimeMapper][execute]");
+                        List<ClusterTbl> clusterTbls = clusterService.findAllClustersWithOrgInfo();
+                        for(ClusterTbl clusterTbl : clusterTbls) {
+                            clusterCreateTime.put(clusterTbl.getClusterName(), clusterTbl.getCreateTime());
+                        }
+                        future().setSuccess();
+                    }
+
+                    @Override
+                    protected void doReset() {
+
+                    }
+                });
+
+    }
+
+    private Date getClusterCreateTime(String clusterName) {
+        if(StringUtil.isEmpty(clusterName)) {
+            logger.error("[getClusterCreateTime] empty cluster name");
+            return null;
+        }
+        Date date = clusterCreateTime.get(clusterName);
+        if(date == null) {
+            ClusterTbl clusterTbl = clusterService.find(clusterName);
+            if(clusterTbl == null) {
+                logger.error("[getClusterCreateTime] cluster not found: {}", clusterName);
+            } else {
+                date = clusterTbl.getCreateTime();
+                if(date != null) {
+                    clusterCreateTime.put(clusterName, date);
+                }
+            }
+        }
+        return date;
     }
 
     public void alert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message){
@@ -75,7 +137,18 @@ public class AlertManager {
         notifier.addAlert(dc, cluster, shard, hostPort, type, message);
     }
 
-    private boolean shouldAlert(String cluster) {
+    @VisibleForTesting
+    protected boolean shouldAlert(String cluster) {
+        try {
+            Date createTime = getClusterCreateTime(cluster);
+            int minutes = consoleConfig.getNoAlarmMinutesForNewCluster();
+            Date current = new Date();
+            if (createTime != null && current.before(DateTimeUtils.getMinutesLaterThan(createTime, minutes))) {
+                return false;
+            }
+        } catch (Exception e) {
+            logger.error("[shouldAlert]", e);
+        }
         return !alertClusterWhiteList.contains(cluster);
     }
 
@@ -113,4 +186,13 @@ public class AlertManager {
         return sb.toString();
     }
 
+    @VisibleForTesting
+    protected void setClusterCreateTime(Map<String, Date> map) {
+        this.clusterCreateTime = map;
+    }
+
+    @VisibleForTesting
+    protected void setAlertClusterWhiteList(Set<String> clusterWhiteList) {
+        this.alertClusterWhiteList = clusterWhiteList;
+    }
 }

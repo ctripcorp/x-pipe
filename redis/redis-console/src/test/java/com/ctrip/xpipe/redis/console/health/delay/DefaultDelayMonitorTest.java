@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.console.health.delay;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,4 +75,16 @@ public class DefaultDelayMonitorTest extends AbstractConsoleIntegrationTest {
     }
 
 
+    @Test
+    public void avoidNullPointerException() {
+        DelaySampleResult sampleResult = new DelaySampleResult(System.currentTimeMillis(), "cluster", "shard");
+        sampleResult.addSlaveDelayNanos(new HostPort("127.0.0.1", 6379), System.nanoTime());
+        sampleResult.addSlaveDelayNanos(new HostPort("127.0.0.1", 6380), System.nanoTime());
+
+        try {
+            delayMonitor.getDelayCollectors().forEach(collector -> collector.collect(sampleResult));
+        } catch (Exception e) {
+            Assert.assertFalse(e instanceof NullPointerException);
+        }
+    }
 }

@@ -30,7 +30,7 @@ public class AlertMessageDecorator extends Decorator {
 
     @Override
     protected VelocityContext fillInContext(AlertEntity alert, VelocityContext context) {
-        context.put("" + alert.getAlertType(), alert.getAlertType());
+        context.put(alert.getAlertType().name(), alert.getAlertType());
         context.put("redisAlert", alert);
         context.put("title", generateTitle(alert));
         return context;

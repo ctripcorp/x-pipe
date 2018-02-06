@@ -147,6 +147,11 @@ public class AlertEntity {
         this.alertType = alertType;
     }
 
+    public void removeSpecialCharacters() {
+        message = message.replaceAll("\r", " ");
+        message = message.replaceAll("\n", " ");
+    }
+
     public static class RedisAlertBuilder {
         private String dc;
         private HostPort hostPort;

@@ -53,7 +53,7 @@ public class KeeperServiceImpl implements KeeperService {
             protected void doRun() throws Exception {
                 keepers = metaCache.allKeepers();
             }
-        }, refreshIntervalMilli, refreshIntervalMilli, TimeUnit.MILLISECONDS);
+        }, refreshIntervalMilli, refreshIntervalMilli, TimeUnit.SECONDS);
     }
 
     @Override

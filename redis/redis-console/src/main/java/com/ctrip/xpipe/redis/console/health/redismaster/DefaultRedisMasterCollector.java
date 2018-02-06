@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,12 +77,13 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
         });
     }
 
-    private void doCorrection(RedisMasterSamplePlan plan) {
+    @VisibleForTesting
+    protected void doCorrection(RedisMasterSamplePlan plan) {
         logger.info("[doCorrection]{}", plan);
 
         //check redis master again
 
-        if(isMaster(plan.getMasterHost(), plan.getMasterPort())){
+        if(plan.getMasterHost() != null && isMaster(plan.getMasterHost(), plan.getMasterPort())){
             logger.info("[doCorrection][still master]{}", plan);
             return;
         }
@@ -125,9 +127,10 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
         }
     }
 
-    private boolean isMaster(String host, int port) {
-        RedisSession redisSession = redisSessionManager.findOrCreateSession(host, port);
+    @VisibleForTesting
+    protected boolean isMaster(String host, int port) {
         try {
+            RedisSession redisSession = redisSessionManager.findOrCreateSession(host, port);
             String role = redisSession.roleSync();
             if(Server.SERVER_ROLE.MASTER.sameRole(role)){
                 return true;

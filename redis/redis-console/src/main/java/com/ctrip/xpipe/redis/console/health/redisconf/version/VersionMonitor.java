@@ -44,7 +44,7 @@ public class VersionMonitor extends AbstractRedisConfMonitor<VersionInstanceResu
             HostPort hostPort = entry.getKey();
             try{
                 RedisSession redisSession = findRedisSession(hostPort);
-                redisSession.serverInfo(new Callbackable<String>() {
+                redisSession.infoServer(new Callbackable<String>() {
                     @Override
                     public void success(String message) {
                         addInstanceSuccess(startNanoTime, hostPort.getHost(), hostPort.getPort(), message);

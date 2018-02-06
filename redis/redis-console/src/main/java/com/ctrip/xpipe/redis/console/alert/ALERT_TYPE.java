@@ -21,7 +21,9 @@ public enum ALERT_TYPE {
     MARK_INSTANCE_UP("mark instance up", EMAIL_DBA, 5),
     MARK_INSTANCE_DOWN("mark instance down", EMAIL_DBA, 5),
     ALERT_SYSTEM_OFF("alert system is turning off", EMAIL_DBA | EMAIL_XPIPE_ADMIN, 0),
-    SENTINEL_AUTO_PROCESS_OFF("sentinel auto process is turning off", EMAIL_DBA | EMAIL_XPIPE_ADMIN, 0);
+    SENTINEL_AUTO_PROCESS_OFF("sentinel auto process is turning off", EMAIL_DBA | EMAIL_XPIPE_ADMIN, 0),
+    REPL_BACKLOG_NOT_ACTIVE("repl_backlog_not_active", EMAIL_XPIPE_ADMIN, 5)
+    ;
 
     private String simpleDesc;
 

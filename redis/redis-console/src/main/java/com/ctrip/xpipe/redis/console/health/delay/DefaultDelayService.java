@@ -20,7 +20,9 @@ public class DefaultDelayService implements DelayService, DelayCollector{
 	
 	@Override
 	public void collect(DelaySampleResult result) {
-		hostPort2Delay.put(result.getMasterHostPort(), TimeUnit.NANOSECONDS.toMillis(result.getMasterDelayNanos()));
+		if(result.getMasterHostPort() != null) {
+			hostPort2Delay.put(result.getMasterHostPort(), TimeUnit.NANOSECONDS.toMillis(result.getMasterDelayNanos()));
+		}
 		
 		for(Entry<HostPort, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
 			if(entry.getValue() != null) {

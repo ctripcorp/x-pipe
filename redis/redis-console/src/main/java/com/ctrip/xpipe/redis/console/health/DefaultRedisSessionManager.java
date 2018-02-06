@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.lambdaworks.redis.ClientOptions;
@@ -157,6 +158,9 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Override
 	public RedisSession findOrCreateSession(String host, int port) {
 
+		if(StringUtil.isEmpty(host) || port == 0) {
+			throw new IllegalArgumentException("Redis Host/Port can not be empty: " + host + ":" + port);
+		}
 		HostPort hostPort = new HostPort(host, port);
 		RedisSession session = sessions.get(hostPort);
 

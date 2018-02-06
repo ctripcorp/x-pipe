@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.health.delay.DelaySampleResult;
 import com.ctrip.xpipe.redis.console.health.ping.PingCollector;
 import com.ctrip.xpipe.redis.console.health.ping.PingSampleResult;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,9 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
 
     public HEALTH_STATE getState(HostPort hostPort){
 
+        if(hostPort == null || StringUtil.isEmpty(hostPort.getHost())) {
+            return HEALTH_STATE.UNKNOWN;
+        }
         HealthStatus healthStatus = allHealthStatus.get(hostPort);
         if(healthStatus == null){
             return HEALTH_STATE.UNKNOWN;
@@ -113,10 +117,11 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
 
     @Override
     public void collect(DelaySampleResult result) {
-
-        HealthStatus healthStatus = createOrGet(result.getMasterHostPort());
-        healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(result.getMasterDelayNanos()));
-
+        HealthStatus healthStatus;
+        if(result.getMasterHostPort() != null) {
+            healthStatus = createOrGet(result.getMasterHostPort());
+            healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(result.getMasterDelayNanos()));
+        }
         for (Map.Entry<HostPort, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
 
             healthStatus = createOrGet(entry.getKey());

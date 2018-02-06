@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.health.ping.PingService;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -42,7 +43,11 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 	protected void notifyCollectors(Sample<InstanceDelayResult> sample) {
 		DelaySampleResult sampleResult = convertToSampleResult(sample);
 		for (DelayCollector collector : delayCollectors) {
-			collector.collect(sampleResult);
+			try {
+				collector.collect(sampleResult);
+			} catch (Exception e) {
+				log.error("[DefaultDelayMonitor][notifyCollectors]{}", e);
+			}
 		}
 	}
 
@@ -96,10 +101,15 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 				});
 		}
 
-		RedisSession masterSession = findRedisSession(samplePlan.getMasterHost(), samplePlan.getMasterPort());
+		RedisSession masterSession = null;
+		if(samplePlan.getMasterHost() != null) {
+			masterSession = findRedisSession(samplePlan.getMasterHost(), samplePlan.getMasterPort());
+		}
 		long startNanoTime = recordSample(samplePlan);
 		log.debug("[sampleDelay][publish]{}:{}", samplePlan.getMasterHost(), samplePlan.getMasterPort());
-		masterSession.publish(CHECK_CHANNEL, Long.toHexString(startNanoTime));
+		if(masterSession != null) {
+			masterSession.publish(CHECK_CHANNEL, Long.toHexString(startNanoTime));
+		}
 	}
 
 	@Override
@@ -114,5 +124,13 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 		return new DelaySamplePlan(clusterId, shardId);
 	}
 
+	@VisibleForTesting
+	protected void setDelayCollectors(List<DelayCollector> collectors) {
+		this.delayCollectors = collectors;
+	}
 
+	@VisibleForTesting
+	protected List<DelayCollector> getDelayCollectors() {
+		return this.delayCollectors;
+	}
 }

@@ -18,16 +18,17 @@
             </div>
         </header>
 
-        <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
+        <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
             <tr ng-repeat="cluster in $data">
                 <td data-title="'cluster'" filter="{ clusterName : 'text' }">
                     <a href="/#/cluster_dc_shards/{{cluster.clusterName}}/">{{ cluster.clusterName }}</a>
                 </td>
-                <td data-title="'主数据中心'" ng-bind="getDcName({{cluster.activedcId}})"></td>
-                <td data-title="'描述'" ng-bind="cluster.clusterDescription | limitTo:50" ></td>
-                <td data-title="'组织'" ng-bind="cluster.clusterOrgName" ></td>
-                <td data-title="'联系人邮箱'" ng-bind="cluster.clusterAdminEmails| limitTo:50" ></td>
-                <td data-title="'操作'">
+                <td ng-if="showUnhealthyClusterOnly" data-title="'详情'"><div title="{{cluster.message}}">详情</div></td>
+                <td ng-if="true" data-title="'主数据中心'" ng-bind="getDcName({{cluster.activedcId}})"></td>
+                <td ng-if="true" data-title="'描述'" ng-bind="cluster.clusterDescription | limitTo:50" ></td>
+                <td ng-if="true" data-title="'组织'" ng-bind="cluster.clusterOrgName" ></td>
+                <td ng-if="true" data-title="'联系人邮箱'" ng-bind="cluster.clusterAdminEmails| limitTo:50" ></td>
+                <td ng-if="true" data-title="'操作'">
                 	<a href="/#/cluster_dc?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">数据中心</a>&nbsp;
                     <a href="/#/cluster_form?clusterName={{cluster.clusterName}}&type=retrieve" class="btn btn-info btn-xs">Cluster</a>&nbsp;
                     <a href="/#/cluster_shards?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">Shards</a>&nbsp;

@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.health;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,14 +106,22 @@ public class HealthChecker {
 		daemonHealthCheckThread.start();
 	}
 
-	private void warmup() {
-		int period = 2000;
-		try {
-			while(metaCache == null || metaCache.getXpipeMeta() == null) {
-				log.info("[warmup] waiting for metaCache initialized");
+	@VisibleForTesting
+	protected void warmup() {
+		int period = 1000;
+		XpipeMeta xpipeMeta = null;
+		while(xpipeMeta == null) {
+			log.info("[warmup] waiting for metaCache initialized");
+			try {
 				Thread.sleep(period);
+				xpipeMeta = metaCache.getXpipeMeta();
+				Thread.sleep(period);
+			} catch (Exception e) {
+				log.error("[warmup]", e);
 			}
-			List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
+		}
+		try {
+			List<DcMeta> dcsToCheck = new LinkedList<>(xpipeMeta.getDcs().values());
 			for(DcMeta dc : dcsToCheck) {
 				dc.accept(healthCheckVisitor);
 			}
@@ -147,4 +157,8 @@ public class HealthChecker {
 		daemonHealthCheckThread.interrupt();
 	}
 
+	@VisibleForTesting
+	public void setMetaCache(MetaCache metaCache) {
+		this.metaCache = metaCache;
+	}
 }

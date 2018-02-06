@@ -239,10 +239,10 @@ public class RedisSession {
 
     }
 
-    public void serverInfo(Callbackable<String> callback) {
-        String serverInfoSection = "server";
+    public void info(final String infoSection, Callbackable<String> callback) {
+
         Consumer<StatefulRedisConnection> connectionConsumer = (connection) -> {
-            CompletableFuture<String> future = connection.async().info(serverInfoSection).toCompletableFuture();
+            CompletableFuture<String> future = connection.async().info(infoSection).toCompletableFuture();
             future.whenCompleteAsync((info, th) -> {
                 if(th != null){
                     log.error("[info]{}", hostPort, th);
@@ -259,6 +259,17 @@ public class RedisSession {
         };
 
         asyncExecute(connectionConsumer, throwableConsumer);
+    }
+
+
+    public void infoServer(Callbackable<String> callback) {
+        String section = "server";
+        info(section, callback);
+    }
+
+    public void infoReplication(Callbackable<String> callback) {
+        String infoReplicationSection = "replication";
+        info(infoReplicationSection, callback);
     }
 
     public void conf(String confSection, Callbackable<List<String>> callback) {
@@ -361,9 +372,13 @@ public class RedisSession {
     }
 
     public void closeConnection() {
-        nonSubscribeConn.get().close();
+        try {
+            nonSubscribeConn.get().close();
+        } catch (Exception ignore) {}
         for(PubSubConnectionWrapper connectionWrapper : subscribConns.values()) {
-            connectionWrapper.closeAndClean();
+            try {
+                connectionWrapper.closeAndClean();
+            } catch (Exception ignore) {}
         }
     }
 }

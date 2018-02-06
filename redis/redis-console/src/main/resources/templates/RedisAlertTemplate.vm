@@ -65,6 +65,11 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
         <h4>CRedis Instance Mark Down</h4>
         <p>说明：Redis 实例故障之后(多数console认定Delay时间过长)，会调用CRedis API将Redis在CRedis服务端标记为"不可读"状态</p>
     #end
+    #if(${REPL_BACKLOG_NOT_ACTIVE})
+        -------------------
+        <h4>Redis Replication Backlog Non-Active</h4>
+        <p>说明：Redis repl_backlog_active 参数为0，表示Redis用于PSync的backlog未开启或被删除，切换时可能引起全量同步</p>
+    #end
     <table border="1">
         <thead>
         <tr>
