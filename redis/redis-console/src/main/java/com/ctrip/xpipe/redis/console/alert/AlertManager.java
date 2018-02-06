@@ -62,7 +62,7 @@ public class AlertManager {
     @PostConstruct
     public void postConstruct(){
 
-        int retryDelayBase = 10000;
+        int retryDelayBase = 10000, retryTimes = 3;
 
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
@@ -72,7 +72,7 @@ public class AlertManager {
             }
         }, 0, 30, TimeUnit.SECONDS);
 
-        new OneThreadTaskExecutor(RetryNTimes.retryForEver(new RetryDelay(retryDelayBase)), scheduled)
+        new OneThreadTaskExecutor(new RetryNTimes<>(retryTimes, retryDelayBase), scheduled)
                 .executeCommand(new AbstractCommand<Void>() {
 
                     @Override
