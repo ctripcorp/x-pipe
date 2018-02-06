@@ -35,6 +35,7 @@ public abstract class Decorator {
 
     public String generateContent(AlertEntity alert) {
         VelocityContext context = generateCommonContext();
+        alert.removeSpecialCharacters();
         context = fillInContext(alert, context);
         return getRenderedString(getTemplateName(), context);
     }
