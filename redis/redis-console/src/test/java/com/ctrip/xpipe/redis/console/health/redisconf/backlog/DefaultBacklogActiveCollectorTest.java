@@ -2,15 +2,18 @@ package com.ctrip.xpipe.redis.console.health.redisconf.backlog;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisConf;
+import com.ctrip.xpipe.redis.console.health.redisconf.RedisConfManager;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
-import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -21,10 +24,14 @@ import static org.mockito.Mockito.when;
  * <p>
  * Feb 05, 2018
  */
+
 public class DefaultBacklogActiveCollectorTest {
 
     @Spy
     private AlertManager alertManager;
+
+    @Mock
+    private RedisConfManager redisConfManager;
 
     @InjectMocks
     private DefaultBacklogActiveCollector collector = new DefaultBacklogActiveCollector();
@@ -32,11 +39,17 @@ public class DefaultBacklogActiveCollectorTest {
     @Before
     public void beforeDefaultBacklogActiveCollectorTest() {
         MockitoAnnotations.initMocks(this);
+
     }
 
     @Test
     public void analysisInfoReplication() throws Exception {
         doNothing().when(alertManager).alert(any(), any(), any(), any(), any());
+        Assert.assertNotNull(redisConfManager);
+        RedisConf redisConf = new RedisConf(new HostPort(), "", "");
+        redisConf.setXredisVersion("1.0.0");
+        redisConf.setRedisVersion("4.0.1");
+        when(redisConfManager.findOrCreateConfig("127.0.0.1", 6379)).thenReturn(redisConf);
         collector.analysisInfoReplication("role:slave\n" +
                 "master_host:10.2.54.233\n" +
                 "master_port:7381\n" +
