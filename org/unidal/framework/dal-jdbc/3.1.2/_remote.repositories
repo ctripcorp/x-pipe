@@ -1,4 +1,7 @@
 #NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
-#Thu Nov 16 17:53:30 CST 2017
+#Sat Dec 09 10:51:47 CST 2017
+dal-jdbc-3.1.2.jar>public=
 dal-jdbc-3.1.2.pom>localpublic=
+dal-jdbc-3.1.2-sources.jar>public=
 dal-jdbc-3.1.2.jar>localpublic=
+dal-jdbc-3.1.2.pom>public=

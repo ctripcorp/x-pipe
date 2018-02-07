@@ -1,4 +1,7 @@
 #NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
-#Mon Nov 13 13:29:46 CST 2017
+#Sat Dec 09 10:51:09 CST 2017
 foundation-service-3.1.2.jar>localpublic=
 foundation-service-3.1.2.pom>localpublic=
+foundation-service-3.1.2-sources.jar>public=
+foundation-service-3.1.2.pom>public=
+foundation-service-3.1.2.jar>public=
