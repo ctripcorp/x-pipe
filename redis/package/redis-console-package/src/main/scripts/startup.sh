@@ -87,8 +87,8 @@ echo "current env:"$ENV
 if [ $ENV = "PRO" ]
 then
     #GB
-    USED_MEM=10
-    XMN=6
+    USED_MEM=9
+    XMN=5
     MAX_DIRECT=1
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g  -XX:+AlwaysPreTouch -Xmn${XMN}g -XX:MaxDirectMemorySize=${MAX_DIRECT}g"
 elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
