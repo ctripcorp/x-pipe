@@ -3,20 +3,24 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
+import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
+import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
+import com.ctrip.xpipe.redis.console.notifier.shard.ShardEventListener;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
-import com.google.common.collect.Sets;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 @Service
 public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implements ShardService {
@@ -27,6 +31,18 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private ShardDao shardDao;
 	@Autowired
 	private ClusterMetaModifiedNotifier notifier;
+
+	@Autowired
+	private DcClusterShardService dcClusterShardService;
+
+	@Autowired
+	private SentinelService sentinelService;
+
+	@Autowired
+	private List<ShardEventListener> shardEventListeners;
+
+	@Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+	private ExecutorService executors;
 	
 	@Override
 	public ShardTbl find(final long shardId) {
@@ -117,8 +133,12 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 				return dao.findShard(clusterName, shardName, ShardTblEntity.READSET_FULL);
 			}
     	});
-    	
+
     	if(null != shard) {
+    		// Call shard event
+			Map<Long, SetinelTbl> sentinels = sentinelService.findByShard(shard.getId());
+			createShardDeleteEvent(clusterName, shardName, shard, sentinels).onEvent();
+
     		queryHandler.handleQuery(new DalQuery<Integer>() {
     			@Override
     			public Integer doQuery() throws DalException {
@@ -128,12 +148,33 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
     	}
     	
     	/** Notify meta server **/
-    	List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
+		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
     	if(null != relatedDcs) {
     		for(DcTbl dc : relatedDcs) {
     			notifier.notifyClusterUpdate(dc.getDcName(), clusterName);
+
     		}
     	}
+	}
+
+	@VisibleForTesting
+	protected ShardDeleteEvent createShardDeleteEvent(String clusterName, String shardName, ShardTbl shardTbl,
+												Map<Long, SetinelTbl> sentinelTblMap) {
+
+		String monitorName = shardTbl.getSetinelMonitorName();
+		ShardDeleteEvent shardDeleteEvent = new ShardDeleteEvent(clusterName, shardName, executors);
+		shardDeleteEvent.setShardMonitorName(monitorName);
+
+		// Splicing sentinel address as "127.0.0.1:6379,127.0.0.2:6380"
+		StringBuffer sb = new StringBuffer();
+		for(SetinelTbl setinelTbl : sentinelTblMap.values()) {
+			sb.append(setinelTbl.getSetinelAddress()).append(",");
+		}
+		sb.deleteCharAt(sb.length() - 1);
+
+		shardDeleteEvent.setShardSentinels(sb.toString());
+		shardEventListeners.forEach(shardEventListener -> shardDeleteEvent.addObserver(shardEventListener));
+		return shardDeleteEvent;
 	}
 
 	private ShardTbl generateMonitorNameAndReturnShard(ShardTbl dupShardTbl, Set<String> monitorNames,
