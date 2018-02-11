@@ -1,6 +1,8 @@
-package com.ctrip.xpipe.redis.console.notifier.shard;
+package com.ctrip.xpipe.redis.console.redis;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
+import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEventListener4Sentinel;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.google.common.collect.Lists;
 import org.junit.Before;
@@ -13,22 +15,24 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
+import static org.junit.Assert.*;
+
 /**
  * @author chen.zhu
  * <p>
- * Feb 09, 2018
+ * Feb 11, 2018
  */
-public class ShardDeleteEventListener4SentinelTest extends AbstractConsoleIntegrationTest {
+public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
-    private ShardDeleteEventListener4Sentinel listener;
+    private DefaultSentinelManager manager;
 
     private int port;
 
     @Before
     public void beforeShardDeleteEventListener4SentinelTest() throws Exception {
         MockitoAnnotations.initMocks(this);
-        listener.setScheduled(Executors.newScheduledThreadPool(5));
+        manager.setScheduled(Executors.newScheduledThreadPool(5));
         port = randomPort();
         startServer(port, new Function<String, String>() {
             @Override
@@ -62,19 +66,19 @@ public class ShardDeleteEventListener4SentinelTest extends AbstractConsoleIntegr
         ShardDeleteEvent shardEvent = new ShardDeleteEvent("cluster", "shard", Executors.newFixedThreadPool(2));
         shardEvent.setShardSentinels("127.0.0.1:"+port);
         shardEvent.setShardMonitorName("sitemon-xpipegroup0");
-        listener.removeSentinels(shardEvent);
+        manager.removeShardSentinelMonitors(shardEvent);
     }
 
     @Test
     public void getRealSentinels() throws Exception {
-        List<Sentinel> sentinelList = listener
+        List<Sentinel> sentinelList = manager
                 .getRealSentinels(Lists.newArrayList(new InetSocketAddress("127.0.0.1", port)), "sitemon-xpipegroup0");
         logger.info("{}", sentinelList);
     }
 
     @Test
     public void removeSentinel() throws Exception {
-        listener.removeSentinel(new Sentinel("b99ecc0cc2194c349c61bc2e95b59b9cb07250da", "127.0.0.1", port),
+        manager.removeSentinel(new Sentinel("b99ecc0cc2194c349c61bc2e95b59b9cb07250da", "127.0.0.1", port),
                 "test");
     }
 

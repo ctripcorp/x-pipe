@@ -11,6 +11,10 @@ import java.util.concurrent.ExecutorService;
  */
 public class ShardDeleteEvent extends AbstractShardEvent {
 
+    public ShardDeleteEvent() {
+        super();
+    }
+
     public ShardDeleteEvent(String clusterName, String shardName, ExecutorService executor) {
         super(clusterName, shardName, executor);
     }

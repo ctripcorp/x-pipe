@@ -26,6 +26,10 @@ public abstract class AbstractShardEvent implements ShardEvent {
 
     private ExecutorService executor;
 
+    protected AbstractShardEvent() {
+        this.observers = Lists.newArrayListWithExpectedSize(5);
+    }
+
     protected AbstractShardEvent(String clusterName, String shardName, ExecutorService executor) {
         this.clusterName = clusterName;
         this.shardName = shardName;
@@ -93,6 +97,7 @@ public abstract class AbstractShardEvent implements ShardEvent {
             executor.execute(new AbstractExceptionLogTask() {
                 @Override
                 protected void doRun() throws Exception {
+                    logger.info("[onEvent] execute observer: {}", observer.getClass());
                     observer.update(getShardEventType(), getSelf());
                 }
             });

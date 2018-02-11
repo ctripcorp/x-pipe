@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
+import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -64,6 +65,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private ConsoleConfig consoleConfig;
+
+	@Autowired
+	private ClusterDeleteEventFactory clusterDeleteEventFactory;
 
 	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
@@ -294,6 +298,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
     	
     	final ClusterTbl queryProto = proto;
+
+    	// Call cluster delete event
+		clusterDeleteEventFactory.createClusterEvent(clusterName).onEvent();
+
     	queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
