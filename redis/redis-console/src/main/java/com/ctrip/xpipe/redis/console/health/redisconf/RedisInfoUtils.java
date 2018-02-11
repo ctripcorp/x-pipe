@@ -51,4 +51,24 @@ public class RedisInfoUtils {
         return true;
     }
 
+    public static String getRole(String infoReplication) {
+        return getValueByKey(infoReplication, "role");
+    }
+
+    public static boolean isMasterSyncInProgress(String infoReplication) {
+        String syncInProgress = getValueByKey(infoReplication, "master_sync_in_progress");
+        try {
+            if(StringUtil.isEmpty(syncInProgress)) {
+                logger.warn("[isMasterSyncInProgress]Did not get 'repl_backlog_active'");
+            }
+            int result = Integer.valueOf(syncInProgress);
+            if(result != 1) {
+                return false;
+            }
+        } catch (Exception ignore) {
+            logger.error("[isMasterSyncInProgress]", ignore);
+        }
+        return true;
+    }
+
 }
