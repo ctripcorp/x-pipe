@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
@@ -54,6 +55,9 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
     @Autowired
     private DefaultRedisSessionManager sessionManager;
+
+    @Autowired
+    private AlertManager alertManager;
 
     @Override
     public void collect(SentinelSample sentinelSample) {
@@ -114,6 +118,9 @@ public class DefaultSentinelCollector implements SentinelCollector {
                         if (isKeeperOrDead(host, port)) {
                             shoudReset = true;
                             reason = String.format("[%s]keeper or dead, current:%s,%s, but no clustershard", currentSlave, clusterId, shardId);
+                        } else {
+                            String message = String.format("sentinel monitors redis %s not in xpipe", currentSlave.toString());
+                            alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_INCONSIS, message);
                         }
                         continue;
                     }
@@ -372,6 +379,11 @@ public class DefaultSentinelCollector implements SentinelCollector {
     @VisibleForTesting
     public void setSessionManager(DefaultRedisSessionManager sessionManager) {
         this.sessionManager = sessionManager;
+    }
+
+    @VisibleForTesting
+    public void setAlertManager(AlertManager alertManager) {
+        this.alertManager = alertManager;
     }
 
 }
