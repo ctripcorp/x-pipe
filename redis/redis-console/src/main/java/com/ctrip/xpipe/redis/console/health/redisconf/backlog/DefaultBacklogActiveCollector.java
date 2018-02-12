@@ -65,7 +65,11 @@ public class DefaultBacklogActiveCollector implements BacklogActiveCollector {
         boolean isBacklogActive = RedisInfoUtils.getReplBacklogActive(infoReplication);
         String role = RedisInfoUtils.getRole(infoReplication);
         if(!isBacklogActive && Server.SERVER_ROLE.SLAVE.sameRole(role)) {
-            if(RedisInfoUtils.isMasterSyncInProgress(infoReplication)) {
+            // master sync in progress == REPL_STATE_TRANSFER
+            // master last io seconds ago == server.master ? unix time - last ! -1
+            if(RedisInfoUtils.isMasterSyncInProgress(infoReplication)
+                    || RedisInfoUtils.getMasterLastIoSecondsAgo(infoReplication) == -1) {
+
                 logger.info("[analysisInfoReplication] master sync in progress, waiting for {}, {}, {}",
                         cluster, shard, hostPort);
                 return;

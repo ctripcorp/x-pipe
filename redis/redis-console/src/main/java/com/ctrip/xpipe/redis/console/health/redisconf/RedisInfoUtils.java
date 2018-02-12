@@ -55,6 +55,10 @@ public class RedisInfoUtils {
         return getValueByKey(infoReplication, "role");
     }
 
+    public static int getMasterLastIoSecondsAgo(String infoReplication) {
+        return Integer.parseInt(getValueByKey(infoReplication, "master_last_io_seconds_ago"));
+    }
+
     public static boolean isMasterSyncInProgress(String infoReplication) {
         String syncInProgress = getValueByKey(infoReplication, "master_sync_in_progress");
         try {

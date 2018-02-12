@@ -113,7 +113,7 @@ public class DefaultBacklogActiveCollectorTest {
                 "master_port:7381\n" +
                 "master_link_status:up\n" +
                 "master_last_io_seconds_ago:0\n" +
-                "master_sync_in_progress:1\n" +
+                "master_sync_in_progress:0\n" +
                 "slave_repl_offset:1439009182\n" +
                 "slave_priority:100\n" +
                 "slave_read_only:1\n" +

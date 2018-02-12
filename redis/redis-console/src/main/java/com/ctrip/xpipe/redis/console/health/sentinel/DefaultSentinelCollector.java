@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnectionException;
@@ -144,7 +145,8 @@ public class DefaultSentinelCollector implements SentinelCollector {
         });
     }
 
-    private boolean isKeeperOrDead(String host, int port) {
+    @VisibleForTesting
+    protected boolean isKeeperOrDead(String host, int port) {
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Object> role = new AtomicReference<>();
@@ -365,6 +367,11 @@ public class DefaultSentinelCollector implements SentinelCollector {
             }
         }
         return toAdd;
+    }
+
+    @VisibleForTesting
+    public void setSessionManager(DefaultRedisSessionManager sessionManager) {
+        this.sessionManager = sessionManager;
     }
 
 }
