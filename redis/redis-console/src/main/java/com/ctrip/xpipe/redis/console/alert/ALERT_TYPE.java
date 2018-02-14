@@ -23,7 +23,8 @@ public enum ALERT_TYPE {
     ALERT_SYSTEM_OFF("alert system is turning off", EMAIL_DBA | EMAIL_XPIPE_ADMIN, 0),
     SENTINEL_AUTO_PROCESS_OFF("sentinel auto process is turning off", EMAIL_DBA | EMAIL_XPIPE_ADMIN, 0),
     REPL_BACKLOG_NOT_ACTIVE("repl_backlog_not_active", EMAIL_DBA | EMAIL_XPIPE_ADMIN, 5),
-    SENTINEL_INCONSIS("sentinel monitor info inconsis", EMAIL_XPIPE_ADMIN, 0)
+    SENTINEL_MONITOR_REDUNDANT_REDIS("sentinel_monitors_redundant_redis", EMAIL_XPIPE_ADMIN, 0),
+    SENTINEL_MONITOR_INCONSIS("sentinel_monitor_incosis", EMAIL_XPIPE_ADMIN, 0)
     ;
 
     private String simpleDesc;

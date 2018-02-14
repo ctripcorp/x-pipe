@@ -1,15 +1,18 @@
 package com.ctrip.xpipe.redis.console.redis;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -18,7 +21,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -32,6 +34,8 @@ import java.util.concurrent.ScheduledExecutorService;
 public class DefaultSentinelManager implements SentinelManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static final String SENTINEL = "sentinel";
 
     @Resource
     private XpipeNettyClientKeyedObjectPool keyedClientPool;
@@ -48,7 +52,7 @@ public class DefaultSentinelManager implements SentinelManager {
 
         String allSentinels = shardEvent.getShardSentinels();
 
-        logger.info("[removeShardSentinelMonitors]removeSentinel cluster:{}, shard:{}, masterName:{}, sentinelAddress:{}",
+        logger.info("[removeShardSentinelMonitors]removeSentinelMonitor cluster:{}, shard:{}, masterName:{}, sentinelAddress:{}",
                 clusterId, shardId, sentinelMonitorName, allSentinels);
 
         if(checkEmpty(sentinelMonitorName, allSentinels)) {
@@ -62,16 +66,33 @@ public class DefaultSentinelManager implements SentinelManager {
             return;
         }
 
-        logger.info("[removeShardSentinelMonitors]removeSentinel realSentinels: {}", realSentinels);
+        logger.info("[removeShardSentinelMonitors]removeSentinelMonitor realSentinels: {}", realSentinels);
 
         for(Sentinel sentinel : realSentinels) {
 
-            removeSentinel(sentinel, sentinelMonitorName);
+            removeSentinelMonitor(sentinel, sentinelMonitorName);
         }
     }
 
-    @VisibleForTesting
-    protected void removeSentinel(Sentinel sentinel, String sentinelMonitorName) {
+    @Override
+    public HostPort getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName) {
+        SimpleObjectPool<NettyClient> clientPool = keyedClientPool
+                .getKeyPool(new InetSocketAddress(sentinel.getIp(), sentinel.getPort()));
+        AbstractSentinelCommand.SentinelMaster sentinelMaster = new AbstractSentinelCommand
+                .SentinelMaster(clientPool, scheduled, sentinelMonitorName);
+
+        HostPort result = null;
+        try {
+            result = sentinelMaster.execute().get();
+            logger.info("[getMasterOfMonitor]getMasterOfMonitor {} from {} : {}", sentinelMonitorName, sentinel, result);
+        } catch (Exception e) {
+            logger.error("[getMasterOfMonitor] {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
+        }
+        return result;
+    }
+
+    @Override
+    public void removeSentinelMonitor(Sentinel sentinel, String sentinelMonitorName) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new InetSocketAddress(sentinel.getIp(), sentinel.getPort()));
 
@@ -79,10 +100,10 @@ public class DefaultSentinelManager implements SentinelManager {
                 .SentinelRemove(clientPool, sentinelMonitorName, scheduled);
         try {
             String result = sentinelRemove.execute().get();
-            logger.info("[removeSentinels]removeSentinel {} from {} : {}", sentinelMonitorName, sentinel, result);
+            logger.info("[removeSentinels]removeSentinelMonitor {} from {} : {}", sentinelMonitorName, sentinel, result);
 
         } catch (Exception e) {
-            logger.error("removeSentinel {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
+            logger.error("removeSentinelMonitor {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
         }
     }
 

@@ -50,7 +50,13 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
             redisSession.closeSubscribedChannel(helloChannel);
         });
 
-        collectors.forEach((collector) -> collector.collect((SentinelSample) sample));
+        collectors.forEach((collector) -> {
+            try {
+                collector.collect((SentinelSample) sample);
+            } catch (Exception e) {
+                log.error("[notifyCollectors]", e);
+            }
+        });
 
     }
 

@@ -120,7 +120,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
                             reason = String.format("[%s]keeper or dead, current:%s,%s, but no clustershard", currentSlave, clusterId, shardId);
                         } else {
                             String message = String.format("sentinel monitors redis %s not in xpipe", currentSlave.toString());
-                            alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_INCONSIS, message);
+                            alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, message);
                         }
                         continue;
                     }

@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.redis;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
-import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEventListener4Sentinel;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.google.common.collect.Lists;
 import org.junit.Before;
@@ -14,8 +13,6 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu
@@ -78,7 +75,7 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void removeSentinel() throws Exception {
-        manager.removeSentinel(new Sentinel("b99ecc0cc2194c349c61bc2e95b59b9cb07250da", "127.0.0.1", port),
+        manager.removeSentinelMonitor(new Sentinel("b99ecc0cc2194c349c61bc2e95b59b9cb07250da", "127.0.0.1", port),
                 "test");
     }
 
