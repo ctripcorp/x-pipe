@@ -53,7 +53,8 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 	public static enum INFO_TYPE{
 
 		REPLICATION,
-		SERVER;
+		SERVER,
+		SENTINEL;
 
 		public String cmd(){
 			return toString().toLowerCase();

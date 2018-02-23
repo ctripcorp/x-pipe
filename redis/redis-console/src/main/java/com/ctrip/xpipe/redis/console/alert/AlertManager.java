@@ -123,7 +123,7 @@ public class AlertManager {
     }
 
     @VisibleForTesting
-    protected boolean shouldAlert(String cluster) {
+    public boolean shouldAlert(String cluster) {
         try {
             Date createTime = getClusterCreateTime(cluster);
             int minutes = consoleConfig.getNoAlarmMinutesForNewCluster();

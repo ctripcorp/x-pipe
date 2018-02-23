@@ -75,4 +75,19 @@ public class RedisInfoUtils {
         return true;
     }
 
+    public static int getMonitorNumber(String infoSentinel) {
+        String num = getValueByKey(infoSentinel, "sentinel_masters");
+        try {
+            if(StringUtil.isEmpty(num)) {
+                logger.warn("[isMasterSyncInProgress]Did not get 'repl_backlog_active'");
+                return 0;
+            }
+            return Integer.parseInt(num);
+
+        } catch (Exception ignore) {
+            logger.error("[getMonitorNumber]", ignore);
+        }
+        return 0;
+    }
+
 }

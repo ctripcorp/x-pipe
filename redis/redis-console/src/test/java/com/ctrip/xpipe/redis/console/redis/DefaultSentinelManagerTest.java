@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.redis;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.health.sentinel.monitor.SentinelMonitors;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.google.common.collect.Lists;
@@ -77,6 +78,15 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
     public void removeSentinel() throws Exception {
         manager.removeSentinelMonitor(new Sentinel("b99ecc0cc2194c349c61bc2e95b59b9cb07250da", "127.0.0.1", port),
                 "test");
+    }
+
+    @Test// manual test
+    public void infoSentinel() throws Exception {
+        String info = manager.infoSentinel(new Sentinel("test", "10.2.48.234", 5000));
+        logger.info("=====================================");
+        SentinelMonitors.parseFromString(info).getMonitors().forEach(monitor -> logger.info(monitor));
+        logger.info("=====================================");
+
     }
 
 }

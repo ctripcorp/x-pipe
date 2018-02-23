@@ -16,4 +16,6 @@ public interface SentinelManager {
     void removeSentinelMonitor(Sentinel sentinel, String sentinelMonitorName);
 
     HostPort getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName);
+
+    String infoSentinel(Sentinel sentinel);
 }

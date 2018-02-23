@@ -7,12 +7,11 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
-import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -105,6 +104,20 @@ public class DefaultSentinelManager implements SentinelManager {
         } catch (Exception e) {
             logger.error("removeSentinelMonitor {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
         }
+    }
+
+    @Override
+    public String infoSentinel(Sentinel sentinel) {
+        SimpleObjectPool<NettyClient> clientPool = keyedClientPool
+                .getKeyPool(new InetSocketAddress(sentinel.getIp(), sentinel.getPort()));
+
+        InfoCommand infoCommand = new InfoCommand(clientPool, InfoCommand.INFO_TYPE.SENTINEL, scheduled);
+        try {
+            return infoCommand.execute().get();
+        } catch (Exception e) {
+            logger.error("[infoSentinel]", e);
+        }
+        return null;
     }
 
     private boolean checkEmpty(String sentinelMonitorName, String allSentinels) {

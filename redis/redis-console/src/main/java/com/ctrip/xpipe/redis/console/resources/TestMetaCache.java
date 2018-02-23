@@ -69,4 +69,9 @@ public class TestMetaCache implements MetaCache {
     public String getDc(HostPort hostPort) {
         return null;
     }
+
+    @Override
+    public Pair<String, String> findClusterShardBySentinelMonitor(String monitor) {
+        return null;
+    }
 }

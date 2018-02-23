@@ -30,4 +30,6 @@ public interface MetaCache {
     HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException;
 
     String getDc(HostPort hostPort);
+
+    Pair<String, String> findClusterShardBySentinelMonitor(String monitor);
 }
