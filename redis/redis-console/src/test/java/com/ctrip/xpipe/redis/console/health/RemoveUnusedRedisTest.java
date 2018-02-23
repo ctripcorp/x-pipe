@@ -82,7 +82,7 @@ public class RemoveUnusedRedisTest extends AbstractTest {
                 }
 
                 @Override
-                public void fail(Exception e) {
+                public void fail(Throwable e) {
 
                 }
             });

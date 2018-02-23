@@ -95,7 +95,7 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 					}
 
 					@Override
-					public void fail(Exception e) {
+					public void fail(Throwable e) {
 						//nothing to do
 					}
 				});
