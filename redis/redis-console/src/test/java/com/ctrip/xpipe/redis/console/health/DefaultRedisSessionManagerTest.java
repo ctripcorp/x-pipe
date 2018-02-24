@@ -44,7 +44,7 @@ public class DefaultRedisSessionManagerTest extends AbstractConsoleTest{
                     logger.info("[message]{}, {}", channel, message);
                 }
                 @Override
-                public void fail(Exception e) {
+                public void fail(Throwable e) {
                     logger.error("[fail]", e);
                 }
             });

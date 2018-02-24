@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.redisconf.backlog;
 
+import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
@@ -62,9 +63,20 @@ public class DefaultBacklogActiveCollector implements BacklogActiveCollector {
     @VisibleForTesting
     void analysisInfoReplication(String infoReplication, String cluster, String shard, HostPort hostPort) {
         boolean isBacklogActive = RedisInfoUtils.getReplBacklogActive(infoReplication);
-        if(!isBacklogActive) {
+        String role = RedisInfoUtils.getRole(infoReplication);
+        if(!isBacklogActive && Server.SERVER_ROLE.SLAVE.sameRole(role)) {
+            // master sync in progress == REPL_STATE_TRANSFER
+            // master last io seconds ago == server.master ? unix time - last ! -1
+            if(RedisInfoUtils.isMasterSyncInProgress(infoReplication)
+                    || RedisInfoUtils.getMasterLastIoSecondsAgo(infoReplication) == -1) {
+
+                logger.info("[analysisInfoReplication] master sync in progress, waiting for {}, {}, {}",
+                        cluster, shard, hostPort);
+                return;
+            }
             RedisConf redisConf = redisConfManager.findOrCreateConfig(hostPort.getHost(), hostPort.getPort());
-            if(StringUtil.compareVersion(redisConf.getRedisVersion(), "4.0.0") >= 0
+            if((!StringUtil.isEmpty(redisConf.getRedisVersion())
+                    && StringUtil.compareVersion(redisConf.getRedisVersion(), "4.0.0") >= 0)
                     || !StringUtil.isEmpty(redisConf.getXredisVersion())) {
 
                 String message = "Redis replication backlog not active";

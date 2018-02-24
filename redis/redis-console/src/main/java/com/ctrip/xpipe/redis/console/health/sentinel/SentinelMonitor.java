@@ -50,7 +50,13 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
             redisSession.closeSubscribedChannel(helloChannel);
         });
 
-        collectors.forEach((collector) -> collector.collect((SentinelSample) sample));
+        collectors.forEach((collector) -> {
+            try {
+                collector.collect((SentinelSample) sample);
+            } catch (Exception e) {
+                log.error("[notifyCollectors]", e);
+            }
+        });
 
     }
 
@@ -82,7 +88,7 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
                 }
 
                 @Override
-                public void fail(Exception e) {
+                public void fail(Throwable e) {
 
                     addInstanceFail(startNanoTime, hostPort, e);
                     log.error("[fail]" + hostPort, e);

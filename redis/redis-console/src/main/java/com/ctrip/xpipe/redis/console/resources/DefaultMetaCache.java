@@ -14,6 +14,8 @@ import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +25,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +56,8 @@ public class DefaultMetaCache implements MetaCache {
     private Pair<XpipeMeta, XpipeMetaManager> meta;
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+
+    private Map<String, Pair<String, String>> monitor2ClusterShard;
 
     public DefaultMetaCache() {
 
@@ -101,6 +102,7 @@ public class DefaultMetaCache implements MetaCache {
                 XpipeMeta xpipeMeta = createXpipeMeta(dcMetas);
                 Pair<XpipeMeta, XpipeMetaManager> meta = new Pair<>(xpipeMeta, new DefaultXpipeMetaManager(xpipeMeta));
                 DefaultMetaCache.this.meta = meta;
+                monitor2ClusterShard = Maps.newHashMap();
             }
         });
     }
@@ -241,5 +243,34 @@ public class DefaultMetaCache implements MetaCache {
             throw new IllegalStateException("unfound shard for instance:" + hostPort);
         }
         return metaDesc.getDcId();
+    }
+
+    @Override
+    public Pair<String, String> findClusterShardBySentinelMonitor(String monitor) {
+        if(StringUtil.isEmpty(monitor)) {
+            return null;
+        }
+        if(monitor2ClusterShard.containsKey(monitor)) {
+            return monitor2ClusterShard.get(monitor);
+        }
+        try {
+            XpipeMeta xpipeMeta = meta.getKey();
+            for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+                for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                    for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+
+                        monitor2ClusterShard.put(shardMeta.getSentinelMonitorName(),
+                                new Pair<>(clusterMeta.getId(), shardMeta.getId()));
+
+                        if (shardMeta.getSentinelMonitorName().equals(monitor)) {
+                            return new Pair<>(clusterMeta.getId(), shardMeta.getId());
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("[findClusterShardBySentinelMonitor]", e);
+        }
+        return null;
     }
 }

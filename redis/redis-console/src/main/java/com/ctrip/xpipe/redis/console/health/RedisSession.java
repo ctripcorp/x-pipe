@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
-import com.ctrip.xpipe.utils.OsUtils;
 import com.lambdaworks.redis.RedisChannelHandler;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnectionStateListener;
@@ -106,7 +104,11 @@ public class RedisSession {
             }, executors);
             pubSubFuture.whenCompleteAsync((pubSub, th) -> {
                 if(th != null) {
-                    callback.fail(new Exception(th));
+                    Throwable exception = th;
+                    while(exception instanceof CompletionException) {
+                        exception = exception.getCause();
+                    }
+                    callback.fail(exception);
                     log.warn("Error subscribe to redis {}", hostPort);
                 } else {
                     try {
@@ -218,7 +220,7 @@ public class RedisSession {
                 }, executors);
             }
         };
-        asyncExecute(connectionConsumer, null);
+        asyncExecute(connectionConsumer, (th) -> callback.fail(th));
     }
 
     public void configRewrite(BiConsumer<String, Throwable> consumer) {
@@ -299,9 +301,15 @@ public class RedisSession {
         CompletableFuture.supplyAsync(supplier, executors)
                 .whenCompleteAsync((connection, th) -> {
                     if(th != null) {
+                        Throwable exception = th;
+                        while(exception instanceof CompletionException) {
+                            exception = exception.getCause();
+                        }
                         log.error("[asyncExecute]" + hostPort, th);
-                        if(throwableConsumer != null)
-                            throwableConsumer.accept(th);
+
+                        if(throwableConsumer != null) {
+                            throwableConsumer.accept(exception);
+                        }
                     } else {
                         connectionConsumer.accept(connection);
                     }
@@ -332,7 +340,7 @@ public class RedisSession {
 
         void message(String channel, String message);
 
-        void fail(Exception e);
+        void fail(Throwable e);
     }
 
     public class PubSubConnectionWrapper {

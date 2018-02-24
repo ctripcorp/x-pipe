@@ -51,4 +51,43 @@ public class RedisInfoUtils {
         return true;
     }
 
+    public static String getRole(String infoReplication) {
+        return getValueByKey(infoReplication, "role");
+    }
+
+    public static int getMasterLastIoSecondsAgo(String infoReplication) {
+        return Integer.parseInt(getValueByKey(infoReplication, "master_last_io_seconds_ago"));
+    }
+
+    public static boolean isMasterSyncInProgress(String infoReplication) {
+        String syncInProgress = getValueByKey(infoReplication, "master_sync_in_progress");
+        try {
+            if(StringUtil.isEmpty(syncInProgress)) {
+                logger.warn("[isMasterSyncInProgress]Did not get 'repl_backlog_active'");
+            }
+            int result = Integer.valueOf(syncInProgress);
+            if(result != 1) {
+                return false;
+            }
+        } catch (Exception ignore) {
+            logger.error("[isMasterSyncInProgress]", ignore);
+        }
+        return true;
+    }
+
+    public static int getMonitorNumber(String infoSentinel) {
+        String num = getValueByKey(infoSentinel, "sentinel_masters");
+        try {
+            if(StringUtil.isEmpty(num)) {
+                logger.warn("[isMasterSyncInProgress]Did not get 'repl_backlog_active'");
+                return 0;
+            }
+            return Integer.parseInt(num);
+
+        } catch (Exception ignore) {
+            logger.error("[getMonitorNumber]", ignore);
+        }
+        return 0;
+    }
+
 }

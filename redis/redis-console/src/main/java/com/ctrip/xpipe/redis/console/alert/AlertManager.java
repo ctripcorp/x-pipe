@@ -62,8 +62,6 @@ public class AlertManager {
     @PostConstruct
     public void postConstruct(){
 
-        int retryDelayBase = 10000, retryTimes = 3;
-
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
             @Override
@@ -72,29 +70,16 @@ public class AlertManager {
             }
         }, 0, 30, TimeUnit.SECONDS);
 
-        new OneThreadTaskExecutor(new RetryNTimes<>(retryTimes, retryDelayBase), scheduled)
-                .executeCommand(new AbstractCommand<Void>() {
-
-                    @Override
-                    public String getName() {
-                        return "[clusterCreateTimeMapper]";
-                    }
-
-                    @Override
-                    protected void doExecute() throws Exception {
-                        logger.info("[clusterCreateTimeMapper][execute]");
-                        List<ClusterTbl> clusterTbls = clusterService.findAllClustersWithOrgInfo();
-                        for(ClusterTbl clusterTbl : clusterTbls) {
-                            clusterCreateTime.put(clusterTbl.getClusterName(), clusterTbl.getCreateTime());
-                        }
-                        future().setSuccess();
-                    }
-
-                    @Override
-                    protected void doReset() {
-
-                    }
-                });
+        scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() throws Exception {
+                logger.info("[clusterCreateTimeMapper][execute]");
+                List<ClusterTbl> clusterTbls = clusterService.findAllClustersWithOrgInfo();
+                for(ClusterTbl clusterTbl : clusterTbls) {
+                    clusterCreateTime.put(clusterTbl.getClusterName(), clusterTbl.getCreateTime());
+                }
+            }
+        }, 1, 60, TimeUnit.MINUTES);
 
     }
 
@@ -138,7 +123,7 @@ public class AlertManager {
     }
 
     @VisibleForTesting
-    protected boolean shouldAlert(String cluster) {
+    public boolean shouldAlert(String cluster) {
         try {
             Date createTime = getClusterCreateTime(cluster);
             int minutes = consoleConfig.getNoAlarmMinutesForNewCluster();

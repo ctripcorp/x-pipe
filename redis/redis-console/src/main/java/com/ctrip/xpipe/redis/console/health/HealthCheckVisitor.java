@@ -82,7 +82,7 @@ public class HealthCheckVisitor implements IVisitor {
                     }
 
                     @Override
-                    public void fail(Exception e) {
+                    public void fail(Throwable e) {
                         logger.debug("[visitedRedis] subscribe health check channel fail, {}", e);
                     }
                 });

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
@@ -134,6 +135,46 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		@Override
 		public String toString() {
 			return String.format("%s %s %s", SENTINEL, REMOVE, masterName);
+		}
+	}
+
+	public static class SentinelMaster extends AbstractSentinelCommand<HostPort> {
+
+		private static final String MASTER = "master";
+
+		private String monitorName;
+
+		public SentinelMaster(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+							  String monitorName) {
+
+			super(clientPool, scheduled);
+			this.monitorName = monitorName;
+		}
+
+		@Override
+		public HostPort format(Object payload) {
+			if(!(payload instanceof Object[])){
+				throw new IllegalStateException("expected Object[], but:" + payload + "," + payload.getClass());
+			}
+			return doFormat((Object[])payload);
+		}
+
+		private HostPort doFormat(Object[] payload) {
+			if(payload.length < 6) {
+				throw new IllegalStateException("expected arg len >=6, but:" + payload.length + ","
+						+ StringUtil.join(",", payload));
+			}
+			String monitorNameFromSentinel = payloadToString(payload[1]);
+			if(!this.monitorName.equalsIgnoreCase(monitorNameFromSentinel)) {
+				throw new IllegalMonitorStateException("expected monitor name: " + monitorName + ", but is: "
+						+ monitorNameFromSentinel);
+			}
+			return new HostPort(payloadToString(payload[3]), payloadToInteger(payload[5]));
+		}
+
+		@Override
+		public ByteBuf getRequest() {
+			return new RequestStringParser(SENTINEL, MASTER, monitorName).format();
 		}
 	}
 }

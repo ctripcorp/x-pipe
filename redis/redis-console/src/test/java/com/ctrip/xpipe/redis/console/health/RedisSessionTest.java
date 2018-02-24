@@ -66,7 +66,7 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
                 }
 
                 @Override
-                public void fail(Exception e) {
+                public void fail(Throwable e) {
                     System.out.println(e.getMessage());
                 }
             });
