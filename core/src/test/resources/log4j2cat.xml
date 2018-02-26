@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="info" packages="com.ctrip.xpipe.utils.log" >
+
+    <Scripts>
+        <Script name="filter.gv" language="js">
+            java.lang.System.getProperty('log.console.close') == 'true'
+        </Script>
+    </Scripts>
+
+    <appenders>
+        <console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
+            <ScriptFilter onMatch="DENY" onMisMatch="ACCEPT">
+                <ScriptRef ref="filter.gv" />
+            </ScriptFilter>
+        </console>
+
+        <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe/xpipe-test.log"
+                     filePattern="target/applogs/xpipe/xpipe-test-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="512 MB"/>
+            </Policies>
+        </RollingFile>
+        <CatAppender4Log4j2 name="catAppender4Log4j2"/>
+    </appenders>
+
+    <loggers>
+        <!--过滤掉spring和hibernate的一些无用的debug信息-->
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="INFO"/>
+        <logger name="io.netty" level="INFO"/>
+        <logger name="org.apache" level="WARN"/>
+
+        <logger name="com.ctrip.xpipe.lifecycle.CreatedComponentRedistry" level="WARN"/>
+		<logger name="com.ctrip.xpipe.lifecycle.SpringComponentRegistry" level="WARN"/>
+		<logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
+		<logger name="com.ctrip.xpipe.lifecycle.DefaultLifecycleState" level="WARN"/>
+
+        <root level="INFO">
+            <appender-ref ref="Console"/>
+            <appender-ref ref="RollingFileInfo"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </root>
+    </loggers>
+
+</configuration >
