@@ -191,6 +191,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
         if (role.get() instanceof RedisConnectionException) {
             return true;
         }
+        logger.info("[isKeeperOrDead] role: {}", role.get());
         return false;
     }
 

@@ -262,6 +262,68 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
             </tbody>
         </table>
     #end
+    #if(${SENTINEL_MONITOR_REDUNDANT_REDIS})
+        -------------------
+        <h4>Sentinel Monitor Redundant Redis</h4>
+        <p>说明：Redis哨兵监控到了冗余的Redis(在XPipe上对应的shard中没有相关Redis存在)</p>
+        <table border="1">
+            <thead>
+            <tr>
+                <th>报错类型</th>
+                <th>Redis DC</th>
+                <th>Redis集群</th>
+                <th>Redis分片</th>
+                <th>机器IP</th>
+                <th>Redis端口</th>
+                <th>错误信息</th>
+            </tr>
+            </thead>
+            <tbody>
+                #foreach($redisAlert in $redisAlerts.get(${SENTINEL_MONITOR_REDUNDANT_REDIS}))
+                <tr>
+                    <td>$!redisAlert.getAlertType()</td>
+                    <td>$!redisAlert.getDc()</td>
+                    <td>$!redisAlert.getClusterId()</td>
+                    <td>$!redisAlert.getShardId()</td>
+                    <td>$!redisAlert.getHostPort().getHost()</td>
+                    <td>$!redisAlert.getHostPort().getPort()</td>
+                    <td>$!redisAlert.getMessage()</td>
+                </tr>
+                #end
+            </tbody>
+        </table>
+    #end
+    #if(${SENTINEL_MONITOR_INCONSIS})
+        -------------------
+        <h4>Sentinel Monitor InConsis</h4>
+        <p>说明：Redis哨兵监控名称和XPipe Shard上的不一致</p>
+        <table border="1">
+            <thead>
+            <tr>
+                <th>报错类型</th>
+                <th>Redis DC</th>
+                <th>Redis集群</th>
+                <th>Redis分片</th>
+                <th>机器IP</th>
+                <th>Redis端口</th>
+                <th>错误信息</th>
+            </tr>
+            </thead>
+            <tbody>
+                #foreach($redisAlert in $redisAlerts.get(${SENTINEL_MONITOR_INCONSIS}))
+                <tr>
+                    <td>$!redisAlert.getAlertType()</td>
+                    <td>$!redisAlert.getDc()</td>
+                    <td>$!redisAlert.getClusterId()</td>
+                    <td>$!redisAlert.getShardId()</td>
+                    <td>$!redisAlert.getHostPort().getHost()</td>
+                    <td>$!redisAlert.getHostPort().getPort()</td>
+                    <td>$!redisAlert.getMessage()</td>
+                </tr>
+                #end
+            </tbody>
+        </table>
+    #end
     <h4>其他类型错误</h4>
     <table border="1">
         <thead>
