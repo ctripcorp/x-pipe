@@ -180,7 +180,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
         }
 
         try {
-            latch.await(1, TimeUnit.SECONDS);
+            latch.await(2, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             logger.error("[isKeeperOrDead]latch await error: {}", e);
         }
