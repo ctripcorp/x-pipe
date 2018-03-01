@@ -130,7 +130,7 @@ public class DefaultMigrationEventManager implements MigrationEventManager, Cros
 
 		MigrationEvent event = (MigrationEvent) args;
 		if(event.isDone()){
-			logger.info("[update][done]", event);
+			logger.info("[update][done]{}", event);
 		}
 	}
 
