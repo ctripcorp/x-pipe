@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.query;
 
+import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.dal.jdbc.DalNotFoundException;
@@ -21,4 +22,14 @@ public class DalQueryHandler {
 		}
 	}
 
+	public void handleUpdate(DalQuery<Integer> query) {
+		try {
+			Integer result = query.doQuery();
+			if(result == null || result == 0) {
+				throw new DalUpdateException("No rows updated");
+			}
+		} catch (Exception e) {
+			throw new DalUpdateException("Update failed." + e.getMessage(), e);
+		}
+	}
 }
