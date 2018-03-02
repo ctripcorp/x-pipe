@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
+import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
@@ -137,14 +138,16 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
     	if(null != shard) {
     		// Call shard event
 			Map<Long, SetinelTbl> sentinels = sentinelService.findByShard(shard.getId());
-			createShardDeleteEvent(clusterName, shardName, shard, sentinels).onEvent();
+			ShardEvent shardEvent = createShardDeleteEvent(clusterName, shardName, shard, sentinels);
 
-    		queryHandler.handleQuery(new DalQuery<Integer>() {
-    			@Override
-    			public Integer doQuery() throws DalException {
-    				return shardDao.deleteShardsBatch(shard);
-    			}
-        	});
+			try {
+				shardDao.deleteShardsBatch(shard);
+			} catch (Exception e) {
+				throw new ServerException(e.getMessage());
+			}
+
+			shardEvent.onEvent();
+
     	}
     	
     	/** Notify meta server **/

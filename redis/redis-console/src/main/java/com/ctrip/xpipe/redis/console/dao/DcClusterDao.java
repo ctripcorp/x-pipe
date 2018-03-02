@@ -56,8 +56,15 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 			}
 		}
 		dcClusterShardDao.deleteDcClusterShardsBatch(dcClusterShards);
-		
-		dcClusterTblDao.deleteBatch(dcClusters.toArray(new DcClusterTbl[dcClusters.size()]), DcClusterTblEntity.UPDATESET_FULL);
+
+		queryHandler.handleBatchUpdate(new DalQuery<int[]>() {
+			@Override
+			public int[] doQuery() throws DalException {
+				return dcClusterTblDao.deleteBatch(dcClusters.toArray(new DcClusterTbl[dcClusters.size()]),
+						DcClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+
 	}
 
 	@DalTransaction
@@ -74,8 +81,14 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 		if(null != dcClusterShards) {
 			dcClusterShardDao.deleteDcClusterShardsBatch(dcClusterShards);
 		}
-		
-		dcClusterTblDao.deleteBatch(dcCluster, DcClusterTblEntity.UPDATESET_FULL);
+
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dcClusterTblDao.deleteBatch(dcCluster, DcClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+
 	}
 	
 }

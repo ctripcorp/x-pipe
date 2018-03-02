@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
+import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
@@ -295,13 +296,11 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     private void updateRedises(final List<RedisTbl> toCreate, final List<RedisTbl> toDelete, final List<RedisTbl> left) {
-        queryHandler.handleQuery(new DalQuery<Integer>() {
-            @Override
-            public Integer doQuery() throws DalException {
-                redisDao.handleUpdate(toCreate, toDelete, left);
-                return 0;
-            }
-        });
+        try {
+            redisDao.handleUpdate(toCreate, toDelete, left);
+        } catch (DalException e) {
+            throw new ServerException(e.getMessage());
+        }
     }
 
     private void addRedisTbl(DcClusterShardTbl dcClusterShard, List<RedisTbl> result, List<RedisTbl> redises, String defaultRole) {
@@ -320,7 +319,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             proto.setId(redis.getId()).setRedisIp(redis.getRedisIp()).setRedisPort(redis.getRedisPort())
                     .setKeeperActive(redis.isKeeperActive()).setKeepercontainerId(redis.getKeepercontainerId());
 
-            proto.setMaster(redis.isMaster() ? true : false);
+            proto.setMaster(redis.isMaster());
             if (!StringUtil.isEmpty(redis.getRedisRole())) {
                 proto.setRedisRole(redis.getRedisRole());
             } else {

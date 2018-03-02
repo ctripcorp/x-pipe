@@ -245,9 +245,9 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		}
 		
 		final ClusterTbl proto = cluster;
-		queryHandler.handleQuery(new DalQuery<Void>() {
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
-			public Void doQuery() throws DalException {
+			public Integer doQuery() throws DalException {
 				clusterTblDao.updateByPK(proto, ClusterTblEntity.UPDATESET_FULL);
 				return null;
 			}

@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
+import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
 import com.ctrip.xpipe.redis.console.health.delay.DelayService;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
@@ -14,6 +15,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
+import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterEvent;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -252,12 +254,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		proto.setOrganizationInfo(null);
 		
 		final ClusterTbl queryProto = proto;
-    	queryHandler.handleQuery(new DalQuery<Integer>() {
-			@Override
-			public Integer doQuery() throws DalException {
-				return clusterDao.updateCluster(queryProto);
-			}
-    	});
+    	clusterDao.updateCluster(queryProto);
 	}
 
 	@Override
@@ -267,7 +264,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterTbl.setId(id);
 		clusterTbl.setActivedcId(activeDcId);
 
-		queryHandler.handleQuery(new DalQuery<Integer>() {
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
 				return dao.updateActivedcId(clusterTbl, ClusterTblEntity.UPDATESET_FULL);
@@ -282,7 +279,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterTbl.setId(id);
 		clusterTbl.setStatus(clusterStatus.toString());
 
-		queryHandler.handleQuery(new DalQuery<Integer>() {
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
 				return dao.updateStatusById(clusterTbl, ClusterTblEntity.UPDATESET_FULL);
@@ -300,15 +297,16 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	final ClusterTbl queryProto = proto;
 
     	// Call cluster delete event
-		clusterDeleteEventFactory.createClusterEvent(clusterName).onEvent();
+		ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterName);
 
-    	queryHandler.handleQuery(new DalQuery<Integer>() {
-			@Override
-			public Integer doQuery() throws DalException {
-				return clusterDao.deleteCluster(queryProto);
-			}
-    	});
-    	
+		try {
+			clusterDao.deleteCluster(queryProto);
+		} catch (Exception e) {
+			throw new ServerException(e.getMessage());
+		}
+
+    	clusterEvent.onEvent();
+
     	/** Notify meta server **/
     	notifier.notifyClusterDelete(clusterName, relatedDcs);
 	}
@@ -347,7 +345,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public void update(final ClusterTbl cluster) {
-		queryHandler.handleQuery(new DalQuery<Integer>() {
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
 				dao.updateByPK(cluster, ClusterTblEntity.UPDATESET_FULL);

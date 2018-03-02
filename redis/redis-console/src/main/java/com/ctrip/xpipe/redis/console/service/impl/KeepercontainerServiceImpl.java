@@ -94,13 +94,12 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
     });
   }
 
-  protected Void update(KeepercontainerTbl keepercontainerTbl) {
+  protected void update(KeepercontainerTbl keepercontainerTbl) {
 
-    return queryHandler.handleQuery(new DalQuery<Void>() {
+    queryHandler.handleUpdate(new DalQuery<Integer>() {
       @Override
-      public Void doQuery() throws DalException {
-        dao.updateByPK(keepercontainerTbl, KeepercontainerTblEntity.UPDATESET_FULL);
-        return null;
+      public Integer doQuery() throws DalException {
+        return dao.updateByPK(keepercontainerTbl, KeepercontainerTblEntity.UPDATESET_FULL);
       }
     });
   }

@@ -32,4 +32,22 @@ public class DalQueryHandler {
 			throw new DalUpdateException("Update failed." + e.getMessage(), e);
 		}
 	}
+
+	public void handleBatchUpdate(DalQuery<int[]> query) {
+		try {
+			int[] result = query.doQuery();
+			if(result == null) {
+				throw new DalUpdateException("No rows updated");
+			}
+			int changeSum = 0;
+			for(int changedRows: result) {
+				changeSum += changedRows;
+			}
+			if(changeSum == 0) {
+				throw new DalUpdateException("No rows updated");
+			}
+		} catch (Exception e) {
+			throw new DalUpdateException("Update failed." + e.getMessage(), e);
+		}
+	}
 }

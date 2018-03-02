@@ -80,11 +80,10 @@ public class OrganizationDao extends AbstractXpipeConsoleDAO {
 
     @DalTransaction
     public void updateOrg(OrganizationTbl org) {
-        queryHandler.handleQuery(new DalQuery<Void>() {
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
             @Override
-            public Void doQuery() throws DalException {
-                organizationTblDao.updateByPK(org, OrganizationTblEntity.UPDATESET_FULL);
-                return null;
+            public Integer doQuery() throws DalException {
+                return organizationTblDao.updateByPK(org, OrganizationTblEntity.UPDATESET_FULL);
             }
         });
     }
@@ -105,12 +104,11 @@ public class OrganizationDao extends AbstractXpipeConsoleDAO {
     @DalTransaction
     public void updateBatchOrganizations(List<OrganizationTbl> orgs) {
         if (null != orgs) {
-            queryHandler.handleQuery(new DalQuery<Void>() {
+            queryHandler.handleBatchUpdate(new DalQuery<int[]>() {
                 @Override
-                public Void doQuery() throws DalException {
-                    organizationTblDao.updateBatch(orgs.toArray(new OrganizationTbl[orgs.size()]),
+                public int[] doQuery() throws DalException {
+                    return organizationTblDao.updateBatch(orgs.toArray(new OrganizationTbl[orgs.size()]),
                         OrganizationTblEntity.UPDATESET_FULL);
-                    return null;
                 }
             });
         }
