@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>com.ctrip</groupId>
+  <artifactId>super-pom</artifactId>
+  <versioning>
+    <versions>
+      <version>0.2.0-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20170110070437</lastUpdated>
+  </versioning>
+</metadata>
