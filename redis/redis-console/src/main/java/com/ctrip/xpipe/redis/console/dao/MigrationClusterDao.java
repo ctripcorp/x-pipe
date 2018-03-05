@@ -51,9 +51,9 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
         });
     }
 
-    public Integer insert(MigrationClusterTbl migrationCluster){
+    public void insert(MigrationClusterTbl migrationCluster){
 
-        return queryHandler.handleQuery(new DalQuery<Integer>() {
+        queryHandler.handleInsert(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {
                 return migrationClusterTblDao.insert(migrationCluster);

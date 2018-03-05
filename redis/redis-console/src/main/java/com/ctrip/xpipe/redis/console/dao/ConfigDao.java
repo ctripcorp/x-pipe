@@ -91,7 +91,12 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
             });
         }else{
             configTbl.setDesc("insert automatically");
-            configTblDao.insert(configTbl);
+            queryHandler.handleInsert(new DalQuery<Integer>() {
+                @Override
+                public Integer doQuery() throws DalException {
+                    return configTblDao.insert(configTbl);
+                }
+            });
         }
         logger.info("[setConfig] config update successfully, as {}", config.toString());
     }

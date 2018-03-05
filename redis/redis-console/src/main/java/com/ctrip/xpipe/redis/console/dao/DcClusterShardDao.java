@@ -42,8 +42,9 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public void deleteDcClusterShardsBatch(List<DcClusterShardTbl> dcClusterShards) throws DalException {
-		if(null == dcClusterShards) {
-			throw new DalException("Null cannot be deleted.");
+		if(null == dcClusterShards || dcClusterShards.isEmpty()) {
+			logger.warn("[deleteDcClusterShardsBatch] Empty list: {}", dcClusterShards);
+			return;
 		}
 		
 		List<RedisTbl> redises = new LinkedList<RedisTbl>();
@@ -58,14 +59,14 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 		}
 		redisDao.deleteRedisesBatch(redises);
 
-		queryHandler.handleBatchUpdate(new DalQuery<int[]>() {
+		queryHandler.handleBatchDelete(new DalQuery<int[]>() {
 			@Override
 			public int[] doQuery() throws DalException {
 				return dcClusterShardTblDao.deleteDcClusterShardsBatch(
 						dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]),
 						DcClusterShardTblEntity.UPDATESET_FULL);
 			}
-		});
+		}, true);
 
 	}
 

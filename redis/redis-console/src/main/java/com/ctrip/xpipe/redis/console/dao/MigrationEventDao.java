@@ -248,8 +248,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				clusterTblDao.updateByPK(proto, ClusterTblEntity.UPDATESET_FULL);
-				return null;
+				return clusterTblDao.updateByPK(proto, ClusterTblEntity.UPDATESET_FULL);
 			}
 			
 		});
@@ -279,11 +278,10 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 			}
 		}
 
-		queryHandler.handleQuery(new DalQuery<Void>() {
+		queryHandler.handleBatchInsert(new DalQuery<int[]>() {
 			@Override
-			public Void doQuery() throws DalException {
-				migrationShardTblDao.insertBatch(Lists.toArray(MigrationShardTbl.class, toCreateMigrationShards));
-				return null;
+			public int[] doQuery() throws DalException {
+				return migrationShardTblDao.insertBatch(Lists.toArray(MigrationShardTbl.class, toCreateMigrationShards));
 			}
 		});
 	}

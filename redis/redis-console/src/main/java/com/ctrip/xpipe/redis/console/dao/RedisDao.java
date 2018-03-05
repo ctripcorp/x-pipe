@@ -77,7 +77,13 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
                     }
                 }
             }
-            redisTblDao.insertBatch(redises.toArray(new RedisTbl[redises.size()]));
+            queryHandler.handleBatchInsert(new DalQuery<int[]>() {
+                @Override
+                public int[] doQuery() throws DalException {
+                    return redisTblDao.insertBatch(redises.toArray(new RedisTbl[redises.size()]));
+                }
+            });
+
         }
     }
 
@@ -94,16 +100,16 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
 
     @DalTransaction
     public void deleteRedisesBatch(List<RedisTbl> redises) {
-        if (null != redises) {
+        if (null != redises && !redises.isEmpty()) {
             for (RedisTbl redis : redises) {
                 redis.setRunId(generateDeletedName(redis.getRunId()));
             }
-            queryHandler.handleBatchUpdate(new DalQuery<int[]>() {
+            queryHandler.handleBatchDelete(new DalQuery<int[]>() {
                 @Override
                 public int[] doQuery() throws DalException {
                     return redisTblDao.deleteBatch(redises.toArray(new RedisTbl[redises.size()]), RedisTblEntity.UPDATESET_FULL);
                 }
-            });
+            }, true);
         } else {
             logger.info("[deleteRedisesBatch][null]");
         }

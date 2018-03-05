@@ -77,7 +77,10 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public void deleteShardsBatch(List<ShardTbl> shards) throws DalException {
-		if(null == shards) throw new DalException("Null cannot be deleted.");
+		if(null == shards || shards.isEmpty()) {
+			logger.warn("[deleteShardsBatch] Empty shards: {}", shards);
+			return;
+		}
 		
 		List<DcClusterShardTbl> relatedDcClusterShards = new LinkedList<DcClusterShardTbl>();
 		for(final ShardTbl shard : shards) {
@@ -97,13 +100,13 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 		for(ShardTbl shard : shards) {
 			shard.setShardName(generateDeletedName(shard.getShardName()));
 		}
-		queryHandler.handleBatchUpdate(new DalQuery<int[]>() {
+		queryHandler.handleBatchDelete(new DalQuery<int[]>() {
 			@Override
 			public int[] doQuery() throws DalException {
 				return shardTblDao.deleteShardsBatch(shards.toArray(new ShardTbl[shards.size()]),
 						ShardTblEntity.UPDATESET_FULL);
 			}
-		});
+		}, true);
 	}
 	
 	@DalTransaction
@@ -123,12 +126,12 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 		ShardTbl proto = shard;
 		proto.setShardName(generateDeletedName(shard.getShardName()));
 
-		queryHandler.handleUpdate(new DalQuery<Integer>() {
+		queryHandler.handleDelete(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
 				return shardTblDao.deleteShard(proto, ShardTblEntity.UPDATESET_FULL);
 			}
-		});
+		}, true);
 	}
 	
 	private void validateShard(final String clusterName, ShardTbl shard) throws DalException {
@@ -156,7 +159,12 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 
 		final ClusterTbl cluster = clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
 		shard.setClusterId(cluster.getId());
-		shardTblDao.insert(shard);
+		queryHandler.handleInsert(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return shardTblDao.insert(shard);
+			}
+		});
 
 		// dc-cluster-shards
 		List<DcClusterTbl> dcClusters = queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
@@ -177,7 +185,12 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 				}
 				dcClusterShards.add(dcClusterShardProto);
 			}
-			dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
+			queryHandler.handleBatchInsert(new DalQuery<int[]>() {
+				@Override
+				public int[] doQuery() throws DalException {
+					return dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
+				}
+			});
 
 		}
 		return shard;

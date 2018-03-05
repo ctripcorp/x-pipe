@@ -91,11 +91,10 @@ public class OrganizationDao extends AbstractXpipeConsoleDAO {
     @DalTransaction
     public void createBatchOrganizations(List<OrganizationTbl> orgs) {
         if (null != orgs) {
-            queryHandler.handleQuery(new DalQuery<Void>() {
+            queryHandler.handleBatchInsert(new DalQuery<int[]>() {
                 @Override
-                public Void doQuery() throws DalException {
-                    organizationTblDao.insertBatch(orgs.toArray(new OrganizationTbl[orgs.size()]));
-                    return null;
+                public int[] doQuery() throws DalException {
+                    return organizationTblDao.insertBatch(orgs.toArray(new OrganizationTbl[orgs.size()]));
                 }
             });
         }
