@@ -1,0 +1,5 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Wed Feb 07 11:42:45 CST 2018
+http\://maven.aliyun.com/nexus/content/groups/public/.error=Could not transfer artifact com.ctrip.framework\:framework-foundation\:jar\:1.8.2 from/to nexus-aliyun (http\://maven.aliyun.com/nexus/content/groups/public)\: sun.security.validator.ValidatorException\: PKIX path building failed\: sun.security.provider.certpath.SunCertPathBuilderException\: unable to find valid certification path to requested target
+@default-nexus-aliyun-http\://maven.aliyun.com/nexus/content/groups/public/.lastUpdated=1517974964343
+http\://maven.release.ctripcorp.com/nexus/content/repositories/public/.lastUpdated=1517974965629
