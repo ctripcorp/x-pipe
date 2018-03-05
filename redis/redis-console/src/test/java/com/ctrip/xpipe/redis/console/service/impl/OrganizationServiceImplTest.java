@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.redis.console.dao.OrganizationDao;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,9 +65,37 @@ public class OrganizationServiceImplTest extends AbstractServiceImplTest {
 
     @Test
     public void testUpdateOrganizations() {
-        organizationService.updateOrganizations();
-        List<OrganizationTbl> orgs = organizationDao.findAllOrgs();
-        orgs.forEach(org->logger.info("{}", org));
+        List<OrganizationTbl> localDbOrgs = createOrganizationTblList(10);
+        organizationDao.createBatchOrganizations(localDbOrgs);
+        localDbOrgs = organizationService.getAllOrganizations();
+
+        List<OrganizationTbl> remoteDbOrgs = Lists.newArrayList(localDbOrgs);
+        OrganizationTbl org = new OrganizationTbl().setOrgId(remoteDbOrgs.get(0).getOrgId()).setOrgName("test-different");
+        remoteDbOrgs.set(0, org);
+        List<OrganizationTbl> result = organizationService.getOrgTblUpdateList(remoteDbOrgs, localDbOrgs);
+
+        Assert.assertEquals(1, result.size());
+
+        Assert.assertEquals("test-different", result.get(0).getOrgName());
+
+        OrganizationTbl organizationTbl = organizationService.getOrganizationTblByCMSOrganiztionId(result.get(0).getOrgId());
+
+        System.out.println(organizationTbl.getOrgName());
+    }
+
+    @Test
+    public void testGetOrgTblUpdateList2() {
+        List<OrganizationTbl> localDbOrgs = createOrganizationTblList(10);
+        organizationDao.createBatchOrganizations(localDbOrgs);
+        localDbOrgs = organizationService.getAllOrganizations();
+
+        List<OrganizationTbl> remoteDbOrgs = Lists.newArrayList(localDbOrgs);
+        OrganizationTbl org = new OrganizationTbl().setOrgId(remoteDbOrgs.get(0).getOrgId()).setOrgName("test-different");
+        remoteDbOrgs.set(0, org);
+
+        List<OrganizationTbl> toUpdate = organizationService.getOrgTblUpdateList(remoteDbOrgs, localDbOrgs);
+        organizationDao.updateBatchOrganizations(toUpdate);
+        
     }
 
     private List<OrganizationTbl> createOrganizationTblList(int count) {

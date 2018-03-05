@@ -8,6 +8,9 @@ import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTblDao;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
+import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -100,9 +103,16 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
     List<OrganizationTbl> getOrgTblUpdateList(List<OrganizationTbl> remoteDBOrgs,
         List<OrganizationTbl> localDBOrgs) {
 
-        Map<Long, OrganizationTbl> storedOrgTbl = new HashMap<>();
+        Map<Long, OrganizationTbl> storedOrgTbl = Maps.newHashMapWithExpectedSize(localDBOrgs.size());
         localDBOrgs.forEach(org->storedOrgTbl.put(org.getOrgId(), org));
-        return remoteDBOrgs.stream().filter(org->storedOrgTbl.containsKey(org.getOrgId())
-            && !org.getOrgName().equalsIgnoreCase(storedOrgTbl.get(org.getOrgId()).getOrgName())).collect(Collectors.toList());
+
+        List<OrganizationTbl> result = Lists.newArrayListWithCapacity(localDBOrgs.size());
+        for(OrganizationTbl remoteOrg : remoteDBOrgs) {
+            OrganizationTbl localOrg = storedOrgTbl.get(remoteOrg.getOrgId());
+            if(localOrg != null && !StringUtil.trimEquals(localOrg.getOrgName(), remoteOrg.getOrgName())) {
+                result.add(localOrg.setOrgName(remoteOrg.getOrgName()));
+            }
+        }
+        return result;
     }
 }
