@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.util.List;
@@ -77,6 +78,7 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
+    @DirtiesContext
     public void testFindKeeperCountByClusterWithAllKeeperDeleted() {
         String clusterName = "cluster4";
         ClusterTbl clusterTbl = clusterDao.findClusterAndOrgByName(clusterName);
@@ -86,7 +88,7 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
-    public  void testFindAllActiveByDcName(){
+    public void testFindAllActiveByDcName(){
 
         String dcName = dcNames[0];
         List<KeepercontainerTbl> allByDcName = keepercontainerService.findAllByDcName(dcName);
@@ -106,6 +108,49 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
         allByDcName = keepercontainerService.findAllByDcName(dcName);
         Assert.assertEquals(size, allByDcName.size());
 
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testAddKeeperContainer() {
+        KeepercontainerTbl proto = new KeepercontainerTbl();
+
+        keepercontainerService.addKeeperContainer(proto);
+    }
+
+    @Test
+    public void testAddKeeperContainer2() {
+        KeepercontainerTbl proto = new KeepercontainerTbl();
+        proto.setKeepercontainerDc(1).setKeepercontainerId(100L).setOrgId(3L)
+                .setKeepercontainerIp("192.168.0.1").setKeepercontainerPort(9090);
+
+        keepercontainerService.addKeeperContainer(proto);
+
+        List<KeepercontainerTbl> result = keepercontainerService.findAllActiveByDcName(dcNames[0]);
+
+        KeepercontainerTbl target = null;
+        for(KeepercontainerTbl kc : result) {
+            if(kc.getKeepercontainerIp().equals("192.168.0.1") && kc.getKeepercontainerPort()==9090) {
+                target = kc;
+                break;
+            }
+        }
+        Assert.assertNotNull(target);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testAddKeeperContainer3() {
+        KeepercontainerTbl proto = new KeepercontainerTbl();
+        proto.setKeepercontainerDc(1).setKeepercontainerId(100L).setOrgId(3L)
+                .setKeepercontainerIp("192.168.0.1").setKeepercontainerPort(9090);
+
+        keepercontainerService.addKeeperContainer(proto);
+
+        try {
+            keepercontainerService.addKeeperContainer(proto);
+        } catch (Exception e) {
+            Assert.assertEquals("Keeper Container with IP: " + proto.getKeepercontainerIp() + " already exists", e.getMessage());
+            throw e;
+        }
     }
 
     @Override

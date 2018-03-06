@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTblDao;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTblEntity;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -21,6 +20,9 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
 
   @Autowired
   private ClusterService clusterService;
+
+  @Autowired
+  private DcService dcService;
 
   @Override
   public KeepercontainerTbl find(final long id) {
@@ -102,5 +104,54 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
         return dao.updateByPK(keepercontainerTbl, KeepercontainerTblEntity.UPDATESET_FULL);
       }
     });
+  }
+
+  @Override
+  public void addKeeperContainer(final KeepercontainerTbl keepercontainerTbl) {
+
+    KeepercontainerTbl proto = dao.createLocal();
+
+    if(!checkRequiredFields(keepercontainerTbl)) {
+      throw new IllegalArgumentException("Argument missing, keeper container dc_id, ip, port and org_id is needed");
+    }
+
+    if(keeperContainerAlreadyExists(keepercontainerTbl)) {
+      throw new IllegalArgumentException("Keeper Container with IP: "
+              + keepercontainerTbl.getKeepercontainerIp() + " already exists");
+    }
+
+    proto.setKeepercontainerDc(keepercontainerTbl.getKeepercontainerDc())
+            .setKeepercontainerIp(keepercontainerTbl.getKeepercontainerIp())
+            .setKeepercontainerPort(keepercontainerTbl.getKeepercontainerPort())
+            .setKeepercontainerOrgId(keepercontainerTbl.getOrgId())
+            .setKeepercontainerActive(true);
+
+    queryHandler.handleInsert(new DalQuery<Integer>() {
+      @Override
+      public Integer doQuery() throws DalException {
+        return dao.insert(proto);
+      }
+    });
+  }
+
+  private boolean checkRequiredFields(KeepercontainerTbl keepercontainerTbl) {
+
+    if(StringUtil.isEmpty(keepercontainerTbl.getKeepercontainerIp()))
+      return false;
+    if(keepercontainerTbl.getKeepercontainerPort() == 0)
+      return false;
+
+    return true;
+  }
+
+  private boolean keeperContainerAlreadyExists(KeepercontainerTbl keepercontainerTbl) {
+    DcTbl dcTbl = dcService.find(keepercontainerTbl.getKeepercontainerDc());
+    List<KeepercontainerTbl> keepercontainerTbls = findAllByDcName(dcTbl.getDcName());
+    for(KeepercontainerTbl kc : keepercontainerTbls) {
+      if(StringUtil.trimEquals(kc.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerIp())) {
+        return true;
+      }
+    }
+    return false;
   }
 }

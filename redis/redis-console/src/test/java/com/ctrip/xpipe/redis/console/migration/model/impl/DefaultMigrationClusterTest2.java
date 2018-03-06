@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingState;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationMigratingState;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -117,6 +119,44 @@ public class DefaultMigrationClusterTest2 {
         }).when(clusterService).updateStatusById(anyLong(), any());
 
         migrationCluster.updateStat(new MigrationCheckingState(migrationCluster));
+
+    }
+
+    @Test(expected = ServerException.class)
+    public void testUpdateStat2() throws Exception {
+        AtomicInteger counter = new AtomicInteger(1);
+        when(clusterService.find(anyString())).thenReturn(clusterTbl);
+        doAnswer(new Answer() {
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                int currentCounter = counter.getAndIncrement();
+                if(currentCounter % 9 == 0) {
+                    clusterTbl.setStatus(((ClusterStatus) invocation.getArguments()[1]).toString());
+                }
+                return null;
+            }
+        }).when(clusterService).updateStatusById(anyLong(), any());
+
+        migrationCluster.updateStat(new MigrationMigratingState(migrationCluster));
+
+    }
+
+    @Test(expected = ServerException.class)
+    public void testUpdateStat3() throws Exception {
+        AtomicInteger counter = new AtomicInteger(1);
+        when(clusterService.find(anyString())).thenReturn(clusterTbl);
+        doAnswer(new Answer() {
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                int currentCounter = counter.getAndIncrement();
+                if(currentCounter % 7 == 0) {
+                    clusterTbl.setStatus(((ClusterStatus) invocation.getArguments()[1]).toString());
+                }
+                return null;
+            }
+        }).when(clusterService).updateStatusById(anyLong(), any());
+
+        migrationCluster.updateStat(new MigrationPublishState(migrationCluster));
 
     }
 
