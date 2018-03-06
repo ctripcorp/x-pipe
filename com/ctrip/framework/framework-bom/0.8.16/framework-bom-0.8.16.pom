@@ -31,7 +31,7 @@
         <session-client.version>1.0.4</session-client.version>
 
         <!-- qunar tc -->
-        <qunar-tcdev.version>2.0.12</qunar-tcdev.version>
+        <qunar-tcdev.version>2.0.0</qunar-tcdev.version>
 
         <!-- third party -->
         <commons-beanutils.version>1.9.3</commons-beanutils.version>
@@ -57,11 +57,6 @@
         <tomcat.version>7.0.73</tomcat.version>
         <starter-tomcat.version>7.0.73.ctrip.1</starter-tomcat.version>
 
-        <!-- framework bom repository path, only used for framework bom deployment -->
-        <!-- Maven Release Repository URL -->
-        <releases.repo>http://maven.dev.sh.ctripcorp.com:8081/nexus/content/repositories/fxrelease</releases.repo>
-        <!-- Maven Snapshot Repository URL -->
-        <snapshots.repo>http://maven.dev.sh.ctripcorp.com:8081/nexus/content/repositories/fxsnapshot</snapshots.repo>
     </properties>
     <dependencyManagement>
         <dependencies>
