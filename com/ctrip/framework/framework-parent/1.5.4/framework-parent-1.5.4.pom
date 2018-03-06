@@ -224,7 +224,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>${maven-surefire-plugin.version}</version>
+                <version>${maven-enforcer-plugin_version}</version>
                 <executions>
                     <execution>
                         <id>framework-parent-check</id>
