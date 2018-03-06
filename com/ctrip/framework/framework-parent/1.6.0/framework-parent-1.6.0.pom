@@ -32,10 +32,15 @@
         <jackson2.version>2.8.5</jackson2.version>
         <junit.version>4.12</junit.version>
         <libthrift.version>0.9.3</libthrift.version>
-        <netty4.version>4.0.36.Final</netty4.version>
-        <snappy-java.version>1.1.2.6</snappy-java.version>
-        <testng.version>6.10</testng.version>
-        <validation-api.version>1.1.0.Final</validation-api.version>
+		<log4j.version>1.2.17</log4j.version>
+		<log4j2.version>2.7</log4j2.version>
+		<logback.version>1.1.7</logback.version>
+		<netty4.version>4.0.36.Final</netty4.version>
+		<slf4j.version>1.7.21</slf4j.version>
+		<snappy-java.version>1.1.2.6</snappy-java.version>
+		<spring.version>4.3.4.RELEASE</spring.version>
+		<testng.version>6.10</testng.version>
+		<validation-api.version>1.1.0.Final</validation-api.version>
 
 		<!-- add from super pom -->
 		<maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
