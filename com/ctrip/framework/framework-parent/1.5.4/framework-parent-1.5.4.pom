@@ -15,10 +15,6 @@
         <url>http://www.ctrip.com</url>
     </organization>
     <properties>
-        <!-- Maven Release Repository URL -->
-        <releases.repo>http://maven.dev.sh.ctripcorp.com:8081/nexus/content/repositories/fxrelease</releases.repo>
-        <!-- Maven Snapshot Repository URL -->
-        <snapshots.repo>http://maven.dev.sh.ctripcorp.com:8081/nexus/content/repositories/fxsnapshot</snapshots.repo>
         <!-- Common Dependencies Version -->
         <commons-beanutils.version>1.9.3</commons-beanutils.version>
         <commons-codec.version>1.10</commons-codec.version>
