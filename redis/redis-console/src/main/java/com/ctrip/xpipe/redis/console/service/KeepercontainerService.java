@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 
 import java.util.List;
@@ -12,5 +13,5 @@ public interface KeepercontainerService {
 	List<KeepercontainerTbl> findKeeperCount(String dcName);
 	List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName);
 
-	void addKeeperContainer(KeepercontainerTbl keepercontainerTbl);
+	void addKeeperContainer(KeeperContainerCreateInfo createInfo);
 }

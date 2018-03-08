@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
@@ -107,23 +108,24 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
-  public void addKeeperContainer(final KeepercontainerTbl keepercontainerTbl) {
+  public void addKeeperContainer(final KeeperContainerCreateInfo createInfo) {
 
     KeepercontainerTbl proto = dao.createLocal();
 
-    if(!checkRequiredFields(keepercontainerTbl)) {
-      throw new IllegalArgumentException("Argument missing, keeper container dc_id, ip, port and org_id is needed");
-    }
-
-    if(keeperContainerAlreadyExists(keepercontainerTbl)) {
+    if(keeperContainerAlreadyExists(createInfo)) {
       throw new IllegalArgumentException("Keeper Container with IP: "
-              + keepercontainerTbl.getKeepercontainerIp() + " already exists");
+              + createInfo.getKeepercontainerIp() + " already exists");
     }
 
-    proto.setKeepercontainerDc(keepercontainerTbl.getKeepercontainerDc())
-            .setKeepercontainerIp(keepercontainerTbl.getKeepercontainerIp())
-            .setKeepercontainerPort(keepercontainerTbl.getKeepercontainerPort())
-            .setKeepercontainerOrgId(keepercontainerTbl.getOrgId())
+    DcTbl dcTbl = dcService.find(createInfo.getDcName());
+    if(dcTbl == null) {
+      throw new IllegalArgumentException("DC name does not exist");
+    }
+
+    proto.setKeepercontainerDc(dcTbl.getId())
+            .setKeepercontainerIp(createInfo.getKeepercontainerIp())
+            .setKeepercontainerPort(createInfo.getKeepercontainerPort())
+            .setKeepercontainerOrgId(createInfo.getKeepercontainerOrgId())
             .setKeepercontainerActive(true);
 
     queryHandler.handleInsert(new DalQuery<Integer>() {
@@ -134,21 +136,10 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
     });
   }
 
-  private boolean checkRequiredFields(KeepercontainerTbl keepercontainerTbl) {
-
-    if(StringUtil.isEmpty(keepercontainerTbl.getKeepercontainerIp()))
-      return false;
-    if(keepercontainerTbl.getKeepercontainerPort() == 0)
-      return false;
-
-    return true;
-  }
-
-  private boolean keeperContainerAlreadyExists(KeepercontainerTbl keepercontainerTbl) {
-    DcTbl dcTbl = dcService.find(keepercontainerTbl.getKeepercontainerDc());
-    List<KeepercontainerTbl> keepercontainerTbls = findAllByDcName(dcTbl.getDcName());
+  private boolean keeperContainerAlreadyExists(KeeperContainerCreateInfo createInfo) {
+    List<KeepercontainerTbl> keepercontainerTbls = findAllByDcName(createInfo.getDcName());
     for(KeepercontainerTbl kc : keepercontainerTbls) {
-      if(StringUtil.trimEquals(kc.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerIp())) {
+      if(StringUtil.trimEquals(kc.getKeepercontainerIp(), createInfo.getKeepercontainerIp())) {
         return true;
       }
     }

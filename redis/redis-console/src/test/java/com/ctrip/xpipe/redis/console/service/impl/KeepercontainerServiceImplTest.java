@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
@@ -112,18 +113,18 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
 
     @Test(expected = IllegalArgumentException.class)
     public void testAddKeeperContainer() {
-        KeepercontainerTbl proto = new KeepercontainerTbl();
+        KeeperContainerCreateInfo createInfo = new KeeperContainerCreateInfo();
 
-        keepercontainerService.addKeeperContainer(proto);
+        keepercontainerService.addKeeperContainer(createInfo);
     }
 
     @Test
     public void testAddKeeperContainer2() {
-        KeepercontainerTbl proto = new KeepercontainerTbl();
-        proto.setKeepercontainerDc(1).setKeepercontainerId(100L).setOrgId(3L)
-                .setKeepercontainerIp("192.168.0.1").setKeepercontainerPort(9090);
+        KeeperContainerCreateInfo createInfo = new KeeperContainerCreateInfo()
+                .setDcName(dcNames[0]).setKeepercontainerIp("192.168.0.1")
+                .setKeepercontainerPort(9090).setKeepercontainerOrgId(3L);
 
-        keepercontainerService.addKeeperContainer(proto);
+        keepercontainerService.addKeeperContainer(createInfo);
 
         List<KeepercontainerTbl> result = keepercontainerService.findAllActiveByDcName(dcNames[0]);
 
@@ -139,16 +140,17 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
 
     @Test(expected = IllegalArgumentException.class)
     public void testAddKeeperContainer3() {
-        KeepercontainerTbl proto = new KeepercontainerTbl();
-        proto.setKeepercontainerDc(1).setKeepercontainerId(100L).setOrgId(3L)
-                .setKeepercontainerIp("192.168.0.1").setKeepercontainerPort(9090);
 
-        keepercontainerService.addKeeperContainer(proto);
+        KeeperContainerCreateInfo createInfo = new KeeperContainerCreateInfo()
+                .setDcName(dcNames[0]).setKeepercontainerIp("192.168.0.1")
+                .setKeepercontainerPort(9090).setKeepercontainerOrgId(3L);
+
+        keepercontainerService.addKeeperContainer(createInfo);
 
         try {
-            keepercontainerService.addKeeperContainer(proto);
+            keepercontainerService.addKeeperContainer(createInfo);
         } catch (Exception e) {
-            Assert.assertEquals("Keeper Container with IP: " + proto.getKeepercontainerIp() + " already exists", e.getMessage());
+            Assert.assertEquals("Keeper Container with IP: " + createInfo.getKeepercontainerIp() + " already exists", e.getMessage());
             throw e;
         }
     }
