@@ -4,10 +4,7 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +21,9 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
 
   @Autowired
   private DcService dcService;
+
+  @Autowired
+  private OrganizationService organizationService;
 
   @Override
   public KeepercontainerTbl find(final long id) {
@@ -122,10 +122,15 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
       throw new IllegalArgumentException("DC name does not exist");
     }
 
+    OrganizationTbl org = organizationService.getOrganizationTblByCMSOrganiztionId(createInfo.getKeepercontainerOrgId());
+    if(org == null) {
+      throw new IllegalArgumentException("Org Id does not exist in database");
+    }
+
     proto.setKeepercontainerDc(dcTbl.getId())
             .setKeepercontainerIp(createInfo.getKeepercontainerIp())
             .setKeepercontainerPort(createInfo.getKeepercontainerPort())
-            .setKeepercontainerOrgId(createInfo.getKeepercontainerOrgId())
+            .setKeepercontainerOrgId(org.getId())
             .setKeepercontainerActive(true);
 
     queryHandler.handleInsert(new DalQuery<Integer>() {
