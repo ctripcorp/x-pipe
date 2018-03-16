@@ -40,7 +40,10 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public void deleteDcClustersBatch(List<DcClusterTbl> dcClusters) throws DalException {
-		if(null == dcClusters) throw new DalException("Null cannot be deleted.");
+		if(null == dcClusters || !dcClusters.isEmpty()) {
+			logger.warn("[deleteDcClustersBatch] Empty dcClusters list: {}", dcClusters);
+			return;
+		}
 		
 		List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
 		for(final DcClusterTbl dcCluster : dcClusters) {
@@ -56,8 +59,15 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 			}
 		}
 		dcClusterShardDao.deleteDcClusterShardsBatch(dcClusterShards);
-		
-		dcClusterTblDao.deleteBatch(dcClusters.toArray(new DcClusterTbl[dcClusters.size()]), DcClusterTblEntity.UPDATESET_FULL);
+
+		queryHandler.handleBatchDelete(new DalQuery<int[]>() {
+			@Override
+			public int[] doQuery() throws DalException {
+				return dcClusterTblDao.deleteBatch(dcClusters.toArray(new DcClusterTbl[dcClusters.size()]),
+						DcClusterTblEntity.UPDATESET_FULL);
+			}
+		}, true);
+
 	}
 
 	@DalTransaction
@@ -74,8 +84,14 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 		if(null != dcClusterShards) {
 			dcClusterShardDao.deleteDcClusterShardsBatch(dcClusterShards);
 		}
-		
-		dcClusterTblDao.deleteBatch(dcCluster, DcClusterTblEntity.UPDATESET_FULL);
+
+		queryHandler.handleDelete(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dcClusterTblDao.deleteBatch(dcCluster, DcClusterTblEntity.UPDATESET_FULL);
+			}
+		}, true);
+
 	}
 	
 }

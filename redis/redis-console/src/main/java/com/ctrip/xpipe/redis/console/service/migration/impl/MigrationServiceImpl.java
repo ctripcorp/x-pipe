@@ -149,7 +149,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         migrationShardTbl.setId(id);
         migrationShardTbl.setLog(log);
 
-        queryHandler.handleQuery(new DalQuery<Integer>() {
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {
                 return migrationShardTblDao.updateLogById(migrationShardTbl, MigrationShardTblEntity.UPDATESET_FULL);

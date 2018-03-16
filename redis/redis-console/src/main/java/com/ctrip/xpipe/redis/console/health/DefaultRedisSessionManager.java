@@ -187,7 +187,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	}
 
 	public RedisClient findRedisConnection(String host, int port) {
-		RedisURI redisUri = new RedisURI(host, port, 2, TimeUnit.SECONDS);
+		RedisURI redisUri = new RedisURI(host, port, 1, TimeUnit.SECONDS);
 		SocketOptions socketOptions = SocketOptions.builder()
 				.connectTimeout(XPipeConsoleConstant.SOCKET_TIMEOUT, TimeUnit.SECONDS)
 				.build();

@@ -220,7 +220,7 @@ public class RedisSession {
                 }, executors);
             }
         };
-        asyncExecute(connectionConsumer, (th) -> callback.fail(th));
+        asyncExecute(connectionConsumer, callback::fail);
     }
 
     public void configRewrite(BiConsumer<String, Throwable> consumer) {
@@ -305,7 +305,7 @@ public class RedisSession {
                         while(exception instanceof CompletionException) {
                             exception = exception.getCause();
                         }
-                        log.error("[asyncExecute]" + hostPort, th);
+                        log.error("[asyncExecute]" + hostPort, exception);
 
                         if(throwableConsumer != null) {
                             throwableConsumer.accept(exception);

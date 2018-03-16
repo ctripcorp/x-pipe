@@ -51,9 +51,9 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
         });
     }
 
-    public Integer insert(MigrationClusterTbl migrationCluster){
+    public void insert(MigrationClusterTbl migrationCluster){
 
-        return queryHandler.handleQuery(new DalQuery<Integer>() {
+        queryHandler.handleInsert(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {
                 return migrationClusterTblDao.insert(migrationCluster);
@@ -61,13 +61,13 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
         });
     }
 
-    public Integer updateStartTime(long id, Date date){
+    public void updateStartTime(long id, Date date){
 
         MigrationClusterTbl migrationClusterTbl = new MigrationClusterTbl();
         migrationClusterTbl.setId(id);
         migrationClusterTbl.setStartTime(date);
 
-        return queryHandler.handleQuery(new DalQuery<Integer>() {
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {
                 return migrationClusterTblDao.updateStartTimeById(migrationClusterTbl, MigrationClusterTblEntity.UPDATESET_FULL);
@@ -76,13 +76,13 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
     }
 
 
-    public Integer updateStatusAndEndTimeById(long id, MigrationStatus status, Date endTime){
+    public void updateStatusAndEndTimeById(long id, MigrationStatus status, Date endTime){
 
         MigrationClusterTbl migrationClusterTbl = new MigrationClusterTbl();
         migrationClusterTbl.setId(id);
         migrationClusterTbl.setEndTime(endTime);
         migrationClusterTbl.setStatus(status.toString());
-        return queryHandler.handleQuery(new DalQuery<Integer>() {
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {
                 return migrationClusterTblDao.updateStatusAndEndTimeById(migrationClusterTbl, MigrationClusterTblEntity.UPDATESET_FULL);
@@ -90,13 +90,13 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
         });
     }
 
-    public Integer updatePublishInfoById(long id, String publishInfo){
+    public void updatePublishInfoById(long id, String publishInfo){
 
         MigrationClusterTbl migrationClusterTbl = new MigrationClusterTbl();
         migrationClusterTbl.setId(id);
         migrationClusterTbl.setPublishInfo(publishInfo);
 
-        return queryHandler.handleQuery(new DalQuery<Integer>() {
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {
                 return migrationClusterTblDao.updatePublishInfoById(migrationClusterTbl, MigrationClusterTblEntity.UPDATESET_FULL);
@@ -127,7 +127,7 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
 
     protected void updateByPK(final MigrationClusterTbl cluster) {
 
-        queryHandler.handleQuery(new DalQuery<Integer>() {
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {
                 return migrationClusterTblDao.updateByPK(cluster, MigrationClusterTblEntity.UPDATESET_FULL);

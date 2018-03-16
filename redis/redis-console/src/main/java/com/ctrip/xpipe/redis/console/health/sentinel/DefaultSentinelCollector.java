@@ -169,7 +169,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
                 @Override
                 public void fail(Throwable e) {
-                    logger.error("[fail]" + host + ":" + port, e);
+                    logger.error("[isKeeperOrDead][fail]" + host + ":" + port, e);
                     role.set(e);
                     latch.countDown();
                 }
@@ -180,9 +180,9 @@ public class DefaultSentinelCollector implements SentinelCollector {
         }
 
         try {
-            latch.await(1, TimeUnit.SECONDS);
+            latch.await(2, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            logger.debug("[isKeeperOrDead]latch await error: {}", e);
+            logger.error("[isKeeperOrDead]latch await error: {}", e);
         }
 
         if (role.get() instanceof String && Server.SERVER_ROLE.KEEPER.sameRole((String) role.get())) {
@@ -191,6 +191,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
         if (role.get() instanceof RedisConnectionException) {
             return true;
         }
+        logger.info("[isKeeperOrDead] role: {}", role.get());
         return false;
     }
 

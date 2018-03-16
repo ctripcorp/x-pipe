@@ -34,8 +34,6 @@ public class DefaultSentinelManager implements SentinelManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String SENTINEL = "sentinel";
-
     @Resource
     private XpipeNettyClientKeyedObjectPool keyedClientPool;
 
@@ -115,7 +113,7 @@ public class DefaultSentinelManager implements SentinelManager {
         try {
             return infoCommand.execute().get();
         } catch (Exception e) {
-            logger.error("[infoSentinel]", e);
+            logger.error("[infoSentinel] " + sentinel, e);
         }
         return null;
     }
@@ -174,7 +172,6 @@ public class DefaultSentinelManager implements SentinelManager {
     }
 
     @VisibleForTesting
-
     public DefaultSentinelManager setKeyedClientPool(XpipeNettyClientKeyedObjectPool keyedClientPool) {
         this.keyedClientPool = keyedClientPool;
         return this;

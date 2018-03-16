@@ -114,4 +114,19 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		latch.await();
 	}
 
+	@Test
+	public void testScaleOut() throws Exception {
+		ByteArrayOutputStreamPayload payload = new ByteArrayOutputStreamPayload();
+		String randomStr = randomString();
+
+		ByteBuf byteBuf = directByteBuf(randomStr.length());
+
+		randomStr += randomString(2<<11);
+
+		byteBuf.writeBytes(randomStr.getBytes());
+		payload.startInput();
+		payload.in(byteBuf);
+		payload.endInput();
+	}
+
 }

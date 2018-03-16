@@ -32,9 +32,9 @@ public class MigrationShardDao extends AbstractXpipeConsoleDAO {
 			.setShardId(migrationShard.getShardId()).setLog(migrationShard.getLog());
 		
 		final MigrationShardTbl forUpdate = proto;
-		queryHandler.handleQuery(new DalQuery<Void>() {
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
-			public Void doQuery() throws DalException {
+			public Integer doQuery() throws DalException {
 				migrationShardDao.updateByPK(forUpdate, MigrationShardTblEntity.UPDATESET_FULL);
 				return null;
 			}

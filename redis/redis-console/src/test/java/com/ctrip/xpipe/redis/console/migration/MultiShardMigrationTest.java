@@ -132,7 +132,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 
 	@Test
 	@DirtiesContext
-	public void testCRedisCheckFailed() {
+	public void testCRedisCheckFailed() throws TimeoutException {
 
 		int failPos = randomInt(1, TEST_SHARD_CNT);
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++ cnt) {
@@ -168,7 +168,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		});
 		//again
 		migrationCluster.process();
-		sleep(1500);
+		waitConditionUntilTimeOut(()-> clusterService.find(clusterId).getStatus() == ClusterStatus.Normal.toString(), 2500);
 		currentCluster = clusterService.find(clusterId);
 		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
 

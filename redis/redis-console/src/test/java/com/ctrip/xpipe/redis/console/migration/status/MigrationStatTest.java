@@ -20,7 +20,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -88,8 +90,9 @@ public class MigrationStatTest extends AbstractConsoleTest {
     private void prepareData() {
         mockedMigrationCluster = (new MigrationClusterTbl()).setId(1).setEventId(1).setClusterId(1).setDestinationDcId(2)
                 .setStatus(MigrationStatus.Initiated.toString());
-        when(mockedClusterService.find(1)).thenReturn((new ClusterTbl()).setId(1).setClusterName("test-cluster")
-                .setActivedcId(1).setStatus(ClusterStatus.Lock.toString()));
+        ClusterTbl clusterTbl = new ClusterTbl().setId(1).setClusterName("test-cluster")
+                .setActivedcId(1).setStatus(ClusterStatus.Lock.toString());
+        when(mockedClusterService.find(1)).thenReturn(clusterTbl);
         List<ShardTbl> shards = new LinkedList<>();
         shards.add((new ShardTbl()).setId(1).setClusterId(1).setShardName("test-shard"));
         when(mockedShardService.findAllByClusterName("test-cluster")).thenReturn(shards);
@@ -97,6 +100,15 @@ public class MigrationStatTest extends AbstractConsoleTest {
         dcs.add((new DcTbl()).setId(1).setDcName("ADC"));
         dcs.add((new DcTbl()).setId(2).setDcName("BDC"));
         when(mockedDcService.findClusterRelatedDc("test-cluster")).thenReturn(dcs);
+        when(mockedClusterService.find(anyString())).thenReturn(clusterTbl);
+        when(mockedClusterService.find(anyInt())).thenReturn(clusterTbl);
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                clusterTbl.setStatus(((ClusterStatus) invocation.getArguments()[1]).toString());
+                return null;
+            }
+        }).when(mockedClusterService).updateStatusById(anyInt(), any());
     }
 
 }

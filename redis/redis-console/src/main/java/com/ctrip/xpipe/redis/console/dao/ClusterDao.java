@@ -62,7 +62,12 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 
 		cluster.setCreateTime(new Date());
 		// cluster meta
-		clusterTblDao.insert(cluster);
+		queryHandler.handleInsert(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return clusterTblDao.insert(cluster);
+			}
+		});
 	    
 	    // related dc-cluster
 	    ClusterTbl newCluster = clusterTblDao.findClusterByClusterName(cluster.getClusterName(), ClusterTblEntity.READSET_FULL);
@@ -70,17 +75,28 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	    DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();
 	    protoDcCluster.setDcId(activeDc.getId())
 	    		.setClusterId(newCluster.getId());
-	    dcClusterTblDao.insert(protoDcCluster);
+	    queryHandler.handleInsert(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dcClusterTblDao.insert(protoDcCluster);
+			}
+		});
+
 		return newCluster;
 	}
 	
 	@DalTransaction
-	public int updateCluster(ClusterTbl cluster) throws DalException {
-		return clusterTblDao.updateByPK(cluster, ClusterTblEntity.UPDATESET_FULL);
+	public void updateCluster(ClusterTbl cluster) {
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return clusterTblDao.updateByPK(cluster, ClusterTblEntity.UPDATESET_FULL);
+			}
+		});
 	}
 	
 	@DalTransaction
-	public int deleteCluster(final ClusterTbl cluster) throws DalException {
+	public void deleteCluster(final ClusterTbl cluster) throws DalException {
 		// Related shards & dcClusters
 		List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
@@ -105,7 +121,12 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		
 		ClusterTbl proto = cluster;
 		proto.setClusterName(generateDeletedName(cluster.getClusterName()));
-		return clusterTblDao.deleteCluster(proto, ClusterTblEntity.UPDATESET_FULL);
+		queryHandler.handleDelete(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return clusterTblDao.deleteCluster(proto, ClusterTblEntity.UPDATESET_FULL);
+			}
+		}, true);
 		
 	}
 
@@ -129,10 +150,17 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			DcClusterTbl proto = dcClusterTblDao.createLocal();
 			proto.setDcId(dc.getId())
 				.setClusterId(cluster.getId());
-			dcClusterTblDao.insert(proto);
+
+			queryHandler.handleInsert(new DalQuery<Integer>() {
+				@Override
+				public Integer doQuery() throws DalException {
+					return dcClusterTblDao.insert(proto);
+				}
+			});
+
 			DcClusterTbl dcCluster = dcClusterTblDao.findDcClusterByName(dc.getDcName(), cluster.getClusterName(), DcClusterTblEntity.READSET_FULL);
 			
-			if(null != shards) {
+			if(null != shards && !shards.isEmpty()) {
 				List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
 				for(ShardTbl shard : shards) {
 					DcClusterShardTbl dcClusterShard = dcClusterShardTblDao.createLocal();
@@ -140,7 +168,13 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 						.setShardId(shard.getId());
 					dcClusterShards.add(dcClusterShard);
 				}
-				dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
+				queryHandler.handleBatchInsert(new DalQuery<int[]>() {
+					@Override
+					public int[] doQuery() throws DalException {
+						return dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
+					}
+				});
+
 			}
 		}
 		
@@ -191,10 +225,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 				return clusterTblDao.findClustersWithOrgInfoByActiveDcId(dcId, ClusterTblEntity.READSET_FULL_WITH_ORG);
 			}
 		});
-	}
-
-	public void updateDcClusterShards(String dcName, String clusterName) {
-
 	}
 
 	public List<ClusterTbl> findClustersWithName(List<String> clusterNames) {

@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTblDao;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTblEntity;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.query.DalQuery;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -41,7 +42,10 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public void deleteDcClusterShardsBatch(List<DcClusterShardTbl> dcClusterShards) throws DalException {
-		if(null == dcClusterShards) throw new DalException("Null cannot be deleted.");
+		if(null == dcClusterShards || dcClusterShards.isEmpty()) {
+			logger.warn("[deleteDcClusterShardsBatch] Empty list: {}", dcClusterShards);
+			return;
+		}
 		
 		List<RedisTbl> redises = new LinkedList<RedisTbl>();
 		for(final DcClusterShardTbl dcClusterShard : dcClusterShards) {
@@ -54,10 +58,16 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 			}
 		}
 		redisDao.deleteRedisesBatch(redises);
-		
-		dcClusterShardTblDao.deleteDcClusterShardsBatch(
-				dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]),
-				DcClusterShardTblEntity.UPDATESET_FULL);
+
+		queryHandler.handleBatchDelete(new DalQuery<int[]>() {
+			@Override
+			public int[] doQuery() throws DalException {
+				return dcClusterShardTblDao.deleteDcClusterShardsBatch(
+						dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]),
+						DcClusterShardTblEntity.UPDATESET_FULL);
+			}
+		}, true);
+
 	}
 
 }

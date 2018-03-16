@@ -4,11 +4,10 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.GenericRetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
-import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
-import com.ctrip.xpipe.redis.console.service.KeeperService;
-import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +33,9 @@ public class KeeperUpdateController extends AbstractConsoleController {
 
   @Autowired
   private KeeperService keeperService;
+
+  @Autowired
+  private KeepercontainerService keepercontainerService;
 
   @RequestMapping(value = "/keepers/{dcId}/{clusterId}/{shardId}", method = RequestMethod.GET)
   public List<String> getKeepers(@PathVariable String dcId, @PathVariable String clusterId,
@@ -122,6 +124,17 @@ public class KeeperUpdateController extends AbstractConsoleController {
     } catch (Exception e) {
         logger.error("[isKeeper]{}", e);
         return RetMessage.createFailMessage(e.getMessage());
+    }
+  }
+
+  @RequestMapping(value = "/keepercontainer", method = RequestMethod.POST)
+  public RetMessage addKeeperContainer(@RequestBody KeeperContainerCreateInfo createInfo) {
+    try {
+      createInfo.check();
+      keepercontainerService.addKeeperContainer(createInfo);
+      return RetMessage.createSuccessMessage("Add KeeperContainer successfully");
+    } catch (Exception e) {
+      return RetMessage.createFailMessage(e.getMessage());
     }
   }
 }

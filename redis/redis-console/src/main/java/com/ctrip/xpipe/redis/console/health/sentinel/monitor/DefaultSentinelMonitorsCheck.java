@@ -24,6 +24,11 @@ public class DefaultSentinelMonitorsCheck extends AbstractSentinelMonitorsCheck 
         Sentinel sentinel = new Sentinel(sentinelHostPort.toString(), sentinelHostPort.getHost(), sentinelHostPort.getPort());
         String infoSentinel = sentinelManager.infoSentinel(sentinel);
 
+        if(infoSentinel == null) {
+            logger.warn("[checkSentinel] info sentinel empty: {}", sentinel);
+            return;
+        }
+
         SentinelMonitors sentinelMonitors = SentinelMonitors.parseFromString(infoSentinel);
 
         // master0:name=cluster_mengshard1,status=ok,address=10.2.58.242:6399,slaves=1,sentinels=3

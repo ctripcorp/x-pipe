@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.redis.console.model.ConfigTblDao;
 import com.ctrip.xpipe.redis.console.model.ConfigTblEntity;
+import com.ctrip.xpipe.redis.console.query.DalQuery;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
@@ -82,10 +83,20 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
             configTbl.setUntil(until);
         }
         if(!insert) {
-            configTblDao.updateValAndUntilByKey(configTbl, ConfigTblEntity.UPDATESET_FULL);
+            queryHandler.handleUpdate(new DalQuery<Integer>() {
+                @Override
+                public Integer doQuery() throws DalException {
+                    return configTblDao.updateValAndUntilByKey(configTbl, ConfigTblEntity.UPDATESET_FULL);
+                }
+            });
         }else{
             configTbl.setDesc("insert automatically");
-            configTblDao.insert(configTbl);
+            queryHandler.handleInsert(new DalQuery<Integer>() {
+                @Override
+                public Integer doQuery() throws DalException {
+                    return configTblDao.insert(configTbl);
+                }
+            });
         }
         logger.info("[setConfig] config update successfully, as {}", config.toString());
     }
