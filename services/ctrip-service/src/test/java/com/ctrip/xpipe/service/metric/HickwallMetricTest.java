@@ -30,7 +30,7 @@ public class HickwallMetricTest extends AbstractServiceTest{
     @Test
     public void testHickWall() throws MetricProxyException, IOException {
 
-        int port = randomPort();
+        int port = 11111;
 
         logger.info("[testHickWall]{}", port);
 
@@ -40,9 +40,10 @@ public class HickwallMetricTest extends AbstractServiceTest{
             protected void doRun() throws Exception {
 
                 List<MetricData> data = new LinkedList<>();
-                MetricData metricData = new MetricData("test", getTestName());
+                HostPort hostPort = new HostPort("127.0.0.1", port);
+                MetricData metricData = new MetricData("unittest", hostPort.getHost(), String.valueOf(hostPort.getPort()));
                 metricData.setValue(1000);
-                metricData.setHostPort(new HostPort("127.0.0.1", port));
+//                metricData.setHostPort();
                 metricData.setTimestampMilli(System.currentTimeMillis());
                 data.add(metricData);
                 hickwallMetricProxy.writeBinMultiDataPoint(data);

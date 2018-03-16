@@ -128,12 +128,15 @@ public class HickwallMetric implements MetricProxy {
 
 		HostPort hostPort = md.getHostPort();
 		String metricNamePrefix = toMetricNamePrefix(md);
-		String metricName = metricNamePrefix + "." + hostPort.getHost() + "." + hostPort.getPort() + "." + getLocalIP();
+		String metricName = metricNamePrefix;
+		if(hostPort != null){
+			metricName += "." + hostPort.getHost() + "." + hostPort.getPort() + "." + getLocalIP();
+		}
 		return metricName;
 	}
 
 	private String toMetricNamePrefix(MetricData metricData) {
-		return "fx.xpipe.delay." + metricData.getClusterName() + "." + metricData.getShardName();
+		return String.format("fx.xpipe.%s.%s.%s", metricData.getMetricType(), metricData.getClusterName(), metricData.getShardName());
 	}
 
 	private String getLocalIP() {

@@ -22,7 +22,7 @@ public class MultiThreadDelayTest extends AbstractIntegratedTest {
 	
 	@Before
 	public void beforeMultiThreadDelayTesr(){
-		 delayManager = new DelayManager(scheduled, "delay", 10);
+		 delayManager = new DelayManager(scheduled, "delay", getTestName(), 10);
 	}
 
 	@Test

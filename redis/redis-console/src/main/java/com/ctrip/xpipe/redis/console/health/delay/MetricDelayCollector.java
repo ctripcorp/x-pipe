@@ -22,6 +22,8 @@ public class MetricDelayCollector implements DelayCollector {
 
     private static Logger log = LoggerFactory.getLogger(MetricDelayCollector.class);
 
+    private static final String TYPE = "delay";
+
     private MetricProxy proxy = ServicesUtil.getMetricProxy();
 
     @Override
@@ -49,7 +51,7 @@ public class MetricDelayCollector implements DelayCollector {
 
     private MetricData getPoint(HostPort hostPort, long value, DelaySampleResult result) {
 
-        MetricData data = new MetricData(result.getClusterId(), result.getShardId());
+        MetricData data = new MetricData(TYPE, result.getClusterId(), result.getShardId());
         data.setValue(value/1000);
         data.setTimestampMilli(System.currentTimeMillis());
         data.setHostPort(hostPort);
