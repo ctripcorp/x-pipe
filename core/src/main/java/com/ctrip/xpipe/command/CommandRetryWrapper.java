@@ -37,7 +37,7 @@ public final class CommandRetryWrapper<V> extends AbstractCommand<V>{
 		this(scheduled, 0, 0, new NoWaitRetry(), command);
 	}
 
-	private CommandRetryWrapper(ScheduledExecutorService scheduled, int retryTimes, int retryTimeoutMilli, RetryPolicy retryPolicy, Command<V> command) {
+	public CommandRetryWrapper(ScheduledExecutorService scheduled, int retryTimes, int retryTimeoutMilli, RetryPolicy retryPolicy, Command<V> command) {
 		
 		this.scheduled = scheduled;
 		this.retryTimes = retryTimes;
@@ -92,7 +92,7 @@ public final class CommandRetryWrapper<V> extends AbstractCommand<V>{
 					logger.error("[operationComplete]" + command, future().cause());
 					
 					int waitMilli = retryPolicy.retryWaitMilli();
-					logger.info("[retry]{}, {},{}", executeCount.get(), waitMilli, command);
+					logger.info("[retry]{},{},{}", executeCount.get(), waitMilli, command);
 					command.reset();
 					execute(waitMilli, TimeUnit.MILLISECONDS);
 				}
@@ -116,7 +116,11 @@ public final class CommandRetryWrapper<V> extends AbstractCommand<V>{
 			logger.info("[shouldRetry][false][retry timeout]{} > {}", current, timeoutTime);
 			return false;
 		}
-		
+
+		if(retryPolicy == null){
+			return false;
+		}
+
 		if(!retryPolicy.retry(throwable)){
 			logger.info("[shouldRetry][exception not retry]{}, {}", retryPolicy, throwable.getClass());
 			return false;

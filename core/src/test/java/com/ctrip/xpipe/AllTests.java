@@ -1,6 +1,7 @@
 package com.ctrip.xpipe;
 
 import com.ctrip.xpipe.api.sso.SsoConfigTest;
+import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactoryTest;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManagerTest;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPortTest;
@@ -13,10 +14,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
-import com.ctrip.xpipe.command.CommandRetryWrapperTest;
-import com.ctrip.xpipe.command.DefaultCommandFutureTest;
-import com.ctrip.xpipe.command.ParallelCommandChainTest;
-import com.ctrip.xpipe.command.SequenceCommandChainTest;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutorTest;
 import com.ctrip.xpipe.concurrent.OneThreadTaskExecutorTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
@@ -55,6 +52,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	TcpPortCheckCommandTest.class,
 	RequestResponseCommandTest.class,
 	CommandRetryWrapperTest.class,
+	DefaultRetryCommandFactoryTest.class,
 	SequenceCommandChainTest.class,
 	ParallelCommandChainTest.class,
 	RestTemplateFactoryTest.class,

@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.concurrent;
 
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
+import com.ctrip.xpipe.command.RetryCommandFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng
@@ -48,7 +51,7 @@ public class OneThreadTaskExecutorTest extends AbstractTest {
     public void testStart() {
 
         oneThreadTaskExecutor.executeCommand(command);
-        sleep(20);
+        sleep(50);
         verify(command).execute();
     }
 
@@ -79,7 +82,7 @@ public class OneThreadTaskExecutorTest extends AbstractTest {
                 }
                 @Override
                 public String getName() {
-                    return getTestName();
+                    return getTestName() + ":" + finalI;
                 }
             });
         }
@@ -120,9 +123,8 @@ public class OneThreadTaskExecutorTest extends AbstractTest {
         when(command.execute()).thenReturn(future);
         future.setFailure(new Exception());
 
-        RetryTemplate<Void> retryTemplate = new RetryNTimes<>(retryTimes);
-
-        OneThreadTaskExecutor oneThreadTaskExecutor = new OneThreadTaskExecutor(retryTemplate, executors);
+        RetryCommandFactory retryCommandFactory = DefaultRetryCommandFactory.retryNTimes(scheduled, retryTimes, 10);
+        OneThreadTaskExecutor oneThreadTaskExecutor = new OneThreadTaskExecutor(retryCommandFactory, executors);
 
         oneThreadTaskExecutor.executeCommand(command);
 
@@ -143,19 +145,22 @@ public class OneThreadTaskExecutorTest extends AbstractTest {
         when(command.execute()).thenReturn(future);
         future.setFailure(new Exception());
 
-        RetryTemplate<Void> retryTemplate = RetryNTimes.retryForEver(new RetryDelay(10));
+        RetryCommandFactory<Void> retryCommandFactory = DefaultRetryCommandFactory.retryForever(scheduled, 0);
 
-        OneThreadTaskExecutor oneThreadTaskExecutor = new OneThreadTaskExecutor(retryTemplate, executors);
+        OneThreadTaskExecutor oneThreadTaskExecutor = new OneThreadTaskExecutor(retryCommandFactory, executors);
 
         oneThreadTaskExecutor.executeCommand(command);
         sleep(100);
 
+        logger.info("[testClose][destroy]");
         oneThreadTaskExecutor.destroy();
-        retryTemplate.destroy();
-        sleep(10);
+        retryCommandFactory.destroy();
+
+        sleep(50);
         verify(command, new AtLeast(1)).execute();
         verify(command, new AtLeast(1)).reset();
 
+        logger.info("[testClose][sleep verify no more interactions]");
         sleep(100);
         verifyNoMoreInteractions(command);
     }
