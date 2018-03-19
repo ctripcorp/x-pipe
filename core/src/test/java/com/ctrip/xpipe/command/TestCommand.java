@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.command;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -45,7 +47,7 @@ public class TestCommand extends AbstractCommand<String>{
 
 	@Override
 	public String getName() {
-		return "TestCommand";
+		return "TestCommand@" + System.identityHashCode(this);
 	}
 
 	@Override
@@ -53,10 +55,10 @@ public class TestCommand extends AbstractCommand<String>{
 		beginExecute = true;
 
 		scheduled = Executors.newScheduledThreadPool(1);
-		future = scheduled.schedule(new Runnable() {
+		future = scheduled.schedule(new AbstractExceptionLogTask() {
 			
 			@Override
-			public void run() {
+			public void doRun() {
 				try {
 					logger.debug("[doExecute][begin]{}", this);
 					if(e != null){

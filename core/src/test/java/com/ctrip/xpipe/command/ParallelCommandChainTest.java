@@ -3,6 +3,7 @@ package com.ctrip.xpipe.command;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import com.ctrip.xpipe.api.command.Command;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -15,19 +16,24 @@ import com.ctrip.xpipe.api.command.CommandFuture;
  */
 public class ParallelCommandChainTest extends AbstractCommandChainTest{
 	
-	private int totalCommandCount = 5;
+	private int totalCommandCount = 10;
 	private int failIndex = 2;
 	private String successMessage = randomString();
 
-	
+
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testSuccess() throws InterruptedException, ExecutionException{
-		
-		ParallelCommandChain chain = new ParallelCommandChain(executors, createSuccessCommands(totalCommandCount, successMessage));
+
+		Command<?>[] successCommands = createSuccessCommands(totalCommandCount, successMessage);
+		ParallelCommandChain chain = new ParallelCommandChain(executors, successCommands);
 		
 		List<CommandFuture<?>> result = (List<CommandFuture<?>>) chain.execute().get();
 		Assert.assertEquals(totalCommandCount, result.size());
+
+		for(Command<?> success : successCommands){
+			Assert.assertTrue(success.future().isSuccess());
+		}
 	}
 	
 	@Test
