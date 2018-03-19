@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
@@ -129,10 +130,17 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 			public void operationComplete( CommandFuture commandFuture) throws Exception {
 				
 				if(commandFuture.isSuccess() && activeSuccessCommand != null){
-					logger.info("[addActiveCommandHook][set active success, execute hook]{}", setActiveCommand, activeSuccessCommand);
+					logger.info("[addActiveCommandHook][set active success, execute hook]{}, {}", setActiveCommand, activeSuccessCommand);
 					activeSuccessCommand.execute();
 				}
 			}
 		});
+	}
+
+	@Override
+	public String toString() {
+		return String.format("[%s] master: %s",
+				StringUtil.join(",", (keeper) -> String.format("%s.%s", keeper.desc(), keeper.isActive()), keepers),
+				activeKeeperMaster);
 	}
 }

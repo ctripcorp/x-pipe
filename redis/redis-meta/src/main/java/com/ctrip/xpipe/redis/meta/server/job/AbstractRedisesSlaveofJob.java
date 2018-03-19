@@ -15,6 +15,7 @@ import com.ctrip.xpipe.pool.XpipeObjectPoolFromKeyed;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.retry.RetryDelay;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
@@ -104,7 +105,7 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	
 	@Override
 	public String toString() {
-		return String.format("%s -> %s:%d", redises, masterHost, masterPort);
+		return String.format("[%s] slaveof %s:%d", StringUtil.join(",", (redis)-> redis.desc(), redises), masterHost, masterPort);
 	}
 	
 }

@@ -79,7 +79,7 @@ public class Pair<K, V> implements Map.Entry<K, V>{
 
     @Override
     public String toString() {
-        return String.format("%s, %s", key, value);
+        return String.format("%s,%s", key, value);
     }
 
     public static <K, V> Pair<K, V> from(K key, V value) {

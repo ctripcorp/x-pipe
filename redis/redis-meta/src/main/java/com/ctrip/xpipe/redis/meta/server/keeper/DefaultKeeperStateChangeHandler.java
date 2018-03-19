@@ -99,7 +99,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
 			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterId, shardId);
-			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{}", clusterId, shardId,
+			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{},{}", clusterId, shardId,
 					slaves);
 			keeperStateChangeJob.setActiveSuccessCommand(new DefaultSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled, executors));
 		}
