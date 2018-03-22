@@ -76,6 +76,11 @@ public class AlertPolicyManager {
             for (AlertPolicy alertPolicy : alertPolicies) {
                 result.addAll(alertPolicy.queryRecipients(alert));
             }
+
+            // in case not to produce empty recipient email. (Email could not sent successfully without recipient)
+            if(result.isEmpty()) {
+                result.addAll(alertPolicyMap.get(SendToXPipeAdminAlertPolicy.ID).queryRecipients(alert));
+            }
             return new ArrayList<>(result);
         } catch (Exception e) {
             logger.error("[queryRecepients]{}", e);
