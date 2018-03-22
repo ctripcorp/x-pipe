@@ -27,6 +27,10 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 	
 	private int commandTimeoutMilli = DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
+	private boolean logResponse = true;
+
+	private boolean logRequest = true;
+
 	public AbstractRedisCommand(String host, int port, ScheduledExecutorService scheduled){
 		super(host, port, scheduled);
 	}
@@ -183,4 +187,21 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		this.commandTimeoutMilli = commandTimeoutMilli;
 	}
 
+	@Override
+	protected boolean logRequest() {
+		return logRequest;
+	}
+
+	@Override
+	protected boolean logResponse() {
+		return logResponse;
+	}
+
+	public void logResponse(boolean logResponse) {
+		this.logResponse = logResponse;
+	}
+
+	public void logRequest(boolean logRequest) {
+		this.logRequest = logRequest;
+	}
 }

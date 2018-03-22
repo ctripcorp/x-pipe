@@ -77,6 +77,7 @@ public class DefaultSentinelManager implements SentinelManager {
                 .getKeyPool(new InetSocketAddress(sentinel.getIp(), sentinel.getPort()));
         AbstractSentinelCommand.SentinelMaster sentinelMaster = new AbstractSentinelCommand
                 .SentinelMaster(clientPool, scheduled, sentinelMonitorName);
+        sentinelMaster.logResponse(false);
 
         HostPort result = null;
         try {
@@ -110,6 +111,7 @@ public class DefaultSentinelManager implements SentinelManager {
                 .getKeyPool(new InetSocketAddress(sentinel.getIp(), sentinel.getPort()));
 
         InfoCommand infoCommand = new InfoCommand(clientPool, InfoCommand.INFO_TYPE.SENTINEL, scheduled);
+        infoCommand.logResponse(false);
         try {
             return infoCommand.execute().get();
         } catch (Exception e) {
