@@ -93,6 +93,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		if (scheduleTime < 0) {
 			scheduleTime = 0;
 		}
+		logger.info("[masterDisconntected][reconnect after {} ms]", scheduleTime);
 		scheduled.schedule(new Runnable() {
 
 			@Override

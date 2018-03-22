@@ -15,6 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public class InfoCommand extends AbstractRedisCommand<String> {
 
 	private String args;
+	private InfoResultExtractor extractor;
 
 	public InfoCommand(SimpleObjectPool<NettyClient> clientPool, String args, ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);
@@ -43,18 +44,21 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 
 		return payloadToString(payload);
 	}
-	
+
 	@Override
 	public String toString() {
 		return getName() + " " + (args == null? "":args);
 	}
 
 
+
+
 	public static enum INFO_TYPE{
 
 		REPLICATION,
 		SERVER,
-		SENTINEL;
+		SENTINEL,
+		STATS;
 
 		public String cmd(){
 			return toString().toLowerCase();

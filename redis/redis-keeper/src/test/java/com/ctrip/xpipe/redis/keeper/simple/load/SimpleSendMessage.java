@@ -17,6 +17,8 @@ public class SimpleSendMessage extends AbstractLoadRedis {
 
     private final int messageSize = 1 << 10;
 
+    private int concurrent = 10;
+
     private int expire = 0;
 
     private String message;
@@ -39,7 +41,6 @@ public class SimpleSendMessage extends AbstractLoadRedis {
     protected void doStart() throws Exception {
         super.doStart();
 
-        int concurrent = 20;
         CountDownLatch latch = new CountDownLatch(concurrent);
 
         for (int i = 0; i < concurrent; i++) {
@@ -81,10 +82,12 @@ public class SimpleSendMessage extends AbstractLoadRedis {
 
     public static void main(String[] args) throws Exception {
 
-        SimpleSendMessage simpleSendMessage = new SimpleSendMessage(new InetSocketAddress("localhost", 6379));
+        SimpleSendMessage simpleSendMessage = new SimpleSendMessage(new InetSocketAddress("127.0.0.1", 6379));
         simpleSendMessage.total = 1 << 23;
         simpleSendMessage.sleepMilli = 10;
         simpleSendMessage.expire = 0;
+        simpleSendMessage.concurrent = 200;
+        simpleSendMessage.current.set(1 << 22);
         simpleSendMessage.setMaxKeyIndex(1 << 30);
 
         simpleSendMessage.initialize();
