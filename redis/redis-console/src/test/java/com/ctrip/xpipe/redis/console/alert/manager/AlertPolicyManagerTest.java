@@ -8,6 +8,9 @@ import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;
 import com.ctrip.xpipe.redis.console.alert.policy.SendToDBAAlertPolicy;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,6 +33,9 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private AlertPolicyManager policyManager;
+
+    @Autowired
+    private ConfigService configService;
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -95,6 +101,15 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
         sb.deleteCharAt(sb.length() - 1);
 
         Assert.assertEquals(sb.toString(), consoleConfig.getDBAEmails()+","+consoleConfig.getXPipeAdminEmails());
+    }
+
+    @Test
+    public void testEmptyQueryRecipients() throws Exception {
+        configService.stopAlertSystem(new ConfigModel(), 1);
+        alert.setAlertType(ALERT_TYPE.MARK_INSTANCE_UP);
+        List<String> result = policyManager.queryRecepients(alert);
+        logger.info("[recipients] {}", result);
+        Assert.assertFalse(result.isEmpty());
     }
 
 }
