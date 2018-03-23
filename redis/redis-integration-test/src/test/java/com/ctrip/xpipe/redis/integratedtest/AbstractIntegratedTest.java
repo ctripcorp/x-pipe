@@ -382,6 +382,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 		for (RedisMeta redisMeta : allRedisStarted) {
 			try {
+				logger.info("[afterAbstractIntegratedTest][stop redis]{}", redisMeta.desc());
 				stopServerListeningPort(redisMeta.getPort());
 			} catch (IOException e) {
 				logger.error("[afterAbstractIntegratedTest][error stop redis]" + redisMeta, e);

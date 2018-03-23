@@ -64,6 +64,7 @@ import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 	OneThreadTaskExecutorTest.class,
 	TestZkClientTest.class,
 	StringUtilTest.class,
+	VersionUtilsTest.class,
 	ReferenceFileChannelTest.class,
 	ChannelUtilTest.class,
 	KeyedOneThreadTaskExecutorTest.class,

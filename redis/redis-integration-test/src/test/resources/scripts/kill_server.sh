@@ -1,5 +1,5 @@
 echo $*
-lsof -i:$1 -nP | grep LISTEN | awk '{print $0}' | while read line; do
+lsof -i4tcp:$1 -nP | grep LISTEN | awk '{print $0}' | while read line; do
     pid=`echo $line | awk '{print  $2}'`
     echo killing $line
     kill -9 $pid

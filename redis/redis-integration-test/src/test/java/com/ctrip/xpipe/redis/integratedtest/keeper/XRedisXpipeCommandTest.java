@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
-import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import org.junit.Assert;
@@ -16,7 +15,6 @@ import redis.clients.jedis.Jedis;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -25,8 +23,7 @@ import java.util.concurrent.TimeUnit;
  *         <p>
  *         Mar 22, 2018
  */
-public class XRedisXpipeCommandTest extends AbstractIntegratedTest {
-
+public class XRedisXpipeCommandTest extends AbstractKeeperIntegratedSingleDc {
 
     @Test
     public void testRefullsync() throws Exception {
@@ -97,12 +94,6 @@ public class XRedisXpipeCommandTest extends AbstractIntegratedTest {
         return sync_full;
 
     }
-
-    @Override
-    protected List<RedisMeta> getRedisSlaves() {
-        return null;
-    }
-
 
     public static class RefullSync extends AbstractRedisCommand<String> {
 
