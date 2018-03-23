@@ -7,6 +7,7 @@ import com.ctrip.xpipe.netty.commands.AbstractNettyRequestResponseCommand;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.RedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.*;
@@ -21,7 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * 2016年3月24日 下午12:04:13
  */
-public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestResponseCommand<T> implements RedisCommand<T>{
+public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestResponseCommand<T> implements LoggableRedisCommand<T> {
 	
 	public static int DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = Integer.parseInt(System.getProperty("DEFAULT_REDIS_COMMAND_TIME_OUT_SECONDS", "500"));
 	
@@ -197,10 +198,12 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		return logResponse;
 	}
 
+	@Override
 	public void logResponse(boolean logResponse) {
 		this.logResponse = logResponse;
 	}
 
+	@Override
 	public void logRequest(boolean logRequest) {
 		this.logRequest = logRequest;
 	}

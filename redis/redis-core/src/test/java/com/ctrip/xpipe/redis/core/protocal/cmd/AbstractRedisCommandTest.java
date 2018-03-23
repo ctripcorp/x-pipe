@@ -35,9 +35,4 @@ public class AbstractRedisCommandTest extends AbstractRedisTest {
         infoCommand.execute().get();
     }
 
-    @Test
-    public void testlLogResponse() throws Exception {
-
-    }
-
 }
