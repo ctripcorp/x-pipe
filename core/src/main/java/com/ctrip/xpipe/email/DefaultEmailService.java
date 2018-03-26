@@ -1,9 +1,14 @@
 package com.ctrip.xpipe.email;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailService;
+import com.ctrip.xpipe.command.DefaultCommandFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.Executor;
 
 /**
  * @author chen.zhu
@@ -21,6 +26,16 @@ public class DefaultEmailService implements EmailService {
         logger.info("CCers: {}", email.getCCers());
         logger.info("BCCers: {}", email.getBCCers());
         logger.info("Context:\n{}", email.getBodyContent());
+    }
+
+    @Override
+    public CommandFuture<Void> sendEmailAsync(Email email) {
+        return sendEmailAsync(email, MoreExecutors.directExecutor());
+    }
+
+    @Override
+    public CommandFuture<Void> sendEmailAsync(Email email, Executor executor) {
+        return new DefaultCommandFuture<>();
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.alert;
 
-import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
+import com.ctrip.xpipe.redis.console.alert.sender.email.AsyncEmailSender;
 
 /**
  * @author chen.zhu
@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
  * Oct 18, 2017
  */
 public enum AlertChannel {
-    MAIL(EmailSender.ID);
+    MAIL(AsyncEmailSender.ID);
 
     private String id;
 

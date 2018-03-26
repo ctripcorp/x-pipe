@@ -1,17 +1,15 @@
 package com.ctrip.xpipe.redis.console.alert.manager;
 
 import com.ctrip.xpipe.api.email.EmailType;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
-import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
+import com.ctrip.xpipe.redis.console.alert.sender.AbstractSender;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +21,6 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author chen.zhu
@@ -44,11 +41,6 @@ public class NotificationManager {
     private Map<String, AlertEntity> sendedAlerts = new ConcurrentHashMap<>(1000);
 
     private Map<ALERT_TYPE, Set<AlertEntity>> scheduledAlerts = new ConcurrentHashMap<>(1000);
-
-    @VisibleForTesting
-    protected AtomicInteger missingEmails = new AtomicInteger();
-
-    public static final String MISSING_EMAIL_CAT_TYPE = "Missing.Alert.Emails";
 
     @Autowired
     private AlertPolicyManager policyManager;
@@ -98,20 +90,6 @@ public class NotificationManager {
                     scheduledAlerts = new ConcurrentHashMap<>();
                 } catch (Exception e) {
                     logger.error("[start][schedule]{}", e);
-                }
-            }
-        }, 1, 30, TimeUnit.MINUTES);
-
-        schedule.scheduleAtFixedRate(new AbstractExceptionLogTask() {
-
-            @Override
-            protected void doRun() {
-                try {
-                    EventMonitor.DEFAULT.logEvent(MISSING_EMAIL_CAT_TYPE,
-                            String.format("missing emails in half an hour: %d", missingEmails.get()));
-                    missingEmails.set(0);
-                } catch (Exception e) {
-                    logger.error("[start][report-missing-emails]{}", e);
                 }
             }
         }, 1, 30, TimeUnit.MINUTES);
@@ -170,13 +148,11 @@ public class NotificationManager {
             AlertMessageEntity message = new AlertMessageEntity(title, EmailType.CONSOLE_ALERT, content, receivers);
             if(channel == AlertChannel.MAIL) {
                 List<String> ccers = policyManager.queryCCers(alert);
-                message.addParam(EmailSender.CC_ER, ccers);
+                message.addParam(AbstractSender.CC_ER, ccers);
             }
 
             if (senderManager.sendAlert(channel, message)) {
                 result = true;
-            } else {
-                missingEmails.getAndIncrement();
             }
         }
 
@@ -195,7 +171,7 @@ public class NotificationManager {
             AlertMessageEntity message = new AlertMessageEntity(title, EmailType.CONSOLE_ALERT, content, receivers);
             if(channel == AlertChannel.MAIL) {
                 List<String> ccers = policyManager.queryCCers(alert);
-                message.addParam(EmailSender.CC_ER, ccers);
+                message.addParam(AbstractSender.CC_ER, ccers);
             }
 
             if (senderManager.sendAlert(channel, message)) {
