@@ -39,7 +39,7 @@ public class XPipeStabilityTest {
     private int msgSize = Integer.parseInt(System.getProperty("msg-size", "1000"));
 
     private String masterAddress = System.getProperty("master", "127.0.0.1:6379");
-    private String slaveAddress = System.getProperty("slave", "127.0.0.1:6479,127.0.0.1:6579");
+    private String slaveAddress = System.getProperty("slave", "127.0.0.1:6479");
 
     private TestMode testMode = null;
 
@@ -56,7 +56,6 @@ public class XPipeStabilityTest {
                 logger.info("[{}][No-Restart]", Thread.currentThread());
             }
         });
-
 
     }
 
