@@ -20,43 +20,46 @@ import java.util.concurrent.atomic.AtomicLong;
  * Nov 14, 2016
  */
 public class DefaultValueCheck extends AbstractStartStoppable implements ValueCheck{
-	
+
 	private int valueCheckThreadNum;
-	
+
+	private MetricLog metricLog;
+
 	@JsonIgnore
 	private ExecutorService valueCheckThreadPool;
-	
+
 	private JedisPool slavePool;
-	
+
 	private AtomicLong offerCount = new AtomicLong();
-	
+
 	@JsonIgnore
 	private ConcurrentLinkedQueue<Pair<String, String>> valueCheckQueue = new ConcurrentLinkedQueue<>();
-	
-	public DefaultValueCheck(int valueCheckThreadNum, JedisPool slavePool){
+
+	public DefaultValueCheck(int valueCheckThreadNum, JedisPool slavePool, MetricLog metricLog){
 		this.valueCheckThreadNum = valueCheckThreadNum;
 		this.slavePool = slavePool;
+		this.metricLog = metricLog;
 	}
-	
+
 	@Override
 	public void offer(Pair<String, String> checkData){
-		
+
 		offerCount.incrementAndGet();
 		valueCheckQueue.offer(checkData);
 	}
-	
+
 	@Override
 	public long queueSize(){
-		
+
 		return valueCheckQueue.size();
 	}
 
 	@Override
 	protected void doStart() throws Exception {
-		
+
 		valueCheckThreadPool = Executors.newFixedThreadPool(valueCheckThreadNum,
 				XpipeThreadFactory.create("ValueCheckThreadPool"));
-		
+
 		for (int valueCheckThreadCnt = 0; valueCheckThreadCnt != valueCheckThreadNum; ++valueCheckThreadCnt) {
 			valueCheckThreadPool.execute(new ValueCheckThread());
 		}
@@ -65,10 +68,13 @@ public class DefaultValueCheck extends AbstractStartStoppable implements ValueCh
 	@Override
 	protected void doStop() {
 		valueCheckThreadPool.shutdownNow();
-		
+
 	}
-	
+
 	private class ValueCheckThread implements Runnable {
+
+	    private String slaveDesc = null;
+
 		@SuppressWarnings({ "static-access" })
 		@Override
 		public void run() {
@@ -82,18 +88,22 @@ public class DefaultValueCheck extends AbstractStartStoppable implements ValueCh
 			Jedis slave = null;
 			try {
 				slave = slavePool.getResource();
+				if(slaveDesc == null){
+				    slaveDesc = String.format("%s.%d", slave.getClient().getHost(), slave.getClient().getPort());
+                }
 				while (true) {
 					Pair<String, String> pair = valueCheckQueue.poll();
 					if (null != pair) {
 						try {
 							String key = pair.getKey();
 							String pre = pair.getValue();
-							
+
 							String actualValue = slave.get(key);
-							String actualCompare = actualValue.substring(0, pre.length()); 
+							String actualCompare = actualValue.substring(0, pre.length());
 							if (!pre.equals(actualCompare)) {
 								logger.error("[startValueCheckJob][run][ValueCheck]Key:{}, Expect:{}, Get:{}", key,
 										pre, actualCompare);
+                                metricLog.log("notice.notequal", slaveDesc,1);
 							}
 						} catch (JedisConnectionException e) {
 							logger.error("[startValueCheckJob][run]JedisConnectionException:{}", e);

@@ -47,7 +47,6 @@ public abstract class AbstractTestMode implements TestMode {
     private AtomicLong globalCnt = new AtomicLong(0);
     private AtomicLong queryCnt = new AtomicLong(0);
     private Long historyQueryCnt = new Long(0);
-    private ValueCheck valueCheck;
     protected Map<HostPort, DelayManager> allDelays = new ConcurrentHashMap<>();
     private DelayManager beginSend;
     protected HostPort master;

@@ -40,7 +40,7 @@ public class AllKeyMode extends AbstractTestMode {
         if (startValueCheck) {
             logger.info("[test][addValueCheck]");
             JedisPool slavePool = getJedisPool(slave.getHost(), slave.getPort(), valueCheckThreadNum * 2, valueCheckThreadNum);
-            valueCheck = new DefaultValueCheck(valueCheckThreadNum, slavePool);
+            valueCheck = new DefaultValueCheck(valueCheckThreadNum, slavePool, metricLog);
         } else {
             logger.info("[test][NullValueCheck]");
             valueCheck = new NullValueCheck();
@@ -61,8 +61,8 @@ public class AllKeyMode extends AbstractTestMode {
         if (previous != null) {
             Pair<Long, Long> date = extractTimeFromValue(value);
             String masterDesc = String.format("%s.%d", master.getHost(), master.getPort());
-            metricLog.log("lack", masterDesc, 1);
-            logger.warn("[putRecord][replace but old value still exists]{}, previous:{}, {}", key, valueForPrint(previous), new Date(date.getRight()));
+            metricLog.log("notice.lack", masterDesc, 1);
+            logger.error("[putRecord][replace but old value still exists]{}, previous:{}, {}", key, valueForPrint(previous), new Date(date.getRight()));
 
         }
     }
