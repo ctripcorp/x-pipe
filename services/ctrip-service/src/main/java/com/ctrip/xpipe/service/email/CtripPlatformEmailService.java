@@ -134,20 +134,21 @@ public class CtripPlatformEmailService implements EmailService {
                 SendEmailResponse response = client.sendEmail(createSendEmailRequest(email));
                 if (response == null || response.getResultCode() != 1) {
                     String message = response == null ? "no response from email service" : response.getResultMsg();
+                    logger.error("[SendEmailResponse] code: {}, message: {}", response.getResultCode(), response.getResultMsg());
                     future().setFailure(new XpipeRuntimeException(message));
                     return;
                 }
 
                 // Retry 5 time, 2 sec for each, waiting for email sent result
-                RetryCommandFactory factory = DefaultRetryCommandFactory.retryNTimes(scheduled, 3, 1000);
+                RetryCommandFactory factory = DefaultRetryCommandFactory.retryNTimes(scheduled, 3, (int) TimeUnit.MINUTES.toMillis(1));
                 Command<Void> retryCommand = factory.createRetryCommand(new AsyncCheckEmailCommand(response));
                 CommandFuture<Void> future = retryCommand.execute();
                 future.addListener(commandFuture -> {
                     if(commandFuture.isSuccess()) {
                         future().setSuccess();
                     } else {
-                        logger.info("[EmailCheckCommandListener] success: {}, cause: {}",
-                                commandFuture.isSuccess(), commandFuture.cause());
+                        logger.error("[EmailCheckCommandListener] success: {}, cause: {}, email id list: {}",
+                                commandFuture.isSuccess(), commandFuture.cause(), response.getEmailIDList());
 
                         future().setFailure(commandFuture.cause());
                     }
