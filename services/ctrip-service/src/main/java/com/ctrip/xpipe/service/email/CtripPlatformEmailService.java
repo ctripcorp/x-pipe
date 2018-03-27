@@ -1,20 +1,23 @@
 package com.ctrip.xpipe.service.email;
 
 import com.ctrip.soa.platform.basesystem.emailservice.v1.*;
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailService;
-import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
+import com.ctrip.xpipe.retry.RetryNTimes;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Calendar;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
+import java.util.concurrent.*;
 
 /**
  * @author chen.zhu
@@ -30,6 +33,9 @@ public class CtripPlatformEmailService implements EmailService {
     private static final String TYPE = "SOA.EMAIL.SERVICE";
 
     private static EmailServiceClient client = EmailServiceClient.getInstance();
+
+    private static final ScheduledExecutorService scheduled = Executors.newSingleThreadScheduledExecutor(
+            XpipeThreadFactory.create(CtripPlatformEmailService.class.getSimpleName()));
 
     @Override
     public void sendEmail(Email email) {
@@ -131,8 +137,21 @@ public class CtripPlatformEmailService implements EmailService {
                     future().setFailure(new XpipeRuntimeException(message));
                     return;
                 }
-                checkSentResult(response);
-                future().setSuccess();
+
+                // Retry 5 time, 2 sec for each, waiting for email sent result
+                RetryCommandFactory factory = DefaultRetryCommandFactory.retryNTimes(scheduled, 3, 1000);
+                Command<Void> retryCommand = factory.createRetryCommand(new AsyncCheckEmailCommand(response));
+                CommandFuture<Void> future = retryCommand.execute();
+                future.addListener(commandFuture -> {
+                    if(commandFuture.isSuccess()) {
+                        future().setSuccess();
+                    } else {
+                        logger.info("[EmailCheckCommandListener] success: {}, cause: {}",
+                                commandFuture.isSuccess(), commandFuture.cause());
+
+                        future().setFailure(commandFuture.cause());
+                    }
+                });
             } catch (Exception e) {
                 future().setFailure(e);
             }
@@ -148,6 +167,38 @@ public class CtripPlatformEmailService implements EmailService {
             client = c;
         }
     }
+
+    static class AsyncCheckEmailCommand extends AbstractCommand<Void> {
+
+        private SendEmailResponse response;
+
+        public AsyncCheckEmailCommand(SendEmailResponse response) {
+            this.response = response;
+        }
+
+
+        @Override
+        protected void doExecute() throws Exception {
+            try {
+                checkSentResult(response);
+                future().setSuccess();
+            } catch (Exception e) {
+                future().setFailure(e);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+
+        }
+
+        @Override
+        public String getName() {
+            return "check-email-send";
+        }
+    }
+
+
 
     @Override
     public int getOrder() {

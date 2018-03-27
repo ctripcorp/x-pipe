@@ -3,6 +3,7 @@ package com.ctrip.xpipe.service.email;
 import com.ctrip.soa.platform.basesystem.emailservice.v1.EmailServiceClient;
 import com.ctrip.soa.platform.basesystem.emailservice.v1.GetEmailStatusResponse;
 import com.ctrip.soa.platform.basesystem.emailservice.v1.SendEmailResponse;
+import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailType;
@@ -26,7 +27,7 @@ import static org.mockito.Mockito.when;
  * <p>
  * Mar 26, 2018
  */
-public class AsyncSendEmailCommandTest {
+public class AsyncSendEmailCommandTest extends AbstractTest {
 
     @Mock
     EmailServiceClient client;
@@ -92,9 +93,12 @@ public class AsyncSendEmailCommandTest {
 
         CommandFuture future = command.execute();
 
-        Assert.assertFalse(future.isSuccess());
+        future.addListener(commandFuture -> {
+            Assert.assertFalse(future.isSuccess());
+            Assert.assertEquals("test exception result could be caught", future.cause().getMessage());
+        });
 
-        Assert.assertEquals("test exception result could be caught", future.cause().getMessage());
+        waitConditionUntilTimeOut(()->future.isDone(), 10 * 1000);
     }
 
     @Test
