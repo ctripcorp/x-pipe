@@ -75,8 +75,8 @@ public class ParallelCommandChain extends AbstractCommandChain{
 			return;
 		}
 		
-		if(completed.size() >= getResult().size()){
-			logger.info("[addComplete][all complete]{}", completed.size());
+		if(completed.size() >= commands.size()){
+			logger.info("[addComplete][all complete]{}, {}", completed.size(), getResult().size());
 			boolean fail = false;
 			for(CommandFuture<?> future : completed){
 				if(!future.isSuccess()){

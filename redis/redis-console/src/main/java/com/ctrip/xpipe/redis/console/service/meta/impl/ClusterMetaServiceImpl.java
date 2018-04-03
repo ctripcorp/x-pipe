@@ -147,7 +147,8 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 	}
 	
 	/** Perform differently with migrating cluster **/
-	protected long getClusterMetaCurrentPrimaryDc(DcTbl dcInfo, ClusterTbl clusterInfo) {
+	@Override
+	public long getClusterMetaCurrentPrimaryDc(DcTbl dcInfo, ClusterTbl clusterInfo) {
 		if (ClusterStatus.isSameClusterStatus(clusterInfo.getStatus(), ClusterStatus.Migrating)) {
 			MigrationClusterTbl migrationCluster = migrationService.findLatestUnfinishedMigrationCluster(clusterInfo.getId());
 			if(migrationCluster != null && dcInfo.getId() == migrationCluster.getDestinationDcId()) {
