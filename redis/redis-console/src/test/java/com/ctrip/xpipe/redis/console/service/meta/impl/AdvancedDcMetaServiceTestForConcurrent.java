@@ -53,15 +53,15 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
 
     @Test
     public void testGetDcMeta() {
-        DcMeta jqFuture = service.getDcMeta("SHAJQ");
-        DcMeta oyFuture = service.getDcMeta("SHAOY");
+        DcMeta jqFuture = service.getDcMeta("NTGXH");
+        DcMeta oyFuture = service.getDcMeta("UAT");
 
-        DcComparator dcComparator = new DcComparator(getDcMeta("SHAJQ"), jqFuture);
+        DcComparator dcComparator = new DcComparator(getDcMeta("NTGXH"), jqFuture);
         Assert.assertEquals(0, dcComparator.getAdded().size());
         Assert.assertEquals(0, dcComparator.getRemoved().size());
         Assert.assertEquals(0, dcComparator.getMofified().size());
 
-        dcComparator = new DcComparator(getDcMeta("SHAOY"), oyFuture);
+        dcComparator = new DcComparator(getDcMeta("UAT"), oyFuture);
         Assert.assertEquals(0, dcComparator.getAdded().size());
         Assert.assertEquals(0, dcComparator.getRemoved().size());
         Assert.assertEquals(0, dcComparator.getMofified().size());
@@ -69,7 +69,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
 
     @Test
     public void testGetDcMeta2() throws TimeoutException {
-        String dcJQ = "SHAJQ", dcOY = "SHAOY";
+        String dcJQ = "NTGXH", dcOY = "UAT";
         DcMeta currentJQ = getDcMeta(dcJQ), currentOY = getDcMeta(dcOY);
         ExecutorService executors = Executors.newCachedThreadPool();
         final int task = 50;
@@ -226,7 +226,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
     protected String prepareDatas() throws IOException {
         // empty the database
         String sql = prepareDatasFromFile("src/main/resources/sql/h2/xpipedemodbtables.sql");
-        sql += "insert into dc_tbl(id, dc_name, dc_active, dc_description) values (1, 'SHAJQ', 1, 'SHAJQ'), (2, 'SHAOY', 2, 'SHAOY');";
+        sql += "insert into dc_tbl(id, dc_name, dc_active, dc_description) values (1, 'NTGXH', 1, 'NTGXH'), (2, 'UAT', 2, 'UAT');";
         return sql;
     }
 
@@ -237,16 +237,16 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
         Map<String, Map<Long, SetinelTbl>> shardMap = Maps.newHashMap();
         long dcId;
         for(DcMeta dcMeta : getXpipeMeta().getDcs().values()) {
-            dcId = dcMeta.getId().equalsIgnoreCase("SHAJQ") ? 1L : 2L;
+            dcId = dcMeta.getId().equalsIgnoreCase("NTGXH") ? 1L : 2L;
             for(ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
                 if(clusters.add(clusterMeta.getId())) {
-                    long activeDcId = clusterMeta.getActiveDc().equalsIgnoreCase("SHAJQ") ? 1L : 2L;
+                    long activeDcId = clusterMeta.getActiveDc().equalsIgnoreCase("NTGXH") ? 1L : 2L;
                     ClusterTbl clusterTbl = new ClusterTbl().setActivedcId(activeDcId)
                             .setClusterName(clusterMeta.getId()).setClusterLastModifiedTime(clusterMeta.getLastModifiedTime())
                             .setClusterAdminEmails("test@ctrip.com").setClusterDescription(clusterMeta.getId());
                     ClusterModel clusterModel = new ClusterModel();
                     clusterModel.setClusterTbl(clusterTbl);
-                    String slaveDc = clusterMeta.getActiveDc().equalsIgnoreCase("SHAJQ") ? "SHAOY" : "SHAJQ";
+                    String slaveDc = clusterMeta.getActiveDc().equalsIgnoreCase("NTGXH") ? "UAT" : "NTGXH";
                     clusterModel.setSlaveDcs(Lists.newArrayList(new DcTbl().setDcName(slaveDc)));
                     clusterService.createCluster(clusterModel);
                 }

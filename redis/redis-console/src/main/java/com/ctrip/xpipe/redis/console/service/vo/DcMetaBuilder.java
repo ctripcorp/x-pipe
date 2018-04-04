@@ -117,7 +117,6 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 long activeDcId = clusterMetaService.getClusterMetaCurrentPrimaryDc(proto, cluster);
                 clusterMeta.setActiveDc(dcNameMap.get(activeDcId));
                 clusterMeta.setParent(dcMeta);
-                clusterMeta.setLastModifiedTime(cluster.getClusterLastModifiedTime());
                 clusterMeta.setBackupDcs(getBackupDcs(cluster, activeDcId));
                 return clusterMeta;
             }
