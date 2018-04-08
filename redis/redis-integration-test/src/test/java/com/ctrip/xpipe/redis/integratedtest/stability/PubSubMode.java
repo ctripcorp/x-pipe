@@ -26,6 +26,11 @@ public class PubSubMode extends AbstractTestMode {
     }
 
     @Override
+    protected void sendSomeTestMessage() {
+        masterPool.getResource().publish(pubChannel, testMessagePrefix + "-value");
+    }
+
+    @Override
     protected void onPMessage(HostPort slave, DelayManager delayManager, String message) {
 
         long currentNanos = System.nanoTime();
