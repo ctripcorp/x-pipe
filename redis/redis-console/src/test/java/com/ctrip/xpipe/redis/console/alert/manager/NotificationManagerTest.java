@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.alert.manager;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
@@ -15,7 +14,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
-import static com.ctrip.xpipe.redis.console.alert.manager.NotificationManager.MISSING_EMAIL_CAT_TYPE;
 import static org.mockito.Mockito.when;
 
 /**
@@ -73,10 +71,4 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
         notificationManager.sendRecoveryMessage(alert);
     }
 
-    @Test
-    public void testMissingEmailsReport() throws Exception {
-        // manual test
-        notificationManager.missingEmails.set(10);
-        waitConditionUntilTimeOut(()->notificationManager.missingEmails.get() == 0, 1500);
-    }
 }

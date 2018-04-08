@@ -12,4 +12,5 @@ public interface DcClusterShardService {
 	List<DcClusterShardTbl> findAllByDcCluster(long dcClusterId);
 	List<DcClusterShardTbl> findAllByDcCluster(String dcName, String clusterName);
 	void updateDcClusterShard(DcClusterShardTbl dcClusterShardTbl) throws DalException;
+	List<DcClusterShardTbl> findAllByDcId(long dcId);
 }

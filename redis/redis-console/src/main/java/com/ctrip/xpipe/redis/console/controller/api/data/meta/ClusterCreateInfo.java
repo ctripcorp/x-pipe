@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.LinkedList;
@@ -22,6 +26,29 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
     private Long organizationId;
 
     private String clusterAdminEmails;
+
+    public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService) {
+
+        ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
+
+        clusterCreateInfo.setDesc(clusterTbl.getClusterDescription());
+        clusterCreateInfo.setClusterName(clusterTbl.getClusterName());
+        OrganizationTbl organizationTbl = clusterTbl.getOrganizationInfo();
+        clusterCreateInfo.setOrganizationId(organizationTbl != null ? organizationTbl.getOrgId() : 0L);
+        clusterCreateInfo.setClusterAdminEmails(clusterTbl.getClusterAdminEmails());
+
+        List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterTbl.getClusterName());
+        clusterRelatedDc.forEach(dcTbl -> {
+
+            if (dcTbl.getId() == clusterTbl.getActivedcId()) {
+                clusterCreateInfo.addFirstDc(dcTbl.getDcName());
+            } else {
+                clusterCreateInfo.addDc(dcTbl.getDcName());
+            }
+        });
+
+        return clusterCreateInfo;
+    }
 
     public ClusterCreateInfo(){
     }

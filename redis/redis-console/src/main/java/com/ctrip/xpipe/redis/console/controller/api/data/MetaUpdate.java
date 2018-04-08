@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author wenchao.meng
@@ -221,27 +222,21 @@ public class MetaUpdate extends AbstractConsoleController {
 
         List<ClusterCreateInfo> result = new LinkedList<>();
         allClusters.forEach(clusterTbl -> {
-
-            ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
-            clusterCreateInfo.setDesc(clusterTbl.getClusterDescription());
-            clusterCreateInfo.setClusterName(clusterTbl.getClusterName());
-            OrganizationTbl organizationTbl = clusterTbl.getOrganizationInfo();
-            clusterCreateInfo.setOrganizationId(organizationTbl != null ? organizationTbl.getOrgId() : 0L);
-            clusterCreateInfo.setClusterAdminEmails(clusterTbl.getClusterAdminEmails());
-
-            List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterTbl.getClusterName());
-            clusterRelatedDc.forEach(dcTbl -> {
-
-                if (dcTbl.getId() == clusterTbl.getActivedcId()) {
-                    clusterCreateInfo.addFirstDc(dcTbl.getDcName());
-                } else {
-                    clusterCreateInfo.addDc(dcTbl.getDcName());
-                }
-            });
-            result.add(clusterCreateInfo);
+            result.add(ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService));
         });
 
         return transformFromInner(result);
+    }
+
+    @RequestMapping(value = "/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
+    public ClusterCreateInfo getCluster(@PathVariable String clusterName) {
+
+        logger.info("[getCluster]{}", clusterName);
+
+        ClusterTbl clusterTbl = clusterService.findClusterAndOrg(clusterName);
+        ClusterCreateInfo clusterCreateInfo = ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService);
+
+        return transform(clusterCreateInfo, DC_TRANSFORM_DIRECTION.INNER_TO_OUTER);
     }
 
     private List<ClusterCreateInfo> transformFromInner(List<ClusterCreateInfo> source) {

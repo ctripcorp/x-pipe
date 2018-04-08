@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.api.email;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.utils.ServicesUtil;
+
+import java.util.concurrent.Executor;
 
 /**
  * @author chen.zhu
@@ -14,4 +17,8 @@ public interface EmailService extends Ordered {
     EmailService DEFAULT = ServicesUtil.getEmailService();
 
     void sendEmail(Email email);
+
+    CommandFuture<Void> sendEmailAsync(Email email);
+
+    CommandFuture<Void> sendEmailAsync(Email email, Executor executor);
 }

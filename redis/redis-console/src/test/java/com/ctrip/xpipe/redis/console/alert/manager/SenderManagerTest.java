@@ -7,7 +7,8 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
-import com.ctrip.xpipe.redis.console.alert.sender.EmailSender;
+import com.ctrip.xpipe.redis.console.alert.sender.email.AsyncEmailSender;
+import com.ctrip.xpipe.redis.console.alert.sender.email.EmailSender;
 import com.ctrip.xpipe.redis.console.alert.sender.Sender;
 import io.netty.util.internal.ConcurrentSet;
 import org.junit.Assert;
@@ -41,7 +42,7 @@ public class SenderManagerTest extends AbstractConsoleIntegrationTest {
         AlertChannel channel = AlertChannel.MAIL;
         String id = channel.getId();
         sender = senderManager.querySender(id);
-        Assert.assertTrue(sender instanceof EmailSender);
+        Assert.assertTrue(sender instanceof AsyncEmailSender);
     }
 
     @Test

@@ -58,4 +58,14 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 	public void updateDcClusterShard(DcClusterShardTbl dcClusterShardTbl) throws DalException{
 		dao.updateByPK(dcClusterShardTbl, DcClusterShardTblEntity.UPDATESET_FULL);
 	}
+
+	@Override
+	public List<DcClusterShardTbl> findAllByDcId(long dcId) {
+		return queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
+			@Override
+			public List<DcClusterShardTbl> doQuery() throws DalException {
+				return dao.findAllByDcId(dcId, DcClusterShardTblEntity.READSET_FULL_WITH_DC_CLUSTER);
+			}
+		});
+	}
 }

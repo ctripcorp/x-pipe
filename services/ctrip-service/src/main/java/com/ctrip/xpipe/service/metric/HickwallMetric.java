@@ -13,6 +13,7 @@ import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.*;
 import com.ctrip.xpipe.service.foundation.CtripFoundationService;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,8 +117,15 @@ public class HickwallMetric implements MetricProxy {
 		
 		for(MetricData md : datas) {
 			DataPoint dp = new DataPoint(metricName(md), (double) md.getValue(), md.getTimestampMilli() * 1000000);
-			dp.setEndpoint("fx");
-			dp.getTag().put("MetricSource", getLocalIP());
+			// cluster.shard.10_2_2_2_6379.10_28_142_142 (cluster.shard.redis+port.console)
+			dp.setEndpoint(getEndpoint(md));
+			dp.getMeta().put("measurement", "fx.xpipe.delay");
+			dp.getTag().put("cluster", md.getClusterName());
+			dp.getTag().put("shard", md.getShardName());
+			dp.getTag().put("address", md.getHostPort().toString());
+			dp.getTag().put("srcaddr", getLocalIP());
+			dp.getTag().put("app", "fx");
+
 			dps.add(dp);
 		}
 		
@@ -141,6 +149,22 @@ public class HickwallMetric implements MetricProxy {
 
 	private String getLocalIP() {
 		return Foundation.net().getHostAddress();
+	}
+
+	private String getEndpoint(MetricData md) {
+		String redisToPattern = getFormattedRedisAddr(md.getHostPort());
+		String srcConsoleIpToPattern = getFormattedSrcAddr(getLocalIP());
+		return String.format("%s.%s.%s.%s", md.getClusterName(), md.getShardName(), redisToPattern, srcConsoleIpToPattern);
+	}
+
+	@VisibleForTesting
+	protected String getFormattedRedisAddr(HostPort hostPort) {
+		return hostPort.getHost().replaceAll("\\.", "_") + "_" + hostPort.getPort();
+	}
+
+	@VisibleForTesting
+	protected String getFormattedSrcAddr(String ipAddr) {
+		return ipAddr.replaceAll("\\.", "_");
 	}
 
 	@Override

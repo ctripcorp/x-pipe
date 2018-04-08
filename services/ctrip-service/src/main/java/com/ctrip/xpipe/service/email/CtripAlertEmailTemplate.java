@@ -13,7 +13,7 @@ public class CtripAlertEmailTemplate implements CtripEmailTemplate {
 
     private static final int BODY_TEMPLATE_ID = 37030053;
 
-    private static final String SEND_CODE = "37030053";
+    public static final String SEND_CODE = "37030053";
 
     @Override
     public Integer getAppID() {

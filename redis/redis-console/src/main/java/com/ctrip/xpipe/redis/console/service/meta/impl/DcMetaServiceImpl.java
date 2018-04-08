@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.HashMap;
@@ -24,7 +23,7 @@ import java.util.concurrent.*;
  *
  * Aug 17, 2016
  */
-@Service
+//@Service
 public class DcMetaServiceImpl extends AbstractMetaService implements DcMetaService {
 	@Autowired
 	private DcService dcService;

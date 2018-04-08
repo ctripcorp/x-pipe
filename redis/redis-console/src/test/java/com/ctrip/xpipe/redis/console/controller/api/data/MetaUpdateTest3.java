@@ -222,6 +222,17 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(1, shards.size());
     }
 
+    @Test
+    public void testGetCluster() throws Exception {
+        createCluster();
+        ClusterCreateInfo clusterCreateInfo = metaUpdate.getCluster(clusterName);
+        Assert.assertEquals(clusterName, clusterCreateInfo.getClusterName());
+        Assert.assertEquals(3L, (long)clusterCreateInfo.getOrganizationId());
+        Assert.assertEquals(2, clusterCreateInfo.getDcs().size());
+        Assert.assertEquals(activeDC, clusterCreateInfo.getDcs().get(0));
+        Assert.assertEquals(backupDC, clusterCreateInfo.getDcs().get(1));
+    }
+
     private List<RedisCreateInfo> createInfo(List<String> activeDcRedis, List<String> backupDcRedis) {
         return Lists.newArrayList(new RedisCreateInfo().setDcId(activeDC).setRedises(StringUtil.join(", ", activeDcRedis.toArray())),
                 new RedisCreateInfo().setDcId(backupDC).setRedises(StringUtil.join(", ", backupDcRedis.toArray())));
