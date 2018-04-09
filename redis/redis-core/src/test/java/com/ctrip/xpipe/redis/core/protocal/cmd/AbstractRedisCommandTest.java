@@ -7,6 +7,7 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -33,6 +34,24 @@ public class AbstractRedisCommandTest extends AbstractRedisTest {
         infoCommand.logResponse(false);
 //        infoCommand.logRequest(false);
         infoCommand.execute().get();
+    }
+
+    @Test
+    public void testDoReceiveResponse() throws Exception {
+        AbstractRedisCommand<Object> redisCommand = new AbstractRedisCommand<Object>(
+                getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("127.0.0.1", randomPort())), scheduled) {
+            @Override
+            protected Object format(Object payload) {
+                return payload;
+            }
+
+            @Override
+            public ByteBuf getRequest() {
+                return new RequestStringParser(getName(), "test").format();
+            }
+        };
+
+        redisCommand.doReceiveResponse(null, Unpooled.copiedBuffer(":1\r\n".getBytes()));
     }
 
 }
