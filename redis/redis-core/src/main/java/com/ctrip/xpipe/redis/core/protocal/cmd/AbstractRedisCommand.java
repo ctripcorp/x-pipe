@@ -174,6 +174,30 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		return Boolean.parseBoolean(result);
 	}
 
+	protected String[] payloadToStringArray(Object payload) {
+		if(!(payload instanceof Object[])) {
+			throw new RedisRuntimeException(String.format("payload not array: %s", payload));
+		}
+		Object[] objects = (Object[]) payload;
+		String[] result = new String[objects.length];
+
+		for(int i = 0; i < result.length; i++) {
+			result[i] = payloadToString(objects[i]);
+		}
+
+		return result;
+	}
+
+	protected Long payloadToLong(Object payload) {
+
+		if(payload instanceof Long){
+			return (Long) payload;
+		}
+
+		String result = payloadToString(payload);
+		return Long.parseLong(result);
+	}
+
 	@Override
 	public String getName() {
 		return getClass().getSimpleName();
