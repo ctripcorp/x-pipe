@@ -1,3 +1,14 @@
+package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
+
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.simpleserver.Server;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
+
 import static org.junit.Assert.*;
 
 /**
@@ -5,6 +16,40 @@ import static org.junit.Assert.*;
  * <p>
  * Apr 09, 2018
  */
-public class PublishCommandTest {
+public class PublishCommandTest extends AbstractRedisTest {
 
+    private PublishCommand publishCommand;
+
+    private String channel = "hello";
+
+    private String message = "world";
+
+    @Before
+    public void before() throws Exception {
+        int port = randomPort();
+        publishCommand = new PublishCommand(getXpipeNettyClientKeyedObjectPool()
+                .getKeyPool(new InetSocketAddress("127.0.0.1", port)), scheduled, channel, message);
+        startEchoServer(port, "+OK");
+    }
+
+
+    @Test
+    public void testPublishCommand() throws ExecutionException, InterruptedException {
+        publishCommand.future().addListener(commandFuture -> {
+            Assert.assertEquals("+OK", commandFuture.get());
+        });
+        publishCommand.execute().get();
+    }
+
+    @Test
+    public void testPublishCommandManully() throws Exception {
+        publishCommand = new PublishCommand(getXpipeNettyClientKeyedObjectPool()
+                .getKeyPool(new InetSocketAddress("127.0.0.1", 6379)), scheduled, channel, message);
+        for(int i = 0; i < 100; i ++) {
+            publishCommand.execute().get();
+            Thread.sleep(1000);
+        }
+
+
+    }
 }
