@@ -50,6 +50,11 @@ public class AllKeyMode extends AbstractTestMode {
     }
 
     @Override
+    protected void sendSomeTestMessage() {
+        masterPool.getResource().set(testMessagePrefix + "-key", testMessagePrefix + "-value");
+    }
+
+    @Override
     protected String getPattern() {
         return "__key*__:*";
     }
@@ -86,6 +91,7 @@ public class AllKeyMode extends AbstractTestMode {
 
     @Override
     public void onPMessage(HostPort slave, DelayManager delayManager, String message) {
+
         String key = message;
         String value = records.get(key);
         if (null != value) {

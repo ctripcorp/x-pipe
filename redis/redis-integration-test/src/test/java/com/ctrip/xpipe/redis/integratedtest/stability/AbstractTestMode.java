@@ -31,8 +31,9 @@ public abstract class AbstractTestMode implements TestMode {
 
     public int QPS_COUNT_INTERVAL = Integer.parseInt(System.getProperty("qps-count-interval", "5"));
     public int TIME_TOO_LONG_TO_LOG_MILLI = Integer.parseInt(System.getProperty("time-long-log", "10"));
+    public static final String testMessagePrefix = "test";
 
-    protected  MetricLog metricLog = MetricLog.create();
+    protected MetricLog metricLog = MetricLog.create();
 
 
     private final int producerThreadNum;
@@ -81,7 +82,7 @@ public abstract class AbstractTestMode implements TestMode {
         doTest();
     }
 
-    protected void doTest() {
+    protected void doTest() throws InterruptedException {
 
         startQpsCheckJob();
         startConsumerJob();
@@ -89,7 +90,9 @@ public abstract class AbstractTestMode implements TestMode {
 
     }
 
-    protected void startConsumerJob() {
+    protected void startConsumerJob() throws InterruptedException {
+
+        CountDownLatch latch = new CountDownLatch(slavePools.size());
 
         slavePools.forEach((slaveHostport, slavePool) -> {
 
@@ -101,7 +104,11 @@ public abstract class AbstractTestMode implements TestMode {
                         @Override
                         protected void doRestart() {
                             logger.info("[doRestart]Consumer Job");
-                            startConsumerJob();
+                            try {
+                                startConsumerJob();
+                            } catch (InterruptedException e) {
+                                logger.error("[doRestart]" + slaveHostport, e);
+                            }
                         }
                     });
 
@@ -112,6 +119,11 @@ public abstract class AbstractTestMode implements TestMode {
                             @Override
                             public void onPMessage(String pattern, String channel, String message) {
                                 try {
+                                    latch.countDown();
+                                    if(isTestMessage(message)){
+                                        logger.info("[onPMessage][testmessage]{}, {}", channel, message);
+                                        return;
+                                    }
                                     AbstractTestMode.this.onPMessage(slaveHostport, allDelays.get(slaveHostport), message);
                                 } catch (Exception e) {
                                     logger.error("[onPMessage]", e);
@@ -127,7 +139,13 @@ public abstract class AbstractTestMode implements TestMode {
                 }
             });
         });
+
+        sendSomeTestMessage();//try make sure consumer has started
+        boolean await = latch.await(5, TimeUnit.SECONDS);
+        logger.info("[startConsumerJob][wait]{}", await);
     }
+
+    protected abstract void sendSomeTestMessage();
 
     protected abstract void onPMessage(HostPort slave, DelayManager delayManager, String message);
 
@@ -161,7 +179,7 @@ public abstract class AbstractTestMode implements TestMode {
                 long milli = System.currentTimeMillis();
                 long nano = System.nanoTime();
 
-                key.from(globalCnt.getAndIncrement() % maxKeys);
+                key.from(currentKey());
                 nanoTime.from(nano);
                 currentMilli.from(milli);
 
@@ -197,6 +215,15 @@ public abstract class AbstractTestMode implements TestMode {
                 }
             }
         }
+    }
+
+    private long currentKey() {
+        long current = globalCnt.getAndIncrement() % maxKeys;
+        if (current == 0) {
+            logger.info("[currentKey][back to zero]{}", current);
+
+        }
+        return current;
     }
 
     protected abstract void removeRecordsPutException(String key);
@@ -248,6 +275,10 @@ public abstract class AbstractTestMode implements TestMode {
                 doPrintQpsInfo();
             }
         }, 1, QPS_COUNT_INTERVAL, TimeUnit.SECONDS);
+    }
+
+    protected boolean isTestMessage(String message) {
+        return message != null && message.startsWith(testMessagePrefix);
     }
 
     protected abstract void doPrintQpsInfo();
