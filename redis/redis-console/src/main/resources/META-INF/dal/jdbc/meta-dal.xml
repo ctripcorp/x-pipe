@@ -152,10 +152,11 @@
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="organization-info"/>
 			</readset>
-			<readset name="ID_NAME_STATUS">
+			<readset name="META_INFO">
 				<member name="id"/>
 				<member name="cluster-name"/>
 				<member name="status"/>
+				<member name="activedc-id"/>
 			</readset>
 		</readsets>
 		
@@ -483,10 +484,10 @@
 			<readset name="SENTINEL_ID">
 				<member name="setinel-id"/>
 			</readset>
-			<readset name="FULL_WITH_DC_CLUSTER">
+			<readset name="DC_CLUSTER_SHARD_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
-				<readset-ref name="ID_NAME_STATUS" relation-name="cluster-info"/>
-				<readset-ref name="FULL" relation-name="redis-info"/>
+				<readset-ref name="META_INFO" relation-name="cluster-info"/>
+				<readset-ref name="META_INFO" relation-name="redis-info"/>
 				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
 			</readset>
 		</readsets>
@@ -629,6 +630,16 @@
 			<readset name="IP-AND-PORT">
 				<member name='redis-ip'/>
 				<member name="redis-port"/>
+			</readset>
+			<readset name="META_INFO">
+				<member name="redis-ip"/>
+				<member name="redis-port"/>
+				<member name="run-id"/>
+				<member name="redis-role"/>
+				<member name="keeper-active"/>
+				<member name="master"/>
+				<member name="redis-master"/>
+				<member name="keepercontainer-id"/>
 			</readset>
 		</readsets>
 
