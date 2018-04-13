@@ -152,7 +152,7 @@
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="organization-info"/>
 			</readset>
-			<readset name="META_INFO">
+			<readset name="CLUSTER_META_INFO">
 				<member name="id"/>
 				<member name="cluster-name"/>
 				<member name="status"/>
@@ -486,8 +486,8 @@
 			</readset>
 			<readset name="DC_CLUSTER_SHARD_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
-				<readset-ref name="META_INFO" relation-name="cluster-info"/>
-				<readset-ref name="META_INFO" relation-name="redis-info"/>
+				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
+				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
 				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
 			</readset>
 		</readsets>
@@ -631,7 +631,7 @@
 				<member name='redis-ip'/>
 				<member name="redis-port"/>
 			</readset>
-			<readset name="META_INFO">
+			<readset name="REDIS_META_INFO">
 				<member name="redis-ip"/>
 				<member name="redis-port"/>
 				<member name="run-id"/>
