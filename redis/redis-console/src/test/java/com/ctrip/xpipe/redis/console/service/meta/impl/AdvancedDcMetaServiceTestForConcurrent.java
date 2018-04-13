@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.comparator.AbstractMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.ClusterChange;
-import com.ctrip.xpipe.redis.core.meta.comparator.DcChange;
-import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.redis.core.meta.comparator.*;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -103,6 +102,46 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
 
         waitConditionUntilTimeOut(() -> counter.get() >= task , 60 * 1000);
 
+    }
+
+    @Test
+    public void testDcComparator() {
+        DcMeta jqFuture = service.getDcMeta("NTGXH");
+        jqFuture.addCluster(new ClusterMeta("add"));
+
+        DcComparator dcComparator = new DcComparator(getDcMeta("NTGXH"), jqFuture);
+
+        Assert.assertNotEquals(0, dcComparator.getAdded().size());
+        Assert.assertEquals(0, dcComparator.getRemoved().size());
+        Assert.assertEquals(0, dcComparator.getMofified().size());
+    }
+
+    @Test
+    public void testDcComparator2() {
+        DcMeta jqFuture = service.getDcMeta("NTGXH");
+
+        jqFuture.removeCluster(jqFuture.getClusters().keySet().iterator().next());
+
+        DcComparator dcComparator = new DcComparator(getDcMeta("NTGXH"), jqFuture);
+
+        Assert.assertNotEquals(0, dcComparator.getRemoved().size());
+
+        Assert.assertEquals(0, dcComparator.getMofified().size());
+    }
+
+    @Test
+    public void testDcComparator3() {
+        DcMeta jqFuture = service.getDcMeta("NTGXH");
+
+        ClusterMeta clusterMeta = jqFuture.getClusters().values().iterator().next();
+
+        clusterMeta.addShard(new ShardMeta("differ-shard"));
+
+        DcComparator dcComparator = new DcComparator(getDcMeta("NTGXH"), jqFuture);
+
+        Assert.assertEquals(0, dcComparator.getRemoved().size());
+
+        Assert.assertNotEquals(0, dcComparator.getMofified().size());
     }
 
     class TestDcMetaCommand extends AbstractCommand<DcMeta> {
@@ -201,7 +240,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
             for(String shardId : result.getMiddle()) {
                 ShardMeta currentMeta = current.findShard(shardId);
                 ShardMeta futureMeta = future.findShard(shardId);
-                ShardMetaComparator comparator = new ShardMetaComparator(currentMeta, futureMeta);
+                ShardComparator comparator = new ShardComparator(currentMeta, futureMeta);
                 comparator.compare();
                 if(comparator.getAdded().size() != 0 || comparator.getRemoved().size() != 0
                         || comparator.getMofified().size() != 0) {
@@ -213,6 +252,71 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
         @Override
         public String idDesc() {
             return null;
+        }
+    }
+
+
+    public class ShardComparator extends AbstractMetaComparator<Redis, ShardChange>{
+
+        private ShardMeta current, future;
+
+        public ShardComparator(ShardMeta current, ShardMeta future){
+            this.current = current;
+            this.future = future;
+        }
+
+        @Override
+        public void compare() {
+            List<Redis> currentAll =  getAll(current);
+            List<Redis> futureAll =  getAll(future);
+
+
+            Pair<List<Redis>, List<Pair<Redis, Redis>>> subResult = sub(futureAll, currentAll);
+            List<Redis> tAdded = subResult.getKey();
+            added.addAll(tAdded);
+
+            List<Pair<Redis, Redis>> modifiedAll = subResult.getValue();
+
+            List<Redis> tRemoved = sub(currentAll, futureAll).getKey();
+            removed.addAll(tRemoved);
+        }
+
+
+        private Pair<List<Redis>, List<Pair<Redis, Redis>>> sub(List<Redis> allRedis1, List<Redis> allRedis2) {
+
+            List<Redis> subResult = new LinkedList<>();
+            List<Pair<Redis, Redis>> intersectResult = new LinkedList<>();
+
+            for(Redis redis1 : allRedis1){
+
+                Redis redis2Equal = null;
+                for(Redis redis2 : allRedis2) {
+                    if (!MetaUtils.theSame(redis2, redis1)) {
+                        continue;
+                    }
+                    redis2Equal = redis2;
+                    break;
+                }
+                if(redis2Equal == null){
+                    subResult.add(redis1);
+                }else{
+                    intersectResult.add(new Pair<>(redis1, redis2Equal));
+                }
+            }
+            return new Pair<List<Redis>, List<Pair<Redis, Redis>>>(subResult, intersectResult);
+        }
+
+        private List<Redis> getAll(ShardMeta shardMeta) {
+
+            List<Redis> result = new LinkedList<>();
+            result.addAll(shardMeta.getRedises());
+            result.addAll(shardMeta.getKeepers());
+            return result;
+        }
+
+        @Override
+        public String idDesc() {
+            return current.getId();
         }
     }
 

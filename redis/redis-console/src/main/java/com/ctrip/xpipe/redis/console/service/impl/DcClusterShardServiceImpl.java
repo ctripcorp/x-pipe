@@ -64,7 +64,7 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 		return queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
 			@Override
 			public List<DcClusterShardTbl> doQuery() throws DalException {
-				return dao.findAllByDcId(dcId, DcClusterShardTblEntity.READSET_FULL_WITH_DC_CLUSTER);
+				return dao.findAllByDcId(dcId, DcClusterShardTblEntity.READSET_DC_CLUSTER_SHARD_META_INFO);
 			}
 		});
 	}

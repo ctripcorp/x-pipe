@@ -44,7 +44,7 @@ public class MetaServiceTest extends AbstractConsoleTest{
 	@Mock
 	private RedisMetaService mockedRedisMetaService;
 	@InjectMocks
-	private DcMetaServiceImpl mockedDcMetaService;
+	private AdvancedDcMetaService mockedDcMetaService;
 	@InjectMocks
 	private ClusterMetaServiceImpl clusterMetaService;
 	@InjectMocks
