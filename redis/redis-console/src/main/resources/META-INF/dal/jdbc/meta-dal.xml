@@ -152,6 +152,12 @@
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="organization-info"/>
 			</readset>
+			<readset name="CLUSTER_META_INFO">
+				<member name="id"/>
+				<member name="cluster-name"/>
+				<member name="status"/>
+				<member name="activedc-id"/>
+			</readset>
 		</readsets>
 		
 		<query-defs>
@@ -380,6 +386,10 @@
 			<readset name="MONITOR_NAME">
 				<member name="setinel-monitor-name"/>
 			</readset>
+			<readset name="NAME_AND_MONITOR_NAME">
+				<member name="shard-name"/>
+				<member name="setinel-monitor-name"/>
+			</readset>
 		</readsets>
 
 		<query-defs>
@@ -471,12 +481,14 @@
 		<relation name="redis-info" entity-name="redis-tbl" entity-alias="rt"/>
 
 		<readsets>
-			<readset name="FULL_WITH_DC_CLUSTER">
-				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="cluster-info"/>
-				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
-				<readset-ref name="FULL" relation-name="redis-info"/>
-				<readset-ref name="FULL" relation-name="shard-info"/>
+			<readset name="SENTINEL_ID">
+				<member name="setinel-id"/>
+			</readset>
+			<readset name="DC_CLUSTER_SHARD_META_INFO">
+				<readset-ref name="SENTINEL_ID"/>
+				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
+				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
+				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
 			</readset>
 		</readsets>
 
@@ -618,6 +630,16 @@
 			<readset name="IP-AND-PORT">
 				<member name='redis-ip'/>
 				<member name="redis-port"/>
+			</readset>
+			<readset name="REDIS_META_INFO">
+				<member name="redis-ip"/>
+				<member name="redis-port"/>
+				<member name="run-id"/>
+				<member name="redis-role"/>
+				<member name="keeper-active"/>
+				<member name="master"/>
+				<member name="redis-master"/>
+				<member name="keepercontainer-id"/>
 			</readset>
 		</readsets>
 
