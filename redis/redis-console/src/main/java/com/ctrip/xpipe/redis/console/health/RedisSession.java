@@ -1,7 +1,13 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
+import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeListener;
 import com.lambdaworks.redis.RedisChannelHandler;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnectionStateListener;
@@ -12,6 +18,8 @@ import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Resource;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -19,6 +27,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.REDIS_COMMAND_EXECUTOR;
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 
 /**
@@ -48,12 +59,23 @@ public class RedisSession {
 
     private Executor pingAndDelayExecutor;
 
+    @Resource
+    private XpipeNettyClientKeyedObjectPool keyedNettyClientPool;
+
+    @Resource(name=REDIS_COMMAND_EXECUTOR)
+    private ScheduledExecutorService scheduled;
+
+    private SimpleObjectPool<NettyClient> clientPool;
+
     public RedisSession(RedisClient redisClient, HostPort hostPort, Executor executors, Executor pingDelayExecutor) {
         this.redis = redisClient;
         redis.addListener(channelListener());
         this.hostPort = hostPort;
         this.executors = executors;
         this.pingAndDelayExecutor = pingDelayExecutor;
+
+        clientPool = keyedNettyClientPool.getKeyPool(new InetSocketAddress(hostPort.getHost(), hostPort.getPort()));
+
     }
 
     public void check() {
@@ -95,42 +117,47 @@ public class RedisSession {
 
         if (!subscribConns.containsKey(channel)) {
 
-            CompletableFuture<StatefulRedisPubSubConnection> pubSubFuture = CompletableFuture
-                    .supplyAsync(new Supplier<StatefulRedisPubSubConnection>() {
-                @Override
-                public StatefulRedisPubSubConnection get() {
-                    return redis.connectPubSub();
-                }
-            }, executors);
-            pubSubFuture.whenCompleteAsync((pubSub, th) -> {
-                if(th != null) {
-                    Throwable exception = th;
-                    while(exception instanceof CompletionException) {
-                        exception = exception.getCause();
-                    }
-                    callback.fail(exception);
-                    log.warn("Error subscribe to redis {}", hostPort);
-                } else {
-                    try {
-                        pubSub.async().subscribe(channel);
-                        PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(pubSub, callback);
+            SubscribeCommand command = new SubscribeCommand(hostPort.getHost(), hostPort.getPort(), scheduled, channel);
 
-                        pubSub.addListener(new RedisPubSubAdapter<String, String>() {
+            PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(command.execute(), callback);
 
-                            @Override
-                            public void message(String channel, String message) {
 
-                                wrapper.setLastActiveTime(System.currentTimeMillis());
-                                wrapper.getCallback().message(channel, message);
-                            }
-                        });
-                        subscribConns.put(channel, wrapper);
-                    } catch (RuntimeException e) {
-                        callback.fail(e);
-                        log.warn("Error subscribe to redis {}", hostPort);
-                    }
-                }
-            }, pingAndDelayExecutor);
+//            CompletableFuture<StatefulRedisPubSubConnection> pubSubFuture = CompletableFuture
+//                    .supplyAsync(new Supplier<StatefulRedisPubSubConnection>() {
+//                @Override
+//                public StatefulRedisPubSubConnection get() {
+//                    return redis.connectPubSub();
+//                }
+//            }, executors);
+//            pubSubFuture.whenCompleteAsync((pubSub, th) -> {
+//                if(th != null) {
+//                    Throwable exception = th;
+//                    while(exception instanceof CompletionException) {
+//                        exception = exception.getCause();
+//                    }
+//                    callback.fail(exception);
+//                    log.warn("Error subscribe to redis {}", hostPort);
+//                } else {
+//                    try {
+//                        pubSub.async().subscribe(channel);
+//                        PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(pubSub, callback);
+//
+//                        pubSub.addListener(new RedisPubSubAdapter<String, String>() {
+//
+//                            @Override
+//                            public void message(String channel, String message) {
+//
+//                                wrapper.setLastActiveTime(System.currentTimeMillis());
+//                                wrapper.getCallback().message(channel, message);
+//                            }
+//                        });
+//                        subscribConns.put(channel, wrapper);
+//                    } catch (RuntimeException e) {
+//                        callback.fail(e);
+//                        log.warn("Error subscribe to redis {}", hostPort);
+//                    }
+//                }
+//            }, pingAndDelayExecutor);
         }
     }
 
@@ -345,17 +372,22 @@ public class RedisSession {
 
     public class PubSubConnectionWrapper {
 
-        private StatefulRedisPubSubConnection<String, String> connection;
         private Long lastActiveTime = System.currentTimeMillis();
         private AtomicReference<SubscribeCallback> callback = new AtomicReference<>();
 
-        public PubSubConnectionWrapper(StatefulRedisPubSubConnection<String, String> connection, SubscribeCallback callback) {
-            this.connection = connection;
+        private AtomicReference<CommandFuture<Object>> subscribeCommandFuture = new AtomicReference<>();
+
+        public PubSubConnectionWrapper(CommandFuture<Object> commandFuture, SubscribeCallback callback) {
+            this.subscribeCommandFuture.set(commandFuture);
             this.callback.set(callback);
         }
 
-        public StatefulRedisPubSubConnection<String, String> getConnection() {
-            return connection;
+        public void closeAndClean() {
+            subscribeCommandFuture.get().cancel(true);
+        }
+
+        public CommandFuture<Object> getSubscribeCommandFuture() {
+            return subscribeCommandFuture.get();
         }
 
         public SubscribeCallback getCallback() {
@@ -372,10 +404,6 @@ public class RedisSession {
 
         public Long getLastActiveTime() {
             return lastActiveTime;
-        }
-
-        public void closeAndClean() {
-            connection.close();
         }
     }
 

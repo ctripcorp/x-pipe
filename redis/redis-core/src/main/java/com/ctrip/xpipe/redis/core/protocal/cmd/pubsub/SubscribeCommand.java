@@ -9,7 +9,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class SubscribeCommand extends AbstractSubscribe {
 
-    protected SubscribeCommand(String host, int port, ScheduledExecutorService scheduled, String channel) {
+    public SubscribeCommand(String host, int port, ScheduledExecutorService scheduled, String channel) {
         super(host, port, scheduled, channel, MESSAGE_TYPE.MESSAGE);
     }
 
