@@ -6,9 +6,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;
-import com.ctrip.xpipe.redis.console.alert.policy.SendToDBAAlertPolicy;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.junit.Assert;
@@ -18,8 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
 import java.util.List;
-
-import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.*;
 
 
 /**
@@ -57,7 +53,7 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
     @Test
     public void queryRecoverMinute() throws Exception {
         int minute = policyManager.queryRecoverMinute(alert);
-        int expect = alert.getAlertType().getRecoverTime();
+        int expect = alert.getAlertType().getCheckInterval();
         Assert.assertEquals(expect, minute);
     }
 
@@ -88,9 +84,9 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
         AlertEntity entity = new AlertEntity(null, null, null, null,
                 ALERT_TYPE.ALERT_SYSTEM_OFF.simpleDesc(), ALERT_TYPE.ALERT_SYSTEM_OFF);
         ALERT_TYPE type = entity.getAlertType();
-        logger.info("type.getAlertPolicy() & EMAIL_DBA: {}", type.getAlertPolicy() & EMAIL_DBA);
-        logger.info("type.getAlertPolicy() & EMAIL_XPIPE_ADMIN: {}", type.getAlertPolicy() & EMAIL_XPIPE_ADMIN);
-        logger.info("type.getAlertPolicy() & EMAIL_CLUSTER_ADMIN: {}", type.getAlertPolicy() & EMAIL_CLUSTER_ADMIN);
+        logger.info("type.getAlertMethod() & EMAIL_DBA: {}", type.getAlertMethod() & EMAIL_DBA);
+        logger.info("type.getAlertMethod() & EMAIL_XPIPE_ADMIN: {}", type.getAlertMethod() & EMAIL_XPIPE_ADMIN);
+        logger.info("type.getAlertMethod() & EMAIL_CLUSTER_ADMIN: {}", type.getAlertMethod() & EMAIL_CLUSTER_ADMIN);
 
         List<String> recievers = policyManager.queryRecepients(entity);
         logger.info("recievers: {}", recievers);

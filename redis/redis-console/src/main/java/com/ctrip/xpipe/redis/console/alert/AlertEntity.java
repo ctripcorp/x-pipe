@@ -34,7 +34,7 @@ public class AlertEntity {
         this.shardId = shardId;
         this.message = message;
         this.alertType = alertType;
-        this.date = new Date(System.currentTimeMillis());
+        this.date = new Date();
     }
 
     @Override
@@ -152,46 +152,4 @@ public class AlertEntity {
         message = message.replaceAll("\n", " ");
     }
 
-    public static class RedisAlertBuilder {
-        private String dc;
-        private HostPort hostPort;
-        private String clusterId;
-        private String shardId;
-        private String message;
-        private ALERT_TYPE alertType;
-
-        public RedisAlertBuilder dc(String dc) {
-            this.dc = dc;
-            return this;
-        }
-
-        public RedisAlertBuilder hostPort(HostPort hostPort) {
-            this.hostPort = hostPort;
-            return this;
-        }
-
-        public RedisAlertBuilder clusterId(String clusterId) {
-            this.clusterId = clusterId;
-            return this;
-        }
-
-        public RedisAlertBuilder shardId(String shardId) {
-            this.shardId = shardId;
-            return this;
-        }
-
-        public RedisAlertBuilder message(String message) {
-            this.message = message;
-            return this;
-        }
-
-        public RedisAlertBuilder alertType(ALERT_TYPE alertType) {
-            this.alertType = alertType;
-            return this;
-        }
-
-        public AlertEntity createRedisAlert() {
-            return new AlertEntity(this.hostPort, this.dc, this.clusterId, this.shardId, this.message, this.alertType);
-        }
-    }
 }

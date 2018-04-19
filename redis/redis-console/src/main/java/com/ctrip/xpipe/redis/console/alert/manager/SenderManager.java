@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
-import com.ctrip.xpipe.redis.console.alert.policy.SendToDBAAlertPolicy;
 import com.ctrip.xpipe.redis.console.alert.sender.Sender;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.tuple.Pair;
@@ -15,8 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-
-import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.*;
 
 /**
  * @author chen.zhu
@@ -86,14 +83,14 @@ public class SenderManager {
                 continue;
 
             logger.info("[email_dba] {}, {}, {}", alertEntities, alertEntities.isEmpty(), alertEntities.size());
-            if((type.getAlertPolicy() & EMAIL_DBA) != 0
+            if((type.getAlertMethod() & EMAIL_DBA) != 0
                     && shouldAlert(type)) {
                 sendToDBA.put(type, alertEntities);
             }
-            if((type.getAlertPolicy() & EMAIL_XPIPE_ADMIN) != 0) {
+            if((type.getAlertMethod() & EMAIL_XPIPE_ADMIN) != 0) {
                 sendToXPipeAdmin.put(type, alertEntities);
             }
-            if((type.getAlertPolicy() & EMAIL_CLUSTER_ADMIN) != 0
+            if((type.getAlertMethod() & EMAIL_CLUSTER_ADMIN) != 0
                     && shouldAlert(type)) {
                 sendToClusterAdmin.put(type, alertEntities);
             }

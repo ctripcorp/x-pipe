@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,10 +27,18 @@ public abstract class AbstractRedisConfMonitor<T extends BaseInstanceResult> ext
     @Autowired(required = false)
     private CrossDcClusterServer clusterServer;
 
+    @Autowired
+    private AlertPolicyManager alertPolicyManager;
+
     @PostConstruct
-    public void postUpdateLastPlanTime() {
+    public void postConstructRun() {
         lastPlanTime = INIT_TIME;
+        for(ALERT_TYPE type : alertTypes()) {
+            alertPolicyManager.markCheckInterval(type, ()->consoleConfig.getRedisConfCheckIntervalMilli());
+        }
     }
+
+    protected abstract List<ALERT_TYPE> alertTypes();
 
     @Override
     public Collection<BaseSamplePlan<T>> generatePlan(List<DcMeta> dcMetas) {

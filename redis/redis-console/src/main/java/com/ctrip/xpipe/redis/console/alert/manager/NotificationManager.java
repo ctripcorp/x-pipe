@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.sender.AbstractSender;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -50,6 +51,7 @@ public class NotificationManager {
 
     @Autowired
     private DecoratorManager decoratorManager;
+
 
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService schedule;
@@ -118,7 +120,7 @@ public class NotificationManager {
 
         String alertKey = alert.getKey();
         List<AlertChannel> channels = policyManager.queryChannels(alert);
-        int suspendMinute = policyManager.querySuspendMinute(alert);
+        long suspendMinute = policyManager.querySuspendMilli(alert);
 
         // Skip the existing alerts, and report them once upon time
         if(unrecoveredAlerts.containsKey(alertKey)) {
