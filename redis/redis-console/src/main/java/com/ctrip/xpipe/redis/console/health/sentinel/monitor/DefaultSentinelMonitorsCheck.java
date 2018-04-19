@@ -5,8 +5,11 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -40,5 +43,10 @@ public class DefaultSentinelMonitorsCheck extends AbstractSentinelMonitorsCheck 
                 alertManager.alert(null, null, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
             }
         }
+    }
+
+    @Override
+    protected List<ALERT_TYPE> alertTypes() {
+        return Lists.newArrayList(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS);
     }
 }
