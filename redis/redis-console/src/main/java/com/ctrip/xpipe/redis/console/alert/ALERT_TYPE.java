@@ -12,7 +12,7 @@ public enum ALERT_TYPE {
 
     CLIENT_INSTANCE_NOT_OK("client_status", EMAIL_DBA | EMAIL_XPIPE_ADMIN, true),
     QUORUM_DOWN_FAIL("quorum_fail", EMAIL_XPIPE_ADMIN, false),
-    SENTINEL_RESET("stl_rst", EMAIL_DBA | EMAIL_XPIPE_ADMIN, false),
+    SENTINEL_RESET("stl_rst", EMAIL_XPIPE_ADMIN, false),
     REDIS_CONF_REWRITE_FAILURE("redis_conf_rewrite_failure", EMAIL_DBA|EMAIL_XPIPE_ADMIN, false),
     CLIENT_INCONSIS("client_inconsis", EMAIL_DBA | EMAIL_XPIPE_ADMIN, true),
     MIGRATION_MANY_UNFINISHED("migra_unfinish", EMAIL_XPIPE_ADMIN, true),

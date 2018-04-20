@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.console.alert.sender.AbstractSender;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.springframework.stereotype.Component;
@@ -34,23 +35,28 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
             @Override
             protected void doRun() throws Exception {
 
-                Map<ALERT_TYPE, Set<AlertEntity>> alerts;
-                synchronized (this) {
-                    alerts = refresh();
-                }
-                if(alerts == null || alerts.isEmpty()) {
-                    return;
-                }
-
-                SequenceCommandChain chain = new SequenceCommandChain();
-
-                chain.add(new ScheduledCleanupExpiredAlertTask(alerts));
-                chain.add(new ScheduledSendRepeatAlertTask(alerts));
-
-                chain.execute(executors);
+                scheduledReport();
 
             }
         }, 1, consoleConfig().getAlertSystemSuspendMinute(), TimeUnit.MINUTES);
+    }
+
+    @VisibleForTesting
+    protected void scheduledReport() {
+        Map<ALERT_TYPE, Set<AlertEntity>> alerts;
+        synchronized (this) {
+            alerts = refresh();
+        }
+        if(alerts == null || alerts.isEmpty()) {
+            return;
+        }
+
+        SequenceCommandChain chain = new SequenceCommandChain();
+
+        chain.add(new ScheduledCleanupExpiredAlertTask(alerts));
+        chain.add(new ScheduledSendRepeatAlertTask(alerts));
+
+        chain.execute(executors);
     }
 
     @Override
@@ -74,7 +80,8 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
     private AlertMessageEntity getMessage(EmailReceiverModel receivers, Map<ALERT_TYPE, Set<AlertEntity>> alerts) {
 
         Pair<String, String> titleAndContent = decoratorManager().generateTitleAndContent(alerts);
-        AlertMessageEntity message = new AlertMessageEntity(titleAndContent.getKey(), titleAndContent.getValue(), receivers.getRecipients());
+        AlertMessageEntity message = new AlertMessageEntity(titleAndContent.getKey(), titleAndContent.getValue(),
+                receivers.getRecipients());
         message.addParam(AbstractSender.CC_ER, receivers.getCcers());
 
         return message;
@@ -91,10 +98,15 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
         @Override
         protected void doExecute() throws Exception {
             Map<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> map = alertPolicyManager().queryGroupedEmailReceivers(alerts);
+
             for(Map.Entry<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> mailGroup : map.entrySet()) {
+                if(mailGroup.getValue() == null || mailGroup.getValue().isEmpty()) {
+                    continue;
+                }
                 AlertMessageEntity message = getMessage(mailGroup.getKey(), mailGroup.getValue());
                 emailMessage(message);
             }
+            future().setSuccess();
         }
 
         @Override
@@ -124,6 +136,7 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
                 alertEntitySet.removeIf(alert -> alertRecovered(alert));
                 alerts.put(type, alertEntitySet);
             }
+            future().setSuccess();
         }
 
         @Override

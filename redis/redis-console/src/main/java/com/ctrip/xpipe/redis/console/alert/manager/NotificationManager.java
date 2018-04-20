@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.message.AlertEventBus;
 import com.ctrip.xpipe.redis.console.job.event.Subscriber;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,5 +52,8 @@ public class NotificationManager {
         eventBus.post(alert);
     }
 
-
+    @VisibleForTesting
+    protected List<Subscriber<AlertEntity>> subscribers() {
+        return subscribers;
+    }
 }

@@ -22,12 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Component
 public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscriber {
 
-    private Set<AlertEntity> sentOnce = Sets.newTreeSet(new Comparator<AlertEntity>() {
-        @Override
-        public int compare(AlertEntity o1, AlertEntity o2) {
-            return o1.getDate().compareTo(o2.getDate());
-        }
-    });
+    private Set<AlertEntity> sentOnce = Sets.newConcurrentHashSet();
 
     private Lock lock = new ReentrantLock();
 

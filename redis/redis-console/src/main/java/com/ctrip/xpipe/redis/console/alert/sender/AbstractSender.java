@@ -40,7 +40,6 @@ public abstract class AbstractSender implements Sender {
         }
         email.setRecipients(message.getReceivers());
         email.setBodyContent(message.getContent());
-        email.setEmailType(message.getType());
         return email;
     }
 }

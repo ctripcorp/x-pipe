@@ -28,8 +28,6 @@ import java.util.function.LongSupplier;
 @Component
 public class AlertPolicyManager {
 
-    private static final int DEFAULT_SUSPSEND_MINUTE = 5;
-
     @Autowired
     private ConsoleConfig consoleConfig;
 
@@ -49,7 +47,7 @@ public class AlertPolicyManager {
         emailReceiver = new DefaultEmailReceiver(consoleConfig, configService);
         groupEmailReceiver = new DefaultGroupEmailReceiver(consoleConfig, configService);
         channelSelector = new DefaultChannelSelector();
-        recoveryTimeController = new RecoveryTimeSlotControl();
+        recoveryTimeController = new RecoveryTimeSlotControl(consoleConfig);
     }
 
     public List<AlertChannel> queryChannels(AlertEntity alert) {
@@ -61,7 +59,7 @@ public class AlertPolicyManager {
     }
 
     public long querySuspendMilli(AlertEntity alert) {
-        return TimeUnit.MINUTES.toMillis(DEFAULT_SUSPSEND_MINUTE);
+        return TimeUnit.MINUTES.toMillis(consoleConfig.getAlertSystemSuspendMinute());
     }
 
     public EmailReceiverModel queryEmailReceivers(AlertEntity alert) {
