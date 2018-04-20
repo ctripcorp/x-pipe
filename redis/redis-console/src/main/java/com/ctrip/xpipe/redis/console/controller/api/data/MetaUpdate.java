@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -13,10 +15,8 @@ import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author wenchao.meng
