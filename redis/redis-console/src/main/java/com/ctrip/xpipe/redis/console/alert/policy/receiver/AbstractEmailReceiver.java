@@ -23,6 +23,10 @@ public abstract class AbstractEmailReceiver implements EmailReceiver {
         this.configService = configService;
     }
 
+    protected List<String> getDbaEmails() {
+        return EmailReceiverParam.DbaReceiver.getInstance(consoleConfig).param();
+    }
+
     protected List<String> getXPipeAdminEmails() {
         return EmailReceiverParam.XPipeAdminReceiver.getInstance(consoleConfig).param();
     }
