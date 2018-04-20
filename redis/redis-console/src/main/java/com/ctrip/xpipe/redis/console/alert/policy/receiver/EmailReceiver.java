@@ -2,9 +2,6 @@ package com.ctrip.xpipe.redis.console.alert.policy.receiver;
 
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;
-import com.ctrip.xpipe.tuple.Pair;
-
-import java.util.List;
 
 /**
  * @author chen.zhu
@@ -13,7 +10,7 @@ import java.util.List;
  */
 public interface EmailReceiver extends AlertPolicy {
 
-    Pair<List<String>, List<String>> receivers(AlertEntity alert);
+    EmailReceiverModel receivers(AlertEntity alert);
 
     int EMAIL_DBA = 1 << 0;
     int EMAIL_XPIPE_ADMIN = 1 << 1;
