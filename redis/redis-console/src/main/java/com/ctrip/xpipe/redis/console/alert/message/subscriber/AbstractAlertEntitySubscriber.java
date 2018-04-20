@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.alert.message;
+package com.ctrip.xpipe.redis.console.alert.message.subscriber;
 
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager;
 import com.ctrip.xpipe.redis.console.alert.manager.DecoratorManager;
 import com.ctrip.xpipe.redis.console.alert.manager.SenderManager;
+import com.ctrip.xpipe.redis.console.alert.message.AlertEntitySubscriber;
 import com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.console.alert.sender.AbstractSender;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;

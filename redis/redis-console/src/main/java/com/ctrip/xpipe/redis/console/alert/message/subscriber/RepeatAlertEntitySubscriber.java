@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.alert.message;
+package com.ctrip.xpipe.redis.console.alert.message.subscriber;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.SequenceCommandChain;

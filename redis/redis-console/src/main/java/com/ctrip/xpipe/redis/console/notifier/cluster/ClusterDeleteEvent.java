@@ -1,10 +1,7 @@
 package com.ctrip.xpipe.redis.console.notifier.cluster;
 
-import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.console.notifier.EventType;
-import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 /**

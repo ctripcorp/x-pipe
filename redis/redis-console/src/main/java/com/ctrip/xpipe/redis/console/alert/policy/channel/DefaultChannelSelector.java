@@ -6,9 +6,7 @@ import com.google.common.collect.Lists;
 
 import java.util.List;
 
-import static com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiver.EMAIL_CLUSTER_ADMIN;
-import static com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiver.EMAIL_DBA;
-import static com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiver.EMAIL_XPIPE_ADMIN;
+import static com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiver.*;
 
 /**
  * @author chen.zhu
