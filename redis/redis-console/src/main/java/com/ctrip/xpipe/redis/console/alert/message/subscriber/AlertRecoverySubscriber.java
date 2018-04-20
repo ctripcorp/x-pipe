@@ -4,6 +4,7 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.springframework.stereotype.Component;
 
@@ -31,16 +32,21 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
                     return;
                 }
 
-                RecoveredAlertCleaner cleaner = new RecoveredAlertCleaner();
-                cleaner.future().addListener(commandFuture -> {
-                    if(commandFuture.isSuccess()) {
-                        Set<AlertEntity> recovered = commandFuture.getNow();
-                        new ReportRecoveredAlertTask(recovered).execute(executors);
-                    }
-                });
-                cleaner.execute(executors);
+                reportRecovered();
             }
         }, 1, 1, TimeUnit.MINUTES);
+    }
+
+    @VisibleForTesting
+    protected void reportRecovered() {
+        RecoveredAlertCleaner cleaner = new RecoveredAlertCleaner();
+        cleaner.future().addListener(commandFuture -> {
+            if(commandFuture.isSuccess()) {
+                Set<AlertEntity> recovered = commandFuture.getNow();
+                new ReportRecoveredAlertTask(recovered).execute(executors);
+            }
+        });
+        cleaner.execute(executors);
     }
 
     @Override

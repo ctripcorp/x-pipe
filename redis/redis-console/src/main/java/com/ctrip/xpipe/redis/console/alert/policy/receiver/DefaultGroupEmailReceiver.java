@@ -40,21 +40,23 @@ public class DefaultGroupEmailReceiver extends AbstractEmailReceiver implements 
     }
 
     private Map<ALERT_TYPE, Set<AlertEntity>> xpipeAdminAsReceiverAlerts(Map<ALERT_TYPE, Set<AlertEntity>> alerts) {
-        return Maps.filterEntries(alerts, new Predicate<Map.Entry<ALERT_TYPE, Set<AlertEntity>>>() {
+        Map<ALERT_TYPE, Set<AlertEntity>> filteredMap = Maps.filterEntries(alerts, new Predicate<Map.Entry<ALERT_TYPE, Set<AlertEntity>>>() {
             @Override
             public boolean apply(Map.Entry<ALERT_TYPE, Set<AlertEntity>> input) {
                 return !dbaSensitive(input.getKey());
             }
         });
+        return Maps.newHashMap(filteredMap);
     }
 
     private Map<ALERT_TYPE, Set<AlertEntity>> dbaAsReceiverAlerts(Map<ALERT_TYPE, Set<AlertEntity>> alerts) {
-        return Maps.filterEntries(alerts, new Predicate<Map.Entry<ALERT_TYPE, Set<AlertEntity>>>() {
+        Map<ALERT_TYPE, Set<AlertEntity>> filteredMap =  Maps.filterEntries(alerts, new Predicate<Map.Entry<ALERT_TYPE, Set<AlertEntity>>>() {
             @Override
             public boolean apply(Map.Entry<ALERT_TYPE, Set<AlertEntity>> input) {
                 return dbaSensitive(input.getKey());
             }
         });
+        return Maps.newHashMap(filteredMap);
     }
 
     private boolean dbaSensitive(ALERT_TYPE type) {

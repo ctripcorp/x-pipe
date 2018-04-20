@@ -23,6 +23,10 @@ public class RecoveryTimeSlotControl implements TimeSlotControl {
 
     private Map<ALERT_TYPE, LongSupplier> checkIntervals = Maps.newHashMap();
 
+    public RecoveryTimeSlotControl(ConsoleConfig consoleConfig) {
+        this.consoleConfig = consoleConfig;
+    }
+
     @Override
     public long durationMilli(AlertEntity alert) {
         ALERT_TYPE type = alert.getAlertType();

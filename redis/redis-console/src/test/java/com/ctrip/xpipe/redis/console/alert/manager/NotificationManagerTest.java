@@ -5,6 +5,13 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
+import com.ctrip.xpipe.redis.console.alert.message.subscriber.AlertEntityImmediateSubscriber;
+import com.ctrip.xpipe.redis.console.alert.message.subscriber.AlertRecoverySubscriber;
+import com.ctrip.xpipe.redis.console.alert.message.subscriber.RepeatAlertEntitySubscriber;
+import com.ctrip.xpipe.redis.console.job.event.Subscriber;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.eventbus.Subscribe;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,6 +20,9 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
+
+import java.util.List;
+import java.util.Set;
 
 import static org.mockito.Mockito.when;
 
@@ -44,31 +54,13 @@ public class NotificationManagerTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    @DirtiesContext
-    public void isSuspend() throws Exception {
-        AlertEntity alert = new AlertEntity(hostPort, dcNames[0], cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
-        notificationManager.addAlert(cluster, dcNames[0], shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
-        Thread.sleep(1000);
-        Assert.assertTrue(notificationManager.isSuspend(alert.getKey(), 1000));
-    }
+    public void testSubscribers() {
+        List<Subscriber<AlertEntity>> subscribers = notificationManager.subscribers();
+        Set<Class> subscriberList = Sets.newHashSet(AlertEntityImmediateSubscriber.class,
+                AlertRecoverySubscriber.class, RepeatAlertEntitySubscriber.class);
 
-    @Test
-    @DirtiesContext
-    public void send() throws Exception {
-        AlertEntity alert = new AlertEntity(hostPort, dcNames[0], cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
-        Assert.assertTrue(notificationManager.send(alert));
-        notificationManager.addAlert(dcNames[0], cluster, shard, hostPort, ALERT_TYPE.CLIENT_INCONSIS, message);
-        Assert.assertFalse(notificationManager.send(alert));
-    }
-
-    @Test
-    @DirtiesContext
-    public void sendRecoveryMessage() throws Exception {
-        AlertEntity alert = new AlertEntity(hostPort, dcNames[0], cluster, shard, message, ALERT_TYPE.CLIENT_INCONSIS);
-        Assert.assertTrue(notificationManager.sendRecoveryMessage(alert));
-
-        alert = new AlertEntity(hostPort, dcNames[0], cluster, shard, message, ALERT_TYPE.MARK_INSTANCE_DOWN);
-        notificationManager.sendRecoveryMessage(alert);
+        Assert.assertEquals(subscriberList.size(), subscribers.size());
+        subscribers.forEach(subscriber -> Assert.assertTrue(subscriberList.contains(subscriber.getClass())));
     }
 
 }
