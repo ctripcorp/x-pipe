@@ -28,6 +28,7 @@ public class SingleThreadDispatcher implements Dispatcher<AlertEntity> {
             @Override
             protected void doExecute() throws Exception {
                 subscriber.processData(alertEntity);
+                future().setSuccess();
             }
 
             @Override
