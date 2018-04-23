@@ -28,7 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public abstract class AbstractAlertEntitySubscriber implements AlertEntitySubscriber {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractAlertEntitySubscriber.class);
+    protected static final Logger logger = LoggerFactory.getLogger(AbstractAlertEntitySubscriber.class);
 
     @Autowired
     private DecoratorManager decoratorManager;

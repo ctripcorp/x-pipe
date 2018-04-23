@@ -34,7 +34,7 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-
+                logger.debug("[scheduledTask]Stored alerts: {}", repeatAlerts);
                 scheduledReport();
 
             }
@@ -47,6 +47,7 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
         synchronized (this) {
             alerts = refresh();
         }
+        logger.debug("[scheduledReport]Keep receiving alerts: {}", alerts);
         if(alerts == null || alerts.isEmpty()) {
             return;
         }
