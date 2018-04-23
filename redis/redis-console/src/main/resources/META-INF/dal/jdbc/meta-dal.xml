@@ -1378,4 +1378,35 @@
 			</query>
 		</query-defs>
 	</entity>
+	<entity name="event-tbl" table="event_tbl" alias="et">
+
+		<var name="target-event-type" value-type="String"/>
+		<var name="target-date" value-type="Date"/>
+
+		<query-defs>
+			<query name="find-event-by-type" type="SELECT" multiple="true">
+				<param name="target-event-type"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name="event-type"/> = ${target-event-type}
+					]]>
+				</statement>
+			</query>
+			<query name="find-event-by-type-after-date" type="SELECT" multiple="true">
+				<param name="target-event-type"/>
+				<param name="target-date"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name="event-type"/> = ${target-event-type}
+					AND <FIELD name="data-change-last-time"/> >= ${target-date}
+					]]>
+				</statement>
+			</query>
+
+		</query-defs>
+	</entity>
 </entities>

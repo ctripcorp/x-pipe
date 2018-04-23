@@ -42,4 +42,12 @@ public class DateTimeUtils {
 		cal.add(Calendar.MINUTE, minute);
 		return cal.getTime();
 	}
+
+	public static Date getHoursBeforeDate(Date date, int hours) {
+		int minusHours = -Math.abs(hours);
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		cal.add(Calendar.HOUR_OF_DAY, minusHours);
+		return cal.getTime();
+	}
 }
