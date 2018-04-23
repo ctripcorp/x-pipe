@@ -28,6 +28,8 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
+
+                logger.debug("[scheduledRecoverAlertReport] unRecoveredAlerts: {}", unRecoveredAlerts);
                 if(unRecoveredAlerts.isEmpty()) {
                     return;
                 }
@@ -52,10 +54,12 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
     @Override
     protected void doProcessAlert(AlertEntity alert) {
         if(!alert.getAlertType().reportRecovery()) {
+            logger.debug("[doProcessAlert]Not interested: {}", alert);
             return;
         }
 
         while(!unRecoveredAlerts.add(alert)) {
+            logger.debug("[doProcessAlert]add alert: {}", alert);
             unRecoveredAlerts.remove(alert);
         }
     }

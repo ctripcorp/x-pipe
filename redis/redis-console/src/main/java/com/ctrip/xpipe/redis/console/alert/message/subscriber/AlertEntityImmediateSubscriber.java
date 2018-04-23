@@ -33,6 +33,7 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
             protected void doRun() throws Exception {
                 try {
                     lock.lock();
+                    logger.debug("[initCleaner]sent alerts: {}", sentOnce);
                     sentOnce.removeIf(alert -> alertRecovered(alert));
                 } finally {
                     lock.unlock();
@@ -46,11 +47,13 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
     protected void doProcessAlert(AlertEntity alert) {
 
         if(hasBeenSentOut(alert)) {
+            logger.debug("[doProcessAlert]Alert has been sent out once: {}", alert);
             return;
         }
 
         AlertMessageEntity message = getMessage(alert, true);
 
+        logger.info("Sending alert immediately: {}", alert);
         emailMessage(message);
 
     }
