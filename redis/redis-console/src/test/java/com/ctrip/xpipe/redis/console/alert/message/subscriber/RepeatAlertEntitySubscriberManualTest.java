@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
+import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +24,9 @@ public class RepeatAlertEntitySubscriberManualTest extends AbstractConsoleIntegr
 
     @Autowired
     private RepeatAlertEntitySubscriber subscriber;
+
+    @Autowired
+    private AlertPolicyManager policyManager;
 
     private AlertEntity alert;
 
@@ -56,5 +60,18 @@ public class RepeatAlertEntitySubscriberManualTest extends AbstractConsoleIntegr
     @Test
     public void doProcessAlert() {
         subscriber.processData(alert);
+    }
+
+
+    /**No emails should be sent out, as the alert has been expired*/
+    @Test
+    public void testNoEmptyEmailOut() throws InterruptedException {
+        alert.setAlertType(ALERT_TYPE.CLIENT_INSTANCE_NOT_OK);
+        policyManager.markCheckInterval(ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, ()->10);
+        subscriber.doProcessAlert(alert);
+        Thread.sleep(subscriber.recoveryMilli(alert) + 10);
+
+        subscriber.scheduledReport();
+        Thread.sleep(2000);
     }
 }
