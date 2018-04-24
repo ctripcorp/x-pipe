@@ -1,12 +1,19 @@
 package com.ctrip.xpipe.redis.console.health.redismaster;
 
 import com.ctrip.xpipe.api.server.Server;
-import com.ctrip.xpipe.redis.console.health.*;
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.health.AbstractRedisConfMonitor;
+import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
+import com.ctrip.xpipe.redis.console.health.RedisSession;
+import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * @author wenchao.meng
@@ -23,6 +30,11 @@ public class DefaultRedisMasterMonitor extends AbstractRedisConfMonitor<Instance
     @Override
     protected void notifyCollectors(Sample sample) {
         redisMasterCollector.collect(sample);
+    }
+
+    @Override
+    protected List<ALERT_TYPE> alertTypes() {
+        return Lists.newArrayList();
     }
 
     @Override

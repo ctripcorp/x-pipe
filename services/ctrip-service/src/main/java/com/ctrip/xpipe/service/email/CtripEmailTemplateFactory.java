@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.service.email;
 
-import com.ctrip.xpipe.api.email.EmailType;
-
 /**
  * @author chen.zhu
  * <p>
@@ -9,14 +7,7 @@ import com.ctrip.xpipe.api.email.EmailType;
  */
 public class CtripEmailTemplateFactory {
 
-    public static CtripEmailTemplate createCtripEmailTemplate(EmailType emailType) {
-        switch (emailType) {
-            case CONSOLE_ALERT: {
-                return new CtripAlertEmailTemplate();
-            }
-            default:
-                break;
-        }
-        return null;
+    public static CtripEmailTemplate createCtripEmailTemplate() {
+        return new CtripAlertEmailTemplate();
     }
 }

@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.notifier.cluster;
 
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.console.notifier.shard.AbstractShardEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;

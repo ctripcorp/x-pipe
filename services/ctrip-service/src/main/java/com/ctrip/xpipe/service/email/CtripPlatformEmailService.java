@@ -95,8 +95,7 @@ public class CtripPlatformEmailService implements EmailService {
 
     private static SendEmailRequest createSendEmailRequest(Email email) {
 
-        CtripEmailTemplate ctripEmailTemplate = CtripEmailTemplateFactory
-                .createCtripEmailTemplate(email.getEmailType());
+        CtripEmailTemplate ctripEmailTemplate = CtripEmailTemplateFactory.createCtripEmailTemplate();
         ctripEmailTemplate.decorateBodyContent(email);
 
         SendEmailRequest request = new SendEmailRequest();

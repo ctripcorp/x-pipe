@@ -6,20 +6,23 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;
-import com.ctrip.xpipe.redis.console.alert.policy.SendToDBAAlertPolicy;
+import com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiverModel;
+import com.ctrip.xpipe.redis.console.alert.policy.timing.NaiveRecoveryTimeAlgorithm;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
+import org.unidal.dal.jdbc.DalException;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager.*;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -41,9 +44,10 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
     private ConsoleConfig consoleConfig;
 
     @Before
-    public void beforeAlertPolicyManagerTest() {
+    public void beforeAlertPolicyManagerTest() throws DalException {
         alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
                 "clusterId", "shardId", "test message", ALERT_TYPE.XREDIS_VERSION_NOT_VALID);
+        configService.startAlertSystem(new ConfigModel());
     }
 
     @Test
@@ -56,60 +60,158 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void queryRecoverMinute() throws Exception {
-        int minute = policyManager.queryRecoverMinute(alert);
-        int expect = alert.getAlertType().getRecoverTime();
-        Assert.assertEquals(expect, minute);
+        alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
+                "clusterId", "shardId", "test message", ALERT_TYPE.QUORUM_DOWN_FAIL);
+        long milli = policyManager.queryRecoverMilli(alert);
+        long expect = TimeUnit.MINUTES.toMillis(consoleConfig.getAlertSystemRecoverMinute());
+        Assert.assertEquals(expect, milli);
+
+        alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
+                "clusterId", "shardId", "test message", ALERT_TYPE.CLIENT_INCONSIS);
+        milli = policyManager.queryRecoverMilli(alert);
+        expect = consoleConfig.getRedisConfCheckIntervalMilli();
+        Assert.assertEquals(expect, milli);
     }
 
     @Test
     public void querySuspendMinute() throws Exception {
-        int minute = policyManager.querySuspendMinute(alert);
-        int expect = 30;
+        long minute = policyManager.querySuspendMilli(alert);
+        long expect = TimeUnit.MINUTES.toMillis(consoleConfig.getAlertSystemSuspendMinute());
         Assert.assertEquals(expect, minute);
     }
 
     @Test
     public void queryRecepients() throws Exception {
-        AlertPolicy policy = policyManager.alertPolicyMap.get(SendToDBAAlertPolicy.ID);
-        List<String> expected = policy.queryRecipients(new AlertEntity(null, null, null, null, null, ALERT_TYPE.MARK_INSTANCE_UP));
-        logger.info("[testQueryRecepients] emails: {}", expected);
-        Assert.assertEquals(expected, policyManager.queryRecepients(alert));
+        alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
+                "clusterId", "shardId", "test message", ALERT_TYPE.QUORUM_DOWN_FAIL);
+        EmailReceiverModel receivers = policyManager.queryEmailReceivers(alert);
+        EmailReceiverModel expect = new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null);
+        Assert.assertEquals(expect, receivers);
+
+        configService.stopAlertSystem(new ConfigModel(), 1);
+        alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
+                "clusterId", "shardId", "test message", ALERT_TYPE.MARK_INSTANCE_UP);
+        EmailReceiverModel receivers2 = policyManager.queryEmailReceivers(alert);
+        EmailReceiverModel expect2 = new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null);
+        Assert.assertEquals(expect2, receivers2);
+
+        configService.stopAlertSystem(new ConfigModel(), 1);
+        alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
+                "clusterId", "shardId", "test message", ALERT_TYPE.CLIENT_INCONSIS);
+        EmailReceiverModel receivers3 = policyManager.queryEmailReceivers(alert);
+        EmailReceiverModel expect3 = new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null);
+        Assert.assertEquals(expect3, receivers3);
+
+        configService.stopAlertSystem(new ConfigModel(), 1);
+        alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
+                "clusterId", "shardId", "test message", ALERT_TYPE.ALERT_SYSTEM_OFF);
+        EmailReceiverModel receivers4 = policyManager.queryEmailReceivers(alert);
+        List<String> expectedReceivers = Lists.newArrayList(consoleConfig.getDBAEmails(), consoleConfig.getXPipeAdminEmails());
+        EmailReceiverModel expect4 = new EmailReceiverModel(expectedReceivers, null);
+        Collections.sort(expect4.getRecipients());
+        Collections.sort(receivers4.getRecipients());
+        Assert.assertEquals(expect4, receivers4);
     }
 
-    @Test
-    public void queryCCers() throws Exception {
-        AlertPolicy policy = policyManager.alertPolicyMap.get(SendToDBAAlertPolicy.ID);
-        List<String> expected = policy.queryCCers();
-        Assert.assertEquals(expected, policyManager.queryCCers(alert));
-    }
 
-    @Test
-    public void testQueryRecepients() throws Exception {
-        AlertEntity entity = new AlertEntity(null, null, null, null,
-                ALERT_TYPE.ALERT_SYSTEM_OFF.simpleDesc(), ALERT_TYPE.ALERT_SYSTEM_OFF);
-        ALERT_TYPE type = entity.getAlertType();
-        logger.info("type.getAlertPolicy() & EMAIL_DBA: {}", type.getAlertPolicy() & EMAIL_DBA);
-        logger.info("type.getAlertPolicy() & EMAIL_XPIPE_ADMIN: {}", type.getAlertPolicy() & EMAIL_XPIPE_ADMIN);
-        logger.info("type.getAlertPolicy() & EMAIL_CLUSTER_ADMIN: {}", type.getAlertPolicy() & EMAIL_CLUSTER_ADMIN);
-
-        List<String> recievers = policyManager.queryRecepients(entity);
-        logger.info("recievers: {}", recievers);
-        StringBuffer sb = new StringBuffer();
-        for(String emailAdr : recievers) {
-            sb.append(emailAdr).append(",");
-        }
-        sb.deleteCharAt(sb.length() - 1);
-
-        Assert.assertEquals(sb.toString(), consoleConfig.getDBAEmails()+","+consoleConfig.getXPipeAdminEmails());
-    }
 
     @Test
     public void testEmptyQueryRecipients() throws Exception {
         configService.stopAlertSystem(new ConfigModel(), 1);
         alert.setAlertType(ALERT_TYPE.MARK_INSTANCE_UP);
-        List<String> result = policyManager.queryRecepients(alert);
+        EmailReceiverModel result = policyManager.queryEmailReceivers(alert);
         logger.info("[recipients] {}", result);
-        Assert.assertFalse(result.isEmpty());
+        Assert.assertFalse(result.getRecipients().isEmpty());
+
+        alert.setAlertType(ALERT_TYPE.ALERT_SYSTEM_OFF);
+        result = policyManager.queryEmailReceivers(alert);
+        logger.info("[recipients] {}", result);
+        Assert.assertFalse(result.getRecipients().isEmpty());
+
+        alert.setAlertType(ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS);
+        result = policyManager.queryEmailReceivers(alert);
+        logger.info("[recipients] {}", result);
+        Assert.assertFalse(result.getRecipients().isEmpty());
+
+        alert.setAlertType(ALERT_TYPE.CLIENT_INCONSIS);
+        result = policyManager.queryEmailReceivers(alert);
+        logger.info("[recipients] {}", result);
+        Assert.assertFalse(result.getRecipients().isEmpty());
+    }
+
+
+    @Test
+    public void testMarkCheckInterval() throws Exception {
+        int checkInterval = randomInt();
+        policyManager.markCheckInterval(ALERT_TYPE.MARK_INSTANCE_UP, ()->checkInterval);
+        alert.setAlertType(ALERT_TYPE.MARK_INSTANCE_UP);
+        Assert.assertEquals(new NaiveRecoveryTimeAlgorithm().calculate(checkInterval), policyManager.queryRecoverMilli(alert));
+    }
+
+    @Test
+    public void testQueryGroupedEmailReceivers() throws Exception {
+        HostPort hostPort = new HostPort("192.168.1.10", 6379);
+        Map<ALERT_TYPE, Set<AlertEntity>> alerts = new HashMap<>();
+        alerts.put(ALERT_TYPE.CLIENT_INCONSIS,
+                Collections.singleton(
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.CLIENT_INCONSIS
+                        )));
+        alerts.put(ALERT_TYPE.XREDIS_VERSION_NOT_VALID,
+                Collections.singleton(
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.XREDIS_VERSION_NOT_VALID
+                        )));
+        alerts.put(ALERT_TYPE.QUORUM_DOWN_FAIL,
+                Collections.singleton(
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.QUORUM_DOWN_FAIL
+                        )));
+        alerts.put(ALERT_TYPE.SENTINEL_RESET,
+                Collections.singleton(
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.SENTINEL_RESET
+                        )));
+        alerts.put(ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE,
+                Collections.singleton(
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE
+                        )));
+        alerts.put(ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR,
+                Collections.singleton(
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR
+                        )));
+        alerts.put(ALERT_TYPE.MIGRATION_MANY_UNFINISHED,
+                Collections.singleton(
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.MIGRATION_MANY_UNFINISHED
+                        )));
+
+        Map<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> expect = Maps.newHashMap();
+
+        Map<ALERT_TYPE, Set<AlertEntity>> dbaMap = Maps.newHashMap();
+        dbaMap.put(ALERT_TYPE.CLIENT_INCONSIS, alerts.get(ALERT_TYPE.CLIENT_INCONSIS));
+        dbaMap.put(ALERT_TYPE.XREDIS_VERSION_NOT_VALID, alerts.get(ALERT_TYPE.XREDIS_VERSION_NOT_VALID));
+        dbaMap.put(ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE, alerts.get(ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE));
+        dbaMap.put(ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR, alerts.get(ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR));
+
+        Map<ALERT_TYPE, Set<AlertEntity>> xpipeAdminMap = Maps.newHashMap();
+        xpipeAdminMap.put(ALERT_TYPE.QUORUM_DOWN_FAIL, alerts.get(ALERT_TYPE.QUORUM_DOWN_FAIL));
+        xpipeAdminMap.put(ALERT_TYPE.SENTINEL_RESET, alerts.get(ALERT_TYPE.SENTINEL_RESET));
+        xpipeAdminMap.put(ALERT_TYPE.MIGRATION_MANY_UNFINISHED, alerts.get(ALERT_TYPE.MIGRATION_MANY_UNFINISHED));
+
+        expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getDBAEmails()),
+                Lists.newArrayList(consoleConfig.getXPipeAdminEmails())), dbaMap);
+
+        expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null), xpipeAdminMap);
+
+        Assert.assertEquals(expect, policyManager.queryGroupedEmailReceivers(alerts));
+
+        configService.stopAlertSystem(new ConfigModel(), 1);
+
+        expect.clear();
+        expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null), alerts);
+        Assert.assertEquals(expect, policyManager.queryGroupedEmailReceivers(alerts));
+
+    }
+
+    @After
+    public void afterAlertPolicyManagerTest() throws DalException {
+        configService.startAlertSystem(new ConfigModel());
     }
 
 }
