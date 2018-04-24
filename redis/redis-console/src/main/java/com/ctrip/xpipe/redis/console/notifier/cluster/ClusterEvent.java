@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.console.notifier.EventType;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 
-import java.util.Collection;
 import java.util.List;
 
 /**

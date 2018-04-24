@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 import com.ctrip.xpipe.utils.ServicesUtil;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -55,6 +56,11 @@ public class ClientConfigMonitor extends AbstractIntervalCheck {
                 logger.info("[doCheck]" + cluster, e);
             }
         }
+    }
+
+    @Override
+    protected List<ALERT_TYPE> alertTypes() {
+        return Lists.newArrayList(ALERT_TYPE.CLIENT_INCONSIS, ALERT_TYPE.CLIENT_INSTANCE_NOT_OK);
     }
 
     private void checkCluster(String clusterName, XpipeMeta xpipeMeta) throws Exception {

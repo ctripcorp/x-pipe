@@ -22,6 +22,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 import java.util.concurrent.ExecutionException;
+
 import java.util.concurrent.ExecutorService;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;

@@ -39,7 +39,7 @@ public class AsyncEmailSenderTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testSend() throws Exception {
-        sender.send(new AlertMessageEntity("Test", EmailType.CONSOLE_ALERT, "test", Lists.newArrayList("test-list")));
+        sender.send(new AlertMessageEntity("Test", "test", Lists.newArrayList("test-list")));
     }
 
     @Test

@@ -6,7 +6,8 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author chen.zhu
