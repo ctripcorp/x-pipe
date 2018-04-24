@@ -18,6 +18,7 @@ import javax.annotation.PostConstruct;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 
 /**
  * @author chen.zhu
@@ -134,9 +135,14 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
         @Override
         protected void doExecute() throws Exception {
             for(ALERT_TYPE type : alerts.keySet()) {
-                Set<AlertEntity> alertEntitySet = alerts.get(type);
+                Set<AlertEntity> alertEntitySet = alerts.remove(type);
+                if(alertEntitySet == null) {
+                    continue;
+                }
                 alertEntitySet.removeIf(alert -> alertRecovered(alert));
-                alerts.put(type, alertEntitySet);
+                if(!alertEntitySet.isEmpty()) {
+                    alerts.put(type, alertEntitySet);
+                }
             }
             future().setSuccess();
         }
