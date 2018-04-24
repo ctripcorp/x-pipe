@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.email.Email;
+import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
@@ -17,6 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.*;
 
 /**
@@ -67,24 +71,25 @@ public class CtripPlatformEmailService implements EmailService {
     }
 
     @Override
-    public CommandFuture<Void> sendEmailAsync(Email email) {
+    public CommandFuture<EmailResponse> sendEmailAsync(Email email) {
         return sendEmailAsync(email, MoreExecutors.directExecutor());
     }
 
     @Override
-    public CommandFuture<Void> sendEmailAsync(Email email, Executor executor) {
+    public CommandFuture<EmailResponse> sendEmailAsync(Email email, Executor executor) {
         return new AsyncSendEmailCommand(email).execute(executor);
     }
 
-    private static void checkSentResult(SendEmailResponse response) throws Exception {
-
-        GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
-                new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, response.getEmailIDList()));
-
-        if(emailStatusResponse.getResultCode() != 1) {
-            throw new XpipeRuntimeException(emailStatusResponse.getResultMsg());
+    @Override
+    public boolean checkAsyncEmailResult(EmailResponse response) {
+        try {
+            GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
+                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, Collections.singletonList(response.getProperties().getProperty("check"))));
+            return emailStatusResponse.getResultCode() == 1;
+        }catch (Exception e) {
+            logger.error("check email send response error: {}", e);
         }
-
+        return false;
     }
 
 
@@ -115,7 +120,23 @@ public class CtripPlatformEmailService implements EmailService {
     }
 
 
-    static class AsyncSendEmailCommand extends AbstractCommand<Void> {
+    static class CtripEmailResponse implements EmailResponse {
+
+        private SendEmailResponse response;
+
+        public CtripEmailResponse(SendEmailResponse response) {
+            this.response = response;
+        }
+
+        @Override
+        public Properties getProperties() {
+            Properties properties = new Properties();
+            properties.put("check", response.getEmailIDList());
+            return properties;
+        }
+    }
+
+    static class AsyncSendEmailCommand extends AbstractCommand<EmailResponse> {
 
         private Email email;
 
@@ -139,20 +160,7 @@ public class CtripPlatformEmailService implements EmailService {
                     return;
                 }
 
-                // Retry 5 time, 2 sec for each, waiting for email sent result
-                RetryCommandFactory factory = DefaultRetryCommandFactory.retryNTimes(scheduled, 3, (int) TimeUnit.MINUTES.toMillis(1));
-                Command<Void> retryCommand = factory.createRetryCommand(new AsyncCheckEmailCommand(response));
-                CommandFuture<Void> future = retryCommand.execute();
-                future.addListener(commandFuture -> {
-                    if(commandFuture.isSuccess()) {
-                        future().setSuccess();
-                    } else {
-                        logger.error("[EmailCheckCommandListener] success: {}, cause: {}, email id list: {}",
-                                commandFuture.isSuccess(), commandFuture.cause(), response.getEmailIDList());
-
-                        future().setFailure(commandFuture.cause());
-                    }
-                });
+                future().setSuccess(new CtripEmailResponse(response));
             } catch (Exception e) {
                 future().setFailure(e);
             }
@@ -166,36 +174,6 @@ public class CtripPlatformEmailService implements EmailService {
         @VisibleForTesting
         public static void setClient(EmailServiceClient c) {
             client = c;
-        }
-    }
-
-    static class AsyncCheckEmailCommand extends AbstractCommand<Void> {
-
-        private SendEmailResponse response;
-
-        public AsyncCheckEmailCommand(SendEmailResponse response) {
-            this.response = response;
-        }
-
-
-        @Override
-        protected void doExecute() throws Exception {
-            try {
-                checkSentResult(response);
-                future().setSuccess();
-            } catch (Exception e) {
-                future().setFailure(e);
-            }
-        }
-
-        @Override
-        protected void doReset() {
-
-        }
-
-        @Override
-        public String getName() {
-            return "check-email-send";
         }
     }
 

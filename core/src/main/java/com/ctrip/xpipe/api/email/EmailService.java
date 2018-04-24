@@ -18,7 +18,9 @@ public interface EmailService extends Ordered {
 
     void sendEmail(Email email);
 
-    CommandFuture<Void> sendEmailAsync(Email email);
+    CommandFuture<EmailResponse> sendEmailAsync(Email email);
 
-    CommandFuture<Void> sendEmailAsync(Email email, Executor executor);
+    CommandFuture<EmailResponse> sendEmailAsync(Email email, Executor executor);
+
+    boolean checkAsyncEmailResult(EmailResponse response);
 }
