@@ -47,7 +47,10 @@ public class EmailSentCounter extends AbstractEmailSenderCallback {
 
     @PostConstruct
     public void scheduledCheckSentEmails() {
-
+        if(clusterServer != null && !clusterServer.amILeader()){
+            logger.debug("[scheduledCheckSentEmails][not leader quit]");
+            return;
+        }
         ScheduledExecutorService scheduled = MoreExecutors.getExitingScheduledExecutorService(
                 new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create(getClass().getSimpleName() + "-")),
                 THREAD_POOL_TIME_OUT, TimeUnit.SECONDS
@@ -83,14 +86,13 @@ public class EmailSentCounter extends AbstractEmailSenderCallback {
         successCount = successAndFail.getKey();
         failCount = successAndFail.getValue();
 
-        String localIP = FoundationService.DEFAULT.getLocalIp();
         logger.info("[scheduledTask] scheduled report, total email count: {}", totalCount);
         EventMonitor.DEFAULT.logEvent(EMAIL_SERVICE_CAT_TYPE,
-                String.format("total sent out - %s", localIP), totalCount);
+                "total sent out - %s", totalCount);
         EventMonitor.DEFAULT.logEvent(EMAIL_SERVICE_CAT_TYPE,
-                String.format("success sent out - %s", localIP), successCount);
+                "success sent out - %s", successCount);
         EventMonitor.DEFAULT.logEvent(EMAIL_SERVICE_CAT_TYPE,
-                String.format("fail sent out - %s", localIP), failCount);
+                "fail sent out - %s", failCount);
     }
 
     @VisibleForTesting

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.delay;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.health.ping.PingService;
@@ -21,7 +22,7 @@ import java.util.Map.Entry;
 @Lazy
 public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> implements DelayMonitor {
 
-	public static final String CHECK_CHANNEL = "xpipe-health-check";
+	public static final String CHECK_CHANNEL = "xpipe-health-check-" + FoundationService.DEFAULT.getLocalIp();
 
 	public static final long SAMPLE_LOST_AND_NO_PONG = -99999L * 1000 * 1000;
 
