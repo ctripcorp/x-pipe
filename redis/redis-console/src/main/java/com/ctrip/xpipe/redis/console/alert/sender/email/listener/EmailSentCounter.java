@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.alert.sender.email.listener;
 
+import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.api.foundation.FoundationService;
@@ -41,8 +42,12 @@ public class EmailSentCounter extends AbstractEmailSenderCallback {
     @Autowired
     private AlertEventService alertEventService;
 
+    @Autowired(required = false)
+    private CrossDcClusterServer clusterServer;
+
     @PostConstruct
     public void scheduledCheckSentEmails() {
+
         ScheduledExecutorService scheduled = MoreExecutors.getExitingScheduledExecutorService(
                 new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create(getClass().getSimpleName() + "-")),
                 THREAD_POOL_TIME_OUT, TimeUnit.SECONDS
