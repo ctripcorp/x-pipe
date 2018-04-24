@@ -126,7 +126,6 @@ public class AsyncSendEmailCommandTest extends AbstractTest {
         String text = IOUtils.toString(ins);
         Email email = new Email();
         email.setBodyContent(text);
-        email.setEmailType(EmailType.CONSOLE_ALERT);
         email.addRecipient("zhuchen@ctrip.com");
         email.setSender("xpipe@test.com");
         email.setSubject("XPipe Subject");

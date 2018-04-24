@@ -11,16 +11,15 @@ import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
 import com.ctrip.xpipe.retry.RetryNTimes;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -81,10 +80,15 @@ public class CtripPlatformEmailService implements EmailService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean checkAsyncEmailResult(EmailResponse response) {
         try {
+            String emailIDListStr = (String) response.getProperties().get(EmailResponse.KEYS.CHECK_INFO.name());
+            List<String> emailIDList = decodeListString(emailIDListStr);
             GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
-                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, Collections.singletonList(response.getProperties().getProperty("check"))));
+                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList));
+
+            logger.info("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
             return emailStatusResponse.getResultCode() == 1;
         }catch (Exception e) {
             logger.error("check email send response error: {}", e);
@@ -121,16 +125,14 @@ public class CtripPlatformEmailService implements EmailService {
 
     static class CtripEmailResponse implements EmailResponse {
 
-        private SendEmailResponse response;
+        private Properties properties = new Properties();
 
         public CtripEmailResponse(SendEmailResponse response) {
-            this.response = response;
+            properties.put(KEYS.CHECK_INFO.name(), encodeListString(response.getEmailIDList()));
         }
 
         @Override
         public Properties getProperties() {
-            Properties properties = new Properties();
-            properties.put("check", response.getEmailIDList());
             return properties;
         }
     }
@@ -176,7 +178,21 @@ public class CtripPlatformEmailService implements EmailService {
         }
     }
 
+    @VisibleForTesting
+    protected static String encodeListString(List<String> strs) {
+        StringBuffer sb = new StringBuffer();
+        for(String str : strs) {
+            sb.append(str).append(",");
+        }
+        sb.deleteCharAt(sb.length() - 1);
+        return sb.toString();
+    }
 
+    @VisibleForTesting
+    protected static List<String> decodeListString(String str) {
+        String[] strs = StringUtil.splitRemoveEmpty("\\s*,\\s*", str);
+        return Arrays.asList(strs);
+    }
 
     @Override
     public int getOrder() {

@@ -57,6 +57,12 @@ public class DateTimeUtilsTest extends AbstractTest {
     }
 
     @Test
+    public void testGetNearestHour() throws Exception {
+        Date date = DateTimeUtils.getNearestHour();
+        logger.info("{}", date);
+    }
+
+    @Test
     public void testFormat() {
 
         logger.info(DateTimeUtils.timeAsString(0));
