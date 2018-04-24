@@ -27,7 +27,9 @@ public class SingleThreadDispatcher implements Dispatcher<AlertEntity> {
         keyedOneThreadTaskExecutor.execute(alertEntity.getAlertType(), new AbstractCommand<Void>() {
             @Override
             protected void doExecute() throws Exception {
+                logger.debug("[dispatch]Subscriber: {}, alert: {}", subscriber, alertEntity);
                 subscriber.processData(alertEntity);
+                logger.debug("[dispatch]finished");
                 future().setSuccess();
             }
 

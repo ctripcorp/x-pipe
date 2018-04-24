@@ -104,6 +104,7 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
                 if(mailGroup.getValue() == null || mailGroup.getValue().isEmpty()) {
                     continue;
                 }
+                logger.info("[ScheduledSendRepeatAlertTask] Mail out: {}", mailGroup.getValue());
                 AlertMessageEntity message = getMessage(mailGroup.getKey(), mailGroup.getValue());
                 emailMessage(message);
             }
