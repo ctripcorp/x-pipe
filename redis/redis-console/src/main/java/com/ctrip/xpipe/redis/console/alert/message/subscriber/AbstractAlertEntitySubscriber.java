@@ -70,7 +70,9 @@ public abstract class AbstractAlertEntitySubscriber implements AlertEntitySubscr
         Pair<String, String> titleAndContent = decoratorManager.generateTitleAndContent(alert, isAlertMessage);
 
         EmailReceiverModel receivers = alertPolicyManager.queryEmailReceivers(alert);
-        AlertMessageEntity message = new AlertMessageEntity(titleAndContent.getKey(), titleAndContent.getValue(), receivers.getRecipients());
+        AlertMessageEntity message = new AlertMessageEntity(titleAndContent.getKey(), titleAndContent.getValue(),
+                receivers.getRecipients(), alert);
+
         message.addParam(AbstractSender.CC_ER, receivers.getCcers());
 
         return message;

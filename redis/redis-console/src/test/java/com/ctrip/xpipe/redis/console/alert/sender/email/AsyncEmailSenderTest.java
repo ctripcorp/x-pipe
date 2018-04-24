@@ -44,8 +44,7 @@ public class AsyncEmailSenderTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testCreateEventModel() {
-        AlertMessageEntity message = new AlertMessageEntity("Test",
-                EmailType.CONSOLE_ALERT, "test", Lists.newArrayList("test-list"));
+        AlertMessageEntity message = new AlertMessageEntity("Test", "test", Lists.newArrayList("test-list"));
         message.setAlert(new AlertEntity(new HostPort("192.168.0.1", 1234), dcNames[0], "clusterId", "shardId",
                 "message", ALERT_TYPE.CLIENT_INSTANCE_NOT_OK));
 
