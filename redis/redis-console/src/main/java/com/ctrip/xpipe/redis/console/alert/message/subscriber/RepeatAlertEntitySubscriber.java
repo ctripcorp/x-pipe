@@ -10,11 +10,13 @@ import com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.console.alert.sender.AbstractSender;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +31,9 @@ import java.util.function.BiFunction;
 public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
 
     private Map<ALERT_TYPE, Set<AlertEntity>> repeatAlerts = Maps.newConcurrentMap();
+
+    private List<ALERT_TYPE> ignoredAlertType = Lists.newArrayList(
+            ALERT_TYPE.ALERT_SYSTEM_OFF, ALERT_TYPE.SENTINEL_AUTO_PROCESS_OFF);
 
     @PostConstruct
     public void scheduledTask() {
@@ -63,6 +68,9 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
 
     @Override
     protected void doProcessAlert(AlertEntity alert) {
+        if(ignoreAlert(alert)) {
+            return;
+        }
         synchronized (this) {
             repeatAlerts.putIfAbsent(alert.getAlertType(), Sets.newConcurrentHashSet());
         }
@@ -87,6 +95,10 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
         message.addParam(AbstractSender.CC_ER, receivers.getCcers());
 
         return message;
+    }
+
+    private boolean ignoreAlert(AlertEntity alert) {
+        return ignoredAlertType.contains(alert.getAlertType());
     }
 
     class ScheduledSendRepeatAlertTask extends AbstractCommand<Void> {
