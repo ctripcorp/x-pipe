@@ -47,10 +47,6 @@ public class EmailSentCounter extends AbstractEmailSenderCallback {
 
     @PostConstruct
     public void scheduledCheckSentEmails() {
-        if(clusterServer != null && !clusterServer.amILeader()){
-            logger.info("[scheduledCheckSentEmails][not leader quit]");
-            return;
-        }
         logger.info("[scheduledCheckSentEmails] [post construct] begin");
         ScheduledExecutorService scheduled = MoreExecutors.getExitingScheduledExecutorService(
                 new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create(getClass().getSimpleName() + "-")),
@@ -66,6 +62,10 @@ public class EmailSentCounter extends AbstractEmailSenderCallback {
         scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
+                if(clusterServer != null && !clusterServer.amILeader()) {
+                    logger.info("[scheduledCheckSentEmails][not leader quit]");
+                    return;
+                }
                 scheduledTask();
             }
         }, startTime, 60, TimeUnit.MINUTES);
