@@ -26,7 +26,7 @@ public class DefaultGroupEmailReceiver extends AbstractEmailReceiver implements 
         Map<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> result = Maps.newHashMap();
         if(!isAlertSystemOn()) {
             EmailReceiverModel receivers = new EmailReceiverModel(getXPipeAdminEmails(), null);
-            result.put(receivers, alerts);
+            result.put(receivers, Maps.newHashMap(alerts));
             return result;
         }
 
