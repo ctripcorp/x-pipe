@@ -21,6 +21,8 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 	
 	public static String SET_STATE = "setstate";
 
+	public static String PROXY = "proxy";
+
 	
 	public AbstractKeeperCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);

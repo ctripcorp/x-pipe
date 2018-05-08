@@ -17,6 +17,17 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
 
     private long keepercontainerOrgId;
 
+    private boolean active;
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public KeeperContainerCreateInfo setActive(boolean active) {
+        this.active = active;
+        return this;
+    }
+
     @Override
     public void check() throws CheckFailException {
         if(!IpUtils.isValidIpFormat(keepercontainerIp)) {
