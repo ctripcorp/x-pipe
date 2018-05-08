@@ -44,7 +44,7 @@ public class ChannelUtil {
 		return remoteIpLocalPort;
 	}
 
-	private static String getSimpleIpport(SocketAddress remoteAddr) {
+	public static String getSimpleIpport(SocketAddress remoteAddr) {
 		
 		if(remoteAddr == null){
 			return null;

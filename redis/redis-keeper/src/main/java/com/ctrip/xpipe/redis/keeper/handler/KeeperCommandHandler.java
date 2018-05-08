@@ -26,7 +26,7 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 	}
 
 	@Override
-	protected void doHandle(String[] args, RedisClient redisClient) {
+	protected void doHandle(String[] args, RedisClient redisClient) throws Exception {
 		
 		if(args.length >= 1){
 			
@@ -43,7 +43,12 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 				}else{
 					throw new IllegalArgumentException("setstate argument error:" + StringUtil.join(" ", args));
 				}
-			}else{
+			} else if(args[0].equalsIgnoreCase(AbstractKeeperCommand.PROXY)) {
+				String[] proxy = new String[args.length - 1];
+				System.arraycopy(args, 1, proxy, 0, proxy.length);
+				new ProxyCommandHandler().handle(proxy, redisClient);
+			}
+			else{
 				throw new IllegalStateException("unknown command:" + args[0]);
 			}
 		}

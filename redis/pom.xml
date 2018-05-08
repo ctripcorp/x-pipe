@@ -16,7 +16,29 @@
 		<module>redis-meta</module>
 		<module>redis-console</module>
 		<module>redis-integration-test</module>
+		<module>redis-proxy</module>
 	</modules>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.ctrip.framework.xpipe.redis</groupId>
+			<artifactId>redis-core</artifactId>
+		</dependency>
+
+		<!--test-->
+		<dependency>
+			<groupId>com.ctrip.framework.xpipe</groupId>
+			<artifactId>core</artifactId>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.ctrip.framework.xpipe.redis</groupId>
+			<artifactId>redis-core</artifactId>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 
 	<profiles>
 		<profile>
