@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.proxy.model;
 
-import com.ctrip.xpipe.redis.proxy.session.SESSION_TYPE;
-import io.netty.channel.Channel;
+import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.redis.proxy.Session;
+import com.ctrip.xpipe.redis.proxy.session.SessionState;
+import com.ctrip.xpipe.utils.ChannelUtil;
 
 /**
  * @author chen.zhu
@@ -10,7 +13,66 @@ import io.netty.channel.Channel;
  */
 public class SessionMeta {
 
-    private SESSION_TYPE type;
+    private String type;
 
-    private Channel channel;
+    private String channel;
+
+    private String endpoint;
+
+    private String state;
+
+    public SessionMeta(Session session, ProxyEndpoint endpoint, SessionState state) {
+        this.type = session.getSessionType().name();
+        this.channel = ChannelUtil.getDesc(session.getChannel());
+        this.endpoint = endpoint.rawUri();
+        this.state = state.name();
+    }
+
+    public SessionMeta(String type, String channel, String endpoint, String state) {
+        this.type = type;
+        this.channel = channel;
+        this.endpoint = endpoint;
+        this.state = state;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public SessionMeta setType(String type) {
+        this.type = type;
+        return this;
+    }
+
+    public String getChannel() {
+        return channel;
+    }
+
+    public SessionMeta setChannel(String channel) {
+        this.channel = channel;
+        return this;
+    }
+
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    public SessionMeta setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
+        return this;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public SessionMeta setState(String state) {
+        this.state = state;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return JsonCodec.INSTANCE.encode(this);
+    }
 }

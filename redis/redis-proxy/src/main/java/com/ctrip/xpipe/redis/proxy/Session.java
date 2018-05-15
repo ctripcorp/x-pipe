@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy;
 
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.lifecycle.Releasable;
+import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.model.SessionMeta;
 import com.ctrip.xpipe.redis.proxy.session.SESSION_TYPE;
@@ -14,17 +15,19 @@ import io.netty.channel.ChannelFuture;
  * <p>
  * May 09, 2018
  */
-public interface Session extends Lifecycle {
+public interface Session extends Releasable, Observable {
 
     Tunnel tunnel();
 
-    ChannelFuture tryConnect();
+    void forward(ByteBuf message);
+
+    void cache(ByteBuf message);
+
+    ChannelFuture connect();
 
     void disconnect();
 
     ChannelFuture tryWrite(ByteBuf byteBuf);
-
-    void setCourier(Courier courier);
 
     void setEndpoint(ProxyEndpoint endpoint);
 
@@ -38,11 +41,4 @@ public interface Session extends Lifecycle {
 
     void setSessionState(SessionState sessionState);
 
-    enum SESSION_STATE {
-        CHANNEL_ESTABLISHED,
-        DATA_FORWARDING,
-        CONNECTION_TIMEOUT,
-        READ_TIMEOUT,
-        UNKNOWN
-    }
 }

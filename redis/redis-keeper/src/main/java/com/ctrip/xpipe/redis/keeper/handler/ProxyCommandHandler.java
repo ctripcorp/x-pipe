@@ -20,10 +20,8 @@ public class ProxyCommandHandler extends AbstractCommandHandler {
         String proxyProtocol = reStructCommand(args);
         logger.info("[doHandle]receive proxy protocol: {}", proxyProtocol);
 
-        ProxyProtocolParser parser = new DefaultProxyProtocolParser();
-        ProxyProtocol protocol = parser.read(proxyProtocol);
+        ProxyProtocol protocol = new DefaultProxyProtocolParser().read(proxyProtocol);
 
-        fakeOne(protocol, redisClient);
     }
 
     private String reStructCommand(String[] args) {
@@ -35,8 +33,5 @@ public class ProxyCommandHandler extends AbstractCommandHandler {
         return new String[]{"proxy"};
     }
 
-    private void fakeOne(ProxyProtocol proxyProtocol, RedisClient redisClient) {
 
-
-    }
 }

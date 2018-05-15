@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.core.proxy.endpoint;
 
+import com.ctrip.xpipe.api.lifecycle.Startable;
+import com.ctrip.xpipe.api.lifecycle.Stoppable;
+
 import java.util.List;
 
 /**
@@ -7,7 +10,7 @@ import java.util.List;
  * <p>
  * May 10, 2018
  */
-public interface ProxyEndpointManager {
+public interface ProxyEndpointManager extends Startable, Stoppable {
 
     List<ProxyEndpoint> getAvailableProxyEndpoints();
 
@@ -17,5 +20,4 @@ public interface ProxyEndpointManager {
 
     void setNextJumpAlgorithm(NextJumpAlgorithm algorithm);
 
-    boolean checkConnectivity(ProxyEndpoint endpoint);
 }

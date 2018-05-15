@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.compress.CompressAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ProxyPathParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.ProxyRouteParser;
@@ -23,6 +23,8 @@ public class DefaultProxyProtocol implements ProxyProtocol {
 
     private ProxyProtocolParser parser;
 
+    private String content;
+
     public DefaultProxyProtocol() {
 
     }
@@ -32,7 +34,7 @@ public class DefaultProxyProtocol implements ProxyProtocol {
     }
 
     @Override
-    public List<Endpoint> nextEndpoints() {
+    public List<ProxyEndpoint> nextEndpoints() {
         ProxyRouteParser routeOptionParser = (ProxyRouteParser) parser.getProxyOptionParser(PROXY_OPTION.ROUTE);
         return routeOptionParser.getNextEndpoints();
     }
@@ -54,6 +56,16 @@ public class DefaultProxyProtocol implements ProxyProtocol {
         logger.info("[read] Simple String parse: {}", simpleString.getPayload());
         String protocol = simpleString.getPayload();
         return new DefaultProxyProtocolParser().read(protocol);
+    }
+
+    @Override
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    @Override
+    public String getContent() {
+        return this.content;
     }
 
     @Override

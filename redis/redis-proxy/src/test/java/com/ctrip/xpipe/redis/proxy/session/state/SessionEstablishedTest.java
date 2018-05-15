@@ -1,0 +1,57 @@
+package com.ctrip.xpipe.redis.proxy.session.state;
+
+import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
+import com.ctrip.xpipe.redis.proxy.session.DefaultSession;
+import com.ctrip.xpipe.redis.proxy.session.SessionState;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+/**
+ * @author chen.zhu
+ * <p>
+ * May 13, 2018
+ */
+public class SessionEstablishedTest extends AbstractRedisProxyServerTest {
+
+    private SessionState sessionEstablished;
+
+    private DefaultSession frontend;
+
+    @Before
+    public void beforeSessionClosedTest() throws Exception {
+        frontend = (DefaultSession) frontend();
+        sessionEstablished = new SessionEstablished(frontend);
+    }
+
+    @Test
+    public void testDoNextAfterSuccess() {
+        Assert.assertEquals(new SessionEstablished(frontend), sessionEstablished.nextAfterSuccess());
+    }
+
+    @Test
+    public void testDoNextAfterFail() {
+        Assert.assertEquals(new SessionClosing(frontend), sessionEstablished.nextAfterFail());
+    }
+
+    @Test
+    public void testTryWrite() {
+        sessionEstablished.tryWrite(new UnpooledByteBufAllocator(true).buffer());
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testConnect() {
+        sessionEstablished.connect();
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testDisconnect() {
+        sessionEstablished.disconnect();
+    }
+
+    @Test
+    public void testName() {
+        Assert.assertEquals(sessionEstablished.toString(), sessionEstablished.name());
+    }
+}

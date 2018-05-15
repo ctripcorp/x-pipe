@@ -1,13 +1,14 @@
 package com.ctrip.xpipe.redis.core.proxy.parser.route;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author chen.zhu
@@ -20,6 +21,8 @@ public class RouteOptionParser extends AbstractProxyOptionParser implements Prox
 
     private String[] nextNodes;
 
+    private AtomicBoolean nextNodesRemoved = new AtomicBoolean(false);
+
     @Override
     public PROXY_OPTION option() {
         return PROXY_OPTION.ROUTE;
@@ -27,17 +30,20 @@ public class RouteOptionParser extends AbstractProxyOptionParser implements Prox
 
     @Override
     public void removeNextNodes() {
-        String[] newNodes = new String[nodes.length - 1];
-        System.arraycopy(nodes, 1, newNodes, 0, newNodes.length);
-        nodes = newNodes;
+        if(nextNodesRemoved.compareAndSet(false, true)) {
+            if(nodes.length < 1)    return;
+            String[] newNodes = new String[nodes.length - 1];
+            System.arraycopy(nodes, 1, newNodes, 0, newNodes.length);
+            nodes = newNodes;
+        }
     }
 
     @Override
-    public List<Endpoint> getNextEndpoints() {
+    public List<ProxyEndpoint> getNextEndpoints() {
         if(nextNodes == null || nextNodes.length == 0) {
             return null;
         }
-        List<Endpoint> result = Lists.newArrayList();
+        List<ProxyEndpoint> result = Lists.newArrayList();
         for(String rawUri : nextNodes) {
             result.add(new DefaultProxyEndpoint(rawUri));
         }

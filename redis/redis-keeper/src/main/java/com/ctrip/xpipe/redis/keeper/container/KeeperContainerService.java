@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
@@ -43,6 +45,10 @@ public class KeeperContainerService {
     private KeeperContainerConfig keeperContainerConfig;
     @Autowired
     private KeepersMonitorManager keepersMonitorManager;
+    @Autowired
+    private NettySslHandlerFactory clientSslFactory;
+    @Autowired
+    private ProxyEndpointManager endpointManager;
 
     private Set<Integer> runningPorts = Sets.newConcurrentHashSet();
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
@@ -214,6 +220,9 @@ public class KeeperContainerService {
 
         RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper, keeperConfig,
                 baseDir, metaService, leaderElectorManager, keepersMonitorManager);
+
+        ((DefaultRedisKeeperServer) redisKeeperServer).setClientSslHandlerFactory(clientSslFactory)
+                .setEndpointManager(endpointManager);
 
         register(redisKeeperServer);
         return redisKeeperServer;

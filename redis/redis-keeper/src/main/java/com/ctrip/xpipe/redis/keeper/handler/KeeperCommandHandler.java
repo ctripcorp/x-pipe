@@ -6,12 +6,18 @@ import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
+import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import java.net.InetSocketAddress;
+
+import static com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser.WHITE_SPACE;
 
 /**
  * @author wenchao.meng
@@ -37,27 +43,35 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 			}else if(args[0].equalsIgnoreCase(AbstractKeeperCommand.SET_STATE)){
 				
 				if(args.length >= 4){
-					KeeperState keeperState = KeeperState.valueOf(args[1]);
-					InetSocketAddress masterAddress = new InetSocketAddress(args[2], Integer.parseInt(args[3]));
-					doSetKeeperState(redisClient, keeperState, masterAddress);
+					setKeeperState(args, redisClient);
 				}else{
 					throw new IllegalArgumentException("setstate argument error:" + StringUtil.join(" ", args));
 				}
-			} else if(args[0].equalsIgnoreCase(AbstractKeeperCommand.PROXY)) {
-				String[] proxy = new String[args.length - 1];
-				System.arraycopy(args, 1, proxy, 0, proxy.length);
-				new ProxyCommandHandler().handle(proxy, redisClient);
-			}
-			else{
+			} else{
 				throw new IllegalStateException("unknown command:" + args[0]);
 			}
 		}
 	}
 
+	private void setKeeperState(String[] args, RedisClient redisClient) {
+		KeeperState keeperState = KeeperState.valueOf(args[1]);
+		InetSocketAddress masterAddress = new InetSocketAddress(args[2], Integer.parseInt(args[3]));
+		if(containsProxyProtocol(args) && keeperState == KeeperState.ACTIVE) {
+			doSetKeeperStateWithProxy(redisClient, masterAddress, args);
+		} else {
+			doSetKeeperState(redisClient, keeperState, masterAddress);
+		}
+	}
+
+	private boolean containsProxyProtocol(String[] args) {
+		return args.length > 4 && "proxy".equalsIgnoreCase(args[4]);
+	}
+
 	private void doSetKeeperState(RedisClient redisClient, KeeperState keeperState, InetSocketAddress masterAddress) {
 		
 		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
-		
+		redisKeeperServer.connectMasterThroughProxy(false);
+
 		RedisKeeperServerState currentState = redisKeeperServer.getRedisKeeperServerState();
 		try{
 			switch(keeperState){
@@ -77,5 +91,21 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 			logger.error("[doSetKeeperState]" + String.format("%s, %s, %s", redisClient, keeperState, masterAddress), e);
 			redisClient.sendMessage(new RedisErrorParser(e.getMessage()).format());
 		}
+	}
+
+	private void doSetKeeperStateWithProxy(RedisClient redisClient, InetSocketAddress masterAddress, String[] args) {
+		ProxyProtocol protocol = getProxyProtocol(args);
+		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+		redisKeeperServer.connectMasterThroughProxy(true);
+		redisKeeperServer.setProxyProtocol(protocol);
+
+		redisKeeperServer.getRedisKeeperServerState().becomeActive(masterAddress);
+	}
+
+	private ProxyProtocol getProxyProtocol(String[] args) {
+		String[] protocolArr = new String[args.length - 4];
+		System.arraycopy(args, 4, protocolArr, 0, protocolArr.length);
+		String protocol = StringUtil.join(WHITE_SPACE, args);
+		return new DefaultProxyProtocolParser().read(protocol);
 	}
 }

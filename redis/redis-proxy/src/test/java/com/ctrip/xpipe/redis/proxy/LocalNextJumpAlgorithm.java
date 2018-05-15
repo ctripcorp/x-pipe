@@ -1,6 +1,7 @@
-package com.ctrip.xpipe.redis.core.proxy.endpoint;
+package com.ctrip.xpipe.redis.proxy;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NextJumpAlgorithm;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 
 import java.util.List;
 
@@ -14,7 +15,7 @@ public class LocalNextJumpAlgorithm implements NextJumpAlgorithm {
     @Override
     public ProxyEndpoint nextJump(List<ProxyEndpoint> endpoints) {
         for(ProxyEndpoint node : endpoints) {
-            if(node.getHost().contains("127.0.0.1")) {
+            if(node.getHost().contains("127.0.0.1") && !node.isSslEnabled()) {
                 return node;
             }
         }
