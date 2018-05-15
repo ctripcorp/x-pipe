@@ -11,6 +11,8 @@ public interface ProxyEndpoint extends Endpoint {
 
     boolean isSslEnabled();
 
+    String rawUri();
+
     enum PROXY_SCHEME {
         PROXY, PROXYTLS;
 

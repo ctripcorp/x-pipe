@@ -1,43 +1,53 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
+import com.ctrip.xpipe.netty.AbstractNettyHandler;
+import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author chen.zhu
  * <p>
  * May 09, 2018
  */
-public class ProxyProtocolHandler extends ChannelDuplexHandler {
+public class ProxyProtocolHandler extends AbstractNettyHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ProxyProtocolHandler.class);
 
-    private TunnelManager tunnelManager;
-
-    public ProxyProtocolHandler(TunnelManager tunnelManager) {
-        super();
-        this.tunnelManager = tunnelManager;
-    }
+    private AtomicBoolean protocolProcessed = new AtomicBoolean(false);
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-        logger.info("[channelRead] msg: {}", ((ByteBuf)msg).toString(Charset.defaultCharset()));
-        ProxyProtocol protocol = new DefaultProxyProtocol().read((ByteBuf)msg);
-        tunnelManager.getOrCreate(ctx.channel(), protocol);
-
-        // remove this handler, no need for further data processing
-        // (proxy protocol is sent and only sent first time connection established)
-        ctx.pipeline().remove(this);
+        ByteBuf byteBuf = (ByteBuf) msg;
+        logger.debug("[channelRead] msg: {}", byteBuf.toString(Charset.defaultCharset()));
+        if(isProxyProtocol(byteBuf)) {
+            if(!protocolProcessed.get()) {
+                logger.info("[channelRead] msg: {}", byteBuf.toString(Charset.defaultCharset()));
+                ProxyProtocol protocol = null;
+                try {
+                    protocol = new DefaultProxyProtocol().read(byteBuf);
+                    protocol.recordPath(ctx.channel());
+                    protocolProcessed.set(true);
+                } catch (Exception e) {
+                    logger.error("[channelRead]", e);
+                    throw new ProxyProtocolException(e.getMessage());
+                }
+                byteBuf.release();
+                ctx.fireChannelRead(protocol);
+            }
+        } else {
+            super.channelRead(ctx, msg);
+        }
     }
 
     @Override
@@ -45,6 +55,18 @@ public class ProxyProtocolHandler extends ChannelDuplexHandler {
         if(msg instanceof ProxyProtocol) {
             ProxyProtocol protocol = (ProxyProtocol) msg;
             ctx.write(protocol.output(), promise);
+        } else {
+            super.write(ctx, msg, promise);
+        }
+    }
+
+    @VisibleForTesting
+    protected boolean isProxyProtocol(ByteBuf byteBuf) {
+        try {
+            return byteBuf.toString(Charset.defaultCharset()).toLowerCase().startsWith("+proxy");
+        } catch (Exception e) {
+            logger.error("[isProxyProtocol]", e);
+            return false;
         }
     }
 }

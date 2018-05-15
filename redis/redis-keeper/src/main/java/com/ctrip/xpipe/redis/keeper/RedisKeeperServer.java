@@ -5,6 +5,8 @@ import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
+import com.ctrip.xpipe.redis.core.proxy.ProxyEnabled;
+import com.ctrip.xpipe.redis.core.proxy.TLSEnabled;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
@@ -20,7 +22,7 @@ import java.util.Set;
  *
  * 2016年3月29日 下午3:09:23
  */
-public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyable{
+public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyable, ProxyEnabled, TLSEnabled {
 	
 	int getListeningPort();
 	
@@ -88,4 +90,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	KeeperMonitor getKeeperMonitor();
 
 	void processCommandSequentially(Runnable runnable);
+
+	boolean connectMasterThroughProxy();
+
+	void connectMasterThroughProxy(boolean throughProxy);
 }

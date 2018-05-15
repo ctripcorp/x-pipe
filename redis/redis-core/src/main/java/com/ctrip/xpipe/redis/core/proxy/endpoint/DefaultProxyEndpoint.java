@@ -30,4 +30,9 @@ public class DefaultProxyEndpoint extends DefaultEndPoint implements ProxyEndpoi
     public boolean isSslEnabled() {
         return PROXY_SCHEME.PROXYTLS.matches(getScheme());
     }
+
+    @Override
+    public String rawUri() {
+        return getRawUrl();
+    }
 }

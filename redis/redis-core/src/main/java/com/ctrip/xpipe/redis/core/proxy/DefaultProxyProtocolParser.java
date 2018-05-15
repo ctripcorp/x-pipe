@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
+import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
-import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
@@ -49,18 +49,21 @@ public class DefaultProxyProtocolParser implements ProxyProtocolParser {
 
     @Override
     public ProxyProtocol read(String protocol) {
+        if(!protocol.toLowerCase().startsWith(KEY_WORD.toLowerCase())) {
+            throw new ProxyProtocolException("proxy protocol format error: " + protocol);
+        }
+        ProxyProtocol proxyProtocol = new DefaultProxyProtocol(this);
+        proxyProtocol.setContent(protocol);
+
         protocol = removeKeyWord(protocol);
         String[] allOption = protocol.split(LINE_SPLITTER);
         for(String option : allOption) {
             addProxyParser(PROXY_OPTION.parse(option.trim()));
         }
-        return new DefaultProxyProtocol(this);
+        return proxyProtocol;
     }
 
     private String removeKeyWord(String protocol) {
-        if(protocol.toLowerCase().contains(KEY_WORD.toLowerCase())) {
-            return protocol.substring(KEY_WORD.length());
-        }
-        return protocol;
+        return protocol.substring(KEY_WORD.length());
     }
 }

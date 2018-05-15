@@ -1,19 +1,24 @@
 package com.ctrip.xpipe.redis.proxy.config;
 
+
+import com.ctrip.xpipe.redis.core.config.TLSConfig;
+
 /**
  * @author chen.zhu
  * <p>
  * May 09, 2018
  */
-public interface ProxyConfig {
+public interface ProxyConfig extends TLSConfig {
 
     int frontendPort();
 
-    int workerEventLoops();
+    int frontendWorkerEventLoopNum();
 
     long getTrafficReportIntervalMillis();
 
-    int maxProxyProtocolLength();
-
     boolean isSslEnabled();
+
+    int backendEventLoopNum();
+
+    int endpointHealthCheckIntervalSec();
 }

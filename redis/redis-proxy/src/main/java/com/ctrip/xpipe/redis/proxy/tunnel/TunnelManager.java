@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.proxy.tunnel;
 
+import com.ctrip.xpipe.api.lifecycle.Releasable;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import io.netty.channel.Channel;
 
@@ -12,7 +13,7 @@ import java.util.List;
  * <p>
  * May 09, 2018
  */
-public interface TunnelManager {
+public interface TunnelManager extends Releasable, Observer {
 
     Tunnel getOrCreate(Channel frontendChannel, ProxyProtocol protocol);
 

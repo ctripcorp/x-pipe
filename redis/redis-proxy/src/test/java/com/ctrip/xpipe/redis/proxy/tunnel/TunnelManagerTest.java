@@ -2,7 +2,11 @@ package com.ctrip.xpipe.redis.proxy.tunnel;
 
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
+import com.ctrip.xpipe.redis.proxy.Tunnel;
+import io.netty.channel.Channel;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -12,7 +16,33 @@ import java.net.InetSocketAddress;
  * <p>
  * May 10, 2018
  */
-public class TunnelManagerTest {
+public class TunnelManagerTest extends AbstractRedisProxyServerTest {
+
+    private TunnelManager manager;
+
+    @Before
+    public void beforeTunnelManagerTest() {
+        manager = tunnelManager();
+    }
+
+    @Test
+    public void testAddOrCreate() throws Exception {
+        Channel frontChannel = frontChannel();
+        Tunnel tunnel1 = manager.getOrCreate(frontChannel, protocol());
+        Tunnel tunnel2 = manager.getOrCreate(frontChannel, protocol());
+
+        Assert.assertTrue(tunnel1 == tunnel2);
+    }
+
+    @Test
+    public void testRemove() throws Exception {
+        Channel frontChannel = frontChannel();
+        Tunnel tunnel1 = manager.getOrCreate(frontChannel, protocol());
+        Assert.assertNotNull(tunnel1);
+
+        manager.remove(frontChannel);
+        Assert.assertFalse(tunnel1 == manager.getOrCreate(frontChannel, protocol()));
+    }
 
     @Test
     public void testKey() {

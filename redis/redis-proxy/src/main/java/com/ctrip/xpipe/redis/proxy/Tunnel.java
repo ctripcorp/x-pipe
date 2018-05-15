@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.lifecycle.Releasable;
+import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
+import com.ctrip.xpipe.redis.proxy.tunnel.TunnelState;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
 /**
@@ -12,35 +15,26 @@ import io.netty.channel.Channel;
  * <p>
  * May 09, 2018
  */
-public interface Tunnel extends Lifecycle {
+public interface Tunnel extends Lifecycle, Releasable, Observable, Observer {
 
-    Channel frontendChannel();
+    Session frontend();
 
-    Session frontEnd();
+    Session backend();
 
-    Session backEnd();
-
-    void disconnect();
+    Session session(Channel channel);
 
     TunnelMeta getTunnelMeta();
 
-    void setProxyProtocol(ProxyProtocol protocol);
-
-    ProxyProtocol getProxyProtocol();
-
-    void setProxyEndpointManager(ProxyEndpointManager manager);
-
     ProxyEndpoint getNextJump();
 
-    void setTunnelState();
+    void setState(TunnelState tunnelState);
 
-    enum TUNNEL_STATE {
-        FRONT_END_ESTABLISHED,
-        PROXY_PROTOCOL_RECEIVED,
-        BACK_END_SELECTED,
-        BACK_END_ESTABLISHED,
-        PROXY_PROTOCOL_SENT,
-        FRONT_END_TERMINATED,
-        BACK_END_TERMINATED
-    }
+    TunnelState getState();
+
+    void forward(ByteBuf message, Session src);
+
+    String identity();
+
+    void sendProxyProtocol();
+
 }

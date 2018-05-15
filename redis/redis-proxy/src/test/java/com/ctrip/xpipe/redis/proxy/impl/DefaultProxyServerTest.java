@@ -11,7 +11,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import org.junit.Before;
@@ -21,10 +20,7 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.ctrip.xpipe.redis.proxy.impl.DefaultProxy.LINE_BASED_DECODER;
-import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 /**
@@ -32,9 +28,9 @@ import static org.mockito.Mockito.when;
  * <p>
  * May 10, 2018
  */
-public class DefaultProxyTest {
+public class DefaultProxyServerTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultProxyTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultProxyServerTest.class);
 
     @Mock
     private TunnelManager tunnelManager;
@@ -46,7 +42,7 @@ public class DefaultProxyTest {
     @Before
     public void beforeDefaultProxyTest() {
         MockitoAnnotations.initMocks(this);
-        when(tunnelManager.getOrCreate(any())).thenReturn(tunnel);
+        when(tunnelManager.getOrCreate(any(), any())).thenReturn(tunnel);
     }
 
     @Test
@@ -62,7 +58,7 @@ public class DefaultProxyTest {
                     public void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline p = ch.pipeline();
                         p.addLast(new LoggingHandler(LogLevel.DEBUG));
-                        p.addLast(new ProxyProtocolHandler(tunnelManager));
+                        p.addLast(new ProxyProtocolHandler());
                         p.addLast(new TestHandler());
                     }
                 });

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
+import com.ctrip.xpipe.redis.proxy.State;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 
@@ -8,11 +9,11 @@ import io.netty.channel.ChannelFuture;
  * <p>
  * May 10, 2018
  */
-public interface SessionState {
+public interface SessionState extends State<SessionState> {
 
     ChannelFuture tryWrite(ByteBuf byteBuf);
 
-    ChannelFuture tryConnect();
+    ChannelFuture connect();
 
     void disconnect();
 
