@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.*;
-import java.security.cert.CertificateException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +12,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
+import java.security.cert.CertificateException;
 import java.util.Objects;
 
 /**
@@ -61,7 +61,7 @@ public class SSLHandlerProvider {
                     .getResource(KEYSTORE))
                     .getFile());
             ks = KeyStore.getInstance(KEYSTORE_TYPE);
-            ks.load(inputStream,KEYSTORE_PASSWORD.toCharArray());
+            ks.load(inputStream, KEYSTORE_PASSWORD.toCharArray());
         } catch (IOException e) {
             logger.error("Cannot load the keystore file",e);
         } catch (CertificateException e) {

@@ -7,6 +7,9 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +29,8 @@ public class Production extends AbstractProfile {
 
     public static final String SERVER_SSL_HANDLER_FACTORY = "clientSslHandlerFactory";
 
+    public static final String BACKEND_EVENTLOOP_GROUP = "backendEventLoopGroup";
+
     @Autowired
     private ProxyConfig config;
 
@@ -42,5 +47,10 @@ public class Production extends AbstractProfile {
     @Bean(name = SERVER_SSL_HANDLER_FACTORY)
     public NettySslHandlerFactory serverSslHandlerFactory() {
         return new NettyServerSslHandlerFactory(config);
+    }
+
+    @Bean(name = BACKEND_EVENTLOOP_GROUP)
+    public EventLoopGroup backendEventLoopGroup() {
+        return new NioEventLoopGroup(config.backendEventLoopNum(), XpipeThreadFactory.create("backend"));
     }
 }

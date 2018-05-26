@@ -291,7 +291,7 @@ public class DefaultRedisSlave implements RedisSlave {
 		long lag = System.currentTimeMillis() - replAckTime;
 		info = String.format(
 				"ip=%s,port=%d,state=%s,offset=%d,lag=%d,remotePort=%d" ,
-				IpUtils.getIp(channel().remoteAddress()), getSlaveListeningPort(), 
+				ip(), getSlaveListeningPort(),
 				slaveState != null ? slaveState.getDesc() : "null",
 				replAckOff, lag/1000, remotePort());
 		return info;
@@ -405,6 +405,11 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	public int getSlaveListeningPort() {
 		return redisClient.getSlaveListeningPort();
+	}
+
+	@Override
+	public void setSlaveIpAddress(String host) {
+		redisClient.setSlaveIpAddress(host);
 	}
 
 	public void capa(CAPA capa) {

@@ -9,7 +9,7 @@ import java.util.List;
  * <p>
  * May 04, 2018
  */
-public interface NextJumpAlgorithm {
+public interface NextHopAlgorithm {
 
-    ProxyEndpoint nextJump(List<ProxyEndpoint> endpoints);
+    ProxyEndpoint nextHop(List<ProxyEndpoint> endpoints);
 }

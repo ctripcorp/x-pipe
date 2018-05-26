@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.core.proxy;
 
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.UnknownOptionParser;
-import com.ctrip.xpipe.redis.core.proxy.parser.path.PathOptionParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.path.ForwardForOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.RouteOptionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,10 +21,10 @@ public enum PROXY_OPTION {
             return new RouteOptionParser();
         }
     },
-    PATH {
+    FORWARD_FOR {
         @Override
         protected ProxyOptionParser getProxyOptionParser() {
-            return new PathOptionParser();
+            return new ForwardForOptionParser();
         }
     },
     UNKOWN {

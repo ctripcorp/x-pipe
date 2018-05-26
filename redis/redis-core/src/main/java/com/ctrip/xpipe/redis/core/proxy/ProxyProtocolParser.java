@@ -14,6 +14,8 @@ public interface ProxyProtocolParser {
 
     ProxyProtocol read(String protocol);
 
+    ProxyProtocol read(ByteBuf byteBuf);
+
     ProxyOptionParser getProxyOptionParser(PROXY_OPTION option);
 
 }

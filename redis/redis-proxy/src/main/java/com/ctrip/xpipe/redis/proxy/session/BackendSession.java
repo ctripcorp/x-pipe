@@ -1,0 +1,21 @@
+package com.ctrip.xpipe.redis.proxy.session;
+
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.redis.proxy.Session;
+import com.ctrip.xpipe.redis.proxy.tunnel.event.EventHandler;
+import io.netty.buffer.ByteBuf;
+
+/**
+ * @author chen.zhu
+ * <p>
+ * May 24, 2018
+ */
+public interface BackendSession extends Session {
+
+    void sendImmdiateAfterProtocol(ByteBuf byteBuf) throws Exception;
+
+    ProxyEndpoint getEndpoint();
+
+    void registerChannelEstablishedHandler(EventHandler handler);
+
+}

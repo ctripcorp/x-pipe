@@ -11,10 +11,13 @@ public interface ProxyEndpoint extends Endpoint {
 
     boolean isSslEnabled();
 
-    String rawUri();
+    //SUPPORTED
+    boolean isProxyProtocolSupported();
+
+    String getUri();
 
     enum PROXY_SCHEME {
-        PROXY, PROXYTLS;
+        TCP, TLS, PROXY, PROXYTLS;
 
         boolean matches(String scheme) {
             return name().equalsIgnoreCase(scheme);

@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.proxy.buffer;
 
-import com.ctrip.xpipe.redis.proxy.Session;
+import com.ctrip.xpipe.redis.proxy.exception.ResourceNotFoundException;
 import io.netty.buffer.ByteBuf;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.channel.Channel;
 
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -15,22 +14,14 @@ import java.util.concurrent.LinkedBlockingDeque;
  */
 public class SimpleBlockingQueueBufferStore implements BufferStore {
 
-    private static final Logger logger = LoggerFactory.getLogger(SimpleBlockingQueueBufferStore.class);
-
-    private Session session;
-
     private BlockingDeque<ByteBuf> buffer = new LinkedBlockingDeque<>();
-
-    public SimpleBlockingQueueBufferStore(Session session) {
-        this.session = session;
-    }
 
     @Override
     public void offer(ByteBuf byteBuf) {
         if(buffer != null) {
-            buffer.offer(byteBuf);
+            buffer.offer(byteBuf.retain());
         } else {
-            logger.error("[offer] empty buffer");
+            throw new ResourceNotFoundException("empty buffer");
         }
     }
 
@@ -45,13 +36,14 @@ public class SimpleBlockingQueueBufferStore implements BufferStore {
     }
 
     @Override
-    public void clearAndSend() {
+    public void clearAndSend(Channel channel) {
         synchronized (buffer) {
-            BlockingDeque<ByteBuf> clone = buffer;
-            buffer = null;
-            while(!clone.isEmpty()) {
-                session.tryWrite(clone.poll());
+            while(!buffer.isEmpty()) {
+                ByteBuf byteBuf = buffer.poll();
+                channel.write(byteBuf);
+                byteBuf.release();
             }
+            channel.flush();
         }
     }
 

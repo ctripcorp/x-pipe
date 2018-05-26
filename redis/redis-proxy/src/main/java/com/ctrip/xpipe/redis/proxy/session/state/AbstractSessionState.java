@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.session.state;
 
-import com.ctrip.xpipe.redis.proxy.session.DefaultSession;
+import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,9 +14,9 @@ public abstract class AbstractSessionState implements SessionState {
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractSessionState.class);
 
-    protected DefaultSession session;
+    protected Session session;
 
-    public AbstractSessionState(DefaultSession session) {
+    public AbstractSessionState(Session session) {
         this.session = session;
     }
 

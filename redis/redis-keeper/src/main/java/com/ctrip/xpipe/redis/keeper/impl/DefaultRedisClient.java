@@ -51,6 +51,8 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	
 	private CLIENT_ROLE clientRole = CLIENT_ROLE.NORMAL;
 
+	private String slaveIpAddress;
+
 	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
 		this.redisKeeperServer = redisKeeperServer;
 		
@@ -94,6 +96,11 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	@Override
 	public int getSlaveListeningPort() {
 		return this.slaveListeningPort;
+	}
+
+	@Override
+	public void setSlaveIpAddress(String host) {
+		this.slaveIpAddress = host;
 	}
 
 	@Override
@@ -205,6 +212,9 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 
 	@Override
 	public String ip() {
+		if(this.slaveIpAddress != null) {
+			return slaveIpAddress;
+		}
 		Channel channel = channel();
 		return channel == null? "null": IpUtils.getIp(channel.remoteAddress());
 	}

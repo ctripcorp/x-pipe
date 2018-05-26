@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.tunnel.state;
 
-import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelState;
-import io.netty.buffer.ByteBuf;
 
 /**
  * @author chen.zhu
@@ -19,11 +17,6 @@ public class TunnelHalfEstablished extends AbstractTunnelState {
     @Override
     public String name() {
         return "Half-Established";
-    }
-
-    @Override
-    public void forward(ByteBuf message, Session src) {
-        throw new UnsupportedOperationException("Front channel auto-read should be false");
     }
 
     @Override
@@ -44,5 +37,10 @@ public class TunnelHalfEstablished extends AbstractTunnelState {
     @Override
     public boolean equals(Object obj) {
         return super.equals(obj);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }

@@ -16,7 +16,7 @@ public class DefaultProxyEndpoint extends DefaultEndPoint implements ProxyEndpoi
     }
 
     public DefaultProxyEndpoint(String ip, int port) {
-        this("proxy://" + ip + ":" + port);
+        this("tcp://" + ip + ":" + port);
     }
 
     public DefaultProxyEndpoint(InetSocketAddress address) {
@@ -28,11 +28,16 @@ public class DefaultProxyEndpoint extends DefaultEndPoint implements ProxyEndpoi
 
     @Override
     public boolean isSslEnabled() {
-        return PROXY_SCHEME.PROXYTLS.matches(getScheme());
+        return PROXY_SCHEME.TLS.matches(getScheme()) || PROXY_SCHEME.PROXYTLS.matches(getScheme());
     }
 
     @Override
-    public String rawUri() {
+    public boolean isProxyProtocolSupported() {
+        return getScheme().toLowerCase().contains("proxy");
+    }
+
+    @Override
+    public String getUri() {
         return getRawUrl();
     }
 }

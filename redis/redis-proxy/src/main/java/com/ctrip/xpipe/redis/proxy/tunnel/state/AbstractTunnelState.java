@@ -23,7 +23,7 @@ public abstract class AbstractTunnelState implements TunnelState {
     @Override
     public TunnelState nextAfterSuccess() {
         TunnelState next = doNextAfterSuccess();
-        logger.debug("[nextAfterSuccess] current: {}, next: {}", this.name(), next.name());
+        logger.debug("[nextAfterSuccess] current: {}, next: {}", this.name(), next == null ? "null" : next.name());
         return next;
     }
 
@@ -32,7 +32,7 @@ public abstract class AbstractTunnelState implements TunnelState {
     @Override
     public TunnelState nextAfterFail() {
         TunnelState next = doNextAfterFail();
-        logger.debug("[nextAfterFail] current: {}, next: {}", this.name(), next.name());
+        logger.debug("[nextAfterFail] current: {}, next: {}", this.name(), next == null ? "null" : next.name());
         return next;
     }
 
@@ -54,5 +54,10 @@ public abstract class AbstractTunnelState implements TunnelState {
         }
         TunnelState other = (TunnelState) obj;
         return this.name().equals(other.name());
+    }
+
+    @Override
+    public String toString() {
+        return name();
     }
 }

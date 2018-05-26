@@ -16,11 +16,11 @@ public interface ProxyProtocol {
 
     List<ProxyEndpoint> nextEndpoints();
 
-    void recordPath(Channel channel);
+    void recordForwardFor(Channel channel);
+
+    String getForwardFor();
 
     ByteBuf output();
-
-    ProxyProtocol read(ByteBuf byteBuf);
 
     void setContent(String content);
 

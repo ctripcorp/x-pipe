@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.impl;
 
 import com.ctrip.xpipe.redis.proxy.Tunnel;
-import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolHandler;
+import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelDuplexHandler;
@@ -58,7 +58,7 @@ public class DefaultProxyServerTest {
                     public void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline p = ch.pipeline();
                         p.addLast(new LoggingHandler(LogLevel.DEBUG));
-                        p.addLast(new ProxyProtocolHandler());
+                        p.addLast(new ProxyProtocolDecoder(1024));
                         p.addLast(new TestHandler());
                     }
                 });

@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.session.state;
 
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
-import com.ctrip.xpipe.redis.proxy.session.DefaultSession;
+import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -9,7 +9,6 @@ import io.netty.util.ReferenceCountUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.test.annotation.DirtiesContext;
 
 /**
  * @author chen.zhu
@@ -20,11 +19,11 @@ public class SessionClosingTest extends AbstractRedisProxyServerTest {
 
     private SessionState seesionClosing;
 
-    private DefaultSession frontend;
+    private Session frontend;
 
     @Before
     public void beforeSessionClosedTest() throws Exception {
-        frontend = (DefaultSession) frontend();
+        frontend = frontend();
         seesionClosing = new SessionClosing(frontend);
     }
 
@@ -44,11 +43,6 @@ public class SessionClosingTest extends AbstractRedisProxyServerTest {
         byteBuf.setBytes(0, "+OK\r\n".getBytes());
         seesionClosing.tryWrite(byteBuf);
         ReferenceCountUtil.release(byteBuf);
-    }
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void testConnect() {
-        seesionClosing.connect();
     }
 
     @Test

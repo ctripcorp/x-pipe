@@ -8,7 +8,7 @@ import io.netty.channel.Channel;
  * <p>
  * May 04, 2018
  */
-public interface ProxyPathParser extends ProxyOptionParser {
+public interface ProxyForwardForParser extends ProxyOptionParser {
 
-    void addNodeToPath(Channel channel);
+    void append(Channel channel);
 }

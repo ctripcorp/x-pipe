@@ -24,7 +24,7 @@ public class SessionMeta {
     public SessionMeta(Session session, ProxyEndpoint endpoint, SessionState state) {
         this.type = session.getSessionType().name();
         this.channel = ChannelUtil.getDesc(session.getChannel());
-        this.endpoint = endpoint.rawUri();
+        this.endpoint = endpoint.getUri();
         this.state = state.name();
     }
 

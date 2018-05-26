@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.tunnel.event;
 
 import com.ctrip.xpipe.redis.proxy.Session;
-import com.ctrip.xpipe.redis.proxy.session.DefaultSession;
 import com.ctrip.xpipe.redis.proxy.session.SessionStateChangeEvent;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 
@@ -19,6 +18,6 @@ public class SessionClosingEventHandler extends AbstractSessionEventHandler {
     @Override
     protected void doHandle() {
         session.disconnect();
-        session.setSessionState(new SessionClosed((DefaultSession) session));
+        session.setSessionState(new SessionClosed(session));
     }
 }

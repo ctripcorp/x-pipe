@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.core.proxy;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.compress.CompressAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.parser.path.ProxyPathParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.path.ProxyForwardForParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.ProxyRouteParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -40,22 +40,19 @@ public class DefaultProxyProtocol implements ProxyProtocol {
     }
 
     @Override
-    public void recordPath(Channel channel) {
-        ProxyPathParser pathParser = (ProxyPathParser) parser.getProxyOptionParser(PROXY_OPTION.PATH);
-        pathParser.addNodeToPath(channel);
+    public void recordForwardFor(Channel channel) {
+        ProxyForwardForParser forwardForParser = (ProxyForwardForParser) parser.getProxyOptionParser(PROXY_OPTION.FORWARD_FOR);
+        forwardForParser.append(channel);
+    }
+
+    @Override
+    public String getForwardFor() {
+        return parser.getProxyOptionParser(PROXY_OPTION.FORWARD_FOR).getPayload();
     }
 
     @Override
     public ByteBuf output() {
         return parser.format();
-    }
-
-    @Override
-    public ProxyProtocol read(ByteBuf byteBuf) {
-        SimpleStringParser simpleString = (SimpleStringParser) new SimpleStringParser().read(byteBuf);
-        logger.info("[read] Simple String parse: {}", simpleString.getPayload());
-        String protocol = simpleString.getPayload();
-        return new DefaultProxyProtocolParser().read(protocol);
     }
 
     @Override
@@ -76,5 +73,10 @@ public class DefaultProxyProtocol implements ProxyProtocol {
     @Override
     public CompressAlgorithm compressAlgorithm() {
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return content;
     }
 }

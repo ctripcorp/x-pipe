@@ -9,15 +9,12 @@ import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 import static com.ctrip.xpipe.redis.proxy.spring.Production.CLIENT_SSL_HANDLER_FACTORY;
 import static com.ctrip.xpipe.redis.proxy.spring.Production.SERVER_SSL_HANDLER_FACTORY;
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

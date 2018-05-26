@@ -21,9 +21,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -163,7 +161,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private ChannelFuture tryConnectThroughProxy(Bootstrap b) {
 		ProxyProtocol protocol = redisKeeperServer.getProxyProtocol();
-		ProxyEndpoint endpoint = redisKeeperServer.getProxyEndpointManager().getNextJump(protocol.nextEndpoints());
+		ProxyEndpoint endpoint = redisKeeperServer.getProxyEndpointManager().getNextHop(protocol.nextEndpoints());
 		NettySslHandlerFactory clientSslFactory = redisKeeperServer.getNettySslHandlerFactory();
 
 		logger.info("[tryConnectThroughProxy][begin]{}", endpoint);
