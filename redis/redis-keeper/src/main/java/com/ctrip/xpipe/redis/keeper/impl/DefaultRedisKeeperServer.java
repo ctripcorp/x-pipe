@@ -30,6 +30,7 @@ import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.TLSEnabled;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -132,6 +133,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private ProxyEndpointManager endpointManager;
 
 	private ProxyProtocol protocol;
+
+	private ProxyEndpointSelector selector;
 
 	private AtomicBoolean connectMasterThroughProxy = new AtomicBoolean(false);
 	
@@ -754,6 +757,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public ProxyProtocol getProxyProtocol() {
 		return this.protocol;
+	}
+
+	@Override
+	public void setProxyEndpointSelector(ProxyEndpointSelector selector) {
+		this.selector = selector;
+	}
+
+	@Override
+	public ProxyEndpointSelector getProxyEndpointSelector() {
+		return this.selector;
 	}
 
 	@Override
