@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.net.InetSocketAddress;
 
@@ -94,18 +95,26 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 	}
 
 	private void doSetKeeperStateWithProxy(RedisClient redisClient, InetSocketAddress masterAddress, String[] args) {
-		ProxyProtocol protocol = getProxyProtocol(args);
-		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
-		redisKeeperServer.connectMasterThroughProxy(true);
-		redisKeeperServer.setProxyProtocol(protocol);
+		try {
+			ProxyProtocol protocol = getProxyProtocol(args);
+			RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+			redisKeeperServer.connectMasterThroughProxy(true);
+			redisKeeperServer.setProxyProtocol(protocol);
 
-		redisKeeperServer.getRedisKeeperServerState().becomeActive(masterAddress);
+			redisKeeperServer.getRedisKeeperServerState().becomeActive(masterAddress);
+			redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
+		} catch (Exception e) {
+			logger.error("[doSetKeeperState]" + String.format("%s, %s, %s", redisClient, masterAddress, args), e);
+			redisClient.sendMessage(new RedisErrorParser(e.getMessage()).format());
+		}
 	}
 
-	private ProxyProtocol getProxyProtocol(String[] args) {
+	@VisibleForTesting
+	protected ProxyProtocol getProxyProtocol(String[] args) {
 		String[] protocolArr = new String[args.length - 4];
 		System.arraycopy(args, 4, protocolArr, 0, protocolArr.length);
-		String protocol = StringUtil.join(WHITE_SPACE, args);
+		String protocol = StringUtil.join(WHITE_SPACE, protocolArr);
+		logger.info("[getProxyProtocol] protocol: {}", protocol);
 		return new DefaultProxyProtocolParser().read(protocol);
 	}
 }

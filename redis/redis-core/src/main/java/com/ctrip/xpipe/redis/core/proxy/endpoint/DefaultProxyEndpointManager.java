@@ -32,8 +32,6 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
 
     private Set<ProxyEndpoint> availableEndpoints = Sets.newConcurrentHashSet();
 
-    private NextJumpAlgorithm algorithm = new NaiveNextJumpAlgorithm();
-
     private EndpointHealthChecker healthChecker = new DefaultEndpointHealthChecker();
 
     private Future future;
@@ -61,26 +59,8 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
     }
 
     @Override
-    public ProxyEndpoint getNextJump(List<ProxyEndpoint> candidates) {
-
-        recordProxyEndpoints(candidates);
-        candidates.retainAll(getAvailableProxyEndpoints());
-
-        ProxyEndpoint endpoint = algorithm.nextJump(candidates);
-        if(endpoint == null) {
-            logger.info("[getNextJump] no endpoint selected, chose first for default");
-            endpoint = candidates.get(0);
-        }
-        return endpoint;
-    }
-
-    @Override
-    public void setNextJumpAlgorithm(NextJumpAlgorithm algorithm) {
-        this.algorithm = algorithm;
-    }
-
-    private void recordProxyEndpoints(List<ProxyEndpoint> candidates) {
-        List<ProxyEndpoint> newArrival = Lists.newArrayList(candidates);
+    public void storeProxyEndpoints(List<ProxyEndpoint> endpoints) {
+        List<ProxyEndpoint> newArrival = Lists.newArrayList(endpoints);
         newArrival.removeAll(allEndpoints);
         allEndpoints.addAll(newArrival);
         availableEndpoints.addAll(newArrival);
@@ -113,7 +93,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
                 if(healthChecker.checkConnectivity(endpoint)) {
                     availableEndpoints.add(endpoint);
                 } else {
-                    logger.info("[HealthCheckTask] endpoint not healthy: {}", endpoint.rawUri());
+                    logger.info("[HealthCheckTask] endpoint not healthy: {}", endpoint.getUri());
                     availableEndpoints.remove(endpoint);
                 }
             }

@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
-import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolHandler;
-import com.ctrip.xpipe.redis.proxy.handler.TunnelNettyHandler;
+import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
+import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -73,7 +73,7 @@ public class DefaultProxyServer implements ProxyServer {
         bootstrap.group(new NioEventLoopGroup(1, XpipeThreadFactory.create("frontend-boss")),
                         new NioEventLoopGroup(config.frontendWorkerEventLoopNum(), XpipeThreadFactory.create("frontend-worker")))
                 .channel(NioServerSocketChannel.class)
-                .handler(new LoggingHandler(LogLevel.INFO))
+                .handler(new LoggingHandler(LogLevel.DEBUG))
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
@@ -83,8 +83,8 @@ public class DefaultProxyServer implements ProxyServer {
                             p.addLast(serverSslHandlerFactory.createSslHandler());
                         }
                         p.addLast(new LoggingHandler(LogLevel.DEBUG));
-                        p.addLast(new ProxyProtocolHandler());
-                        p.addLast(new TunnelNettyHandler(tunnelManager));
+                        p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
+                        p.addLast(new FrontendSessionNettyHandler(tunnelManager));
                     }
                 });
 

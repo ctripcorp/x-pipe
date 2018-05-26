@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.session.state;
 
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
-import com.ctrip.xpipe.redis.proxy.exception.WriteWhenSessionInitException;
-import com.ctrip.xpipe.redis.proxy.session.DefaultSession;
+import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Assert;
@@ -18,11 +17,11 @@ public class SessionInitTest extends AbstractRedisProxyServerTest {
 
     private SessionState sessionInit;
 
-    private DefaultSession backend;
+    private Session backend;
 
     @Before
     public void beforeSessionClosedTest() throws Exception {
-        backend = (DefaultSession) backend();
+        backend = backend();
         sessionInit = new SessionInit(backend);
     }
 
@@ -36,14 +35,9 @@ public class SessionInitTest extends AbstractRedisProxyServerTest {
         Assert.assertEquals(new SessionClosed(backend), sessionInit.nextAfterFail());
     }
 
-    @Test(expected = WriteWhenSessionInitException.class)
+    @Test(expected = UnsupportedOperationException.class)
     public void testTryWrite() {
-        sessionInit.tryWrite(new UnpooledByteBufAllocator(true).buffer());
-    }
-
-    @Test
-    public void testConnect() {
-        sessionInit.connect();
+        sessionInit.tryWrite(new UnpooledByteBufAllocator(true).buffer().writeByte(1));
     }
 
     @Test(expected = UnsupportedOperationException.class)

@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.proxy;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.monitor.CatConfig;
-import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
@@ -13,6 +12,7 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -22,6 +22,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import org.junit.After;
@@ -30,6 +31,9 @@ import org.junit.BeforeClass;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
 
 /**
  * @author chen.zhu
@@ -45,6 +49,8 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
             ()->config.endpointHealthCheckIntervalSec());
 
     private TunnelManager tunnelManager = new DefaultTunnelManager();
+
+    private NextHopAlgorithm algorithm = new LocalNextHopAlgorithm();
 
     private NettySslHandlerFactory clientFactory = new NettyClientSslHandlerFactory(config);
 
@@ -64,7 +70,9 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     @Before
     public void beforeAbstractRedisProxyTest() {
         ((DefaultTunnelManager) tunnelManager).setEndpointManager(endpointManager);
-        endpointManager.setNextJumpAlgorithm(new LocalNextJumpAlgorithm());
+        ((DefaultTunnelManager) tunnelManager).setBackendEventLoopGroup(new NioEventLoopGroup(3,
+                XpipeThreadFactory.create("backend")));
+
         ((DefaultProxyEndpointManager)endpointManager).setHealthChecker(new EndpointHealthChecker() {
             @Override
             public boolean checkConnectivity(Endpoint endpoint) {
@@ -121,7 +129,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     public ProxyProtocol protocol() {
         if(proxyProtocol == null) {
-            String protocolStr = String.format("Proxy ROUTE %s,%s,%s %s,%s %s;PATH %s",
+            String protocolStr = String.format("Proxy ROUTE %s,%s,%s %s,%s %s;FORWARD_FOR %s",
                     newProxyEndpoint(true, false), newProxyEndpoint(false, true), newProxyEndpoint(true, true),
                     newProxyEndpoint(true, true), newProxyEndpoint(false, true),
                     newProxyEndpoint(true, false),
@@ -142,7 +150,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     protected ProxyEndpoint newProxyEndpoint(boolean isLocal, boolean isSSL) {
         String local = "127.0.0.1", remote = String.format("10.3.%d.%d", randomInt(0, 255), randomInt(0, 255));
         String rawUri = String.format("%s://%s:%d",
-                isSSL ? ProxyEndpoint.PROXY_SCHEME.PROXYTLS.name() : ProxyEndpoint.PROXY_SCHEME.PROXY.name(),
+                isSSL ? ProxyEndpoint.PROXY_SCHEME.TLS.name() : ProxyEndpoint.PROXY_SCHEME.PROXY.name(),
                 isLocal ? local : remote,
                 randomPort());
 
@@ -216,6 +224,15 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         }).bind(port);
     }
 
+    public ChannelFuture startReceiveServer(int port, AtomicReference<ByteBuf> receivedBuf) {
+        return serverBootstrap().childHandler(new ChannelInitializer<SocketChannel>() {
+            @Override
+            protected void initChannel(SocketChannel ch) throws Exception {
+                ch.pipeline().addLast(new ReceiveHandler(receivedBuf));
+            }
+        }).bind(port);
+    }
+
     class ListeningHandler extends ChannelInboundHandlerAdapter {
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -233,6 +250,43 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         @Override
         public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
             logger.info("[ListeningHandler][channel un-register");
+            super.channelUnregistered(ctx);
+        }
+    }
+
+    class ReceiveHandler extends ChannelInboundHandlerAdapter {
+
+        private ByteToMessageDecoder.Cumulator cumulator = MERGE_CUMULATOR;
+
+        private ByteBuf cumulation;
+
+        private AtomicReference<ByteBuf> buffer;
+
+        public ReceiveHandler(AtomicReference<ByteBuf> buffer) {
+            this.buffer = buffer;
+            cumulation = buffer.get();
+        }
+
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            ByteBuf byteBuf = (ByteBuf) msg;
+            byteBuf.retain();
+//            logger.info("[channelRead] {}", byteBuf.toString(Charset.defaultCharset()));
+            cumulator.cumulate(ctx.channel().alloc(), cumulation, byteBuf);
+            buffer.set(cumulation);
+            super.channelRead(ctx, msg);
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            logger.info("[ReceiveHandler][channel in-active");
+            buffer.set(cumulation);
+            super.channelInactive(ctx);
+        }
+
+        @Override
+        public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+            logger.info("[ReceiveHandler][channel un-register");
             super.channelUnregistered(ctx);
         }
     }

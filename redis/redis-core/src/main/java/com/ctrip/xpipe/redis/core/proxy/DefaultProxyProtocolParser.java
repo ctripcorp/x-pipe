@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
 import com.google.common.collect.Lists;
@@ -18,7 +19,9 @@ import static com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser.
  */
 public class DefaultProxyProtocolParser implements ProxyProtocolParser {
 
-    private static final String KEY_WORD = "Proxy";
+    private static final String KEY_WORD = "PROXY";
+
+    private SimpleStringParser simpleStringParser = new SimpleStringParser();
 
     private List<ProxyOptionParser> parsers = Lists.newArrayList();
 
@@ -47,6 +50,8 @@ public class DefaultProxyProtocolParser implements ProxyProtocolParser {
         return new SimpleStringParser(proxyProtocol.toString()).format();
     }
 
+
+
     @Override
     public ProxyProtocol read(String protocol) {
         if(!protocol.toLowerCase().startsWith(KEY_WORD.toLowerCase())) {
@@ -61,6 +66,15 @@ public class DefaultProxyProtocolParser implements ProxyProtocolParser {
             addProxyParser(PROXY_OPTION.parse(option.trim()));
         }
         return proxyProtocol;
+    }
+
+    @Override
+    public ProxyProtocol read(ByteBuf byteBuf) {
+        RedisClientProtocol<String> redisClientProtocol = simpleStringParser.read(byteBuf);
+        if(redisClientProtocol == null) {
+            return null;
+        }
+        return read(redisClientProtocol.getPayload());
     }
 
     private String removeKeyWord(String protocol) {

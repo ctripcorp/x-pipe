@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.session.state;
 
-import com.ctrip.xpipe.redis.proxy.session.DefaultSession;
+import com.ctrip.xpipe.redis.proxy.Session;
+import com.ctrip.xpipe.redis.proxy.session.AbstractSession;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
@@ -12,7 +13,7 @@ import io.netty.channel.ChannelFuture;
  */
 public class SessionEstablished extends AbstractSessionState {
 
-    public SessionEstablished(DefaultSession session) {
+    public SessionEstablished(Session session) {
         super(session);
     }
 
@@ -28,12 +29,7 @@ public class SessionEstablished extends AbstractSessionState {
 
     @Override
     public ChannelFuture tryWrite(ByteBuf byteBuf) {
-        return session.doWrite(byteBuf);
-    }
-
-    @Override
-    public ChannelFuture connect() {
-        throw new UnsupportedOperationException("Already connected");
+        return ((AbstractSession)session).doWrite(byteBuf);
     }
 
     @Override
@@ -49,5 +45,15 @@ public class SessionEstablished extends AbstractSessionState {
     @Override
     public boolean equals(Object obj) {
         return super.equals(obj);
+    }
+
+    @Override
+    public boolean isValidNext(SessionState sessionState) {
+        return (sessionState instanceof SessionClosed) || super.isValidNext(sessionState);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }

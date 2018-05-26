@@ -1,10 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
-import com.ctrip.xpipe.utils.StringUtil;
 
 /**
  * @author chen.zhu
@@ -17,15 +18,32 @@ public class ProxyCommandHandler extends AbstractCommandHandler {
 
     @Override
     protected void doHandle(String[] args, RedisClient redisClient) {
-        String proxyProtocol = reStructCommand(args);
+        String proxyProtocol = restructCommand(args);
         logger.info("[doHandle]receive proxy protocol: {}", proxyProtocol);
 
         ProxyProtocol protocol = new DefaultProxyProtocolParser().read(proxyProtocol);
+        String forwardFor = protocol.getForwardFor();
 
+        Endpoint srcEndpoint = getSourceEndpoint(forwardFor);
+        redisClient.setSlaveIpAddress(srcEndpoint.getHost());
     }
 
-    private String reStructCommand(String[] args) {
-        return StringUtil.join(WHITE_SPACE, args);
+    private String restructCommand(String[] args) {
+        StringBuilder sb = new StringBuilder("Proxy");
+        for(String arg : args) {
+            sb.append(WHITE_SPACE).append(arg);
+        }
+        return sb.toString();
+    }
+
+    private Endpoint getSourceEndpoint(String forwardFor) {
+        String[] pathStrs = forwardFor.split("\\h");
+        if(pathStrs.length < 2) {
+            return new DefaultEndPoint();
+        }
+        String hostAndPort = pathStrs[1];
+        HostPort hostPort = HostPort.fromString(hostAndPort);
+        return new DefaultEndPoint(hostPort.getHost(), hostPort.getPort());
     }
 
     @Override

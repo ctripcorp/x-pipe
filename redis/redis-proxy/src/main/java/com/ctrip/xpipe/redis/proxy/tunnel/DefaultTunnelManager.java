@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.netty.channel.Channel;
+import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +60,9 @@ public class DefaultTunnelManager implements TunnelManager {
 
     @Resource(name = Production.CLIENT_SSL_HANDLER_FACTORY)
     private NettySslHandlerFactory factory;
+
+    @Resource(name = Production.BACKEND_EVENTLOOP_GROUP)
+    private EventLoopGroup backendEventLoopGroup;
 
     private Map<Channel, Tunnel> cache = Maps.newConcurrentMap();
 
@@ -111,13 +115,12 @@ public class DefaultTunnelManager implements TunnelManager {
         Tunnel tunnel = MapUtils.getOrCreate(cache, frontendChannel, new ObjectFactory<Tunnel>() {
             @Override
             public Tunnel create() {
-                return new DefaultTunnel(frontendChannel, endpointManager, protocol, factory, config);
+                return new DefaultTunnel(frontendChannel, endpointManager, protocol,
+                        factory, config, backendEventLoopGroup);
             }
         });
         try {
             tunnel.addObserver(this);
-            LifecycleHelper.initializeIfPossible(tunnel);
-            LifecycleHelper.startIfPossible(tunnel);
         } catch (Exception e) {
             logger.error("[getOrCreate] error init Tunnel of channel {}", ChannelUtil.getDesc(frontendChannel), e);
         }
@@ -162,6 +165,11 @@ public class DefaultTunnelManager implements TunnelManager {
             return;
         }
         DefaultTunnel tunnel = (DefaultTunnel) observable;
+
+        // deal with TunnelStateChangeEvent Only for current
+        if(!(args instanceof TunnelStateChangeEvent)) {
+            return;
+        }
         TunnelStateChangeEvent event = (TunnelStateChangeEvent) args;
 
         if(event.getCurrent() instanceof TunnelClosed) {
@@ -170,17 +178,18 @@ public class DefaultTunnelManager implements TunnelManager {
 
         } else if(event.getCurrent() instanceof FrontendClosed) {
             logger.info("[update] Frontend closed, tunnel: {}", tunnel.getTunnelMeta());
+            tunnel.backend().release();
             tunnel.setState(new TunnelClosing(tunnel));
 
         } else if(event.getCurrent() instanceof BackendClosed) {
             logger.info("[update] Backend closed, tunnel: {}", tunnel.getTunnelMeta());
+            tunnel.frontend().release();
             tunnel.setState(new TunnelClosing(tunnel));
 
         } else if(event.getCurrent() instanceof TunnelClosing) {
             try {
                 LifecycleHelper.stopIfPossible(tunnel);
                 remove(tunnel.frontendChannel());
-
             } catch (Exception e) {
                 logger.error("[update] try to stop tunnel failed: ", e);
             }
@@ -203,6 +212,12 @@ public class DefaultTunnelManager implements TunnelManager {
     @VisibleForTesting
     public DefaultTunnelManager setFactory(NettySslHandlerFactory clientFactory) {
         this.factory = clientFactory;
+        return this;
+    }
+
+    @VisibleForTesting
+    public DefaultTunnelManager setBackendEventLoopGroup(EventLoopGroup backendEventLoopGroup) {
+        this.backendEventLoopGroup = backendEventLoopGroup;
         return this;
     }
 }

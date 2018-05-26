@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy.buffer;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 
 /**
  * @author chen.zhu
@@ -16,5 +17,5 @@ public interface BufferStore extends Releasable {
 
     boolean isEmpty();
 
-    void clearAndSend();
+    void clearAndSend(Channel channel);
 }

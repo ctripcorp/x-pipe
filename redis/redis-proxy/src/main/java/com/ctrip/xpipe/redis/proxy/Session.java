@@ -1,11 +1,12 @@
 package com.ctrip.xpipe.redis.proxy;
 
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.model.SessionMeta;
 import com.ctrip.xpipe.redis.proxy.session.SESSION_TYPE;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
+import com.ctrip.xpipe.redis.proxy.tunnel.event.EventHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -15,30 +16,31 @@ import io.netty.channel.ChannelFuture;
  * <p>
  * May 09, 2018
  */
-public interface Session extends Releasable, Observable {
+public interface Session extends Lifecycle, Releasable, Observable {
 
     Tunnel tunnel();
 
-    void forward(ByteBuf message);
-
-    void cache(ByteBuf message);
-
-    ChannelFuture connect();
-
     void disconnect();
+
+    void registerNotWritableHandler(EventHandler handler);
+
+    void registerWritableHandler(EventHandler handler);
+
+    void onChannelNotWritable();
+
+    void onChannelWritable();
 
     ChannelFuture tryWrite(ByteBuf byteBuf);
 
-    void setEndpoint(ProxyEndpoint endpoint);
-
-    void setChannel(Channel channel);
+    void setSessionState(SessionState sessionState);
 
     Channel getChannel();
 
-    SESSION_TYPE getSessionType();
-
     SessionMeta getSessionMeta();
 
-    void setSessionState(SessionState sessionState);
+    SESSION_TYPE getSessionType();
+
+    @Override
+    void release();
 
 }

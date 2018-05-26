@@ -10,10 +10,10 @@ import io.netty.channel.Channel;
  * <p>
  * May 04, 2018
  */
-public class PathOptionParser extends AbstractProxyOptionParser implements ProxyPathParser {
+public class ForwardForOptionParser extends AbstractProxyOptionParser implements ProxyForwardForParser {
 
     @Override
-    public void addNodeToPath(Channel channel) {
+    public void append(Channel channel) {
         String ipAndPort = ChannelUtil.getSimpleIpport(channel.remoteAddress());
         if(originOptionString == null || originOptionString.isEmpty()) {
             originOptionString = option().name();
@@ -23,7 +23,7 @@ public class PathOptionParser extends AbstractProxyOptionParser implements Proxy
 
     @Override
     public PROXY_OPTION option() {
-        return PROXY_OPTION.PATH;
+        return PROXY_OPTION.FORWARD_FOR;
     }
 
 

@@ -36,28 +36,24 @@ public class SessionClosedEventHandler implements EventHandler {
     @Override
     public void handle() {
         if(!event.getCurrent().equals(new SessionClosed(null))) {
-            logger.error("[handle] event not match: {} - {}", event.getPrevious(), event.getCurrent());
             return;
         }
         // tunnel-established -> BACKEND/FRONTEND-CLOSED -> tunnel-closing(close other session) -> tunnel-closed
         if(tunnel.getState().equals(new TunnelClosing(null))) {
-            logger.info("[handle] tunnel closing -> tunnel closed");
             tunnel.setState(new TunnelClosed((DefaultTunnel) tunnel));
             return;
         }
         switch (session.getSessionType()) {
             case FRONTEND:
-                logger.info("[handle] set tunnel state -> front end closed");
                 tunnel.setState(new FrontendClosed((DefaultTunnel) tunnel));
                 break;
             case BACKEND:
-                logger.info("[handle] set tunnel state -> back end closed");
                 tunnel.setState(new BackendClosed((DefaultTunnel) tunnel));
                 break;
 
                 default:
                    logger.error("[handle] session type un-defined: {}", session.toString());
-                    break;
+                   break;
         }
 
     }

@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
  */
 public class TestProxyConfig implements ProxyConfig {
 
+    private boolean sslEnabled = false;
+
     @Override
     public int frontendPort() {
         return 8992;
@@ -26,7 +28,7 @@ public class TestProxyConfig implements ProxyConfig {
 
     @Override
     public boolean isSslEnabled() {
-        return false;
+        return sslEnabled;
     }
 
     @Override
@@ -46,16 +48,20 @@ public class TestProxyConfig implements ProxyConfig {
 
     @Override
     public String getServerCertFilePath() {
-        return null;
+        return "/opt/cert/xpipe-server.jks";
     }
 
     @Override
     public String getClientCertFilePath() {
-        return null;
+        return "/opt/cert/xpipe-client.jks";
     }
 
     @Override
     public String getCertFileType() {
-        return null;
+        return "JKS";
+    }
+
+    public void setSslEnabled(boolean sslEnabled) {
+        this.sslEnabled = sslEnabled;
     }
 }

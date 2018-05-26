@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.proxy.session.state;
 
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
-import com.ctrip.xpipe.redis.proxy.session.DefaultSession;
+import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.test.annotation.DirtiesContext;
 
 /**
  * @author chen.zhu
@@ -17,11 +18,11 @@ public class SessionEstablishedTest extends AbstractRedisProxyServerTest {
 
     private SessionState sessionEstablished;
 
-    private DefaultSession frontend;
+    private Session frontend;
 
     @Before
     public void beforeSessionClosedTest() throws Exception {
-        frontend = (DefaultSession) frontend();
+        frontend = frontend();
         sessionEstablished = new SessionEstablished(frontend);
     }
 
@@ -36,13 +37,9 @@ public class SessionEstablishedTest extends AbstractRedisProxyServerTest {
     }
 
     @Test
+    @DirtiesContext
     public void testTryWrite() {
         sessionEstablished.tryWrite(new UnpooledByteBufAllocator(true).buffer());
-    }
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void testConnect() {
-        sessionEstablished.connect();
     }
 
     @Test(expected = UnsupportedOperationException.class)

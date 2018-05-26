@@ -13,8 +13,6 @@ public interface SessionState extends State<SessionState> {
 
     ChannelFuture tryWrite(ByteBuf byteBuf);
 
-    ChannelFuture connect();
-
     void disconnect();
 
 }

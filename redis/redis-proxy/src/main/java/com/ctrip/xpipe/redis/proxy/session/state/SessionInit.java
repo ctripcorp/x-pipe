@@ -1,10 +1,11 @@
 package com.ctrip.xpipe.redis.proxy.session.state;
 
-import com.ctrip.xpipe.redis.proxy.exception.WriteWhenSessionInitException;
-import com.ctrip.xpipe.redis.proxy.session.DefaultSession;
+import com.ctrip.xpipe.redis.proxy.Session;
+import com.ctrip.xpipe.redis.proxy.session.BackendSession;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.DefaultChannelProgressivePromise;
 
 /**
  * @author chen.zhu
@@ -13,7 +14,7 @@ import io.netty.channel.ChannelFuture;
  */
 public class SessionInit extends AbstractSessionState {
 
-    public SessionInit(DefaultSession session) {
+    public SessionInit(Session session) {
         super(session);
     }
 
@@ -29,13 +30,15 @@ public class SessionInit extends AbstractSessionState {
 
     @Override
     public ChannelFuture tryWrite(ByteBuf byteBuf) {
-        throw new WriteWhenSessionInitException("Cannot write when session initializing");
-    }
-
-    @Override
-    public ChannelFuture connect() {
-        logger.info("[connect] Session connect");
-        return session.tryConnect();
+        if(session instanceof BackendSession) {
+            try {
+                ((BackendSession) session).sendImmdiateAfterProtocol(byteBuf);
+            } catch (Exception e) {
+                throw new UnsupportedOperationException(e);
+            }
+            return new DefaultChannelProgressivePromise(session.getChannel());
+        }
+        throw new UnsupportedOperationException("No write through init state");
     }
 
     @Override
@@ -51,5 +54,10 @@ public class SessionInit extends AbstractSessionState {
     @Override
     public boolean equals(Object obj) {
         return super.equals(obj);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }

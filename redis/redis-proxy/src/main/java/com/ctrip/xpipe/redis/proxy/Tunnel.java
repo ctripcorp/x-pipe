@@ -4,11 +4,13 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
+import com.ctrip.xpipe.redis.proxy.session.BackendSession;
+import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelState;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 
 /**
  * @author chen.zhu
@@ -17,24 +19,30 @@ import io.netty.channel.Channel;
  */
 public interface Tunnel extends Lifecycle, Releasable, Observable, Observer {
 
-    Session frontend();
+    FrontendSession frontend();
 
-    Session backend();
-
-    Session session(Channel channel);
+    BackendSession backend();
 
     TunnelMeta getTunnelMeta();
-
-    ProxyEndpoint getNextJump();
 
     void setState(TunnelState tunnelState);
 
     TunnelState getState();
 
-    void forward(ByteBuf message, Session src);
-
     String identity();
 
-    void sendProxyProtocol();
+    ChannelFuture forwardToBackend(ByteBuf message);
+
+    ChannelFuture forwardToFrontend(ByteBuf message);
+
+    void closeBackendRead();
+
+    void closeFrontendRead();
+
+    void triggerBackendRead();
+
+    void triggerFrontendRead();
+
+    ProxyProtocol getProxyProtocol();
 
 }
