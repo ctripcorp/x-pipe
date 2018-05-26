@@ -35,7 +35,7 @@ public class SessionInitTest extends AbstractRedisProxyServerTest {
         Assert.assertEquals(new SessionClosed(backend), sessionInit.nextAfterFail());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testTryWrite() {
         sessionInit.tryWrite(new UnpooledByteBufAllocator(true).buffer().writeByte(1));
     }

@@ -21,7 +21,9 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -161,7 +163,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private ChannelFuture tryConnectThroughProxy(Bootstrap b) {
 		ProxyProtocol protocol = redisKeeperServer.getProxyProtocol();
-		ProxyEndpoint endpoint = redisKeeperServer.getProxyEndpointManager().getNextHop(protocol.nextEndpoints());
+		ProxyEndpointSelector selector = redisKeeperServer.getProxyEndpointSelector();
+		if(selector == null) {
+			selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(),
+					redisKeeperServer.getProxyEndpointManager());
+			redisKeeperServer.setProxyEndpointSelector(selector);
+		}
+		ProxyEndpoint endpoint = selector.nextHop();
 		NettySslHandlerFactory clientSslFactory = redisKeeperServer.getNettySslHandlerFactory();
 
 		logger.info("[tryConnectThroughProxy][begin]{}", endpoint);
@@ -169,17 +177,20 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			b.handler(new ChannelInitializer<SocketChannel>() {
 				@Override
 				protected void initChannel(SocketChannel ch) throws Exception {
-					ch.pipeline().addFirst(clientSslFactory.createSslHandler());
+					ChannelPipeline p = ch.pipeline();
+					p.addLast(clientSslFactory.createSslHandler());
+					p.addLast(new LoggingHandler(LogLevel.DEBUG));
+					p.addLast(new NettySimpleMessageHandler());
+					p.addLast(createHandler());
 				}
 			});
 		}
 		ChannelFuture future = b.connect(endpoint.getHost(), endpoint.getPort());
 		future.addListener(new ChannelFutureListener() {
 			@Override
-			public void operationComplete(ChannelFuture future) throws Exception {
-				if(future.isSuccess()) {
-					future.channel().writeAndFlush(protocol.output());
-				}
+			public void operationComplete(ChannelFuture future) {
+				future.channel().writeAndFlush(protocol.output());
+
 			}
 		});
 		return future;
