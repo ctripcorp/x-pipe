@@ -4,7 +4,8 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
-import com.ctrip.xpipe.redis.proxy.tunnel.event.EventHandler;
+import com.ctrip.xpipe.redis.proxy.event.EventHandler;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
@@ -34,8 +35,8 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
             logger.debug("[setSessionState][Frontend] already session state: {}", oldState);
         } else {
             logger.info("[setSessionState][Frontend] Session state change from {} to {} ({})", oldState, newState, getSessionMeta());
-            EventMonitor.DEFAULT.logEvent(SESSION_STATE_CHANGE, String.format("Session: %s, %s -> %s", getSessionMeta(),
-                    oldState.toString(), newState.toString()));
+            EventMonitor.DEFAULT.logEvent(SESSION_STATE_CHANGE, String.format("%s -> %s(%s)",
+                    oldState.toString(), newState.toString(), ChannelUtil.getDesc(getChannel())));
             notifyObservers(new SessionStateChangeEvent(oldState, newState));
         }
     }
