@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.proxy.session;
 
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.Session;
-import com.ctrip.xpipe.redis.proxy.tunnel.event.EventHandler;
+import com.ctrip.xpipe.redis.proxy.event.EventHandler;
 import io.netty.buffer.ByteBuf;
 
 /**

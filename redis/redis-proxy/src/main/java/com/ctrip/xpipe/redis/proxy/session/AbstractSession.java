@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.model.SessionMeta;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
-import com.ctrip.xpipe.redis.proxy.tunnel.event.EventHandler;
+import com.ctrip.xpipe.redis.proxy.event.EventHandler;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;

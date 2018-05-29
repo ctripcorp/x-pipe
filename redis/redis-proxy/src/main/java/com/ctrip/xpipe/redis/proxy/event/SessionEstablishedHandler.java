@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.proxy.tunnel.event;
+package com.ctrip.xpipe.redis.proxy.event;
 
 
 import com.ctrip.xpipe.redis.proxy.Session;

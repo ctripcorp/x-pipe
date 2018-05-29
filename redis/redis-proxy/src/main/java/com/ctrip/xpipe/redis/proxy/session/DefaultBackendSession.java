@@ -11,7 +11,8 @@ import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
-import com.ctrip.xpipe.redis.proxy.tunnel.event.EventHandler;
+import com.ctrip.xpipe.redis.proxy.event.EventHandler;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.google.common.collect.Lists;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -164,8 +165,8 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             logger.debug("[setSessionState] already session state: {}", oldState);
         } else {
             logger.info("[setSessionState] Session state change from {} to {} ({})", oldState, newState, getSessionMeta());
-            EventMonitor.DEFAULT.logEvent(SESSION_STATE_CHANGE, String.format("Session: %s, %s -> %s", getSessionMeta(),
-                    oldState.toString(), newState.toString()));
+            EventMonitor.DEFAULT.logEvent(SESSION_STATE_CHANGE, String.format("%s -> %s(%s)",
+                    oldState.toString(), newState.toString(), ChannelUtil.getDesc(getChannel())));
             notifyObservers(new SessionStateChangeEvent(oldState, newState));
         }
     }
