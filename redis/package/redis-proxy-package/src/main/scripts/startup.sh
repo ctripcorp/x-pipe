@@ -64,7 +64,7 @@ function getCurrentRealPath(){
 
 #VARS
 FULL_DIR=`getCurrentRealPath`
-SERVICE_NAME=xpipe-proxy
+SERVICE_NAME=redis-proxy
 SERVER_PORT=`getPortFromPathOrDefault $FULL_DIR 8080`
 JMX_PORT=` expr $SERVER_PORT + 10000 `
 IP=`ifconfig | grep "inet.10" | awk '{print $2}; NR == 1 {exit}'`
