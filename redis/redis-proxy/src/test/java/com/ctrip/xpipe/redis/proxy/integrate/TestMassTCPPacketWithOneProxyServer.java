@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -178,7 +179,7 @@ public class TestMassTCPPacketWithOneProxyServer extends AbstractProxyIntegratio
 
     @Test
     public void testStabilityWithN() throws TimeoutException, InterruptedException {
-        int N = 200;
+        int N = 100;
         int[] port = new int[N];
         String[] protocol = new String[N], message = new String[N], total = new String[N];
         AtomicReference<ByteBuf>[] references = new AtomicReference[N];
@@ -198,6 +199,7 @@ public class TestMassTCPPacketWithOneProxyServer extends AbstractProxyIntegratio
             total[i] = protocol[i] + message[i];
         }
 
+        AtomicInteger counter = new AtomicInteger(0);
         for(int i = 0; i < N; i++) {
             int finalI = i;
             new Thread(new Runnable() {
@@ -225,12 +227,16 @@ public class TestMassTCPPacketWithOneProxyServer extends AbstractProxyIntegratio
                             e.printStackTrace();
                         }
                     }
+                    counter.getAndIncrement();
                 }
             }).start();
 
         }
 
         Thread.sleep(1000 * N/100 + 1);
+        waitConditionUntilTimeOut(()-> {
+            return counter.get() == N;
+        }, 5000);
 
         for(int i = 0; i < N; i++) {
             receiveServer[i].channel().close();

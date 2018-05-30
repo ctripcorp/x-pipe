@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.proxy.event.SessionEstablishedHandler;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelClosed;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelHalfEstablished;
 import com.ctrip.xpipe.utils.ChannelUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -255,10 +256,10 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
             return;
         }
         setState(new TunnelClosed(this));
-        if(frontend != null) {
+        if(frontend != null && frontend.isReleasable()) {
             frontend.release();
         }
-        if(backend != null) {
+        if(backend != null && backend.isReleasable()) {
             backend.release();
         }
         if(endpointManager != null) {
@@ -267,8 +268,18 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     }
 
 
-    public Channel frontendChannel() {
+    protected Channel frontendChannel() {
         return frontendChannel;
+    }
+
+    @VisibleForTesting
+    protected void setFrontend(FrontendSession frontend) {
+        this.frontend = frontend;
+    }
+
+    @VisibleForTesting
+    protected void setBackend(BackendSession backend) {
+        this.backend = backend;
     }
 
 }

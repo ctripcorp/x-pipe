@@ -23,9 +23,11 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
 
     protected Session session;
 
+    protected static final int HIGH_WATER_MARK = 1024 * 1024;
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.channel().config().setWriteBufferHighWaterMark(1024 * 1024);
+        ctx.channel().config().setWriteBufferHighWaterMark(HIGH_WATER_MARK);
         super.channelActive(ctx);
     }
 
@@ -79,5 +81,13 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
 
             return buf.toString();
         }
+    }
+
+    protected void setTunnel(Tunnel tunnel) {
+        this.tunnel = tunnel;
+    }
+
+    protected void setSession(Session session) {
+        this.session = session;
     }
 }

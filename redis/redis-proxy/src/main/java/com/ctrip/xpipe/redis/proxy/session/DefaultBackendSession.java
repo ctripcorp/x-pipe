@@ -60,7 +60,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             logger.info("[connect] not session init state, quit");
             return;
         }
-        if(selector.selectCounts() == selector.getCandidates().size()) {
+        if(selector.selectCounts() >= selector.getCandidates().size()) {
             // Retry times up, close session
             setSessionState(new SessionClosing(this));
             throw new ResourceIncorrectException("No candidates are available");

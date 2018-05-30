@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.event.TunnelBackendClosedEventHandler;
+import com.ctrip.xpipe.redis.proxy.event.TunnelFrontendClosedEventHandler;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.BackendClosed;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.FrontendClosed;
@@ -178,18 +180,19 @@ public class DefaultTunnelManager implements TunnelManager {
 
         } else if(event.getCurrent() instanceof FrontendClosed) {
             logger.info("[update] Frontend closed, tunnel: {}", tunnel.getTunnelMeta());
-            tunnel.backend().release();
-            tunnel.setState(new TunnelClosing(tunnel));
+            new TunnelFrontendClosedEventHandler(tunnel, event).handle();
 
         } else if(event.getCurrent() instanceof BackendClosed) {
             logger.info("[update] Backend closed, tunnel: {}", tunnel.getTunnelMeta());
-            tunnel.frontend().release();
-            tunnel.setState(new TunnelClosing(tunnel));
+            new TunnelBackendClosedEventHandler(tunnel, event).handle();
 
         } else if(event.getCurrent() instanceof TunnelClosing) {
             try {
-                LifecycleHelper.stopIfPossible(tunnel);
-                remove(tunnel.frontendChannel());
+                // ensure the concurrent situation
+                if(tunnel.getState() instanceof TunnelClosing) {
+                    tunnel.release();
+                    remove(tunnel.frontendChannel());
+                }
             } catch (Exception e) {
                 logger.error("[update] try to stop tunnel failed: ", e);
             }

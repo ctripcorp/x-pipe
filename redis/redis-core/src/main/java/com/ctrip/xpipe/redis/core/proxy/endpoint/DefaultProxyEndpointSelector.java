@@ -34,9 +34,10 @@ public class DefaultProxyEndpointSelector implements ProxyEndpointSelector {
     public ProxyEndpoint nextHop() {
 
         candidates.retainAll(endpointManager.getAvailableProxyEndpoints());
-        candidates.removeAll(selected);
+        List<ProxyEndpoint> toBeSelected = Lists.newArrayList(candidates);
+        toBeSelected.removeAll(selected);
 
-        ProxyEndpoint endpoint = algorithm.nextHop(candidates);
+        ProxyEndpoint endpoint = algorithm.nextHop(toBeSelected);
         if(endpoint == null) {
             logger.info("[getNextHop] no endpoint selected, chose first for default");
             endpoint = candidates.get(0);

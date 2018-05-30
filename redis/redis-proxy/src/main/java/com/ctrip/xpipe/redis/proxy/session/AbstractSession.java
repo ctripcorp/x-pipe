@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
 import com.ctrip.xpipe.redis.proxy.event.EventHandler;
 import com.ctrip.xpipe.utils.ChannelUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -124,7 +125,11 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
 
     @Override
     public SessionMeta getSessionMeta() {
-        return new SessionMeta(this, endpoint, getSessionState());
+        try {
+            return new SessionMeta(this, endpoint, getSessionState());
+        } catch (Exception e) {
+            return new SessionMeta(getSessionType().name(), "unknown", "unknown", getSessionState().name());
+        }
     }
 
     @Override
@@ -150,9 +155,15 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
         super.doStart();
     }
 
-    protected void setChannel(Channel channel) {
+    @Override
+    public boolean isReleasable() {
+        SessionState sessionState = getSessionState();
+        return !(sessionState instanceof SessionClosed);
+    }
+
+    @VisibleForTesting
+    public void setChannel(Channel channel) {
         AbstractSession.this.channel = channel;
     }
 
-    protected abstract SessionState getSessionState();
 }
