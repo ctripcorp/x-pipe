@@ -18,6 +18,11 @@ public abstract class AbstractTunnelEventHandler implements EventHandler {
 
     protected TunnelStateChangeEvent event;
 
+    public AbstractTunnelEventHandler(Tunnel tunnel, TunnelStateChangeEvent event) {
+        this.tunnel = tunnel;
+        this.event = event;
+    }
+
     @Override
     public void handle() {
         logger.info("[handle] handle tunnel: {}, event: {}", tunnel.getTunnelMeta(), event);

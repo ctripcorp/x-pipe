@@ -25,7 +25,12 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
         super(tunnel, trafficReportIntervalMillis);
         this.channel = channel;
         this.sessionState = new AtomicReference<>(new SessionEstablished(this));
-        this.endpoint = new DefaultProxyEndpoint((InetSocketAddress) channel.remoteAddress());
+        try {
+            this.endpoint = new DefaultProxyEndpoint((InetSocketAddress) channel.remoteAddress());
+        } catch (Exception e) {
+            this.endpoint = new DefaultProxyEndpoint("0.0.0.0", -1);
+            logger.error("[construct]", e);
+        }
     }
 
     @Override
@@ -62,7 +67,7 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
     }
 
     @Override
-    protected SessionState getSessionState() {
+    public SessionState getSessionState() {
         return sessionState.get();
     }
 }

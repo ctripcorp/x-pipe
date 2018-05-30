@@ -34,6 +34,10 @@ public interface Session extends Lifecycle, Releasable, Observable {
 
     void setSessionState(SessionState sessionState);
 
+    SessionState getSessionState();
+
+    boolean isReleasable();
+
     Channel getChannel();
 
     SessionMeta getSessionMeta();

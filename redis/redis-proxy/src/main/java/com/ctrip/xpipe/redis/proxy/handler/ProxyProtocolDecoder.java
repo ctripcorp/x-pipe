@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
 import com.ctrip.xpipe.utils.ChannelUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -81,5 +82,10 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
             throw new ProxyProtocolException("frame length (" + readLength + ") exceeds the allowed maximum ("
                     + maxLength + ')');
         }
+    }
+
+    @VisibleForTesting
+    protected boolean isFinished() {
+        return finished;
     }
 }
