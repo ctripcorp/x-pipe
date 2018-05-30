@@ -146,6 +146,16 @@ public class DefaultTunnelManager implements TunnelManager {
     }
 
     @Override
+    public Tunnel getById(String id) {
+        for(Tunnel tunnel : tunnels()) {
+            if(tunnel.identity().equals(id)) {
+                return tunnel;
+            }
+        }
+        return null;
+    }
+
+    @Override
     public void release() throws Exception {
         if(future != null) {
             future.cancel(true);
