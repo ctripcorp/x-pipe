@@ -64,7 +64,7 @@ function getCurrentRealPath(){
 
 #VARS
 FULL_DIR=`getCurrentRealPath`
-SERVICE_NAME=redis-proxy
+SERVICE_NAME=xpipe-proxy
 SERVER_PORT=`getPortFromPathOrDefault $FULL_DIR 8080`
 JMX_PORT=` expr $SERVER_PORT + 10000 `
 IP=`ifconfig | grep "inet.10" | awk '{print $2}; NR == 1 {exit}'`
@@ -144,7 +144,7 @@ fi
 
 printf "$(date) ==== Starting ==== \n" > $STARTUP_LOG
 
-ln $PATH_TO_JAR $SERVICE_NAME".jar"
+ln $PATH_TO_JAR $c".jar"
 chmod a+x $SERVICE_NAME".jar"
 ./$SERVICE_NAME".jar" start
 
