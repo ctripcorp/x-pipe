@@ -54,7 +54,6 @@ public class FrontendSessionNettyHandler extends AbstractSessionNettyHandler {
         try {
             tunnel = tunnelManager.create(ctx.channel(), (ProxyProtocol) msg);
             session = tunnel.frontend();
-            ctx.pipeline().addLast(new TunnelTrafficReporter(1000, session));
         } catch (Exception e) {
             logger.error("[channelRead] Error when create tunnel: ", e);
             throw e;
