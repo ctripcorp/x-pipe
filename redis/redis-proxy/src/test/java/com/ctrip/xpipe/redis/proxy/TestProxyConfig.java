@@ -17,11 +17,6 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
-    public int frontendWorkerEventLoopNum() {
-        return 10;
-    }
-
-    @Override
     public long getTrafficReportIntervalMillis() {
         return 1000;
     }
@@ -29,11 +24,6 @@ public class TestProxyConfig implements ProxyConfig {
     @Override
     public boolean isSslEnabled() {
         return sslEnabled;
-    }
-
-    @Override
-    public int backendEventLoopNum() {
-        return 2;
     }
 
     @Override

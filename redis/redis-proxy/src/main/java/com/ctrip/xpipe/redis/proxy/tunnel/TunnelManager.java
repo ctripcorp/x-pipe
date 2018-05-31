@@ -15,7 +15,7 @@ import java.util.List;
  */
 public interface TunnelManager extends Releasable, Observer {
 
-    Tunnel getOrCreate(Channel frontendChannel, ProxyProtocol protocol);
+    Tunnel create(Channel frontendChannel, ProxyProtocol protocol);
 
     void remove(Channel frontendChannel);
 

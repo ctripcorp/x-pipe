@@ -35,14 +35,6 @@ public interface Tunnel extends Lifecycle, Releasable, Observable, Observer {
 
     ChannelFuture forwardToFrontend(ByteBuf message);
 
-    void closeBackendRead();
-
-    void closeFrontendRead();
-
-    void triggerBackendRead();
-
-    void triggerFrontendRead();
-
     ProxyProtocol getProxyProtocol();
 
 }

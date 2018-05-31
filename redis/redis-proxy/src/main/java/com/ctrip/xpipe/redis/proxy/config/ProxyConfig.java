@@ -12,13 +12,9 @@ public interface ProxyConfig extends TLSConfig {
 
     int frontendPort();
 
-    int frontendWorkerEventLoopNum();
-
     long getTrafficReportIntervalMillis();
 
     boolean isSslEnabled();
-
-    int backendEventLoopNum();
 
     int endpointHealthCheckIntervalSec();
 }

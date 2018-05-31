@@ -1,15 +1,9 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
-import com.ctrip.xpipe.redis.proxy.Tunnel;
-import com.ctrip.xpipe.redis.proxy.event.EventHandler;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
-import io.netty.channel.EventLoop;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.channel.nio.NioEventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,8 +16,6 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import static io.netty.util.concurrent.ImmediateEventExecutor.INSTANCE;
-import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
@@ -44,7 +36,7 @@ public class DefaultFrontendSessionTest {
     @Mock
     private DefaultBackendSession backend;
 
-    private Queue<EventHandler> queue = new LinkedList<>();
+    private Queue<SessionEventHandler> queue = new LinkedList<>();
 
     @Before
     public void beforeDefaultFrontendSessionTest() {
@@ -58,15 +50,15 @@ public class DefaultFrontendSessionTest {
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                queue.offer((EventHandler) invocation.getArguments()[0]);
+                queue.offer((SessionEventHandler) invocation.getArguments()[0]);
                 return null;
             }
-        }).when(backend).registerChannelEstablishedHandler(any(EventHandler.class));
+        }).when(backend).addSessionEventHandler(any(SessionEventHandler.class));
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
                 while(!queue.isEmpty()) {
-                    queue.poll().handle();
+                    queue.poll().onEstablished();
                 }
                 return null;
             }
@@ -80,15 +72,30 @@ public class DefaultFrontendSessionTest {
 
     @Test
     public void testDoInitialize() throws Exception {
-        doCallRealMethod().when(tunnel).closeFrontendRead();
-        doCallRealMethod().when(tunnel).triggerFrontendRead();
+        session.addSessionEventHandler(new SessionEventHandler() {
+            @Override
+            public void onInit() {
+                session.makeUnReadable();
+            }
+
+            @Override
+            public void onEstablished() {
+
+            }
+
+            @Override
+            public void onWritable() {
+
+            }
+
+            @Override
+            public void onNotWritable() {
+
+            }
+        });
         Assert.assertTrue(channel.config().isAutoRead());
         session.doInitialize();
         Assert.assertFalse(channel.config().isAutoRead());
-        Assert.assertEquals(1, queue.size());
-        backend.onChannelEstablished(new EmbeddedChannel());
-        Thread.sleep(2);
-        Assert.assertTrue(channel.config().isAutoRead());
     }
 
     @Test

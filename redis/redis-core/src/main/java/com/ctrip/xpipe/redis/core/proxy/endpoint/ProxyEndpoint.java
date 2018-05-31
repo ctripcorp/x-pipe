@@ -11,7 +11,6 @@ public interface ProxyEndpoint extends Endpoint {
 
     boolean isSslEnabled();
 
-    //SUPPORTED
     boolean isProxyProtocolSupported();
 
     String getUri();

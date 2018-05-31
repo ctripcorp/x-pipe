@@ -12,10 +12,6 @@ import io.netty.buffer.ByteBuf;
  */
 public interface BackendSession extends Session {
 
-    void sendImmdiateAfterProtocol(ByteBuf byteBuf) throws Exception;
-
-    ProxyEndpoint getEndpoint();
-
-    void registerChannelEstablishedHandler(EventHandler handler);
+    void sendAfterProtocol(ByteBuf byteBuf) throws Exception;
 
 }

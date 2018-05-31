@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.spring.AbstractController;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,7 +29,11 @@ public class ProxyController {
     @RequestMapping(value = "/tunnels", method = RequestMethod.GET)
     public List<TunnelMeta> getTunnelMetas() {
         List<Tunnel> tunnels = tunnelManager.tunnels();
-        return tunnels.stream().map(Tunnel::getTunnelMeta).collect(Collectors.toList());
+        List<TunnelMeta> result = Lists.newArrayListWithCapacity(tunnels.size());
+        for(Tunnel tunnel : tunnels) {
+            result.add(tunnel.getTunnelMeta());
+        }
+        return result;
     }
 
     @RequestMapping(value = "/tunnel/{id}", method = RequestMethod.GET)

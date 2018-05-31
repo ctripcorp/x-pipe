@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.proxy.parser.compress.CompressAlgorithm;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
@@ -16,7 +17,7 @@ public interface ProxyProtocol {
 
     List<ProxyEndpoint> nextEndpoints();
 
-    void recordForwardFor(Channel channel);
+    void recordForwardFor(InetSocketAddress address);
 
     String getForwardFor();
 

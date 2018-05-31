@@ -11,7 +11,6 @@ import java.util.List;
  * May 10, 2018
  */
 
-//TODO Abstract a selector
 public interface ProxyEndpointManager extends Startable, Stoppable {
 
     List<ProxyEndpoint> getAvailableProxyEndpoints();

@@ -52,10 +52,11 @@ public class FrontendSessionNettyHandler extends AbstractSessionNettyHandler {
     private void handleProxyProtocol(ChannelHandlerContext ctx, Object msg) {
         logger.debug("[doChannelRead][ProxyProtocol] {}", msg);
         try {
-            tunnel = tunnelManager.getOrCreate(ctx.channel(), (ProxyProtocol) msg);
+            tunnel = tunnelManager.create(ctx.channel(), (ProxyProtocol) msg);
             session = tunnel.frontend();
+            ctx.pipeline().addLast(new TunnelTrafficReporter(1000, session));
         } catch (Exception e) {
-            logger.error("[channelRead] Error when getOrCreate tunnel: ", e);
+            logger.error("[channelRead] Error when create tunnel: ", e);
             throw e;
         }
     }

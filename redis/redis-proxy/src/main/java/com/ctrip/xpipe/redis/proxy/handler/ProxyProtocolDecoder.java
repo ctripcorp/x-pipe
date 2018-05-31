@@ -12,6 +12,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
@@ -45,7 +46,9 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
             if(proxyProtocol == null) {
                 return;
             }
-            proxyProtocol.recordForwardFor(ctx.channel());
+            if(ctx.channel().remoteAddress() instanceof InetSocketAddress) {
+                proxyProtocol.recordForwardFor((InetSocketAddress) ctx.channel().remoteAddress());
+            }
             out.add(proxyProtocol);
             finished = true;
         } catch (ProxyProtocolException e) {

@@ -18,13 +18,11 @@ import com.ctrip.xpipe.redis.proxy.session.*;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
-import com.ctrip.xpipe.redis.proxy.event.EventHandler;
 import com.ctrip.xpipe.redis.proxy.event.SessionClosedEventHandler;
 import com.ctrip.xpipe.redis.proxy.event.SessionClosingEventHandler;
 import com.ctrip.xpipe.redis.proxy.event.SessionEstablishedHandler;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelClosed;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelHalfEstablished;
-import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -111,26 +109,6 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     }
 
     @Override
-    public void closeBackendRead() {
-        ChannelUtil.closeChannelAutoRead(backend().getChannel());
-    }
-
-    @Override
-    public void closeFrontendRead() {
-        ChannelUtil.closeChannelAutoRead(frontend().getChannel());
-    }
-
-    @Override
-    public void triggerBackendRead() {
-        ChannelUtil.triggerChannelAutoRead(backend().getChannel());
-    }
-
-    @Override
-    public void triggerFrontendRead() {
-        ChannelUtil.triggerChannelAutoRead(frontend().getChannel());
-    }
-
-    @Override
     public FrontendSession frontend() {
         return frontend;
     }
@@ -206,11 +184,12 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         backend = new DefaultBackendSession(this, config.getTrafficReportIntervalMillis(), selector,
                 backendEventLoopGroup, clientSslFactory);
 
+        registerSessionEventHandlers();
         frontend.addObserver(this);
         backend.addObserver(this);
+
         LifecycleHelper.initializeIfPossible(frontend);
         LifecycleHelper.initializeIfPossible(backend);
-        registerWriteEventHandlers();
 
         super.doInitialize();
     }
@@ -223,24 +202,9 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         super.doStart();
     }
 
-    private void registerWriteEventHandlers() {
-        backend.registerNotWritableHandler(new EventHandler() {
-            @Override
-            public void handle() {
-                closeFrontendRead();
-                backend.getChannel().flush();
-            }
-        });
-        backend.registerWritableHandler(()->triggerFrontendRead());
-
-        frontend.registerNotWritableHandler(new EventHandler() {
-            @Override
-            public void handle() {
-                closeBackendRead();
-                frontend.getChannel().flush();
-            }
-        });
-        frontend.registerWritableHandler(()->triggerBackendRead());
+    private void registerSessionEventHandlers() {
+        frontend.addSessionEventHandler(new FrontendSessionEventHandler());
+        backend.addSessionEventHandler(new BackendSessionEventHandler());
     }
 
     @Override
@@ -282,4 +246,47 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         this.backend = backend;
     }
 
+    class BackendSessionEventHandler implements SessionEventHandler {
+        @Override
+        public void onInit() {
+
+        }
+
+        @Override
+        public void onEstablished() {
+            frontend.makeReadable();
+        }
+
+        @Override
+        public void onWritable() {
+            frontend.makeReadable();
+        }
+
+        @Override
+        public void onNotWritable() {
+            frontend.makeUnReadable();
+        }
+    }
+
+    class FrontendSessionEventHandler implements SessionEventHandler {
+        @Override
+        public void onInit() {
+            frontend.makeUnReadable();
+        }
+
+        @Override
+        public void onEstablished() {
+
+        }
+
+        @Override
+        public void onWritable() {
+            backend.makeReadable();
+        }
+
+        @Override
+        public void onNotWritable() {
+            backend.makeUnReadable();
+        }
+    }
 }

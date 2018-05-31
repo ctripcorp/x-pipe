@@ -6,12 +6,14 @@ import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import com.ctrip.xpipe.utils.ChannelUtil;
 
+import java.io.Serializable;
+
 /**
  * @author chen.zhu
  * <p>
  * May 09, 2018
  */
-public class SessionMeta {
+public class SessionMeta implements Serializable {
 
     private String type;
 
@@ -70,6 +72,7 @@ public class SessionMeta {
         this.state = state;
         return this;
     }
+
 
     @Override
     public String toString() {

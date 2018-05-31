@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -51,6 +52,6 @@ public class Production extends AbstractProfile {
 
     @Bean(name = BACKEND_EVENTLOOP_GROUP)
     public EventLoopGroup backendEventLoopGroup() {
-        return new NioEventLoopGroup(config.backendEventLoopNum(), XpipeThreadFactory.create("backend"));
+        return new NioEventLoopGroup(OsUtils.getCpuCount() * 2, XpipeThreadFactory.create("backend"));
     }
 }

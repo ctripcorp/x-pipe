@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.proxy.event.EventHandler;
 import com.ctrip.xpipe.redis.proxy.model.SessionMeta;
 import com.ctrip.xpipe.redis.proxy.session.SESSION_TYPE;
+import com.ctrip.xpipe.redis.proxy.session.SessionEventHandler;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -22,13 +23,11 @@ public interface Session extends Lifecycle, Releasable, Observable {
 
     void disconnect();
 
-    void registerNotWritableHandler(EventHandler handler);
+    void addSessionEventHandler(SessionEventHandler handler);
 
-    void registerWritableHandler(EventHandler handler);
+    void makeReadable();
 
-    void onChannelNotWritable();
-
-    void onChannelWritable();
+    void makeUnReadable();
 
     ChannelFuture tryWrite(ByteBuf byteBuf);
 
@@ -47,4 +46,9 @@ public interface Session extends Lifecycle, Releasable, Observable {
     @Override
     void release();
 
+    void setWritableState(SessionWritableState state);
+
+    enum SessionWritableState {
+        WRITABLE, UNWRITABLE
+    }
 }

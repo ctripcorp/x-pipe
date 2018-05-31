@@ -6,12 +6,8 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
-import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
-import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
-import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
-import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import com.ctrip.xpipe.redis.proxy.session.*;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
@@ -31,7 +27,6 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.net.InetSocketAddress;
 import java.util.Queue;
 import java.util.concurrent.TimeoutException;
 
@@ -78,7 +73,7 @@ public class BothSessionTryWriteTest extends AbstractProxyIntegrationTest {
     @Before
     public void beforeBothSessionTryWriteTest() {
         MockitoAnnotations.initMocks(this);
-        when(tunnelManager.getOrCreate(frontChannel, proxyProtocol)).thenReturn(tunnel);
+        when(tunnelManager.create(frontChannel, proxyProtocol)).thenReturn(tunnel);
         frontChannel = new EmbeddedChannel(new LineBasedFrameDecoder(2048), new StringDecoder());
         spy(frontChannel);
 

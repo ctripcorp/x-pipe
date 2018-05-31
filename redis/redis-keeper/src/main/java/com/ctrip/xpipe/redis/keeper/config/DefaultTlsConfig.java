@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
+import com.ctrip.framework.foundation.Foundation;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
@@ -17,7 +19,7 @@ public class DefaultTlsConfig extends AbstractConfigBean implements TLSConfig {
 
     @Override
     public String getPassword() {
-        return getProperty(KEY_CERT_PASSWORD, "");
+        return getProperty(KEY_CERT_PASSWORD, FoundationService.DEFAULT.getAppId());
     }
 
     @Override
