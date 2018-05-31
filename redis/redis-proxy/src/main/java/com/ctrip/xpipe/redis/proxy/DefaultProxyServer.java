@@ -93,7 +93,7 @@ public class DefaultProxyServer implements ProxyServer {
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         if(channelFuture != null) {
             channelFuture.channel().close();
         }

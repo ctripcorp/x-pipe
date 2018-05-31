@@ -51,12 +51,6 @@ public class SessionClosedTest extends AbstractRedisProxyServerTest {
 
     }
 
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void testDisconnect() {
-        sessionClosed.disconnect();
-    }
-
     @Test
     public void testName() {
         Assert.assertEquals(sessionClosed.toString(), sessionClosed.name());

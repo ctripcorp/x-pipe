@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
-import com.ctrip.xpipe.redis.proxy.tunnel.state.FrontendClosed;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -54,15 +53,9 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
     }
 
     @Test
-    public void setTunnelStateWhenSessionClosed() {
-        handler.setTunnelStateWhenSessionClosed();
-        verify(tunnel).setState(new FrontendClosed(tunnel));
-    }
-
-    @Test
     public void testChannelInactive() {
         channel.finish();
-        verify(tunnel).setState(new FrontendClosed(tunnel));
+
     }
 
     @Test
@@ -91,7 +84,6 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
 
     @Test
     public void testChannelRead3() {
-        when(tunnel.forwardToBackend(any())).thenReturn(null);
         channel.writeInbound("Hello Wrold");
         verify(manager, never()).create(any(), any());
         verify(tunnel, never()).forwardToBackend(any());

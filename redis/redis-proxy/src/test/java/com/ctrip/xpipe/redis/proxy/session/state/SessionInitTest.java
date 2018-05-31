@@ -40,10 +40,6 @@ public class SessionInitTest extends AbstractRedisProxyServerTest {
         sessionInit.tryWrite(new UnpooledByteBufAllocator(true).buffer().writeByte(1));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testDisconnect() {
-        sessionInit.disconnect();
-    }
 
     @Test
     public void testName() {

@@ -6,7 +6,6 @@ import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.config.CompositeConfig;
 import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.utils.OsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -66,7 +65,7 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
 
     @Override
     public long getTrafficReportIntervalMillis() {
-        return getLongProperty(KEY_TRAFFIC_REPORT_INTERVAL, 5 * 1000L);
+        return getLongProperty(KEY_TRAFFIC_REPORT_INTERVAL, 30000L);
     }
 
     @Override
@@ -86,12 +85,12 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
 
     @Override
     public String getServerCertFilePath() {
-        return getProperty(KEY_SERVER_CERT_FILE_PATH, "/opt/cert/xpipe_server.jks");
+        return getProperty(KEY_SERVER_CERT_FILE_PATH, "/opt/data/100013684/xpipe-server.jks");
     }
 
     @Override
     public String getClientCertFilePath() {
-        return getProperty(KEY_CLIENT_CERT_FILE_PATH, "/opt/cert/xpipe_client.jks");
+        return getProperty(KEY_CLIENT_CERT_FILE_PATH, "/opt/data/100013684/xpipe-client.jks");
     }
 
     @Override

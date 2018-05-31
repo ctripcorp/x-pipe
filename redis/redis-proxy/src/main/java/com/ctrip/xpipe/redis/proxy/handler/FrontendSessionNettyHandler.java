@@ -2,9 +2,7 @@ package com.ctrip.xpipe.redis.proxy.handler;
 
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
-import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
-import com.ctrip.xpipe.redis.proxy.tunnel.state.FrontendClosed;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -20,11 +18,6 @@ public class FrontendSessionNettyHandler extends AbstractSessionNettyHandler {
 
     public FrontendSessionNettyHandler(TunnelManager tunnelManager) {
         this.tunnelManager = tunnelManager;
-    }
-
-    @Override
-    protected void setTunnelStateWhenSessionClosed() {
-        tunnel.setState(new FrontendClosed((DefaultTunnel) tunnel));
     }
 
     @Override

@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.session.AbstractSession;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
 
 /**
  * @author chen.zhu
@@ -28,13 +27,8 @@ public class SessionEstablished extends AbstractSessionState {
     }
 
     @Override
-    public ChannelFuture tryWrite(ByteBuf byteBuf) {
-        return ((AbstractSession)session).doWrite(byteBuf);
-    }
-
-    @Override
-    public void disconnect() {
-        throw new UnsupportedOperationException("Session disconnect when Session-Closing state");
+    public void tryWrite(ByteBuf byteBuf) {
+        ((AbstractSession)session).doWrite(byteBuf);
     }
 
     @Override

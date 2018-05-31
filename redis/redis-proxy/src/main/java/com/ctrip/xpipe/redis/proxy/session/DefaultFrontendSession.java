@@ -4,12 +4,10 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
-import com.ctrip.xpipe.redis.proxy.event.EventHandler;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -53,7 +51,7 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
 
     @Override
     protected void doInitialize() throws Exception {
-        onSessionCreate();
+        onSessionInit();
         super.doInitialize();
     }
 

@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.proxy.session.BackendSession;
 import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelState;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
 
 /**
  * @author chen.zhu
@@ -25,15 +24,13 @@ public interface Tunnel extends Lifecycle, Releasable, Observable, Observer {
 
     TunnelMeta getTunnelMeta();
 
-    void setState(TunnelState tunnelState);
-
     TunnelState getState();
 
     String identity();
 
-    ChannelFuture forwardToBackend(ByteBuf message);
+    void forwardToBackend(ByteBuf message);
 
-    ChannelFuture forwardToFrontend(ByteBuf message);
+    void forwardToFrontend(ByteBuf message);
 
     ProxyProtocol getProxyProtocol();
 

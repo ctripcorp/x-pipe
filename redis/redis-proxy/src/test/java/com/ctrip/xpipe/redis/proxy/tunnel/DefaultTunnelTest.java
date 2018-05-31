@@ -11,7 +11,10 @@ import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
-import com.ctrip.xpipe.redis.proxy.session.*;
+import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
+import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
+import com.ctrip.xpipe.redis.proxy.session.SESSION_TYPE;
+import com.ctrip.xpipe.redis.proxy.session.SessionStateChangeEvent;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
@@ -96,7 +99,7 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
 
     @Test
     public void testForwardToBackend() {
-        when(backend.tryWrite(testByteBuf)).then(new Answer<ChannelFuture>() {
+        doAnswer(new Answer<ChannelFuture>() {
             @Override
             public ChannelFuture answer(InvocationOnMock invocation) throws Throwable {
                 Object object = invocation.getArguments()[0];
@@ -104,7 +107,7 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
                 Assert.assertEquals(testByteBuf, object);
                 return null;
             }
-        });
+        }).when(backend).tryWrite(testByteBuf);
         tunnel.forwardToBackend(testByteBuf);
         verify(backend).tryWrite(testByteBuf);
         verify(frontend, never()).tryWrite(any());
@@ -112,7 +115,7 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
 
     @Test
     public void testForwardToFrontend() {
-        when(frontend.tryWrite(testByteBuf)).then(new Answer<ChannelFuture>() {
+        doAnswer(new Answer<ChannelFuture>() {
             @Override
             public ChannelFuture answer(InvocationOnMock invocation) throws Throwable {
                 Object object = invocation.getArguments()[0];
@@ -120,7 +123,7 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
                 Assert.assertEquals(testByteBuf, object);
                 return frontChannel.newSucceededFuture();
             }
-        });
+        }).when(frontend).tryWrite(testByteBuf);
         tunnel.forwardToFrontend(testByteBuf);
         verify(frontend).tryWrite(testByteBuf);
         verify(backend, never()).tryWrite(any());
@@ -187,23 +190,6 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
         Assert.assertEquals(new BackendClosed(tunnel), tunnel.getState());
     }
 
-    @Test
-    public void testSetState6() {
-        registerTunnelMasterObserver();
-        tunnel.setState(new FrontendClosed(tunnel));
-        Assert.assertEquals(new TunnelClosed(tunnel), tunnel.getState());
-        verify(backend).release();
-    }
-
-    @Test
-    public void testSetState7() {
-        registerTunnelMasterObserver();
-        tunnel.setState(new TunnelEstablished(tunnel));
-        tunnel.setState(new BackendClosed(tunnel));
-        Assert.assertEquals(new TunnelClosed(tunnel), tunnel.getState());
-        verify(frontend).release();
-    }
-
     private void registerTunnelMasterObserver() {
         tunnel.addObserver(tunnelManager);
         doCallRealMethod().when(tunnelManager).update(any(), any());
@@ -235,20 +221,27 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
 
     @Test
     public void testUpdate4() {
+        tunnel = spy(tunnel);
         tunnel.setState(new TunnelEstablished(tunnel));
         tunnel.update(new SessionStateChangeEvent(new SessionClosing(frontend), new SessionClosed(frontend)), frontend);
-        Assert.assertEquals(new FrontendClosed(tunnel), tunnel.getState());
+        Assert.assertEquals(new TunnelClosing(tunnel), tunnel.getState());
+        verify(tunnel).setState(new FrontendClosed(tunnel));
     }
 
     @Test
     public void testUpdate5() {
+        tunnel = spy(tunnel);
         tunnel.setState(new TunnelEstablished(tunnel));
         tunnel.update(new SessionStateChangeEvent(new SessionClosing(backend), new SessionClosed(backend)), backend);
-        Assert.assertEquals(new BackendClosed(tunnel), tunnel.getState());
+        Assert.assertEquals(new TunnelClosing(tunnel), tunnel.getState());
+        verify(tunnel).setState(new BackendClosed(tunnel));
     }
 
     @Test
     public void testUpdate6() {
+        frontend = new DefaultFrontendSession(tunnel, new EmbeddedChannel(), 3000);
+        frontend.addObserver(tunnel);
+        tunnel.setFrontend(frontend);
         registerTunnelMasterObserver();
         tunnel.setState(new TunnelEstablished(tunnel));
         tunnel.update(new SessionStateChangeEvent(new SessionClosing(backend), new SessionClosed(backend)), backend);
@@ -257,6 +250,9 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
 
     @Test
     public void testUpdate7() {
+        backend = new DefaultBackendSession(tunnel, 1, null, null, null);
+        tunnel.setBackend(backend);
+        backend.addObserver(tunnel);
         registerTunnelMasterObserver();
         tunnel.setState(new TunnelEstablished(tunnel));
         tunnel.update(new SessionStateChangeEvent(new SessionClosing(frontend), new SessionClosed(frontend)), frontend);
@@ -276,8 +272,6 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
         tunnel.setState(new TunnelEstablished(tunnel));
         when(frontend.getSessionState()).thenReturn(new SessionEstablished(frontend));
         when(backend.getSessionState()).thenReturn(new SessionEstablished(backend));
-        doCallRealMethod().when(frontend).isReleasable();
-        doCallRealMethod().when(backend).isReleasable();
         tunnel.release();
         logger.info("[testRelease2] frontend: {}", frontend.getSessionState());
         logger.info("[testRelease2] backend: {}", backend.getSessionState());

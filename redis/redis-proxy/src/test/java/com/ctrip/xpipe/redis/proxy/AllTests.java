@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.redis.proxy.config.DefaultProxyConfigTest;
-import com.ctrip.xpipe.redis.proxy.event.*;
 import com.ctrip.xpipe.redis.proxy.handler.AbstractSessionNettyHandlerTest;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandlerTest;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandlerTest;
@@ -13,7 +12,6 @@ import com.ctrip.xpipe.redis.proxy.session.state.SessionClosedTest;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosingTest;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablishedTest;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInitTest;
-import com.ctrip.xpipe.redis.proxy.tunnel.BothSessionTryWriteTest;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -31,14 +29,6 @@ import org.junit.runners.Suite;
         SessionEstablishedTest.class,
         DefaultProxyConfigTest.class,
 
-        AbstractSessionEventHandlerTest.class,
-        AbstractTunnelEventHandlerTest.class,
-        SessionClosedEventHandlerTest.class,
-        SessionClosingEventHandlerTest.class,
-        SessionEstablishedHandlerTest.class,
-        TunnelBackendClosedEventHandlerTest.class,
-        TunnelFrontendClosedEventHandlerTest.class,
-
         AbstractSessionNettyHandlerTest.class,
         FrontendSessionNettyHandlerTest.class,
         BackendSessionHandlerTest.class,
@@ -47,7 +37,6 @@ import org.junit.runners.Suite;
         DefaultTunnelTest.class,
         DefaultBackendSessionTest.class,
         DefaultFrontendSessionTest.class,
-        BothSessionTryWriteTest.class,
 
         TestMassTCPPacketWithOneProxyServer.class
 

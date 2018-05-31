@@ -17,23 +17,16 @@ import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
 import com.ctrip.xpipe.redis.proxy.session.*;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
-import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
-import com.ctrip.xpipe.redis.proxy.event.SessionClosedEventHandler;
-import com.ctrip.xpipe.redis.proxy.event.SessionClosingEventHandler;
-import com.ctrip.xpipe.redis.proxy.event.SessionEstablishedHandler;
-import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelClosed;
-import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelHalfEstablished;
+import com.ctrip.xpipe.redis.proxy.tunnel.state.*;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -98,13 +91,13 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     }
 
     @Override
-    public ChannelFuture forwardToBackend(ByteBuf message) {
-        return backend().tryWrite(message);
+    public void forwardToBackend(ByteBuf message) {
+        backend().tryWrite(message);
     }
 
     @Override
-    public ChannelFuture forwardToFrontend(ByteBuf message) {
-        return frontend().tryWrite(message);
+    public void forwardToFrontend(ByteBuf message) {
+        frontend().tryWrite(message);
     }
 
     @Override
@@ -127,8 +120,8 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         return this.tunnelState.get();
     }
 
-    @Override
-    public synchronized void setState(TunnelState newState) {
+    @VisibleForTesting
+    protected void setState(TunnelState newState) {
         if(!tunnelState.get().isValidNext(newState)) {
             logger.debug("[setState] Set state failed, state relationship not match, old: {}, new: {}",
                     tunnelState.get().name(), newState.name());
@@ -162,22 +155,54 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         Session session = (Session) observable;
         SessionStateChangeEvent event = (SessionStateChangeEvent) args;
         if(event.getCurrent() instanceof SessionClosed) {
-            new SessionClosedEventHandler(session, event).handle();
-        } else if(event.getCurrent() instanceof SessionClosing) {
-            new SessionClosingEventHandler(session, event).handle();
+            onSessionClosed(session);
         } else if(event.getCurrent() instanceof SessionEstablished) {
-            new SessionEstablishedHandler(session, event).handle();
+            onSessionEstablished(session);
         } else {
             logger.info("[update] un-recognised event: {}", event);
         }
     }
 
+    private void onSessionClosed(Session session) {
+        // tunnel-established -> BACKEND/FRONTEND-CLOSED -> tunnel-closing(close other session) -> tunnel-closed
+        if(getState().equals(new TunnelClosing(this))) {
+            setState(new TunnelClosed(this));
+            return;
+        }
+        Session peer = null;
+        switch (session.getSessionType()) {
+            case FRONTEND:
+                peer = backend;
+                setState(new FrontendClosed(this));
+                break;
+            case BACKEND:
+                peer = frontend;
+                setState(new BackendClosed(this));
+                break;
+
+            default:
+                logger.error("[handle] session type un-defined: {}", session.toString());
+                return;
+        }
+        setState(new TunnelClosing(this));
+        peer.release();
+    }
+
+    private void onSessionEstablished(Session session) {
+        if(!(getState() instanceof TunnelHalfEstablished)) {
+            logger.info("[doHandle] tunnel state {}, not able transfer to established", getState().name());
+            return;
+        }
+        if(session.getSessionType() == SESSION_TYPE.BACKEND) {
+            setState(new TunnelEstablished(this));
+        }
+    }
 
     /**
      * Lifecycle corresponding*/
     @Override
     protected void doInitialize() throws Exception {
-        frontend = new DefaultFrontendSession(this, frontendChannel(), config.getTrafficReportIntervalMillis());
+        frontend = new DefaultFrontendSession(this, frontendChannel, config.getTrafficReportIntervalMillis());
         ProxyEndpointSelector selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), endpointManager);
         selector.setNextHopAlgorithm(new NaiveNextHopAlgorithm());
         backend = new DefaultBackendSession(this, config.getTrafficReportIntervalMillis(), selector,
@@ -219,10 +244,10 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
             return;
         }
         setState(new TunnelClosed(this));
-        if(frontend != null && frontend.isReleasable()) {
+        if(frontend != null) {
             frontend.release();
         }
-        if(backend != null && backend.isReleasable()) {
+        if(backend != null) {
             backend.release();
         }
         if(endpointManager != null) {
