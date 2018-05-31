@@ -20,11 +20,6 @@ public class DefaultProxyConfigTest {
     }
 
     @Test
-    public void frontendWorkerEventLoopNum() {
-        Assert.assertEquals(4, config.frontendWorkerEventLoopNum());
-    }
-
-    @Test
     public void getTrafficReportIntervalMillis() {
         Assert.assertEquals(30000, config.getTrafficReportIntervalMillis());
     }
@@ -32,11 +27,6 @@ public class DefaultProxyConfigTest {
     @Test
     public void isSslEnabled() {
         Assert.assertEquals(false, config.isSslEnabled());
-    }
-
-    @Test
-    public void backendEventLoopNum() {
-        Assert.assertEquals(4, config.backendEventLoopNum());
     }
 
     @Test

@@ -32,7 +32,7 @@ public class SessionInit extends AbstractSessionState {
     public ChannelFuture tryWrite(ByteBuf byteBuf) {
         if(session instanceof BackendSession) {
             try {
-                ((BackendSession) session).sendImmdiateAfterProtocol(byteBuf);
+                ((BackendSession) session).sendAfterProtocol(byteBuf);
             } catch (Exception e) {
                 throw new UnsupportedOperationException(e);
             }

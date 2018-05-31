@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
+import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.bootstrap.ServerBootstrap;
@@ -71,7 +72,7 @@ public class DefaultProxyServer implements ProxyServer {
         }
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(new NioEventLoopGroup(1, XpipeThreadFactory.create("frontend-boss")),
-                        new NioEventLoopGroup(config.frontendWorkerEventLoopNum(), XpipeThreadFactory.create("frontend-worker")))
+                        new NioEventLoopGroup(OsUtils.getCpuCount() * 2, XpipeThreadFactory.create("frontend-worker")))
                 .channel(NioServerSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.DEBUG))
                 .childHandler(new ChannelInitializer<SocketChannel>() {

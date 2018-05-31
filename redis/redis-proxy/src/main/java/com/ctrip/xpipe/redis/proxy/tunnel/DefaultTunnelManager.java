@@ -113,7 +113,7 @@ public class DefaultTunnelManager implements TunnelManager {
     }
 
     @Override
-    public Tunnel getOrCreate(Channel frontendChannel, ProxyProtocol protocol) {
+    public Tunnel create(Channel frontendChannel, ProxyProtocol protocol) {
         Tunnel tunnel = MapUtils.getOrCreate(cache, frontendChannel, new ObjectFactory<Tunnel>() {
             @Override
             public Tunnel create() {
@@ -124,7 +124,7 @@ public class DefaultTunnelManager implements TunnelManager {
         try {
             tunnel.addObserver(this);
         } catch (Exception e) {
-            logger.error("[getOrCreate] error init Tunnel of channel {}", ChannelUtil.getDesc(frontendChannel), e);
+            logger.error("[create] error init Tunnel of channel {}", ChannelUtil.getDesc(frontendChannel), e);
         }
         return tunnel;
     }

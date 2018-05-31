@@ -29,19 +29,15 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
 
     private static final String PROXY_PROPERTIES_PATH = String.format("/opt/data/%s", FoundationService.DEFAULT.getAppId());
 
-    private static final String PROXY_PROPERTIES_FILE = "proxy.properties";
+    private static final String PROXY_PROPERTIES_FILE = "xpipe.properties";
 
-    private static final String KEY_FRONT_END_PORT = "frontend.port";
+    private static final String KEY_FRONT_END_PORT = "proxy.frontend.port";
 
-    private static final String KEY_FRONT_END_WORKER_NUMBERS = "frontend.worker.num";
+    private static final String KEY_SSL_ENABLED = "proxy.frontend.ssl.enabled";
 
-    private static final String KEY_SSL_ENABLED = "frontend.ssl.enabled";
+    private static final String KEY_ENDPOINT_HEALTH_CHECK_INTERVAL = "proxy.endpoint.check.interval.sec";
 
-    private static final String KEY_BACK_END_WORKER_NUMBERS = "backend.worker.num";
-
-    private static final String KEY_ENDPOINT_HEALTH_CHECK_INTERVAL = "endpoint.check.interval.sec";
-
-    private static final String KEY_TRAFFIC_REPORT_INTERVAL = "traffic.report.interval.milli";
+    private static final String KEY_TRAFFIC_REPORT_INTERVAL = "proxy.traffic.report.interval.milli";
 
     public DefaultProxyConfig() {
         setConfig(initConfig());
@@ -54,6 +50,7 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
         } catch (Exception e) {
             logger.info("[DefaultProxyConfig]{}", e);
         }
+
         try {
             compositeConfig.addConfig(new DefaultFileConfig());
         } catch (Exception e) {
@@ -68,11 +65,6 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
     }
 
     @Override
-    public int frontendWorkerEventLoopNum() {
-        return getIntProperty(KEY_FRONT_END_WORKER_NUMBERS, OsUtils.getCpuCount());
-    }
-
-    @Override
     public long getTrafficReportIntervalMillis() {
         return getLongProperty(KEY_TRAFFIC_REPORT_INTERVAL, 5 * 1000L);
     }
@@ -83,18 +75,13 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
     }
 
     @Override
-    public int backendEventLoopNum() {
-        return getIntProperty(KEY_BACK_END_WORKER_NUMBERS, 2);
-    }
-
-    @Override
     public int endpointHealthCheckIntervalSec() {
         return getIntProperty(KEY_ENDPOINT_HEALTH_CHECK_INTERVAL, 60);
     }
 
     @Override
     public String getPassword() {
-        return getProperty(KEY_CERT_PASSWORD, "");
+        return getProperty(KEY_CERT_PASSWORD, FoundationService.DEFAULT.getAppId());
     }
 
     @Override

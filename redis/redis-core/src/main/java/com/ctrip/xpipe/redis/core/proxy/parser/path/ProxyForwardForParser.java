@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.core.proxy.parser.path;
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
 import io.netty.channel.Channel;
 
+import java.net.InetSocketAddress;
+
 /**
  * @author chen.zhu
  * <p>
@@ -10,5 +12,5 @@ import io.netty.channel.Channel;
  */
 public interface ProxyForwardForParser extends ProxyOptionParser {
 
-    void append(Channel channel);
+    void append(InetSocketAddress address);
 }

@@ -53,16 +53,7 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
 
     @Override
     protected void doInitialize() throws Exception {
-        tunnel().closeFrontendRead();
-        tunnel().backend().registerChannelEstablishedHandler(new EventHandler() {
-            @Override
-            public void handle() {
-                getChannel().eventLoop()
-                        .schedule(()->{
-                            tunnel().triggerFrontendRead();
-                        }, 1, TimeUnit.MILLISECONDS);
-            }
-        });
+        onSessionCreate();
         super.doInitialize();
     }
 

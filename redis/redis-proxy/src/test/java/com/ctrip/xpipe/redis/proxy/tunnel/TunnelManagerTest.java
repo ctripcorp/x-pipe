@@ -28,8 +28,8 @@ public class TunnelManagerTest extends AbstractRedisProxyServerTest {
     @Test
     public void testAddOrCreate() throws Exception {
         Channel frontChannel = frontChannel();
-        Tunnel tunnel1 = manager.getOrCreate(frontChannel, protocol());
-        Tunnel tunnel2 = manager.getOrCreate(frontChannel, protocol());
+        Tunnel tunnel1 = manager.create(frontChannel, protocol());
+        Tunnel tunnel2 = manager.create(frontChannel, protocol());
 
         Assert.assertTrue(tunnel1 == tunnel2);
     }
@@ -37,11 +37,11 @@ public class TunnelManagerTest extends AbstractRedisProxyServerTest {
     @Test
     public void testRemove() throws Exception {
         Channel frontChannel = frontChannel();
-        Tunnel tunnel1 = manager.getOrCreate(frontChannel, protocol());
+        Tunnel tunnel1 = manager.create(frontChannel, protocol());
         Assert.assertNotNull(tunnel1);
 
         manager.remove(frontChannel);
-        Assert.assertFalse(tunnel1 == manager.getOrCreate(frontChannel, protocol()));
+        Assert.assertFalse(tunnel1 == manager.create(frontChannel, protocol()));
     }
 
     @Test

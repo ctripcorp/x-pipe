@@ -42,7 +42,7 @@ public class DefaultProxyServerTest {
     @Before
     public void beforeDefaultProxyTest() {
         MockitoAnnotations.initMocks(this);
-        when(tunnelManager.getOrCreate(any(), any())).thenReturn(tunnel);
+        when(tunnelManager.create(any(), any())).thenReturn(tunnel);
     }
 
     @Test

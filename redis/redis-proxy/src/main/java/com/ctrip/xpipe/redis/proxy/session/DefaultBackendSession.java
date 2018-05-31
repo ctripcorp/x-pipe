@@ -103,7 +103,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
     }
 
     @Override
-    public void sendImmdiateAfterProtocol(ByteBuf byteBuf) throws Exception {
+    public void sendAfterProtocol(ByteBuf byteBuf) throws Exception {
         if(sendAfterProtocol == null) {
             sendAfterProtocol = byteBuf.retain();
             return;
@@ -111,45 +111,17 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         throw new IllegalAccessException("ByteBuf send after protocol has been valued");
     }
 
-    @Override
-    public ProxyEndpoint getEndpoint() {
-        return super.endpoint;
-    }
-
-    @Override
-    public void registerChannelEstablishedHandler(EventHandler handler) {
-        channelEstablishedHandlers.add(handler);
-    }
-
     protected void onChannelEstablished(Channel channel) {
         setChannel(channel);
 
-        ChannelFuture future = null;
         if(endpoint.isProxyProtocolSupported()) {
-            future = getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
+            getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
         }
         if(sendAfterProtocol != null) {
-            future = getChannel().writeAndFlush(sendAfterProtocol);
+            getChannel().writeAndFlush(sendAfterProtocol);
         }
         setSessionState(new SessionEstablished(DefaultBackendSession.this));
-
-        if(future != null) {
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    executeChannelEstablishHandlers();
-                }
-            });
-        } else {
-            executeChannelEstablishHandlers();
-        }
-
-    }
-
-    private void executeChannelEstablishHandlers() {
-        for(EventHandler handler : channelEstablishedHandlers) {
-            handler.handle();
-        }
+        onSessionEstablished();
     }
 
     @Override

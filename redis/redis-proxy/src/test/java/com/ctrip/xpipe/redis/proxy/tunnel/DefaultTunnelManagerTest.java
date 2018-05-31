@@ -34,8 +34,8 @@ public class DefaultTunnelManagerTest extends AbstractRedisProxyServerTest {
         startListenServer(8009);
         Channel frontChannel1 = fakeChannel();
         Channel frontChannel2 = fakeChannel();
-        manager.getOrCreate(frontChannel1, protocol("Proxy Route proxy://127.0.0.1:8009"));
-        manager.getOrCreate(frontChannel2, protocol("Proxy Route proxy://127.0.0.1:8009"));
+        manager.create(frontChannel1, protocol("Proxy Route proxy://127.0.0.1:8009"));
+        manager.create(frontChannel2, protocol("Proxy Route proxy://127.0.0.1:8009"));
 
         Assert.assertEquals(2, manager.tunnels().size());
 
@@ -52,8 +52,8 @@ public class DefaultTunnelManagerTest extends AbstractRedisProxyServerTest {
         Channel frontChannel1 = fakeChannel();
         Channel frontChannel2 = fakeChannel();
         when(frontChannel2.isActive()).thenReturn(true);
-        Tunnel tunnel1 = manager.getOrCreate(frontChannel1, protocol("Proxy Route proxy://127.0.0.1:8009"));
-        manager.getOrCreate(frontChannel2, protocol());
+        Tunnel tunnel1 = manager.create(frontChannel1, protocol("Proxy Route proxy://127.0.0.1:8009"));
+        manager.create(frontChannel2, protocol());
 
         Assert.assertEquals(2, manager.tunnels().size());
 

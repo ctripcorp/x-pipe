@@ -6,8 +6,6 @@ import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.model.SessionMeta;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
-import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
-import com.ctrip.xpipe.redis.proxy.event.EventHandler;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -39,10 +37,9 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
 
     protected long trafficReportIntervalMillis;
 
-    protected List<EventHandler> writableEventHandlers = Lists.newArrayList();
+    private List<SessionEventHandler> handlers = Lists.newArrayList();
 
-    protected List<EventHandler> notWritableEventHandlers = Lists.newArrayList();
-
+    private volatile SessionWritableState writableState = SessionWritableState.WRITABLE;
 
     public AbstractSession(Tunnel tunnel, long trafficReportIntervalMillis) {
         this.tunnel = tunnel;
@@ -60,29 +57,58 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
     }
 
     @Override
-    public void registerNotWritableHandler(EventHandler handler) {
-        notWritableEventHandlers.add(handler);
+    public void addSessionEventHandler(SessionEventHandler handler) {
+        handlers.add(handler);
     }
 
     @Override
-    public void registerWritableHandler(EventHandler handler) {
-        writableEventHandlers.add(handler);
+    public void makeReadable() {
+        ChannelUtil.triggerChannelAutoRead(getChannel());
     }
 
     @Override
-    public void onChannelNotWritable() {
-        for(EventHandler handler : notWritableEventHandlers) {
-            handler.handle();
-        }
+    public void makeUnReadable() {
+        ChannelUtil.closeChannelAutoRead(getChannel());
     }
 
     @Override
-    public void onChannelWritable() {
-        if(getSessionState() instanceof SessionInit) {
+    public void setWritableState(SessionWritableState state) {
+        if(state == writableState) {
             return;
         }
-        for(EventHandler handler : writableEventHandlers) {
-            handler.handle();
+        switch (state) {
+            case WRITABLE:
+                onSessionWritable();
+                break;
+            case UNWRITABLE:
+                onSessionNotWritable();
+                break;
+
+                default: break;
+        }
+    }
+
+    protected void onSessionCreate() {
+        for(SessionEventHandler handler : handlers) {
+            handler.onInit();
+        }
+    }
+
+    protected void onSessionEstablished() {
+        for(SessionEventHandler handler : handlers) {
+            handler.onEstablished();
+        }
+    }
+
+    private void onSessionWritable() {
+        for(SessionEventHandler handler : handlers) {
+            handler.onWritable();
+        }
+    }
+
+    private void onSessionNotWritable() {
+        for(SessionEventHandler handler : handlers) {
+            handler.onNotWritable();
         }
     }
 

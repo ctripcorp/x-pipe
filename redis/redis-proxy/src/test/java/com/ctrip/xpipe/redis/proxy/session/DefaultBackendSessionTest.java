@@ -1,16 +1,12 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
-import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
-import com.ctrip.xpipe.redis.proxy.event.EventHandler;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
-import com.ctrip.xpipe.redis.proxy.model.SessionMeta;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -26,7 +22,6 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -56,8 +51,8 @@ public class DefaultBackendSessionTest {
 
     @Test(expected = IllegalAccessException.class)
     public void testSendImmdiateAfterProtocol() throws Exception {
-        session.sendImmdiateAfterProtocol(testByteBuf());
-        session.sendImmdiateAfterProtocol(testByteBuf());
+        session.sendAfterProtocol(testByteBuf());
+        session.sendAfterProtocol(testByteBuf());
     }
 
     @Test
@@ -69,10 +64,10 @@ public class DefaultBackendSessionTest {
         EmbeddedChannel channel = new EmbeddedChannel();
         session.endpoint = new DefaultProxyEndpoint("TCP://127.0.0.1:6379");
 
-        EventHandler handler = mock(EventHandler.class);
-        session.registerChannelEstablishedHandler(handler);
+        SessionEventHandler handler = mock(SessionEventHandler.class);
+        session.addSessionEventHandler(handler);
         session.onChannelEstablished(channel);
-        verify(handler).handle();
+        verify(handler).onEstablished();
     }
 
     @Test(expected = ResourceIncorrectException.class)

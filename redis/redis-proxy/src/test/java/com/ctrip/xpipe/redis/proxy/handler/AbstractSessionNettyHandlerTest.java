@@ -81,7 +81,6 @@ public class AbstractSessionNettyHandlerTest extends AbstractNettyTest {
 
     @Test
     public void channelWritabilityChanged() {
-        doNothing().when(session).onChannelNotWritable();
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.config().setWriteBufferHighWaterMark(32768 + 200);
         channel.config().setWriteBufferLowWaterMark(32768);
@@ -91,7 +90,7 @@ public class AbstractSessionNettyHandlerTest extends AbstractNettyTest {
             count += "hello world!".getBytes().length;
         }
         Assert.assertFalse(channel.isWritable());
-        verify(session).onChannelNotWritable();
+        verify(session).setWritableState(Session.SessionWritableState.UNWRITABLE);
 
     }
 }

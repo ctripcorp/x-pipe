@@ -1,13 +1,10 @@
 package com.ctrip.xpipe.redis.proxy.tunnel;
 
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
-import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
@@ -35,9 +32,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyByte;
 import static org.mockito.Mockito.*;
 
 /**
@@ -77,7 +72,7 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
     @Before
     public void beforeDefaultTunnelTest() {
         MockitoAnnotations.initMocks(this);
-        when(tunnelManager.getOrCreate(frontChannel, proxyProtocol)).thenReturn(tunnel);
+        when(tunnelManager.create(frontChannel, proxyProtocol)).thenReturn(tunnel);
         frontChannel = new EmbeddedChannel(new FrontendSessionNettyHandler(tunnelManager),
                 new TunnelTrafficReporter(6000, frontend));
 
@@ -129,35 +124,6 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
         tunnel.forwardToFrontend(testByteBuf);
         verify(frontend).tryWrite(testByteBuf);
         verify(backend, never()).tryWrite(any());
-    }
-
-    @Test
-    public void testCloseBackendRead() {
-        tunnel.closeBackendRead();
-        Assert.assertFalse(backend.getChannel().config().isAutoRead());
-    }
-
-    @Test
-    public void testCloseFrontendRead() {
-        tunnel.closeFrontendRead();
-        Assert.assertFalse(frontChannel.config().isAutoRead());
-    }
-
-    @Test
-    public void triggerBackendRead() {
-        Assert.assertTrue(backend.getChannel().config().isAutoRead());
-        backend.getChannel().config().setAutoRead(false);
-        Assert.assertFalse(backend.getChannel().config().isAutoRead());
-        tunnel.triggerBackendRead();
-        Assert.assertTrue(backend.getChannel().config().isAutoRead());
-    }
-
-    @Test
-    public void triggerFrontendRead() {
-        frontChannel.config().setAutoRead(false);
-        Assert.assertFalse(frontChannel.config().isAutoRead());
-        tunnel.triggerFrontendRead();
-        Assert.assertTrue(frontend.getChannel().config().isAutoRead());
     }
 
     @Test

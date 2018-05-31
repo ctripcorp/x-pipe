@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.channel.Channel;
 
+import java.net.InetSocketAddress;
+
 /**
  * @author chen.zhu
  * <p>
@@ -13,8 +15,8 @@ import io.netty.channel.Channel;
 public class ForwardForOptionParser extends AbstractProxyOptionParser implements ProxyForwardForParser {
 
     @Override
-    public void append(Channel channel) {
-        String ipAndPort = ChannelUtil.getSimpleIpport(channel.remoteAddress());
+    public void append(InetSocketAddress address) {
+        String ipAndPort = ChannelUtil.getSimpleIpport(address);
         if(originOptionString == null || originOptionString.isEmpty()) {
             originOptionString = option().name();
         }

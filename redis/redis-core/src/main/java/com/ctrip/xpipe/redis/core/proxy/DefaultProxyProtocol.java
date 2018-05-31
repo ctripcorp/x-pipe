@@ -10,6 +10,7 @@ import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
@@ -40,9 +41,9 @@ public class DefaultProxyProtocol implements ProxyProtocol {
     }
 
     @Override
-    public void recordForwardFor(Channel channel) {
+    public void recordForwardFor(InetSocketAddress address) {
         ProxyForwardForParser forwardForParser = (ProxyForwardForParser) parser.getProxyOptionParser(PROXY_OPTION.FORWARD_FOR);
-        forwardForParser.append(channel);
+        forwardForParser.append(address);
     }
 
     @Override

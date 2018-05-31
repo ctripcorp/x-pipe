@@ -204,7 +204,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     }
 
     public Tunnel tunnel() throws Exception {
-        return tunnelManager.getOrCreate(frontChannel(), protocol());
+        return tunnelManager.create(frontChannel(), protocol());
     }
 
     public Session frontend() throws Exception {

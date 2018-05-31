@@ -30,7 +30,7 @@ public class TestTCPPacketWithTwoProxyServer extends AbstractProxyIntegrationTes
     public void beforeTestMassTCPPacketWithOneProxyServer() throws Exception {
         System.setProperty("server.port", "9992");
         server1 = new DefaultProxyServer(PROXY_PORT1);
-        prepareTLS(server1);
+        prepare(server1);
         server1.start();
 
         server2 = new DefaultProxyServer(PROXY_PORT2);
@@ -86,7 +86,7 @@ public class TestTCPPacketWithTwoProxyServer extends AbstractProxyIntegrationTes
 
     @Test
     public void testStabilityWithN() throws TimeoutException, InterruptedException {
-        int N = 50;
+        int N = 100;
         int[] port = new int[N];
         String[] protocol = new String[N], message = new String[N], total = new String[N];
         AtomicReference<ByteBuf>[] references = new AtomicReference[N];

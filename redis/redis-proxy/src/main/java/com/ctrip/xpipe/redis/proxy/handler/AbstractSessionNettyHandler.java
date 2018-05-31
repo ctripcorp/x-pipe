@@ -56,9 +56,9 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
         logger.debug("[channelWritabilityChanged] writable: {}", ctx.channel().isWritable());
 
         if(ctx.channel().isWritable()) {
-            session.onChannelWritable();
+            session.setWritableState(Session.SessionWritableState.WRITABLE);
         } else {
-            session.onChannelNotWritable();
+            session.setWritableState(Session.SessionWritableState.UNWRITABLE);
         }
         super.channelWritabilityChanged(ctx);
     }
