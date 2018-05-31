@@ -4,8 +4,6 @@ import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.session.BackendSession;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.DefaultChannelProgressivePromise;
 
 /**
  * @author chen.zhu
@@ -29,21 +27,16 @@ public class SessionInit extends AbstractSessionState {
     }
 
     @Override
-    public ChannelFuture tryWrite(ByteBuf byteBuf) {
+    public void tryWrite(ByteBuf byteBuf) {
         if(session instanceof BackendSession) {
             try {
                 ((BackendSession) session).sendAfterProtocol(byteBuf);
             } catch (Exception e) {
                 throw new UnsupportedOperationException(e);
             }
-            return new DefaultChannelProgressivePromise(session.getChannel());
+        } else {
+            throw new UnsupportedOperationException("No write through init state");
         }
-        throw new UnsupportedOperationException("No write through init state");
-    }
-
-    @Override
-    public void disconnect() {
-        throw new UnsupportedOperationException("disconnect only allowed in session closing");
     }
 
     @Override

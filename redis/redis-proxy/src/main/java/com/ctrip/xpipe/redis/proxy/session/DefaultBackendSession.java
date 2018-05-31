@@ -11,9 +11,7 @@ import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
-import com.ctrip.xpipe.redis.proxy.event.EventHandler;
 import com.ctrip.xpipe.utils.ChannelUtil;
-import com.google.common.collect.Lists;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -23,7 +21,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -44,8 +41,6 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     private AtomicReference<SessionState> sessionState;
 
-    private List<EventHandler> channelEstablishedHandlers = Lists.newArrayList();
-
     public DefaultBackendSession(Tunnel tunnel, long trafficReportIntervalMillis, ProxyEndpointSelector selector,
                                  EventLoopGroup eventLoopGroup, NettySslHandlerFactory sslHandlerFactory) {
         super(tunnel, trafficReportIntervalMillis);
@@ -60,6 +55,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             logger.info("[connect] not session init state, quit");
             return;
         }
+        //todo strategy
         if(selector.selectCounts() >= selector.getCandidates().size()) {
             // Retry times up, close session
             setSessionState(new SessionClosing(this));
@@ -74,6 +70,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                 if(future.isSuccess()) {
                     onChannelEstablished(future.channel());
                 } else {
+                    //todo time <--> selector.count
                     logger.error("[tryConnect] fail to connect: {}", getSessionMeta(), future.cause());
                     future.channel().eventLoop().schedule(()->connect(), 1, TimeUnit.MILLISECONDS);
                 }
@@ -89,7 +86,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    public void initChannel(SocketChannel ch) throws Exception {
+                    public void initChannel(SocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
                         if(endpoint.isSslEnabled()) {
                             p.addLast(sslHandlerFactory.createSslHandler());
@@ -124,6 +121,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         onSessionEstablished();
     }
 
+    //TODO init.start parent->child, releasr ,close clihd->parent
     @Override
     protected void doStart() throws Exception {
         connect();

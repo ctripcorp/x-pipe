@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.proxy;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.Test;
 
-import java.util.Date;
-
 /**
  * @author chen.zhu
  * <p>

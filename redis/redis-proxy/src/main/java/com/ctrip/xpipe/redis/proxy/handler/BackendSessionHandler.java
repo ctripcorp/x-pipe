@@ -2,8 +2,6 @@ package com.ctrip.xpipe.redis.proxy.handler;
 
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
-import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
-import com.ctrip.xpipe.redis.proxy.tunnel.state.BackendClosed;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -30,8 +28,4 @@ public class BackendSessionHandler extends AbstractSessionNettyHandler {
         super.channelRead(ctx, msg);
     }
 
-    @Override
-    protected void setTunnelStateWhenSessionClosed() {
-        tunnel.setState(new BackendClosed((DefaultTunnel) tunnel));
-    }
 }

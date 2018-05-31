@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.proxy.handler;
 import com.ctrip.xpipe.netty.AbstractNettyHandler;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
-import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
-import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -23,6 +21,7 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
 
     protected Session session;
 
+    //todo calculate
     protected static final int HIGH_WATER_MARK = 1024 * 1024;
 
     @Override
@@ -36,8 +35,7 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
         logger.info("[channelInactive]");
         if(tunnel != null && session != null) {
             try {
-                session.setSessionState(new SessionClosed(session));
-                setTunnelStateWhenSessionClosed();
+                session.release();
             } catch (Exception e) {
                 logger.error("[channelInactive]", e);
             }
@@ -47,7 +45,7 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         logger.error("[exceptionCaught] ", cause);
-        session.setSessionState(new SessionClosing(session));
+        session.release();
         super.exceptionCaught(ctx, cause);
     }
 
@@ -62,8 +60,6 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
         }
         super.channelWritabilityChanged(ctx);
     }
-
-    protected abstract void setTunnelStateWhenSessionClosed();
 
     @VisibleForTesting
     protected String formatByteBuf(String eventName, ByteBuf msg) {

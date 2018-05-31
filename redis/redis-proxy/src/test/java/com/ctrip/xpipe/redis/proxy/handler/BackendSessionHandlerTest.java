@@ -4,13 +4,9 @@ import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
-import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
-import com.ctrip.xpipe.redis.proxy.tunnel.state.BackendClosed;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.jboss.netty.channel.DefaultChannelFuture;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,9 +17,7 @@ import org.mockito.stubbing.Answer;
 
 import java.nio.charset.Charset;
 
-import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyByte;
 import static org.mockito.Mockito.*;
 
 /**
@@ -73,9 +67,4 @@ public class BackendSessionHandlerTest extends AbstractNettyTest {
         verify(tunnel).forwardToFrontend(any());
     }
 
-    @Test
-    public void setTunnelStateWhenSessionClosed() {
-        handler.setTunnelStateWhenSessionClosed();
-        verify(tunnel).setState(new BackendClosed(tunnel));
-    }
 }

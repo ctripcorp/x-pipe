@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
 
@@ -27,13 +28,21 @@ public abstract class AbstractNettySslHandlerFactory implements NettySslHandlerF
 
     protected KeyStore loadKeyStore() {
         KeyStore keyStore = null;
-
+        InputStream inputStream = null;
         try {
             keyStore = KeyStore.getInstance(tlsConfig.getCertFileType());
-            InputStream inputStream = new FileInputStream(getFilePath());
+            inputStream = new FileInputStream(getFilePath());
             keyStore.load(inputStream, getPassword().toCharArray());
         } catch (Exception e) {
             logger.error("[loadKeyStore] {}", e);
+        } finally {
+            if(inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException ignore) {
+
+                }
+            }
         }
 
         return keyStore;

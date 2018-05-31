@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.proxy.config;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>
@@ -36,17 +34,17 @@ public class DefaultProxyConfigTest {
 
     @Test
     public void getPassword() {
-        Assert.assertEquals("123456", config.getPassword());
+        Assert.assertEquals("appid_xpipe", config.getPassword());
     }
 
     @Test
     public void getServerCertFilePath() {
-        Assert.assertEquals("/opt/cert/xpipe-server.jks", config.getServerCertFilePath());
+        Assert.assertEquals("/opt/data/100013684/xpipe-server.jks", config.getServerCertFilePath());
     }
 
     @Test
     public void getClientCertFilePath() {
-        Assert.assertEquals("/opt/cert/xpipe-client.jks", config.getClientCertFilePath());
+        Assert.assertEquals("/opt/data/100013684/xpipe-client.jks", config.getClientCertFilePath());
     }
 
     @Test

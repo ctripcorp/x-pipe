@@ -12,7 +12,6 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +26,7 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
 
     protected final static Logger logger = LoggerFactory.getLogger(AbstractSession.class);
 
-    protected static final String SESSION_STATE_CHANGE = "Session.State.Change";
+    protected final static String SESSION_STATE_CHANGE = "Session.State.Change";
 
     protected ProxyEndpoint endpoint;
 
@@ -41,7 +40,7 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
 
     private volatile SessionWritableState writableState = SessionWritableState.WRITABLE;
 
-    public AbstractSession(Tunnel tunnel, long trafficReportIntervalMillis) {
+    protected AbstractSession(Tunnel tunnel, long trafficReportIntervalMillis) {
         this.tunnel = tunnel;
         this.trafficReportIntervalMillis = trafficReportIntervalMillis;
     }
@@ -49,11 +48,6 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
     @Override
     public Tunnel tunnel() {
         return tunnel;
-    }
-
-    @Override
-    public void disconnect() {
-        getSessionState().disconnect();
     }
 
     @Override
@@ -89,7 +83,7 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
         }
     }
 
-    protected void onSessionCreate() {
+    protected void onSessionInit() {
         for(SessionEventHandler handler : handlers) {
             handler.onInit();
         }
@@ -113,28 +107,19 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
         }
     }
 
-    public void doDisconnect() {
-        try {
-            channel.close();
-        } catch (Exception e) {
-            logger.error("[doDisconnect] session: {}", getSessionMeta(), e);
-        }
-    }
-
     @Override
-    public ChannelFuture tryWrite(ByteBuf byteBuf) {
-        return getSessionState().tryWrite(byteBuf);
+    public void tryWrite(ByteBuf byteBuf) {
+        getSessionState().tryWrite(byteBuf);
     }
 
-    public ChannelFuture doWrite(ByteBuf byteBuf) {
+    public void doWrite(ByteBuf byteBuf) {
         if(logger.isDebugEnabled()) {
             logger.debug("[doWrite] {}: {}", getSessionType(), ByteBufUtil.prettyHexDump(byteBuf));
         }
-        return getChannel().writeAndFlush(byteBuf.retain());
+        getChannel().writeAndFlush(byteBuf.retain());
     }
 
-    @Override
-    public void setSessionState(SessionState newState) {
+    protected void setSessionState(SessionState newState) {
         if(!getSessionState().isValidNext(newState)) {
             logger.debug("[setSessionState] Set state failed, state relationship not match, old: {}, new: {}",
                     getSessionState(), newState.name());
@@ -180,12 +165,6 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
     @Override
     protected void doStart() throws Exception {
         super.doStart();
-    }
-
-    @Override
-    public boolean isReleasable() {
-        SessionState sessionState = getSessionState();
-        return !(sessionState instanceof SessionClosed);
     }
 
     @VisibleForTesting

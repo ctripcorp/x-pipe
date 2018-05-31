@@ -16,7 +16,7 @@ public class TunnelHalfEstablished extends AbstractTunnelState {
 
     @Override
     public String name() {
-        return "Half-Established";
+        return "Tunnel-Half-Established";
     }
 
     @Override

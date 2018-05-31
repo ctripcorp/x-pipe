@@ -42,11 +42,6 @@ public class SessionEstablishedTest extends AbstractRedisProxyServerTest {
         sessionEstablished.tryWrite(new UnpooledByteBufAllocator(true).buffer());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testDisconnect() {
-        sessionEstablished.disconnect();
-    }
-
     @Test
     public void testName() {
         Assert.assertEquals(sessionEstablished.toString(), sessionEstablished.name());

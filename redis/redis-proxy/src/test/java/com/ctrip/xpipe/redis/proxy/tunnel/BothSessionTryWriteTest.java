@@ -9,9 +9,9 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
-import com.ctrip.xpipe.redis.proxy.session.*;
+import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
+import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
-import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelEstablished;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
@@ -83,8 +83,8 @@ public class BothSessionTryWriteTest extends AbstractProxyIntegrationTest {
         frontend = new DefaultFrontendSession(tunnel, frontChannel, 300000);
         backend = new DefaultBackendSession(tunnel, 300000, selector, eventLoopGroup1, sslHandlerFactory);
 
-        spy(frontend);
-        spy(backend);
+        frontend = spy(frontend);
+        backend = spy(backend);
 
         backendChannel = new EmbeddedChannel(new LineBasedFrameDecoder(2048), new StringDecoder());
         backend.setChannel(backendChannel);
@@ -93,8 +93,8 @@ public class BothSessionTryWriteTest extends AbstractProxyIntegrationTest {
         tunnel.setFrontend(frontend);
         tunnel.setBackend(backend);
 
-        backend.setSessionState(new SessionEstablished(backend));
-        tunnel.setState(new TunnelEstablished(tunnel));
+        when(backend.getSessionState()).thenReturn(new SessionEstablished(backend));
+        when(frontend.getSessionState()).thenReturn(new SessionEstablished(frontend));
 
     }
 
