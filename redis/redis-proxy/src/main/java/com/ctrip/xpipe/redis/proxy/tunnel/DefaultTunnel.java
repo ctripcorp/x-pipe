@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
 import com.ctrip.xpipe.redis.proxy.session.*;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
@@ -63,8 +64,6 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     private NettySslHandlerFactory clientSslFactory;
 
     private ProxyConfig config;
-
-    private AtomicBoolean isProxyProtocolSent = new AtomicBoolean(false);
 
     private EventLoopGroup backendEventLoopGroup;
 
@@ -272,6 +271,8 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         @Override
         public void onInit() {
             frontend.makeUnReadable();
+            frontend.getChannel().pipeline()
+                    .addLast(new TunnelTrafficReporter(config.getTrafficReportIntervalMillis(), frontend));
         }
 
         @Override

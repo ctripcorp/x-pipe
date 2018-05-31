@@ -76,6 +76,7 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
         if(state == writableState) {
             return;
         }
+        writableState = state;
         switch (state) {
             case WRITABLE:
                 onSessionWritable();
