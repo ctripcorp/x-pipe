@@ -29,7 +29,9 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole,
 
 	int getSlaveListeningPort();
 
-	void setSlaveIpAddress(String host);
+	void setClientIpAddress(String host);
+
+	String getClientIpAddress();
 
 	void capa(CAPA capa);
 

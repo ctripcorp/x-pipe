@@ -13,7 +13,8 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static com.ctrip.xpipe.redis.proxy.handler.AbstractSessionNettyHandler.HIGH_WATER_MARK;
+import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_HIGH_WATER_MARK;
+import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MARK;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -36,13 +37,6 @@ public class AbstractSessionNettyHandlerTest extends AbstractNettyTest {
         MockitoAnnotations.initMocks(this);
         handler.setSession(session);
         handler.setTunnel(tunnel);
-    }
-
-    @Test
-    public void channelActive() {
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
-        Assert.assertTrue(channel.isActive());
-        Assert.assertEquals(HIGH_WATER_MARK, channel.config().getWriteBufferHighWaterMark());
     }
 
     @Test

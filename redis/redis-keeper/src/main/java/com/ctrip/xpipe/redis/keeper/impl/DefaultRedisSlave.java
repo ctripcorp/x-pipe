@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -291,7 +290,8 @@ public class DefaultRedisSlave implements RedisSlave {
 		long lag = System.currentTimeMillis() - replAckTime;
 		info = String.format(
 				"ip=%s,port=%d,state=%s,offset=%d,lag=%d,remotePort=%d" ,
-				ip(), getSlaveListeningPort(),
+				getClientIpAddress() == null ? ip() : getClientIpAddress(),
+				getSlaveListeningPort(),
 				slaveState != null ? slaveState.getDesc() : "null",
 				replAckOff, lag/1000, remotePort());
 		return info;
@@ -408,8 +408,13 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public void setSlaveIpAddress(String host) {
-		redisClient.setSlaveIpAddress(host);
+	public void setClientIpAddress(String host) {
+		redisClient.setClientIpAddress(host);
+	}
+
+	@Override
+	public String getClientIpAddress() {
+		return redisClient.getClientIpAddress();
 	}
 
 	public void capa(CAPA capa) {

@@ -39,6 +39,11 @@ public class RouteOptionParser extends AbstractProxyOptionParser implements Prox
     }
 
     @Override
+    public String getContent() {
+        return originOptionString;
+    }
+
+    @Override
     public List<ProxyEndpoint> getNextEndpoints() {
         if(nextNodes == null || nextNodes.length == 0) {
             return null;

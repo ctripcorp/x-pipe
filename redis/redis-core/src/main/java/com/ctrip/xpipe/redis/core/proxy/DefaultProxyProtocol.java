@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.compress.CompressAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ProxyForwardForParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.ProxyRouteParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.route.RouteOptionParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
@@ -64,6 +65,12 @@ public class DefaultProxyProtocol implements ProxyProtocol {
     @Override
     public String getContent() {
         return this.content;
+    }
+
+    @Override
+    public String getRouteInfo() {
+        ProxyRouteParser proxyRouteParser = (ProxyRouteParser) parser.getProxyOptionParser(PROXY_OPTION.ROUTE);
+        return proxyRouteParser.getContent();
     }
 
     @Override

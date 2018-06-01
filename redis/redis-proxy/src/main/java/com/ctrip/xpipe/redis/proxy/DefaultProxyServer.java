@@ -12,6 +12,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -44,6 +45,10 @@ public class DefaultProxyServer implements ProxyServer {
 
     private ChannelFuture channelFuture;
 
+    public static final int WRITE_HIGH_WATER_MARK = 8 * 1024 * 1024;
+
+    public static final int WRITE_LOW_WATER_MARK = 2 * 1024 * 1024;
+
     @VisibleForTesting
     private int frontPort = -1;
 
@@ -74,6 +79,8 @@ public class DefaultProxyServer implements ProxyServer {
         bootstrap.group(new NioEventLoopGroup(1, XpipeThreadFactory.create("frontend-boss")),
                         new NioEventLoopGroup(OsUtils.getCpuCount() * 2, XpipeThreadFactory.create("frontend-worker")))
                 .channel(NioServerSocketChannel.class)
+                .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, WRITE_HIGH_WATER_MARK)
+                .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, WRITE_LOW_WATER_MARK)
                 .handler(new LoggingHandler(LogLevel.DEBUG))
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override

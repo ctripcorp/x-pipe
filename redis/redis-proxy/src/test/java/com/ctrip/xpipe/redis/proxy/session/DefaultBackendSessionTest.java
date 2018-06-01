@@ -1,9 +1,13 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
+import com.ctrip.xpipe.redis.core.exception.NoResourceException;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.SelectOneCycle;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
@@ -21,6 +25,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+import sun.net.spi.DefaultProxySelector;
 
 import static org.mockito.Mockito.*;
 
@@ -29,15 +35,15 @@ import static org.mockito.Mockito.*;
  * <p>
  * May 29, 2018
  */
-public class DefaultBackendSessionTest {
+public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
 
     private DefaultBackendSession session;
 
     @Mock
     private Tunnel tunnel;
 
-    @Mock
-    private ProxyEndpointSelector selector;
+    @Spy
+    private DefaultProxyEndpointSelector selector = new DefaultProxyEndpointSelector(Lists.newArrayList(), endpointManager());
 
     private NettySslHandlerFactory sslHandlerFactory = new NettyServerSslHandlerFactory(new TestProxyConfig());
 
@@ -70,10 +76,12 @@ public class DefaultBackendSessionTest {
         verify(handler).onEstablished();
     }
 
-    @Test(expected = ResourceIncorrectException.class)
+    @Test(expected = NoResourceException.class)
     public void doStart() throws Exception {
         when(selector.selectCounts()).thenReturn(1);
         when(selector.getCandidates()).thenReturn(Lists.newArrayList());
+        selector.setSelectStrategy(new SelectOneCycle(selector));
+        doCallRealMethod().when(selector).nextHop();
         session.doStart();
     }
 

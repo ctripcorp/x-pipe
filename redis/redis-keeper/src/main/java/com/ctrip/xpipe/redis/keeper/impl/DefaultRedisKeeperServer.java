@@ -25,10 +25,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.proxy.ProxyEnabled;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.core.proxy.TLSEnabled;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
@@ -127,21 +124,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private KeepersMonitorManager keepersMonitorManager;
 	private KeeperMonitor keeperMonitor;
-
-	private NettySslHandlerFactory clientSslHandlerFactory;
-
-	private ProxyEndpointManager endpointManager;
-
-	private ProxyProtocol protocol;
-
-	private ProxyEndpointSelector selector;
-
-	private AtomicBoolean connectMasterThroughProxy = new AtomicBoolean(false);
 	
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
-									MetaServerKeeperService metaService,
-									LeaderElectorManager leaderElectorManager,
-									KeepersMonitorManager keepersMonitorManager){
+			MetaServerKeeperService metaService,
+			LeaderElectorManager leaderElectorManager,
+			KeepersMonitorManager keepersMonitorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
 		this.shardId = currentKeeperMeta.parent().getId();
 		this.currentKeeperMeta = currentKeeperMeta;
@@ -285,6 +272,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private void initAndStartMaster(Endpoint target) {
 		try {
 			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, masterEventLoopGroup, replicationStoreManager, scheduled);
+
 			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
 				logger.info("[initAndStartMaster][stopped, exit]{}, {}", target, this);
 				return;
@@ -720,57 +708,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public boolean connectMasterThroughProxy() {
-		return connectMasterThroughProxy.get();
-	}
-
-	@Override
-	public void connectMasterThroughProxy(boolean throughProxy) {
-		connectMasterThroughProxy.set(throughProxy);
-	}
-
-	@Override
 	public RdbDumper rdbDumper() {
 		return rdbDumper.get();
-	}
-
-	public DefaultRedisKeeperServer setClientSslHandlerFactory(NettySslHandlerFactory clientSslHandlerFactory) {
-		this.clientSslHandlerFactory = clientSslHandlerFactory;
-		return this;
-	}
-
-	public DefaultRedisKeeperServer setEndpointManager(ProxyEndpointManager endpointManager) {
-		this.endpointManager = endpointManager;
-		return this;
-	}
-
-	@Override
-	public ProxyEndpointManager getProxyEndpointManager() {
-		return endpointManager;
-	}
-
-	@Override
-	public void setProxyProtocol(ProxyProtocol protocol) {
-		this.protocol = protocol;
-	}
-
-	@Override
-	public ProxyProtocol getProxyProtocol() {
-		return this.protocol;
-	}
-
-	@Override
-	public void setProxyEndpointSelector(ProxyEndpointSelector selector) {
-		this.selector = selector;
-	}
-
-	@Override
-	public ProxyEndpointSelector getProxyEndpointSelector() {
-		return this.selector;
-	}
-
-	@Override
-	public NettySslHandlerFactory getNettySslHandlerFactory() {
-		return clientSslHandlerFactory;
 	}
 }

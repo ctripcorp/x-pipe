@@ -24,6 +24,9 @@ import io.netty.handler.logging.LoggingHandler;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_HIGH_WATER_MARK;
+import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MARK;
+
 /**
  * @author chen.zhu
  * <p>
@@ -55,14 +58,13 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             logger.info("[connect] not session init state, quit");
             return;
         }
-        //todo strategy
-        if(selector.selectCounts() >= selector.getCandidates().size()) {
-            // Retry times up, close session
-            setSessionState(new SessionClosing(this));
-            throw new ResourceIncorrectException("No candidates are available");
-        }
 
-        ProxyEndpoint endpoint = this.endpoint = selector.nextHop();
+        try {
+            this.endpoint = selector.nextHop();
+        } catch (Exception e) {
+            setSessionState(new SessionClosing(this));
+            throw e;
+        }
         ChannelFuture connectionFuture = initChannel(endpoint);
         connectionFuture.addListener(new ChannelFutureListener() {
             @Override
@@ -70,9 +72,9 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                 if(future.isSuccess()) {
                     onChannelEstablished(future.channel());
                 } else {
-                    //todo time <--> selector.count
                     logger.error("[tryConnect] fail to connect: {}", getSessionMeta(), future.cause());
-                    future.channel().eventLoop().schedule(()->connect(), 1, TimeUnit.MILLISECONDS);
+                    future.channel().eventLoop()
+                            .schedule(()->connect(), selector.selectCounts(), TimeUnit.MILLISECONDS);
                 }
             }
         });
@@ -84,6 +86,8 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, WRITE_HIGH_WATER_MARK)
+                .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, WRITE_LOW_WATER_MARK)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) {
@@ -121,11 +125,10 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         onSessionEstablished();
     }
 
-    //TODO init.start parent->child, releasr ,close clihd->parent
     @Override
     protected void doStart() throws Exception {
-        connect();
         super.doStart();
+        connect();
     }
 
     @Override

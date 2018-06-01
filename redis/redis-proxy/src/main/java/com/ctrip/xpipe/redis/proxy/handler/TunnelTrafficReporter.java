@@ -31,13 +31,13 @@ public class TunnelTrafficReporter extends ChannelTrafficStatisticsHandler {
     @Override
     protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
         if(readBytes > 0) {
-            logger.info("[doReportTraffic] read bytes: {}", readBytes);
+            logger.debug("[doReportTraffic] read bytes: {}", readBytes);
             String type = String.format("Tunnel.%s.In.%s", session.getSessionType().name(), session.tunnel().identity());
             String name = String.format("%s:%s", remoteIp, remotePort);
             EventMonitor.DEFAULT.logEvent(type, name, readBytes);
         }
         if(writtenBytes > 0) {
-            logger.info("[doReportTraffic] write bytes: {}", writtenBytes);
+            logger.debug("[doReportTraffic] write bytes: {}", writtenBytes);
             String type = String.format("Tunnel.%s.Out.%s", session.getSessionType().name(), session.tunnel().identity());
             String name = String.format("%s:%s", remoteIp, remotePort);
             EventMonitor.DEFAULT.logEvent(type, name, writtenBytes);

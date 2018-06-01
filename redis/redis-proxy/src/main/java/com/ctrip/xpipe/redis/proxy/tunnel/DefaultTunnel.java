@@ -5,10 +5,7 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointSelector;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
@@ -28,6 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointSelector.*;
 
 /**
  * @author chen.zhu
@@ -69,20 +68,6 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         this.endpointManager = endpointManager;
         this.clientSslFactory = clientSslFactory;
         this.backendEventLoopGroup = eventLoopGroup;
-        initAndStart();
-    }
-
-    private void initAndStart() {
-        try {
-            LifecycleHelper.initializeIfPossible(this);
-        } catch (Exception e) {
-            logger.error("[initAndStart][init] ", e);
-        }
-        try {
-            LifecycleHelper.startIfPossible(this);
-        } catch (Exception e) {
-            logger.error("[initAndStart][start] ", e);
-        }
     }
 
     @Override
@@ -202,9 +187,12 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
      * Lifecycle corresponding*/
     @Override
     protected void doInitialize() throws Exception {
+        super.doInitialize();
+
         frontend = new DefaultFrontendSession(this, frontendChannel, config.getTrafficReportIntervalMillis());
         ProxyEndpointSelector selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), endpointManager);
         selector.setNextHopAlgorithm(new NaiveNextHopAlgorithm());
+        selector.setSelectStrategy(new SelectOneCycle(selector));
         backend = new DefaultBackendSession(this, config.getTrafficReportIntervalMillis(), selector,
                 backendEventLoopGroup, clientSslFactory);
 
@@ -214,16 +202,13 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
         LifecycleHelper.initializeIfPossible(frontend);
         LifecycleHelper.initializeIfPossible(backend);
-
-        super.doInitialize();
     }
 
     @Override
     protected void doStart() throws Exception {
+        super.doStart();
         LifecycleHelper.startIfPossible(frontend);
         LifecycleHelper.startIfPossible(backend);
-
-        super.doStart();
     }
 
     private void registerSessionEventHandlers() {

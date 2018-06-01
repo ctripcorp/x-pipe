@@ -21,19 +21,10 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
 
     protected Session session;
 
-    //todo calculate
-    protected static final int HIGH_WATER_MARK = 1024 * 1024;
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.channel().config().setWriteBufferHighWaterMark(HIGH_WATER_MARK);
-        super.channelActive(ctx);
-    }
-
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         logger.info("[channelInactive]");
-        if(tunnel != null && session != null) {
+        if(session != null) {
             try {
                 session.release();
             } catch (Exception e) {

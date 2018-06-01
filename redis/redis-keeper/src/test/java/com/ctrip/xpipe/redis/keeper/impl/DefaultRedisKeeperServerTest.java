@@ -182,7 +182,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.start();
 
 		redisKeeperServer.setRedisKeeperServerState(
-				new RedisKeeperServerStateActive(redisKeeperServer, localhostInetAddress(server1.getPort())));
+				new RedisKeeperServerStateActive(redisKeeperServer, localHostEndpoint(server1.getPort())));
 		redisKeeperServer.reconnectMaster();
 
 		waitConditionUntilTimeOut(() -> server1.getConnected() == 1);
@@ -191,7 +191,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.stop();
 
 		redisKeeperServer.setRedisKeeperServerState(
-				new RedisKeeperServerStateActive(redisKeeperServer, localhostInetAddress(server2.getPort())));
+				new RedisKeeperServerStateActive(redisKeeperServer, localHostEndpoint(server2.getPort())));
 		redisKeeperServer.reconnectMaster();
 
 		waitConditionUntilTimeOut(() -> server1.getConnected() == 0);
@@ -200,7 +200,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.dispose();
 
 		redisKeeperServer.setRedisKeeperServerState(
-				new RedisKeeperServerStateActive(redisKeeperServer, localhostInetAddress(server3.getPort())));
+				new RedisKeeperServerStateActive(redisKeeperServer, localHostEndpoint(server3.getPort())));
 		redisKeeperServer.reconnectMaster();
 		sleep(100);
 		Assert.assertEquals(0, server1.getConnected());
