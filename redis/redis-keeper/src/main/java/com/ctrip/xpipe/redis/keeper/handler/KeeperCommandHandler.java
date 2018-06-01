@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand;
@@ -9,6 +11,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
@@ -44,34 +47,21 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 			}else if(args[0].equalsIgnoreCase(AbstractKeeperCommand.SET_STATE)){
 				
 				if(args.length >= 4){
-					setKeeperState(args, redisClient);
+					KeeperState keeperState = KeeperState.valueOf(args[1]);
+					Endpoint masterAddress = getMasterAddress(args);
+					doSetKeeperState(redisClient, keeperState, masterAddress);
 				}else{
 					throw new IllegalArgumentException("setstate argument error:" + StringUtil.join(" ", args));
 				}
-			} else{
+			}else{
 				throw new IllegalStateException("unknown command:" + args[0]);
 			}
 		}
 	}
 
-	private void setKeeperState(String[] args, RedisClient redisClient) {
-		KeeperState keeperState = KeeperState.valueOf(args[1]);
-		InetSocketAddress masterAddress = new InetSocketAddress(args[2], Integer.parseInt(args[3]));
-		if(containsProxyProtocol(args) && keeperState == KeeperState.ACTIVE) {
-			doSetKeeperStateWithProxy(redisClient, masterAddress, args);
-		} else {
-			doSetKeeperState(redisClient, keeperState, masterAddress);
-		}
-	}
+	private void doSetKeeperState(RedisClient redisClient, KeeperState keeperState, Endpoint masterAddress) {
 
-	private boolean containsProxyProtocol(String[] args) {
-		return args.length > 4 && "proxy".equalsIgnoreCase(args[4]);
-	}
-
-	private void doSetKeeperState(RedisClient redisClient, KeeperState keeperState, InetSocketAddress masterAddress) {
-		
 		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
-		redisKeeperServer.connectMasterThroughProxy(false);
 
 		RedisKeeperServerState currentState = redisKeeperServer.getRedisKeeperServerState();
 		try{
@@ -94,20 +84,18 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 		}
 	}
 
-	private void doSetKeeperStateWithProxy(RedisClient redisClient, InetSocketAddress masterAddress, String[] args) {
-		try {
-			ProxyProtocol protocol = getProxyProtocol(args);
-			RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
-			redisKeeperServer.connectMasterThroughProxy(true);
-			redisKeeperServer.setProxyProtocol(protocol);
-
-			redisKeeperServer.getRedisKeeperServerState().becomeActive(masterAddress);
-			redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
-		} catch (Exception e) {
-			logger.error("[doSetKeeperState]" + String.format("%s, %s, %s", redisClient, masterAddress, args), e);
-			redisClient.sendMessage(new RedisErrorParser(e.getMessage()).format());
+	private Endpoint getMasterAddress(String[] args) {
+		if(containsProxyProtocol(args)) {
+			return new ProxyEnabledEndpoint(args[2], Integer.parseInt(args[3]), getProxyProtocol(args));
+		} else {
+			return new DefaultEndPoint(args[2], Integer.parseInt(args[3]));
 		}
 	}
+
+	private boolean containsProxyProtocol(String[] args) {
+		return args.length > 4 && "proxy".equalsIgnoreCase(args[4]);
+	}
+
 
 	@VisibleForTesting
 	protected ProxyProtocol getProxyProtocol(String[] args) {

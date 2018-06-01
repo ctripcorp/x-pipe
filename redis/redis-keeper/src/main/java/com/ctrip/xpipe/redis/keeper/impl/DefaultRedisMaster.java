@@ -27,7 +27,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	private ReplicationStoreManager replicationStoreManager;
 
-	private DefaultEndPoint endpoint;
+	private Endpoint endpoint;
 	
 	private AtomicBoolean isKeeper = new AtomicBoolean(false);
 	

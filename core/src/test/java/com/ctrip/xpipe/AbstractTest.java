@@ -1,7 +1,9 @@
 package com.ctrip.xpipe;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
@@ -519,6 +521,10 @@ public class AbstractTest {
 
     protected InetSocketAddress localhostInetAddress(int port) {
         return new InetSocketAddress("localhost", port);
+    }
+
+    protected DefaultEndPoint localHostEndpoint(int port) {
+        return new DefaultEndPoint("localhost", port);
     }
 
     protected Server startEmptyServer() throws Exception {

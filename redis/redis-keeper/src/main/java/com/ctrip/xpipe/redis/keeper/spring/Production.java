@@ -24,8 +24,6 @@ import org.springframework.context.annotation.Profile;
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class Production extends AbstractProfile{
 
-	private TLSConfig tlsConfig = new DefaultTlsConfig();
-
 	@Bean
 	public ZkClient getZkClient(KeeperConfig keeperConfig) {
 		return getZkClient(keeperConfig.getZkNameSpace(), keeperConfig.getZkConnectionString());
@@ -44,11 +42,6 @@ public class Production extends AbstractProfile{
 	@Bean
 	public KeepersMonitorManager getKeeperMonitorManager(){
 		return new DefaultKeepersMonitorManager();
-	}
-
-	@Bean
-	public NettySslHandlerFactory getClientSslFactory() {
-		return new NettyClientSslHandlerFactory(tlsConfig);
 	}
 
 	@Bean

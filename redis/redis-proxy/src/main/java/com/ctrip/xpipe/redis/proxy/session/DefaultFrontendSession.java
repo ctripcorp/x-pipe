@@ -51,8 +51,8 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
 
     @Override
     protected void doInitialize() throws Exception {
-        onSessionInit();
         super.doInitialize();
+        onSessionInit();
     }
 
     @Override

@@ -116,12 +116,23 @@ public class DefaultTunnelManager implements TunnelManager {
                         factory, config, backendEventLoopGroup);
             }
         });
-        try {
-            tunnel.addObserver(this);
-        } catch (Exception e) {
-            logger.error("[create] error init Tunnel of channel {}", ChannelUtil.getDesc(frontendChannel), e);
-        }
+        initAndStart(tunnel);
+        tunnel.addObserver(this);
+
         return tunnel;
+    }
+
+    private void initAndStart(Tunnel tunnel) {
+        try {
+            LifecycleHelper.initializeIfPossible(tunnel);
+        } catch (Exception e) {
+            logger.error("[initAndStart][init] ", e);
+        }
+        try {
+            LifecycleHelper.startIfPossible(tunnel);
+        } catch (Exception e) {
+            logger.error("[initAndStart][start] ", e);
+        }
     }
 
     @Override

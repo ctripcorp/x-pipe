@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy.endpoint;
 
+import com.ctrip.xpipe.redis.core.exception.NoResourceException;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,8 @@ public class DefaultProxyEndpointSelector implements ProxyEndpointSelector {
 
     private NextHopAlgorithm algorithm;
 
+    private SelectStrategy strategy;
+
     public DefaultProxyEndpointSelector(List<ProxyEndpoint> candidates, ProxyEndpointManager endpointManager) {
         this.candidates = candidates;
         this.endpointManager = endpointManager;
@@ -31,16 +34,17 @@ public class DefaultProxyEndpointSelector implements ProxyEndpointSelector {
     }
 
     @Override
-    public ProxyEndpoint nextHop() {
+    public ProxyEndpoint nextHop() throws NoResourceException {
 
+        if(strategy != null && !strategy.select()) {
+            throw new NoResourceException(String.format("No resource for strategy: %s", strategy.getClass().getSimpleName()));
+        }
         candidates.retainAll(endpointManager.getAvailableProxyEndpoints());
         List<ProxyEndpoint> toBeSelected = Lists.newArrayList(candidates);
-        toBeSelected.removeAll(selected);
 
         ProxyEndpoint endpoint = algorithm.nextHop(toBeSelected);
         if(endpoint == null) {
-            logger.info("[getNextHop] no endpoint selected, chose first for default");
-            endpoint = candidates.get(0);
+            throw new NoResourceException("No candidates available");
         }
         selected.add(endpoint);
 
@@ -49,6 +53,7 @@ public class DefaultProxyEndpointSelector implements ProxyEndpointSelector {
 
     @Override
     public void setNextHopAlgorithm(NextHopAlgorithm algorithm) {
+        logger.info("[setNextHopAlgorithm] algorithm: {}", algorithm.getClass());
         this.algorithm = algorithm;
     }
 
@@ -60,5 +65,11 @@ public class DefaultProxyEndpointSelector implements ProxyEndpointSelector {
     @Override
     public List<ProxyEndpoint> getCandidates() {
         return candidates;
+    }
+
+    @Override
+    public void setSelectStrategy(SelectStrategy strategy) {
+        logger.info("[setSelectStrategy] strategy: {}", strategy);
+        this.strategy = strategy;
     }
 }

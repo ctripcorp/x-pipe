@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.utils.ChannelUtil;
-import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
@@ -26,8 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -51,7 +48,7 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	
 	private CLIENT_ROLE clientRole = CLIENT_ROLE.NORMAL;
 
-	private String slaveIpAddress;
+	private String clientIpAddress;
 
 	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
 		this.redisKeeperServer = redisKeeperServer;
@@ -99,8 +96,13 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	}
 
 	@Override
-	public void setSlaveIpAddress(String host) {
-		this.slaveIpAddress = host;
+	public void setClientIpAddress(String host) {
+		this.clientIpAddress = host;
+	}
+
+	@Override
+	public String getClientIpAddress() {
+		return this.clientIpAddress;
 	}
 
 	@Override
@@ -212,8 +214,8 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 
 	@Override
 	public String ip() {
-		if(this.slaveIpAddress != null) {
-			return slaveIpAddress;
+		if(this.clientIpAddress != null) {
+			return clientIpAddress;
 		}
 		Channel channel = channel();
 		return channel == null? "null": IpUtils.getIp(channel.remoteAddress());

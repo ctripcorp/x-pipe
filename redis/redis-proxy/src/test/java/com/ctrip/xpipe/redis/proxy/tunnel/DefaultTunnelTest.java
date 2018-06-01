@@ -27,6 +27,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -95,6 +96,16 @@ public class DefaultTunnelTest extends AbstractProxyIntegrationTest {
 
         when(backend.getSessionType()).thenReturn(SESSION_TYPE.BACKEND);
         when(frontend.getSessionType()).thenReturn(SESSION_TYPE.FRONTEND);
+    }
+
+    @After
+    public void afterbeforeDefaultTunnelTest() {
+        backend = null;
+        proxyProtocol = null;
+        frontend = null;
+        frontChannel = null;
+        tunnel = null;
+        tunnelManager = null;
     }
 
     @Test
