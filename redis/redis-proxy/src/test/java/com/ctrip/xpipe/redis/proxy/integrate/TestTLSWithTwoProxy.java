@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.integrate;
 
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
+import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -30,11 +31,11 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
     @Before
     public void beforeTestMassTCPPacketWithOneProxyServer() throws Exception {
         System.setProperty("server.port", "9992");
-        server1 = new DefaultProxyServer(PROXY_PORT1);
+        server1 = new DefaultProxyServer().setConfig(new TestProxyConfig().setFrontendTlsPort(-1).setFrontendTcpPort(PROXY_PORT1));
         prepare(server1);
         server1.start();
 
-        server2 = new DefaultProxyServer(PROXY_PORT2);
+        server2 = new DefaultProxyServer().setConfig(new TestProxyConfig().setFrontendTlsPort(PROXY_PORT2).setFrontendTcpPort(randomPort()));
         prepareTLS(server2);
         server2.start();
     }
@@ -49,7 +50,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
     public void testStability() throws TimeoutException, InterruptedException {
         int port = randomPort();
         String protocol = generateProxyProtocol(port);
-        String message = randomString(1 * 10000);
+        String message = randomString(10000);
 
         ChannelFuture clientFuture = clientBootstrap().connect(PROXY_HOST, PROXY_PORT1);
 
@@ -96,7 +97,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
         for(int i = 0; i < N; i++) {
             port[i] = randomPort();
             protocol[i] = generateProxyProtocol(port[i]);
-            message[i] = randomString(10000);
+            message[i] = randomString(5000);
 
             clientFuture[i] = clientBootstrap().connect(PROXY_HOST, PROXY_PORT1);
 
@@ -140,7 +141,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
 
         }
 
-        Thread.sleep(1000 * N/100 + 1000);
+        Thread.sleep(1000 * N/100 + 2000);
 
         for(int i = 0; i < N; i++) {
             receiveServer[i].channel().close();

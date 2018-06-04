@@ -26,16 +26,18 @@ import org.springframework.context.annotation.Profile;
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class Production extends AbstractProfile {
 
+    public static final String GLOBAL_ENDPOINT_MANAGER = "globalProxyEndpointManager";
+
     public static final String CLIENT_SSL_HANDLER_FACTORY = "clientSslHandlerFactory";
 
-    public static final String SERVER_SSL_HANDLER_FACTORY = "clientSslHandlerFactory";
+    public static final String SERVER_SSL_HANDLER_FACTORY = "serverSslHandlerFactory";
 
     public static final String BACKEND_EVENTLOOP_GROUP = "backendEventLoopGroup";
 
     @Autowired
     private ProxyConfig config;
 
-    @Bean
+    @Bean(name = GLOBAL_ENDPOINT_MANAGER)
     public ProxyEndpointManager getProxyEndpointManager() {
         return new DefaultProxyEndpointManager(() -> config.endpointHealthCheckIntervalSec());
     }

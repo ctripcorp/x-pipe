@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
 import com.ctrip.xpipe.redis.proxy.session.*;
@@ -27,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointSelector.*;
+import static com.ctrip.xpipe.redis.proxy.spring.Production.GLOBAL_ENDPOINT_MANAGER;
 
 /**
  * @author chen.zhu
@@ -39,7 +41,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultTunnel.class);
 
-    private final String identity = UUID.randomUUID().toString();
+    private final String identity = Long.toHexString(System.currentTimeMillis());
 
     private Channel frontendChannel;
 
@@ -53,21 +55,15 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private AtomicReference<TunnelState> tunnelState = new AtomicReference<>(new TunnelHalfEstablished(this));
 
-    private NettySslHandlerFactory clientSslFactory;
-
     private ProxyConfig config;
 
-    private EventLoopGroup backendEventLoopGroup;
-
-    public DefaultTunnel(Channel frontendChannel, ProxyEndpointManager endpointManager, ProxyProtocol protocol,
-                         NettySslHandlerFactory clientSslFactory, ProxyConfig config, EventLoopGroup eventLoopGroup) {
+    public DefaultTunnel(Channel frontendChannel, ProxyProtocol protocol, ProxyConfig config) {
 
         this.config = config;
         this.protocol = protocol;
         this.frontendChannel = frontendChannel;
-        this.endpointManager = endpointManager;
-        this.clientSslFactory = clientSslFactory;
-        this.backendEventLoopGroup = eventLoopGroup;
+        this.endpointManager = (ProxyEndpointManager) ComponentRegistryHolder.getComponentRegistry()
+                .getComponent(GLOBAL_ENDPOINT_MANAGER);
     }
 
     @Override
@@ -193,8 +189,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         ProxyEndpointSelector selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), endpointManager);
         selector.setNextHopAlgorithm(new NaiveNextHopAlgorithm());
         selector.setSelectStrategy(new SelectOneCycle(selector));
-        backend = new DefaultBackendSession(this, config.getTrafficReportIntervalMillis(), selector,
-                backendEventLoopGroup, clientSslFactory);
+        backend = new DefaultBackendSession(this, config.getTrafficReportIntervalMillis(), selector);
 
         registerSessionEventHandlers();
         frontend.addObserver(this);
@@ -234,9 +229,6 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         }
         if(backend != null) {
             backend.release();
-        }
-        if(endpointManager != null) {
-            endpointManager.stop();
         }
     }
 

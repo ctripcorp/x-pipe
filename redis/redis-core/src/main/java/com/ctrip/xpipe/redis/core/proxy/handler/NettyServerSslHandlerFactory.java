@@ -35,7 +35,6 @@ public class NettyServerSslHandlerFactory extends AbstractNettySslHandlerFactory
         }
         SSLEngine sslEngine = sslContext.createSSLEngine();
         sslEngine.setUseClientMode(false);
-        sslEngine.setNeedClientAuth(true);
 
         return new SslHandler(sslEngine);
     }

@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.util.List;
 
 /**
@@ -79,7 +80,6 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
     }
 
     private void checkValid(ByteBuf in) {
-
         readLength += in.readableBytes();
         if(readLength > maxLength) {
             throw new ProxyProtocolException("frame length (" + readLength + ") exceeds the allowed maximum ("

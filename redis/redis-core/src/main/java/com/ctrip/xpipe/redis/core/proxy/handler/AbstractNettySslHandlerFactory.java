@@ -31,6 +31,7 @@ public abstract class AbstractNettySslHandlerFactory implements NettySslHandlerF
         InputStream inputStream = null;
         try {
             keyStore = KeyStore.getInstance(tlsConfig.getCertFileType());
+            logger.info("[loadKeyStore] File path: {}", getFilePath());
             inputStream = new FileInputStream(getFilePath());
             keyStore.load(inputStream, getPassword().toCharArray());
         } catch (Exception e) {

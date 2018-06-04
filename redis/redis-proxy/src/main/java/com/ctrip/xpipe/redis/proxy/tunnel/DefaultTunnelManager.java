@@ -50,16 +50,7 @@ public class DefaultTunnelManager implements TunnelManager {
     private static final Logger logger = LoggerFactory.getLogger(DefaultTunnelManager.class);
 
     @Autowired
-    private ProxyEndpointManager endpointManager;
-
-    @Autowired
     private ProxyConfig config;
-
-    @Resource(name = Production.CLIENT_SSL_HANDLER_FACTORY)
-    private NettySslHandlerFactory factory;
-
-    @Resource(name = Production.BACKEND_EVENTLOOP_GROUP)
-    private EventLoopGroup backendEventLoopGroup;
 
     private Map<Channel, Tunnel> cache = Maps.newConcurrentMap();
 
@@ -112,8 +103,7 @@ public class DefaultTunnelManager implements TunnelManager {
         Tunnel tunnel = MapUtils.getOrCreate(cache, frontendChannel, new ObjectFactory<Tunnel>() {
             @Override
             public Tunnel create() {
-                return new DefaultTunnel(frontendChannel, endpointManager, protocol,
-                        factory, config, backendEventLoopGroup);
+                return new DefaultTunnel(frontendChannel, protocol, config);
             }
         });
         initAndStart(tunnel);
@@ -198,27 +188,10 @@ public class DefaultTunnelManager implements TunnelManager {
     }
 
     // Unit Test
-    @VisibleForTesting
-    public DefaultTunnelManager setEndpointManager(ProxyEndpointManager endpointManager) {
-        this.endpointManager = endpointManager;
-        return this;
-    }
 
     @VisibleForTesting
     public DefaultTunnelManager setConfig(ProxyConfig config) {
         this.config = config;
-        return this;
-    }
-
-    @VisibleForTesting
-    public DefaultTunnelManager setFactory(NettySslHandlerFactory clientFactory) {
-        this.factory = clientFactory;
-        return this;
-    }
-
-    @VisibleForTesting
-    public DefaultTunnelManager setBackendEventLoopGroup(EventLoopGroup backendEventLoopGroup) {
-        this.backendEventLoopGroup = backendEventLoopGroup;
         return this;
     }
 }

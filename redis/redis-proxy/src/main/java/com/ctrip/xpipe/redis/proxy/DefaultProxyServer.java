@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -43,19 +44,11 @@ public class DefaultProxyServer implements ProxyServer {
     @Resource(name = Production.SERVER_SSL_HANDLER_FACTORY)
     private NettySslHandlerFactory serverSslHandlerFactory;
 
-    private ChannelFuture channelFuture;
+    private ChannelFuture tcpFuture, tlsFuture;
 
     public static final int WRITE_HIGH_WATER_MARK = 8 * 1024 * 1024;
 
     public static final int WRITE_LOW_WATER_MARK = 2 * 1024 * 1024;
-
-    @VisibleForTesting
-    private int frontPort = -1;
-
-    @VisibleForTesting
-    public DefaultProxyServer(int frontPort) {
-        this.frontPort = frontPort;
-    }
 
     public DefaultProxyServer() {
     }
@@ -72,37 +65,65 @@ public class DefaultProxyServer implements ProxyServer {
 
     @Override
     public void start() throws Exception {
-        if(frontPort == -1) {
-            frontPort = config.frontendPort();
+        startTcpServer();
+        startTlsServer();
+    }
+
+    private void startTcpServer() throws Exception {
+        ServerBootstrap b = bootstrap("tcp").childHandler(new ChannelInitializer<SocketChannel>() {
+            @Override
+            public void initChannel(SocketChannel ch) throws Exception {
+
+                ChannelPipeline p = ch.pipeline();
+                p.addLast(new LoggingHandler(LogLevel.DEBUG));
+                p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
+                p.addLast(new FrontendSessionNettyHandler(tunnelManager));
+            }
+        });
+
+        tcpFuture = b.bind(config.frontendTcpPort()).sync();
+    }
+
+    private void startTlsServer() throws Exception {
+        // Test Logic, no use for product
+        int port = config.frontendTlsPort();
+        if(port == -1) {
+            return;
         }
+        ServerBootstrap b = bootstrap("tls").childHandler(new ChannelInitializer<SocketChannel>() {
+            @Override
+            public void initChannel(SocketChannel ch) throws Exception {
+
+                ChannelPipeline p = ch.pipeline();
+                p.addLast(serverSslHandlerFactory.createSslHandler());
+                p.addLast(new LoggingHandler(LogLevel.DEBUG));
+                p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
+                p.addLast(new FrontendSessionNettyHandler(tunnelManager));
+            }
+        });
+
+        tlsFuture = b.bind(config.frontendTlsPort()).sync();
+    }
+
+    private ServerBootstrap bootstrap(String prefix) {
+
         ServerBootstrap bootstrap = new ServerBootstrap();
-        bootstrap.group(new NioEventLoopGroup(1, XpipeThreadFactory.create("frontend-boss")),
-                        new NioEventLoopGroup(OsUtils.getCpuCount() * 2, XpipeThreadFactory.create("frontend-worker")))
+        bootstrap.group(new NioEventLoopGroup(1, XpipeThreadFactory.create("frontend-boss-" + prefix)),
+                new NioEventLoopGroup(OsUtils.getCpuCount() * 2, XpipeThreadFactory.create("frontend-worker-" + prefix)))
                 .channel(NioServerSocketChannel.class)
                 .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, WRITE_HIGH_WATER_MARK)
                 .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, WRITE_LOW_WATER_MARK)
-                .handler(new LoggingHandler(LogLevel.DEBUG))
-                .childHandler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    public void initChannel(SocketChannel ch) throws Exception {
-
-                        ChannelPipeline p = ch.pipeline();
-                        if(config.isSslEnabled()) {
-                            p.addLast(serverSslHandlerFactory.createSslHandler());
-                        }
-                        p.addLast(new LoggingHandler(LogLevel.DEBUG));
-                        p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
-                        p.addLast(new FrontendSessionNettyHandler(tunnelManager));
-                    }
-                });
-
-        channelFuture = bootstrap.bind(frontPort).sync();
+                .handler(new LoggingHandler(LogLevel.DEBUG));
+        return bootstrap;
     }
 
     @Override
     public void stop() {
-        if(channelFuture != null) {
-            channelFuture.channel().close();
+        if(tcpFuture != null) {
+            tcpFuture.channel().close();
+        }
+        if(tlsFuture != null) {
+            tlsFuture.channel().close();
         }
     }
 
@@ -124,5 +145,10 @@ public class DefaultProxyServer implements ProxyServer {
     public DefaultProxyServer setServerSslHandlerFactory(NettySslHandlerFactory serverSslHandlerFactory) {
         this.serverSslHandlerFactory = serverSslHandlerFactory;
         return this;
+    }
+
+    @VisibleForTesting
+    public ProxyConfig getConfig() {
+        return config;
     }
 }

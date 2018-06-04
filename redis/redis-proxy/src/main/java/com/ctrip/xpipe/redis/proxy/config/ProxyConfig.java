@@ -10,11 +10,11 @@ import com.ctrip.xpipe.redis.core.config.TLSConfig;
  */
 public interface ProxyConfig extends TLSConfig {
 
-    int frontendPort();
+    int frontendTcpPort();
+
+    int frontendTlsPort();
 
     long getTrafficReportIntervalMillis();
-
-    boolean isSslEnabled();
 
     int endpointHealthCheckIntervalSec();
 }

@@ -9,21 +9,21 @@ import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
  */
 public class TestProxyConfig implements ProxyConfig {
 
-    private boolean sslEnabled = false;
+    private int frontendTcpPort = 8992, frontendTlsPort = 443;
 
     @Override
-    public int frontendPort() {
-        return 8992;
+    public int frontendTcpPort() {
+        return frontendTcpPort;
+    }
+
+    @Override
+    public int frontendTlsPort() {
+        return frontendTlsPort;
     }
 
     @Override
     public long getTrafficReportIntervalMillis() {
         return 1000;
-    }
-
-    @Override
-    public boolean isSslEnabled() {
-        return sslEnabled;
     }
 
     @Override
@@ -33,7 +33,7 @@ public class TestProxyConfig implements ProxyConfig {
 
     @Override
     public String getPassword() {
-        return "123456";
+        return "100013684";
     }
 
     @Override
@@ -51,7 +51,13 @@ public class TestProxyConfig implements ProxyConfig {
         return "JKS";
     }
 
-    public void setSslEnabled(boolean sslEnabled) {
-        this.sslEnabled = sslEnabled;
+    public TestProxyConfig setFrontendTcpPort(int frontendTcpPort) {
+        this.frontendTcpPort = frontendTcpPort;
+        return this;
+    }
+
+    public TestProxyConfig setFrontendTlsPort(int frontendTlsPort) {
+        this.frontendTlsPort = frontendTlsPort;
+        return this;
     }
 }
