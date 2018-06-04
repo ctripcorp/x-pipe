@@ -38,28 +38,28 @@ public class SslServer {
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-        // Normal Client
-        EventLoopGroup group = new NioEventLoopGroup();
-        try {
-            Bootstrap b = new Bootstrap();
-            b.group(group)
-                    .channel(NioSocketChannel.class)
-                    .handler(new ChannelInitializer<Channel>() {
-                        @Override
-                        protected void initChannel(Channel ch) throws Exception {
-                            ChannelPipeline pipeLine = ch.pipeline();
-                            pipeLine.addLast(new LoggingHandler());
-                        }
-                    });
-
-            // Start the connection attempt.
-            future = b.connect("127.0.0.1", NormalServer.LOCAL_PORT);
-
-
-        } finally {
-            // The connection is closed automatically on shutdown.
-            group.shutdownGracefully();
-        }
+//        // Normal Client
+//        EventLoopGroup group = new NioEventLoopGroup();
+//        try {
+//            Bootstrap b = new Bootstrap();
+//            b.group(group)
+//                    .channel(NioSocketChannel.class)
+//                    .handler(new ChannelInitializer<Channel>() {
+//                        @Override
+//                        protected void initChannel(Channel ch) throws Exception {
+//                            ChannelPipeline pipeLine = ch.pipeline();
+//                            pipeLine.addLast(new LoggingHandler());
+//                        }
+//                    });
+//
+//            // Start the connection attempt.
+//            future = b.connect("127.0.0.1", NormalServer.LOCAL_PORT);
+//
+//
+//        } finally {
+//            // The connection is closed automatically on shutdown.
+//            group.shutdownGracefully();
+//        }
 
         // SSL Server
 
@@ -74,27 +74,7 @@ public class SslServer {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new ChannelInitializer<Channel>() {
-                        @Override
-                        protected void initChannel(Channel ch) throws Exception {
-                            ch.pipeline().addLast(sslCtx.newHandler(ch.alloc()));
-                            ch.pipeline().addLast(new ChannelInboundHandlerAdapter(){
-                                @Override
-                                public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-                                    logger.info("[channelRead] {}", ((ByteBuf)msg).toString(Charset.defaultCharset()));
-
-                                    logger.info("[execute] message: {}", msg);
-                                    ChannelFuture future1 = finalFuture.channel().writeAndFlush(msg);
-                                    try {
-                                        future1.sync().channel().closeFuture().sync();
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-
-                                }
-                            });
-                        }
-                    });
+                    .childHandler(new SecureChatServerInitializer());
             b.bind(9090).sync().channel().closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();

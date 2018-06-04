@@ -13,18 +13,8 @@ public class DefaultProxyConfigTest {
     ProxyConfig config = new DefaultProxyConfig();
 
     @Test
-    public void frontendPort() {
-        Assert.assertEquals(9527, config.frontendPort());
-    }
-
-    @Test
     public void getTrafficReportIntervalMillis() {
         Assert.assertEquals(30000, config.getTrafficReportIntervalMillis());
-    }
-
-    @Test
-    public void isSslEnabled() {
-        Assert.assertEquals(false, config.isSslEnabled());
     }
 
     @Test

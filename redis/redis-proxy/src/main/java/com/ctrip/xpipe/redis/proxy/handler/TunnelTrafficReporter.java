@@ -42,5 +42,8 @@ public class TunnelTrafficReporter extends ChannelTrafficStatisticsHandler {
             String name = String.format("%s:%s", remoteIp, remotePort);
             EventMonitor.DEFAULT.logEvent(type, name, writtenBytes);
         }
+        if(readBytes != writtenBytes) {
+            logger.info("[doReportTraffic] read bytes: {}, write bytes: {}", readBytes, writtenBytes);
+        }
     }
 }

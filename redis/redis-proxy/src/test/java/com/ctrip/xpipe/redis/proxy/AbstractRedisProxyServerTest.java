@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
@@ -10,6 +11,12 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
+import com.ctrip.xpipe.redis.proxy.session.BackendSession;
+import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
+import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
+import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
+import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -18,6 +25,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -28,12 +36,20 @@ import io.netty.handler.logging.LoggingHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import sun.net.spi.DefaultProxySelector;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.ctrip.xpipe.redis.proxy.spring.Production.*;
 import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
@@ -48,7 +64,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     private ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(
             ()->config.endpointHealthCheckIntervalSec());
 
-    private TunnelManager tunnelManager = new DefaultTunnelManager();
+    private TunnelManager tunnelManager;
 
     private NextHopAlgorithm algorithm = new LocalNextHopAlgorithm();
 
@@ -62,6 +78,8 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     private AtomicBoolean serverStarted = new AtomicBoolean(false);
 
+    private DefaultTunnel tunnel;
+
     @BeforeClass
     public static void beforeAbstractRedisProxyServerTestClass() {
         System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
@@ -69,20 +87,33 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     @Before
     public void beforeAbstractRedisProxyTest() {
-        ((DefaultTunnelManager) tunnelManager).setEndpointManager(endpointManager);
-        ((DefaultTunnelManager) tunnelManager).setBackendEventLoopGroup(new NioEventLoopGroup(3,
-                XpipeThreadFactory.create("backend")));
-
+        MockitoAnnotations.initMocks(this);
         ((DefaultProxyEndpointManager)endpointManager).setHealthChecker(new EndpointHealthChecker() {
             @Override
             public boolean checkConnectivity(Endpoint endpoint) {
-                ProxyEndpoint proxyEndpoint = (ProxyEndpoint) endpoint;
-                if(proxyEndpoint.isSslEnabled() || !proxyEndpoint.getHost().contains("127.0.0.1")) {
-                    return false;
-                }
                 return true;
             }
         });
+        tunnelManager = new DefaultTunnelManager();
+        tunnelManager = spy(tunnelManager);
+
+        ComponentRegistry registry = mock(ComponentRegistry.class);
+        when(registry.getComponent(GLOBAL_ENDPOINT_MANAGER)).thenReturn(endpointManager);
+        when(registry.getComponent(CLIENT_SSL_HANDLER_FACTORY))
+                .thenReturn(new NettyClientSslHandlerFactory(new TestProxyConfig()));
+        when(registry.getComponent(SERVER_SSL_HANDLER_FACTORY))
+                .thenReturn(new NettyServerSslHandlerFactory(new TestProxyConfig()));
+        when(registry.getComponent(BACKEND_EVENTLOOP_GROUP)).thenReturn(new NioEventLoopGroup(2));
+        ComponentRegistryHolder.initializeRegistry(registry);
+
+        tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig());
+        tunnel = spy(tunnel);
+        doReturn(tunnel).when(tunnelManager).create(any(), any());
+        BackendSession backend = new DefaultBackendSession(tunnel, 3000, mock(DefaultProxyEndpointSelector.class));
+        doReturn(backend).when(tunnel).backend();
+
+        FrontendSession frontend = new DefaultFrontendSession(tunnel, new EmbeddedChannel(), 30000);
+        doReturn(frontend).when(tunnel).frontend();
     }
 
     @After
@@ -93,9 +124,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     }
 
     public TunnelManager tunnelManager() {
-        ((DefaultTunnelManager) tunnelManager).setEndpointManager(endpointManager);
         ((DefaultTunnelManager) tunnelManager).setConfig(config);
-        ((DefaultTunnelManager) tunnelManager).setFactory(clientFactory);
         return tunnelManager;
     }
 
@@ -195,7 +224,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
                         p.addLast(new LoggingHandler(LogLevel.DEBUG));
                     }
                 });
-        return b.connect("127.0.0.1", config.frontendPort());
+        return b.connect("127.0.0.1", config.frontendTcpPort());
     }
 
     public Channel frontChannel() throws Exception {
@@ -204,7 +233,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     }
 
     public Tunnel tunnel() throws Exception {
-        return tunnelManager.create(frontChannel(), protocol());
+        return tunnelManager.create(new EmbeddedChannel(), protocol());
     }
 
     public Session frontend() throws Exception {

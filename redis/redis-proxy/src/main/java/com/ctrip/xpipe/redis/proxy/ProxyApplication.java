@@ -1,7 +1,13 @@
 package com.ctrip.xpipe.redis.proxy;
 
+import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
+import com.ctrip.xpipe.lifecycle.DefaultRegistry;
+import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
 /**
  * @author chen.zhu
@@ -11,11 +17,21 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class ProxyApplication {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         System.setProperty("spring.profiles.active", "production");
-        SpringApplication springApplication = new SpringApplication(ProxyApplication.class);
+        SpringApplication application = new SpringApplication(ProxyApplication.class);
 
-        springApplication.run(args);
+        final ConfigurableApplicationContext context = application.run(args);
+
+        initComponentRegistry(context);
+    }
+
+    private static void initComponentRegistry(ConfigurableApplicationContext context) throws Exception {
+
+        final ComponentRegistry registry = new SpringComponentRegistry(context);
+        registry.initialize();
+        registry.start();
+        ComponentRegistryHolder.initializeRegistry(registry);
     }
 }

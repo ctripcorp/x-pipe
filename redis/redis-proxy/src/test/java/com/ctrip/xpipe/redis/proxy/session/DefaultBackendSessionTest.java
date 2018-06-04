@@ -52,7 +52,8 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
     @Before
     public void beforeDefaultBackendSessionTest() {
         MockitoAnnotations.initMocks(this);
-        session = new DefaultBackendSession(tunnel, 300000, selector, eventLoopGroup, sslHandlerFactory);
+        session = new DefaultBackendSession(tunnel, 300000, selector);
+
     }
 
     @Test(expected = IllegalAccessException.class)

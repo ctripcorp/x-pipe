@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
+import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
@@ -12,6 +13,7 @@ import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
 import com.ctrip.xpipe.utils.ChannelUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -26,6 +28,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_HIGH_WATER_MARK;
 import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MARK;
+import static com.ctrip.xpipe.redis.proxy.spring.Production.BACKEND_EVENTLOOP_GROUP;
+import static com.ctrip.xpipe.redis.proxy.spring.Production.CLIENT_SSL_HANDLER_FACTORY;
 
 /**
  * @author chen.zhu
@@ -44,12 +48,13 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     private AtomicReference<SessionState> sessionState;
 
-    public DefaultBackendSession(Tunnel tunnel, long trafficReportIntervalMillis, ProxyEndpointSelector selector,
-                                 EventLoopGroup eventLoopGroup, NettySslHandlerFactory sslHandlerFactory) {
+    public DefaultBackendSession(Tunnel tunnel, long trafficReportIntervalMillis, ProxyEndpointSelector selector) {
         super(tunnel, trafficReportIntervalMillis);
         this.selector = selector;
-        this.nioEventLoopGroup = eventLoopGroup;
-        this.sslHandlerFactory = sslHandlerFactory;
+        this.nioEventLoopGroup = (EventLoopGroup) ComponentRegistryHolder.getComponentRegistry()
+                                                    .getComponent(BACKEND_EVENTLOOP_GROUP);
+        this.sslHandlerFactory = (NettySslHandlerFactory) ComponentRegistryHolder.getComponentRegistry()
+                                                    .getComponent(CLIENT_SSL_HANDLER_FACTORY);
         this.sessionState = new AtomicReference<>(new SessionInit(this));
     }
 
@@ -151,6 +156,16 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     public SessionState getSessionState() {
         return sessionState.get();
+    }
+
+    @VisibleForTesting
+    protected void setSslHandlerFactory(NettySslHandlerFactory factory) {
+        this.sslHandlerFactory = factory;
+    }
+
+    @VisibleForTesting
+    protected void setNioEventLoopGroup(EventLoopGroup group) {
+        this.nioEventLoopGroup = group;
     }
 
 }

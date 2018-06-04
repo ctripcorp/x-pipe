@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.integrate;
 
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
+import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -34,7 +35,8 @@ public class TestMassTCPPacketWithNProxyServer extends AbstractProxyIntegrationT
         System.setProperty("server.port", "9992");
         for(int i = 0; i < N_SERVER; i++) {
             PROXY_PORT[i] = randomPort();
-            server[i] = new DefaultProxyServer(PROXY_PORT[i]);
+            TestProxyConfig config = new TestProxyConfig().setFrontendTcpPort(PROXY_PORT[i]).setFrontendTlsPort(-1);
+            server[i] = new DefaultProxyServer().setConfig(config);
             prepare(server[i]);
             server[i].start();
         }

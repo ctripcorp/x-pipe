@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
@@ -38,7 +39,7 @@ import static org.mockito.Mockito.when;
  * <p>
  * May 30, 2018
  */
-public class BothSessionTryWriteTest extends AbstractProxyIntegrationTest {
+public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
 
     private EmbeddedChannel backendChannel;
 
@@ -78,10 +79,10 @@ public class BothSessionTryWriteTest extends AbstractProxyIntegrationTest {
         spy(frontChannel);
 
         proxyProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
-        tunnel = new DefaultTunnel(frontChannel, endpointManager, proxyProtocol, sslHandlerFactory, config, eventLoopGroup2);
+        tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config);
 
         frontend = new DefaultFrontendSession(tunnel, frontChannel, 300000);
-        backend = new DefaultBackendSession(tunnel, 300000, selector, eventLoopGroup1, sslHandlerFactory);
+        backend = new DefaultBackendSession(tunnel, 300000, selector);
 
         frontend = spy(frontend);
         backend = spy(backend);
