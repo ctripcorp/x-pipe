@@ -266,3 +266,36 @@ CREATE TABLE `event_tbl` (
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `event_type` (`event_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Event Info';
+
+-- Route Table
+drop table if exists route_tbl;
+CREATE TABLE `route_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `route_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of route',
+  `src_dc_id` bigint(20) unsigned NOT NULL COMMENT 'source dc id',
+  `dst_dc_id` bigint(20) unsigned NOT NULL COMMENT 'destination dc id',
+  `src_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'source proxies ids',
+  `dst_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'destination proxies ids',
+  `optional_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'optional relay proxies, ids separated by whitespace',
+  `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'active or not',
+  `weight` tinyint(4) NOT NULL DEFAULT '1' COMMENT 'route weight for selection',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Route Info';
+
+-- Proxy Table
+drop table if exists proxy_tbl;
+CREATE TABLE `proxy_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'dc id',
+  `scheme` varchar(20) NOT NULL DEFAULT 'TCP' COMMENT 'scheme, like PROXY, PROXYTLS, TCP',
+  `proxy_ip` varchar(40) NOT NULL DEFAULT '0.0.0.0' COMMENT 'proxy ip',
+  `proxy_port` int(11) NOT NULL DEFAULT '0' COMMENT 'proxy port',
+  `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'active or not',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Proxy Info';

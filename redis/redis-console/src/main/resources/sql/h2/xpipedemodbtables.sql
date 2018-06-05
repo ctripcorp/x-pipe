@@ -214,3 +214,32 @@ CREATE TABLE EVENT_TBL (
   `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
   `deleted` tinyint(4) not null default 0,
 );
+
+-- Route Table
+drop table if exists route_tbl;
+CREATE TABLE `route_tbl` (
+  `id` bigint unsigned not null AUTO_INCREMENT primary key,
+  `route_org_id` bigint(20) unsigned not null default 0,
+  `src_dc_id` bigint(20) unsigned not null,
+  `dst_dc_id` bigint(20) unsigned not null,
+  `src_proxy_ids` varchar(128) not null default '',
+  `dst_proxy_ids` varchar(128) not null default '',
+  `optional_proxy_ids` varchar(128) not null default '',
+  `active` tinyint(1) not null default 1,
+  `weight` tinyint(4) not null default 1,
+  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
+  `deleted` tinyint(4) not null default 0,
+);
+
+-- Proxy Table
+drop table if exists proxy_tbl;
+CREATE TABLE `proxy_tbl` (
+  `id` bigint unsigned  not null AUTO_INCREMENT primary key,
+  `dc_id` bigint(20) unsigned not null default 0,
+  `scheme` varchar(20) not null default '',
+  `proxy_ip` varchar(40) not null default '0.0.0.0',
+  `proxy_port` int(11) not null default 0,
+  `active` tinyint(1) not null default 1,
+  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
+  `deleted` tinyint(4) not null default 0,
+);

@@ -12,6 +12,7 @@
 		<attribute name="id" key="true" />
 		<entity-ref name="cluster" type="map" />
 		<entity-ref name="sentinel" type="map" />
+		<entity-ref name="route" type="list" />
 	</entity>
 	<entity name="cluster" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Cluster">
 		<attribute name="id" key="true" />
@@ -44,6 +45,8 @@
 			return m_master == null || m_master.trim().length() == 0;
 			}
 		</snippet>
+	</entity>
+	<entity name="route" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Route">
 	</entity>
 </model>
 
