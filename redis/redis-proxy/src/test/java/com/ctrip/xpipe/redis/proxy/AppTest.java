@@ -22,7 +22,7 @@ public class AppTest extends AbstractProxyIntegrationTest {
     @Test
     public void start8992() throws Exception {
         System.setProperty("server.port", "9992");
-        DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig().setFrontendTcpPort(8992).setFrontendTlsPort(-1));
+        DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig().setFrontendTcpPort(8992).setFrontendTlsPort(1443));
         prepare(server);
         server.start();
         Thread.sleep(1000 * 60 * 60);
@@ -31,7 +31,7 @@ public class AppTest extends AbstractProxyIntegrationTest {
     @Test
     public void start8993() throws Exception {
         System.setProperty("server.port", "9993");
-        DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig().setFrontendTcpPort(8993).setFrontendTlsPort(-1));
+        DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig().setFrontendTcpPort(8993).setFrontendTlsPort(2443));
         prepare(server);
         server.start();
         Thread.sleep(1000 * 60 * 60);
