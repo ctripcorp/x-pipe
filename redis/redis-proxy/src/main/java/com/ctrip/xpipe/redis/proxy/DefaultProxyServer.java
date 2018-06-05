@@ -20,6 +20,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +36,8 @@ import javax.annotation.Resource;
  */
 @Component
 public class DefaultProxyServer implements ProxyServer {
+
+    private Logger logger = LoggerFactory.getLogger(DefaultProxyServer.class);
 
     @Autowired
     private ProxyConfig config;
@@ -70,6 +74,7 @@ public class DefaultProxyServer implements ProxyServer {
     }
 
     private void startTcpServer() throws Exception {
+        logger.info("[startTcpServer] start with port: {}", config.frontendTcpPort());
         ServerBootstrap b = bootstrap("tcp").childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
@@ -90,6 +95,7 @@ public class DefaultProxyServer implements ProxyServer {
         if(port == -1) {
             return;
         }
+        logger.info("[startTlsServer] start with port: {}", port);
         ServerBootstrap b = bootstrap("tls").childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {

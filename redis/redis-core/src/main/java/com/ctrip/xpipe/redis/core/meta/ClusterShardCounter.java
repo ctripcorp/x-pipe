@@ -82,6 +82,11 @@ public class ClusterShardCounter implements IVisitor{
     }
 
     @Override
+    public void visitRoute(RouteMeta route) {
+
+    }
+
+    @Override
     public void visitSentinel(SentinelMeta sentinel) {
 
     }
