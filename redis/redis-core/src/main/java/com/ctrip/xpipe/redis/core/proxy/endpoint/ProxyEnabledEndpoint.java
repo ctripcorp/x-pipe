@@ -30,4 +30,9 @@ public class ProxyEnabledEndpoint extends DefaultEndPoint implements Endpoint, P
     public ProxyProtocol getProxyProtocol() {
         return protocol;
     }
+
+    @Override
+    public String toString() {
+        return super.toString() + " " + protocol.toString();
+    }
 }

@@ -154,13 +154,17 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected abstract void doConnect(Bootstrap b);
 
 	protected ChannelFuture tryConnect(Bootstrap b) {
-		if(redisMaster.masterEndPoint() instanceof ProxyEnabled) {
+		if(isMasterConnectThroughProxy()) {
 			return tryConnectThroughProxy(b);
 		} else {
 			Endpoint endpoint = redisMaster.masterEndPoint();
 			logger.info("[tryConnect][begin]{}", endpoint);
 			return b.connect(endpoint.getHost(), endpoint.getPort());
 		}
+	}
+
+	private boolean isMasterConnectThroughProxy() {
+		return redisMaster.masterEndPoint() instanceof ProxyEnabled;
 	}
 
 	private ChannelFuture tryConnectThroughProxy(Bootstrap b) {
@@ -176,14 +180,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		}
 		ProxyEndpoint nextHop = selector.nextHop();
 
-		ChannelFuture future = b.connect(nextHop.getHost(), nextHop.getPort());
-		future.addListener(new ChannelFutureListener() {
-			@Override
-			public void operationComplete(ChannelFuture future) {
-				future.channel().writeAndFlush(protocol.output());
-			}
-		});
-		return future;
+		return b.connect(nextHop.getHost(), nextHop.getPort());
 	}
 
 	@Override
@@ -207,12 +204,21 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		clientPool = new FixedObjectPool<NettyClient>(new DefaultNettyClient(channel));
 
 		checkTimeout(channel);
+
+		if(isMasterConnectThroughProxy()) {
+			ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) redisMaster.masterEndPoint();
+			channel.writeAndFlush(endpoint.getProxyProtocol().output());
+		}
 		
 		checkKeeper();
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		chain.add(listeningPortCommand());
-		chain.add(new FailSafeCommandWrapper<>(new Replconf(clientPool, ReplConfType.CAPA, scheduled, CAPA.EOF.toString(), CAPA.PSYNC2.toString())));
+
+		// for proxy connect init time
+		Replconf capa = new Replconf(clientPool, ReplConfType.CAPA, scheduled, CAPA.EOF.toString(), CAPA.PSYNC2.toString());
+		capa.setCommandTimeoutMilli(1000);
+		chain.add(new FailSafeCommandWrapper<>(capa));
 		
 		try {
 			executeCommand(chain).addListener(new CommandFutureListener() {
@@ -232,7 +238,9 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	}
 
 	private void checkKeeper() {
-		executeCommand(new Replconf(clientPool, ReplConfType.KEEPER, scheduled)).addListener(new CommandFutureListener<Object>() {
+		Replconf replconf = new Replconf(clientPool, ReplConfType.KEEPER, scheduled);
+		replconf.setCommandTimeoutMilli(1000); // for proxy circumstances
+		executeCommand(replconf).addListener(new CommandFutureListener<Object>() {
 
 			@Override
 			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -290,6 +298,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 		Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT, scheduled,
 				String.valueOf(redisKeeperServer.getListeningPort()));
+		replconf.setCommandTimeoutMilli(1000);
 		return replconf;
 	}
 

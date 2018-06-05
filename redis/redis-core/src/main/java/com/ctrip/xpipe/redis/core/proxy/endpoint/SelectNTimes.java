@@ -18,7 +18,7 @@ public class SelectNTimes implements SelectStrategy {
 
     @Override
     public boolean select() {
-        return times < selector.selectCounts();
+        return times > selector.selectCounts();
     }
 
 }
