@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.proxy;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
+import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -20,12 +22,16 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.net.InetSocketAddress;
+import java.security.acl.LastOwnerException;
 
 /**
  * @author chen.zhu
@@ -34,6 +40,8 @@ import javax.annotation.Resource;
  */
 @Component
 public class DefaultProxyServer implements ProxyServer {
+
+    private Logger logger = LoggerFactory.getLogger(DefaultProxyServer.class);
 
     @Autowired
     private ProxyConfig config;
@@ -80,8 +88,11 @@ public class DefaultProxyServer implements ProxyServer {
                 p.addLast(new FrontendSessionNettyHandler(tunnelManager));
             }
         });
-
-        tcpFuture = b.bind(config.frontendTcpPort()).sync();
+        // port 80 bind only local address
+        InetSocketAddress bindAddress = new InetSocketAddress(FoundationService.DEFAULT.getLocalIp(),
+                config.frontendTcpPort());
+        logger.info("[startTcpServer] bind socket: {}", bindAddress);
+        tcpFuture = b.bind(bindAddress).sync();
     }
 
     private void startTlsServer() throws Exception {
@@ -101,7 +112,7 @@ public class DefaultProxyServer implements ProxyServer {
                 p.addLast(new FrontendSessionNettyHandler(tunnelManager));
             }
         });
-
+        logger.info("[startTlsServer] bind tls port: {}", config.frontendTlsPort());
         tlsFuture = b.bind(config.frontendTlsPort()).sync();
     }
 

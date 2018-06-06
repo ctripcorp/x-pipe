@@ -35,14 +35,6 @@
         <logger name="org.springframework" level="INFO"/>
         <logger name="org.hibernate" level="INFO"/>
         <logger name="io.netty" level="INFO"/>
-        <logger name="org.apache.zookeeper" level="INFO" additivity="false">
-            <appender-ref ref="zkLogFile"/>
-            <appender-ref ref="catAppender4Log4j2"/>
-        </logger>
-        <logger name="org.apache.curator" level="INFO" additivity="false">
-            <appender-ref ref="zkLogFile"/>
-            <appender-ref ref="catAppender4Log4j2"/>
-        </logger>
 
         <root level="INFO">
             <appender-ref ref="rollingFileInfo"/>

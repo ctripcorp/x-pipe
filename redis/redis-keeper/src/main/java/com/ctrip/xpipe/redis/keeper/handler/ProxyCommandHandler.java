@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 
 import java.net.InetSocketAddress;
@@ -29,6 +30,7 @@ public class ProxyCommandHandler extends AbstractCommandHandler {
 
         Endpoint srcEndpoint = getSourceEndpoint(forwardFor);
         redisClient.setClientIpAddress(srcEndpoint.getHost());
+        redisClient.setClientEndpoint(new ProxyEnabledEndpoint(srcEndpoint.getHost(), srcEndpoint.getPort(), protocol));
     }
 
     private String restructCommand(String[] args) {
