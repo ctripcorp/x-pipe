@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
@@ -7,6 +8,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -446,6 +448,16 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	public void addChannelCloseReleaseResources(Releasable releasable) {
 		redisClient.addChannelCloseReleaseResources(releasable);
+	}
+
+	@Override
+	public void setClientEndpoint(Endpoint endpoint) {
+		redisClient.setClientEndpoint(endpoint);
+	}
+
+	@Override
+	public Endpoint getClientEndpoint() {
+		return redisClient.getClientEndpoint();
 	}
 
 	@Override

@@ -17,7 +17,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
 
-    private static final int TIMEOUT_MILLI = 200;
+    private static final int TIMEOUT_MILLI = 1000 * 2;
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultEndpointHealthChecker.class);
 
