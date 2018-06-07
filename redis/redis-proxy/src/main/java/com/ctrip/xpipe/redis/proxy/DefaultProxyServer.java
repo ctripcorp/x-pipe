@@ -54,9 +54,21 @@ public class DefaultProxyServer implements ProxyServer {
 
     private ChannelFuture tcpFuture, tlsFuture;
 
-    public static final int WRITE_HIGH_WATER_MARK = 8 * 1024 * 1024;
+    private static final int MEGA_BYTE = 1000 * 1000;
 
-    public static final int WRITE_LOW_WATER_MARK = 2 * 1024 * 1024;
+    private static final int GIGA_BYTE = 1000 * MEGA_BYTE;
+
+    public static final int GLOBAL_WRITE_LIMIT = GIGA_BYTE;
+
+    public static final int GLOBAL_READ_LIMIT = GIGA_BYTE;
+
+    public static final int CHANNEL_WRITE_LIMIT = 20 * MEGA_BYTE;
+
+    public static final int CHANNEL_READ_LIMIT = 20 * MEGA_BYTE;
+
+    public static final int WRITE_LOW_WATER_MARK = CHANNEL_WRITE_LIMIT;
+
+    public static final int WRITE_HIGH_WATER_MARK = 2 * WRITE_LOW_WATER_MARK;
 
     public DefaultProxyServer() {
     }
@@ -104,7 +116,9 @@ public class DefaultProxyServer implements ProxyServer {
         ServerBootstrap b = bootstrap("tls").childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
-
+                if(config.notInterest(ch.remoteAddress())) {
+                    return;
+                }
                 ChannelPipeline p = ch.pipeline();
                 p.addLast(serverSslHandlerFactory.createSslHandler());
                 p.addLast(new LoggingHandler(LogLevel.DEBUG));

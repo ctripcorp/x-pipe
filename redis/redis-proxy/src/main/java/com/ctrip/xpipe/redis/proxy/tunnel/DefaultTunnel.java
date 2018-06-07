@@ -41,7 +41,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultTunnel.class);
 
-    private final String identity = Long.toHexString(System.currentTimeMillis());
+    private final String identity = UUID.randomUUID().toString();
 
     private Channel frontendChannel;
 
@@ -265,11 +265,13 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
         @Override
         public void onWritable() {
+            logger.info("[onWritable][Backend][{}]open frontend auto read", identity());
             frontend.makeReadable();
         }
 
         @Override
         public void onNotWritable() {
+            logger.info("[onNotWritable][Backend][{}]close frontend auto read", identity());
             frontend.makeUnReadable();
         }
     }
@@ -289,11 +291,13 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
         @Override
         public void onWritable() {
+            logger.info("[onWritable][Frontend][{}]open backend auto read", identity());
             backend.makeReadable();
         }
 
         @Override
         public void onNotWritable() {
+            logger.info("[onNotWritable][Frontend][{}]close backend auto read", identity());
             backend.makeUnReadable();
         }
     }

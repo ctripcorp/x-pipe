@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import io.netty.util.ResourceLeakDetector;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -21,6 +22,7 @@ public class AppTest extends AbstractProxyIntegrationTest {
 
     @Test
     public void start8992() throws Exception {
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
         System.setProperty("server.port", "9992");
         DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig().setFrontendTcpPort(8992).setFrontendTlsPort(1443));
         prepare(server);

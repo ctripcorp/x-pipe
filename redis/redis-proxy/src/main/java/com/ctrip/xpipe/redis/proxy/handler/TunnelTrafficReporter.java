@@ -40,50 +40,12 @@ public class TunnelTrafficReporter extends ChannelTrafficStatisticsHandler {
 
     @Override
     protected void doChannelRead(ChannelHandlerContext ctx, Object msg) {
-        if(msg instanceof ByteBuf) {
-            try {
-                ByteBuf buf = (ByteBuf) msg;
-                ByteBufRecorder recorder = getRecoder();
-                if(recorder != null) {
-                    recorder.recordInbound(buf);
-                }
-            } catch (Exception e) {
-                logger.error("[doChannelRead]", e);
-            }
-        }
+
     }
 
     @Override
     protected void doWrite(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-        if(msg instanceof ByteBuf) {
-            try {
-                ByteBuf buf = (ByteBuf) msg;
-                ByteBufRecorder recorder = getRecoder();
-                if(recorder != null) {
-                    recorder.recordOutbound(buf);
-                }
-            } catch (Exception e) {
-                logger.error("[doChannelRead]", e);
-            }
-        }
-    }
 
-    private ByteBufRecorder getRecoder() {
-        try {
-            ProxyConfig config = ComponentRegistryHolder.getComponentRegistry().getComponent(ProxyConfig.class);
-            if(config == null) {
-                logger.error("[getRecoder] Did not get config");
-                return null;
-            }
-            if (config.debugTunnel()) {
-                TunnelMonitorManager manager = (TunnelMonitorManager) ComponentRegistryHolder.getComponentRegistry()
-                        .getComponent(Production.TUNNEL_MONITOR_MANAGER);
-                return manager.getOrCreate(session.tunnel()).getByteBufRecorder();
-            }
-        } catch (Exception e) {
-            logger.error("[getRecoder]", e);
-        }
-        return null;
     }
 
     @Override
@@ -99,9 +61,6 @@ public class TunnelTrafficReporter extends ChannelTrafficStatisticsHandler {
             logger.debug("[doReportTraffic][tunnel-{}][{}] write bytes: {}", session.tunnel().identity(),
                     session.getSessionType(), writtenBytes);
             EventMonitor.DEFAULT.logEvent(CAT_TYPE, CAT_NAME_OUT, writtenBytes);
-        }
-        if(readBytes != writtenBytes) {
-            logger.info("[doReportTraffic] read bytes: {}, write bytes: {}", readBytes, writtenBytes);
         }
     }
 }
