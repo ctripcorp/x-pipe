@@ -5,6 +5,7 @@ import com.ctrip.xpipe.netty.ChannelTrafficStatisticsHandler;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
+import com.ctrip.xpipe.redis.proxy.monitor.ByteBufRecorder;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import io.netty.buffer.ByteBuf;
@@ -27,39 +28,67 @@ public class TunnelTrafficReporter extends ChannelTrafficStatisticsHandler {
     public TunnelTrafficReporter(long reportIntervalMillis, Session session) {
         super(reportIntervalMillis);
         this.session = session;
-        this.CAT_TYPE = String.format("Tunnel.%s", session.tunnel().identity());
-        this.CAT_NAME_IN = String.format("%s.In", session.getSessionType());
-        this.CAT_NAME_OUT = String.format("%s.Out", session.getSessionType());
+    }
+
+    private void initCatRelated() {
+        if(CAT_TYPE == null || CAT_NAME_IN == null || CAT_NAME_OUT == null) {
+            this.CAT_TYPE = String.format("Tunnel.%s", session.tunnel().identity());
+            this.CAT_NAME_IN = String.format("%s.In", session.getSessionType());
+            this.CAT_NAME_OUT = String.format("%s.Out", session.getSessionType());
+        }
     }
 
     @Override
-    protected void doChannelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    protected void doChannelRead(ChannelHandlerContext ctx, Object msg) {
         if(msg instanceof ByteBuf) {
-            ByteBuf buf = (ByteBuf) msg;
-            ProxyConfig config = ComponentRegistryHolder.getComponentRegistry().getComponent(ProxyConfig.class);
-            if (config.debugTunnel()) {
-                TunnelMonitorManager manager = (TunnelMonitorManager) ComponentRegistryHolder.getComponentRegistry()
-                        .getComponent(Production.TUNNEL_MONITOR_MANAGER);
-                manager.getOrCreate(session.tunnel()).getByteBufRecorder().recordInbound(buf);
+            try {
+                ByteBuf buf = (ByteBuf) msg;
+                ByteBufRecorder recorder = getRecoder();
+                if(recorder != null) {
+                    recorder.recordInbound(buf);
+                }
+            } catch (Exception e) {
+                logger.error("[doChannelRead]", e);
             }
         }
     }
 
     @Override
-    protected void doWrite(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+    protected void doWrite(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if(msg instanceof ByteBuf) {
-            ByteBuf buf = (ByteBuf) msg;
+            try {
+                ByteBuf buf = (ByteBuf) msg;
+                ByteBufRecorder recorder = getRecoder();
+                if(recorder != null) {
+                    recorder.recordOutbound(buf);
+                }
+            } catch (Exception e) {
+                logger.error("[doChannelRead]", e);
+            }
+        }
+    }
+
+    private ByteBufRecorder getRecoder() {
+        try {
             ProxyConfig config = ComponentRegistryHolder.getComponentRegistry().getComponent(ProxyConfig.class);
+            if(config == null) {
+                logger.error("[getRecoder] Did not get config");
+                return null;
+            }
             if (config.debugTunnel()) {
                 TunnelMonitorManager manager = (TunnelMonitorManager) ComponentRegistryHolder.getComponentRegistry()
                         .getComponent(Production.TUNNEL_MONITOR_MANAGER);
-                manager.getOrCreate(session.tunnel()).getByteBufRecorder().recordOutbound(buf);
+                return manager.getOrCreate(session.tunnel()).getByteBufRecorder();
             }
+        } catch (Exception e) {
+            logger.error("[getRecoder]", e);
         }
+        return null;
     }
 
     @Override
     protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
+        initCatRelated();
         EventMonitor.DEFAULT.logEvent(CAT_TYPE, String.format("%s->%s:%d", session.getSessionType(), remoteIp, remotePort));
         if(readBytes > 0) {
             logger.debug("[doReportTraffic][tunnel-{}][{}] read bytes: {}", session.tunnel().identity(),
