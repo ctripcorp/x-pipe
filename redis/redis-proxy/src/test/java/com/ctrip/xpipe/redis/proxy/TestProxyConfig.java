@@ -32,6 +32,11 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public boolean debugTunnel() {
+        return false;
+    }
+
+    @Override
     public String getPassword() {
         return "100013684";
     }

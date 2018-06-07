@@ -38,6 +38,8 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
 
     private static final String KEY_FRONTEND_TLS_PORT = "proxy.frontend.tls.port";
 
+    private static final String KEY_DEBUG_TUNNEL = "proxy.debug.tunnel";
+
     public DefaultProxyConfig() {
         setConfig(initConfig());
     }
@@ -76,6 +78,11 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
     @Override
     public int endpointHealthCheckIntervalSec() {
         return getIntProperty(KEY_ENDPOINT_HEALTH_CHECK_INTERVAL, 60);
+    }
+
+    @Override
+    public boolean debugTunnel() {
+        return getBooleanProperty(KEY_DEBUG_TUNNEL, false);
     }
 
     @Override
