@@ -94,7 +94,10 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
                     availableEndpoints.add(endpoint);
                 } else {
                     logger.info("[HealthCheckTask] endpoint not healthy: {}", endpoint.getUri());
-                    availableEndpoints.remove(endpoint);
+                    boolean exist = availableEndpoints.remove(endpoint);
+                    if(!exist) {
+                        allEndpoints.remove(endpoint);
+                    }
                 }
             }
             logger.debug("[HealthCheckTask] all endpoints: {}, available endpoints: {}",

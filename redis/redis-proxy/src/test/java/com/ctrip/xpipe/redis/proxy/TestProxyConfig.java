@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 
+import java.net.InetSocketAddress;
+
 /**
  * @author chen.zhu
  * <p>
@@ -33,6 +35,11 @@ public class TestProxyConfig implements ProxyConfig {
 
     @Override
     public boolean debugTunnel() {
+        return false;
+    }
+
+    @Override
+    public boolean notInterest(InetSocketAddress address) {
         return false;
     }
 
