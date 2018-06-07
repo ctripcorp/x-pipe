@@ -5,12 +5,21 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.config.CompositeConfig;
 import com.ctrip.xpipe.config.DefaultFileConfig;
+import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -40,8 +49,26 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
 
     private static final String KEY_DEBUG_TUNNEL = "proxy.debug.tunnel";
 
+    private static final String KEY_NOT_INTEREST_IP = "proxy.not.interest.ips";
+
+    private String[] notInterests;
+
+    @Resource(name = Production.GLOBAL_SCHEDULED)
+    private ScheduledExecutorService scheduled;
+
     public DefaultProxyConfig() {
         setConfig(initConfig());
+    }
+
+    @PostConstruct
+    public void scheduledFresh() {
+        scheduled.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                setConfig(initConfig());
+                refreshNotInterest();
+            }
+        }, 1, 1, TimeUnit.MINUTES);
     }
 
     private Config initConfig() {
@@ -83,6 +110,26 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
     @Override
     public boolean debugTunnel() {
         return getBooleanProperty(KEY_DEBUG_TUNNEL, false);
+    }
+
+    @Override
+    public boolean notInterest(InetSocketAddress address) {
+        if(notInterests == null || notInterests.length == 0) {
+            refreshNotInterest();
+        }
+        if(notInterests == null) {
+            return false;
+        }
+        for(String ip : notInterests) {
+            if(address.getHostName().equals(ip))
+                return true;
+        }
+        return false;
+    }
+
+    private void refreshNotInterest() {
+        String ips = getProperty(KEY_NOT_INTEREST_IP, "0.0.0.0");
+        notInterests = StringUtil.splitRemoveEmpty("\\s*,\\s*", ips);
     }
 
     @Override

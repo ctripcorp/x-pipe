@@ -116,7 +116,7 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
         if(logger.isDebugEnabled()) {
             logger.debug("[doWrite] {}: {}", getSessionType(), ByteBufUtil.prettyHexDump(byteBuf));
         }
-        getChannel().writeAndFlush(byteBuf.retain());
+        getChannel().writeAndFlush(byteBuf.retain(), getChannel().voidPromise());
     }
 
     protected void setSessionState(SessionState newState) {
