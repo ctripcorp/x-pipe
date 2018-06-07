@@ -158,11 +158,12 @@ public class InfoHandler extends AbstractCommandHandler{
 			}
 			sb.append(String.format("# Replication Detail%s", RedisProtocol.CRLF));
 			Set<RedisSlave> slaves = redisKeeperServer.slaves();
-			sb.append("connected_slaves:" + slaves.size() + RedisProtocol.CRLF);
 			int slaveIndex = 0;
 			for(RedisSlave slave : slaves){
-				sb.append(String.format("slave%d:%s" + RedisProtocol.CRLF, slaveIndex, slave.getClientEndpoint()));
-				slaveIndex++;
+				if(slave.getClientEndpoint() != null) {
+					sb.append(String.format("slave%d:%s" + RedisProtocol.CRLF, slaveIndex, slave.getClientEndpoint()));
+					slaveIndex++;
+				}
 			}
 		}
 	}

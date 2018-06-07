@@ -17,4 +17,6 @@ public interface ProxyConfig extends TLSConfig {
     long getTrafficReportIntervalMillis();
 
     int endpointHealthCheckIntervalSec();
+
+    boolean debugTunnel();
 }

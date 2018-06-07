@@ -179,6 +179,11 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         }
     }
 
+    @Override
+    public int hashCode() {
+       return identity.hashCode();
+    }
+
     /**
      * Lifecycle corresponding*/
     @Override
