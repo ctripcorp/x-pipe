@@ -3,22 +3,30 @@ package com.ctrip.xpipe.service.email;
 import com.ctrip.soa.platform.basesystem.emailservice.v1.EmailServiceClient;
 import com.ctrip.soa.platform.basesystem.emailservice.v1.GetEmailStatusResponse;
 import com.ctrip.soa.platform.basesystem.emailservice.v1.SendEmailResponse;
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.email.EmailType;
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailService;
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.utils.FileUtils;
+import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Properties;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
@@ -30,12 +38,14 @@ import static org.mockito.Mockito.when;
  */
 public class CtripPlatformEmailServiceTest {
 
-    EmailService emailService;
+    private static Logger logger = LoggerFactory.getLogger(CtripPlatformEmailServiceTest.class);
+
+    CtripPlatformEmailService emailService;
 
     @Before
     public void before() {
         MockitoAnnotations.initMocks(this);
-        emailService = EmailService.DEFAULT;
+        emailService = new CtripPlatformEmailService();
     }
 
     @Test
@@ -50,6 +60,37 @@ public class CtripPlatformEmailServiceTest {
     }
 
 
+    @Test
+    public void testCheckAsyncEmailResult() throws Exception {
+        CommandFuture<EmailResponse> future = emailService.sendEmailAsync(generateEmail());
+        EmailResponse response = future.get();
+        logger.info("response: {}", response.getProperties());
+
+        String encode = Codec.DEFAULT.encode(response.getProperties());
+        EmailResponse newResponse = new EmailResponse() {
+            @Override
+            public Properties getProperties() {
+                return Codec.DEFAULT.decode(encode, Properties.class);
+            }
+        };
+
+        logger.info("new Response: {}", newResponse.getProperties());
+        emailService.checkAsyncEmailResult(newResponse);
+    }
+
+    @Test
+    public void testEncodeListString() {
+        String expected = "123,456,789";
+        String result = CtripPlatformEmailService.encodeListString(Lists.newArrayList("123", "456", "789"));
+        Assert.assertEquals(expected, result);
+    }
+
+    @Test
+    public void testDecodeListString() {
+        List<String> expected = Lists.newArrayList("123", "456", "789");
+        List<String> result = CtripPlatformEmailService.decodeListString("123,456,789");
+        Assert.assertEquals(expected, result);
+    }
 
     private Email generateEmail() throws IOException {
         String path = "src/test/resources/ctripPlatformEmailServiceTest.txt";
@@ -57,7 +98,6 @@ public class CtripPlatformEmailServiceTest {
         String text = IOUtils.toString(ins);
         Email email = new Email();
         email.setBodyContent(text);
-        email.setEmailType(EmailType.CONSOLE_ALERT);
         email.addRecipient("zhuchen@ctrip.com");
         email.setSender("xpipe@test.com");
         email.setSubject("XPipe Test");

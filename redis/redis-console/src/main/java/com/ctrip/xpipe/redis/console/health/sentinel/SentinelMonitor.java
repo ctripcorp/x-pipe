@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.health.AbstractRedisConfMonitor;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
@@ -9,6 +10,7 @@ import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -34,6 +36,11 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
     @Autowired
     private ClusterService clusterService;
+
+    @Override
+    protected List<ALERT_TYPE> alertTypes() {
+        return Lists.newArrayList(ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS);
+    }
 
     @Override
     protected boolean shouldStart() {

@@ -1,10 +1,27 @@
 package com.ctrip.xpipe.redis.console.alert.sender.email.listener;
 
+import com.ctrip.xpipe.api.email.EmailResponse;
+import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.redis.console.model.EventModel;
+import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.Date;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
@@ -13,22 +30,34 @@ import static org.mockito.Mockito.verify;
  */
 public class EmailSentCounterTest {
 
+    @Mock
+    private AlertEventService service;
+
+    @InjectMocks
     private EmailSentCounter instance = new EmailSentCounter();
 
-    @Test
-    public void testSuccess() throws Exception {
-        instance.success();
-        Assert.assertEquals(1, instance.getTotal());
-        Assert.assertEquals(1, instance.getSuccess());
-        Assert.assertEquals(0, instance.getFailed());
+    @Before
+    public void beforeEmailSentCounterTest() {
+        MockitoAnnotations.initMocks(this);
     }
 
     @Test
-    public void testFail() throws Exception {
-        instance.fail(new Exception("test"));
-        Assert.assertEquals(1, instance.getTotal());
-        Assert.assertEquals(0, instance.getSuccess());
-        Assert.assertEquals(1, instance.getFailed());
+    public void testStatistics() throws Exception {
+        Properties properties1 = new Properties();
+        properties1.put(EmailResponse.KEYS.CHECK_INFO.name(), "123456");
+        String property1 = JsonCodec.DEFAULT.encode(properties1);
+        EventModel event1 = new EventModel().setEventProperty(property1);
+
+        Properties properties2 = new Properties();
+        properties1.put(EmailResponse.KEYS.CHECK_INFO.name(), "1234567");
+        String property2 = JsonCodec.DEFAULT.encode(properties2);
+        EventModel event2 = new EventModel().setEventProperty(property2);
+
+        when(service.getLastHourAlertEvent()).thenReturn(Lists.newArrayList(event1, event2));
+
+        Pair<Integer, Integer> successAndFails = instance.statistics(service.getLastHourAlertEvent());
+        Assert.assertEquals(2, (int)successAndFails.getKey());
+        Assert.assertEquals(0, (int)successAndFails.getValue());
     }
 
     @Test
@@ -43,6 +72,17 @@ public class EmailSentCounterTest {
             Thread.sleep(1000);
         }
 
+    }
+
+    @Test
+    public void testGetStartTime() throws Exception {
+        long minute = instance.getStartTime();
+        Date date = DateTimeUtils.getMinutesLaterThan(new Date(), (int)minute);
+        Date expected = DateTimeUtils.getNearestHour();
+        System.out.println(minute);
+        System.out.println(date);
+        System.out.println(expected);
+        Assert.assertTrue(Math.abs(expected.getTime() - date.getTime()) <= TimeUnit.MINUTES.toMillis(1));
     }
 
 }

@@ -1,17 +1,24 @@
 package com.ctrip.xpipe.redis.console.alert.manager;
 
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
-import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;
-import com.ctrip.xpipe.redis.console.alert.policy.SendToDBAAlertPolicy;
-import com.ctrip.xpipe.redis.console.alert.policy.SendToRedisClusterAdminAlertPolicy;
-import com.ctrip.xpipe.redis.console.alert.policy.SendToXPipeAdminAlertPolicy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.ctrip.xpipe.redis.console.alert.policy.channel.ChannelSelector;
+import com.ctrip.xpipe.redis.console.alert.policy.channel.DefaultChannelSelector;
+import com.ctrip.xpipe.redis.console.alert.policy.receiver.*;
+import com.ctrip.xpipe.redis.console.alert.policy.timing.RecoveryTimeSlotControl;
+import com.ctrip.xpipe.redis.console.alert.policy.timing.TimeSlotControl;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
 
 /**
  * @author chen.zhu
@@ -21,100 +28,52 @@ import java.util.*;
 @Component
 public class AlertPolicyManager {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    public static final int EMAIL_DBA = 1 << 0;
-    public static final int EMAIL_XPIPE_ADMIN = 1 << 1;
-    public static final int EMAIL_CLUSTER_ADMIN = 1 << 2;
-
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     @Autowired
-    Map<String, AlertPolicy> alertPolicyMap;
+    private ConfigService configService;
+
+    private EmailReceiver emailReceiver;
+
+    private GroupEmailReceiver groupEmailReceiver;
+
+    private ChannelSelector channelSelector;
+
+    private TimeSlotControl recoveryTimeController;
+
+    @PostConstruct
+    public void initPolicies() {
+        emailReceiver = new DefaultEmailReceiver(consoleConfig, configService);
+        groupEmailReceiver = new DefaultGroupEmailReceiver(consoleConfig, configService);
+        channelSelector = new DefaultChannelSelector();
+        recoveryTimeController = new RecoveryTimeSlotControl(consoleConfig);
+    }
 
     public List<AlertChannel> queryChannels(AlertEntity alert) {
-        try {
-            // TODO more types in the future
-            if(alert.getAlertType().getAlertPolicy() <= EMAIL_CLUSTER_ADMIN) {
-                return Collections.singletonList(AlertChannel.MAIL);
-            }
-        } catch (Exception e) {
-            logger.error("[queryChannels]{}", e);
-        }
-        return new LinkedList<>();
+        return channelSelector.alertChannels(alert);
     }
 
-    public int queryRecoverMinute(AlertEntity alert) {
-        try {
-            List<AlertPolicy> alertPolicies = findAlertPolicies(alert);
-            int result = alert.getAlertType().getRecoverTime();
-            for (AlertPolicy alertPolicy : alertPolicies) {
-                result = Math.max(result, alertPolicy.queryRecoverMinute(alert));
-            }
-            return result;
-        } catch (Exception ex) {
-            return 30;
-        }
+    public long queryRecoverMilli(AlertEntity alert) {
+        return recoveryTimeController.durationMilli(alert);
     }
 
-    public int querySuspendMinute(AlertEntity alert) {
-        try {
-            List<AlertPolicy> alertPolicies = findAlertPolicies(alert);
-            int result = 0;
-            for (AlertPolicy alertPolicy : alertPolicies) {
-                result = Math.max(result, alertPolicy.querySuspendMinute(alert));
-            }
-            return result;
-        } catch (Exception ex) {
-            return 5;
-        }
+    public long querySuspendMilli(AlertEntity alert) {
+        return TimeUnit.MINUTES.toMillis(consoleConfig.getAlertSystemSuspendMinute());
     }
 
-    public List<String> queryRecepients(AlertEntity alert) {
-        try {
-            List<AlertPolicy> alertPolicies = findAlertPolicies(alert);
-            Set<String> result = new HashSet<>();
-            for (AlertPolicy alertPolicy : alertPolicies) {
-                result.addAll(alertPolicy.queryRecipients(alert));
-            }
-
-            // in case not to produce empty recipient email. (Email could not sent successfully without recipient)
-            if(result.isEmpty()) {
-                result.addAll(alertPolicyMap.get(SendToXPipeAdminAlertPolicy.ID).queryRecipients(alert));
-            }
-            return new ArrayList<>(result);
-        } catch (Exception e) {
-            logger.error("[queryRecepients]{}", e);
-            return new LinkedList<>();
-        }
+    public EmailReceiverModel queryEmailReceivers(AlertEntity alert) {
+        return emailReceiver.receivers(alert);
     }
 
-    public List<String> queryCCers(AlertEntity alert) {
-        try {
-            List<AlertPolicy> alertPolicies = findAlertPolicies(alert);
-            Set<String> result = new HashSet<>();
-            for (AlertPolicy alertPolicy : alertPolicies) {
-                result.addAll(alertPolicy.queryCCers());
-            }
-            return new ArrayList<>(result);
-        } catch (Exception e) {
-            logger.error("[queryCCers]{}", e);
-            return new LinkedList<>();
-        }
+    public void markCheckInterval(ALERT_TYPE alertType, LongSupplier checkInterval) {
+        recoveryTimeController.mark(alertType, checkInterval);
     }
 
-    private List<AlertPolicy> findAlertPolicies(AlertEntity alert) {
-        List<AlertPolicy> alertPolicies = new ArrayList<>(10);
-        int total = alert.getAlertType().getAlertPolicy();
-        if((total & EMAIL_DBA) != 0) {
-            alertPolicies.add(alertPolicyMap.get(SendToDBAAlertPolicy.ID));
-        }
-        if((total & EMAIL_XPIPE_ADMIN) != 0) {
-            alertPolicies.add(alertPolicyMap.get(SendToXPipeAdminAlertPolicy.ID));
-        }
-        if((total & EMAIL_CLUSTER_ADMIN) != 0) {
-            alertPolicies.add(alertPolicyMap.get(SendToRedisClusterAdminAlertPolicy.ID));
-        }
-        return alertPolicies;
+    public Map<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> queryGroupedEmailReceivers(
+            Map<ALERT_TYPE, Set<AlertEntity>> alerts) {
+
+        return groupEmailReceiver.getGroupedEmailReceiver(alerts);
     }
 
 }

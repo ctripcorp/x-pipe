@@ -250,3 +250,19 @@ CREATE TABLE `organization_tbl` (
   UNIQUE KEY `org_name` (`org_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Organization Info';
 INSERT INTO organization_tbl (`org_id`, `org_name`) VALUES ('0', '');
+
+-- Event Table
+drop table if exists event_tbl;
+CREATE TABLE `event_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `event_type`  varchar(20) NOT NULL DEFAULT 'none' COMMENT 'event type',
+  `event_operator` varchar(128) NOT NULL DEFAULT 'none' COMMENT 'operator for the event',
+  `event_operation` varchar(120) NOT NULL DEFAULT 'none' COMMENT 'event operation',
+  `event_detail` varchar(512) NOT NULL DEFAULT 'none' COMMENT 'event details',
+  `event_property` varchar(512) NOT NULL DEFAULT 'none' COMMENT 'potential property used for event',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`),
+  KEY `event_type` (`event_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Event Info';

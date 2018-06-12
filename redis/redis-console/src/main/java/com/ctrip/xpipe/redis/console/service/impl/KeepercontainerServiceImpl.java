@@ -122,16 +122,21 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
       throw new IllegalArgumentException("DC name does not exist");
     }
 
-    OrganizationTbl org = organizationService.getOrganizationTblByCMSOrganiztionId(createInfo.getKeepercontainerOrgId());
-    if(org == null) {
-      throw new IllegalArgumentException("Org Id does not exist in database");
+    OrganizationTbl org;
+    if(createInfo.getKeepercontainerOrgId() == 0) {
+      org = new OrganizationTbl().setId(0L);
+    } else {
+      org = organizationService.getOrganizationTblByCMSOrganiztionId(createInfo.getKeepercontainerOrgId());
+      if (org == null) {
+        throw new IllegalArgumentException("Org Id does not exist in database");
+      }
     }
 
     proto.setKeepercontainerDc(dcTbl.getId())
             .setKeepercontainerIp(createInfo.getKeepercontainerIp())
             .setKeepercontainerPort(createInfo.getKeepercontainerPort())
             .setKeepercontainerOrgId(org.getId())
-            .setKeepercontainerActive(true);
+            .setKeepercontainerActive(createInfo.isActive());
 
     queryHandler.handleInsert(new DalQuery<Integer>() {
       @Override

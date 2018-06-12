@@ -76,7 +76,7 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
         long start = System.currentTimeMillis();
         dcMetaService.getDcMeta(dcNames[0]);
         long end = System.currentTimeMillis();
-        logger.info("[duration] {}", end - start);
+        logger.info("[durationMilli] {}", end - start);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
             dcMetaService.getDcMeta(dcNames[(1&i)]);
         }
         long end = System.currentTimeMillis();
-        logger.info("[duration] {}", (end - start)/100);
+        logger.info("[durationMilli] {}", (end - start)/100);
     }
 
 

@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -35,12 +38,19 @@ public abstract class AbstractIntervalCheck {
     @Autowired
     protected ConsoleConfig consoleConfig;
 
+    @Autowired
+    private AlertPolicyManager alertPolicyManager;
+
     private long lastStartTime = System.currentTimeMillis();
 
     @PostConstruct
     public void postConstruct(){
 
         logger.info("[postConstruct]{}", this);
+
+        for(ALERT_TYPE type : alertTypes()) {
+            alertPolicyManager.markCheckInterval(type, this::getIntervalMilli);
+        }
 
         scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 
@@ -80,5 +90,6 @@ public abstract class AbstractIntervalCheck {
         return consoleConfig.getRedisConfCheckIntervalMilli();
     }
 
+    protected abstract List<ALERT_TYPE> alertTypes();
 
 }

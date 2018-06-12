@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.alert.sender.email.listener;
 
-import com.ctrip.xpipe.redis.console.alert.sender.email.listener.AsyncEmailSenderCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
