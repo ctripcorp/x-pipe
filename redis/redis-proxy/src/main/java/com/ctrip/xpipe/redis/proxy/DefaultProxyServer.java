@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.proxy;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
+import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -28,6 +30,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.net.InetSocketAddress;
+import java.security.acl.LastOwnerException;
 
 /**
  * @author chen.zhu
@@ -50,9 +54,21 @@ public class DefaultProxyServer implements ProxyServer {
 
     private ChannelFuture tcpFuture, tlsFuture;
 
-    public static final int WRITE_HIGH_WATER_MARK = 8 * 1024 * 1024;
+    private static final int MEGA_BYTE = 1000 * 1000;
 
-    public static final int WRITE_LOW_WATER_MARK = 2 * 1024 * 1024;
+    private static final int GIGA_BYTE = 1000 * MEGA_BYTE;
+
+    public static final int GLOBAL_WRITE_LIMIT = GIGA_BYTE;
+
+    public static final int GLOBAL_READ_LIMIT = GIGA_BYTE;
+
+    public static final int CHANNEL_WRITE_LIMIT = 20 * MEGA_BYTE;
+
+    public static final int CHANNEL_READ_LIMIT = 20 * MEGA_BYTE;
+
+    public static final int WRITE_LOW_WATER_MARK = CHANNEL_WRITE_LIMIT;
+
+    public static final int WRITE_HIGH_WATER_MARK = 2 * WRITE_LOW_WATER_MARK;
 
     public DefaultProxyServer() {
     }
@@ -85,8 +101,11 @@ public class DefaultProxyServer implements ProxyServer {
                 p.addLast(new FrontendSessionNettyHandler(tunnelManager));
             }
         });
-
-        tcpFuture = b.bind(config.frontendTcpPort()).sync();
+        // port 80 bind only local address
+        InetSocketAddress bindAddress = new InetSocketAddress(FoundationService.DEFAULT.getLocalIp(),
+                config.frontendTcpPort());
+        logger.info("[startTcpServer] bind socket: {}", bindAddress);
+        tcpFuture = b.bind(bindAddress).sync();
     }
 
     private void startTlsServer() throws Exception {
@@ -99,7 +118,9 @@ public class DefaultProxyServer implements ProxyServer {
         ServerBootstrap b = bootstrap("tls").childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
-
+                if(config.notInterest(ch.remoteAddress())) {
+                    return;
+                }
                 ChannelPipeline p = ch.pipeline();
                 p.addLast(serverSslHandlerFactory.createSslHandler());
                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
@@ -107,7 +128,7 @@ public class DefaultProxyServer implements ProxyServer {
                 p.addLast(new FrontendSessionNettyHandler(tunnelManager));
             }
         });
-
+        logger.info("[startTlsServer] bind tls port: {}", config.frontendTlsPort());
         tlsFuture = b.bind(config.frontendTlsPort()).sync();
     }
 

@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -62,7 +63,8 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 		nioEventLoopGroup = new NioEventLoopGroup();
 
-		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, replTimeoutMilli);
+		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
+				scheduled, replTimeoutMilli, AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI);
 		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
 
 		when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
@@ -128,7 +130,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		defaultRedisMasterReplication.initialize();
 		defaultRedisMasterReplication.start();
 
-		waitConditionUntilTimeOut(() -> connectingCount.get() >= 2);
+		waitConditionUntilTimeOut(() -> connectingCount.get() >= 2, 3000);
 	}
 
 	@Test

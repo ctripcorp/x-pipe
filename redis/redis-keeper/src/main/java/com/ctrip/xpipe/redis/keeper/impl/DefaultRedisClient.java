@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
@@ -49,6 +50,8 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	private CLIENT_ROLE clientRole = CLIENT_ROLE.NORMAL;
 
 	private String clientIpAddress;
+
+	private Endpoint endpoint;
 
 	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
 		this.redisKeeperServer = redisKeeperServer;
@@ -274,6 +277,16 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 				releasable.release();
 			}
 		});
+	}
+
+	@Override
+	public void setClientEndpoint(Endpoint endpoint) {
+		this.endpoint = endpoint;
+	}
+
+	@Override
+	public Endpoint getClientEndpoint() {
+		return this.endpoint;
 	}
 
 	@Override

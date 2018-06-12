@@ -62,7 +62,7 @@ public class InfoHandler extends AbstractCommandHandler{
 
 		server(isDefault, isAll, section, sb, redisKeeperServer);
 		replication(isDefault, isAll, section, sb, redisKeeperServer);
-		proxy(isDefault, isAll, section, sb, redisKeeperServer);
+		detail(isDefault, isAll, section, sb, redisKeeperServer);
 
 		redisClient.sendMessage(new BulkStringParser(sb.toString()).format());
 	}
@@ -150,16 +150,21 @@ public class InfoHandler extends AbstractCommandHandler{
 		}
 	}
 
-	private void proxy(boolean isDefault, boolean isAll, String section, StringBuilder sb, RedisKeeperServer redisKeeperServer) {
-		if(isDefault || isAll || "proxy".equalsIgnoreCase(section)) {
+	private void detail(boolean isDefault, boolean isAll, String section, StringBuilder sb, RedisKeeperServer redisKeeperServer) {
+		if(isDefault || isAll || "replication".equalsIgnoreCase(section)) {
 			Endpoint endpoint = redisKeeperServer.getRedisMaster().masterEndPoint();
 			if(!(endpoint instanceof ProxyEnabled)) {
 				return;
 			}
-			ProxyProtocol proxyProtocol = ((ProxyEnabledEndpoint) endpoint).getProxyProtocol();
-			sb.append(String.format("# Proxy%s", RedisProtocol.CRLF));
-			sb.append(String.format("route:%s%s", proxyProtocol.getRouteInfo(), RedisProtocol.CRLF));
-			sb.append(String.format("forward-for:%s%s", proxyProtocol.getForwardFor(), RedisProtocol.CRLF));
+			sb.append(String.format("# Replication Detail%s", RedisProtocol.CRLF));
+			Set<RedisSlave> slaves = redisKeeperServer.slaves();
+			int slaveIndex = 0;
+			for(RedisSlave slave : slaves){
+				if(slave.getClientEndpoint() != null) {
+					sb.append(String.format("slave%d:%s" + RedisProtocol.CRLF, slaveIndex, slave.getClientEndpoint()));
+					slaveIndex++;
+				}
+			}
 		}
 	}
 
