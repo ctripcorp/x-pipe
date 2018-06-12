@@ -12,7 +12,6 @@
 		<attribute name="id" key="true" />
 		<entity-ref name="cluster" type="map" />
 		<entity-ref name="sentinel" type="map" />
-		<entity-ref name="route" type="list" />
 	</entity>
 	<entity name="cluster" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Cluster">
 		<attribute name="id" key="true" />
