@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.proxy.config;
 
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
 
+import java.net.InetSocketAddress;
+
 /**
  * @author chen.zhu
  * <p>
@@ -17,4 +19,8 @@ public interface ProxyConfig extends TLSConfig {
     long getTrafficReportIntervalMillis();
 
     int endpointHealthCheckIntervalSec();
+
+    boolean debugTunnel();
+
+    boolean notInterest(InetSocketAddress address);
 }

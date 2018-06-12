@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy.integrate;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.EndpointHealthChecker;
@@ -33,8 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.proxy.spring.Production.*;
 import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
@@ -52,6 +52,9 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
     }
 
     private void sameStuff(DefaultProxyServer server) {
+        FoundationService service = FoundationService.DEFAULT;
+        service = spy(FoundationService.DEFAULT);
+        doReturn("127.0.0.1").when(service).getLocalIp();
         server.setServerSslHandlerFactory(new NettyServerSslHandlerFactory(new TestProxyConfig()));
         DefaultProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()-> 180);
         endpointManager.setHealthChecker(new EndpointHealthChecker() {
