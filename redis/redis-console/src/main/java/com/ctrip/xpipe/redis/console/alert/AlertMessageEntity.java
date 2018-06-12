@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.alert;
 
 
-import com.ctrip.xpipe.api.email.EmailType;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,8 +14,6 @@ public class AlertMessageEntity {
 
     private String m_title;
 
-    private EmailType m_type;
-
     private String m_content;
 
     private List<String> m_receivers;
@@ -27,16 +23,15 @@ public class AlertMessageEntity {
     private AlertEntity alert;
 
     public AlertMessageEntity(AlertEntity alert) {
-        this(null, null, null, null, alert);
+        this(null, null, null, alert);
     }
 
-    public AlertMessageEntity(String title, EmailType type, String content, List<String> receivers) {
-        this(title, type, content, receivers, null);
+    public AlertMessageEntity(String title, String content, List<String> receivers) {
+        this(title, content, receivers, null);
     }
 
-    public AlertMessageEntity(String title, EmailType type, String content, List<String> receivers, AlertEntity alert) {
+    public AlertMessageEntity(String title, String content, List<String> receivers, AlertEntity alert) {
         m_title = title;
-        m_type = type;
         m_content = content;
         m_receivers = receivers;
         params = new HashMap<>();
@@ -85,9 +80,6 @@ public class AlertMessageEntity {
         return m_title;
     }
 
-    public EmailType getType() {
-        return m_type;
-    }
 
     public void setContent(String content) {
         m_content = content;
@@ -95,7 +87,7 @@ public class AlertMessageEntity {
 
     @Override
     public String toString() {
-        return "title: " + m_title + " content: " + m_content + " type: " + m_type + " receiver: " + getReceiverString();
+        return "title: " + m_title + " content: " + m_content + " receiver: " + getReceiverString();
     }
 
     public AlertEntity getAlert() {

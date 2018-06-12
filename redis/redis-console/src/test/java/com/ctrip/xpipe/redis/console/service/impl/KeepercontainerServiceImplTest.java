@@ -122,7 +122,8 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     public void testAddKeeperContainer2() {
         KeeperContainerCreateInfo createInfo = new KeeperContainerCreateInfo()
                 .setDcName(dcNames[0]).setKeepercontainerIp("192.168.0.1")
-                .setKeepercontainerPort(9090).setKeepercontainerOrgId(3L);
+                .setKeepercontainerPort(9090).setKeepercontainerOrgId(3L)
+                .setActive(true);
 
         keepercontainerService.addKeeperContainer(createInfo);
 

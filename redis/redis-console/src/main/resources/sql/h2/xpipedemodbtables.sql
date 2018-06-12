@@ -201,3 +201,16 @@ CREATE TABLE `organization_tbl` (
   deleted tinyint(4) not null default 0,
 );
 INSERT INTO organization_tbl (`org_id`, `org_name`) VALUES ('0', '');
+
+-- Event Table
+drop table if exists event_tbl;
+CREATE TABLE EVENT_TBL (
+  `id` bigint unsigned not null AUTO_INCREMENT primary key,
+  `event_type`  varchar(20) not null default 'none',
+  `event_operator` varchar(128) not null default  'none',
+  `event_operation` varchar(120) not null default  'none',
+  `event_detail` varchar(512) not null default  'none',
+  `event_property` varchar(512) not null default  'none',
+  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
+  `deleted` tinyint(4) not null default 0,
+);

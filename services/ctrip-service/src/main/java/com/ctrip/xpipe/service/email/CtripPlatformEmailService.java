@@ -5,18 +5,21 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.email.Email;
+import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
 import com.ctrip.xpipe.retry.RetryNTimes;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Calendar;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -67,31 +70,36 @@ public class CtripPlatformEmailService implements EmailService {
     }
 
     @Override
-    public CommandFuture<Void> sendEmailAsync(Email email) {
+    public CommandFuture<EmailResponse> sendEmailAsync(Email email) {
         return sendEmailAsync(email, MoreExecutors.directExecutor());
     }
 
     @Override
-    public CommandFuture<Void> sendEmailAsync(Email email, Executor executor) {
+    public CommandFuture<EmailResponse> sendEmailAsync(Email email, Executor executor) {
         return new AsyncSendEmailCommand(email).execute(executor);
     }
 
-    private static void checkSentResult(SendEmailResponse response) throws Exception {
+    @Override
+    @SuppressWarnings("unchecked")
+    public boolean checkAsyncEmailResult(EmailResponse response) {
+        try {
+            String emailIDListStr = (String) response.getProperties().get(EmailResponse.KEYS.CHECK_INFO.name());
+            List<String> emailIDList = decodeListString(emailIDListStr);
+            GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
+                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList));
 
-        GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
-                new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, response.getEmailIDList()));
-
-        if(emailStatusResponse.getResultCode() != 1) {
-            throw new XpipeRuntimeException(emailStatusResponse.getResultMsg());
+            logger.info("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
+            return emailStatusResponse.getResultCode() == 1;
+        }catch (Exception e) {
+            logger.error("check email send response error: {}", e);
         }
-
+        return false;
     }
 
 
     private static SendEmailRequest createSendEmailRequest(Email email) {
 
-        CtripEmailTemplate ctripEmailTemplate = CtripEmailTemplateFactory
-                .createCtripEmailTemplate(email.getEmailType());
+        CtripEmailTemplate ctripEmailTemplate = CtripEmailTemplateFactory.createCtripEmailTemplate();
         ctripEmailTemplate.decorateBodyContent(email);
 
         SendEmailRequest request = new SendEmailRequest();
@@ -115,7 +123,21 @@ public class CtripPlatformEmailService implements EmailService {
     }
 
 
-    static class AsyncSendEmailCommand extends AbstractCommand<Void> {
+    static class CtripEmailResponse implements EmailResponse {
+
+        private Properties properties = new Properties();
+
+        public CtripEmailResponse(SendEmailResponse response) {
+            properties.put(KEYS.CHECK_INFO.name(), encodeListString(response.getEmailIDList()));
+        }
+
+        @Override
+        public Properties getProperties() {
+            return properties;
+        }
+    }
+
+    static class AsyncSendEmailCommand extends AbstractCommand<EmailResponse> {
 
         private Email email;
 
@@ -139,20 +161,7 @@ public class CtripPlatformEmailService implements EmailService {
                     return;
                 }
 
-                // Retry 5 time, 2 sec for each, waiting for email sent result
-                RetryCommandFactory factory = DefaultRetryCommandFactory.retryNTimes(scheduled, 3, (int) TimeUnit.MINUTES.toMillis(1));
-                Command<Void> retryCommand = factory.createRetryCommand(new AsyncCheckEmailCommand(response));
-                CommandFuture<Void> future = retryCommand.execute();
-                future.addListener(commandFuture -> {
-                    if(commandFuture.isSuccess()) {
-                        future().setSuccess();
-                    } else {
-                        logger.error("[EmailCheckCommandListener] success: {}, cause: {}, email id list: {}",
-                                commandFuture.isSuccess(), commandFuture.cause(), response.getEmailIDList());
-
-                        future().setFailure(commandFuture.cause());
-                    }
-                });
+                future().setSuccess(new CtripEmailResponse(response));
             } catch (Exception e) {
                 future().setFailure(e);
             }
@@ -169,37 +178,21 @@ public class CtripPlatformEmailService implements EmailService {
         }
     }
 
-    static class AsyncCheckEmailCommand extends AbstractCommand<Void> {
-
-        private SendEmailResponse response;
-
-        public AsyncCheckEmailCommand(SendEmailResponse response) {
-            this.response = response;
+    @VisibleForTesting
+    protected static String encodeListString(List<String> strs) {
+        StringBuffer sb = new StringBuffer();
+        for(String str : strs) {
+            sb.append(str).append(",");
         }
-
-
-        @Override
-        protected void doExecute() throws Exception {
-            try {
-                checkSentResult(response);
-                future().setSuccess();
-            } catch (Exception e) {
-                future().setFailure(e);
-            }
-        }
-
-        @Override
-        protected void doReset() {
-
-        }
-
-        @Override
-        public String getName() {
-            return "check-email-send";
-        }
+        sb.deleteCharAt(sb.length() - 1);
+        return sb.toString();
     }
 
-
+    @VisibleForTesting
+    protected static List<String> decodeListString(String str) {
+        String[] strs = StringUtil.splitRemoveEmpty("\\s*,\\s*", str);
+        return Arrays.asList(strs);
+    }
 
     @Override
     public int getOrder() {

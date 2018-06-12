@@ -2,6 +2,7 @@ package com.ctrip.xpipe.email;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.email.Email;
+import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -29,13 +30,18 @@ public class DefaultEmailService implements EmailService {
     }
 
     @Override
-    public CommandFuture<Void> sendEmailAsync(Email email) {
+    public CommandFuture<EmailResponse> sendEmailAsync(Email email) {
         return sendEmailAsync(email, MoreExecutors.directExecutor());
     }
 
     @Override
-    public CommandFuture<Void> sendEmailAsync(Email email, Executor executor) {
+    public CommandFuture<EmailResponse> sendEmailAsync(Email email, Executor executor) {
         return new DefaultCommandFuture<>();
+    }
+
+    @Override
+    public boolean checkAsyncEmailResult(EmailResponse response) {
+        return true;
     }
 
     @Override

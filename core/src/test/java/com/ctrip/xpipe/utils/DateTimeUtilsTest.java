@@ -47,6 +47,20 @@ public class DateTimeUtilsTest extends AbstractTest {
         Assert.assertTrue((Math.abs(TimeUnit.MINUTES.toMillis(15L) - duration) < TimeUnit.SECONDS.toMillis(1)));
     }
 
+    @Test
+    public void testGetHoursBeforeDate() throws Exception {
+        Date now = new Date();
+        Date before = DateTimeUtils.getHoursBeforeDate(now, 1);
+        long duration = now.getTime() - before.getTime();
+        Assert.assertTrue((Math.abs(TimeUnit.HOURS.toMillis(1L) - duration) < TimeUnit.SECONDS.toMillis(1)));
+
+    }
+
+    @Test
+    public void testGetNearestHour() throws Exception {
+        Date date = DateTimeUtils.getNearestHour();
+        logger.info("{}", date);
+    }
 
     @Test
     public void testFormat() {

@@ -1,10 +1,27 @@
 package com.ctrip.xpipe.redis.console.alert.sender.email.listener;
 
+import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
+import com.ctrip.xpipe.api.email.EmailResponse;
+import com.ctrip.xpipe.api.email.EmailService;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.console.model.EventModel;
+import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -19,20 +36,19 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.THREAD_POOL_TIM
  * <p>
  * Mar 26, 2018
  */
+@Component
 public class EmailSentCounter extends AbstractEmailSenderCallback {
 
-    private AtomicInteger total = new AtomicInteger();
+    @Autowired
+    private AlertEventService alertEventService;
 
-    private AtomicInteger success = new AtomicInteger();
+    @Autowired(required = false)
+    private CrossDcClusterServer clusterServer;
 
-    private AtomicInteger fail = new AtomicInteger();
-
-    private Lock lock = new ReentrantLock();
-
-    private ScheduledExecutorService scheduled;
-
-    public EmailSentCounter() {
-        scheduled = MoreExecutors.getExitingScheduledExecutorService(
+    @PostConstruct
+    public void scheduledCheckSentEmails() {
+        logger.info("[scheduledCheckSentEmails] [post construct] begin");
+        ScheduledExecutorService scheduled = MoreExecutors.getExitingScheduledExecutorService(
                 new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create(getClass().getSimpleName() + "-")),
                 THREAD_POOL_TIME_OUT, TimeUnit.SECONDS
         );
@@ -40,66 +56,76 @@ public class EmailSentCounter extends AbstractEmailSenderCallback {
     }
 
     private void start(ScheduledExecutorService scheduled) {
+
+        long startTime = getStartTime();
+        logger.info("[start] start in {} minutes", startTime);
         scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
+                if(clusterServer != null && !clusterServer.amILeader()) {
+                    logger.info("[scheduledCheckSentEmails][not leader quit]");
+                    return;
+                }
                 scheduledTask();
             }
-        }, 1, 60, TimeUnit.MINUTES);
+        }, startTime, 60, TimeUnit.MINUTES);
     }
 
+    @VisibleForTesting
+    protected long getStartTime() {
+        long deltaTime = TimeUnit.MINUTES.toMillis(1);
+        long startTimeMilli = DateTimeUtils.getNearestHour().getTime() - System.currentTimeMillis() + deltaTime;
+        return TimeUnit.MILLISECONDS.toMinutes(startTimeMilli);
+    }
+
+    @VisibleForTesting
     protected void scheduledTask() {
         logger.info("[scheduledTask] start retrieving info");
         int totalCount, successCount, failCount;
-        try {
-            lock.lock();
-            totalCount = total.getAndSet(0);
-            successCount = success.getAndSet(0);
-            failCount = fail.getAndSet(0);
-        } finally {
-            lock.unlock();
-        }
+
+        List<EventModel> events = alertEventService.getLastHourAlertEvent();
+        totalCount = events.size();
+        Pair<Integer, Integer> successAndFail = statistics(events);
+        successCount = successAndFail.getKey();
+        failCount = successAndFail.getValue();
+
         logger.info("[scheduledTask] scheduled report, total email count: {}", totalCount);
         EventMonitor.DEFAULT.logEvent(EMAIL_SERVICE_CAT_TYPE,
-                String.format("total sent out emails in an hour: %d", totalCount));
+                "total sent out - %s", totalCount);
         EventMonitor.DEFAULT.logEvent(EMAIL_SERVICE_CAT_TYPE,
-                String.format("success sent out emails in an hour: %d", successCount));
+                "success sent out - %s", successCount);
         EventMonitor.DEFAULT.logEvent(EMAIL_SERVICE_CAT_TYPE,
-                String.format("failed sent out emails in an hour: %d", failCount));
+                "fail sent out - %s", failCount);
+    }
+
+    @VisibleForTesting
+    protected Pair<Integer, Integer> statistics(List<EventModel> events) {
+        int success = 0, fail = 0;
+        for(EventModel event : events) {
+            String prop = event.getEventProperty();
+            Properties properties = JsonCodec.INSTANCE.decode(prop, Properties.class);
+            boolean successOrNot = EmailService.DEFAULT.checkAsyncEmailResult(new EmailResponse() {
+                @Override
+                public Properties getProperties() {
+                    return properties;
+                }
+            });
+            if(successOrNot) {
+                success ++;
+            } else {
+                logger.info("[statistics] email fail sent out: {}", event.getEventProperty());
+                fail ++;
+            }
+        }
+        return new Pair<>(success, fail);
     }
 
     @Override
     public void success() {
-        try {
-            lock.lock();
-            success.getAndIncrement();
-            total.getAndIncrement();
-        } finally {
-            lock.unlock();
-        }
     }
 
     @Override
     public void fail(Throwable throwable) {
-        try {
-            lock.lock();
-            total.getAndIncrement();
-            fail.getAndIncrement();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public int getTotal() {
-        return total.get();
-    }
-
-    public int getFailed() {
-        return fail.get();
-    }
-
-    public int getSuccess() {
-        return success.get();
     }
 
 }
