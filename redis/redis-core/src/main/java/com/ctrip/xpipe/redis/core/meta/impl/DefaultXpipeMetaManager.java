@@ -650,7 +650,29 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return random(resultsCandidates);
 	}
 
+	@Override
+	public List<ClusterMeta> getSpecificActiveDcClusters(String currentDc, String clusterActiveDc) {
+
+		DcMeta directDcMeta = getDirectDcMeta(currentDc);
+		if(directDcMeta == null){
+			throw new IllegalArgumentException(String.format("can not find currentDc %s, %s", currentDc, clusterActiveDc));
+		}
+
+		List<ClusterMeta> result = new LinkedList<>();
+		directDcMeta.getClusters().forEach((clusterId, clusterMeta) -> {
+			if(clusterActiveDc.equalsIgnoreCase(clusterMeta.getActiveDc())){
+				result.add(clone(clusterMeta));
+			}
+		});
+
+		return result;
+	}
+
 	protected <T> T random(List<T> resultsCandidates) {
+
+		if(resultsCandidates.isEmpty()){
+			return null;
+		}
 
 		int random = new Random().nextInt(resultsCandidates.size());
 		return resultsCandidates.get(random);
