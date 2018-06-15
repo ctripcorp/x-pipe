@@ -11,9 +11,17 @@ import java.util.Set;
  * Jul 7, 2016
  */
 public interface DcMetaManager{
-	
+
+	/**
+	 * if no route found return null
+	 * @param clusterId
+	 * @return
+	 */
+	RouteMeta randomRoute(String clusterId);
+
+
 	Set<String> getClusters();
-	
+
 	boolean hasCluster(String clusterId);
 	
 	boolean hasShard(String clusterId, String shardId);

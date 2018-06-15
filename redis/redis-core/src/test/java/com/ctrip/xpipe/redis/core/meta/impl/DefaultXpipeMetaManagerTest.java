@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.core.meta.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.tuple.Pair;
@@ -13,9 +10,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng
@@ -26,15 +22,81 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 	private DefaultXpipeMetaManager metaManager;
 
-	private String dc = "jq", clusterId = "cluster1", shardId = "shard1";
+	private String dc = "jq", clusterId = "cluster1", clusterId2 = "cluster2", shardId = "shard1";
 	@SuppressWarnings("unused")
-	private String dcBak = "fq";
+	private String dcBak1 = "fq", dcBak2 = "fra";
 
 	@Before
 	public void beforeDefaultFileDaoTest() throws Exception {
 
 		metaManager = (DefaultXpipeMetaManager) DefaultXpipeMetaManager.buildFromFile("file-dao-test.xml");
 		add(metaManager);
+	}
+
+	@Test
+	public void testMetaRoutes(){
+
+		List<RouteMeta> routeMetas = metaManager.metaRoutes(dcBak2);
+		Assert.assertEquals(4, routeMetas.size());
+		routeMetas.sort((o1, o2) -> o1.getId()  - o2.getId());
+		Assert.assertEquals(new Integer(1), routeMetas.get(0).getId());
+		Assert.assertEquals(new Integer(2), routeMetas.get(1).getId());
+		Assert.assertEquals(new Integer(3), routeMetas.get(2).getId());
+		Assert.assertEquals(new Integer(4), routeMetas.get(3).getId());
+
+		List<RouteMeta> routeMetas2 = metaManager.metaRoutes(dcBak1);
+		Assert.assertEquals(0, routeMetas2.size());
+	}
+
+	@Test
+	public void testRandomRoute(){
+
+		//for dcBak2 cluster1
+		ClusterMeta clusterMeta1 = metaManager.getClusterMeta(dcBak2, clusterId);
+		Set<RouteMeta> routes = new HashSet<>();
+		for(int i=0;i<100;i++){
+			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta1.getOrgId(), clusterMeta1.getActiveDc());
+			routes.add(routeMeta);
+			Assert.assertTrue(routeMeta.getId() >= 1 && routeMeta.getId() <=3 );
+		}
+		Assert.assertEquals(3, routes.size());
+
+
+		//for dcBak2 cluster2
+		ClusterMeta clusterMeta2 = metaManager.getClusterMeta(dcBak2, clusterId2);
+		for(int i=0;i<100;i++){
+			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta2.getOrgId(), clusterMeta2.getActiveDc());
+			Assert.assertEquals(new Integer(4), routeMeta.getId());
+		}
+
+
+		//for dcBak1 cluster1
+		clusterMeta1 = metaManager.getClusterMeta(dcBak1, clusterId);
+		RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak1, clusterMeta1.getOrgId(), clusterMeta1.getActiveDc());
+		Assert.assertNull(routeMeta);
+
+	}
+
+
+	@Test
+	public void testRandom(){
+
+		int total = 100;
+		List<Integer> integers = new LinkedList<>();
+		for(int i=0;i<total;i++){
+			integers.add(i);
+		}
+		HashMap<Integer, AtomicInteger> map = new HashMap<>();
+		for(int i=0;i<(1<<20);i++){
+
+			Integer random = metaManager.random(integers);
+			AtomicInteger put = map.putIfAbsent(random, new AtomicInteger(1));
+			if(put != null){
+				put.incrementAndGet();
+			}
+		}
+		logger.debug("{}", map);
+		Assert.assertEquals(total, map.size());
 	}
 
 	@Test
@@ -104,6 +166,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		Set<String> expected = new HashSet<>();
 		expected.add("oy");
 		expected.add("fq");
+		expected.add("fra");
 		Assert.assertEquals(expected, real);
 		;
 

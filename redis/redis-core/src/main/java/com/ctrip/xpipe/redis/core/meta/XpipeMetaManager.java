@@ -100,4 +100,21 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 
 	void primaryDcChanged(String currentDc, String clusterId, String shardId, String newPrimaryDc);
 
+	/**
+	 * find all routes for current dc, and srcDc equals currentDc
+	 * @param currentDc
+	 * @return
+	 */
+	List<RouteMeta>  routes(String currentDc, String tag);
+
+	RouteMeta randomRoute(String currentDc, String tag, Integer orgId, String dstDc);
+
+	default List<RouteMeta>  metaRoutes(String currentDc){
+		return routes(currentDc, Route.TAG_META);
+	}
+
+	default RouteMeta  metaRandomRoutes(String currentDc, Integer orgId, String dstDc){
+		return randomRoute(currentDc, Route.TAG_META, orgId, dstDc);
+	}
+
 }
