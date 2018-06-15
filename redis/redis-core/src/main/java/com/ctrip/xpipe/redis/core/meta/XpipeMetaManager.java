@@ -117,4 +117,12 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 		return randomRoute(currentDc, Route.TAG_META, orgId, dstDc);
 	}
 
+	/**
+	 * find all clusters in currentDc whose active dc is clusterActiveDc
+	 * @param currentDc
+	 * @param clusterActiveDc
+	 * @return
+	 */
+	List<ClusterMeta> getSpecificActiveDcClusters(String currentDc, String clusterActiveDc);
+
 }
