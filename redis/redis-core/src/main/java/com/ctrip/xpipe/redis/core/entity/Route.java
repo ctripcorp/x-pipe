@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.core.entity;
 
+import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
+import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 
 /**
  * @author chen.zhu
@@ -19,4 +22,13 @@ public interface Route {
     String getRouteInfo();
 
     String getTag();
+
+    default String routeProtocol(){
+
+        String routeInfo = getRouteInfo();
+        if(StringUtil.isEmpty(routeInfo)){
+            return "";
+        }
+        return String.format("%s %s %s", ProxyProtocol.KEY_WORD, PROXY_OPTION.ROUTE.name(), routeInfo.trim());
+    }
 }

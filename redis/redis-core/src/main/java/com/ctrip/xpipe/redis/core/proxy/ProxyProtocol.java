@@ -15,6 +15,8 @@ import java.util.List;
  */
 public interface ProxyProtocol {
 
+    public static final String KEY_WORD = "PROXY";
+
     List<ProxyEndpoint> nextEndpoints();
 
     void recordForwardFor(InetSocketAddress address);

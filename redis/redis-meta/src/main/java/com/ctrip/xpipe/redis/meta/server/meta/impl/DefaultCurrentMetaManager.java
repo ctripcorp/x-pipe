@@ -11,6 +11,7 @@ import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
@@ -311,9 +312,16 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
+	public RouteMeta randomRoute(String clusterId) {
+		return dcMetaCache.randomRoute(clusterId);
+	}
+
+
+	@Override
 	public Pair<String, Integer> getKeeperMaster(String clusterId, String shardId) {
 		return currentMeta.getKeeperMaster(clusterId, shardId);
 	}
+
 
 	@Override
 	public List<KeeperMeta> getSurviveKeepers(String clusterId, String shardId) {

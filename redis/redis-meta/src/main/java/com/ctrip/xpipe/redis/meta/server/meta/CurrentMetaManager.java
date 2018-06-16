@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
@@ -34,6 +35,8 @@ public interface CurrentMetaManager extends Observable {
 	KeeperMeta getKeeperActive(String clusterId, String shardId);
 
 	Pair<String, Integer> getKeeperMaster(String clusterId, String shardId);
+
+	RouteMeta randomRoute(String clusterId);
 
 	RedisMeta getRedisMaster(String clusterId, String shardId);
 
