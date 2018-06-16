@@ -19,8 +19,6 @@ import static com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser.
  */
 public class DefaultProxyProtocolParser implements ProxyProtocolParser {
 
-    private static final String KEY_WORD = "PROXY";
-
     private SimpleStringParser simpleStringParser = new SimpleStringParser();
 
     private List<ProxyOptionParser> parsers = Lists.newArrayList();
@@ -43,7 +41,7 @@ public class DefaultProxyProtocolParser implements ProxyProtocolParser {
 
     @Override
     public ByteBuf format() {
-        StringBuilder proxyProtocol = new StringBuilder(KEY_WORD).append(WHITE_SPACE);
+        StringBuilder proxyProtocol = new StringBuilder(ProxyProtocol.KEY_WORD).append(WHITE_SPACE);
         for(ProxyOptionParser parser : parsers) {
             proxyProtocol.append(parser.getPayload()).append(";");
         }
@@ -54,7 +52,7 @@ public class DefaultProxyProtocolParser implements ProxyProtocolParser {
 
     @Override
     public ProxyProtocol read(String protocol) {
-        if(!protocol.toLowerCase().startsWith(KEY_WORD.toLowerCase())) {
+        if(!protocol.toLowerCase().startsWith(ProxyProtocol.KEY_WORD.toLowerCase())) {
             throw new ProxyProtocolException("proxy protocol format error: " + protocol);
         }
         ProxyProtocol proxyProtocol = new DefaultProxyProtocol(this);
@@ -78,6 +76,6 @@ public class DefaultProxyProtocolParser implements ProxyProtocolParser {
     }
 
     private String removeKeyWord(String protocol) {
-        return protocol.substring(KEY_WORD.length());
+        return protocol.substring(ProxyProtocol.KEY_WORD.length());
     }
 }
