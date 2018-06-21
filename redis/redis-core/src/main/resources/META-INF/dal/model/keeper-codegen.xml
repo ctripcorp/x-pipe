@@ -71,7 +71,6 @@
     <attribute name="tag" value-type="String" />
     <attribute name="src-dc" value-type="String" />
     <attribute name="dst-dc" value-type="String" />
-    <attribute name="weight" value-type="int" />
     <attribute name="routeInfo" value-type="String" />
   </entity>
 </model>

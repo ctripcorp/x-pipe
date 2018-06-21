@@ -58,7 +58,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_NO_ALARM_MUNITE_FOR_NEW_CLUSTER = "no.alarm.minute.for.new.cluster";
 
-    private static final String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
+    public static final String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
 
     @Override
     public int getAlertSystemRecoverMinute() {

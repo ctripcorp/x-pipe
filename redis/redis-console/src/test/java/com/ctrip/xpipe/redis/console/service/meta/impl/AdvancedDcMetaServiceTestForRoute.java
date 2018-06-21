@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.model.ProxyTbl;
 import com.ctrip.xpipe.redis.console.model.RouteTbl;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -109,7 +110,7 @@ public class AdvancedDcMetaServiceTestForRoute extends AbstractConsoleIntegratio
                 .setSrcDcId(1L).setDstDcId(3L).setTag("console"));
         List<ProxyTbl> proxies = Lists.newArrayList();
         proxies.addAll(proxyTblMap.values());
-        List<RouteMeta> routeMetas = service.combineRouteInfo(routes, proxies);
+        List<RouteMeta> routeMetas = service.combineRouteInfo(routes, proxies, new DcMeta());
         logger.info("{}", routeMetas.get(0));
         Assert.assertEquals(PROXY1+","+PROXY2+" "+PROXY3+" "+PROXY4+","+PROXY5+","+PROXY6, routeMetas.get(0).getRouteInfo());
     }
