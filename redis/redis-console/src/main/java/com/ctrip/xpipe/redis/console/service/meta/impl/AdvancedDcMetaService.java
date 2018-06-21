@@ -99,6 +99,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         ParallelCommandChain chain = new ParallelCommandChain(executors);
         chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
+        chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMeta, dcTbl.getId(), executors, redisMetaService, dcClusterService,
                 clusterMetaService, dcClusterShardService, dcService, factory);
@@ -194,8 +195,9 @@ public class AdvancedDcMetaService implements DcMetaService {
             try {
                 List<RouteTbl> routes = routeService.getAllRoutes();
                 List<ProxyTbl> proxies = proxyService.getAllProxies();
-                List<RouteMeta> routeMetas = combineRouteInfo(routes, proxies);
+                List<RouteMeta> routeMetas = combineRouteInfo(routes, proxies, dcMeta);
                 routeMetas.forEach((routeMeta)->dcMeta.addRoute(routeMeta));
+                future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);
             }
@@ -213,11 +215,14 @@ public class AdvancedDcMetaService implements DcMetaService {
     }
 
     @VisibleForTesting
-    protected List<RouteMeta> combineRouteInfo(List<RouteTbl> routes, List<ProxyTbl> proxies) {
+    protected List<RouteMeta> combineRouteInfo(List<RouteTbl> routes, List<ProxyTbl> proxies, DcMeta dcMeta) {
         List<DcTbl> dcTbls = dcService.findAllDcBasic();
         Map<Long, ProxyTbl> proxyTblMap = convertToMap(proxies);
         List<RouteMeta> result = Lists.newArrayListWithCapacity(routes.size());
         for(RouteTbl route : routes) {
+            if(!getDcName(route.getSrcDcId(), dcTbls).equals(dcMeta.getId())) {
+                continue;
+            }
             RouteMeta routeMeta = new RouteMeta();
             routeMeta.setId((int) route.getId()).setOrgId((int) route.getRouteOrgId()).setTag(route.getTag());
             routeMeta.setSrcDc(getDcName(route.getSrcDcId(), dcTbls)).setDstDc(getDcName(route.getDstDcId(), dcTbls));
