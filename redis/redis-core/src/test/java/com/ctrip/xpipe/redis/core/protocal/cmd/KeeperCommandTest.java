@@ -39,7 +39,7 @@ public class KeeperCommandTest extends AbstractRedisTest {
         String result = new AbstractKeeperCommand.KeeperSetStateCommand(
                 new KeeperMeta().setIp("localhost").setPort(server.getPort()),
                 KeeperState.ACTIVE, new Pair<>("localhost", randomPort()),
-                new RouteMeta().setRouteInfo("PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"),
+                new RouteMeta().setRouteInfo("PROXYTCP://1.1.1.1:80,PROXYTCP://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"),
                 scheduled
         ).execute().get(3, TimeUnit.SECONDS);
 

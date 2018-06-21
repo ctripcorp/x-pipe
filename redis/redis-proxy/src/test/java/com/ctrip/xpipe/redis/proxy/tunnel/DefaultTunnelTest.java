@@ -70,7 +70,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
     private ProxyProtocol proxyProtocol;
 
-    private static final String PROXY_PROTOCOL = "PROXY ROUTE TCP://127.0.0.1:6379\r\n";
+    private static final String PROXY_PROTOCOL = "PROXYTCP ROUTE TCP://127.0.0.1:6379\r\n";
 
     private ByteBuf testByteBuf = Unpooled.copiedBuffer("TEST".getBytes());
 

@@ -61,7 +61,7 @@ public class KeeperStateChangeJobTest extends AbstractMetaServerTest{
 	@Test
 	public void testRoute() throws Exception {
 
-		String routeInfo = "PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443";
+		String routeInfo = "PROXYTCP://1.1.1.1:80,PROXYTCP://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443";
 		startServer(keepers.get(0).getPort(), new AbstractIoActionFactory() {
 			@Override
 			protected byte[] getToWrite(Object readResult) {

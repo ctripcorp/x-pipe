@@ -517,6 +517,15 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 	}
 
+	@Override
+	public void addBackupDc(String cluster, String dcName) {
+		ClusterTbl clusterTbl = find(cluster);
+		if(clusterTbl == null) {
+			throw new IllegalArgumentException("cluster not found");
+		}
+
+	}
+
 	@VisibleForTesting
 	protected List<ClusterListClusterModel> richClusterInfo(Map<String, ClusterListClusterModel> clusters) {
 

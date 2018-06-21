@@ -1,9 +1,23 @@
 -- Xpipe DB Demo
 
+-- ZONE Table
+drop table if exists ZONE_TBL;
+create table ZONE_TBL
+(
+	`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+	`zone_name` varchar(128) NOT NULL DEFAULT '' COMMENT 'zone name',
+	`DataChange_LastTime` timestamp default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
+	`deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+	PRIMARY KEY (`id`),
+  UNIQUE KEY `zone_name` (`zone_name`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+) DEFAULT CHARSET=utf8 COMMENT='zone base info';
+
 -- DC Table
 drop table if exists DC_TBL;
 CREATE TABLE `DC_TBL` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `zone_id` bigint(20) unsigned NOT NULL COMMENT 'zone id',
   `dc_name` varchar(128) NOT NULL DEFAULT '' COMMENT 'dc name',
   `dc_active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'dc active status',
   `dc_description` varchar(1024) NOT NULL DEFAULT 'nothing' COMMENT 'dc description',
@@ -278,7 +292,7 @@ CREATE TABLE `route_tbl` (
   `dst_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'destination proxies ids',
   `optional_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'optional relay proxies, ids separated by whitespace',
   `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'active or not',
-  `weight` tinyint(4) NOT NULL DEFAULT '1' COMMENT 'route weight for selection',
+  `tag` varchar(128) NOT NULL DEFAULT '1' COMMENT 'tag for console or meta',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
@@ -290,9 +304,7 @@ drop table if exists proxy_tbl;
 CREATE TABLE `proxy_tbl` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'dc id',
-  `scheme` varchar(20) NOT NULL DEFAULT 'TCP' COMMENT 'scheme, like PROXY, PROXYTLS, TCP',
-  `proxy_ip` varchar(40) NOT NULL DEFAULT '0.0.0.0' COMMENT 'proxy ip',
-  `proxy_port` int(11) NOT NULL DEFAULT '0' COMMENT 'proxy port',
+  `uri` varchar(20) NOT NULL DEFAULT 'TCP' COMMENT 'scheme, like PROXYTCP, PROXYTLS://127.0.0.1:8080, TCP://127.0.0.1:8090',
   `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'active or not',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',

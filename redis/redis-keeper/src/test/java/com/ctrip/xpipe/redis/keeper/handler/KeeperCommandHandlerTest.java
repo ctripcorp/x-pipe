@@ -18,7 +18,7 @@ public class KeeperCommandHandlerTest {
 
     @Test
     public void testGetProxyProtocol() {
-        final String command = "setstate ACTIVE 127.0.0.1 6379 PROXY ROUTE proxy://127.0.0.1:6379,tls://10.2.1.1:6379" +
+        final String command = "setstate ACTIVE 127.0.0.1 6379 PROXYTCP ROUTE proxy://127.0.0.1:6379,tls://10.2.1.1:6379" +
                 " tls://10.3.2.1:6379,tls://10.3.2.1:6380 raw://127.0.0.1:6380;FORWARD_FOR 192.168.1.1:6379";
         ProxyProtocol protocol = handler.getProxyProtocol(command.split(WHITE_SPACE));
         Assert.assertTrue(command.contains(protocol.getContent()));

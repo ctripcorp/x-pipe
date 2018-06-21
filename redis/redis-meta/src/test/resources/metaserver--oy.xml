@@ -5,7 +5,7 @@
 
 		<routes>
 			<!--
-			<route id="1" org-id="0" tag="meta" src-dc="oy" dst-dc="jq" weight="6" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="1" org-id="0" tag="meta" src-dc="oy" dst-dc="jq" weight="6" routeInfo="PROXYTCP://1.1.1.1:80,PROXYTCP://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
 			-->
 		</routes>
 

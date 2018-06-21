@@ -1,14 +1,25 @@
 -- Xpipe DB Demo
 
+-- ZONE Table
+drop table if exists ZONE_TBL;
+create table ZONE_TBL
+(
+	id bigint unsigned not null auto_increment primary key ,
+	zone_name varchar(128) not null unique,
+	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
+	deleted tinyint(1) not null default 0
+);
+
 -- DC Table
 drop table if exists DC_TBL;
 create table DC_TBL
 (
-	id bigint unsigned not null auto_increment primary key ,
+	id bigint unsigned not null auto_increment primary key,
+	zone_id bigint unsigned not null,
 	dc_name varchar(128) not null unique, 
 	dc_active tinyint(1) not null default 1,
 	dc_description varchar(1024) not null default 'nothing',
-    dc_last_modified_time varchar(40) not null default '',
+  dc_last_modified_time varchar(40) not null default '',
 	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
@@ -182,8 +193,8 @@ CREATE TABLE `config_tbl` (
   key varchar(128) NOT NULL DEFAULT '' unique,
   value varchar(1024) DEFAULT '' ,
   until TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `latest_update_user` varchar(512) DEFAULT '',
-  `latest_update_ip` varchar(128) DEFAULT '',
+  latest_update_user varchar(512) DEFAULT '',
+  latest_update_ip varchar(128) DEFAULT '',
   desc varchar(1024) NOT NULL DEFAULT '' ,
   DataChange_LastTime timestamp DEFAULT CURRENT_TIMESTAMP,
   deleted tinyint(4) NOT NULL DEFAULT 0,
@@ -226,7 +237,7 @@ CREATE TABLE `route_tbl` (
   `dst_proxy_ids` varchar(128) not null default '',
   `optional_proxy_ids` varchar(128) not null default '',
   `active` tinyint(1) not null default 1,
-  `weight` tinyint(4) not null default 1,
+  `tag` varchar(128) not null default 'META',
   `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
   `deleted` tinyint(4) not null default 0,
 );
@@ -236,9 +247,7 @@ drop table if exists proxy_tbl;
 CREATE TABLE `proxy_tbl` (
   `id` bigint unsigned  not null AUTO_INCREMENT primary key,
   `dc_id` bigint(20) unsigned not null default 0,
-  `scheme` varchar(20) not null default '',
-  `proxy_ip` varchar(40) not null default '0.0.0.0',
-  `proxy_port` int(11) not null default 0,
+  `uri` varchar(128) not null default '',
   `active` tinyint(1) not null default 1,
   `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
   `deleted` tinyint(4) not null default 0,
