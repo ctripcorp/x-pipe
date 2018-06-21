@@ -32,12 +32,12 @@ public class ProxyProtocolDecoderTest extends AbstractNettyTest {
     public void testDecodeWithPositive() {
         ProxyProtocolDecoder decoder = new ProxyProtocolDecoder(1024);
         EmbeddedChannel channel = new EmbeddedChannel(decoder, new ListeningNettyHandler("TEST"));
-        channel.writeInbound(Unpooled.copiedBuffer("+PROXYTCP ROUTE TCP://127.0.0.1:6379 PROXYTCP://127.0.0.1:6380\r\nTEST".getBytes()));
+        channel.writeInbound(Unpooled.copiedBuffer("+PROXY ROUTE TCP://127.0.0.1:6379 PROXYTCP://127.0.0.1:6380\r\nTEST".getBytes()));
     }
 
     @Test
     public void channelRead() {
-        channel.writeInbound(Unpooled.copiedBuffer("+PROXYTCP ROUTE TCP://127.0.0.1:6379 PROXYTCP://127.0.0.1:6380\r\n".getBytes()));
+        channel.writeInbound(Unpooled.copiedBuffer("+PROXY ROUTE TCP://127.0.0.1:6379 PROXYTCP://127.0.0.1:6380\r\n".getBytes()));
         Assert.assertTrue(decoder.isFinished());
     }
 

@@ -20,7 +20,7 @@ import static org.junit.Assert.*;
  */
 public class ProxyEnabledEndpointTest {
 
-    private ProxyProtocol protocol = new DefaultProxyProtocolParser().read("PROXYTCP ROUTE TCP://127.0.0.1:6379\r\n");
+    private ProxyProtocol protocol = new DefaultProxyProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:6379\r\n");
 
     private static final Logger logger = LoggerFactory.getLogger(ProxyEnabledEndpointTest.class);
 

@@ -60,7 +60,7 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
 
     @Test
     public void channelRead() {
-        channel.writeInbound(new DefaultProxyProtocolParser().read("PROXYTCP ROUTE TCP://127.0.0.1:6379"));
+        channel.writeInbound(new DefaultProxyProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:6379"));
         verify(manager).create(any(), any());
         verify(tunnel).frontend();
     }
