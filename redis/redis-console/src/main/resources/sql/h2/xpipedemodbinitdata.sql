@@ -7,6 +7,7 @@ insert into DC_TBL (id,zone_id,dc_name,dc_active,dc_description,dc_last_modified
 
 insert into SETINEL_TBL (setinel_id,dc_id,setinel_address,setinel_description) values(1,1,'127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002','setinel no.1');
 insert into SETINEL_TBL (setinel_id,dc_id,setinel_address,setinel_description) values(2,2,'127.0.0.1:17172,127.0.0.1:17172','setinel no.2');
+insert into SETINEL_TBL (setinel_id,dc_id,setinel_address,setinel_description) values(3,3,'127.0.0.1:32222,127.0.0.1:32223','setinel no.3');
 
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active) values (1,1,'127.0.0.1',7080,1);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active) values (2,1,'127.0.0.1',7081,1);
