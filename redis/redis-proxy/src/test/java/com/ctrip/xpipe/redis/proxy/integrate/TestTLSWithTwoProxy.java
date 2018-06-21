@@ -153,6 +153,6 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
     }
 
     private String generateProxyProtocol(int port) {
-        return String.format("+PROXY ROUTE PROXYTLS://127.0.0.1:%d TCP://127.0.0.1:%d\r\n", PROXY_PORT2, port);
+        return String.format("+PROXYTCP ROUTE PROXYTLS://127.0.0.1:%d TCP://127.0.0.1:%d\r\n", PROXY_PORT2, port);
     }
 }

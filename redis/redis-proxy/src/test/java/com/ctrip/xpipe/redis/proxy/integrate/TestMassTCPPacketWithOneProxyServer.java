@@ -253,7 +253,7 @@ public class TestMassTCPPacketWithOneProxyServer extends AbstractProxyIntegratio
 
 
     private String generateProxyProtocol(int port) {
-        return String.format("+PROXY ROUTE TCP://127.0.0.1:%d\r\n", port);
+        return String.format("+PROXYTCP ROUTE TCP://127.0.0.1:%d\r\n", port);
     }
 
 }

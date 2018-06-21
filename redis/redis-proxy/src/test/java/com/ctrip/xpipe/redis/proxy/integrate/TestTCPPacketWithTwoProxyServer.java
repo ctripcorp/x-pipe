@@ -159,9 +159,9 @@ public class TestTCPPacketWithTwoProxyServer extends AbstractProxyIntegrationTes
 
     private String generateProxyProtocol(int port) {
         if((counter & 1) != 0) {
-            return String.format("+PROXY ROUTE PROXY://127.0.0.1:%d TCP://127.0.0.1:%d\r\n", PROXY_PORT2, port);
+            return String.format("+PROXYTCP ROUTE PROXYTCP://127.0.0.1:%d TCP://127.0.0.1:%d\r\n", PROXY_PORT2, port);
         } else {
-            return String.format("+PROXY ROUTE PROXY://127.0.0.1:%d TCP://127.0.0.1:%d\r\n", PROXY_PORT1, port);
+            return String.format("+PROXYTCP ROUTE PROXYTCP://127.0.0.1:%d TCP://127.0.0.1:%d\r\n", PROXY_PORT1, port);
         }
     }
 }
