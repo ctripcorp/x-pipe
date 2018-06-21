@@ -115,8 +115,8 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 					SET_STATE,
 					state.toString(),
 					masterAddress.getKey(), String.valueOf(masterAddress.getValue()),
-					routeMeta == null?"":routeMeta.routeProtocol(),
-					ProxyEndpoint.PROXY_SCHEME.TCP.name()).format();
+					routeMeta == null?"":(routeMeta.routeProtocol() + " " + ProxyEndpoint.PROXY_SCHEME.TCP.name())
+			).format();
 		}
 		
 		
