@@ -15,7 +15,7 @@ import java.util.List;
  */
 public interface ProxyProtocol {
 
-    public static final String KEY_WORD = "PROXYTCP";
+    public static final String KEY_WORD = "PROXY";
 
     List<ProxyEndpoint> nextEndpoints();
 

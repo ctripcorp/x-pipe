@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
@@ -114,7 +115,8 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 					SET_STATE,
 					state.toString(),
 					masterAddress.getKey(), String.valueOf(masterAddress.getValue()),
-					routeMeta == null?"":routeMeta.routeProtocol()).format();
+					routeMeta == null?"":routeMeta.routeProtocol(),
+					ProxyEndpoint.PROXY_SCHEME.TCP.name()).format();
 		}
 		
 		
