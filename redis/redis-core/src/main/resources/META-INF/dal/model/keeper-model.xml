@@ -45,5 +45,7 @@
 			}
 		</snippet>
 	</entity>
+	<entity name="route" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Route">
+	</entity>
 </model>
 

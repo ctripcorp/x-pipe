@@ -440,7 +440,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		for(String dcName : dcToSentinels.keySet()) {
 			List<DcClusterShardTbl> dcClusterShards = dcClusterShardService.findAllByDcCluster(dcName, cluster);
 			List<SetinelTbl> sentinels = dcToSentinels.get(dcName);
-			if(dcClusterShards == null || sentinels == null) {
+			if(dcClusterShards == null || sentinels == null || sentinels.isEmpty()) {
 				throw new XpipeRuntimeException("DcClusterShard | Sentinels should not be null");
 			}
             long randomlySelectedSentinelId = randomlyChoseSentinels(sentinels);
@@ -515,6 +515,15 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			logger.error("[findUnhealthyClusters]{}", e);
 			return Collections.emptyList();
 		}
+	}
+
+	@Override
+	public void addBackupDc(String cluster, String dcName) {
+		ClusterTbl clusterTbl = find(cluster);
+		if(clusterTbl == null) {
+			throw new IllegalArgumentException("cluster not found");
+		}
+
 	}
 
 	@VisibleForTesting

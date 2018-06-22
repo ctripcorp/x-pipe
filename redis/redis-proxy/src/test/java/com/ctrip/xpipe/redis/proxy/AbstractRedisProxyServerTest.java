@@ -19,7 +19,6 @@ import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -37,10 +36,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import sun.net.spi.DefaultProxySelector;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -179,7 +174,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     protected ProxyEndpoint newProxyEndpoint(boolean isLocal, boolean isSSL) {
         String local = "127.0.0.1", remote = String.format("10.3.%d.%d", randomInt(0, 255), randomInt(0, 255));
         String rawUri = String.format("%s://%s:%d",
-                isSSL ? ProxyEndpoint.PROXY_SCHEME.TLS.name() : ProxyEndpoint.PROXY_SCHEME.PROXY.name(),
+                isSSL ? ProxyEndpoint.PROXY_SCHEME.TLS.name() : ProxyEndpoint.PROXY_SCHEME.PROXYTCP.name(),
                 isLocal ? local : remote,
                 randomPort());
 

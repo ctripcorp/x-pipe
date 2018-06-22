@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import javax.annotation.PreDestroy;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -69,7 +71,7 @@ public class HealthChecker {
 							warmuped = true;
 							waitAndRetry();
 						}
-						List<DcMeta> dcsToCheck = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
+						List<DcMeta> dcsToCheck = dcsToCheck(metaCache.getXpipeMeta());
 						if(!dcsToCheck.isEmpty()){
 							sampleAll(dcsToCheck);
 						}
@@ -121,13 +123,27 @@ public class HealthChecker {
 			}
 		}
 		try {
-			List<DcMeta> dcsToCheck = new LinkedList<>(xpipeMeta.getDcs().values());
+			List<DcMeta> dcsToCheck = dcsToCheck(xpipeMeta);
 			for(DcMeta dc : dcsToCheck) {
 				dc.accept(healthCheckVisitor);
 			}
 		} catch (Exception e) {
 			log.error("[warmup] error: {}", e);
 		}
+	}
+
+	@VisibleForTesting
+	protected List<DcMeta> dcsToCheck(XpipeMeta xpipeMeta) {
+		List<DcMeta> result = new LinkedList<>(xpipeMeta.getDcs().values());
+		Set<String> ignoredDcNames = config.getIgnoredHealthCheckDc();
+		List<DcMeta> toRemove = Lists.newArrayList();
+		for(DcMeta dcMeta : result) {
+			if(ignoredDcNames.contains(dcMeta.getId()) || ignoredDcNames.contains(dcMeta.getId().toUpperCase())) {
+				toRemove.add(dcMeta);
+			}
+		}
+		result.removeAll(toRemove);
+		return result;
 	}
 
 	private void sampleAll(List<DcMeta> dcMetas) {

@@ -75,7 +75,7 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 		Assert.assertFalse(addCommand.isBeginExecute());
 		
 		defaultKeeperStateController.addKeeper(new KeeperTransMeta(getClusterId(), getShardId(), new KeeperMeta()));
-		sleep(10);
+		sleep(50);
 		Assert.assertTrue(addCommand.isBeginExecute());
 		
 	}

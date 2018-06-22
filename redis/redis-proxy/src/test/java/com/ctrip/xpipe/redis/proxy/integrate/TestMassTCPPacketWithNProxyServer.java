@@ -162,7 +162,7 @@ public class TestMassTCPPacketWithNProxyServer extends AbstractProxyIntegrationT
 
     private String generateProxyProtocol(int port) {
         StringBuilder sb = new StringBuilder("+PROXY ROUTE ");
-        String baseString = "PROXY://127.0.0.1:%d";
+        String baseString = "PROXYTCP://127.0.0.1:%d";
         for(int i = 1; i < N_SERVER; i++) {
             sb.append(String.format(baseString, PROXY_PORT[i])).append(" ");
         }
