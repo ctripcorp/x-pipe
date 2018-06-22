@@ -2,8 +2,12 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.List;
 
 /**
  * @author chen.zhu

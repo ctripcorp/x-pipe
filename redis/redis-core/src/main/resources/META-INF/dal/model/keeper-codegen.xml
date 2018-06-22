@@ -11,6 +11,7 @@
     <entity-ref name="keeperContainer" type="list" names="keeperContainers" xml-indent="true" />
     <entity-ref name="sentinel" type="list" names="sentinels" />
     <entity-ref name="cluster" type="list" names="clusters" />
+    <entity-ref name="route" type="list" names="routes" xml-indent="true" />
   </entity>
   <entity name="metaServer">
     <attribute name="ip" value-type="String" />
@@ -33,6 +34,7 @@
     <attribute name="id" value-type="String" />
     <attribute name="active-dc" value-type="String" />
     <attribute name="backup-dcs" value-type="String" />
+    <attribute name="org-id" value-type="int" />
     <attribute name="phase" value-type="int" />
     <attribute name="lastModifiedTime" value-type="String" />
     <entity-ref name="shard" type="list" names="shards" />
@@ -62,6 +64,14 @@
     <attribute name="master" value-type="String" />
     <attribute name="offset" value-type="int" />
     <attribute name="survive" value-type="boolean" />
+  </entity>
+  <entity name="route">
+    <attribute name="id" value-type="int" />
+    <attribute name="org-id" value-type="int" />
+    <attribute name="tag" value-type="String" />
+    <attribute name="src-dc" value-type="String" />
+    <attribute name="dst-dc" value-type="String" />
+    <attribute name="routeInfo" value-type="String" />
   </entity>
 </model>
 

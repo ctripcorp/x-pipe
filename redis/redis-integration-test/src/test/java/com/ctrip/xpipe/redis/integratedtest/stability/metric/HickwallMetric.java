@@ -31,6 +31,11 @@ public class HickwallMetric implements MetricLog {
     @Override
     public void log(String desc, String metricSub, long delayNanos) {
 
+        if(metricProxy == null){
+            logger.info("[log][null return]");
+            return;
+        }
+
         MetricData metricData = new MetricData(desc, clusterKey, metricSub);
         metricData.setTimestampMilli(System.currentTimeMillis());
         metricData.setValue(delayNanos);

@@ -10,6 +10,7 @@ import io.netty.buffer.ByteBuf;
  */
 public interface ProxyProtocolParser {
 
+
     ByteBuf format();
 
     ProxyProtocol read(String protocol);

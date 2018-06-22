@@ -90,6 +90,7 @@ public class DefaultProxyServer implements ProxyServer {
     }
 
     private void startTcpServer() throws Exception {
+        logger.info("[startTcpServer] start with port: {}", config.frontendTcpPort());
         ServerBootstrap b = bootstrap("tcp").childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
@@ -113,6 +114,7 @@ public class DefaultProxyServer implements ProxyServer {
         if(port == -1) {
             return;
         }
+        logger.info("[startTlsServer] start with port: {}", port);
         ServerBootstrap b = bootstrap("tls").childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {

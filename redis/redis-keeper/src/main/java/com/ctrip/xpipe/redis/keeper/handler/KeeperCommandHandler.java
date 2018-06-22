@@ -97,10 +97,13 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 	}
 
 
+	// setstate ACTIVE 127.0.0.1 6379 PROXY ROUTE PROXYTCP://127.0.0.1:80,PROXYTCP://127.0.0.2;80 TCP
 	@VisibleForTesting
 	protected ProxyProtocol getProxyProtocol(String[] args) {
 		String[] protocolArr = new String[args.length - 4];
 		System.arraycopy(args, 4, protocolArr, 0, protocolArr.length);
+		String scheme = protocolArr[protocolArr.length - 1];
+		protocolArr[protocolArr.length - 1] = String.format("%s://%s:%s", scheme, args[2], args[3]);
 		String protocol = StringUtil.join(WHITE_SPACE, protocolArr);
 		logger.info("[getProxyProtocol] protocol: {}", protocol);
 		return new DefaultProxyProtocolParser().read(protocol);
