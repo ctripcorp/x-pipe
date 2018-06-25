@@ -5,14 +5,18 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ProxyTbl;
 import com.ctrip.xpipe.redis.console.model.RouteTbl;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
 import com.ctrip.xpipe.redis.console.service.RouteService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.retry.RetryDelay;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +46,9 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private RouteService routeService;
+
+    @Autowired
+    private ClusterService clusterService;
 
     @Test
     public void testRetry3TimesUntilSuccess() throws Exception {
@@ -119,6 +126,25 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
         List<RouteMeta> routeMetas = service.combineRouteInfo(routes, proxies, meta);
         routeMetas.forEach((routeMeta)->meta.addRoute(routeMeta));
         logger.info("{}", meta);
+    }
+
+    @Test
+    public void testClusterOrgInfo() {
+        List<ClusterTbl> clusterTbls = clusterService.findAllClustersWithOrgInfo();
+        logger.info("{}", clusterTbls.size());
+
+        ClusterTbl clusterTbl = clusterTbls.get(0);
+        clusterTbl.setClusterOrgId(3);
+        clusterService.update(clusterTbl);
+
+        logger.info("{}", clusterService.find(clusterTbl.getId()));
+
+        DcMeta dcMeta = service.getDcMeta("jq");
+        List<ClusterMeta> clusters = Lists.newArrayList(dcMeta.getClusters().values());
+
+        logger.info("{}", clusters.get(0));
+        Assert.assertNotNull(clusters.get(0).getOrgId());
+        Assert.assertTrue(3 == clusters.get(0).getOrgId());
     }
 
     @Override

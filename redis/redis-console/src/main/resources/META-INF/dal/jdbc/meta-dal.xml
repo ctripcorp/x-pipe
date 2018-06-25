@@ -158,6 +158,7 @@
 				<member name="cluster-name"/>
 				<member name="status"/>
 				<member name="activedc-id"/>
+				<member name="cluster-org-id"/>
 			</readset>
 		</readsets>
 		
