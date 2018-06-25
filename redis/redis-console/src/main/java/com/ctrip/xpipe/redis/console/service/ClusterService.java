@@ -31,5 +31,4 @@ public interface ClusterService {
 	void reBalanceClusterSentinels(List<String> clusterNames);
 
 	List<ClusterListClusterModel> findUnhealthyClusters();
-	void addBackupDc(String cluster, String dcName);
 }

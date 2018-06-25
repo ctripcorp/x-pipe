@@ -286,8 +286,8 @@ drop table if exists route_tbl;
 CREATE TABLE `route_tbl` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `route_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of route',
-  `src_dc_id` bigint(20) unsigned NOT NULL COMMENT 'source dc id',
-  `dst_dc_id` bigint(20) unsigned NOT NULL COMMENT 'destination dc id',
+  `src_dc_id` bigint(20) unsigned NOT NULL DEFAULT '' COMMENT 'source dc id',
+  `dst_dc_id` bigint(20) unsigned NOT NULL DEFAULT '' COMMENT 'destination dc id',
   `src_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'source proxies ids',
   `dst_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'destination proxies ids',
   `optional_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'optional relay proxies, ids separated by whitespace',
