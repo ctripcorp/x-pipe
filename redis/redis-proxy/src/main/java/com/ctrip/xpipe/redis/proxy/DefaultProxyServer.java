@@ -122,7 +122,9 @@ public class DefaultProxyServer implements ProxyServer {
                     return;
                 }
                 ChannelPipeline p = ch.pipeline();
-                p.addLast(serverSslHandlerFactory.createSslHandler());
+                if(!config.noTlsNettyHandler()) {
+                    p.addLast(serverSslHandlerFactory.createSslHandler());
+                }
                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
                 p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
                 p.addLast(new FrontendSessionNettyHandler(tunnelManager));

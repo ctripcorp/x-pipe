@@ -51,6 +51,8 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
 
     private static final String KEY_NOT_INTEREST_IP = "proxy.not.interest.ips";
 
+    private static final String KEY_NO_TLS_NETTY_HANDLER = "proxy.no.tls.netty.handler";
+
     private String[] notInterests;
 
     @Resource(name = Production.GLOBAL_SCHEDULED)
@@ -125,6 +127,11 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
                 return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean noTlsNettyHandler() {
+        return getBooleanProperty(KEY_NO_TLS_NETTY_HANDLER, false);
     }
 
     private void refreshNotInterest() {
