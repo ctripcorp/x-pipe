@@ -44,6 +44,11 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public boolean noTlsNettyHandler() {
+        return false;
+    }
+
+    @Override
     public String getPassword() {
         return "100013684";
     }

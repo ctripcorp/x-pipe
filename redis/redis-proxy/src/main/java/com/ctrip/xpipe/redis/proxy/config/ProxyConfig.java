@@ -23,4 +23,6 @@ public interface ProxyConfig extends TLSConfig {
     boolean debugTunnel();
 
     boolean notInterest(InetSocketAddress address);
+
+    boolean noTlsNettyHandler();
 }
