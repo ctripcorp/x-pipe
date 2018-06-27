@@ -21,6 +21,8 @@ public class SimpleSendMessage extends AbstractLoadRedis {
 
     private int expire = 0;
 
+    private long expireat = 0;
+
     private String message;
 
     public SimpleSendMessage(InetSocketAddress master) {
@@ -57,10 +59,14 @@ public class SimpleSendMessage extends AbstractLoadRedis {
                                     break;
                                 }
                                 long keyIndex = getKeyIndex(index);
-                                if (expire > 0) {
-                                    jedis.setex(String.valueOf(keyIndex), expire, message);
-                                } else {
-                                    jedis.set(String.valueOf(keyIndex), message);
+                                String key = String.valueOf(keyIndex);
+                                if (expireat > 0) {
+                                    jedis.set(key, message);
+                                    jedis.expireAt(key, expireat);
+                                } else if(expire > 0){
+                                    jedis.setex(key, expire, message);
+                                }else {
+                                    jedis.set(key, message);
                                 }
 
                                 if(sleepMilli > 0){
@@ -69,7 +75,9 @@ public class SimpleSendMessage extends AbstractLoadRedis {
                             }
                         }
                         logger.info("[doStart][finish]");
-                    } finally {
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }finally {
                         latch.countDown();
                     }
                 }
@@ -77,17 +85,20 @@ public class SimpleSendMessage extends AbstractLoadRedis {
         }
 
         latch.await();
+        logger.info("[exit]");
+        TimeUnit.SECONDS.sleep(1);
         System.exit(0);
     }
 
     public static void main(String[] args) throws Exception {
 
         SimpleSendMessage simpleSendMessage = new SimpleSendMessage(new InetSocketAddress("127.0.0.1", 6379));
-        simpleSendMessage.total = 1 << 23;
-        simpleSendMessage.sleepMilli = 10;
-        simpleSendMessage.expire = 0;
-        simpleSendMessage.concurrent = 200;
-        simpleSendMessage.current.set(1 << 22);
+        simpleSendMessage.total = 1 << 16;
+        simpleSendMessage.sleepMilli = 0;
+        simpleSendMessage.expireat = System.currentTimeMillis()/1000 + 30;
+//        simpleSendMessage.expire = 120;
+        simpleSendMessage.concurrent = 10;
+        simpleSendMessage.current.set(0);
         simpleSendMessage.setMaxKeyIndex(1 << 30);
 
         simpleSendMessage.initialize();
