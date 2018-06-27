@@ -192,7 +192,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	public void handleResponse(Channel channel, ByteBuf byteBuf) throws XpipeException {
 
-		if(!getLifecycleState().isStarted()){
+		if(!(getLifecycleState().isStarted() || getLifecycleState().isStarting())){
 			throw new RedisMasterReplicationStateException(this,
 					String.format("not stated: %s, do not receive message:%d, %s", getLifecycleState().getPhaseName(), byteBuf.readableBytes(), ByteBufUtils.readToString(byteBuf)));
 		}

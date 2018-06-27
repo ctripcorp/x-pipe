@@ -5,8 +5,6 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
-import com.ctrip.xpipe.retry.RetryPolicyFactories;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -22,12 +20,7 @@ import java.util.List;
  */
 public class DefaultMetaServerConsoleService extends AbstractMetaService implements MetaServerConsoleService{
 
-	private int MAX_PER_ROUTE = Integer.parseInt(System.getProperty("max-per-route", "1000"));
-	private int MAX_TOTAL = Integer.parseInt(System.getProperty("max-per-route", "10000"));
-	private int RETRY_TIMES = Integer.parseInt(System.getProperty("retry-times", "8"));
-	private int CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("connect-timeout", "8000"));
-	private int SO_TIMEOUT = Integer.parseInt(System.getProperty("so-timeout", "8000"));
-	
+
 	private String  metaServerAddress;
 	private String  changeClusterPath;
 	private String  changePrimaryDcCheckPath; 
@@ -41,14 +34,6 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(metaServerAddress);
 		makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(metaServerAddress);
 		changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(metaServerAddress);
-		
-		this.restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(
-				MAX_PER_ROUTE,
-				MAX_TOTAL,
-				CONNECT_TIMEOUT,
-				SO_TIMEOUT,
-				RETRY_TIMES,
-				RetryPolicyFactories.newRestOperationsRetryPolicyFactory(5));
 	}
 
 	@Override
