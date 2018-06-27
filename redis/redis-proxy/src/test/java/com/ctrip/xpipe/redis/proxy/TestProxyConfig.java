@@ -49,6 +49,16 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public int getNettyWriteHighWaterMark() {
+        return 40 * MEGA_BYTE;
+    }
+
+    @Override
+    public int getNettyWriteLowWaterMark() {
+        return 20 * MEGA_BYTE;
+    }
+
+    @Override
     public String getPassword() {
         return "100013684";
     }

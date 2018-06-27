@@ -104,7 +104,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig());
         tunnel = spy(tunnel);
         doReturn(tunnel).when(tunnelManager).create(any(), any());
-        BackendSession backend = new DefaultBackendSession(tunnel, 3000, mock(DefaultProxyEndpointSelector.class));
+        BackendSession backend = new DefaultBackendSession(tunnel, mock(DefaultProxyEndpointSelector.class), config);
         doReturn(backend).when(tunnel).backend();
 
         FrontendSession frontend = new DefaultFrontendSession(tunnel, new EmbeddedChannel(), 30000);

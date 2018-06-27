@@ -53,6 +53,10 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
 
     private static final String KEY_NO_TLS_NETTY_HANDLER = "proxy.no.tls.netty.handler";
 
+    private static final String KEY_NETTY_WRITE_HIGH_WATER_MARK = "proxy.netty.write.high.water.mark";
+
+    private static final String KEY_NETTY_WRITE_LOW_WATER_MARK = "proxy.netty.write.low.water.mark";
+
     private String[] notInterests;
 
     @Resource(name = Production.GLOBAL_SCHEDULED)
@@ -132,6 +136,16 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
     @Override
     public boolean noTlsNettyHandler() {
         return getBooleanProperty(KEY_NO_TLS_NETTY_HANDLER, false);
+    }
+
+    @Override
+    public int getNettyWriteHighWaterMark() {
+        return getIntProperty(KEY_NETTY_WRITE_HIGH_WATER_MARK, 80 * MEGA_BYTE);
+    }
+
+    @Override
+    public int getNettyWriteLowWaterMark() {
+        return getIntProperty(KEY_NETTY_WRITE_LOW_WATER_MARK, 20 * MEGA_BYTE);
     }
 
     private void refreshNotInterest() {
