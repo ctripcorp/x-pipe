@@ -34,12 +34,15 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
 
     private Tunnel tunnel;
 
+    protected long trafficReportIntervalMillis;
+
     private List<SessionEventHandler> handlers = Lists.newArrayList();
 
     private volatile SessionWritableState writableState = SessionWritableState.WRITABLE;
 
-    protected AbstractSession(Tunnel tunnel) {
+    protected AbstractSession(Tunnel tunnel, long trafficReportIntervalMillis) {
         this.tunnel = tunnel;
+        this.trafficReportIntervalMillis = trafficReportIntervalMillis;
     }
 
     @Override

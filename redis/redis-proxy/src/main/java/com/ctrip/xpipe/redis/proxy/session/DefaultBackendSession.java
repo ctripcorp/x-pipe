@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
-import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
@@ -23,10 +22,13 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.traffic.GlobalChannelTrafficShapingHandler;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_HIGH_WATER_MARK;
+import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MARK;
 import static com.ctrip.xpipe.redis.proxy.spring.Production.BACKEND_EVENTLOOP_GROUP;
 import static com.ctrip.xpipe.redis.proxy.spring.Production.CLIENT_SSL_HANDLER_FACTORY;
 
@@ -47,16 +49,13 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     private AtomicReference<SessionState> sessionState;
 
-    private ProxyConfig config;
-
-    public DefaultBackendSession(Tunnel tunnel, ProxyEndpointSelector selector, ProxyConfig config) {
-        super(tunnel);
+    public DefaultBackendSession(Tunnel tunnel, long trafficReportIntervalMillis, ProxyEndpointSelector selector) {
+        super(tunnel, trafficReportIntervalMillis);
         this.selector = selector;
         this.nioEventLoopGroup = (EventLoopGroup) ComponentRegistryHolder.getComponentRegistry()
                                                     .getComponent(BACKEND_EVENTLOOP_GROUP);
         this.sslHandlerFactory = (NettySslHandlerFactory) ComponentRegistryHolder.getComponentRegistry()
                                                     .getComponent(CLIENT_SSL_HANDLER_FACTORY);
-        this.config = config;
         this.sessionState = new AtomicReference<>(new SessionInit(this));
     }
 
@@ -94,8 +93,8 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10 * 1000) //10 sec timeout, to avoid forever waiting
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, config.getNettyWriteHighWaterMark())
-                .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, config.getNettyWriteLowWaterMark())
+                .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, WRITE_HIGH_WATER_MARK)
+                .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, WRITE_LOW_WATER_MARK)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) {
@@ -105,7 +104,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                         }
                         p.addLast(new LoggingHandler(LogLevel.DEBUG));
                         p.addLast(new BackendSessionHandler(tunnel()));
-                        p.addLast(new TunnelTrafficReporter(config.getTrafficReportIntervalMillis(), DefaultBackendSession.this));
+                        p.addLast(new TunnelTrafficReporter(trafficReportIntervalMillis, DefaultBackendSession.this));
                     }
                 });
         return b.connect(endpoint.getHost(), endpoint.getPort());

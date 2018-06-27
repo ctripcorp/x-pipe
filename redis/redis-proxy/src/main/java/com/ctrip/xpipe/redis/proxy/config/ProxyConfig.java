@@ -12,8 +12,6 @@ import java.net.InetSocketAddress;
  */
 public interface ProxyConfig extends TLSConfig {
 
-    public static final int MEGA_BYTE = 1024 * 1024;
-
     int frontendTcpPort();
 
     int frontendTlsPort();
@@ -27,8 +25,4 @@ public interface ProxyConfig extends TLSConfig {
     boolean notInterest(InetSocketAddress address);
 
     boolean noTlsNettyHandler();
-
-    int getNettyWriteHighWaterMark();
-
-    int getNettyWriteLowWaterMark();
 }
