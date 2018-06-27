@@ -20,7 +20,7 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
     private AtomicReference<SessionState> sessionState;
 
     public DefaultFrontendSession(Tunnel tunnel, Channel channel, long trafficReportIntervalMillis) {
-        super(tunnel, trafficReportIntervalMillis);
+        super(tunnel);
         this.channel = channel;
         this.sessionState = new AtomicReference<>(new SessionEstablished(this));
         try {

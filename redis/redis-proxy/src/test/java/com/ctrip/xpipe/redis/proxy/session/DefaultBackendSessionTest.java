@@ -52,7 +52,7 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
     @Before
     public void beforeDefaultBackendSessionTest() {
         MockitoAnnotations.initMocks(this);
-        session = new DefaultBackendSession(tunnel, 300000, selector);
+        session = new DefaultBackendSession(tunnel, selector, new TestProxyConfig());
 
     }
 
