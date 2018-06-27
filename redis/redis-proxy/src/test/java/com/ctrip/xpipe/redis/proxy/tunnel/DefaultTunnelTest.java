@@ -262,7 +262,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
     @Test
     public void testUpdate7() {
-        backend = new DefaultBackendSession(tunnel, null, config);
+        backend = new DefaultBackendSession(tunnel, 1, null);
         tunnel.setBackend(backend);
         backend.addObserver(tunnel);
         registerTunnelMasterObserver();
