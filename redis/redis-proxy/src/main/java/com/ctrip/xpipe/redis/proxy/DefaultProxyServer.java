@@ -56,19 +56,9 @@ public class DefaultProxyServer implements ProxyServer {
 
     private static final int MEGA_BYTE = 1000 * 1000;
 
-    private static final int GIGA_BYTE = 1000 * MEGA_BYTE;
+    public static final int WRITE_LOW_WATER_MARK = 10 * MEGA_BYTE;
 
-    public static final int GLOBAL_WRITE_LIMIT = GIGA_BYTE;
-
-    public static final int GLOBAL_READ_LIMIT = GIGA_BYTE;
-
-    public static final int CHANNEL_WRITE_LIMIT = 20 * MEGA_BYTE;
-
-    public static final int CHANNEL_READ_LIMIT = 20 * MEGA_BYTE;
-
-    public static final int WRITE_LOW_WATER_MARK = CHANNEL_WRITE_LIMIT;
-
-    public static final int WRITE_HIGH_WATER_MARK = 2 * WRITE_LOW_WATER_MARK;
+    public static final int WRITE_HIGH_WATER_MARK = 5 * WRITE_LOW_WATER_MARK;
 
     public DefaultProxyServer() {
     }
