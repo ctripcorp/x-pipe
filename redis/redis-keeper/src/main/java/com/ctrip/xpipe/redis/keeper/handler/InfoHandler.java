@@ -1,13 +1,18 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.proxy.ProxyEnabled;
+import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.Set;
 
@@ -57,6 +62,7 @@ public class InfoHandler extends AbstractCommandHandler{
 
 		server(isDefault, isAll, section, sb, redisKeeperServer);
 		replication(isDefault, isAll, section, sb, redisKeeperServer);
+		detail(isDefault, isAll, section, sb, redisKeeperServer);
 
 		redisClient.sendMessage(new BulkStringParser(sb.toString()).format());
 	}
@@ -140,6 +146,24 @@ public class InfoHandler extends AbstractCommandHandler{
 			} catch (Throwable ex) {
 				sb.append("error_message:" + ex.getMessage() + RedisProtocol.CRLF);
 				logger.info("Cannot calculate end offset", ex);
+			}
+		}
+	}
+
+	private void detail(boolean isDefault, boolean isAll, String section, StringBuilder sb, RedisKeeperServer redisKeeperServer) {
+		if(isDefault || isAll || "replication".equalsIgnoreCase(section)) {
+			Endpoint endpoint = redisKeeperServer.getRedisMaster().masterEndPoint();
+			if(!(endpoint instanceof ProxyEnabled)) {
+				return;
+			}
+			sb.append(String.format("# Replication Detail%s", RedisProtocol.CRLF));
+			Set<RedisSlave> slaves = redisKeeperServer.slaves();
+			int slaveIndex = 0;
+			for(RedisSlave slave : slaves){
+				if(slave.getClientEndpoint() != null) {
+					sb.append(String.format("slave%d:%s" + RedisProtocol.CRLF, slaveIndex, slave.getClientEndpoint()));
+					slaveIndex++;
+				}
 			}
 		}
 	}

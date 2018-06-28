@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
@@ -27,19 +28,19 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		super(redisKeeperServer);
 	}
 	
-	public RedisKeeperServerStateBackup(RedisKeeperServer redisKeeperServer, InetSocketAddress masterAddress) {
+	public RedisKeeperServerStateBackup(RedisKeeperServer redisKeeperServer, Endpoint masterAddress) {
 		super(redisKeeperServer, masterAddress);
 	}
 
 
 
 	@Override
-	public void becomeBackup(InetSocketAddress masterAddress) {
+	public void becomeBackup(Endpoint masterAddress) {
 		setMasterAddress(masterAddress);
 	}
 
 	@Override
-	public void becomeActive(InetSocketAddress masterAddress) {
+	public void becomeActive(Endpoint masterAddress) {
 		
 		logger.info("[becomeActive]{}", masterAddress);
 		doBecomeActive(masterAddress);

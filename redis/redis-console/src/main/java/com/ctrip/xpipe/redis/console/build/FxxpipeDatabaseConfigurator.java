@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.build;
 
-import org.unidal.dal.jdbc.configuration.AbstractJdbcResourceConfigurator;
-import org.unidal.lookup.configuration.Component;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.unidal.dal.jdbc.configuration.AbstractJdbcResourceConfigurator;
+import org.unidal.lookup.configuration.Component;
 
 final class FxxpipeDatabaseConfigurator extends AbstractJdbcResourceConfigurator {
    @Override

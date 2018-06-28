@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
@@ -84,7 +85,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	    	if(redisKeeperServer.getRedisKeeperServerState().handleSlaveOf()){
 				logger.info("[handleSlaveOf][slaveof]{}:{} {}", host, port, redisClient);
 				redisClient.getRedisKeeperServer().getRedisKeeperServerState().setMasterAddress(
-						new InetSocketAddress(host, port));
+						new DefaultEndPoint(host, port));
 			}else{
 				logger.info("[handleSlaveOf][slaveof, ignore]{},{}:{} {}", redisKeeperServer.getRedisKeeperServerState(), host, port, redisClient);
 			}
@@ -100,7 +101,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			redisClient.getRedisKeeperServer().stopAndDisposeMaster();
 		}else{
 			logger.info("[handleSelf][slaveof]{}", StringUtil.join(" ", args));
-			redisClient.getRedisKeeperServer().getRedisKeeperServerState().setMasterAddress(new InetSocketAddress(args[0], Integer.parseInt(args[1])));
+			redisClient.getRedisKeeperServer().getRedisKeeperServerState().setMasterAddress(new DefaultEndPoint(args[0], Integer.parseInt(args[1])));
 		}
 		redisClient.sendMessage(new BulkStringParser(RedisProtocol.OK).format());
 	}

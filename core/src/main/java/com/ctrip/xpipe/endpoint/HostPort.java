@@ -45,6 +45,11 @@ public class HostPort {
 		return new HostPort(pair.getKey(), pair.getValue());
 	}
 
+	public static HostPort fromString(String addr) {
+		String[] hostPort = addr.split("\\s*:\\s*");
+		return new HostPort(hostPort[0], Integer.parseInt(hostPort[1]));
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;

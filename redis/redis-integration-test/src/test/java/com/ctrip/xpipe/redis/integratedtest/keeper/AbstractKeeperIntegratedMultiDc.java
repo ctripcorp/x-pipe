@@ -83,13 +83,13 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		List<KeeperMeta> keepers = getDcKeepers(dcMeta.getId(), getClusterId(), getShardId());
 		RedisMeta redisMaster = getRedisMaster();
 		
-		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort()), getXpipeNettyClientKeyedObjectPool(), scheduled, executors);
+		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort()), null, getXpipeNettyClientKeyedObjectPool(), scheduled, executors);
 		job.execute().sync();
 		
 		for(DcMeta backupDc : backupDcs()){
 			
 			List<KeeperMeta> backupKeepers = getDcKeepers(backupDc.getId(), getClusterId(), getShardId());
-			job = new KeeperStateChangeJob(backupKeepers, new Pair<String, Integer>(activeDcKeeperActive.getIp(), activeDcKeeperActive.getPort()), getXpipeNettyClientKeyedObjectPool(), scheduled, executors);
+			job = new KeeperStateChangeJob(backupKeepers, new Pair<String, Integer>(activeDcKeeperActive.getIp(), activeDcKeeperActive.getPort()), null, getXpipeNettyClientKeyedObjectPool(), scheduled, executors);
 			job.execute().sync();
 		}
 	}

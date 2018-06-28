@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
@@ -7,6 +8,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -26,7 +28,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -291,7 +292,8 @@ public class DefaultRedisSlave implements RedisSlave {
 		long lag = System.currentTimeMillis() - replAckTime;
 		info = String.format(
 				"ip=%s,port=%d,state=%s,offset=%d,lag=%d,remotePort=%d" ,
-				IpUtils.getIp(channel().remoteAddress()), getSlaveListeningPort(), 
+				getClientIpAddress() == null ? ip() : getClientIpAddress(),
+				getSlaveListeningPort(),
 				slaveState != null ? slaveState.getDesc() : "null",
 				replAckOff, lag/1000, remotePort());
 		return info;
@@ -407,6 +409,16 @@ public class DefaultRedisSlave implements RedisSlave {
 		return redisClient.getSlaveListeningPort();
 	}
 
+	@Override
+	public void setClientIpAddress(String host) {
+		redisClient.setClientIpAddress(host);
+	}
+
+	@Override
+	public String getClientIpAddress() {
+		return redisClient.getClientIpAddress();
+	}
+
 	public void capa(CAPA capa) {
 		redisClient.capa(capa);
 	}
@@ -436,6 +448,16 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	public void addChannelCloseReleaseResources(Releasable releasable) {
 		redisClient.addChannelCloseReleaseResources(releasable);
+	}
+
+	@Override
+	public void setClientEndpoint(Endpoint endpoint) {
+		redisClient.setClientEndpoint(endpoint);
+	}
+
+	@Override
+	public Endpoint getClientEndpoint() {
+		return redisClient.getClientEndpoint();
 	}
 
 	@Override

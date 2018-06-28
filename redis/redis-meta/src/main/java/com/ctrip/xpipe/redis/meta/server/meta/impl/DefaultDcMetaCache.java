@@ -173,6 +173,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
+	public RouteMeta randomRoute(String clusterId) {
+		return dcMetaManager.get().randomRoute(clusterId);
+	}
+
+	@Override
 	public KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta) {
 		return dcMetaManager.get().getKeeperContainer(keeperMeta);
 	}

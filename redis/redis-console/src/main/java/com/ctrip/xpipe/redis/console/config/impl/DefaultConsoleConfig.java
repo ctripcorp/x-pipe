@@ -58,6 +58,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_NO_ALARM_MUNITE_FOR_NEW_CLUSTER = "no.alarm.minute.for.new.cluster";
 
+    public static final String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
+
     @Override
     public int getAlertSystemRecoverMinute() {
         return getIntProperty(KEY_ALERT_MESSAGE_RECOVER_TIME, 5);
@@ -156,19 +158,23 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public Set<String> getAlertWhileList() {
-
-        HashSet result = new HashSet();
         String whitelist = getProperty(KEY_ALERT_WHITE_LIST, "");
-        String[] split = whitelist.split("\\s*(,|;)\\s*");
+
+        return getSplitStringSet(whitelist);
+
+    }
+
+    private Set<String> getSplitStringSet(String str) {
+        HashSet result = new HashSet();
+
+        String[] split = str.split("\\s*(,|;)\\s*");
 
         for(String sp : split){
             if(!StringUtil.isEmpty(sp)){
                 result.add(sp);
             }
         }
-
         return result;
-
     }
 
     @Override
@@ -227,5 +233,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int getNoAlarmMinutesForNewCluster() {
         return getIntProperty(KEY_NO_ALARM_MUNITE_FOR_NEW_CLUSTER, 15);
+    }
+
+    @Override
+    public Set<String> getIgnoredHealthCheckDc() {
+        return getSplitStringSet(getProperty(KEY_IGNORED_DC_FOR_HEALTH_CHECK, ""));
     }
 }
