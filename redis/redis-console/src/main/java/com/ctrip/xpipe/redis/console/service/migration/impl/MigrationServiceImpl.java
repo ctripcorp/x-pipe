@@ -272,10 +272,17 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     protected DcTbl findToDc(String fromIdc, String toIdc, List<DcTbl> clusterRelatedDc) throws ToIdcNotFoundException {
 
+        DcTbl fromIdcInfo = null;
+        for(DcTbl dcTbl : clusterRelatedDc) {
+            if(dcTbl.getDcName().equals(fromIdc)) {
+                fromIdcInfo = dcTbl;
+                break;
+            }
+        }
         if(StringUtil.isEmpty(toIdc)){
             //simple
             for (DcTbl dcTbl : clusterRelatedDc) {
-                if (!dcTbl.getDcName().equalsIgnoreCase(fromIdc)) {
+                if (!dcTbl.getDcName().equalsIgnoreCase(fromIdc) && isSameZone(fromIdcInfo, dcTbl)) {
                     return dcTbl;
                 }
             }
@@ -288,10 +295,21 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
             for (DcTbl dcTbl : clusterRelatedDc) {
                 if (dcTbl.getDcName().equalsIgnoreCase(toIdc)) {
+                    if(!isSameZone(fromIdcInfo, dcTbl)) {
+                        throw new ToIdcNotFoundException("To Idc should be in same zone with from Idc");
+                    }
                     return dcTbl;
                 }
             }
             throw new ToIdcNotFoundException(String.format("toIdc : %s, can not find it in all related dcs:%s", toIdc, clusterRelatedDcToString(clusterRelatedDc)));
+        }
+    }
+
+    protected boolean isSameZone(DcTbl fromIdc, DcTbl toIdc) {
+        try {
+            return fromIdc.getZoneId() == toIdc.getZoneId();
+        } catch (Exception e) {
+            return false;
         }
     }
 

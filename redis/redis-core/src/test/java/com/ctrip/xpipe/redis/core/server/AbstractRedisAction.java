@@ -49,7 +49,7 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 	}
 	
 	@Override
-	protected void doWrite(OutputStream ous) throws IOException {
+	protected void doWrite(OutputStream ous, Object readResult) throws IOException {
 		
 		if(line == null){
 			logger.error("[doWrite]" + line);
