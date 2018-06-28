@@ -4,6 +4,8 @@ package com.ctrip.xpipe.utils;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +46,7 @@ public class ChannelUtil {
 		return remoteIpLocalPort;
 	}
 
-	private static String getSimpleIpport(SocketAddress remoteAddr) {
+	public static String getSimpleIpport(SocketAddress remoteAddr) {
 		
 		if(remoteAddr == null){
 			return null;
@@ -67,4 +69,31 @@ public class ChannelUtil {
 		
 	}
 
+	public static void closeChannelAutoRead(Channel channel) {
+		if(channel == null || !channel.config().isAutoRead()) {
+			return;
+		}
+		channel.config().setAutoRead(false);
+	}
+
+	public static void openChannelAutoRead(Channel channel) {
+		if(channel == null || channel.config().isAutoRead()) {
+			return;
+		}
+		channel.config().setAutoRead(true);
+	}
+
+	public static void triggerChannelAutoRead(Channel channel) {
+		if(channel == null || channel.config().isAutoRead()) {
+			return;
+		}
+		openChannelAutoRead(channel);
+		channel.read();
+	}
+
+	public static void closeOnFlush(Channel ch) {
+		if (ch.isActive()) {
+			ch.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+		}
+	}
 }

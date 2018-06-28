@@ -8,8 +8,10 @@ import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
+import com.ctrip.xpipe.redis.core.util.OrgUtil;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Joiner;
 import org.xml.sax.SAXException;
@@ -587,6 +589,94 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
 			changePrimaryDc(dcMeta, clusterId, shardId, newPrimaryDc);
 		}
+	}
+
+	@Override
+	public List<RouteMeta> routes(String currentDc, String tag) {
+
+		DcMeta dcMeta = getDirectDcMeta(currentDc);
+		List<RouteMeta> routes = dcMeta.getRoutes();
+		List<RouteMeta> result = new LinkedList<>();
+
+		if(routes != null){
+			routes.forEach(routeMeta -> {
+				if(routeMeta.tagEquals(tag) && currentDc.equalsIgnoreCase(routeMeta.getSrcDc())) {
+					result.add(MetaClone.clone(routeMeta));
+				}
+			});
+		}
+
+		return result;
+	}
+
+	@Override
+	public RouteMeta randomRoute(String currentDc, String tag, Integer orgId, String dstDc) {
+
+		List<RouteMeta> routes = routes(currentDc, tag);
+		if(routes == null || routes.isEmpty()){
+			return null;
+		}
+
+		//for Same dstdc
+		List<RouteMeta> dstDcRoutes = new LinkedList<>();
+		routes.forEach(routeMeta -> {
+			if(routeMeta.getDstDc().equalsIgnoreCase(dstDc)){
+				dstDcRoutes.add(routeMeta);
+			}
+		});
+		if(dstDcRoutes.isEmpty()){
+			return null;
+		}
+
+		//for same org id
+		List<RouteMeta> resultsCandidates = new LinkedList<>();
+		dstDcRoutes.forEach(routeMeta -> {
+			if(ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
+				resultsCandidates.add(routeMeta);
+			}
+		});
+
+		if(!resultsCandidates.isEmpty()){
+			return random(resultsCandidates);
+		}
+
+
+		dstDcRoutes.forEach(routeMeta -> {
+			if(OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
+				resultsCandidates.add(routeMeta);
+			}
+		});
+
+		return random(resultsCandidates);
+	}
+
+	@Override
+	public List<ClusterMeta> getSpecificActiveDcClusters(String currentDc, String clusterActiveDc) {
+
+		DcMeta directDcMeta = getDirectDcMeta(currentDc);
+		if(directDcMeta == null){
+			throw new IllegalArgumentException(String.format("can not find currentDc %s, %s", currentDc, clusterActiveDc));
+		}
+
+		List<ClusterMeta> result = new LinkedList<>();
+		directDcMeta.getClusters().forEach((clusterId, clusterMeta) -> {
+			if(clusterActiveDc.equalsIgnoreCase(clusterMeta.getActiveDc())){
+				result.add(clone(clusterMeta));
+			}
+		});
+
+		return result;
+	}
+
+	protected <T> T random(List<T> resultsCandidates) {
+
+		if(resultsCandidates.isEmpty()){
+			return null;
+		}
+
+		int random = new Random().nextInt(resultsCandidates.size());
+		return resultsCandidates.get(random);
+
 	}
 
 	private void changePrimaryDc(DcMeta dcMeta, String clusterId, String shardId, String newPrimaryDc) {

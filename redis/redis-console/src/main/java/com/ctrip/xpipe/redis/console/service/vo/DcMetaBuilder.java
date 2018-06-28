@@ -118,6 +118,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setActiveDc(dcNameMap.get(activeDcId));
                 clusterMeta.setParent(dcMeta);
                 clusterMeta.setBackupDcs(getBackupDcs(cluster, activeDcId));
+                clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
                 return clusterMeta;
             }
         });

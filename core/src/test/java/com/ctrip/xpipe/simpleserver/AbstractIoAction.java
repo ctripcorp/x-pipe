@@ -1,14 +1,14 @@
 package com.ctrip.xpipe.simpleserver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 
 /**
  * @author wenchao.meng
@@ -36,15 +36,15 @@ public abstract class AbstractIoAction implements IoAction, DeadAware{
 	protected abstract Object doRead(InputStream ins) throws IOException;
 
 	@Override
-	public void write() throws IOException {
+	public void write(Object readResult) throws IOException {
 		
-		doWrite(socket.getOutputStream());
+		doWrite(socket.getOutputStream(), readResult);
 	}
 
-	protected abstract void doWrite(OutputStream ous) throws IOException;
+	protected abstract void doWrite(OutputStream ous, Object readResult) throws IOException;
 	
 	
-	protected String readLine(InputStream ins) throws IOException {
+	public static String readLine(InputStream ins) throws IOException {
 		
 		StringBuilder sb = new StringBuilder();
 		int last = 0;

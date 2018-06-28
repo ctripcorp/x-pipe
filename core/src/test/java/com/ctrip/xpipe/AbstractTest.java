@@ -2,6 +2,7 @@ package com.ctrip.xpipe;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
@@ -521,6 +522,10 @@ public class AbstractTest {
         return new InetSocketAddress("localhost", port);
     }
 
+    protected DefaultEndPoint localHostEndpoint(int port) {
+        return new DefaultEndPoint("localhost", port);
+    }
+
     protected Server startEmptyServer() throws Exception {
         return startServer(new IoActionFactory() {
 
@@ -530,7 +535,7 @@ public class AbstractTest {
                 return new AbstractIoAction(socket) {
 
                     @Override
-                    protected void doWrite(OutputStream ous) throws IOException {
+                    protected void doWrite(OutputStream ous, Object readResult) throws IOException {
                     }
 
                     @Override
@@ -582,7 +587,7 @@ public class AbstractTest {
                     }
 
                     @Override
-                    protected void doWrite(OutputStream ous) throws IOException {
+                    protected void doWrite(OutputStream ous, Object readResult) throws IOException {
 
                         String[] sp = line.split("\\s+");
                         if (sp.length >= 1) {
@@ -655,7 +660,7 @@ public class AbstractTest {
                     private String readLine = null;
 
                     @Override
-                    protected void doWrite(OutputStream ous) throws IOException {
+                    protected void doWrite(OutputStream ous, Object readResult) throws IOException {
                         try {
                             String call = function.apply(readLine == null? null : readLine.trim());
                             if (call != null) {

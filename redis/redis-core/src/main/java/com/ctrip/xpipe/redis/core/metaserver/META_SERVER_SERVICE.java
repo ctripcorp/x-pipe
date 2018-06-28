@@ -49,7 +49,7 @@ public enum META_SERVER_SERVICE {
         if (!host.startsWith("http")) {
             host += "http://";
         }
-        return String.format("%s/%s/%s", host, PATH.PATH_PREFIX, getPath());
+        return String.format("%s%s%s", host, PATH.PATH_PREFIX, getPath());
     }
 
 

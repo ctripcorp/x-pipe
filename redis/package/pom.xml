@@ -13,6 +13,7 @@
 		<module>redis-metaserver-package</module>
 		<module>redis-keeper-package</module>
 	    <module>redis-console-package</module>
+		<module>redis-proxy-package</module>
     </modules>
 
 

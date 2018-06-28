@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import org.junit.After;
@@ -47,14 +48,14 @@ public class RedisKeeperServerStateActiveTest extends AbstractRedisKeeperServerS
 	@Test
 	public void testActiveActive(){
 		
-		active.becomeActive(new InetSocketAddress("localhost", randomPort()));
+		active.becomeActive(new DefaultEndPoint("localhost", randomPort()));
 		
 	}
 
 	@Test
 	public void testActiveBackup() throws IOException{
 
-		active.becomeBackup(new InetSocketAddress("localhost", randomPort()));
+		active.becomeBackup(new DefaultEndPoint("localhost", randomPort()));
 		Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
 		
 	}
