@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.spring;
 
 
-import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperContainerConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
+import com.ctrip.xpipe.redis.core.config.TLSConfig;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
+import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.keeper.config.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeepersMonitorManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -42,4 +44,8 @@ public class Production extends AbstractProfile{
 		return new DefaultKeepersMonitorManager();
 	}
 
+	@Bean
+	public ProxyEndpointManager getEndpointManager() {
+		return new DefaultProxyEndpointManager(()->60);
+	}
 }

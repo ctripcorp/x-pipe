@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
@@ -8,6 +9,7 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
@@ -81,7 +83,15 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		List<KeeperMeta> keepers = new LinkedList<>();
 		keepers.add(activeKeeper);
 		
-		keyedOneThreadTaskExecutor.execute(new Pair<String, String>(clusterId, shardId), new KeeperStateChangeJob(keepers, newMaster, clientPool, scheduled, executors));
+		keyedOneThreadTaskExecutor.execute(
+				new Pair<String, String>(clusterId, shardId),
+				createKeeperStateChangeJob(clusterId, keepers, newMaster));
+	}
+
+	private KeeperStateChangeJob createKeeperStateChangeJob(String clusterId, List<KeeperMeta> keepers, Pair<String, Integer> master) {
+
+		RouteMeta routeMeta = currentMetaManager.randomRoute(clusterId);
+		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
 	}
 
 	@Override
@@ -95,7 +105,8 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 			return;
 		}
 		Pair<String, Integer> activeKeeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
-		KeeperStateChangeJob keeperStateChangeJob = new KeeperStateChangeJob(keepers, activeKeeperMaster, clientPool, scheduled, executors);
+
+		KeeperStateChangeJob keeperStateChangeJob = createKeeperStateChangeJob(clusterId, keepers, activeKeeperMaster);
 
 		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
 			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterId, shardId);

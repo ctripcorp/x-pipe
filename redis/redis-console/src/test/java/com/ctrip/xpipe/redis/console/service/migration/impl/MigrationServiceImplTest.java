@@ -68,6 +68,16 @@ public class MigrationServiceImplTest extends AbstractMigrationTest{
         }
     }
 
+    @Test(expected = ToIdcNotFoundException.class)
+    public void testFindToDcWithNotSameZone() throws ToIdcNotFoundException {
+        List<DcTbl> relatedDcs = new LinkedList<>();
+
+        relatedDcs.add(new DcTbl().setDcName("dc1").setZoneId(1L));
+        relatedDcs.add(new DcTbl().setDcName("dc2").setZoneId(1L));
+        relatedDcs.add(new DcTbl().setDcName("dc3").setZoneId(2L));
+        migrationService.findToDc("dc1", "dc3", relatedDcs);
+    }
+
     @Test(expected = DalUpdateException.class)
     public void testUpdateLogById() {
         migrationService.updateMigrationShardLogById(887L, "test");

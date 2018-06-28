@@ -6,16 +6,18 @@ import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.*;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilder;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -66,6 +69,12 @@ public class AdvancedDcMetaService implements DcMetaService {
     @Autowired
     private ClusterMetaService clusterMetaService;
 
+    @Autowired
+    private RouteService routeService;
+
+    @Autowired
+    private ProxyService proxyService;
+
     @Resource(name=SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
@@ -90,6 +99,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         ParallelCommandChain chain = new ParallelCommandChain(executors);
         chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
+        chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMeta, dcTbl.getId(), executors, redisMetaService, dcClusterService,
                 clusterMetaService, dcClusterShardService, dcService, factory);
@@ -170,6 +180,105 @@ public class AdvancedDcMetaService implements DcMetaService {
         public String getName() {
             return this.getClass().getSimpleName();
         }
+    }
+
+    class GetAllRouteCommand extends AbstractCommand<Void> {
+
+        private DcMeta dcMeta;
+
+        public GetAllRouteCommand(DcMeta dcMeta) {
+            this.dcMeta = dcMeta;
+        }
+
+        @Override
+        protected void doExecute() throws Exception {
+            try {
+                List<RouteTbl> routes = routeService.getAllRoutes();
+                List<ProxyTbl> proxies = proxyService.getAllProxies();
+                List<RouteMeta> routeMetas = combineRouteInfo(routes, proxies, dcMeta);
+                routeMetas.forEach((routeMeta)->dcMeta.addRoute(routeMeta));
+                future().setSuccess();
+            } catch (Exception e) {
+                future().setFailure(e);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+            dcMeta.getRoutes().clear();
+        }
+
+        @Override
+        public String getName() {
+            return this.getClass().getSimpleName();
+        }
+    }
+
+    @VisibleForTesting
+    protected List<RouteMeta> combineRouteInfo(List<RouteTbl> routes, List<ProxyTbl> proxies, DcMeta dcMeta) {
+        List<DcTbl> dcTbls = dcService.findAllDcBasic();
+        Map<Long, ProxyTbl> proxyTblMap = convertToMap(proxies);
+        List<RouteMeta> result = Lists.newArrayListWithCapacity(routes.size());
+        for(RouteTbl route : routes) {
+            if(!getDcName(route.getSrcDcId(), dcTbls).equals(dcMeta.getId())) {
+                continue;
+            }
+            RouteMeta routeMeta = new RouteMeta();
+            routeMeta.setId((int) route.getId()).setOrgId((int) route.getRouteOrgId()).setTag(route.getTag());
+            routeMeta.setSrcDc(getDcName(route.getSrcDcId(), dcTbls)).setDstDc(getDcName(route.getDstDcId(), dcTbls));
+            routeMeta.setRouteInfo(getRouteInfo(route, proxyTblMap));
+            result.add(routeMeta);
+        }
+        return result;
+    }
+
+    private String getDcName(long id, List<DcTbl> dcTbls) {
+        for(DcTbl dc : dcTbls) {
+            if(dc.getId() == id) {
+                return dc.getDcName();
+            }
+        }
+        return null;
+    }
+
+    @VisibleForTesting
+    protected String getRouteInfo(RouteTbl route, Map<Long, ProxyTbl> proxyTblMap) {
+        StringBuilder sb = new StringBuilder();
+        fetchRouteInfo(route.getSrcProxyIds(), proxyTblMap, sb);
+        fetchRouteInfo(route.getOptionalProxyIds(), proxyTblMap, sb);
+        fetchRouteInfo(route.getDstProxyIds(), proxyTblMap, sb);
+        if(sb.length() > 0 && sb.charAt(sb.length() - 1) == ' ') {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        return sb.toString();
+    }
+
+    @VisibleForTesting
+    protected void fetchRouteInfo(String ids, Map<Long, ProxyTbl> proxyTblMap, StringBuilder sb) {
+        if(ids == null || ids.isEmpty()) {
+            return;
+        }
+        String splitter = "\\s*,\\s*";
+        String[] srcIds = StringUtil.splitRemoveEmpty(splitter, ids);
+        for(String srcId : srcIds) {
+            long id = Long.parseLong(srcId);
+            ProxyTbl proxy = proxyTblMap.get(id);
+            if(proxy != null) {
+                sb.append(proxy.getUri()).append(",");
+            }
+        }
+        if(sb.charAt(sb.length()-1) == ',') {
+            sb.deleteCharAt(sb.length() - 1);
+            sb.append(" ");
+        }
+    }
+
+    private Map<Long, ProxyTbl> convertToMap(List<ProxyTbl> proxies) {
+        Map<Long, ProxyTbl> map = Maps.newHashMap();
+        for(ProxyTbl proxy : proxies) {
+            map.put(proxy.getId(), proxy);
+        }
+        return map;
     }
 
     /**-----------------------Visible for Test-----------------------------------------*/

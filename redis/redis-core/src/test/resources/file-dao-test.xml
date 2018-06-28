@@ -6,9 +6,8 @@
 
 		<zkServer address="127.0.0.1:2181" />
 		<metaServer ip="127.0.0.1" port="9747" master="true" />
-		
-		<cluster id="cluster1" active-dc="jq" backup-dcs="JQ, Fq, oy" phase="1">
-		
+
+		<cluster id="cluster1" active-dc="jq" backup-dcs="JQ, Fq, oy, fra" phase="1">
 			<shard id="shard1" sentinelId="1" sentinelMonitorName="cluster1-shard1">
 				<redis ip="127.0.0.1" port="6379" master="true" />
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000"
@@ -29,6 +28,50 @@
 					ip="127.0.0.1" port="6100" active="true" />
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6100"
 					ip="127.0.0.1" port="6101" active="false" />
+				<redis ip="127.0.0.1" port="8100" master="127.0.0.1:6100" />
+				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
+			</shard>
+		</cluster>
+	</dc>
+	<dc id="fra">
+		<routes>
+			<route id="1" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" weight="6" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="2" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" weight="6" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="3" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" weight="6" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="4" org-id="0" tag="meta" src-dc="fra" dst-dc="jq" weight="6" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="5" org-id="0" tag="meta" src-dc="oy"  dst-dc="jq" weight="6" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="6" org-id="1" tag="console" src-dc="fra" dst-dc="jq" weight="1" routeInfo="PROXY://1.1.1.3:80"/>
+			<route id="7" org-id="1" tag="console" src-dc="jq" dst-dc="jq" weight="1" routeInfo="PROXY://1.1.1.3:80"/>
+		</routes>
+
+		<zkServer address="127.0.0.1:2281" />
+		<metaServer ip="127.0.0.1" port="9847" master="true" />
+		<cluster id="cluster1" active-dc="jq" backup-dcs="" phase="1" org-id="1">
+			<shard id="shard1" upstream="127.0.0.1:6000">
+				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000"
+						ip="127.0.0.1" port="6100" active="true" />
+				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6100"
+						ip="127.0.0.1" port="6101" active="false" />
+				<redis ip="127.0.0.1" port="8100" master="127.0.0.1:6100" />
+				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
+			</shard>
+		</cluster>
+		<cluster id="cluster2" active-dc="jq" backup-dcs="" phase="1" org-id="1000">
+			<shard id="shard1" upstream="127.0.0.1:6000">
+				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000"
+						ip="127.0.0.1" port="6100" active="true" />
+				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6100"
+						ip="127.0.0.1" port="6101" active="false" />
+				<redis ip="127.0.0.1" port="8100" master="127.0.0.1:6100" />
+				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
+			</shard>
+		</cluster>
+		<cluster id="cluster3" active-dc="fq" backup-dcs="" phase="1" org-id="1000">
+			<shard id="shard1" upstream="127.0.0.1:6000">
+				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000"
+						ip="127.0.0.1" port="6100" active="true" />
+				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6100"
+						ip="127.0.0.1" port="6101" active="false" />
 				<redis ip="127.0.0.1" port="8100" master="127.0.0.1:6100" />
 				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
 			</shard>

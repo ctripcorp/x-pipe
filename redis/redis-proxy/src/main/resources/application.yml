@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: xpipe-proxy
+  profiles:
+    active: production
+
+
+server:
+  port: 8080

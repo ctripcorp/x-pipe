@@ -65,7 +65,7 @@ public abstract class AbstractTestMode implements TestMode {
         GenericObjectPoolConfig config = new GenericObjectPoolConfig();
         config.setMaxTotal(producerThreadNum * 3);
         dataPool = new GenericObjectPool<>(new BytesFactory(msgSize), config);
-        consumerThreadPool = Executors.newFixedThreadPool(slaves.size() * 2, XpipeThreadFactory.create("ConsumerThreadPool"));
+        consumerThreadPool = Executors.newFixedThreadPool(slaves.size() * 2 + 1, XpipeThreadFactory.create("ConsumerThreadPool"));
         qpsCheckThreadPool = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("QpsCheckThreadPool"));
 
         masterPool = getJedisPool(master.getHost(), master.getPort(), producerThreadNum * 2, producerThreadNum);
