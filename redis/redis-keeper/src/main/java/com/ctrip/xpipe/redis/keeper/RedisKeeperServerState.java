@@ -16,9 +16,9 @@ import java.net.InetSocketAddress;
  */
 public interface RedisKeeperServerState{
 	
-	void becomeActive(InetSocketAddress masterAddress);
+	void becomeActive(Endpoint masterAddress);
 	
-	void becomeBackup(InetSocketAddress masterAddress);
+	void becomeBackup(Endpoint masterAddress);
 	
 	void setShardStatus(ShardStatus shardStatus) throws IOException;
 	
@@ -36,7 +36,7 @@ public interface RedisKeeperServerState{
 	
 	KeeperState keeperState();
 
-	void setMasterAddress(InetSocketAddress masterAddress);
+	void setMasterAddress(Endpoint masterAddress);
 
 	boolean handleSlaveOf();
 	

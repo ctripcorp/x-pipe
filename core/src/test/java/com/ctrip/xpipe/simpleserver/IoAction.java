@@ -11,5 +11,5 @@ public interface IoAction extends SocketAware{
 
 	Object read() throws IOException;
 	
-	void write() throws IOException;
+	void write(Object readResult) throws IOException;
 }

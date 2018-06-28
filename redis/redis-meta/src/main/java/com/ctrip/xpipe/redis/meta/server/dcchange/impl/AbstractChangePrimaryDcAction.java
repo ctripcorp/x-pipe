@@ -84,7 +84,8 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 		executionLog.info("[makeKeepersOk]" + keepers);
 		
 		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, 
-				new Pair<String, Integer>(newMaster.getKey(), newMaster.getValue()), 
+				new Pair<String, Integer>(newMaster.getKey(), newMaster.getValue()),
+				currentMetaManager.randomRoute(clusterId),
 				keyedObjectPool, 1000, 1, scheduled, executors);
 		try {
 			job.execute().get(waitTimeoutSeconds/2, TimeUnit.SECONDS);

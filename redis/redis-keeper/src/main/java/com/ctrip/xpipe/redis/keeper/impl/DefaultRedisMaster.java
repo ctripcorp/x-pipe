@@ -6,6 +6,9 @@ import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
+import com.ctrip.xpipe.redis.core.proxy.ProxyEnabled;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
@@ -27,7 +30,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	private ReplicationStoreManager replicationStoreManager;
 
-	private DefaultEndPoint endpoint;
+	private Endpoint endpoint;
 	
 	private AtomicBoolean isKeeper = new AtomicBoolean(false);
 	
@@ -47,7 +50,8 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		this.nioEventLoopGroup = nioEventLoopGroup;
 		this.endpoint = endpoint;
 		this.scheduled = scheduled;
-		redisMasterReplication = new DefaultRedisMasterReplication(this, this.redisKeeperServer, nioEventLoopGroup, this.scheduled);
+		redisMasterReplication = new DefaultRedisMasterReplication(this, this.redisKeeperServer, nioEventLoopGroup,
+				this.scheduled, redisCommandTimeoutMilli());
 	}
 	
 	@Override
@@ -131,6 +135,17 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public boolean isKeeper() {
 		return isKeeper.get();
+	}
+
+	private int redisCommandTimeoutMilli() {
+		if(isMasterProxied()) {
+			return AbstractRedisMasterReplication.PROXYED_REPLICATION_TIMEOUT_MILLI;
+		}
+		return AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
+	}
+
+	private boolean isMasterProxied() {
+		return endpoint instanceof ProxyEnabled;
 	}
 
 	@Override

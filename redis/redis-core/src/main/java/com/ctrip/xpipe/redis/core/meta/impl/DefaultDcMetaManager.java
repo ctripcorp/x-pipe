@@ -5,9 +5,11 @@ import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -111,6 +113,22 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	@Override
 	public Set<String> getClusters() {
 		return metaManager.getDcClusters(currentDc);
+	}
+
+	@Override
+	public RouteMeta randomRoute(String clusterId) {
+
+		ClusterMeta clusterMeta = metaManager.getClusterMeta(currentDc, clusterId);
+		if(clusterMeta == null){
+			throw new IllegalArgumentException("clusterId not exist:" + clusterId);
+		}
+		return metaManager.metaRandomRoutes(currentDc, clusterMeta.getOrgId(), clusterMeta.getActiveDc());
+	}
+
+	@Override
+	public List<ClusterMeta> getSpecificActiveDcClusters(String clusterActiveDc) {
+
+		return metaManager.getSpecificActiveDcClusters(currentDc, clusterActiveDc);
 	}
 
 	@Override
