@@ -41,6 +41,9 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 		function sourceDcSelected() {
 			var dcName = $scope.sourceDc;
             var orgName = $scope.clusterOrgName;
+            $scope.sourceDcInfo = $scope.dcs.filter(function (dcInfo) {
+            	return dcInfo.dcName === dcName;
+			})[0];
 			if(dcName && (!orgName || orgName === "不选择")) {
 				ClusterService.findClustersByActiveDcName(dcName).then(function(data) {
 					$scope.clusters = data;
@@ -68,7 +71,8 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 			var dcs = [];
 			
 			cluster.dcClusterInfo.forEach(function(dcCluster) {
-				if(dcCluster.dcInfo.dcName != $scope.sourceDc) {
+				if(dcCluster.dcInfo.dcName != $scope.sourceDc && dcCluster.dcInfo.zoneId === $scope.sourceDcInfo.zoneId) {
+					console.log(dcCluster.dcInfo.zoneId);
 					dcs.push(dcCluster.dcInfo);
 				}
 			});
@@ -127,6 +131,8 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 		$scope.sourceDc = '';
 		
 		$scope.clusters = [];
+
+		$scope.sourceDcInfo = {};
 		
 		$scope.toggle = function (cluster) {
 			cluster.selected = !cluster.selected;

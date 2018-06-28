@@ -91,11 +91,11 @@ public class EmailSentCounter extends AbstractEmailSenderCallback {
 
         logger.info("[scheduledTask] scheduled report, total email count: {}", totalCount);
         EventMonitor.DEFAULT.logEvent(EMAIL_SERVICE_CAT_TYPE,
-                "total sent out - %s", totalCount);
+                "total sent out", totalCount);
         EventMonitor.DEFAULT.logEvent(EMAIL_SERVICE_CAT_TYPE,
-                "success sent out - %s", successCount);
+                "success sent out", successCount);
         EventMonitor.DEFAULT.logEvent(EMAIL_SERVICE_CAT_TYPE,
-                "fail sent out - %s", failCount);
+                "fail sent out", failCount);
     }
 
     @VisibleForTesting
