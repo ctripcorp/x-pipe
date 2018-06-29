@@ -13,6 +13,8 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -59,6 +61,8 @@ public class DefaultProxyServer implements ProxyServer {
     public static final int WRITE_LOW_WATER_MARK = 10 * MEGA_BYTE;
 
     public static final int WRITE_HIGH_WATER_MARK = 5 * WRITE_LOW_WATER_MARK;
+
+    public static final ByteBufAllocator GLOBAL_BYTEBUF_ALLOC = new PooledByteBufAllocator();
 
     public DefaultProxyServer() {
     }
@@ -130,6 +134,7 @@ public class DefaultProxyServer implements ProxyServer {
         bootstrap.group(new NioEventLoopGroup(1, XpipeThreadFactory.create("frontend-boss-" + prefix)),
                 new NioEventLoopGroup(OsUtils.getCpuCount() * 2, XpipeThreadFactory.create("frontend-worker-" + prefix)))
                 .channel(NioServerSocketChannel.class)
+                .option(ChannelOption.ALLOCATOR, GLOBAL_BYTEBUF_ALLOC)
                 .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, WRITE_HIGH_WATER_MARK)
                 .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, WRITE_LOW_WATER_MARK)
                 .handler(new LoggingHandler(LogLevel.DEBUG));

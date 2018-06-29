@@ -27,6 +27,7 @@ import io.netty.handler.traffic.GlobalChannelTrafficShapingHandler;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.GLOBAL_BYTEBUF_ALLOC;
 import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_HIGH_WATER_MARK;
 import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MARK;
 import static com.ctrip.xpipe.redis.proxy.spring.Production.BACKEND_EVENTLOOP_GROUP;
@@ -92,7 +93,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10 * 1000) //10 sec timeout, to avoid forever waiting
-                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .option(ChannelOption.ALLOCATOR, GLOBAL_BYTEBUF_ALLOC)
                 .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, WRITE_HIGH_WATER_MARK)
                 .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, WRITE_LOW_WATER_MARK)
                 .handler(new ChannelInitializer<SocketChannel>() {
