@@ -5,13 +5,11 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
-import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -33,7 +31,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.net.InetSocketAddress;
-import java.security.acl.LastOwnerException;
 
 /**
  * @author chen.zhu
