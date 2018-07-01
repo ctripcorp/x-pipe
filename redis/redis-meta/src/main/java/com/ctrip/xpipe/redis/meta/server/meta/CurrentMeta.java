@@ -3,10 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
@@ -24,6 +21,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng
@@ -36,6 +34,8 @@ public class CurrentMeta implements Releasable {
 	private Logger logger = LoggerFactory.getLogger(CurrentMeta.class);
 
 	private Map<String, CurrentClusterMeta> currentMetas = new ConcurrentHashMap<>();
+
+	private Map<Long, CurrentRouteMeta> routeInfos = new ConcurrentHashMap<>();
 
 	public Set<String> allClusters() {
 		return new HashSet<>(currentMetas.keySet());
@@ -176,6 +176,24 @@ public class CurrentMeta implements Releasable {
 				currentClusterMeta.addShard(added);
 			}
 		});
+	}
+
+	public static class CurrentRouteMeta implements Releasable {
+
+		private Long orgid;
+
+		private List<RouteMeta> routes;
+
+		private AtomicInteger index;
+
+		private void refresh() {
+
+		}
+
+		@Override
+		public void release() throws Exception {
+
+		}
 	}
 
 	public static class CurrentClusterMeta implements Releasable {

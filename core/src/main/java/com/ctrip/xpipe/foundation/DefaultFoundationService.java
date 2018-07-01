@@ -64,8 +64,8 @@ public class DefaultFoundationService implements FoundationService {
 	@Override
 	public String getLocalIp() {
 		try {
-			return Inet4Address.getLocalHost().getHostAddress();
-		} catch (UnknownHostException e) {
+			return Inet4Address.getLoopbackAddress().getHostAddress();
+		} catch (Exception e) {
 			return "127.0.0.1";
 		}
 	}

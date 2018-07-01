@@ -85,7 +85,7 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		
 		RedisMeta redisMaster = getRedisMaster();
 		
-		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort()), getXpipeNettyClientKeyedObjectPool(), scheduled, executors);
+		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort()), null, getXpipeNettyClientKeyedObjectPool(), scheduled, executors);
 		job.execute().sync();
 	}
 

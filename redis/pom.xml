@@ -16,6 +16,7 @@
 		<module>redis-meta</module>
 		<module>redis-console</module>
 		<module>redis-integration-test</module>
+		<module>redis-proxy</module>
 	</modules>
 
 	<profiles>

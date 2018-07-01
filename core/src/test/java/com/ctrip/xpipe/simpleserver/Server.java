@@ -1,5 +1,9 @@
 package com.ctrip.xpipe.simpleserver;
 
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -8,12 +12,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-
-import org.slf4j.Logger;
 
 /**
  * @author wenchao.meng
@@ -115,7 +113,7 @@ public class Server extends AbstractLifecycle{
 					if(read == null){
 						break;
 					}
-					ioAction.write();
+					ioAction.write(read);
 				}
 			} catch (IOException e) {
 				logger.error("[run]" + socket, e);

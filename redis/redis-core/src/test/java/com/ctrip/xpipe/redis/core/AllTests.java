@@ -41,6 +41,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	ShardMetaComparatorTest.class,
 	InfoResultExtractorTest.class,
 	RoleCommandTest.class,
+	KeeperCommandTest.class,
 	MasterRoleTest.class,
 	MasterInfoTest.class,
 	DcInfoTest.class,

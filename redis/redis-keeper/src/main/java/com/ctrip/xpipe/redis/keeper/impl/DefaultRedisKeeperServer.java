@@ -25,6 +25,10 @@ import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
+import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
@@ -59,6 +63,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -67,7 +72,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * 2016年3月24日 下午2:08:26
  */
-public class DefaultRedisKeeperServer extends AbstractRedisServer implements RedisKeeperServer{
+public class DefaultRedisKeeperServer extends AbstractRedisServer implements RedisKeeperServer {
 
 	private static final int DEFAULT_SCHEDULED_CORE_POOL_SIZE = 1;
 	private static final int DEFAULT_BOSS_EVENT_LOOP_SIZE = 1;
@@ -120,8 +125,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private KeepersMonitorManager keepersMonitorManager;
 	private KeeperMonitor keeperMonitor;
 	
-	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir, 
-			MetaServerKeeperService metaService, 
+	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
+			MetaServerKeeperService metaService,
 			LeaderElectorManager leaderElectorManager,
 			KeepersMonitorManager keepersMonitorManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
@@ -135,7 +140,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
 	}
-	
+
 	private LeaderElector createLeaderElector(){
 		
 		String leaderElectionZKPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterId, shardId);
@@ -267,7 +272,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private void initAndStartMaster(Endpoint target) {
 		try {
 			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, masterEventLoopGroup, replicationStoreManager, scheduled);
-			
+
 			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
 				logger.info("[initAndStartMaster][stopped, exit]{}, {}", target, this);
 				return;

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
@@ -29,6 +30,10 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole,
 
 	int getSlaveListeningPort();
 
+	void setClientIpAddress(String host);
+
+	String getClientIpAddress();
+
 	void capa(CAPA capa);
 
 	boolean capaOf(CAPA capa);
@@ -49,4 +54,7 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole,
 	
 	void addChannelCloseReleaseResources(Releasable releasable);
 
+	void setClientEndpoint(Endpoint endpoint);
+
+	Endpoint getClientEndpoint();
 }
