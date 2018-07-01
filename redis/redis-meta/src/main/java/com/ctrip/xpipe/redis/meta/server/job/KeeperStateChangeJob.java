@@ -9,6 +9,7 @@ import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeObjectPoolFromKeyed;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
 import com.ctrip.xpipe.retry.RetryDelay;
@@ -30,6 +31,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	
 	private List<KeeperMeta> keepers;
 	private Pair<String, Integer> activeKeeperMaster;
+	private RouteMeta routeForActiveKeeper;
 	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
 	private int delayBaseMilli = 1000;
 	private int retryTimes = 5;
@@ -37,15 +39,22 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	private Executor executors;
 	private Command<?> activeSuccessCommand;
 
-	public KeeperStateChangeJob(List<KeeperMeta> keepers, Pair<String, Integer> activeKeeperMaster, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool
+	public KeeperStateChangeJob(List<KeeperMeta> keepers,
+								Pair<String, Integer> activeKeeperMaster,
+								RouteMeta routeForActiveKeeper,
+								SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool
 			, ScheduledExecutorService scheduled, Executor executors){
-		this(keepers, activeKeeperMaster, clientPool, 1000, 5, scheduled, executors);
+		this(keepers, activeKeeperMaster, routeForActiveKeeper, clientPool, 1000, 5, scheduled, executors);
 	}
 	
-	public KeeperStateChangeJob(List<KeeperMeta> keepers, Pair<String, Integer> activeKeeperMaster, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool
+	public KeeperStateChangeJob(List<KeeperMeta> keepers,
+								Pair<String, Integer> activeKeeperMaster,
+								RouteMeta routeForActiveKeeper,
+								SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool
 			, int delayBaseMilli, int retryTimes, ScheduledExecutorService scheduled, Executor executors){
 		this.keepers = new LinkedList<>(keepers);
 		this.activeKeeperMaster = activeKeeperMaster;
+		this.routeForActiveKeeper = routeForActiveKeeper;
 		this.clientPool = clientPool;
 		this.delayBaseMilli = delayBaseMilli;
 		this.retryTimes = retryTimes;
@@ -108,7 +117,12 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	private Command<?> createKeeperSetStateCommand(KeeperMeta keeper, Pair<String, Integer> masterAddress) {
 		
 		SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(clientPool, new InetSocketAddress(keeper.getIp(), keeper.getPort()));
-		KeeperSetStateCommand command =  new KeeperSetStateCommand(pool, keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP, masterAddress, scheduled);
+
+		KeeperSetStateCommand command =  new KeeperSetStateCommand(pool,
+				keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP,
+				masterAddress,
+				keeper.isActive() ? routeForActiveKeeper : null,
+				scheduled);
 		return CommandRetryWrapper.buildCountRetry(retryTimes, new RetryDelay(delayBaseMilli), command, scheduled);
 	}
 

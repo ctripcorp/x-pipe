@@ -19,6 +19,8 @@ public interface DcMetaCache extends Observable {
 
 	ClusterMeta getClusterMeta(String clusterId);
 
+	RouteMeta randomRoute(String clusterId);
+
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
 	boolean isCurrentDcPrimary(String clusterId, String shardId);

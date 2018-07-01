@@ -1,0 +1,27 @@
+package com.ctrip.xpipe.redis.proxy.model;
+
+import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
+import com.ctrip.xpipe.redis.proxy.session.SESSION_TYPE;
+import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
+import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
+import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelHalfEstablished;
+import org.junit.Test;
+
+/**
+ * @author chen.zhu
+ * <p>
+ * May 13, 2018
+ */
+public class TunnelMetaTest extends AbstractRedisProxyServerTest {
+
+    @Test
+    public void testToString() {
+        SessionMeta frontend = new SessionMeta(SESSION_TYPE.FRONTEND.name(), "frontend channel",
+                newProxyEndpoint(true, false).getUri(), new SessionEstablished(null).name());
+        SessionMeta backend = new SessionMeta(SESSION_TYPE.FRONTEND.name(), "backend channel",
+                newProxyEndpoint(true, false).getUri(), new SessionInit(null).name());
+        TunnelMeta meta = new TunnelMeta("ABC-DEF", new TunnelHalfEstablished(null).name(), protocol().getContent(), frontend, backend);
+
+        logger.info("[testToString] {}", meta.toString());
+    }
+}

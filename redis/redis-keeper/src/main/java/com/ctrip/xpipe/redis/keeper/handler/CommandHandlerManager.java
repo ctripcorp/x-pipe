@@ -38,6 +38,7 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 		putHandler(new SubscribeCommandHandler());
 		putHandler(new ClientCommandHandler());
 		putHandler(new RoleCommandHandler());
+		putHandler(new ProxyCommandHandler());
 	}
 
 	private void putHandler(CommandHandler handler) {

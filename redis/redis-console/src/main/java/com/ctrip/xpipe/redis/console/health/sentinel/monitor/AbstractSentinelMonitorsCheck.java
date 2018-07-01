@@ -1,16 +1,21 @@
 package com.ctrip.xpipe.redis.console.health.sentinel.monitor;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.AbstractIntervalCheck;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author chen.zhu
@@ -26,10 +31,13 @@ public abstract class AbstractSentinelMonitorsCheck extends AbstractIntervalChec
     @Autowired
     protected SentinelManager sentinelManager;
 
+    @Autowired
+    private ConsoleConfig config;
+
     @Override
     public void doCheck() {
         logger.info("[doCheck] check sentinel monitors");
-        Collection<DcMeta> dcMetas = metaCache.getXpipeMeta().getDcs().values();
+        Collection<DcMeta> dcMetas = dcsToCheck();
         for(DcMeta dcMeta : dcMetas) {
             Collection<SentinelMeta> sentinelMetas = dcMeta.getSentinels().values();
             for(SentinelMeta sentinelMeta : sentinelMetas) {
@@ -39,6 +47,19 @@ public abstract class AbstractSentinelMonitorsCheck extends AbstractIntervalChec
                 }
             }
         }
+    }
+
+    protected List<DcMeta> dcsToCheck() {
+        List<DcMeta> result = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
+        Set<String> ignoredDcNames = config.getIgnoredHealthCheckDc();
+        List<DcMeta> toRemove = Lists.newArrayList();
+        for(DcMeta dcMeta : result) {
+            if (ignoredDcNames.contains(dcMeta.getId()) || ignoredDcNames.contains(dcMeta.getId().toUpperCase())) {
+                toRemove.add(dcMeta);
+            }
+        }
+        result.removeAll(toRemove);
+        return result;
     }
 
     protected abstract void checkSentinel(SentinelMeta sentinelMeta, HostPort hostPort);
