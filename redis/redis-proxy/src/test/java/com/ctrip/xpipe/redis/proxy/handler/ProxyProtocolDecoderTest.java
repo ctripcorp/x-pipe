@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
+import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.nio.channels.ClosedChannelException;
 
 /**
  * @author chen.zhu
@@ -17,7 +20,7 @@ public class ProxyProtocolDecoderTest extends AbstractNettyTest {
 
     private EmbeddedChannel channel = new EmbeddedChannel(decoder);
 
-    @Test
+    @Test(expected = ClosedChannelException.class)
     public void testDecodeWithWriteExhausted() throws Exception {
         int counter = 0;
         while(counter <= 128) {
