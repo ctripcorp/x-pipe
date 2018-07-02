@@ -10,4 +10,6 @@ public interface CommandReader {
 
 	ReferenceFileRegion read() throws IOException;
 
+	void flushed(ReferenceFileRegion referenceFileRegion);
+
 }

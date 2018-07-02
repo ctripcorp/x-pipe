@@ -52,7 +52,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		int gcAfterCreateMilli = 60000;
 		File commandTemplate = new File(getTestFileDir(), getTestName());
 
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, gcAfterCreateMilli, () -> dataKeep.get(), createkeeperMonitor()){
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, gcAfterCreateMilli, () -> dataKeep.get(), DefaultCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor()){
 			@Override
 			public long totalLength() {
 				return initDataKeep * maxFileSize;
