@@ -27,7 +27,9 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
 
     private boolean finished = false;
 
-    private int maxLength, readLength = 0;
+    private static final char[] PREFIX = new char[]{'+', 'P', 'R', 'O', 'X', 'Y'};
+
+    private int maxLength, readLength = 0, bufReadIndex = 0;
 
     private ProxyProtocolParser parser = new DefaultProxyProtocolParser();
 
@@ -80,11 +82,23 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
     }
 
     private void checkValid(ByteBuf in) {
+        if(bufReadIndex < PREFIX.length && !matchProtocolFormat(in)) {
+            throw new ProxyProtocolException("Format error");
+        }
         readLength += in.readableBytes();
         if(readLength > maxLength) {
             throw new ProxyProtocolException("frame length (" + readLength + ") exceeds the allowed maximum ("
                     + maxLength + ')');
         }
+    }
+
+    private boolean matchProtocolFormat(ByteBuf in) {
+        for(; bufReadIndex < PREFIX.length && bufReadIndex < in.readableBytes(); bufReadIndex++) {
+            if(in.getByte(bufReadIndex) != PREFIX[bufReadIndex]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @VisibleForTesting
