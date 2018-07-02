@@ -69,6 +69,10 @@ public class SimpleTest extends AbstractRedisTest {
 
 		File f = new File("/opt/logs/test");
 		logger.info("[exist]{}", f.exists());
+		logger.info("[exist]{}", f.getParent());
+
+		String parent = f.getParent();
+
 
 	}
 

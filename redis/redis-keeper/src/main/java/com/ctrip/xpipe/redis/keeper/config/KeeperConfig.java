@@ -31,6 +31,8 @@ public interface KeeperConfig extends CoreConfig{
 
 	int getReplicationStoreMinTimeMilliToGcAfterCreate();
 
+	long getCommandReaderFlyingThreshold();
+
 	int getRdbDumpMinIntervalMilli();
 	
 	int getDelayLogLimitMicro();
