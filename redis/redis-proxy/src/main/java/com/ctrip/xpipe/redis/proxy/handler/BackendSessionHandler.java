@@ -25,7 +25,7 @@ public class BackendSessionHandler extends AbstractSessionNettyHandler {
         }
         tunnel.forwardToFrontend((ByteBuf) msg);
 
-        super.channelRead(ctx, msg);
+        ctx.fireChannelRead(msg);
     }
 
 }

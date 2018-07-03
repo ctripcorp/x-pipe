@@ -59,8 +59,6 @@ public class DefaultProxyServer implements ProxyServer {
 
     public static final int WRITE_HIGH_WATER_MARK = 5 * WRITE_LOW_WATER_MARK;
 
-    public static final ByteBufAllocator GLOBAL_BYTEBUF_ALLOC = new PooledByteBufAllocator();
-
     public DefaultProxyServer() {
     }
 
@@ -131,7 +129,8 @@ public class DefaultProxyServer implements ProxyServer {
         bootstrap.group(new NioEventLoopGroup(1, XpipeThreadFactory.create("frontend-boss-" + prefix)),
                 new NioEventLoopGroup(OsUtils.getCpuCount() * 2, XpipeThreadFactory.create("frontend-worker-" + prefix)))
                 .channel(NioServerSocketChannel.class)
-                .option(ChannelOption.ALLOCATOR, GLOBAL_BYTEBUF_ALLOC)
+                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, WRITE_HIGH_WATER_MARK)
                 .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, WRITE_LOW_WATER_MARK)
                 .handler(new LoggingHandler(LogLevel.DEBUG));
