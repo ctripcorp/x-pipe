@@ -42,6 +42,14 @@
 			</includes>
 			<lineEnding>unix</lineEnding>
 		</fileSet>
+		<fileSet>
+			<directory>../../../services/local-service/src/main/resources/</directory>
+			<outputDirectory>sql</outputDirectory>
+			<includes>
+				<include>*.sql</include>
+			</includes>
+			<lineEnding>unix</lineEnding>
+		</fileSet>
 		<!--artifact -->
 		<fileSet>
 			<directory>target</directory>
