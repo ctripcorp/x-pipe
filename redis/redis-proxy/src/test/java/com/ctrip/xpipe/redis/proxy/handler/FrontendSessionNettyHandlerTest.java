@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy.handler;
 
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
+import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
@@ -82,7 +83,7 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
         verify(tunnel).forwardToBackend(any());
     }
 
-    @Test
+    @Test(expected = ResourceIncorrectException.class)
     public void testChannelRead3() {
         channel.writeInbound("Hello Wrold");
         verify(manager, never()).create(any(), any());
