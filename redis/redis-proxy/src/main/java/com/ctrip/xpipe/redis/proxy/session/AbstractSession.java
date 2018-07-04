@@ -152,7 +152,7 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
     @Override
     public void release() {
         if(channel != null) {
-            ChannelUtil.closeOnFlush(channel);
+            channel.close();
         }
         setSessionState(new SessionClosed(this));
     }
