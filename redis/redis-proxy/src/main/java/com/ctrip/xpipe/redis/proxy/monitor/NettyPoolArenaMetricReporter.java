@@ -4,14 +4,16 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
+import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.PoolArenaMetric;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -22,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class NettyPoolArenaMetricReporter {
 
-    @Resource(name = Production.GLOBAL_SCHEDULED)
     private ScheduledExecutorService scheduled;
 
     private static final String NEWLINE = "\r\n";
@@ -32,6 +33,7 @@ public class NettyPoolArenaMetricReporter {
 
     @PostConstruct
     public void reportPoolArenaMetric() {
+        scheduled = new ScheduledThreadPoolExecutor(OsUtils.getCpuCount(), XpipeThreadFactory.create("PoolArenaMetricReporter"));
         scheduled.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
