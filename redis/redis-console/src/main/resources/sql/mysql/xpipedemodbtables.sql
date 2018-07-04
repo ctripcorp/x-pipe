@@ -286,8 +286,8 @@ drop table if exists route_tbl;
 CREATE TABLE `route_tbl` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `route_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of route',
-  `src_dc_id` bigint(20) unsigned NOT NULL DEFAULT '' COMMENT 'source dc id',
-  `dst_dc_id` bigint(20) unsigned NOT NULL DEFAULT '' COMMENT 'destination dc id',
+  `src_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'source dc id',
+  `dst_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'destination dc id',
   `src_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'source proxies ids',
   `dst_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'destination proxies ids',
   `optional_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'optional relay proxies, ids separated by whitespace',
@@ -304,7 +304,7 @@ drop table if exists proxy_tbl;
 CREATE TABLE `proxy_tbl` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'dc id',
-  `uri` varchar(20) NOT NULL DEFAULT 'TCP' COMMENT 'scheme, like PROXYTCP, PROXYTLS://127.0.0.1:8080, TCP://127.0.0.1:8090',
+  `uri` varchar(256) NOT NULL DEFAULT 'TCP' COMMENT 'scheme, like PROXYTCP, PROXYTLS://127.0.0.1:8080, TCP://127.0.0.1:8090',
   `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'active or not',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
