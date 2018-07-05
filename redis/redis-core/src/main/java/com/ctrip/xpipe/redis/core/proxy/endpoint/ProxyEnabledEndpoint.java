@@ -33,6 +33,6 @@ public class ProxyEnabledEndpoint extends DefaultEndPoint implements Endpoint, P
 
     @Override
     public String toString() {
-        return super.toString() + " " + protocol.toString();
+        return super.toString();
     }
 }
