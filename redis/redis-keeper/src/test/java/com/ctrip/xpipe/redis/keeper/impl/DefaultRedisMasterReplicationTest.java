@@ -64,7 +64,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		nioEventLoopGroup = new NioEventLoopGroup();
 
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
-				scheduled, replTimeoutMilli, AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI);
+				scheduled, replTimeoutMilli);
 		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
 
 		when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);

@@ -33,6 +33,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.utils.ChannelUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -95,19 +96,19 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	private int commandTimeoutMilli;
 
 	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
-			ScheduledExecutorService scheduled, int replTimeoutMilli, int commandTimeoutMilli) {
+			ScheduledExecutorService scheduled, int replTimeoutMilli) {
 
 		this.redisKeeperServer = redisKeeperServer;
 		this.redisMaster = redisMaster;
 		this.nioEventLoopGroup = nioEventLoopGroup;
 		this.replTimeoutMilli = replTimeoutMilli;
 		this.scheduled = scheduled;
-		this.commandTimeoutMilli = commandTimeoutMilli;
+		this.commandTimeoutMilli = initommandTimeoutMilli();
 	}
 
 	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
 			ScheduledExecutorService scheduled) {
-		this(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI, AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI);
+		this(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI);
 	}
 
 	public RedisMaster getRedisMaster() {
@@ -441,6 +442,18 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	public RedisMaster redisMaster() {
 		return redisMaster;
+	}
+
+	private int initommandTimeoutMilli() {
+		if(isMasterConnectThroughProxy()) {
+			return AbstractRedisMasterReplication.PROXYED_REPLICATION_TIMEOUT_MILLI;
+		}
+		return AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
+	}
+
+	@VisibleForTesting
+	protected int commandTimeoutMilli() {
+		return commandTimeoutMilli;
 	}
 
 }
