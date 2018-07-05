@@ -129,8 +129,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			logger.warn("[startReplication][channel alive, don't do replication]{}", this.masterChannel);
 			return;
 		}
-
-		logger.info("[startReplication]{}", redisMaster.masterEndPoint());
+		Endpoint endpoint = redisMaster.masterEndPoint();
+		String masterInfo = endpoint.toString();
+		if(isMasterConnectThroughProxy()) {
+			masterInfo = String.format("endpoint: %s, proxy info: %s", endpoint.toString(),
+					((ProxyEnabled)endpoint).getProxyProtocol());
+		}
+		logger.info("[startReplication]{}", masterInfo);
 		connectWithMaster();
 
 	}
