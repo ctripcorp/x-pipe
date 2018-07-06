@@ -121,7 +121,7 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
 
     protected void setSessionState(SessionState newState) {
         if(!getSessionState().isValidNext(newState)) {
-            logger.debug("[setSessionState] Set state failed, state relationship not match, old: {}, new: {}",
+            logger.error("[setSessionState] Set state failed, state relationship not match, old: {}, new: {}",
                     getSessionState(), newState.name());
             return;
         }
