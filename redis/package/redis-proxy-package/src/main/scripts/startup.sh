@@ -90,7 +90,7 @@ then
     XMN=3
     #MB
     MAX_DIRECT=2
-    JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g -Xmn${XMN}g -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
+    JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g -Xmn${XMN}g -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}g"
 elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     #MB
     USED_MEM=600
