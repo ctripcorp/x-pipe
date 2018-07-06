@@ -50,8 +50,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		this.nioEventLoopGroup = nioEventLoopGroup;
 		this.endpoint = endpoint;
 		this.scheduled = scheduled;
-		redisMasterReplication = new DefaultRedisMasterReplication(this, this.redisKeeperServer, nioEventLoopGroup,
-				this.scheduled, redisCommandTimeoutMilli());
+		redisMasterReplication = new DefaultRedisMasterReplication(this, this.redisKeeperServer, nioEventLoopGroup, this.scheduled);
 	}
 	
 	@Override
@@ -135,17 +134,6 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public boolean isKeeper() {
 		return isKeeper.get();
-	}
-
-	private int redisCommandTimeoutMilli() {
-		if(isMasterProxied()) {
-			return AbstractRedisMasterReplication.PROXYED_REPLICATION_TIMEOUT_MILLI;
-		}
-		return AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
-	}
-
-	private boolean isMasterProxied() {
-		return endpoint instanceof ProxyEnabled;
 	}
 
 	@Override
