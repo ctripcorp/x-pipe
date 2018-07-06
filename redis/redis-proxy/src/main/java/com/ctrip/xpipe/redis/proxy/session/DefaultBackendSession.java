@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
@@ -65,7 +66,8 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         try {
             this.endpoint = selector.nextHop();
         } catch (Exception e) {
-            setSessionState(new SessionClosing(this));
+            setSessionState(new SessionClosed(this));
+            logger.error("[connect] select nextHop error", e);
             throw e;
         }
         ChannelFuture connectionFuture = initChannel(endpoint);
@@ -75,7 +77,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                 if(future.isSuccess()) {
                     onChannelEstablished(future.channel());
                 } else {
-                    logger.error("[tryConnect] fail to connect: {}", getSessionMeta(), future.cause());
+                    logger.error("[tryConnect] fail to connect: {}, {}", getSessionMeta(), future.cause());
                     future.channel().eventLoop()
                             .schedule(()->connect(), selector.selectCounts(), TimeUnit.MILLISECONDS);
                 }
