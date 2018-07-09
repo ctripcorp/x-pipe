@@ -11,6 +11,8 @@ public class SelectNTimes implements SelectStrategy {
 
     private ProxyEndpointSelector selector;
 
+    public static final int INFINITE = -1;
+
     public SelectNTimes(ProxyEndpointSelector selector, int times) {
         this.selector = selector;
         this.times = times;
@@ -18,6 +20,9 @@ public class SelectNTimes implements SelectStrategy {
 
     @Override
     public boolean select() {
+        if(times == INFINITE) {
+            return true;
+        }
         return times > selector.selectCounts();
     }
 
