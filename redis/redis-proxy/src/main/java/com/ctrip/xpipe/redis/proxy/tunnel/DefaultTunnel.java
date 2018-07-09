@@ -194,7 +194,9 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         ProxyEndpointSelector selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), endpointManager);
         selector.setNextHopAlgorithm(new NaiveNextHopAlgorithm());
         selector.setSelectStrategy(new SelectOneCycle(selector));
-        backend = new DefaultBackendSession(this, config.getTrafficReportIntervalMillis(), selector);
+        // share the nio event loop to avoid oom
+        backend = new DefaultBackendSession(this, frontend.getChannel().eventLoop(),
+                config.getTrafficReportIntervalMillis(), selector);
 
         registerSessionEventHandlers();
         frontend.addObserver(this);
