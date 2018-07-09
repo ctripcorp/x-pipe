@@ -44,6 +44,7 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
     public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
         logger.debug("[channelWritabilityChanged] writable: {}", ctx.channel().isWritable());
 
+        logger.info("[channelWritabilityChanged] buffer size: {}", ctx.channel().unsafe().outboundBuffer().totalPendingWriteBytes());
         if(ctx.channel().isWritable()) {
             session.setWritableState(Session.SessionWritableState.WRITABLE);
         } else {

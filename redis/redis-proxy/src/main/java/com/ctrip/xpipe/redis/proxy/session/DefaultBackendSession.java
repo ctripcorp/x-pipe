@@ -18,6 +18,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
@@ -47,11 +48,11 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     private AtomicReference<SessionState> sessionState;
 
-    public DefaultBackendSession(Tunnel tunnel, long trafficReportIntervalMillis, ProxyEndpointSelector selector) {
+    public DefaultBackendSession(Tunnel tunnel, EventLoopGroup eventLoopGroup, long trafficReportIntervalMillis,
+                                 ProxyEndpointSelector selector) {
         super(tunnel, trafficReportIntervalMillis);
         this.selector = selector;
-        this.nioEventLoopGroup = (EventLoopGroup) ComponentRegistryHolder.getComponentRegistry()
-                                                    .getComponent(BACKEND_EVENTLOOP_GROUP);
+        this.nioEventLoopGroup = eventLoopGroup;
         this.sslHandlerFactory = (NettySslHandlerFactory) ComponentRegistryHolder.getComponentRegistry()
                                                     .getComponent(CLIENT_SSL_HANDLER_FACTORY);
         this.sessionState = new AtomicReference<>(new SessionInit(this));

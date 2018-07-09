@@ -82,7 +82,7 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
         tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config);
 
         frontend = new DefaultFrontendSession(tunnel, frontChannel, 300000);
-        backend = new DefaultBackendSession(tunnel, 300000, selector);
+        backend = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, selector);
 
         frontend = spy(frontend);
         backend = spy(backend);

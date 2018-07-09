@@ -50,7 +50,7 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
     @Before
     public void beforeDefaultBackendSessionTest() {
         MockitoAnnotations.initMocks(this);
-        session = new DefaultBackendSession(tunnel, 300000, selector);
+        session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, selector);
 
     }
 
@@ -98,7 +98,7 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
         selector = new DefaultProxyEndpointSelector(Lists.newArrayList(newProxyEndpoint(true, false), newProxyEndpoint(true, false)), endpointManager());
         selector.setSelectStrategy(new SelectOneCycle(selector));
         selector.setNextHopAlgorithm(new NaiveNextHopAlgorithm());
-        session = new DefaultBackendSession(tunnel, 300000, selector);
+        session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, selector);
         session.setNioEventLoopGroup(new NioEventLoopGroup(1));
         session.doStart();
         Thread.sleep(1000);
