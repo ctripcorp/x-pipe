@@ -188,7 +188,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 					.getComponent(ProxyEndpointManager.class);
 			selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), manager);
 			selector.setNextHopAlgorithm(new NaiveNextHopAlgorithm());
-			selector.setSelectStrategy(new SelectNTimes(selector, 10));
+			selector.setSelectStrategy(new SelectNTimes(selector, SelectNTimes.INFINITE));
 		}
 		ProxyEndpoint nextHop = selector.nextHop();
 		logger.info("[tryConnectThroughProxy] connect endpoint: {}", nextHop.getUri());
