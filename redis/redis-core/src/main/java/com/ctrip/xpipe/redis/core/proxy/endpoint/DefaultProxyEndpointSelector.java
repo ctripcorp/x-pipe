@@ -39,8 +39,10 @@ public class DefaultProxyEndpointSelector implements ProxyEndpointSelector {
         if(strategy != null && !strategy.select()) {
             throw new NoResourceException(String.format("No resource for strategy: %s", strategy.getClass().getSimpleName()));
         }
-        candidates.retainAll(endpointManager.getAvailableProxyEndpoints());
+        logger.info("[candidates][before]{}", candidates);
         List<ProxyEndpoint> toBeSelected = Lists.newArrayList(candidates);
+        toBeSelected.retainAll(endpointManager.getAvailableProxyEndpoints());
+        logger.info("[candidates][after]{}", toBeSelected);
 
         ProxyEndpoint endpoint = algorithm.nextHop(toBeSelected);
         if(endpoint == null) {
