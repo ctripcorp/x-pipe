@@ -34,8 +34,6 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	private volatile PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 
 	private ScheduledFuture<?> replConfFuture;
-	
-	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
 										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,

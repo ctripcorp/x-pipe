@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.proxy.concurrent.FastThreadLocalThreadFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
@@ -127,7 +128,7 @@ public class DefaultProxyServer implements ProxyServer {
     private ServerBootstrap bootstrap(String prefix) {
 
         ServerBootstrap bootstrap = new ServerBootstrap();
-        bootstrap.group(new NioEventLoopGroup(1, XpipeThreadFactory.create("frontend-boss-" + prefix)),
+        bootstrap.group(new NioEventLoopGroup(1, FastThreadLocalThreadFactory.create("frontend-boss-" + prefix)),
                 new NioEventLoopGroup(OsUtils.getCpuCount() * 2, XpipeThreadFactory.create("frontend-worker-" + prefix)))
                 .channel(NioServerSocketChannel.class)
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
