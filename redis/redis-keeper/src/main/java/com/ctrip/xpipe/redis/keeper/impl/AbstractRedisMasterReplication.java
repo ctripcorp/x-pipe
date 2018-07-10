@@ -63,7 +63,9 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	public static int DEFAULT_REPLICATION_TIMEOUT_MILLI = Integer.parseInt(System.getProperty(KEY_REPLICATION_TIMEOUT, "60000"));
 
-	public static int PROXYED_REPLICATION_TIMEOUT_MILLI = 2 * 60 * 1000;
+	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));
+
+	public static int PROXYED_REPLICATION_TIMEOUT_MILLI = 15 * 1000;
 
 	private final int replTimeoutMilli;
 
@@ -160,7 +162,26 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 					}
 				});
 
-		doConnect(b);
+		doConnect0(b);
+	}
+
+	private void doConnect0(Bootstrap b) {
+		try {
+			doConnect(b);
+		} catch (Exception e) {
+			logger.error("[doConnect0] ", e);
+
+			scheduled.schedule(new Runnable() {
+				@Override
+				public void run() {
+					try{
+						connectWithMaster();
+					}catch(Throwable th){
+						logger.error("[doConnect0][connectUntilConnected]" + AbstractRedisMasterReplication.this, th);
+					}
+				}
+			}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
+		}
 	}
 
 	protected abstract void doConnect(Bootstrap b);
@@ -175,7 +196,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		}
 	}
 
-	private boolean isMasterConnectThroughProxy() {
+	@VisibleForTesting
+	protected boolean isMasterConnectThroughProxy() {
 		return redisMaster.masterEndPoint() instanceof ProxyEnabled;
 	}
 

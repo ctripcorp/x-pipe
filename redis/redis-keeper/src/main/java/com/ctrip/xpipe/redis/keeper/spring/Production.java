@@ -46,6 +46,6 @@ public class Production extends AbstractProfile{
 
 	@Bean
 	public ProxyEndpointManager getEndpointManager() {
-		return new DefaultProxyEndpointManager(()->60);
+		return new DefaultProxyEndpointManager(()->1);
 	}
 }
