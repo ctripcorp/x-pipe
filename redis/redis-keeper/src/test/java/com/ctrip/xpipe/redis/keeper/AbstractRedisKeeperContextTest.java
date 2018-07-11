@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.spring.KeeperContextConfig;
@@ -111,7 +112,8 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig,
 			MetaServerKeeperService metaService, File baseDir, LeaderElectorManager leaderElectorManager) {
-		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, metaService, leaderElectorManager, createkeepersMonitorManager());
+		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, metaService, leaderElectorManager,
+				createkeepersMonitorManager(), new DefaultProxyEndpointManager(()->60000));
 	}
 
 	protected RedisMeta createRedisMeta() {

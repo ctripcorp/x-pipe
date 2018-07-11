@@ -4,6 +4,8 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -29,17 +31,22 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 	
 	private ScheduledExecutorService scheduled;
 
-	public RedisMasterNewRdbDumper(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled) {
+	private ProxyEndpointManager endpointManager;
+
+	public RedisMasterNewRdbDumper(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
+								   NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
+								   ProxyEndpointManager endpointManager) {
 		super(redisKeeperServer);
 		this.redisMaster = redisMaster;
 		this.nioEventLoopGroup = nioEventLoopGroup;
 		this.scheduled = scheduled;
+		this.endpointManager = endpointManager;
 	}
 
 	@Override
 	protected void doExecute() throws Exception {
 		
-		rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, this);
+		rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, this, endpointManager);
 		
 		rdbonlyRedisMasterReplication.initialize();
 		rdbonlyRedisMasterReplication.start();

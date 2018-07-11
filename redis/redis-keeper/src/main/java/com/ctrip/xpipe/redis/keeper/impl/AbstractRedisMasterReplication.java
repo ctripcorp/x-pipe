@@ -24,7 +24,6 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.ProxyEnabled;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
-import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -65,7 +64,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));
 
-	public static int PROXYED_REPLICATION_TIMEOUT_MILLI = 15 * 1000;
+	protected static int PROXYED_REPLICATION_COMMAND_TIMEOUT_MILLI = 15 * 1000;
 
 	private final int replTimeoutMilli;
 
@@ -97,20 +96,23 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private int commandTimeoutMilli;
 
+	private ProxyEndpointManager endpointManager;
+
 	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
-			ScheduledExecutorService scheduled, int replTimeoutMilli) {
+			ScheduledExecutorService scheduled, int replTimeoutMilli, ProxyEndpointManager endpointManager) {
 
 		this.redisKeeperServer = redisKeeperServer;
 		this.redisMaster = redisMaster;
 		this.nioEventLoopGroup = nioEventLoopGroup;
 		this.replTimeoutMilli = replTimeoutMilli;
 		this.scheduled = scheduled;
-		this.commandTimeoutMilli = initommandTimeoutMilli();
+		this.endpointManager = endpointManager;
+		this.commandTimeoutMilli = initCommandTimeoutMilli();
 	}
 
 	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
-			ScheduledExecutorService scheduled) {
-		this(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI);
+			ScheduledExecutorService scheduled, ProxyEndpointManager endpointManager) {
+		this(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI, endpointManager);
 	}
 
 	public RedisMaster getRedisMaster() {
@@ -205,10 +207,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) redisMaster.masterEndPoint();
 		ProxyProtocol protocol = endpoint.getProxyProtocol();
 		if(selector == null) {
-			ProxyEndpointManager manager = ComponentRegistryHolder
-					.getComponentRegistry()
-					.getComponent(ProxyEndpointManager.class);
-			selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), manager);
+			selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), endpointManager);
 			selector.setNextHopAlgorithm(new NaiveNextHopAlgorithm());
 			selector.setSelectStrategy(new SelectNTimes(selector, SelectNTimes.INFINITE));
 		}
@@ -251,8 +250,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		chain.add(listeningPortCommand());
 
 		// for proxy connect init time
-		Replconf capa = new Replconf(clientPool, ReplConfType.CAPA, scheduled, CAPA.EOF.toString(), CAPA.PSYNC2.toString());
-		capa.setCommandTimeoutMilli(commandTimeoutMilli);
+		Replconf capa = new Replconf(clientPool, ReplConfType.CAPA, scheduled, commandTimeoutMilli,
+				CAPA.EOF.toString(), CAPA.PSYNC2.toString());
 		chain.add(new FailSafeCommandWrapper<>(capa));
 		
 		try {
@@ -263,8 +262,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 					if(commandFuture.isSuccess()){
 						sendReplicationCommand();
 					}else{
-						logger.error("[operationComplete][listeningPortCommand]", commandFuture.cause());
-						logger.info("[close channel] listeningPortCommand error, close channel and waiting for reconnect");
+						logger.error("[operationComplete][listeningPortCommand] close channel{} and wait for reconnect",
+                                ChannelUtil.getDesc(channel), commandFuture.cause());
 						channel.close();
 					}
 				}
@@ -275,8 +274,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	}
 
 	private void checkKeeper() {
-		Replconf replconf = new Replconf(clientPool, ReplConfType.KEEPER, scheduled);
-		replconf.setCommandTimeoutMilli(commandTimeoutMilli);
+		Replconf replconf = new Replconf(clientPool, ReplConfType.KEEPER, scheduled, commandTimeoutMilli);
 		executeCommand(replconf).addListener(new CommandFutureListener<Object>() {
 
 			@Override
@@ -333,9 +331,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private Replconf listeningPortCommand() {
 
-		Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT, scheduled,
+		Replconf replconf = new Replconf(clientPool, ReplConfType.LISTENING_PORT, scheduled, commandTimeoutMilli,
 				String.valueOf(redisKeeperServer.getListeningPort()));
-		replconf.setCommandTimeoutMilli(commandTimeoutMilli);
 		return replconf;
 	}
 
@@ -474,9 +471,9 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		return redisMaster;
 	}
 
-	private int initommandTimeoutMilli() {
+	private int initCommandTimeoutMilli() {
 		if(isMasterConnectThroughProxy()) {
-			return AbstractRedisMasterReplication.PROXYED_REPLICATION_TIMEOUT_MILLI;
+			return AbstractRedisMasterReplication.PROXYED_REPLICATION_COMMAND_TIMEOUT_MILLI;
 		}
 		return AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 	}
@@ -486,9 +483,4 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		return commandTimeoutMilli;
 	}
 
-
-	@VisibleForTesting
-	protected void setCommandTimeoutMilli(int commandTimeoutMilli) {
-		this.commandTimeoutMilli = commandTimeoutMilli;
-	}
 }

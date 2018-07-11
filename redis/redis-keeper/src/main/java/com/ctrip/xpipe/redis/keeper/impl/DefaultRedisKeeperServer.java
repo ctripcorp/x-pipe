@@ -124,11 +124,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private KeepersMonitorManager keepersMonitorManager;
 	private KeeperMonitor keeperMonitor;
+
+	private ProxyEndpointManager endpointManager;
 	
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 			MetaServerKeeperService metaService,
 			LeaderElectorManager leaderElectorManager,
-			KeepersMonitorManager keepersMonitorManager){
+			KeepersMonitorManager keepersMonitorManager, ProxyEndpointManager endpointManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
 		this.shardId = currentKeeperMeta.parent().getId();
 		this.currentKeeperMeta = currentKeeperMeta;
@@ -139,6 +141,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
+		this.endpointManager = endpointManager;
 	}
 
 	private LeaderElector createLeaderElector(){
@@ -271,7 +274,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private void initAndStartMaster(Endpoint target) {
 		try {
-			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, masterEventLoopGroup, replicationStoreManager, scheduled);
+			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, masterEventLoopGroup,
+					replicationStoreManager, scheduled, endpointManager);
 
 			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
 				logger.info("[initAndStartMaster][stopped, exit]{}, {}", target, this);

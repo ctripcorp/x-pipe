@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -37,13 +38,15 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
 										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
-										 int replTimeoutMilli) {
-		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutMilli);
+										 int replTimeoutMilli, ProxyEndpointManager endpointManager) {
+		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutMilli, endpointManager);
 	}
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
-										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled) {
-		this(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI);
+										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
+										 ProxyEndpointManager endpointManager) {
+		this(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI,
+				endpointManager);
 	}
 
 	@Override
