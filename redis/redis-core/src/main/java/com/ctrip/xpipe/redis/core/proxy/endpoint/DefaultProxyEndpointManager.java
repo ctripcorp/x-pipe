@@ -90,17 +90,16 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
         @Override
         protected void doRun() throws Exception {
             for(ProxyEndpoint endpoint : allEndpoints) {
+                DefaultProxyEndpointManager.logger.info("[HealthCheckTask] checking endpoint: {}", endpoint.getUri());
                 if(healthChecker.checkConnectivity(endpoint)) {
+                    DefaultProxyEndpointManager.logger.info("[HealthCheckTask] endpoint ok: {}", endpoint.getUri());
                     availableEndpoints.add(endpoint);
                 } else {
-                    logger.info("[HealthCheckTask] endpoint not healthy: {}", endpoint.getUri());
-                    boolean exist = availableEndpoints.remove(endpoint);
-                    if(!exist) {
-                        allEndpoints.remove(endpoint);
-                    }
+                    DefaultProxyEndpointManager.logger.info("[HealthCheckTask] endpoint not healthy: {}", endpoint.getUri());
+                    availableEndpoints.remove(endpoint);
                 }
             }
-            logger.debug("[HealthCheckTask] all endpoints: {}, available endpoints: {}",
+            DefaultProxyEndpointManager.logger.debug("[HealthCheckTask] all endpoints: {}, available endpoints: {}",
                     getAllProxyEndpoints(), getAvailableProxyEndpoints());
         }
     }
