@@ -47,10 +47,6 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
 
     private static final String KEY_FRONTEND_TLS_PORT = "proxy.frontend.tls.port";
 
-    private static final String KEY_DEBUG_TUNNEL = "proxy.debug.tunnel";
-
-    private static final String KEY_NOT_INTEREST_IP = "proxy.not.interest.ips";
-
     private static final String KEY_NO_TLS_NETTY_HANDLER = "proxy.no.tls.netty.handler";
 
     private String[] notInterests;
@@ -68,7 +64,6 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
             @Override
             public void run() {
                 setConfig(initConfig());
-                refreshNotInterest();
             }
         }, 1, 1, TimeUnit.MINUTES);
     }
@@ -110,34 +105,10 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
     }
 
     @Override
-    public boolean debugTunnel() {
-        return getBooleanProperty(KEY_DEBUG_TUNNEL, false);
-    }
-
-    @Override
-    public boolean notInterest(InetSocketAddress address) {
-        if(notInterests == null || notInterests.length == 0) {
-            refreshNotInterest();
-        }
-        if(notInterests == null) {
-            return false;
-        }
-        for(String ip : notInterests) {
-            if(address.getHostName().equals(ip))
-                return true;
-        }
-        return false;
-    }
-
-    @Override
     public boolean noTlsNettyHandler() {
         return getBooleanProperty(KEY_NO_TLS_NETTY_HANDLER, false);
     }
 
-    private void refreshNotInterest() {
-        String ips = getProperty(KEY_NOT_INTEREST_IP, "0.0.0.0");
-        notInterests = StringUtil.splitRemoveEmpty("\\s*,\\s*", ips);
-    }
 
     @Override
     public String getPassword() {

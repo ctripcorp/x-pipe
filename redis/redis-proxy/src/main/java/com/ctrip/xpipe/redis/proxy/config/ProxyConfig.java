@@ -20,9 +20,5 @@ public interface ProxyConfig extends TLSConfig {
 
     int endpointHealthCheckIntervalSec();
 
-    boolean debugTunnel();
-
-    boolean notInterest(InetSocketAddress address);
-
     boolean noTlsNettyHandler();
 }
