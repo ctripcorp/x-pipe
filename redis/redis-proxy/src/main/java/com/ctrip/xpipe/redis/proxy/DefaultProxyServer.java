@@ -170,4 +170,9 @@ public class DefaultProxyServer implements ProxyServer {
     public ProxyConfig getConfig() {
         return config;
     }
+
+    @VisibleForTesting
+    public TunnelManager getTunnelManager() {
+        return this.tunnelManager;
+    }
 }

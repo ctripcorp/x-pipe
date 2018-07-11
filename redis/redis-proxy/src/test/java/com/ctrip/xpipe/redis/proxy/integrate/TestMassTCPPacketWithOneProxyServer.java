@@ -191,7 +191,7 @@ public class TestMassTCPPacketWithOneProxyServer extends AbstractProxyIntegratio
         for(int i = 0; i < N; i++) {
             port[i] = randomPort();
             protocol[i] = generateProxyProtocol(port[i]);
-            message[i] = randomString(1 * 10000);
+            message[i] = randomString(1000);
 
             clientFuture[i] = clientBootstrap().connect(PROXY_HOST, PROXY_PORT);
 

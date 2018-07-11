@@ -97,7 +97,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
         for(int i = 0; i < N; i++) {
             port[i] = randomPort();
             protocol[i] = generateProxyProtocol(port[i]);
-            message[i] = randomString(5000);
+            message[i] = randomString(1000);
 
             clientFuture[i] = clientBootstrap().connect(PROXY_HOST, PROXY_PORT1);
 
@@ -141,7 +141,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
 
         }
 
-        Thread.sleep(1000 * N/100 + 2000);
+        Thread.sleep(1500 * N/100 + 2000);
 
         for(int i = 0; i < N; i++) {
             receiveServer[i].channel().close();
