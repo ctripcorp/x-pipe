@@ -26,6 +26,14 @@ public class Replconf extends AbstractRedisCommand<Object> {
 		this.args = args;
 	}
 
+	public Replconf(SimpleObjectPool<NettyClient> clientPool, ReplConfType replConfType,
+					ScheduledExecutorService scheduled, int commandTimeoutMilli, String... args) {
+		super(clientPool, scheduled);
+		this.replConfType = replConfType;
+		this.args = args;
+		setCommandTimeoutMilli(commandTimeoutMilli);
+	}
+
 	@Override
 	public String getName() {
 		return "replconf";

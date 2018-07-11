@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.google.common.collect.Lists;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,7 +22,6 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -60,8 +58,6 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
 
         nioEventLoopGroup = new NioEventLoopGroup();
 
-        redisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
-                scheduled, replTimeoutMilli);
         when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
 
         when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
@@ -70,25 +66,21 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
 
     @Test
     public void testListeningPortCommandTimeOut() throws Exception {
+
         System.setProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "0");
         Server server = startEmptyServer();
         ProxyProtocol protocol = new DefaultProxyProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:"+server.getPort());
         ProxyEnabledEndpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", server.getPort(), protocol);
 
         when(redisMaster.masterEndPoint()).thenReturn(endpoint);
-        redisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, replTimeoutMilli);
-
         ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
         when(proxyEndpointManager.getAvailableProxyEndpoints()).thenReturn(protocol.nextEndpoints());
 
-        ComponentRegistry registry = new CreatedComponentRedistry();
-        registry.initialize();
-        registry.start();
-        registry.add(proxyEndpointManager);
-        ComponentRegistryHolder.initializeRegistry(registry);
+        DefaultRedisMasterReplication.PROXYED_REPLICATION_COMMAND_TIMEOUT_MILLI = 5;
+        redisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
+                scheduled, replTimeoutMilli, proxyEndpointManager);
 
         redisMasterReplication = spy(redisMasterReplication);
-        redisMasterReplication.setCommandTimeoutMilli(5);
         redisMasterReplication.initialize();
         redisMasterReplication.start();
 

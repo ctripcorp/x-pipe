@@ -79,7 +79,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		nioEventLoopGroup = new NioEventLoopGroup();
 
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
-				scheduled, replTimeoutMilli);
+				scheduled, replTimeoutMilli, new DefaultProxyEndpointManager(()->60000));
 		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
 
 		when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
@@ -153,7 +153,8 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 		AtomicInteger replConfCount = new AtomicInteger();
 
-		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, replTimeoutMilli) {
+		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer,
+				nioEventLoopGroup, scheduled, replTimeoutMilli, new DefaultProxyEndpointManager(()->60000)) {
 			@Override
 			protected Command<Object> createReplConf() {
 				replConfCount.incrementAndGet();
@@ -185,18 +186,13 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		ProxyEnabledEndpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", server.getPort(), protocol);
 
 		when(redisMaster.masterEndPoint()).thenReturn(endpoint);
-		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, replTimeoutMilli);
-
-		ComponentRegistry registry = new CreatedComponentRedistry();
 		ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
 
 		// first time empty list, sec time return endpoint
 		when(proxyEndpointManager.getAvailableProxyEndpoints()).thenReturn(Lists.newArrayList())
 				.thenReturn(protocol.nextEndpoints());
-		registry.initialize();
-		registry.start();
-		registry.add(proxyEndpointManager);
-		ComponentRegistryHolder.initializeRegistry(registry);
+		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer,
+				nioEventLoopGroup, scheduled, replTimeoutMilli, proxyEndpointManager);
 
 		defaultRedisMasterReplication = spy(defaultRedisMasterReplication);
 		defaultRedisMasterReplication.initialize();

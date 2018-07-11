@@ -1,17 +1,14 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
-import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.Assert;
 import org.junit.Before;
@@ -20,11 +17,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
 
 /**
@@ -55,11 +50,11 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperTest {
     @Test
     public void testTimeoutMilli() throws CreateRdbDumperException {
         target = new DefaultEndPoint("localhost", randomPort());
-        this.keeperRedisMaster = new DefaultRedisMaster(keeperServer, target, eventLoopGroup, replicationStoreManager, scheduled);
+        this.keeperRedisMaster = new DefaultRedisMaster(keeperServer, target, eventLoopGroup, replicationStoreManager, scheduled, new DefaultProxyEndpointManager(()->60000));
         keeperRedisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
         RedisMasterNewRdbDumper dumper = (RedisMasterNewRdbDumper)keeperRedisMaster.createRdbDumper();
         RdbonlyRedisMasterReplication rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(keeperServer,
-                keeperRedisMaster, eventLoopGroup, scheduled, dumper);
+                keeperRedisMaster, eventLoopGroup, scheduled, dumper, new DefaultProxyEndpointManager(()->60000));
 
         int time = rdbonlyRedisMasterReplication.commandTimeoutMilli();
         Assert.assertEquals(AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, time);
@@ -68,13 +63,13 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperTest {
     @Test
     public void testProxiedMasterTimeoutMilli() throws CreateRdbDumperException {
         target = new ProxyEnabledEndpoint("localhost", randomPort(), new DefaultProxyProtocol());
-        this.keeperRedisMaster = new DefaultRedisMaster(keeperServer, target, eventLoopGroup, replicationStoreManager, scheduled);
+        this.keeperRedisMaster = new DefaultRedisMaster(keeperServer, target, eventLoopGroup, replicationStoreManager, scheduled, new DefaultProxyEndpointManager(()->60000));
         keeperRedisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
         RedisMasterNewRdbDumper dumper = (RedisMasterNewRdbDumper)keeperRedisMaster.createRdbDumper();
         RdbonlyRedisMasterReplication rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(keeperServer,
-                keeperRedisMaster, eventLoopGroup, scheduled, dumper);
+                keeperRedisMaster, eventLoopGroup, scheduled, dumper, new DefaultProxyEndpointManager(()->60000));
 
         int time = rdbonlyRedisMasterReplication.commandTimeoutMilli();
-        Assert.assertEquals(AbstractRedisMasterReplication.PROXYED_REPLICATION_TIMEOUT_MILLI, time);
+        Assert.assertEquals(AbstractRedisMasterReplication.PROXYED_REPLICATION_COMMAND_TIMEOUT_MILLI, time);
     }
 }
