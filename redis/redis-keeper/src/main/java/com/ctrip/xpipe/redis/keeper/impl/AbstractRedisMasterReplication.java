@@ -264,6 +264,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 						sendReplicationCommand();
 					}else{
 						logger.error("[operationComplete][listeningPortCommand]", commandFuture.cause());
+						logger.info("[close channel] listeningPortCommand error, close channel and waiting for reconnect");
+						channel.close();
 					}
 				}
 			});
@@ -484,4 +486,9 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		return commandTimeoutMilli;
 	}
 
+
+	@VisibleForTesting
+	protected void setCommandTimeoutMilli(int commandTimeoutMilli) {
+		this.commandTimeoutMilli = commandTimeoutMilli;
+	}
 }
