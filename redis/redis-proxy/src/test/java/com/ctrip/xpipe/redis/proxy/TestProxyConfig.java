@@ -34,16 +34,6 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
-    public boolean debugTunnel() {
-        return false;
-    }
-
-    @Override
-    public boolean notInterest(InetSocketAddress address) {
-        return false;
-    }
-
-    @Override
     public boolean noTlsNettyHandler() {
         return false;
     }

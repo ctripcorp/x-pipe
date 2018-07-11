@@ -109,9 +109,6 @@ public class DefaultProxyServer implements ProxyServer {
         ServerBootstrap b = bootstrap("tls").childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
-                if(config.notInterest(ch.remoteAddress())) {
-                    return;
-                }
                 ChannelPipeline p = ch.pipeline();
                 if(!config.noTlsNettyHandler()) {
                     p.addLast(serverSslHandlerFactory.createSslHandler());
