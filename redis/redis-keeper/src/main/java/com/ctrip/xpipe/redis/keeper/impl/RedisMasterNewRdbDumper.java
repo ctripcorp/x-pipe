@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
@@ -31,11 +32,11 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 	
 	private ScheduledExecutorService scheduled;
 
-	private ProxyEndpointManager endpointManager;
+	private ProxyResourceManager endpointManager;
 
 	public RedisMasterNewRdbDumper(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
-								   NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
-								   ProxyEndpointManager endpointManager) {
+                                   NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
+                                   ProxyResourceManager endpointManager) {
 		super(redisKeeperServer);
 		this.redisMaster = redisMaster;
 		this.nioEventLoopGroup = nioEventLoopGroup;

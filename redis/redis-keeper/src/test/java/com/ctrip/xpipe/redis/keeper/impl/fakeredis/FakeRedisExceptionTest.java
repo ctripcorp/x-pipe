@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -21,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * @author wenchao.meng
@@ -53,7 +56,7 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 			MetaServerKeeperService metaService, File baseDir, LeaderElectorManager leaderElectorManager) {
 		
 		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, metaService, leaderElectorManager,
-				createkeepersMonitorManager(), new DefaultProxyEndpointManager(()->60000)){
+				createkeepersMonitorManager(), mock(ProxyResourceManager.class)){
 		
 			@Override
 			public void beginWriteRdb(EofType eofType, long offset) {

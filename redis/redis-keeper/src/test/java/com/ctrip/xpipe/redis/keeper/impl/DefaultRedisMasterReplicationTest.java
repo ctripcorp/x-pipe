@@ -11,7 +11,9 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
+import com.ctrip.xpipe.redis.core.proxy.resource.KeeperProxyResourceManager;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -69,6 +71,9 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 	@Mock
 	private MetaStore metaStore;
 
+	@Mock
+	private ProxyResourceManager proxyResourceManager;
+
 	private NioEventLoopGroup nioEventLoopGroup;
 
 	@Before
@@ -79,7 +84,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		nioEventLoopGroup = new NioEventLoopGroup();
 
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
-				scheduled, replTimeoutMilli, new DefaultProxyEndpointManager(()->60000));
+				scheduled, replTimeoutMilli, proxyResourceManager);
 		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
 
 		when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
@@ -154,7 +159,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		AtomicInteger replConfCount = new AtomicInteger();
 
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer,
-				nioEventLoopGroup, scheduled, replTimeoutMilli, new DefaultProxyEndpointManager(()->60000)) {
+				nioEventLoopGroup, scheduled, replTimeoutMilli, proxyResourceManager) {
 			@Override
 			protected Command<Object> createReplConf() {
 				replConfCount.incrementAndGet();
@@ -187,12 +192,13 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 		when(redisMaster.masterEndPoint()).thenReturn(endpoint);
 		ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
+		ProxyResourceManager proxyResourceManager = new KeeperProxyResourceManager(proxyEndpointManager, new NaiveNextHopAlgorithm());
 
 		// first time empty list, sec time return endpoint
 		when(proxyEndpointManager.getAvailableProxyEndpoints()).thenReturn(Lists.newArrayList())
 				.thenReturn(protocol.nextEndpoints());
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer,
-				nioEventLoopGroup, scheduled, replTimeoutMilli, proxyEndpointManager);
+				nioEventLoopGroup, scheduled, replTimeoutMilli, proxyResourceManager);
 
 		defaultRedisMasterReplication = spy(defaultRedisMasterReplication);
 		defaultRedisMasterReplication.initialize();
