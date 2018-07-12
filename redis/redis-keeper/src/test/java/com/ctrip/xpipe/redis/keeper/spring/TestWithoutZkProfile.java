@@ -2,10 +2,14 @@ package com.ctrip.xpipe.redis.keeper.spring;
 
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.core.proxy.resource.KeeperProxyResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeepersMonitorManager;
@@ -53,7 +57,9 @@ public class TestWithoutZkProfile extends AbstractProfile{
 	}
 
 	@Bean
-	public ProxyEndpointManager getEndpointManager() {
-		return new DefaultProxyEndpointManager(()->60);
+	public ProxyResourceManager getProxyResourceManager() {
+		ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()->60);
+		NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
+		return new KeeperProxyResourceManager(endpointManager, algorithm);
 	}
 }

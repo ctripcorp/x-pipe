@@ -4,8 +4,10 @@ import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -73,8 +75,10 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
         ProxyEnabledEndpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", server.getPort(), protocol);
 
         when(redisMaster.masterEndPoint()).thenReturn(endpoint);
-        ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
-        when(proxyEndpointManager.getAvailableProxyEndpoints()).thenReturn(protocol.nextEndpoints());
+        ProxyResourceManager proxyEndpointManager = mock(ProxyResourceManager.class);
+        ProxyEndpointSelector selector = mock(ProxyEndpointSelector.class);
+        when(proxyEndpointManager.createProxyEndpointSelector(any())).thenReturn(selector);
+        when(selector.nextHop()).thenReturn(protocol.nextEndpoints().get(0));
 
         DefaultRedisMasterReplication.PROXYED_REPLICATION_COMMAND_TIMEOUT_MILLI = 5;
         redisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,

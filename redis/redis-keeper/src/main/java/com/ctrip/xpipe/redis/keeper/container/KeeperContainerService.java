@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -46,7 +47,7 @@ public class KeeperContainerService {
     @Autowired
     private KeepersMonitorManager keepersMonitorManager;
     @Autowired
-    private ProxyEndpointManager endpointManager;
+    private ProxyResourceManager resourceManager;
 
     private Set<Integer> runningPorts = Sets.newConcurrentHashSet();
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
@@ -217,7 +218,7 @@ public class KeeperContainerService {
                                                       MetaServerKeeperService metaService) throws Exception {
 
         RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper, keeperConfig,
-                baseDir, metaService, leaderElectorManager, keepersMonitorManager, endpointManager);
+                baseDir, metaService, leaderElectorManager, keepersMonitorManager, resourceManager);
 
         register(redisKeeperServer);
         return redisKeeperServer;

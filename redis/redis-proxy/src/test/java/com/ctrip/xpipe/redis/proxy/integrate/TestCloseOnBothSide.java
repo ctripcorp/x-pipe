@@ -110,6 +110,20 @@ public class TestCloseOnBothSide extends AbstractProxyIntegrationTest {
         backendServer.stop();
     }
 
+    @Test
+    public void testCloseWhenConnectAtBackend() throws InterruptedException {
+        int port = randomPort();
+        Channel channel = clientBootstrap().connect(PROXY_HOST, PROXY_PORT1).sync().channel();
+
+        Assert.assertTrue(channel.isActive());
+        logger.info("{}", getProxyProtocol(port));
+        channel.writeAndFlush(UnpooledByteBufAllocator.DEFAULT.buffer()
+                .writeBytes(getProxyProtocol(port).getBytes()));
+        Thread.sleep(1000);
+
+        Assert.assertFalse(channel.isActive());
+    }
+
     private Server buildChain() throws Exception {
         Server server = startEmptyServer();
         Channel channel = clientBootstrap().connect(PROXY_HOST, PROXY_PORT1).sync().channel();

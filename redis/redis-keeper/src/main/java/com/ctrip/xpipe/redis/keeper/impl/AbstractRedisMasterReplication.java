@@ -23,13 +23,13 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.ProxyEnabled;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -96,23 +96,23 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private int commandTimeoutMilli;
 
-	private ProxyEndpointManager endpointManager;
+	private ProxyResourceManager proxyResourceManager;
 
 	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
-			ScheduledExecutorService scheduled, int replTimeoutMilli, ProxyEndpointManager endpointManager) {
+										  ScheduledExecutorService scheduled, int replTimeoutMilli, ProxyResourceManager proxyResourceManager) {
 
 		this.redisKeeperServer = redisKeeperServer;
 		this.redisMaster = redisMaster;
 		this.nioEventLoopGroup = nioEventLoopGroup;
 		this.replTimeoutMilli = replTimeoutMilli;
 		this.scheduled = scheduled;
-		this.endpointManager = endpointManager;
+		this.proxyResourceManager = proxyResourceManager;
 		this.commandTimeoutMilli = initCommandTimeoutMilli();
 	}
 
 	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
-			ScheduledExecutorService scheduled, ProxyEndpointManager endpointManager) {
-		this(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI, endpointManager);
+										  ScheduledExecutorService scheduled, ProxyResourceManager proxyResourceManager) {
+		this(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI, proxyResourceManager);
 	}
 
 	public RedisMaster getRedisMaster() {
@@ -207,9 +207,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) redisMaster.masterEndPoint();
 		ProxyProtocol protocol = endpoint.getProxyProtocol();
 		if(selector == null) {
-			selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), endpointManager);
-			selector.setNextHopAlgorithm(new NaiveNextHopAlgorithm());
-			selector.setSelectStrategy(new SelectNTimes(selector, SelectNTimes.INFINITE));
+			selector = proxyResourceManager.createProxyEndpointSelector(protocol);
 		}
 		ProxyEndpoint nextHop = selector.nextHop();
 		logger.info("[tryConnectThroughProxy] connect endpoint: {}", nextHop.getUri());
