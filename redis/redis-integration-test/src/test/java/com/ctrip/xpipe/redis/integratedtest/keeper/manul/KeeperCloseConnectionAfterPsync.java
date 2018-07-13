@@ -37,7 +37,7 @@ public class KeeperCloseConnectionAfterPsync extends AbstractKeeperIntegratedSin
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig, MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
 
 		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, metaService, leaderElectorManager,
-				keeperMonitorManager, new DefaultProxyEndpointManager(()->60000)){
+				keeperMonitorManager, proxyResourceManager){
 
 			@Override
 			protected void becomeSlave(Channel channel, RedisSlave redisSlave) {

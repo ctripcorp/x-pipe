@@ -44,7 +44,7 @@ public class BadKeeper extends AbstractKeeperIntegratedSingleDc{
 			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
 		
 		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, metaService, leaderElectorManager,
-				keeperMonitorManager, new DefaultProxyEndpointManager(()->60000)){
+				keeperMonitorManager, proxyResourceManager){
 			@Override
 			public void endWriteRdb() {
 				super.endWriteRdb();

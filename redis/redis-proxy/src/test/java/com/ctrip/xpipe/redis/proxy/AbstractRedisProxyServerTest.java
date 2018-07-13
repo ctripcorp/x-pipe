@@ -6,10 +6,12 @@ import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.core.proxy.resource.ProxyProxyResourceManager;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.proxy.session.BackendSession;
@@ -75,6 +77,9 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     private DefaultTunnel tunnel;
 
+    protected ProxyResourceManager proxyResourceManager = new ProxyProxyResourceManager(
+            new DefaultProxyEndpointManager(()->60000), new LocalNextHopAlgorithm());
+
     @BeforeClass
     public static void beforeAbstractRedisProxyServerTestClass() {
         System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
@@ -93,7 +98,6 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         tunnelManager = spy(tunnelManager);
 
         ComponentRegistry registry = mock(ComponentRegistry.class);
-        when(registry.getComponent(GLOBAL_ENDPOINT_MANAGER)).thenReturn(endpointManager);
         when(registry.getComponent(CLIENT_SSL_HANDLER_FACTORY))
                 .thenReturn(new NettyClientSslHandlerFactory(new TestProxyConfig()));
         when(registry.getComponent(SERVER_SSL_HANDLER_FACTORY))
@@ -101,7 +105,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         when(registry.getComponent(BACKEND_EVENTLOOP_GROUP)).thenReturn(new NioEventLoopGroup(2));
         ComponentRegistryHolder.initializeRegistry(registry);
 
-        tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig());
+        tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(), proxyResourceManager);
         tunnel = spy(tunnel);
         doReturn(tunnel).when(tunnelManager).create(any(), any());
 
