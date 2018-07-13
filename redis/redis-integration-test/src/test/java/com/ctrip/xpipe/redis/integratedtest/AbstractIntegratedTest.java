@@ -8,7 +8,10 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.metaserver.DefaultMetaServerLocator;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
+import com.ctrip.xpipe.redis.core.proxy.resource.KeeperProxyResourceManager;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -54,6 +57,9 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	private int defaultTestMessageCount = 5000;
 
 	private Set<RedisMeta> allRedisStarted = new HashSet<>();
+
+	protected ProxyResourceManager proxyResourceManager = new KeeperProxyResourceManager(
+			new DefaultProxyEndpointManager(()->1000), new NaiveNextHopAlgorithm());
 
 	@BeforeClass
 	public static void beforereAbstractIntegratedTestClass(){
@@ -138,7 +144,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
 
 		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, metaService,
-				leaderElectorManager, keeperMonitorManager, new DefaultProxyEndpointManager(()->60000));
+				leaderElectorManager, keeperMonitorManager, proxyResourceManager);
 	}
 
 	protected LeaderElectorManager createLeaderElectorManager(DcMeta dcMeta) throws Exception {

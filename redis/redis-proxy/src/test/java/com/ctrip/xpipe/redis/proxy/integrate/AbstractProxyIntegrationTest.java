@@ -6,8 +6,10 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.EndpointHealthChecker;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
+import com.ctrip.xpipe.redis.core.proxy.resource.ProxyProxyResourceManager;
 import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
@@ -64,10 +66,10 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
             }
         });
         server.setTunnelManager(new DefaultTunnelManager()
-                .setConfig(server.getConfig()));
+                .setConfig(server.getConfig()).setProxyResourceManager(
+                        new ProxyProxyResourceManager(endpointManager, new NaiveNextHopAlgorithm())));
 
         ComponentRegistry registry = mock(ComponentRegistry.class);
-        when(registry.getComponent(GLOBAL_ENDPOINT_MANAGER)).thenReturn(endpointManager);
         when(registry.getComponent(CLIENT_SSL_HANDLER_FACTORY)).thenReturn(new NettyClientSslHandlerFactory(new TestProxyConfig()));
         when(registry.getComponent(SERVER_SSL_HANDLER_FACTORY)).thenReturn(new NettyServerSslHandlerFactory(new TestProxyConfig()));
         when(registry.getComponent(BACKEND_EVENTLOOP_GROUP)).thenReturn(new NioEventLoopGroup(OsUtils.getCpuCount()));

@@ -8,6 +8,7 @@ import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.net.InetSocketAddress;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -28,12 +30,12 @@ import java.util.concurrent.TimeUnit;
  * May 10, 2018
  */
 
-@Component
-@Lazy
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfig {
+public class DefaultProxyConfig implements ProxyConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultProxyConfig.class);
+
+    private Config config;
 
     private static final String PROXY_PROPERTIES_PATH = String.format("/opt/data/%s", FoundationService.DEFAULT.getAppId());
 
@@ -49,21 +51,18 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
 
     private static final String KEY_NO_TLS_NETTY_HANDLER = "proxy.no.tls.netty.handler";
 
-    private String[] notInterests;
-
-    @Resource(name = Production.GLOBAL_SCHEDULED)
-    private ScheduledExecutorService scheduled;
+    private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
     public DefaultProxyConfig() {
-        setConfig(initConfig());
+        config = initConfig();
+        scheduledFresh();
     }
 
-    @PostConstruct
     public void scheduledFresh() {
         scheduled.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-                setConfig(initConfig());
+                config = initConfig();
             }
         }, 1, 1, TimeUnit.MINUTES);
     }
@@ -128,5 +127,40 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
     @Override
     public String getCertFileType() {
         return getProperty(KEY_CERT_FILE_TYPE, "JKS");
+    }
+
+    protected String getProperty(String key, String defaultValue){
+        return config.get(key, defaultValue);
+    }
+
+    protected Integer getIntProperty(String key, Integer defaultValue){
+
+        String value = config.get(key);
+        if(value == null){
+            return defaultValue;
+        }
+        return Integer.parseInt(value.trim());
+
+    }
+
+    protected Long getLongProperty(String key, Long defaultValue){
+
+        String value = config.get(key);
+        if(value == null){
+            return defaultValue;
+        }
+        //TODO cache value to avoid convert each time
+        return Long.parseLong(value.trim());
+
+    }
+
+    protected Boolean getBooleanProperty(String key, Boolean defaultValue){
+
+        String value = config.get(key);
+        if(value == null){
+            return defaultValue;
+        }
+
+        return Boolean.parseBoolean(value.trim());
     }
 }
