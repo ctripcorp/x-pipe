@@ -209,4 +209,8 @@ public class IpUtils {
 		}
 		return new Pair<>(parts[0], Integer.parseInt(parts[1]));
 	}
+
+	public static String[] splitIpAddr(String ip) {
+		return StringUtil.splitRemoveEmpty("\\s*\\.\\s*", ip);
+	}
 }
