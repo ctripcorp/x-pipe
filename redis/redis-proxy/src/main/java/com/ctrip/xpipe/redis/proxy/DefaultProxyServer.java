@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.concurrent.FastThreadLocalThreadFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
+import com.ctrip.xpipe.redis.proxy.handler.InternalNetworkHandler;
 import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
 import com.ctrip.xpipe.redis.proxy.monitor.NettyPoolArenaMetricReporter;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
@@ -87,6 +88,7 @@ public class DefaultProxyServer implements ProxyServer {
             public void initChannel(SocketChannel ch) throws Exception {
 
                 ChannelPipeline p = ch.pipeline();
+                p.addLast(new InternalNetworkHandler());
                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
                 p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
                 p.addLast(new FrontendSessionNettyHandler(tunnelManager));
