@@ -21,4 +21,7 @@ public interface ProxyConfig extends TLSConfig {
     int endpointHealthCheckIntervalSec();
 
     boolean noTlsNettyHandler();
+
+    // to avoid any connect outside internal network
+    String[] getInternalNetworkPrefix();
 }

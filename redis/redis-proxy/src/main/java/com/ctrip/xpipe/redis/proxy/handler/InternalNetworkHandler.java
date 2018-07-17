@@ -4,8 +4,8 @@ import com.ctrip.xpipe.utils.IpUtils;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-
-import java.net.InetSocketAddress;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author chen.zhu
@@ -14,12 +14,19 @@ import java.net.InetSocketAddress;
  */
 public class InternalNetworkHandler extends ChannelInboundHandlerAdapter {
 
-    private static final String INTERNAL_IP_PREFIX = "10";
+    private Logger logger = LoggerFactory.getLogger(InternalNetworkHandler.class);
+
+    private String[] internalIpPrefix;
+
+    public InternalNetworkHandler(String... internalIpPrefix) {
+        this.internalIpPrefix = internalIpPrefix;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Channel channel = ctx.channel();
         if(!isInternalNetwork(channel)) {
+            logger.error("[not internal network] {}, close channel", channel.remoteAddress());
             channel.close();
         }
         super.channelActive(ctx);
@@ -27,7 +34,12 @@ public class InternalNetworkHandler extends ChannelInboundHandlerAdapter {
 
     private boolean isInternalNetwork(Channel channel) {
         String remoteHost = IpUtils.getIp(channel.remoteAddress());
-        String firstByte = IpUtils.splitIpAddr(remoteHost)[0];
-        return firstByte.equals(INTERNAL_IP_PREFIX);
+        String[] splittedBytes = IpUtils.splitIpAddr(remoteHost);
+        for(int i = 0; internalIpPrefix != null && i < internalIpPrefix.length; i++) {
+            if(!splittedBytes[i].equals(internalIpPrefix[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 }

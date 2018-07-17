@@ -66,5 +66,17 @@ public class IpUtilsTest extends AbstractTest{
 		});
 	}
 
+	@Test
+	public void testIpSplit() {
+		String ip = "10";
+		Assert.assertEquals(1, IpUtils.splitIpAddr(ip).length);
+		Assert.assertEquals(ip, IpUtils.splitIpAddr(ip)[0]);
+
+		ip = "10.26";
+		Assert.assertEquals(2, IpUtils.splitIpAddr(ip).length);
+		Assert.assertEquals("10", IpUtils.splitIpAddr(ip)[0]);
+		Assert.assertEquals("26", IpUtils.splitIpAddr(ip)[1]);
+	}
+
 
 }

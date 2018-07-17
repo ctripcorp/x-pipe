@@ -7,6 +7,7 @@ import com.ctrip.xpipe.config.CompositeConfig;
 import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
@@ -50,6 +51,8 @@ public class DefaultProxyConfig implements ProxyConfig {
     private static final String KEY_FRONTEND_TLS_PORT = "proxy.frontend.tls.port";
 
     private static final String KEY_NO_TLS_NETTY_HANDLER = "proxy.no.tls.netty.handler";
+
+    private static final String KEY_INTERNAL_NETWORK_PREFIX = "proxy.internal.network.prefix";
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
@@ -106,6 +109,12 @@ public class DefaultProxyConfig implements ProxyConfig {
     @Override
     public boolean noTlsNettyHandler() {
         return getBooleanProperty(KEY_NO_TLS_NETTY_HANDLER, false);
+    }
+
+    @Override
+    public String[] getInternalNetworkPrefix() {
+        String internalNetworkPrefix = getProperty(KEY_INTERNAL_NETWORK_PREFIX, "10");
+        return IpUtils.splitIpAddr(internalNetworkPrefix);
     }
 
 
