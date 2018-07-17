@@ -39,6 +39,11 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public String[] getInternalNetworkPrefix() {
+        return null;
+    }
+
+    @Override
     public String getPassword() {
         return "100013684";
     }

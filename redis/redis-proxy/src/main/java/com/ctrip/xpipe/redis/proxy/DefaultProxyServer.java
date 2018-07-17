@@ -88,7 +88,7 @@ public class DefaultProxyServer implements ProxyServer {
             public void initChannel(SocketChannel ch) throws Exception {
 
                 ChannelPipeline p = ch.pipeline();
-                p.addLast(new InternalNetworkHandler());
+                p.addLast(new InternalNetworkHandler(config.getInternalNetworkPrefix()));
                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
                 p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
                 p.addLast(new FrontendSessionNettyHandler(tunnelManager));
