@@ -53,7 +53,6 @@ public class TunnelTrafficReporter extends ChannelTrafficStatisticsHandler {
     @Override
     protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
         initCatRelated();
-        EventMonitor.DEFAULT.logEvent(CAT_TYPE, String.format("%s->%s:%d", session.getSessionType(), remoteIp, remotePort));
         if(readBytes > 0) {
             logger.debug("[doReportTraffic][tunnel-{}][{}] read bytes: {}", session.tunnel().identity(),
                     session.getSessionType(), readBytes);
