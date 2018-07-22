@@ -17,4 +17,6 @@ public interface ProxyRouteParser extends ProxyOptionParser {
     String getContent();
 
     List<ProxyEndpoint> getNextEndpoints();
+
+    String getFinalStation();
 }

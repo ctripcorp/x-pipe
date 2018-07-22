@@ -7,8 +7,10 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.ssl.NotSslRecordException;
 
 import static io.netty.util.internal.StringUtil.NEWLINE;
+import static io.netty.util.internal.StringUtil.substringAfter;
 
 /**
  * @author chen.zhu
@@ -37,6 +39,10 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         logger.error("[exceptionCaught] ", cause);
         session.release();
+        ctx.channel().close();
+        if(cause instanceof NotSslRecordException) {
+            return;
+        }
         super.exceptionCaught(ctx, cause);
     }
 

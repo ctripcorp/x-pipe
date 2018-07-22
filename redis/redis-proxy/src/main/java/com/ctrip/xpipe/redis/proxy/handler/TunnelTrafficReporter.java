@@ -3,11 +3,7 @@ package com.ctrip.xpipe.redis.proxy.handler;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.netty.ChannelTrafficStatisticsHandler;
 import com.ctrip.xpipe.redis.proxy.Session;
-import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
-import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
-import com.ctrip.xpipe.redis.proxy.monitor.ByteBufRecorder;
-import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
-import com.ctrip.xpipe.redis.proxy.spring.Production;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -40,12 +36,18 @@ public class TunnelTrafficReporter extends ChannelTrafficStatisticsHandler {
 
     @Override
     protected void doChannelRead(ChannelHandlerContext ctx, Object msg) {
-
+        if(session.logRead()) {
+            logger.info("[{}][{}] read: {}", session.getSessionType(), ChannelUtil.getDesc(ctx.channel()),
+                    ((ByteBuf) msg).readableBytes());
+        }
     }
 
     @Override
     protected void doWrite(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-
+        if(session.logWrite()) {
+            logger.info("[{}][{}] write: {}", session.getSessionType(), ChannelUtil.getDesc(ctx.channel()),
+                    ((ByteBuf) msg).readableBytes());
+        }
     }
 
     @Override
