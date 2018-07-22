@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import org.slf4j.Logger;
@@ -71,19 +72,16 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        logger.error("[exceptionCaught][close channel]" + ChannelUtil.getDesc(ctx.channel()), cause);
-        ctx.channel().close();
-    }
-
-    @Override
     public boolean isSingleDecode() {
         return true;
     }
 
     private void checkValid(ByteBuf in) {
         if(bufReadIndex < PREFIX.length && !matchProtocolFormat(in)) {
-            throw new ProxyProtocolException("Format error");
+            String insideMessage = ByteBufUtil.prettyHexDump(in);
+            in.release();
+            logger.error("[checkValid] receive: {}", insideMessage);
+            throw new ProxyProtocolException("Format error: " + insideMessage);
         }
         readLength += in.readableBytes();
         if(readLength > maxLength) {

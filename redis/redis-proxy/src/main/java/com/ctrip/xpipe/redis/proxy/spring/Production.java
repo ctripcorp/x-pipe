@@ -12,14 +12,10 @@ import com.ctrip.xpipe.redis.core.proxy.resource.ProxyProxyResourceManager;
 import com.ctrip.xpipe.redis.proxy.config.DefaultProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
-import com.ctrip.xpipe.redis.proxy.monitor.impl.DebugTunnelMonitorManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -46,8 +42,6 @@ public class Production extends AbstractProfile {
 
     public static final String BACKEND_EVENTLOOP_GROUP = "backendEventLoopGroup";
 
-    public static final String TUNNEL_MONITOR_MANAGER = "globalTunnelMonitorManager";
-
     public static final String GLOBAL_SCHEDULED = "globalScheduled";
 
     private ProxyConfig config = new DefaultProxyConfig();
@@ -65,11 +59,6 @@ public class Production extends AbstractProfile {
     @Bean(name = SERVER_SSL_HANDLER_FACTORY)
     public NettySslHandlerFactory serverSslHandlerFactory() {
         return new NettyServerSslHandlerFactory(config);
-    }
-
-    @Bean(name = TUNNEL_MONITOR_MANAGER)
-    public TunnelMonitorManager tunnelMonitorManager () {
-        return new DebugTunnelMonitorManager();
     }
 
     @Bean(name = GLOBAL_SCHEDULED)

@@ -74,6 +74,12 @@ public class DefaultProxyProtocol implements ProxyProtocol {
     }
 
     @Override
+    public String getFinalStation() {
+        ProxyRouteParser routeParser = (ProxyRouteParser) parser.getProxyOptionParser(PROXY_OPTION.ROUTE);
+        return routeParser.getFinalStation();
+    }
+
+    @Override
     public boolean isCompressed() {
         return false;
     }

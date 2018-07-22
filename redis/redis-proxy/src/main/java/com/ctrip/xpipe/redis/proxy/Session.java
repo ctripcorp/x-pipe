@@ -25,6 +25,14 @@ public interface Session extends Lifecycle, Releasable, Observable {
 
     void makeUnReadable();
 
+    boolean logRead();
+
+    boolean logWrite();
+
+    void markReadLoggability(boolean isLoggable);
+
+    void markWriteLoggability(boolean isLoggable);
+
     SessionMeta getSessionMeta();
 
     SESSION_TYPE getSessionType();

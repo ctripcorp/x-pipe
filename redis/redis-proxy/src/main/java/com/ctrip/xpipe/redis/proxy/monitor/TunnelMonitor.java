@@ -7,6 +7,4 @@ package com.ctrip.xpipe.redis.proxy.monitor;
  */
 public interface TunnelMonitor {
 
-    ByteBufRecorder getByteBufRecorder();
-
 }

@@ -37,7 +37,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultTunnel.class);
 
-    private final String identity = UUID.randomUUID().toString();
+    private final String identity;
 
     private Channel frontendChannel;
 
@@ -60,6 +60,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         this.protocol = protocol;
         this.frontendChannel = frontendChannel;
         this.proxyResourceManager = proxyResourceManager;
+        this.identity = protocol.getFinalStation();
     }
 
     @Override
@@ -263,11 +264,15 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         public void onWritable() {
             logger.info("[onWritable][Backend][{}]open frontend auto read", identity());
             frontend.makeReadable();
+            frontend.markReadLoggability(false);
+            backend.markWriteLoggability(false);
         }
 
         @Override
         public void onNotWritable() {
             logger.info("[onNotWritable][Backend][{}]close frontend auto read", identity());
+            frontend.markReadLoggability(true);
+            backend.markWriteLoggability(true);
             frontend.makeUnReadable();
         }
     }
@@ -289,11 +294,15 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         public void onWritable() {
             logger.info("[onWritable][Frontend][{}]open backend auto read", identity());
             backend.makeReadable();
+            backend.markReadLoggability(false);
+            frontend.markWriteLoggability(false);
         }
 
         @Override
         public void onNotWritable() {
             logger.info("[onNotWritable][Frontend][{}]close backend auto read", identity());
+            backend.markReadLoggability(true);
+            frontend.markWriteLoggability(true);
             backend.makeUnReadable();
         }
     }

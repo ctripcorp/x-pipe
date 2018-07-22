@@ -31,6 +31,8 @@ public interface ProxyProtocol {
 
     String getRouteInfo();
 
+    String getFinalStation();
+
     boolean isCompressed();
 
     CompressAlgorithm compressAlgorithm();

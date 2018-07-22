@@ -56,6 +56,15 @@ public class RouteOptionParser extends AbstractProxyOptionParser implements Prox
     }
 
     @Override
+    public String getFinalStation() {
+        if(nodes != null && nodes.length > 0) {
+            return nodes[nodes.length - 1];
+        } else {
+            return "last-stop";
+        }
+    }
+
+    @Override
     public RouteOptionParser read(String option) {
         if(option == null || option.isEmpty() || option.length() <= option().name().length() + 1) {
             return this;
