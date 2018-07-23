@@ -12,6 +12,8 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,7 +143,19 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
         if(logger.isDebugEnabled()) {
             logger.debug("[doWrite] {}: {}", getSessionType(), ByteBufUtil.prettyHexDump(byteBuf));
         }
-        getChannel().writeAndFlush(byteBuf.retain(), getChannel().voidPromise());
+        ChannelFuture future = getChannel().write(byteBuf.retain(), getChannel().voidPromise());
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if(isFlushable()) {
+                    getChannel().flush();
+                }
+            }
+        });
+    }
+
+    private boolean isFlushable() {
+        return getChannel().isWritable();
     }
 
     protected void setSessionState(SessionState newState) {
