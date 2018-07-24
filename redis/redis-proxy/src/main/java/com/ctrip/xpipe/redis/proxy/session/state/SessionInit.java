@@ -50,6 +50,11 @@ public class SessionInit extends AbstractSessionState {
     }
 
     @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override
     public String toString() {
         return super.toString();
     }

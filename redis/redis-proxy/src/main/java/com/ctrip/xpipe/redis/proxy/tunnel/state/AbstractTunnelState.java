@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy.tunnel.state;
 
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelState;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,5 +60,10 @@ public abstract class AbstractTunnelState implements TunnelState {
     @Override
     public String toString() {
         return name();
+    }
+
+    @Override
+    public int hashCode() {
+        return ObjectUtils.hashCode(tunnel);
     }
 }
