@@ -42,6 +42,11 @@ public class SessionEstablished extends AbstractSessionState {
     }
 
     @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override
     public boolean isValidNext(SessionState sessionState) {
         return (sessionState instanceof SessionClosed) || super.isValidNext(sessionState);
     }

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy.session.state;
 
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,11 @@ public abstract class AbstractSessionState implements SessionState {
         }
         SessionState other = (SessionState) obj;
         return this.name().equals(other.name());
+    }
+
+    @Override
+    public int hashCode() {
+        return ObjectUtils.hashCode(session);
     }
 
     @Override

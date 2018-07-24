@@ -72,7 +72,7 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
 
     @Override
     public void setWritableState(SessionWritableState state) {
-        if(state == writableState) {
+        if(state.equals(writableState)) {
             return;
         }
         writableState = state;
@@ -180,16 +180,6 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
             channel.close();
         }
         setSessionState(new SessionClosed(this));
-    }
-
-    @Override
-    protected void doInitialize() throws Exception {
-        super.doInitialize();
-    }
-
-    @Override
-    protected void doStart() throws Exception {
-        super.doStart();
     }
 
     @VisibleForTesting
