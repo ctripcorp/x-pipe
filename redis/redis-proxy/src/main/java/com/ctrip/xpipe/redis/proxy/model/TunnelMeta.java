@@ -86,7 +86,7 @@ public class TunnelMeta implements Serializable {
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer("{");
-        sb.append("identity: ").append(identity).append(",");
+        sb.append("identity: ").append(identity.toString()).append(",");
         sb.append("state: ").append(state).append(",");
         sb.append("protocol: ").append(protocol).append(",");
         sb.append("frontend: ").append(frontend.toString()).append(",");
