@@ -37,12 +37,11 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        logger.error("[exceptionCaught] ", cause);
         session.release();
-        ctx.channel().close();
         if(cause instanceof NotSslRecordException) {
             return;
         }
+        logger.error("[exceptionCaught] ", cause);
         super.exceptionCaught(ctx, cause);
     }
 
