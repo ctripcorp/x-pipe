@@ -193,7 +193,6 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         // share the nio event loop to avoid oom
         backend = new DefaultBackendSession(this, frontend.getChannel().eventLoop(),
                 config.getTrafficReportIntervalMillis(), selector);
-        identity.setBackend(backend.getChannel());
 
         registerSessionEventHandlers();
         frontend.addObserver(this);
@@ -254,7 +253,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     class BackendSessionEventHandler implements SessionEventHandler {
         @Override
         public void onInit() {
-
+            identity.setBackend(backend.getChannel());
         }
 
         @Override
