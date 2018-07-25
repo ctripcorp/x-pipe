@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
 import com.ctrip.xpipe.redis.proxy.session.*;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
@@ -37,7 +38,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultTunnel.class);
 
-    private final String identity;
+    private final TunnelIdentity identity;
 
     private Channel frontendChannel;
 
@@ -60,11 +61,11 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         this.protocol = protocol;
         this.frontendChannel = frontendChannel;
         this.proxyResourceManager = proxyResourceManager;
-        this.identity = protocol.getFinalStation();
+        this.identity = new TunnelIdentity(frontendChannel, protocol.getFinalStation());
     }
 
     @Override
-    public String identity() {
+    public TunnelIdentity identity() {
         return this.identity;
     }
 
@@ -192,6 +193,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         // share the nio event loop to avoid oom
         backend = new DefaultBackendSession(this, frontend.getChannel().eventLoop(),
                 config.getTrafficReportIntervalMillis(), selector);
+        identity.setBackend(backend.getChannel());
 
         registerSessionEventHandlers();
         frontend.addObserver(this);
