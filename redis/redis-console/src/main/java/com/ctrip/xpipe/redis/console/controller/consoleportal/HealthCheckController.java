@@ -46,12 +46,13 @@ public class HealthCheckController extends AbstractConsoleController {
 
     @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
     public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
-        String addr = config.getHickwallAddress();
-        if (Strings.isEmpty(addr)) {
+        String prefix = config.getHickwallAddress();
+        if (Strings.isEmpty(prefix)) {
             return ImmutableMap.of("addr", "");
         }
-        return ImmutableMap.of("addr",
-                String.format("%s.aliasBy(fx.xpipe.delay;cluster=%s;shard=%s;address=%s:%d,srcaddr)",
-                        addr, clusterName, shardName, redisIp, redisPort));
+        String suffix = "&panel.datasource=incluster&panel.db=FX&panelId=1&fullscreen&edit";
+        String template = String.format("aliasBy(fx.xpipe.delay;cluster=%s;shard=%s;address=%s:%d,srcaddr)",
+                clusterName, shardName, redisIp, redisPort);
+        return ImmutableMap.of("addr", prefix + template + suffix);
     }
 }
