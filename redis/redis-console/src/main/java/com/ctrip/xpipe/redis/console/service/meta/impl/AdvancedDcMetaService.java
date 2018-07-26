@@ -193,8 +193,8 @@ public class AdvancedDcMetaService implements DcMetaService {
         @Override
         protected void doExecute() throws Exception {
             try {
-                List<RouteTbl> routes = routeService.getAllRoutes();
-                List<ProxyTbl> proxies = proxyService.getAllProxies();
+                List<RouteTbl> routes = routeService.getActiveRouteTbls();
+                List<ProxyTbl> proxies = proxyService.getActiveProxyTbls();
                 List<RouteMeta> routeMetas = combineRouteInfo(routes, proxies, dcMeta);
                 routeMetas.forEach((routeMeta)->dcMeta.addRoute(routeMeta));
                 future().setSuccess();

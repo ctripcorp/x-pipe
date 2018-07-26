@@ -121,8 +121,8 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
     @Test
     public void testProcess() {
         DcMeta meta = new DcMeta().setId("jq");
-        List<RouteTbl> routes = routeService.getAllRoutes();
-        List<ProxyTbl> proxies = proxyService.getAllProxies();
+        List<RouteTbl> routes = routeService.getActiveRouteTbls();
+        List<ProxyTbl> proxies = proxyService.getActiveProxyTbls();
         List<RouteMeta> routeMetas = service.combineRouteInfo(routes, proxies, meta);
         routeMetas.forEach((routeMeta)->meta.addRoute(routeMeta));
         logger.info("{}", meta);

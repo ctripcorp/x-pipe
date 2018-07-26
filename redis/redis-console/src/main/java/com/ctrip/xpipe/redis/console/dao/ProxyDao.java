@@ -31,7 +31,7 @@ public class ProxyDao extends AbstractXpipeConsoleDAO {
         }
     }
 
-    public List<ProxyTbl> getAllProxyTbls() {
+    public List<ProxyTbl> getActiveProxyTbls() {
         return queryHandler.handleQuery(new DalQuery<List<ProxyTbl>>() {
             @Override
             public List<ProxyTbl> doQuery() throws DalException {
@@ -45,6 +45,36 @@ public class ProxyDao extends AbstractXpipeConsoleDAO {
             @Override
             public Integer doQuery() throws DalException {
                 return dao.insert(proto);
+            }
+        });
+    }
+
+    public void delete(long id) {
+        ProxyTbl proto = new ProxyTbl().setId(id);
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return dao.deleteProxy(proto, ProxyTblEntity.UPDATESET_FULL);
+            }
+        });
+    }
+
+    public void update(ProxyTbl proto) {
+        ProxyTbl target = new ProxyTbl().setId(proto.getId()).setActive(proto.isActive())
+                .setDcId(proto.getDcId()).setUri(proto.getUri());
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return dao.updateByPK(target, ProxyTblEntity.UPDATESET_FULL);
+            }
+        });
+    }
+
+    public List<ProxyTbl> getAllProxyTbls() {
+        return queryHandler.handleQuery(new DalQuery<List<ProxyTbl>>() {
+            @Override
+            public List<ProxyTbl> doQuery() throws DalException {
+                return dao.findAll(ProxyTblEntity.READSET_ID_DC_URI);
             }
         });
     }
