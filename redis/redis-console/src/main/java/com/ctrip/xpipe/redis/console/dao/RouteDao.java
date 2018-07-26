@@ -48,4 +48,33 @@ public class RouteDao extends AbstractXpipeConsoleDAO {
             }
         });
     }
+
+    public void delete(long id) {
+        RouteTbl proto = dao.createLocal().setId(id);
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return dao.deleteRoute(proto, RouteTblEntity.UPDATESET_FULL);
+            }
+        });
+    }
+
+    public List<RouteTbl> getAllRoutes() {
+        return queryHandler.handleQuery(new DalQuery<List<RouteTbl>>() {
+            @Override
+            public List<RouteTbl> doQuery() throws DalException {
+                return dao.findAll(RouteTblEntity.READSET_MAIN);
+            }
+        });
+    }
+
+    public void update(RouteTbl routeTbl) {
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return dao.updateByPK(routeTbl, RouteTblEntity.UPDATESET_main);
+            }
+        });
+    }
+
 }

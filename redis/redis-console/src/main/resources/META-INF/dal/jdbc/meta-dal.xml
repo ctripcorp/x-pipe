@@ -1432,7 +1432,26 @@
 					]]>
 				</statement>
 			</query>
-
+			<query name="find-all" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='delete-proxy' type='UPDATE' batch='false'>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 	<entity name="route-tbl" table="route_tbl" alias="routetbl">
@@ -1450,6 +1469,18 @@
 				<member name="optional_proxy_ids"/>
 			</readset>
 		</readsets>
+		<updatesets>
+			<updateset name="main">
+				<member name="tag"/>
+				<member name="active"/>
+				<member name='route_org_id'/>
+				<member name="src_dc_id"/>
+				<member name="dst_dc_id"/>
+				<member name="src_proxy_ids"/>
+				<member name="dst_proxy_ids"/>
+				<member name="optional_proxy_ids"/>
+			</updateset>
+		</updatesets>
 		<query-defs>
 			<query name="find-all-active" type="SELECT" multiple="true">
 				<statement>
@@ -1461,7 +1492,26 @@
 					]]>
 				</statement>
 			</query>
-
+			<query name="find-all" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='delete-route' type='UPDATE' batch='false'>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 </entities>

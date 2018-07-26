@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.ProxyTbl;
 
 import java.util.List;
@@ -11,5 +12,15 @@ import java.util.List;
  */
 public interface ProxyService {
 
-    List<ProxyTbl> getAllProxies();
+    List<ProxyModel> getActiveProxies();
+
+    List<ProxyModel> getAllProxies();
+
+    void updateProxy(ProxyModel model);
+
+    void deleteProxy(long id);
+
+    void addProxy(ProxyModel model);
+
+    List<ProxyTbl> getActiveProxyTbls();
 }
