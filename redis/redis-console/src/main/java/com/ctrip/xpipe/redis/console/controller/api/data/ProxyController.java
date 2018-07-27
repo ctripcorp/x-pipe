@@ -23,12 +23,12 @@ import java.util.List;
 @RequestMapping(AbstractConsoleController.API_PREFIX)
 public class ProxyController {
 
-    private JsonCodec pretty = new JsonCodec(true);
+    private JsonCodec pretty = new JsonCodec(true, true);
 
     @Autowired
     private ProxyService service;
 
-    @RequestMapping(value = "/proxies/all", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @RequestMapping(value = "/proxies/all", method = RequestMethod.GET)
     public String getAllProxies() {
         try {
             List<ProxyModel> proxies = service.getAllProxies();
@@ -38,7 +38,7 @@ public class ProxyController {
         }
     }
 
-    @RequestMapping(value = "/proxies/active", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @RequestMapping(value = "/proxies/active", method = RequestMethod.GET)
     public String getActiveProxies() {
         try {
             List<ProxyModel> proxies = service.getActiveProxies();

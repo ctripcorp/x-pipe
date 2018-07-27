@@ -2,10 +2,16 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.model.RouteModel;
 import com.ctrip.xpipe.redis.console.service.RouteService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -16,8 +22,58 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(AbstractConsoleController.API_PREFIX)
 public class RouteController {
 
-    private JsonCodec pretty = new JsonCodec(true);
+    private JsonCodec pretty = new JsonCodec(true, true);
 
     @Autowired
     private RouteService service;
+
+    @RequestMapping(value = "/routes/all", method = RequestMethod.GET)
+    public String getAllRoutes() {
+        try {
+            List<RouteModel> proxies = service.getAllRoutes();
+            return pretty.encode(proxies);
+        } catch (Exception e) {
+            return pretty.encode(RetMessage.createFailMessage(e.getMessage()));
+        }
+    }
+
+    @RequestMapping(value = "/routes/active", method = RequestMethod.GET)
+    public String getActiveRoutes() {
+        try {
+            List<RouteModel> proxies = service.getActiveRoutes();
+            return pretty.encode(proxies);
+        } catch (Exception e) {
+            return pretty.encode(RetMessage.createFailMessage(e.getMessage()));
+        }
+    }
+
+    @RequestMapping(value = "/route", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public RetMessage updateProxy(RouteModel model) {
+        try {
+            service.updateRoute(model);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/route", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public RetMessage addProxy(RouteModel model) {
+        try {
+            service.addRoute(model);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/route", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public RetMessage deleteProxy(RouteModel model) {
+        try {
+            service.deleteRoute(model.getId());
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
 }
