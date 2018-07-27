@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,7 +56,7 @@ public class ProxyController {
     }
 
     @RequestMapping(value = "/proxy", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage updateProxy(ProxyModel model) {
+    public RetMessage updateProxy(@RequestBody ProxyModel model) {
         logger.info("[updateProxy] updated one: {}", model);
         try {
             service.updateProxy(model);
@@ -67,7 +68,7 @@ public class ProxyController {
     }
 
     @RequestMapping(value = "/proxy", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage addProxy(ProxyModel model) {
+    public RetMessage addProxy(@RequestBody ProxyModel model) {
         logger.info("[addProxy] add one: {}", model);
         try {
             service.addProxy(model);
@@ -79,7 +80,7 @@ public class ProxyController {
     }
 
     @RequestMapping(value = "/proxy", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage deleteProxy(ProxyModel model) {
+    public RetMessage deleteProxy(@RequestBody ProxyModel model) {
         logger.info("[deleteProxy] delete one: {}", model);
         try {
             service.deleteProxy(model.getId());

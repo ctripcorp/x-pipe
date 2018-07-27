@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.model;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.service.DcService;
 
 import java.util.Objects;
@@ -127,7 +128,14 @@ public class RouteModel {
         RouteTbl proto = new RouteTbl();
         proto.setActive(active).setId(id).setOptionalProxyIds(optionProxyIds).setSrcProxyIds(srcProxyIds)
                 .setDstProxyIds(dstProxyIds).setTag(tag).setRouteOrgId(orgId);
-        proto.setSrcDcId(dcService.find(srcDcName).getId()).setDstDcId(dcService.find(dstDcName).getId());
+        DcTbl srcDc = dcService.find(srcDcName), dstDc = dcService.find(dstDcName);
+        if(srcDc == null) {
+            throw new XpipeRuntimeException("Source Dc not found");
+        }
+        if(dstDc == null) {
+            throw new XpipeRuntimeException("Destination Dc not found");
+        }
+        proto.setSrcDcId(srcDc.getId()).setDstDcId(dstDc.getId());
         return proto;
     }
 
@@ -151,5 +159,11 @@ public class RouteModel {
     public int hashCode() {
 
         return Objects.hash(id, orgId, srcProxyIds, dstProxyIds, optionProxyIds, srcDcName, dstDcName, tag, active);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("RouteModel[id: %d, orgId: %d, srcProxyIds: %s, dstProxyIds: %s, srcDcName: %s, dstDcName: %s, tag: %s, active: %b]",
+                id, orgId, srcProxyIds, dstProxyIds, srcDcName, dstDcName, tag, active);
     }
 }
