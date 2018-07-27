@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,7 +56,7 @@ public class RouteController {
     }
 
     @RequestMapping(value = "/route", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage updateRoute(RouteModel model) {
+    public RetMessage updateRoute(@RequestBody RouteModel model) {
         logger.info("[updateRoute] updated one: {}", model);
         try {
             service.updateRoute(model);
@@ -67,7 +68,7 @@ public class RouteController {
     }
 
     @RequestMapping(value = "/route", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage addRoute(RouteModel model) {
+    public RetMessage addRoute(@RequestBody RouteModel model) {
         logger.info("[addRoute] add one: {}", model);
         try {
             service.addRoute(model);
@@ -79,7 +80,7 @@ public class RouteController {
     }
 
     @RequestMapping(value = "/route", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage deleteRoute(RouteModel model) {
+    public RetMessage deleteRoute(@RequestBody RouteModel model) {
         logger.info("[deleteRoute] delete one: {}", model);
         try {
             service.deleteRoute(model.getId());

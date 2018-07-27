@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.model;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.Objects;
 
@@ -10,6 +12,7 @@ import java.util.Objects;
  * <p>
  * Jun 19, 2018
  */
+
 public class ProxyModel {
 
     private String uri;
@@ -66,7 +69,12 @@ public class ProxyModel {
 
     public ProxyTbl toProxyTbl(DcService dcService) {
         ProxyTbl proto = new ProxyTbl();
-        proto.setActive(active).setDcId(dcService.find(dcName).getId()).setId(id).setUri(uri);
+        proto.setActive(active).setId(id).setUri(uri);
+        DcTbl dc = dcService.find(dcName);
+        if(dc == null) {
+            throw new XpipeRuntimeException("dc name not found");
+        }
+        proto.setDcId(dc.getId());
         return proto;
     }
 
@@ -83,7 +91,11 @@ public class ProxyModel {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(uri, dcName, id, active);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("ProxyModel[uri: %s, active: %b, dc-name: %s, id: %d]", uri, active, dcName, id);
     }
 }
