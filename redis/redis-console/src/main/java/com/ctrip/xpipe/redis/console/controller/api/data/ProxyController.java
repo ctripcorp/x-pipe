@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +27,8 @@ public class ProxyController {
 
     private JsonCodec pretty = new JsonCodec(true, true);
 
+    private static final Logger logger = LoggerFactory.getLogger(ProxyController.class);
+
     @Autowired
     private ProxyService service;
 
@@ -34,6 +38,7 @@ public class ProxyController {
             List<ProxyModel> proxies = service.getAllProxies();
             return pretty.encode(proxies);
         } catch (Exception e) {
+            logger.error("[getAllProxies]", e);
             return pretty.encode(RetMessage.createFailMessage(e.getMessage()));
         }
     }
@@ -44,36 +49,43 @@ public class ProxyController {
             List<ProxyModel> proxies = service.getActiveProxies();
             return pretty.encode(proxies);
         } catch (Exception e) {
+            logger.error("[getActiveProxies]", e);
             return pretty.encode(RetMessage.createFailMessage(e.getMessage()));
         }
     }
 
     @RequestMapping(value = "/proxy", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public RetMessage updateProxy(ProxyModel model) {
+        logger.info("[updateProxy] updated one: {}", model);
         try {
             service.updateProxy(model);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
+            logger.error("[updateProxy]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
 
     @RequestMapping(value = "/proxy", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public RetMessage addProxy(ProxyModel model) {
+        logger.info("[addProxy] add one: {}", model);
         try {
             service.addProxy(model);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
+            logger.error("[addProxy]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
 
     @RequestMapping(value = "/proxy", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public RetMessage deleteProxy(ProxyModel model) {
+        logger.info("[deleteProxy] delete one: {}", model);
         try {
             service.deleteProxy(model.getId());
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
+            logger.error("[deleteProxy]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
