@@ -19,13 +19,13 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 public class XpipeThreadFactory implements ThreadFactory {
 	private static Logger logger = LoggerFactory.getLogger(XpipeThreadFactory.class);
 
-	private final AtomicLong m_threadNumber = new AtomicLong(1);
+	protected final AtomicLong m_threadNumber = new AtomicLong(1);
 	
 	public static final int RANDOM_STRING_LEN = 5;
 
-	private final String m_namePrefix;
+	protected final String m_namePrefix;
 
-	private final boolean m_daemon;
+	protected final boolean m_daemon;
 
 	private final static ThreadGroup m_threadGroup = new ThreadGroup("Xpipe");
 

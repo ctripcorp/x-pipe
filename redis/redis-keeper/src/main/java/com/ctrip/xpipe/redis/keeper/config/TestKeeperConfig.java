@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
+import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 
 /**
  * @author wenchao.meng
@@ -99,6 +100,11 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public int getReplicationStoreMinTimeMilliToGcAfterCreate() {
 		return minTimeMilliToGcAfterCreate;
+	}
+
+	@Override
+	public long getCommandReaderFlyingThreshold() {
+		return DefaultCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD;
 	}
 
 	public void setMinTimeMilliToGcAfterCreate(int minTimeMilliToGcAfterCreate) {

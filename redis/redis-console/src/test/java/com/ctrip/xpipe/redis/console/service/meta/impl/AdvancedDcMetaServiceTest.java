@@ -5,13 +5,24 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.ProxyTbl;
+import com.ctrip.xpipe.redis.console.model.RouteTbl;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.ProxyService;
+import com.ctrip.xpipe.redis.console.service.RouteService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.retry.RetryDelay;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,6 +40,15 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private AdvancedDcMetaService service;
+
+    @Autowired
+    private ProxyService proxyService;
+
+    @Autowired
+    private RouteService routeService;
+
+    @Autowired
+    private ClusterService clusterService;
 
     @Test
     public void testRetry3TimesUntilSuccess() throws Exception {
@@ -74,9 +94,10 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
     @Test
     public void testGetDcMeta() {
         long start = System.currentTimeMillis();
-        dcMetaService.getDcMeta(dcNames[0]);
+        DcMeta dcMeta = service.getDcMeta("jq");
         long end = System.currentTimeMillis();
         logger.info("[durationMilli] {}", end - start);
+        logger.info("[]{}", dcMeta);
     }
 
     @Test
@@ -89,6 +110,42 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
         logger.info("[durationMilli] {}", (end - start)/100);
     }
 
+    @Test
+    public void testGetAllRouteCommand() throws InterruptedException {
+        DcMeta meta = new DcMeta().setId("fra");
+        (service.new GetAllRouteCommand(meta))
+                .execute();
+        logger.info("{}", meta);
+    }
+
+    @Test
+    public void testProcess() {
+        DcMeta meta = new DcMeta().setId("jq");
+        List<RouteTbl> routes = routeService.getActiveRouteTbls();
+        List<ProxyTbl> proxies = proxyService.getActiveProxyTbls();
+        List<RouteMeta> routeMetas = service.combineRouteInfo(routes, proxies, meta);
+        routeMetas.forEach((routeMeta)->meta.addRoute(routeMeta));
+        logger.info("{}", meta);
+    }
+
+    @Test
+    public void testClusterOrgInfo() {
+        List<ClusterTbl> clusterTbls = clusterService.findAllClustersWithOrgInfo();
+        logger.info("{}", clusterTbls.size());
+
+        ClusterTbl clusterTbl = clusterTbls.get(0);
+        clusterTbl.setClusterOrgId(3);
+        clusterService.update(clusterTbl);
+
+        logger.info("{}", clusterService.find(clusterTbl.getId()));
+
+        DcMeta dcMeta = service.getDcMeta("jq");
+        List<ClusterMeta> clusters = Lists.newArrayList(dcMeta.getClusters().values());
+
+        logger.info("{}", clusters.get(0));
+        Assert.assertNotNull(clusters.get(0).getOrgId());
+        Assert.assertTrue(3 == clusters.get(0).getOrgId());
+    }
 
     @Override
     protected String prepareDatas() throws IOException {

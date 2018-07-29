@@ -56,12 +56,17 @@ public class H2Init implements SpringApplicationRunListener {
     private void setUpTestDataSource() throws ComponentLookupException, SQLException, IOException {
 
         DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
-        DataSource dataSource = dsManager.getDataSource(DATA_SOURCE);
-        String driver = dataSource.getDescriptor().getProperty("driver", null);
+        DataSource dataSource = null;
+        try {
+            dataSource = dsManager.getDataSource(DATA_SOURCE);
+        } catch(Exception e) {
+            logger.info("[setUpTestDataSource][ignore if it it not console]{}", e.getMessage());
+            return;
+        }
 
+        String driver = dataSource.getDescriptor().getProperty("driver", null);
         if (driver != null && driver.equals("org.h2.Driver")) {
             executeSqlScript(FileUtils.readFileAsString(TABLE_STRUCTURE));
-            executeSqlScript(FileUtils.readFileAsString(TABLE_DATA));
             executeSqlScript(FileUtils.readFileAsString(DEMO_DATA));
 
         } else {

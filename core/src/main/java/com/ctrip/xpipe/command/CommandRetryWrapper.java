@@ -1,17 +1,16 @@
 package com.ctrip.xpipe.command;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.retry.NoWaitRetry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng
@@ -89,7 +88,7 @@ public final class CommandRetryWrapper<V> extends AbstractCommand<V>{
 						return;
 					}
 
-					logger.error("[operationComplete]" + command, future().cause());
+					logger.error("[operationComplete]" + command, commandFuture.cause());
 					
 					int waitMilli = retryPolicy.retryWaitMilli();
 					logger.info("[retry]{},{},{}", executeCount.get(), waitMilli, command);

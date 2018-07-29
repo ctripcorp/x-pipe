@@ -10,6 +10,8 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -34,15 +36,18 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	private volatile PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 
 	private ScheduledFuture<?> replConfFuture;
-	
-	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));
 
-	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled, int replTimeoutMilli) {
-		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutMilli);
+	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
+										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
+										 int replTimeoutMilli, ProxyResourceManager endpointManager) {
+		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutMilli, endpointManager);
 	}
 
-	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled) {
-		this(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI);
+	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
+										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
+										 ProxyResourceManager endpointManager) {
+		this(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI,
+				endpointManager);
 	}
 
 	@Override
@@ -94,10 +99,10 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 			scheduleTime = 0;
 		}
 		logger.info("[masterDisconntected][reconnect after {} ms]", scheduleTime);
-		scheduled.schedule(new Runnable() {
+		scheduled.schedule(new AbstractExceptionLogTask() {
 
 			@Override
-			public void run() {
+			public void doRun() {
 				connectWithMaster();
 			}
 		}, scheduleTime, TimeUnit.MILLISECONDS);

@@ -168,7 +168,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		});
 		//again
 		migrationCluster.process();
-		waitConditionUntilTimeOut(()-> clusterService.find(clusterId).getStatus() == ClusterStatus.Normal.toString(), 2500);
+		waitConditionUntilTimeOut(()-> clusterService.find(clusterId).getStatus().equals(ClusterStatus.Normal.toString()), 2500);
 		currentCluster = clusterService.find(clusterId);
 		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
 

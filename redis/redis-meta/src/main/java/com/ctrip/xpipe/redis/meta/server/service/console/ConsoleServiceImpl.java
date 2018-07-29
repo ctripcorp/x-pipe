@@ -2,13 +2,10 @@ package com.ctrip.xpipe.redis.meta.server.service.console;
 
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestOperations;
 
 import javax.annotation.PostConstruct;
 import java.util.Arrays;
@@ -21,14 +18,11 @@ import java.util.Set;
  *
  */
 @Service
-public class ConsoleServiceImpl implements ConsoleService {
+public class ConsoleServiceImpl extends AbstractService implements ConsoleService {
 
 	@Autowired
 	private MetaServerConfig config;
-	
-	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	private RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 	private String host;
 
 	@PostConstruct

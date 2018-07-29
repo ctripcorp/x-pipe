@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
  * @author wenchao.meng
  *         <p>
  *         Mar 22, 2018
+ * test for xredis, not for keeper
  */
 public class XRedisXpipeCommandTest extends AbstractKeeperIntegratedSingleDc {
 
