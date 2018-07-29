@@ -13,10 +13,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareReques
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
 import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
-import com.ctrip.xpipe.redis.console.dao.ConfigDaoTest;
-import com.ctrip.xpipe.redis.console.dao.MigrationClusterDaoTest;
-import com.ctrip.xpipe.redis.console.dao.MigrationEventDaoTest;
-import com.ctrip.xpipe.redis.console.dao.RedisDaoTest;
+import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
 import com.ctrip.xpipe.redis.console.health.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
@@ -94,7 +91,13 @@ import org.junit.runners.Suite.SuiteClasses;
         MetaUpdateTest.class,
         MetaUpdateTest2.class,
         MetaUpdateTest3.class,
-        AlertPolicyManagerTest.class
+        AlertPolicyManagerTest.class,
+
+        ProxyDaoTest.class,
+        RouteDaoTest.class,
+        RouteServiceImplTest.class,
+        RouteServiceImplTest.class,
+        ProxyServiceImplTest.class
 })
 public class AllTests {
 

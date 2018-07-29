@@ -55,6 +55,7 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 		if(value == null){
 			return defaultValue;
 		}
+		//TODO cache value to avoid convert each time
 		return Long.parseLong(value.trim());
 		
 	}

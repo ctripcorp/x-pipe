@@ -24,6 +24,9 @@
          <table name="config_tbl"/>
          <table name="organization_tbl"/>
          <table name="event_tbl"/>
+         <table name="ZONE_TBL"/>
+         <table name="proxy_tbl"/>
+         <table name="route_tbl"/>
       </group>
    </jdbc>
 </wizard>
