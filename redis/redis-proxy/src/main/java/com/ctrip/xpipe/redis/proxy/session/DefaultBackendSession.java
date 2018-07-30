@@ -26,6 +26,8 @@ import io.netty.handler.logging.LoggingHandler;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.FIXED_RCVBUF_ALLOCATE_SIZE;
 import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_HIGH_WATER_MARK;
 import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MARK;
 import static com.ctrip.xpipe.redis.proxy.spring.Production.BACKEND_EVENTLOOP_GROUP;
@@ -95,6 +97,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, WRITE_HIGH_WATER_MARK)
                 .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, WRITE_LOW_WATER_MARK)
+                .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(FIXED_RCVBUF_ALLOCATE_SIZE))
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) {

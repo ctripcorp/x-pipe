@@ -16,10 +16,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -61,6 +58,8 @@ public class DefaultProxyServer implements ProxyServer {
     public static final int WRITE_LOW_WATER_MARK = 10 * MEGA_BYTE;
 
     public static final int WRITE_HIGH_WATER_MARK = 5 * WRITE_LOW_WATER_MARK;
+
+    public static final int FIXED_RCVBUF_ALLOCATE_SIZE = 1024;
 
     public DefaultProxyServer() {
     }
@@ -131,9 +130,11 @@ public class DefaultProxyServer implements ProxyServer {
                 new NioEventLoopGroup(OsUtils.getCpuCount() * 2, FastThreadLocalThreadFactory.create("worker-" + prefix)))
                 .channel(NioServerSocketChannel.class)
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(FIXED_RCVBUF_ALLOCATE_SIZE))
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .childOption(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, WRITE_HIGH_WATER_MARK)
                 .childOption(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, WRITE_LOW_WATER_MARK)
+                .childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(FIXED_RCVBUF_ALLOCATE_SIZE))
                 .handler(new LoggingHandler(LogLevel.DEBUG));
         return bootstrap;
     }
