@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
+import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
@@ -50,7 +51,9 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
     @Before
     public void beforeDefaultBackendSessionTest() {
         MockitoAnnotations.initMocks(this);
-        session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, selector);
+        ResourceManager resourceManager = mock(ResourceManager.class);
+        when(resourceManager.createProxyEndpointSelector(any())).thenReturn(selector);
+        session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, resourceManager);
 
     }
 
@@ -90,6 +93,7 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
         when(selector.getCandidates()).thenReturn(Lists.newArrayList(newProxyEndpoint(true, true), newProxyEndpoint(true, false)));
         selector.setSelectStrategy(new SelectOneCycle(selector));
         doCallRealMethod().when(selector).nextHop();
+
         session.doStart();
     }
 
@@ -98,7 +102,10 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
         selector = new DefaultProxyEndpointSelector(Lists.newArrayList(newProxyEndpoint(true, false), newProxyEndpoint(true, false)), endpointManager());
         selector.setSelectStrategy(new SelectOneCycle(selector));
         selector.setNextHopAlgorithm(new NaiveNextHopAlgorithm());
-        session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, selector);
+        ResourceManager resourceManager = mock(ResourceManager.class);
+        when(resourceManager.createProxyEndpointSelector(any())).thenReturn(selector);
+        when(resourceManager.getProxyConfig()).thenReturn(config());
+        session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, resourceManager);
         session.setNioEventLoopGroup(new NioEventLoopGroup(1));
         session.doStart();
         Thread.sleep(1000);

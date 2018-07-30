@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
+import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.*;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
@@ -52,10 +53,10 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private ProxyConfig config;
 
-    private ProxyResourceManager proxyResourceManager;
+    private ResourceManager proxyResourceManager;
 
     public DefaultTunnel(Channel frontendChannel, ProxyProtocol protocol, ProxyConfig config,
-                         ProxyResourceManager proxyResourceManager) {
+                         ResourceManager proxyResourceManager) {
 
         this.config = config;
         this.protocol = protocol;
@@ -189,10 +190,9 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         super.doInitialize();
 
         frontend = new DefaultFrontendSession(this, frontendChannel, config.getTrafficReportIntervalMillis());
-        ProxyEndpointSelector selector = proxyResourceManager.createProxyEndpointSelector(protocol);
         // share the nio event loop to avoid oom
         backend = new DefaultBackendSession(this, frontend.getChannel().eventLoop(),
-                config.getTrafficReportIntervalMillis(), selector);
+                config.getTrafficReportIntervalMillis(), proxyResourceManager);
 
         registerSessionEventHandlers();
         frontend.addObserver(this);

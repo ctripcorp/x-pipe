@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class Production extends AbstractProfile {
 
-    public static final String GLOBAL_PROXY_RESOURCE_MANAGER = "globalProxyEndpointManager";
+    public static final String GLOBAL_ENDPOINT_MANAGER = "globalProxyEndpointManager";
 
     public static final String CLIENT_SSL_HANDLER_FACTORY = "clientSslHandlerFactory";
 
@@ -70,10 +70,8 @@ public class Production extends AbstractProfile {
         );
     }
 
-    @Bean(name = GLOBAL_PROXY_RESOURCE_MANAGER)
-    public ProxyResourceManager getProxyResourceManager() {
-        ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(() -> config.endpointHealthCheckIntervalSec());
-        NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
-        return new ProxyProxyResourceManager(endpointManager, algorithm);
+    @Bean(name = GLOBAL_ENDPOINT_MANAGER)
+    public ProxyEndpointManager getProxyResourceManager() {
+        return new DefaultProxyEndpointManager(() -> config.endpointHealthCheckIntervalSec());
     }
 }
