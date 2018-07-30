@@ -9,10 +9,10 @@ import java.util.List;
  * <p>
  * Sep 25, 2017
  */
-public class DiskLessInstanceResult extends BaseInstanceResult<List<String>> {
+public class DiskLessInstanceResult extends BaseInstanceResult<Boolean> {
 
     @Override
-    public void success(long rcvNanoTime, List<String> message) {
-        super.success(rcvNanoTime, message);
+    public void success(long rcvNanoTime, Boolean isDisklessSync) {
+        super.success(rcvNanoTime, isDisklessSync);
     }
 }
