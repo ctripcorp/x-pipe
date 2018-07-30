@@ -1,20 +1,20 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.BorrowObjectException;
+import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
+import com.ctrip.xpipe.redis.core.protocal.cmd.*;
+import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.PublishCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeListener;
-import com.lambdaworks.redis.RedisChannelHandler;
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisConnectionStateListener;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.lambdaworks.redis.RedisFuture;
 import com.lambdaworks.redis.api.StatefulRedisConnection;
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.REDIS_COMMAND_EXECUTOR;
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 
 /**
@@ -39,7 +38,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR
  */
 public class RedisSession {
 
-    private static Logger log = LoggerFactory.getLogger(RedisSession.class);
+    private static Logger logger = LoggerFactory.getLogger(RedisSession.class);
 
     public static final String KEY_SUBSCRIBE_TIMEOUT_SECONDS = "SUBSCRIBE_TIMEOUT_SECONDS";
 
@@ -47,17 +46,11 @@ public class RedisSession {
 
     private int subscribConnsTimeoutSeconds = Integer.parseInt(System.getProperty(KEY_SUBSCRIBE_TIMEOUT_SECONDS, "60"));
 
-    private RedisClient redis;
-
-    private HostPort hostPort;
+    private Endpoint endpoint;
 
     private ConcurrentMap<String, PubSubConnectionWrapper> subscribConns = new ConcurrentHashMap<>();
 
     private AtomicReference<StatefulRedisConnection<String, String>> nonSubscribeConn = new AtomicReference<>();
-
-    private Executor executors;
-
-    private Executor pingAndDelayExecutor;
 
     @Resource
     private XpipeNettyClientKeyedObjectPool keyedNettyClientPool;
@@ -67,15 +60,9 @@ public class RedisSession {
 
     private SimpleObjectPool<NettyClient> clientPool;
 
-    public RedisSession(RedisClient redisClient, HostPort hostPort, Executor executors, Executor pingDelayExecutor) {
-        this.redis = redisClient;
-        redis.addListener(channelListener());
-        this.hostPort = hostPort;
-        this.executors = executors;
-        this.pingAndDelayExecutor = pingDelayExecutor;
-
-        clientPool = keyedNettyClientPool.getKeyPool(new InetSocketAddress(hostPort.getHost(), hostPort.getPort()));
-
+    public RedisSession(Endpoint endpoint) {
+        this.endpoint = endpoint;
+        this.clientPool = keyedNettyClientPool.getKeyPool(new InetSocketAddress(endpoint.getHost(), endpoint.getPort()));
     }
 
     public void check() {
@@ -87,7 +74,7 @@ public class RedisSession {
 
             if (System.currentTimeMillis() - pubSubConnectionWrapper.getLastActiveTime() > subscribConnsTimeoutSeconds * 1000) {
 
-                log.info("[check][connectin inactive for a long time, force reconnect]{}, {}", subscribConns, hostPort);
+                logger.info("[check][connectin inactive for a long time, force reconnect]{}, {}", subscribConns, endpoint);
                 pubSubConnectionWrapper.closeAndClean();
                 subscribConns.remove(channel);
 
@@ -101,7 +88,7 @@ public class RedisSession {
 
         PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(channel);
         if (pubSubConnectionWrapper != null) {
-            log.info("[closeSubscribedChannel]{}, {}", hostPort, channel);
+            logger.info("[closeSubscribedChannel]{}, {}", endpoint, channel);
             pubSubConnectionWrapper.closeAndClean();
             subscribConns.remove(channel);
         }
@@ -116,178 +103,83 @@ public class RedisSession {
         }
 
         if (!subscribConns.containsKey(channel)) {
-
-            SubscribeCommand command = new SubscribeCommand(hostPort.getHost(), hostPort.getPort(), scheduled, channel);
-
+            SubscribeCommand command = new SubscribeCommand(endpoint.getHost(), endpoint.getPort(), scheduled, channel);
             PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(command.execute(), callback);
-
-
-//            CompletableFuture<StatefulRedisPubSubConnection> pubSubFuture = CompletableFuture
-//                    .supplyAsync(new Supplier<StatefulRedisPubSubConnection>() {
-//                @Override
-//                public StatefulRedisPubSubConnection get() {
-//                    return redis.connectPubSub();
-//                }
-//            }, executors);
-//            pubSubFuture.whenCompleteAsync((pubSub, th) -> {
-//                if(th != null) {
-//                    Throwable exception = th;
-//                    while(exception instanceof CompletionException) {
-//                        exception = exception.getCause();
-//                    }
-//                    callback.fail(exception);
-//                    log.warn("Error subscribe to redis {}", hostPort);
-//                } else {
-//                    try {
-//                        pubSub.async().subscribe(channel);
-//                        PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(pubSub, callback);
-//
-//                        pubSub.addListener(new RedisPubSubAdapter<String, String>() {
-//
-//                            @Override
-//                            public void message(String channel, String message) {
-//
-//                                wrapper.setLastActiveTime(System.currentTimeMillis());
-//                                wrapper.getCallback().message(channel, message);
-//                            }
-//                        });
-//                        subscribConns.put(channel, wrapper);
-//                    } catch (RuntimeException e) {
-//                        callback.fail(e);
-//                        log.warn("Error subscribe to redis {}", hostPort);
-//                    }
-//                }
-//            }, pingAndDelayExecutor);
+            subscribConns.put(channel, wrapper);
         }
     }
 
-    private RedisConnectionStateListener channelListener() {
-
-        return new RedisConnectionStateListener() {
-
-            @Override
-            public void onRedisExceptionCaught(RedisChannelHandler<?, ?> connection, Throwable cause) {
-                log.debug("[lettuce][onRedisExceptionCaught]{}, {}", hostPort, cause);
-            }
-
-            @Override
-            public void onRedisDisconnected(RedisChannelHandler<?, ?> connection) {
-                log.debug("[lettuce][onRedisDisconnected]{}, {}", hostPort, connection);
-            }
-
-            @SuppressWarnings("unchecked")
-            @Override
-            public void onRedisConnected(RedisChannelHandler<?, ?> connection) {
-                log.debug("[lettuce][onRedisConnected]{}, {}", hostPort, connection);
-            }
-        };
-    }
-
     public synchronized void publish(String channel, String message) {
-        asyncExecute(connection -> {
-            try {
-                connection.async().publish(channel, message);
-            } catch (RuntimeException e) {
-                // not connected, just ignore
-                log.warn("Error publish to redis {}", hostPort);
+        PublishCommand pubCommand = new PublishCommand(clientPool, scheduled, channel, message);
+        pubCommand.execute().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    logger.warn("Error publish to redis {}", endpoint);
+                }
             }
-        }, null);
+        });
     }
 
     public void ping(final PingCallback callback) {
         // if connect has been established
-        if(nonSubscribeConn.get() != null) {
-            final CompletableFuture<String> future = nonSubscribeConn.get().async().ping().toCompletableFuture();
-
-            future.whenComplete((pong, th) -> {
-                if(th != null){
-                    callback.fail(th);
-                }else{
-                    callback.pong(pong);
+        PingCommand pingCommand = new PingCommand(clientPool, scheduled);
+        pingCommand.execute().addListener(new CommandFutureListener<String>() {
+            @Override
+            public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                if(commandFuture.isSuccess()) {
+                    callback.pong(commandFuture.get());
+                } else {
+                    callback.fail(commandFuture.cause());
                 }
-            });
-            return;
-        }
-        Consumer<StatefulRedisConnection> connectionConsumer = new Consumer<StatefulRedisConnection>() {
-            @Override
-            public void accept(StatefulRedisConnection statefulRedisConnection) {
-                final CompletableFuture<String> future = statefulRedisConnection.async().ping().toCompletableFuture();
-
-                future.whenCompleteAsync((pong, th) -> {
-                    if(th != null){
-                        callback.fail(th);
-                    }else{
-                        callback.pong(pong);
-                    }
-                }, pingAndDelayExecutor);
             }
-        };
-        Consumer<Throwable> throwableConsumer = new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable e) {
-                callback.fail(e);
-                log.error("[ping]" + hostPort, e);
-            }
-        };
-        asyncExecute(connectionConsumer, throwableConsumer);
+        });
     }
 
     public void role(RollCallback callback) {
-        Consumer<StatefulRedisConnection> connectionConsumer = new Consumer<StatefulRedisConnection>() {
+        new RoleCommand(clientPool, scheduled).execute().addListener(new CommandFutureListener<Role>() {
             @Override
-            public void accept(StatefulRedisConnection statefulRedisConnection) {
-                final CompletableFuture<List<Object>> future = statefulRedisConnection.async().role().toCompletableFuture();
-
-                future.whenCompleteAsync((role, th) -> {
-                    if (th != null) {
-                        callback.fail(th);
-                    } else {
-                        callback.role((String) role.get(0));
-                    }
-                }, executors);
+            public void operationComplete(CommandFuture<Role> commandFuture) throws Exception {
+                if(commandFuture.isSuccess()) {
+                    callback.role(commandFuture.get().getServerRole().name());
+                } else {
+                    callback.fail(commandFuture.cause());
+                }
             }
-        };
-        asyncExecute(connectionConsumer, callback::fail);
+        });
     }
 
     public void configRewrite(BiConsumer<String, Throwable> consumer) {
-        Consumer<StatefulRedisConnection> connectionConsumer = new Consumer<StatefulRedisConnection>() {
+        new ConfigRewrite(clientPool, scheduled).execute().addListener(new CommandFutureListener<String>() {
             @Override
-            public void accept(StatefulRedisConnection statefulRedisConnection) {
-                RedisFuture<String> redisFuture = statefulRedisConnection.async().configRewrite();
-                redisFuture.whenCompleteAsync(consumer, executors);
+            public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                if(commandFuture.isSuccess()) {
+                    consumer.accept(commandFuture.get(), null);
+                } else {
+                    consumer.accept(null, commandFuture.cause());
+                }
             }
-        };
-        asyncExecute(connectionConsumer, null);
+        });
     }
 
     public String roleSync() throws InterruptedException, ExecutionException, TimeoutException {
 
-        final CompletableFuture<List<Object>> future = findOrCreateNonSubscribeConnection().async().role().toCompletableFuture();
-        return (String) future.get(waitResultSeconds, TimeUnit.SECONDS).get(0);
+        return new RoleCommand(clientPool, waitResultSeconds * 1000, true, scheduled).execute().get().getServerRole().name();
 
     }
 
     public void info(final String infoSection, Callbackable<String> callback) {
-
-        Consumer<StatefulRedisConnection> connectionConsumer = (connection) -> {
-            CompletableFuture<String> future = connection.async().info(infoSection).toCompletableFuture();
-            future.whenCompleteAsync((info, th) -> {
-                if(th != null){
-                    log.error("[info]{}", hostPort, th);
-                    callback.fail(th);
-                }else{
-                    callback.success(info);
-                }
-            }, executors);
-        };
-
-        Consumer<Throwable> throwableConsumer = (throwable) -> {
-            callback.fail(throwable);
-            log.error("[info]{}", hostPort, throwable);
-        };
-
-        asyncExecute(connectionConsumer, throwableConsumer);
+        new InfoCommand(clientPool, infoSection, scheduled).execute()
+                .addListener(new CommandFutureListener<String>() {
+                    @Override
+                    public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                        if(!commandFuture.isSuccess()) {
+                            callback.fail(commandFuture.cause());
+                        } else {
+                            callback.success(commandFuture.get());
+                        }
+                    }
+                });
     }
 
 
@@ -301,59 +193,23 @@ public class RedisSession {
         info(infoReplicationSection, callback);
     }
 
-    public void conf(String confSection, Callbackable<List<String>> callback) {
-        Consumer<StatefulRedisConnection> connectionConsumer = (connection) -> {
-            CompletableFuture<List<String>> future = connection.async().configGet(confSection).toCompletableFuture();
-            future.whenCompleteAsync((conf, throwable) -> {
-                if(throwable != null) {
-                    log.error("[conf]Executing conf command error", throwable);
-                    callback.fail(throwable);
+    public void isDiskLessSync(Callbackable<Boolean> callback) {
+        new ConfigGetCommand.ConfigGetDisklessSync(clientPool, scheduled)
+                .execute().addListener(new CommandFutureListener<Boolean>() {
+            @Override
+            public void operationComplete(CommandFuture<Boolean> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    callback.fail(commandFuture.cause());
                 } else {
-                    callback.success(conf);
+                    callback.success(commandFuture.get());
                 }
-            });
-        };
-
-        Consumer<Throwable> throwableConsumer = (throwable) -> {
-            callback.fail(throwable);
-            log.error("[conf]{}", hostPort, throwable);
-        };
-
-        asyncExecute(connectionConsumer, throwableConsumer);
-    }
-
-    private void asyncExecute(Consumer<StatefulRedisConnection> connectionConsumer,
-                              Consumer<Throwable> throwableConsumer) {
-        Supplier<StatefulRedisConnection> supplier = ()->findOrCreateNonSubscribeConnection();
-        CompletableFuture.supplyAsync(supplier, executors)
-                .whenCompleteAsync((connection, th) -> {
-                    if(th != null) {
-                        Throwable exception = th;
-                        while(exception instanceof CompletionException) {
-                            exception = exception.getCause();
-                        }
-                        log.error("[asyncExecute]" + hostPort, exception);
-
-                        if(throwableConsumer != null) {
-                            throwableConsumer.accept(exception);
-                        }
-                    } else {
-                        connectionConsumer.accept(connection);
-                    }
-                }, executors);
+            }
+        });
     }
 
     @Override
     public String toString() {
-        return String.format("%s", hostPort.toString());
-    }
-
-    private StatefulRedisConnection<String, String> findOrCreateNonSubscribeConnection() {
-        if (nonSubscribeConn.get() == null) {
-            nonSubscribeConn.set(redis.connect());
-        }
-
-        return nonSubscribeConn.get();
+        return String.format("%s", endpoint.toString());
     }
 
     public interface RollCallback {
@@ -416,5 +272,10 @@ public class RedisSession {
                 connectionWrapper.closeAndClean();
             } catch (Exception ignore) {}
         }
+    }
+
+    public RedisSession setKeyedNettyClientPool(XpipeNettyClientKeyedObjectPool keyedNettyClientPool) {
+        this.keyedNettyClientPool = keyedNettyClientPool;
+        return this;
     }
 }

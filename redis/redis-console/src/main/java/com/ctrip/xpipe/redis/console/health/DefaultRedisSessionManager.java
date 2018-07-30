@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
@@ -177,7 +178,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			synchronized (this) {
 				session = sessions.get(hostPort);
 				if (session == null) {
-					session = new RedisSession(findRedisConnection(host, port), hostPort, executors, pingAndDelayExecutor);
+					session = new RedisSession(new DefaultEndPoint(hostPort.getHost(), hostPort.getPort()));
 					sessions.put(hostPort, session);
 				}
 			}
