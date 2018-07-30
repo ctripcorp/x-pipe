@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
+import com.ctrip.xpipe.redis.proxy.resource.ProxyRelatedResourceManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -65,9 +66,12 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
                 return true;
             }
         });
+        ProxyRelatedResourceManager resourceManager = new ProxyRelatedResourceManager();
+        resourceManager.setEndpointManager(endpointManager);
+        resourceManager.setConfig(new TestProxyConfig());
+        resourceManager.setClientSslHandlerFactory(new NettyClientSslHandlerFactory(new TestProxyConfig()));
         server.setTunnelManager(new DefaultTunnelManager()
-                .setConfig(server.getConfig()).setProxyResourceManager(
-                        new ProxyProxyResourceManager(endpointManager, new NaiveNextHopAlgorithm())));
+                .setConfig(server.getConfig()).setProxyResourceManager(resourceManager));
 
         ComponentRegistry registry = mock(ComponentRegistry.class);
         when(registry.getComponent(CLIENT_SSL_HANDLER_FACTORY)).thenReturn(new NettyClientSslHandlerFactory(new TestProxyConfig()));

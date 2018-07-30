@@ -54,6 +54,8 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_INTERNAL_NETWORK_PREFIX = "proxy.internal.network.prefix";
 
+    private static final String KEY_RECV_BUFFER_SIZE = "proxy.recv.buffer.size";
+
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
     public DefaultProxyConfig() {
@@ -109,6 +111,12 @@ public class DefaultProxyConfig implements ProxyConfig {
     @Override
     public boolean noTlsNettyHandler() {
         return getBooleanProperty(KEY_NO_TLS_NETTY_HANDLER, false);
+    }
+
+    @Override
+    public int getFixedRecvBufferSize() {
+        int thirtyTwoBytes = 32 * 1024;
+        return getIntProperty(KEY_RECV_BUFFER_SIZE, thirtyTwoBytes);
     }
 
     @Override

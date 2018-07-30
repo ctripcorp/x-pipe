@@ -39,6 +39,11 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public int getFixedRecvBufferSize() {
+        return 32 * 1024;
+    }
+
+    @Override
     public String[] getInternalNetworkPrefix() {
         return null;
     }

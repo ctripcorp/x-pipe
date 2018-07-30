@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelClosed;
 import com.ctrip.xpipe.utils.ChannelUtil;
@@ -54,7 +55,7 @@ public class DefaultTunnelManager implements TunnelManager {
     private ProxyConfig config;
 
     @Autowired
-    private ProxyResourceManager proxyResourceManager;
+    private ResourceManager proxyResourceManager;
 
     private Map<Channel, Tunnel> cache = Maps.newConcurrentMap();
 
@@ -200,7 +201,7 @@ public class DefaultTunnelManager implements TunnelManager {
     }
 
     @VisibleForTesting
-    public DefaultTunnelManager setProxyResourceManager(ProxyResourceManager manager) {
+    public DefaultTunnelManager setProxyResourceManager(ResourceManager manager) {
         this.proxyResourceManager = manager;
         return this;
     }
