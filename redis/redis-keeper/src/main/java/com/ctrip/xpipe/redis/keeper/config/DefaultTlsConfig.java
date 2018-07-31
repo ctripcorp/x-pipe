@@ -36,4 +36,9 @@ public class DefaultTlsConfig extends AbstractConfigBean implements TLSConfig {
     public String getCertFileType() {
         return getProperty(KEY_CERT_FILE_TYPE, "JKS");
     }
+
+    @Override
+    public int getMaxPacketBufferSize() {
+        return 2048;
+    }
 }

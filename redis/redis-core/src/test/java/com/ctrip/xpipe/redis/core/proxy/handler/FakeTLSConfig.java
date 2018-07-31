@@ -11,7 +11,7 @@ public class FakeTLSConfig implements TLSConfig {
 
     @Override
     public String getPassword() {
-        return "123456";
+        return "100013684";
     }
 
     @Override
@@ -27,6 +27,11 @@ public class FakeTLSConfig implements TLSConfig {
     @Override
     public String getCertFileType() {
         return "JKS";
+    }
+
+    @Override
+    public int getMaxPacketBufferSize() {
+        return 2048;
     }
 
 }
