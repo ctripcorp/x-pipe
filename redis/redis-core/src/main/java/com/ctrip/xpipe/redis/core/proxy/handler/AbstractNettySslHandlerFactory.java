@@ -30,43 +30,15 @@ public abstract class AbstractNettySslHandlerFactory implements NettySslHandlerF
         this.tlsConfig = tlsConfig;
     }
 
-    protected KeyStore loadKeyStore() {
-        KeyStore keyStore = null;
-        InputStream inputStream = null;
-        try {
-            keyStore = KeyStore.getInstance(tlsConfig.getCertFileType());
-            logger.info("[loadKeyStore] File path: {}", getFilePath());
-            inputStream = new FileInputStream(getFilePath());
-            keyStore.load(inputStream, getPassword().toCharArray());
-        } catch (Exception e) {
-            logger.error("[loadKeyStore] {}", e);
-        } finally {
-            if(inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException ignore) {
-
-                }
-            }
-        }
-
-        return keyStore;
-    }
-
     protected SslHandler getCustomizedSslHandler(SslHandler sslHandler) {
-        try {
-            Field field = SslHandler.class.getDeclaredField(FIELD_TO_CHANGE);
-            field.setAccessible(true);
-            field.set(sslHandler, tlsConfig.getMaxPacketBufferSize());
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            logger.error("[getCustomizedSslHandler] SslHandler field: {} change error", FIELD_TO_CHANGE, e);
-        }
+//        try {
+//            Field field = SslHandler.class.getDeclaredField(FIELD_TO_CHANGE);
+//            field.setAccessible(true);
+//            field.set(sslHandler, tlsConfig.getMaxPacketBufferSize());
+//        } catch (NoSuchFieldException | IllegalAccessException e) {
+//            logger.error("[getCustomizedSslHandler] SslHandler field: {} change error", FIELD_TO_CHANGE, e);
+//        }
         return sslHandler;
     }
 
-    protected abstract String getFilePath();
-
-    protected String getPassword() {
-        return tlsConfig.getPassword();
-    }
 }

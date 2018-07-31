@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy.handler;
 
+import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -15,12 +17,7 @@ public class NettyServerSslHandlerFactoryTest {
     private NettyServerSslHandlerFactory factory = new NettyServerSslHandlerFactory(new FakeTLSConfig());
 
     @Test
-    public void testGetFilePath() {
-        Assert.assertEquals("/opt/cert/xpipe-server.jks", factory.getFilePath());
-    }
-
-    @Test
     public void testCreateSslHandler() {
-        factory.createSslHandler();
+        factory.createSslHandler(new NioSocketChannel());
     }
 }

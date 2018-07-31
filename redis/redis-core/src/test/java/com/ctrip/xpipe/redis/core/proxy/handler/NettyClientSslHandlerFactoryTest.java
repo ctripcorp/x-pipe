@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy.handler;
 
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslHandler;
 import org.junit.Assert;
 import org.junit.Test;
@@ -21,25 +22,14 @@ public class NettyClientSslHandlerFactoryTest {
     private NettyClientSslHandlerFactory factory = new NettyClientSslHandlerFactory(new FakeTLSConfig());
 
     @Test
-    public void testGetFilePath() {
-        Assert.assertEquals("/opt/cert/xpipe-client.jks", factory.getFilePath());
-    }
-
-    @Test
     public void testCreateSslHandler() {
-        ChannelHandler handler = factory.createSslHandler();
+        ChannelHandler handler = factory.createSslHandler(new NioSocketChannel());
         Assert.assertTrue(handler instanceof SslHandler);
     }
 
     @Test
-    public void testLoad() {
-        KeyStore keyStore = factory.loadKeyStore();
-        Assert.assertNotNull(keyStore);
-    }
-
-    @Test
     public void testReflection() {
-        SslHandler sslHandler = (SslHandler) factory.createSslHandler();
+        SslHandler sslHandler = (SslHandler) factory.createSslHandler(new NioSocketChannel());
         try {
             Field field = SslHandler.class.getDeclaredField("maxPacketBufferSize");
             field.setAccessible(true);

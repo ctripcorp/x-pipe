@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy.handler;
 
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslHandler;
 
 /**
@@ -10,5 +11,5 @@ import io.netty.handler.ssl.SslHandler;
  */
 public interface NettySslHandlerFactory {
 
-    SslHandler createSslHandler();
+    SslHandler createSslHandler(SocketChannel channel);
 }
