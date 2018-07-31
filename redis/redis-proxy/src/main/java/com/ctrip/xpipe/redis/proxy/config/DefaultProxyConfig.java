@@ -126,25 +126,19 @@ public class DefaultProxyConfig implements ProxyConfig {
         return IpUtils.splitIpAddr(internalNetworkPrefix);
     }
 
-
     @Override
-    public String getPassword() {
-        return getProperty(KEY_CERT_PASSWORD, FoundationService.DEFAULT.getAppId());
+    public String getCertChainFilePath() {
+        return getProperty(KEY_CERT_CHAIN_FILE_PATH, "/opt/data/100013684/openssl/xpipe.crt");
     }
 
     @Override
-    public String getServerCertFilePath() {
-        return getProperty(KEY_SERVER_CERT_FILE_PATH, "/opt/data/100013684/xpipe-server.jks");
+    public String getKeyFilePath() {
+        return getProperty(KEY_KEY_FILE_PATH, "/opt/data/100013684/openssl/xpipe.key");
     }
 
     @Override
-    public String getClientCertFilePath() {
-        return getProperty(KEY_CLIENT_CERT_FILE_PATH, "/opt/data/100013684/xpipe-client.jks");
-    }
-
-    @Override
-    public String getCertFileType() {
-        return getProperty(KEY_CERT_FILE_TYPE, "JKS");
+    public String getRootFilePath() {
+        return getProperty(KEY_ROOT_FILE_PATH, "/opt/data/100013684/openssl/ca.crt");
     }
 
     @Override

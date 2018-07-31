@@ -1,12 +1,9 @@
 package com.ctrip.xpipe.redis.core.proxy.handler;
 
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
-import io.netty.handler.ssl.SslHandler;
-
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import java.security.KeyStore;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.ssl.*;
+import java.io.File;
 
 /**
  * @author chen.zhu
@@ -15,47 +12,33 @@ import java.security.KeyStore;
  */
 public class NettyServerSslHandlerFactory extends AbstractNettySslHandlerFactory {
 
-    private volatile SSLContext sslContext;
+    private volatile SslContext sslContext;
 
     public NettyServerSslHandlerFactory(TLSConfig config) {
         super(config);
     }
 
     @Override
-    protected String getFilePath() {
-        return tlsConfig.getServerCertFilePath();
+    public SslHandler createSslHandler(SocketChannel channel) {
+        SslHandler sslHandler = getNettySslContext().newHandler(channel.alloc());
+        return getCustomizedSslHandler(sslHandler);
     }
 
-    @Override
-    public SslHandler createSslHandler() {
-        SSLContext sslContext = initSSLContext();
-        if(sslContext == null) {
-            return null;
-        }
-        SSLEngine sslEngine = sslContext.createSSLEngine();
-        sslEngine.setUseClientMode(false);
-
-        return getCustomizedSslHandler(new SslHandler(sslEngine));
-    }
-
-    private SSLContext initSSLContext() {
+    private SslContext getNettySslContext() {
         if(sslContext == null) {
             synchronized (this) {
                 if(sslContext == null) {
-                    KeyStore keyStore = loadKeyStore();
-                    if (keyStore == null) {
-                        return null;
-                    }
-
                     try {
-                        KeyManagerFactory keyManagerFactory = KeyManagerFactory
-                                .getInstance(KeyManagerFactory.getDefaultAlgorithm());
-                        keyManagerFactory.init(keyStore, getPassword().toCharArray());
-                        sslContext = SSLContext.getInstance(SSL_TYPE);
+                        File certChainFile = new File(tlsConfig.getCertChainFilePath());
+                        File keyFile = new File(tlsConfig.getKeyFilePath());
+                        File rootFile = new File(tlsConfig.getRootFilePath());
 
-                        sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+                        sslContext = SslContextBuilder.forServer(certChainFile, keyFile)
+                                .trustManager(rootFile)
+                                .clientAuth(ClientAuth.REQUIRE)
+                                .sslProvider(SslProvider.OPENSSL).build();
                     } catch (Exception e) {
-                        logger.error("[initSSLContext] ", e);
+                        logger.error("[getNettySslContext] ", e);
                     }
                 }
             }
