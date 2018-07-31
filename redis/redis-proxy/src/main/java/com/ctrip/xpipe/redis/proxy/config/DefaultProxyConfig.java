@@ -56,6 +56,8 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_RECV_BUFFER_SIZE = "proxy.recv.buffer.size";
 
+    private static final String KEY_MAX_PACKET_BUFFER_SIZE = "proxy.max.packet.buffer.size";
+
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
     public DefaultProxyConfig() {
@@ -115,8 +117,7 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     @Override
     public int getFixedRecvBufferSize() {
-        int thirtyTwoBytes = 32 * 1024;
-        return getIntProperty(KEY_RECV_BUFFER_SIZE, thirtyTwoBytes);
+        return getIntProperty(KEY_RECV_BUFFER_SIZE, 1024);
     }
 
     @Override
@@ -144,6 +145,11 @@ public class DefaultProxyConfig implements ProxyConfig {
     @Override
     public String getCertFileType() {
         return getProperty(KEY_CERT_FILE_TYPE, "JKS");
+    }
+
+    @Override
+    public int getMaxPacketBufferSize() {
+        return getIntProperty(KEY_MAX_PACKET_BUFFER_SIZE, 2048);
     }
 
     protected String getProperty(String key, String defaultValue){

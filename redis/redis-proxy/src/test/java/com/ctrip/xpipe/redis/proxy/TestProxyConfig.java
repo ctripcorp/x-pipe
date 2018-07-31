@@ -40,7 +40,7 @@ public class TestProxyConfig implements ProxyConfig {
 
     @Override
     public int getFixedRecvBufferSize() {
-        return 32 * 1024;
+        return 1024;
     }
 
     @Override
@@ -66,6 +66,11 @@ public class TestProxyConfig implements ProxyConfig {
     @Override
     public String getCertFileType() {
         return "JKS";
+    }
+
+    @Override
+    public int getMaxPacketBufferSize() {
+        return 2048;
     }
 
     public TestProxyConfig setFrontendTcpPort(int frontendTcpPort) {

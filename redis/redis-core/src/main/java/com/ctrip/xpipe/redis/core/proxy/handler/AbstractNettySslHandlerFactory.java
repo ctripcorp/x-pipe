@@ -1,12 +1,14 @@
 package com.ctrip.xpipe.redis.core.proxy.handler;
 
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
+import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.security.KeyStore;
 
 /**
@@ -21,6 +23,8 @@ public abstract class AbstractNettySslHandlerFactory implements NettySslHandlerF
     protected static final String SSL_TYPE = "TLS";
 
     protected TLSConfig tlsConfig;
+
+    private static final String FIELD_TO_CHANGE = "maxPacketBufferSize";
 
     public AbstractNettySslHandlerFactory(TLSConfig tlsConfig) {
         this.tlsConfig = tlsConfig;
@@ -47,6 +51,17 @@ public abstract class AbstractNettySslHandlerFactory implements NettySslHandlerF
         }
 
         return keyStore;
+    }
+
+    protected SslHandler getCustomizedSslHandler(SslHandler sslHandler) {
+        try {
+            Field field = SslHandler.class.getDeclaredField(FIELD_TO_CHANGE);
+            field.setAccessible(true);
+            field.set(sslHandler, tlsConfig.getMaxPacketBufferSize());
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            logger.error("[getCustomizedSslHandler] SslHandler field: {} change error", FIELD_TO_CHANGE, e);
+        }
+        return sslHandler;
     }
 
     protected abstract String getFilePath();

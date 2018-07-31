@@ -15,6 +15,8 @@ public interface TLSConfig {
 
     String getCertFileType();
 
+    int getMaxPacketBufferSize();
+
     String KEY_SERVER_CERT_FILE_PATH = "proxy.server.cert.file.path";
 
     String KEY_CLIENT_CERT_FILE_PATH = "proxy.client.cert.file.path";

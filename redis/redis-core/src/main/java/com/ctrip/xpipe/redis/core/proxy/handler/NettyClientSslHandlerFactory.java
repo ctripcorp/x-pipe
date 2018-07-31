@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy.handler;
 
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
-import io.netty.channel.ChannelHandler;
 import io.netty.handler.ssl.SslHandler;
 
 import javax.net.ssl.SSLContext;
@@ -28,15 +27,14 @@ public class NettyClientSslHandlerFactory extends AbstractNettySslHandlerFactory
     }
 
     @Override
-    public ChannelHandler createSslHandler() {
+    public SslHandler createSslHandler() {
         SSLContext sslContext = initSSLContext();
         if(sslContext == null) {
             return null;
         }
-
         SSLEngine sslEngine = sslContext.createSSLEngine();
         sslEngine.setUseClientMode(true);
-        return new SslHandler(sslEngine);
+        return getCustomizedSslHandler(new SslHandler(sslEngine));
     }
 
     private SSLContext initSSLContext() {
