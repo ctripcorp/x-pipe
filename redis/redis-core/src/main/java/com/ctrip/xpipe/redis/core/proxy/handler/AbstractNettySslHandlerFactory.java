@@ -20,24 +20,13 @@ public abstract class AbstractNettySslHandlerFactory implements NettySslHandlerF
 
     protected static Logger logger = LoggerFactory.getLogger(AbstractNettySslHandlerFactory.class);
 
-    protected static final String SSL_TYPE = "TLS";
-
     protected TLSConfig tlsConfig;
-
-    private static final String FIELD_TO_CHANGE = "maxPacketBufferSize";
 
     public AbstractNettySslHandlerFactory(TLSConfig tlsConfig) {
         this.tlsConfig = tlsConfig;
     }
 
     protected SslHandler getCustomizedSslHandler(SslHandler sslHandler) {
-//        try {
-//            Field field = SslHandler.class.getDeclaredField(FIELD_TO_CHANGE);
-//            field.setAccessible(true);
-//            field.set(sslHandler, tlsConfig.getMaxPacketBufferSize());
-//        } catch (NoSuchFieldException | IllegalAccessException e) {
-//            logger.error("[getCustomizedSslHandler] SslHandler field: {} change error", FIELD_TO_CHANGE, e);
-//        }
         return sslHandler;
     }
 
