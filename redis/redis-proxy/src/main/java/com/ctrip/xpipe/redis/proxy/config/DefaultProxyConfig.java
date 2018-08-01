@@ -124,14 +124,25 @@ public class DefaultProxyConfig implements ProxyConfig {
         return IpUtils.splitIpAddr(internalNetworkPrefix);
     }
 
+
     @Override
-    public String getCertChainFilePath() {
-        return getProperty(KEY_CERT_CHAIN_FILE_PATH, "/opt/data/100013684/openssl/xpipe.crt");
+    public String getServerCertChainFilePath() {
+        return getProperty(KEY_SERVER_CERT_CHAIN_FILE_PATH, "/opt/data/100013684/openssl/server.crt");
     }
 
     @Override
-    public String getKeyFilePath() {
-        return getProperty(KEY_KEY_FILE_PATH, "/opt/data/100013684/openssl/xpipe.key");
+    public String getClientCertChainFilePath() {
+        return getProperty(KEY_CLIENT_CERT_CHAIN_FILE_PATH, "/opt/data/100013684/openssl/client.crt");
+    }
+
+    @Override
+    public String getServerKeyFilePath() {
+        return getProperty(KEY_SERVER_KEY_FILE_PATH, "/opt/data/100013684/openssl/pkcs8_server.crt");
+    }
+
+    @Override
+    public String getClientKeyFilePath() {
+        return getProperty(KEY_CLIENT_KEY_FILE_PATH, "/opt/data/100013684/openssl/pkcs8_client.key");
     }
 
     @Override

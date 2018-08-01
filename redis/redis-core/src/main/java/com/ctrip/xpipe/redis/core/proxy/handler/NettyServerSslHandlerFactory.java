@@ -29,8 +29,8 @@ public class NettyServerSslHandlerFactory extends AbstractNettySslHandlerFactory
             synchronized (this) {
                 if(sslContext == null) {
                     try {
-                        File certChainFile = new File(tlsConfig.getCertChainFilePath());
-                        File keyFile = new File(tlsConfig.getKeyFilePath());
+                        File certChainFile = new File(tlsConfig.getServerCertChainFilePath());
+                        File keyFile = new File(tlsConfig.getServerKeyFilePath());
                         File rootFile = new File(tlsConfig.getRootFilePath());
 
                         sslContext = SslContextBuilder.forServer(certChainFile, keyFile)

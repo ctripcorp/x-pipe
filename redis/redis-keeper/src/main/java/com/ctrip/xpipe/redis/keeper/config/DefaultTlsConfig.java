@@ -11,13 +11,23 @@ import com.ctrip.xpipe.redis.core.config.TLSConfig;
 public class DefaultTlsConfig extends AbstractConfigBean implements TLSConfig {
 
     @Override
-    public String getCertChainFilePath() {
-        return getProperty(KEY_CERT_CHAIN_FILE_PATH, "/opt/cert/xpipe.crt");
+    public String getServerCertChainFilePath() {
+        return getProperty(KEY_SERVER_CERT_CHAIN_FILE_PATH, "/opt/cert/server.crt");
     }
 
     @Override
-    public String getKeyFilePath() {
-        return getProperty(KEY_KEY_FILE_PATH, "/opt/cert/xpipe.key");
+    public String getClientCertChainFilePath() {
+        return getProperty(KEY_CLIENT_CERT_CHAIN_FILE_PATH, "/opt/cert/client.crt");
+    }
+
+    @Override
+    public String getServerKeyFilePath() {
+        return getProperty(KEY_SERVER_KEY_FILE_PATH, "/opt/cert/pkcs8_server.key");
+    }
+
+    @Override
+    public String getClientKeyFilePath() {
+        return getProperty(KEY_CLIENT_KEY_FILE_PATH, "/opt/cert/pkcs8_client.key");
     }
 
     @Override

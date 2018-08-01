@@ -49,13 +49,23 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
-    public String getCertChainFilePath() {
-        return "/opt/cert/xpipe.crt";
+    public String getServerCertChainFilePath() {
+        return "/opt/cert/server.crt";
     }
 
     @Override
-    public String getKeyFilePath() {
-        return "/opt/cert/xpipe.key";
+    public String getClientCertChainFilePath() {
+        return "/opt/cert/client.crt";
+    }
+
+    @Override
+    public String getServerKeyFilePath() {
+        return "/opt/cert/pkcs8_server.key";
+    }
+
+    @Override
+    public String getClientKeyFilePath() {
+        return "/opt/cert/pkcs8_client.key";
     }
 
     @Override
