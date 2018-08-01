@@ -56,8 +56,6 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_RECV_BUFFER_SIZE = "proxy.recv.buffer.size";
 
-    private static final String KEY_MAX_PACKET_BUFFER_SIZE = "proxy.max.packet.buffer.size";
-
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
     public DefaultProxyConfig() {
@@ -117,7 +115,7 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     @Override
     public int getFixedRecvBufferSize() {
-        return getIntProperty(KEY_RECV_BUFFER_SIZE, 1024);
+        return getIntProperty(KEY_RECV_BUFFER_SIZE, 1536);
     }
 
     @Override
@@ -139,11 +137,6 @@ public class DefaultProxyConfig implements ProxyConfig {
     @Override
     public String getRootFilePath() {
         return getProperty(KEY_ROOT_FILE_PATH, "/opt/data/100013684/openssl/ca.crt");
-    }
-
-    @Override
-    public int getMaxPacketBufferSize() {
-        return getIntProperty(KEY_MAX_PACKET_BUFFER_SIZE, 2048);
     }
 
     protected String getProperty(String key, String defaultValue){

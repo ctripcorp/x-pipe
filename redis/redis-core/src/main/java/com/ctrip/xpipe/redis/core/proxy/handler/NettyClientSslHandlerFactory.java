@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.core.proxy.handler;
 
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.SslHandler;
-import io.netty.handler.ssl.SslProvider;
+import io.netty.handler.ssl.*;
 
 import java.io.File;
 
@@ -40,6 +37,7 @@ public class NettyClientSslHandlerFactory extends AbstractNettySslHandlerFactory
                         sslContext = SslContextBuilder.forClient()
                                 .keyManager(certChainFile, keyFile)
                                 .trustManager(rootFile)
+                                .clientAuth(ClientAuth.REQUIRE)
                                 .sslProvider(SslProvider.OPENSSL).build();
                     } catch (Exception e) {
                         logger.error("[getNettySslContext] ", e);

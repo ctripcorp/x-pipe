@@ -25,8 +25,4 @@ public class DefaultTlsConfig extends AbstractConfigBean implements TLSConfig {
         return getProperty(KEY_ROOT_FILE_PATH, "/opt/cert/ca.crt");
     }
 
-    @Override
-    public int getMaxPacketBufferSize() {
-        return 2048;
-    }
 }
