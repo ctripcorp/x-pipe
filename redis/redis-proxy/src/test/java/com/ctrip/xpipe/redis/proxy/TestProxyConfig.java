@@ -63,11 +63,6 @@ public class TestProxyConfig implements ProxyConfig {
         return "/opt/cert/ca.crt";
     }
 
-    @Override
-    public int getMaxPacketBufferSize() {
-        return 2048;
-    }
-
     public TestProxyConfig setFrontendTcpPort(int frontendTcpPort) {
         this.frontendTcpPort = frontendTcpPort;
         return this;

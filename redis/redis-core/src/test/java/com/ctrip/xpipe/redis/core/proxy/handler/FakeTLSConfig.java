@@ -24,9 +24,4 @@ public class FakeTLSConfig implements TLSConfig {
         return "/opt/cert/ca.crt";
     }
 
-    @Override
-    public int getMaxPacketBufferSize() {
-        return 2048;
-    }
-
 }
