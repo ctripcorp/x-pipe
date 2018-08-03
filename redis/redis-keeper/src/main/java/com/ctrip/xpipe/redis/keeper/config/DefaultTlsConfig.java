@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
-import com.ctrip.framework.foundation.Foundation;
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.config.AbstractConfigBean;
-import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
 
 /**
@@ -13,27 +10,29 @@ import com.ctrip.xpipe.redis.core.config.TLSConfig;
  */
 public class DefaultTlsConfig extends AbstractConfigBean implements TLSConfig {
 
-    public DefaultTlsConfig() {
-        setConfig(new DefaultFileConfig());
+    @Override
+    public String getServerCertChainFilePath() {
+        return getProperty(KEY_SERVER_CERT_CHAIN_FILE_PATH, "/opt/cert/server.crt");
     }
 
     @Override
-    public String getPassword() {
-        return getProperty(KEY_CERT_PASSWORD, FoundationService.DEFAULT.getAppId());
+    public String getClientCertChainFilePath() {
+        return getProperty(KEY_CLIENT_CERT_CHAIN_FILE_PATH, "/opt/cert/client.crt");
     }
 
     @Override
-    public String getServerCertFilePath() {
-        return getProperty(KEY_SERVER_CERT_FILE_PATH, "/opt/cert/xpipe_server.jks");
+    public String getServerKeyFilePath() {
+        return getProperty(KEY_SERVER_KEY_FILE_PATH, "/opt/cert/pkcs8_server.key");
     }
 
     @Override
-    public String getClientCertFilePath() {
-        return getProperty(KEY_CLIENT_CERT_FILE_PATH, "/opt/cert/xpipe_client.jks");
+    public String getClientKeyFilePath() {
+        return getProperty(KEY_CLIENT_KEY_FILE_PATH, "/opt/cert/pkcs8_client.key");
     }
 
     @Override
-    public String getCertFileType() {
-        return getProperty(KEY_CERT_FILE_TYPE, "JKS");
+    public String getRootFilePath() {
+        return getProperty(KEY_ROOT_FILE_PATH, "/opt/cert/ca.crt");
     }
+
 }

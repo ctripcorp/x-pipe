@@ -1,13 +1,10 @@
 package com.ctrip.xpipe.redis.core.proxy.handler;
 
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
-import io.netty.channel.ChannelHandler;
-import io.netty.handler.ssl.SslHandler;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.ssl.*;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManagerFactory;
-import java.security.KeyStore;
+import java.io.File;
 
 /**
  * @author chen.zhu
@@ -16,51 +13,39 @@ import java.security.KeyStore;
  */
 public class NettyClientSslHandlerFactory extends AbstractNettySslHandlerFactory {
 
-    private volatile SSLContext sslContext;
+    private volatile SslContext sslContext;
 
     public NettyClientSslHandlerFactory(TLSConfig config) {
         super(config);
     }
 
     @Override
-    protected String getFilePath() {
-        return tlsConfig.getClientCertFilePath();
+    public SslHandler createSslHandler(SocketChannel channel) {
+        SslHandler sslHandler = getNettySslContext().newHandler(channel.alloc());
+        return getCustomizedSslHandler(sslHandler);
     }
 
-    @Override
-    public ChannelHandler createSslHandler() {
-        SSLContext sslContext = initSSLContext();
-        if(sslContext == null) {
-            return null;
-        }
-
-        SSLEngine sslEngine = sslContext.createSSLEngine();
-        sslEngine.setUseClientMode(true);
-        return new SslHandler(sslEngine);
-    }
-
-    private SSLContext initSSLContext() {
+    private SslContext getNettySslContext() {
         if(sslContext == null) {
             synchronized (this) {
                 if(sslContext == null) {
-                    KeyStore keyStore = loadKeyStore();
-                    if (keyStore == null) {
-                        return null;
-                    }
-
                     try {
-                        TrustManagerFactory trustManagerFactory = TrustManagerFactory
-                                .getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                        trustManagerFactory.init(keyStore);
+                        File certChainFile = new File(tlsConfig.getClientCertChainFilePath());
+                        File keyFile = new File(tlsConfig.getClientKeyFilePath());
+                        File rootFile = new File(tlsConfig.getRootFilePath());
 
-                        sslContext = SSLContext.getInstance(SSL_TYPE);
-                        sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+                        sslContext = SslContextBuilder.forClient()
+                                .keyManager(certChainFile, keyFile)
+                                .trustManager(rootFile)
+                                .clientAuth(ClientAuth.REQUIRE)
+                                .sslProvider(SslProvider.OPENSSL).build();
                     } catch (Exception e) {
-                        logger.error("[initSSLContext] ", e);
+                        logger.error("[getNettySslContext] ", e);
                     }
                 }
             }
         }
         return sslContext;
     }
+
 }

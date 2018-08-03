@@ -9,12 +9,16 @@ import com.ctrip.xpipe.simpleserver.Server;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.internal.tcnative.SSL;
+import io.netty.util.internal.NativeLibraryLoader;
 import jdk.nashorn.internal.runtime.linker.Bootstrap;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
+
+import java.util.concurrent.TimeoutException;
 
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.spy;
@@ -69,7 +73,7 @@ public class TestCloseOnBothSide extends AbstractProxyIntegrationTest {
         proxy1FrontChannel.close();
 
         waitConditionUntilTimeOut(()->proxy1Tunnel.getState().equals(new TunnelClosed((DefaultTunnel) proxy1Tunnel)) &&
-                proxy2Tunnel.getState().equals(new TunnelClosed((DefaultTunnel) proxy1Tunnel)), 1000);
+                proxy2Tunnel.getState().equals(new TunnelClosed((DefaultTunnel) proxy1Tunnel)), 1500);
 
         Assert.assertFalse(proxy1BackendChannel.isActive());
         Assert.assertFalse(proxy2BackendChannel.isActive());
@@ -101,7 +105,7 @@ public class TestCloseOnBothSide extends AbstractProxyIntegrationTest {
         proxy2BackendChannel.close();
 
         waitConditionUntilTimeOut(()->proxy1Tunnel.getState().equals(new TunnelClosed((DefaultTunnel) proxy1Tunnel)) &&
-                proxy2Tunnel.getState().equals(new TunnelClosed((DefaultTunnel) proxy1Tunnel)), 1000);
+                proxy2Tunnel.getState().equals(new TunnelClosed((DefaultTunnel) proxy1Tunnel)), 1500);
 
         Assert.assertFalse(proxy1BackendChannel.isActive());
         Assert.assertFalse(proxy1FrontChannel.isActive());
@@ -111,7 +115,7 @@ public class TestCloseOnBothSide extends AbstractProxyIntegrationTest {
     }
 
     @Test
-    public void testCloseWhenConnectAtBackend() throws InterruptedException {
+    public void testCloseWhenConnectAtBackend() throws InterruptedException, TimeoutException {
         int port = randomPort();
         Channel channel = clientBootstrap().connect(PROXY_HOST, PROXY_PORT1).sync().channel();
 
@@ -119,9 +123,8 @@ public class TestCloseOnBothSide extends AbstractProxyIntegrationTest {
         logger.info("{}", getProxyProtocol(port));
         channel.writeAndFlush(UnpooledByteBufAllocator.DEFAULT.buffer()
                 .writeBytes(getProxyProtocol(port).getBytes()));
-        Thread.sleep(1000);
 
-        Assert.assertFalse(channel.isActive());
+        waitConditionUntilTimeOut(()->!channel.isActive(), 2000);
     }
 
     private Server buildChain() throws Exception {
@@ -131,12 +134,13 @@ public class TestCloseOnBothSide extends AbstractProxyIntegrationTest {
         channel.writeAndFlush(UnpooledByteBufAllocator.DEFAULT.buffer()
                 .writeBytes(getProxyProtocol(server.getPort()).getBytes()));
         Thread.sleep(1000);
-        Assert.assertNotNull(proxy1.getTunnelManager().tunnels());
-        Assert.assertNotNull(proxy2.getTunnelManager().tunnels());
-
-        Assert.assertFalse(proxy1.getTunnelManager().tunnels().isEmpty());
-        Assert.assertFalse(proxy2.getTunnelManager().tunnels().isEmpty());
+        waitConditionUntilTimeOut(()->chainEstablished(), 2000);
         return server;
+    }
+
+    private boolean chainEstablished() {
+        return proxy1.getTunnelManager().tunnels() != null && proxy2.getTunnelManager().tunnels() != null
+                && !proxy1.getTunnelManager().tunnels().isEmpty() && !proxy2.getTunnelManager().tunnels().isEmpty();
     }
 
     private String getProxyProtocol(int backendServerPort) {

@@ -22,7 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class RedisSessionTest extends AbstractConsoleIntegrationTest {
+public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest {
 
     private Server server;
 
@@ -50,7 +50,8 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
                 return "+OK\r\n";
             }
         });
-        redisSession = new RedisSession(new DefaultEndPoint(HOST, BLOCKED_PORT));
+        redisSession = new RedisSession(new DefaultEndPoint(HOST, BLOCKED_PORT), scheduled,
+                getXpipeNettyClientKeyedObjectPool(), getXpipeNettyClientKeyedObjectPool());
     }
 
     @Test

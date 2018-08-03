@@ -15,7 +15,7 @@ public abstract class AbstractSubscribeMessageHandler implements SubscribeMessag
 
     @Override
     public Pair<String, String> handle(String[] subscribeChannelResponse) {
-        if(subscribeChannelResponse.length < 3) {
+        if(subscribeChannelResponse == null || subscribeChannelResponse.length < 3) {
             logger.error("[handle] Subscribe channel message incorrect: {}", subscribeChannelResponse);
             return null;
         }

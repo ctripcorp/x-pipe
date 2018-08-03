@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.resource.ProxyProxyResourceManager;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
+import com.ctrip.xpipe.redis.proxy.resource.ProxyRelatedResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.BackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
@@ -77,8 +78,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     private DefaultTunnel tunnel;
 
-    protected ProxyResourceManager proxyResourceManager = new ProxyProxyResourceManager(
-            new DefaultProxyEndpointManager(()->60000), new LocalNextHopAlgorithm());
+    protected ProxyRelatedResourceManager proxyResourceManager = new ProxyRelatedResourceManager();
 
     @BeforeClass
     public static void beforeAbstractRedisProxyServerTestClass() {
@@ -105,11 +105,11 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         when(registry.getComponent(BACKEND_EVENTLOOP_GROUP)).thenReturn(new NioEventLoopGroup(2));
         ComponentRegistryHolder.initializeRegistry(registry);
 
-        tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(), proxyResourceManager);
+        tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(), new ProxyRelatedResourceManager().setEndpointManager(endpointManager));
         tunnel = spy(tunnel);
         doReturn(tunnel).when(tunnelManager).create(any(), any());
 
-        BackendSession backend = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 3000, mock(DefaultProxyEndpointSelector.class));
+        BackendSession backend = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 3000, mock(ProxyRelatedResourceManager.class));
         doReturn(backend).when(tunnel).backend();
 
         FrontendSession frontend = new DefaultFrontendSession(tunnel, new EmbeddedChannel(), 30000);

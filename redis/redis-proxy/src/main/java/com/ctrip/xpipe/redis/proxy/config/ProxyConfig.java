@@ -22,6 +22,8 @@ public interface ProxyConfig extends TLSConfig {
 
     boolean noTlsNettyHandler();
 
+    int getFixedRecvBufferSize();
+
     // to avoid any connect outside internal network
     String[] getInternalNetworkPrefix();
 }

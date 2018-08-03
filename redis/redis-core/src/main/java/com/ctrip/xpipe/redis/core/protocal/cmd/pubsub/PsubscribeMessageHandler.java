@@ -17,7 +17,7 @@ public class PsubscribeMessageHandler extends AbstractSubscribeMessageHandler {
     protected Pair<String, String> doHandle(String[] subscribeChannelResponse) {
         String flag = subscribeChannelResponse[0];
         if(!Subscribe.MESSAGE_TYPE.PMESSAGE.matches(flag)) {
-            logger.error("[doHandle] Subscribe message not correct: {}", subscribeChannelResponse);
+            logger.error("[doHandle] PSubscribe message not correct: {}", flag);
             return null;
         }
         logger.debug("[doHandle] Raw channel {} matches {}, and message: {}", subscribeChannelResponse[1],

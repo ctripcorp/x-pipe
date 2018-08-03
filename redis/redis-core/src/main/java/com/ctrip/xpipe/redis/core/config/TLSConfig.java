@@ -7,20 +7,24 @@ package com.ctrip.xpipe.redis.core.config;
  */
 public interface TLSConfig {
 
-    String getPassword();
+    String getServerCertChainFilePath();
 
-    String getServerCertFilePath();
+    String getClientCertChainFilePath();
 
-    String getClientCertFilePath();
+    String getServerKeyFilePath();
 
-    String getCertFileType();
+    String getClientKeyFilePath();
 
-    String KEY_SERVER_CERT_FILE_PATH = "proxy.server.cert.file.path";
+    String getRootFilePath();
 
-    String KEY_CLIENT_CERT_FILE_PATH = "proxy.client.cert.file.path";
+    String KEY_SERVER_CERT_CHAIN_FILE_PATH = "proxy.server.cert.chain.file.path";
 
-    String KEY_CERT_FILE_TYPE = "proxy.cert.file.type";
+    String KEY_CLIENT_CERT_CHAIN_FILE_PATH = "proxy.client.cert.chain.file.path";
 
-    String KEY_CERT_PASSWORD = "proxy.cert.password";
+    String KEY_SERVER_KEY_FILE_PATH = "proxy.server.key.file.path";
+
+    String KEY_CLIENT_KEY_FILE_PATH = "proxy.client.key.file.path";
+
+    String KEY_ROOT_FILE_PATH = "proxy.root.file.path";
 
 }

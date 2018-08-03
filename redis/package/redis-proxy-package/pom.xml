@@ -17,17 +17,7 @@
                     <groupId>com.dianping.cat</groupId>
                     <artifactId>cat-client</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-all</artifactId>
-                </exclusion>
             </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>4.0.37.Final</version>
         </dependency>
 
         <dependency>

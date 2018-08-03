@@ -22,23 +22,4 @@ public class DefaultProxyConfigTest {
         Assert.assertEquals(60, config.endpointHealthCheckIntervalSec());
     }
 
-    @Test
-    public void getPassword() {
-        Assert.assertEquals("appid_xpipe", config.getPassword());
-    }
-
-    @Test
-    public void getServerCertFilePath() {
-        Assert.assertEquals("/opt/data/100013684/xpipe-server.jks", config.getServerCertFilePath());
-    }
-
-    @Test
-    public void getClientCertFilePath() {
-        Assert.assertEquals("/opt/data/100013684/xpipe-client.jks", config.getClientCertFilePath());
-    }
-
-    @Test
-    public void getCertFileType() {
-        Assert.assertEquals("JKS", config.getCertFileType());
-    }
 }

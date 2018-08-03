@@ -75,7 +75,7 @@ public class DefaultFrontendSessionTest {
         session.addSessionEventHandler(new SessionEventHandler() {
             @Override
             public void onInit() {
-                session.makeUnReadable();
+                session.markUnReadable();
             }
 
             @Override

@@ -5,30 +5,23 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.BorrowObjectException;
-import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.PublishCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeListener;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
-import com.lambdaworks.redis.RedisFuture;
 import com.lambdaworks.redis.api.StatefulRedisConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Resource;
-import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.REDIS_COMMAND_EXECUTOR;
+import static com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool.DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
 
 
 /**
@@ -52,17 +45,19 @@ public class RedisSession {
 
     private AtomicReference<StatefulRedisConnection<String, String>> nonSubscribeConn = new AtomicReference<>();
 
-    @Resource
-    private XpipeNettyClientKeyedObjectPool keyedNettyClientPool;
-
-    @Resource(name=REDIS_COMMAND_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
-    private SimpleObjectPool<NettyClient> clientPool;
+    private SimpleObjectPool<NettyClient> requestResponseCommandPool;
 
-    public RedisSession(Endpoint endpoint) {
+    private SimpleObjectPool<NettyClient> subscribePool;
+
+    public RedisSession(Endpoint endpoint, ScheduledExecutorService scheduled,
+                        XpipeNettyClientKeyedObjectPool requestResponseNettyClientPool,
+                        XpipeNettyClientKeyedObjectPool subscribeNettyClientPool) {
         this.endpoint = endpoint;
-        this.clientPool = keyedNettyClientPool.getKeyPool(new InetSocketAddress(endpoint.getHost(), endpoint.getPort()));
+        this.scheduled = scheduled;
+        this.requestResponseCommandPool = requestResponseNettyClientPool.getKeyPool(endpoint);
+        this.subscribePool = subscribeNettyClientPool.getKeyPool(endpoint);
     }
 
     public void check() {
@@ -96,21 +91,30 @@ public class RedisSession {
 
     public synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback) {
 
-        PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(channel);
-        if (pubSubConnectionWrapper != null) {
+        PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.getOrDefault(channel, null);
+        if (shouldCreateNewSub(pubSubConnectionWrapper)) {
+            if(pubSubConnectionWrapper != null) {
+                pubSubConnectionWrapper.closeAndClean();
+            }
+            SubscribeCommand command = new SubscribeCommand(subscribePool, scheduled, channel);
+            PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(command, callback);
+            subscribConns.put(channel, wrapper);
+        } else {
             pubSubConnectionWrapper.replace(callback);
-            return;
         }
 
-        if (!subscribConns.containsKey(channel)) {
-            SubscribeCommand command = new SubscribeCommand(endpoint.getHost(), endpoint.getPort(), scheduled, channel);
-            PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(command.execute(), callback);
-            subscribConns.put(channel, wrapper);
+    }
+
+    private boolean shouldCreateNewSub(PubSubConnectionWrapper pubSubConnectionWrapper) {
+        if(pubSubConnectionWrapper == null) {
+            return true;
         }
+        return pubSubConnectionWrapper.getSubscribeCommandFuture().isDone();
     }
 
     public synchronized void publish(String channel, String message) {
-        PublishCommand pubCommand = new PublishCommand(clientPool, scheduled, channel, message);
+        PublishCommand pubCommand = new PublishCommand(requestResponseCommandPool, scheduled, channel, message);
+        pubCommand.setCommandTimeoutMilli(5000);
         pubCommand.execute().addListener(new CommandFutureListener<Object>() {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -123,7 +127,8 @@ public class RedisSession {
 
     public void ping(final PingCallback callback) {
         // if connect has been established
-        PingCommand pingCommand = new PingCommand(clientPool, scheduled);
+        PingCommand pingCommand = new PingCommand(requestResponseCommandPool, scheduled);
+        pingCommand.setCommandTimeoutMilli(5000);
         pingCommand.execute().addListener(new CommandFutureListener<String>() {
             @Override
             public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
@@ -137,7 +142,7 @@ public class RedisSession {
     }
 
     public void role(RollCallback callback) {
-        new RoleCommand(clientPool, scheduled).execute().addListener(new CommandFutureListener<Role>() {
+        new RoleCommand(requestResponseCommandPool, scheduled).execute().addListener(new CommandFutureListener<Role>() {
             @Override
             public void operationComplete(CommandFuture<Role> commandFuture) throws Exception {
                 if(commandFuture.isSuccess()) {
@@ -150,7 +155,7 @@ public class RedisSession {
     }
 
     public void configRewrite(BiConsumer<String, Throwable> consumer) {
-        new ConfigRewrite(clientPool, scheduled).execute().addListener(new CommandFutureListener<String>() {
+        new ConfigRewrite(requestResponseCommandPool, scheduled).execute().addListener(new CommandFutureListener<String>() {
             @Override
             public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
                 if(commandFuture.isSuccess()) {
@@ -164,12 +169,12 @@ public class RedisSession {
 
     public String roleSync() throws InterruptedException, ExecutionException, TimeoutException {
 
-        return new RoleCommand(clientPool, waitResultSeconds * 1000, true, scheduled).execute().get().getServerRole().name();
+        return new RoleCommand(requestResponseCommandPool, waitResultSeconds * 1000, true, scheduled).execute().get().getServerRole().name();
 
     }
 
     public void info(final String infoSection, Callbackable<String> callback) {
-        new InfoCommand(clientPool, infoSection, scheduled).execute()
+        new InfoCommand(requestResponseCommandPool, infoSection, scheduled).execute()
                 .addListener(new CommandFutureListener<String>() {
                     @Override
                     public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
@@ -194,7 +199,7 @@ public class RedisSession {
     }
 
     public void isDiskLessSync(Callbackable<Boolean> callback) {
-        new ConfigGetCommand.ConfigGetDisklessSync(clientPool, scheduled)
+        new ConfigGetCommand.ConfigGetDisklessSync(requestResponseCommandPool, scheduled)
                 .execute().addListener(new CommandFutureListener<Boolean>() {
             @Override
             public void operationComplete(CommandFuture<Boolean> commandFuture) throws Exception {
@@ -233,9 +238,25 @@ public class RedisSession {
 
         private AtomicReference<CommandFuture<Object>> subscribeCommandFuture = new AtomicReference<>();
 
-        public PubSubConnectionWrapper(CommandFuture<Object> commandFuture, SubscribeCallback callback) {
-            this.subscribeCommandFuture.set(commandFuture);
+        public PubSubConnectionWrapper(SubscribeCommand command, SubscribeCallback callback) {
             this.callback.set(callback);
+            command.addChannelListener(new SubscribeListener() {
+                @Override
+                public void message(String channel, String message) {
+                    getCallback().message(channel, message);
+                }
+            });
+
+            command.future().addListener(new CommandFutureListener<Object>() {
+                @Override
+                public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                    if(!commandFuture.isSuccess()) {
+                        getCallback().fail(commandFuture.cause());
+                    }
+                }
+            });
+            CommandFuture commandFuture = command.execute();
+            this.subscribeCommandFuture.set(commandFuture);
         }
 
         public void closeAndClean() {
@@ -252,6 +273,7 @@ public class RedisSession {
 
         public void replace(SubscribeCallback callback) {
             this.callback.set(callback);
+
         }
 
         public void setLastActiveTime(Long lastActiveTime) {
@@ -275,7 +297,7 @@ public class RedisSession {
     }
 
     public RedisSession setKeyedNettyClientPool(XpipeNettyClientKeyedObjectPool keyedNettyClientPool) {
-        this.keyedNettyClientPool = keyedNettyClientPool;
+        this.requestResponseCommandPool = keyedNettyClientPool.getKeyPool(endpoint);
         return this;
     }
 }

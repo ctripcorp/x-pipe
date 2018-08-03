@@ -2,12 +2,20 @@ package com.ctrip.xpipe.redis.console.spring;
 
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NextHopAlgorithm;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.netty.ProxyEnabledNettyKeyedPoolClientFactory;
+import com.ctrip.xpipe.redis.core.proxy.resource.ConsoleProxyResourceManager;
 import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -32,6 +40,12 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 
 	public final static String REDIS_COMMAND_EXECUTOR = "redisCommandExecutor";
 
+	public final static String REQUEST_RESPONSE_NETTY_CLIENT_POOL = "reqResNettyClientPool";
+
+	public final static String SUBSCRIBE_NETTY_CLIENT_POOL = "subscribeNettyClientPool";
+
+	private ProxyResourceManager resourceManager;
+
 	@Bean(name = REDIS_COMMAND_EXECUTOR)
 	public ScheduledExecutorService getRedisCommandExecutor() {
 		int corePoolSize = OsUtils.getCpuCount();
@@ -49,13 +63,35 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 		return new DefaultMetaServerConsoleServiceManagerWrapper();
 	}
 
-	@Bean
-	public XpipeNettyClientKeyedObjectPool getClientPool() throws Exception {
-
-		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool();
-		keyedObjectPool.initialize();
-		keyedObjectPool.start();
+	@Bean(name = REQUEST_RESPONSE_NETTY_CLIENT_POOL)
+	public XpipeNettyClientKeyedObjectPool getReqResNettyClientPool() throws Exception {
+		ProxyEnabledNettyKeyedPoolClientFactory factory = new ProxyEnabledNettyKeyedPoolClientFactory(getResourceManager());
+		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(factory);
+		LifecycleHelper.initializeIfPossible(keyedObjectPool);
+		LifecycleHelper.startIfPossible(keyedObjectPool);
 		return keyedObjectPool;
+	}
+
+	@Bean(name = SUBSCRIBE_NETTY_CLIENT_POOL)
+	public XpipeNettyClientKeyedObjectPool getSubscribeNettyClientPool() throws Exception {
+		ProxyEnabledNettyKeyedPoolClientFactory factory = new ProxyEnabledNettyKeyedPoolClientFactory(getResourceManager(), OsUtils.getCpuCount());
+		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(factory);
+		LifecycleHelper.initializeIfPossible(keyedObjectPool);
+		LifecycleHelper.startIfPossible(keyedObjectPool);
+		return keyedObjectPool;
+	}
+
+	private ProxyResourceManager getResourceManager() {
+		if(resourceManager == null) {
+			synchronized (this) {
+				if(resourceManager == null) {
+					ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()->2);
+					NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
+					resourceManager = new ConsoleProxyResourceManager(endpointManager, algorithm);
+				}
+			}
+		}
+		return resourceManager;
 	}
 
 	@Bean
