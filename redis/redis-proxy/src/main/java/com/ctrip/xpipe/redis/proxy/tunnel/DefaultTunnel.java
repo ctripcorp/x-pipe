@@ -5,14 +5,13 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
+import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.*;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
@@ -23,7 +22,6 @@ import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 
@@ -52,10 +50,10 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private ProxyConfig config;
 
-    private ProxyResourceManager proxyResourceManager;
+    private ResourceManager proxyResourceManager;
 
     public DefaultTunnel(Channel frontendChannel, ProxyProtocol protocol, ProxyConfig config,
-                         ProxyResourceManager proxyResourceManager) {
+                         ResourceManager proxyResourceManager) {
 
         this.config = config;
         this.protocol = protocol;
@@ -189,10 +187,9 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         super.doInitialize();
 
         frontend = new DefaultFrontendSession(this, frontendChannel, config.getTrafficReportIntervalMillis());
-        ProxyEndpointSelector selector = proxyResourceManager.createProxyEndpointSelector(protocol);
         // share the nio event loop to avoid oom
         backend = new DefaultBackendSession(this, frontend.getChannel().eventLoop(),
-                config.getTrafficReportIntervalMillis(), selector);
+                config.getTrafficReportIntervalMillis(), proxyResourceManager);
 
         registerSessionEventHandlers();
         frontend.addObserver(this);
@@ -253,35 +250,31 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     class BackendSessionEventHandler implements SessionEventHandler {
         @Override
         public void onInit() {
-            identity.setBackend(backend.getChannel());
         }
 
         @Override
         public void onEstablished() {
-            frontend.makeReadable();
+            identity.setBackend(backend.getChannel());
+            frontend.markReadable();
         }
 
         @Override
         public void onWritable() {
             logger.info("[onWritable][Backend][{}]open frontend auto read", identity());
-            frontend.makeReadable();
-            frontend.markReadLoggability(false);
-            backend.markWriteLoggability(false);
+            frontend.markReadable();
         }
 
         @Override
         public void onNotWritable() {
             logger.info("[onNotWritable][Backend][{}]close frontend auto read", identity());
-            frontend.markReadLoggability(true);
-            backend.markWriteLoggability(true);
-            frontend.makeUnReadable();
+            frontend.markUnReadable();
         }
     }
 
     class FrontendSessionEventHandler implements SessionEventHandler {
         @Override
         public void onInit() {
-            frontend.makeUnReadable();
+            frontend.markUnReadable();
             frontend.getChannel().pipeline()
                     .addLast(new TunnelTrafficReporter(config.getTrafficReportIntervalMillis(), frontend));
         }
@@ -294,17 +287,13 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         @Override
         public void onWritable() {
             logger.info("[onWritable][Frontend][{}]open backend auto read", identity());
-            backend.makeReadable();
-            backend.markReadLoggability(false);
-            frontend.markWriteLoggability(false);
+            backend.markReadable();
         }
 
         @Override
         public void onNotWritable() {
             logger.info("[onNotWritable][Frontend][{}]close backend auto read", identity());
-            backend.markReadLoggability(true);
-            frontend.markWriteLoggability(true);
-            backend.makeUnReadable();
+            backend.markUnReadable();
         }
     }
 }

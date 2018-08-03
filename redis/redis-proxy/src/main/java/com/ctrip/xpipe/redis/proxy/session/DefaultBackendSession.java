@@ -1,13 +1,16 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
+import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
@@ -26,6 +29,8 @@ import io.netty.handler.logging.LoggingHandler;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.FIXED_RCVBUF_ALLOCATE_SIZE;
 import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_HIGH_WATER_MARK;
 import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MARK;
 import static com.ctrip.xpipe.redis.proxy.spring.Production.BACKEND_EVENTLOOP_GROUP;
@@ -48,13 +53,15 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     private AtomicReference<SessionState> sessionState;
 
+    private ResourceManager resourceManager;
+
     public DefaultBackendSession(Tunnel tunnel, EventLoopGroup eventLoopGroup, long trafficReportIntervalMillis,
-                                 ProxyEndpointSelector selector) {
+                                 ResourceManager resourceManager) {
         super(tunnel, trafficReportIntervalMillis);
-        this.selector = selector;
+        this.resourceManager = resourceManager;
+        this.selector = resourceManager.createProxyEndpointSelector(tunnel.getProxyProtocol());
         this.nioEventLoopGroup = eventLoopGroup;
-        this.sslHandlerFactory = (NettySslHandlerFactory) ComponentRegistryHolder.getComponentRegistry()
-                                                    .getComponent(CLIENT_SSL_HANDLER_FACTORY);
+        this.sslHandlerFactory = resourceManager.getClientSslHandlerFactory();
         this.sessionState = new AtomicReference<>(new SessionInit(this));
     }
 
@@ -88,19 +95,20 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     private ChannelFuture initChannel(ProxyEndpoint endpoint) {
         Bootstrap b = new Bootstrap();
+        ProxyConfig config = resourceManager.getProxyConfig();
         b.group(nioEventLoopGroup)
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 7 * 1000) //7 sec timeout, to avoid forever waiting
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, WRITE_HIGH_WATER_MARK)
-                .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, WRITE_LOW_WATER_MARK)
+                .option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(WRITE_LOW_WATER_MARK, WRITE_HIGH_WATER_MARK))
+                .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(config.getFixedRecvBufferSize()))
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
                         if(endpoint.isSslEnabled()) {
-                            p.addLast(sslHandlerFactory.createSslHandler());
+                            p.addLast(sslHandlerFactory.createSslHandler(ch));
                         }
                         p.addLast(new LoggingHandler(LogLevel.DEBUG));
                         p.addLast(new BackendSessionHandler(tunnel()));

@@ -39,28 +39,38 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public int getFixedRecvBufferSize() {
+        return 1024;
+    }
+
+    @Override
     public String[] getInternalNetworkPrefix() {
         return null;
     }
 
     @Override
-    public String getPassword() {
-        return "100013684";
+    public String getServerCertChainFilePath() {
+        return "/opt/cert/server.crt";
     }
 
     @Override
-    public String getServerCertFilePath() {
-        return "/opt/cert/xpipe-server.jks";
+    public String getClientCertChainFilePath() {
+        return "/opt/cert/client.crt";
     }
 
     @Override
-    public String getClientCertFilePath() {
-        return "/opt/cert/xpipe-client.jks";
+    public String getServerKeyFilePath() {
+        return "/opt/cert/pkcs8_server.key";
     }
 
     @Override
-    public String getCertFileType() {
-        return "JKS";
+    public String getClientKeyFilePath() {
+        return "/opt/cert/pkcs8_client.key";
+    }
+
+    @Override
+    public String getRootFilePath() {
+        return "/opt/cert/ca.crt";
     }
 
     public TestProxyConfig setFrontendTcpPort(int frontendTcpPort) {

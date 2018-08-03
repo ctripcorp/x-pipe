@@ -77,17 +77,16 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
     }
 
     private void checkValid(ByteBuf in) {
-        if(bufReadIndex < PREFIX.length && !matchProtocolFormat(in)) {
-            String insideMessage = ByteBufUtil.prettyHexDump(in);
-            in.release();
-            logger.error("[checkValid] receive: {}", insideMessage);
-            throw new ProxyProtocolException("Format error: " + insideMessage);
-        }
-        readLength += in.readableBytes();
         if(readLength > maxLength) {
             throw new ProxyProtocolException("frame length (" + readLength + ") exceeds the allowed maximum ("
                     + maxLength + ')');
         }
+        if(bufReadIndex < PREFIX.length && !matchProtocolFormat(in)) {
+            String insideMessage = ByteBufUtil.prettyHexDump(in);
+            logger.error("[checkValid] receive: {}", insideMessage);
+            throw new ProxyProtocolException("Format error: " + insideMessage);
+        }
+        readLength += in.readableBytes();
     }
 
     private boolean matchProtocolFormat(ByteBuf in) {

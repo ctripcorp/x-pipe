@@ -54,6 +54,8 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_INTERNAL_NETWORK_PREFIX = "proxy.internal.network.prefix";
 
+    private static final String KEY_RECV_BUFFER_SIZE = "proxy.recv.buffer.size";
+
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
     public DefaultProxyConfig() {
@@ -112,6 +114,11 @@ public class DefaultProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public int getFixedRecvBufferSize() {
+        return getIntProperty(KEY_RECV_BUFFER_SIZE, 1536);
+    }
+
+    @Override
     public String[] getInternalNetworkPrefix() {
         String internalNetworkPrefix = getProperty(KEY_INTERNAL_NETWORK_PREFIX, "10");
         return IpUtils.splitIpAddr(internalNetworkPrefix);
@@ -119,23 +126,28 @@ public class DefaultProxyConfig implements ProxyConfig {
 
 
     @Override
-    public String getPassword() {
-        return getProperty(KEY_CERT_PASSWORD, FoundationService.DEFAULT.getAppId());
+    public String getServerCertChainFilePath() {
+        return getProperty(KEY_SERVER_CERT_CHAIN_FILE_PATH, "/opt/data/100013684/openssl/server.crt");
     }
 
     @Override
-    public String getServerCertFilePath() {
-        return getProperty(KEY_SERVER_CERT_FILE_PATH, "/opt/data/100013684/xpipe-server.jks");
+    public String getClientCertChainFilePath() {
+        return getProperty(KEY_CLIENT_CERT_CHAIN_FILE_PATH, "/opt/data/100013684/openssl/client.crt");
     }
 
     @Override
-    public String getClientCertFilePath() {
-        return getProperty(KEY_CLIENT_CERT_FILE_PATH, "/opt/data/100013684/xpipe-client.jks");
+    public String getServerKeyFilePath() {
+        return getProperty(KEY_SERVER_KEY_FILE_PATH, "/opt/data/100013684/openssl/pkcs8_server.crt");
     }
 
     @Override
-    public String getCertFileType() {
-        return getProperty(KEY_CERT_FILE_TYPE, "JKS");
+    public String getClientKeyFilePath() {
+        return getProperty(KEY_CLIENT_KEY_FILE_PATH, "/opt/data/100013684/openssl/pkcs8_client.key");
+    }
+
+    @Override
+    public String getRootFilePath() {
+        return getProperty(KEY_ROOT_FILE_PATH, "/opt/data/100013684/openssl/ca.crt");
     }
 
     protected String getProperty(String key, String defaultValue){

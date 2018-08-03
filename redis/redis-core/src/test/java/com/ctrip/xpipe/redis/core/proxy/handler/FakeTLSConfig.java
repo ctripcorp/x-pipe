@@ -10,23 +10,28 @@ import com.ctrip.xpipe.redis.core.config.TLSConfig;
 public class FakeTLSConfig implements TLSConfig {
 
     @Override
-    public String getPassword() {
-        return "123456";
+    public String getServerCertChainFilePath() {
+        return "/opt/cert/server.crt";
     }
 
     @Override
-    public String getServerCertFilePath() {
-        return "/opt/cert/xpipe-server.jks";
+    public String getClientCertChainFilePath() {
+        return "/opt/cert/client.crt";
     }
 
     @Override
-    public String getClientCertFilePath() {
-        return "/opt/cert/xpipe-client.jks";
+    public String getServerKeyFilePath() {
+        return "/opt/cert/pkcs8_server.key";
     }
 
     @Override
-    public String getCertFileType() {
-        return "JKS";
+    public String getClientKeyFilePath() {
+        return "/opt/cert/pkcs8_client.key";
+    }
+
+    @Override
+    public String getRootFilePath() {
+        return "/opt/cert/ca.crt";
     }
 
 }
