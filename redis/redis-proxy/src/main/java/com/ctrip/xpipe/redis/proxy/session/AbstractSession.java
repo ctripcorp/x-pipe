@@ -61,12 +61,12 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
     }
 
     @Override
-    public void makeReadable() {
+    public void markReadable() {
         ChannelUtil.triggerChannelAutoRead(getChannel());
     }
 
     @Override
-    public void makeUnReadable() {
+    public void markUnReadable() {
         ChannelUtil.closeChannelAutoRead(getChannel());
     }
 
@@ -86,26 +86,6 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
 
                 default: break;
         }
-    }
-
-    @Override
-    public boolean logRead() {
-        return logRead.get();
-    }
-
-    @Override
-    public boolean logWrite() {
-        return logWrite.get();
-    }
-
-    @Override
-    public void markReadLoggability(boolean isLoggable) {
-        logRead.set(isLoggable);
-    }
-
-    @Override
-    public void markWriteLoggability(boolean isLoggable) {
-        logWrite.set(isLoggable);
     }
 
     protected void onSessionInit() {

@@ -21,17 +21,9 @@ public interface Session extends Lifecycle, Releasable, Observable {
 
     Channel getChannel();
 
-    void makeReadable();
+    void markReadable();
 
-    void makeUnReadable();
-
-    boolean logRead();
-
-    boolean logWrite();
-
-    void markReadLoggability(boolean isLoggable);
-
-    void markWriteLoggability(boolean isLoggable);
+    void markUnReadable();
 
     SessionMeta getSessionMeta();
 
