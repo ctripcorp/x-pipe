@@ -1,18 +1,15 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
-import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
-import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
 import com.ctrip.xpipe.utils.ChannelUtil;
@@ -21,7 +18,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
@@ -30,11 +26,8 @@ import io.netty.handler.logging.LoggingHandler;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.FIXED_RCVBUF_ALLOCATE_SIZE;
 import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_HIGH_WATER_MARK;
 import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MARK;
-import static com.ctrip.xpipe.redis.proxy.spring.Production.BACKEND_EVENTLOOP_GROUP;
-import static com.ctrip.xpipe.redis.proxy.spring.Production.CLIENT_SSL_HANDLER_FACTORY;
 
 /**
  * @author chen.zhu

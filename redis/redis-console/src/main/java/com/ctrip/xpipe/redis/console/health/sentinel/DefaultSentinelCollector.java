@@ -9,9 +9,11 @@ import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
+import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MasterNotFoundException;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -59,6 +61,9 @@ public class DefaultSentinelCollector implements SentinelCollector {
     @Autowired
     private AlertManager alertManager;
 
+    @Autowired
+    private SentinelManager sentinelManager;
+
     @Override
     public void collect(SentinelSample sentinelSample) {
 
@@ -93,21 +98,14 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
         hellos.forEach((hello) -> {
             HostPort sentinelAddr = hello.getSentinelAddr();
-            RedisClient redisConnection = null;
+            Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
             try {
-                redisConnection = sessionManager.findRedisConnection(sentinelAddr.getHost(), sentinelAddr.getPort());
-                StatefulRedisSentinelConnection<String, String> connection = redisConnection.connectSentinel();
-                List<Map<String, String>> slaves = connection.sync().slaves(sentinelMonitorName);
-
+                List<HostPort> slaves = sentinelManager.slaves(sentinel, sentinelMonitorName);
                 boolean shoudReset = false;
                 String reason = null;
                 Set<HostPort> keepers = new HashSet<>();
 
-                for (Map<String, String> slave : slaves) {
-
-                    String host = slave.get("ip");
-                    int port = Integer.parseInt(slave.get("port"));
-                    HostPort currentSlave = new HostPort(host, port);
+                for (HostPort currentSlave : slaves) {
 
                     if(allKeepers.contains(currentSlave)){
                         keepers.add(currentSlave);
@@ -115,7 +113,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
                     Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
                     if (clusterShard == null) {
-                        if (isKeeperOrDead(host, port)) {
+                        if (isKeeperOrDead(currentSlave.getHost(), currentSlave.getPort())) {
                             shoudReset = true;
                             reason = String.format("[%s]keeper or dead, current:%s,%s, but no clustershard", currentSlave, clusterId, shardId);
                         } else {
@@ -140,14 +138,10 @@ public class DefaultSentinelCollector implements SentinelCollector {
                     logger.info("[reset][sentinelAddr]{}, {}, {}", sentinelAddr, sentinelMonitorName, reason);
                     EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
                             String.format("[%s]%s,%s", ALERT_TYPE.SENTINEL_RESET, sentinelAddr, reason));
-                    connection.sync().reset(sentinelMonitorName);
+                    sentinelManager.reset(sentinel, sentinelMonitorName);
                 }
             } catch (Exception e) {
                 logger.error("[doAction][checkReset]" + hello, e);
-            } finally {
-                if (redisConnection != null) {
-                    redisConnection.shutdown();
-                }
             }
         });
     }
@@ -211,17 +205,11 @@ public class DefaultSentinelCollector implements SentinelCollector {
         if(toDelete != null){
             toDelete.forEach((hello -> {
                 HostPort sentinelAddr = hello.getSentinelAddr();
-                RedisClient redisConnection = null;
                 try {
                     CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[del]" + hello);
-                    redisConnection = sessionManager.findRedisConnection(sentinelAddr.getHost(), sentinelAddr.getPort());
-                    redisConnection.connectSentinel().sync().remove(hello.getMonitorName());
+                    sentinelManager.removeSentinelMonitor(new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort()), hello.getMonitorName());
                 } catch (Exception e) {
                     logger.error("[doAction][delete]" + hello, e);
-                } finally {
-                    if (redisConnection != null) {
-                        redisConnection.shutdown();
-                    }
                 }
             }));
         }
@@ -229,38 +217,26 @@ public class DefaultSentinelCollector implements SentinelCollector {
         if(toAdd != null){
             toAdd.forEach((hello) -> {
                 HostPort sentinelAddr = hello.getSentinelAddr();
-                RedisClient redisConnection = null;
                 try {
-                    // TODO: Re-use connection instead of creating them each time
-                    redisConnection = sessionManager.findRedisConnection(sentinelAddr.getHost(), sentinelAddr.getPort());
-
+                    Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
                     boolean doAdd = true;
                     try {
-                        Map<String, String> map = redisConnection.connectSentinel().sync().master(hello.getMonitorName());
-                        if (equals(hello.getMonitorName(), hello.getMasterAddr(), map)) {
+                        HostPort masterHostPort = sentinelManager.getMasterOfMonitor(sentinel, hello.getMonitorName());
+                        if (hello.getMasterAddr().equals(masterHostPort)) {
                             doAdd = false;
-                            logger.info("[doAction][already exist]{}, {}", map, hello.getSentinelAddr());
+                            logger.info("[doAction][already exist]{}, {}", masterHostPort, hello.getSentinelAddr());
                         } else {
-                            redisConnection.connectSentinel().sync().remove(hello.getMonitorName());
+                            sentinelManager.removeSentinelMonitor(sentinel, hello.getMonitorName());
                         }
                     } catch (Exception e) {
                         //ingnore
                     }
                     if (doAdd) {
                         CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);
-                        redisConnection.connectSentinel().sync().monitor(
-                                hello.getMonitorName(),
-                                hello.getMasterAddr().getHost(),
-                                hello.getMasterAddr().getPort(),
-                                quorumConfig.getQuorum()
-                        );
+                        sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), quorumConfig.getQuorum());
                     }
                 } catch (Exception e) {
                     logger.error("[doAction][add]" + hello, e);
-                } finally {
-                    if (redisConnection != null) {
-                        redisConnection.shutdown();
-                    }
                 }
             });
         }

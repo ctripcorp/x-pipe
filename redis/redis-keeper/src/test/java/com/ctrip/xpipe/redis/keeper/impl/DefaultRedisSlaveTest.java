@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.Unpooled;
@@ -50,7 +49,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
     public void beforeDefaultRedisSlaveTest() {
 
         when(channel.closeFuture()).thenReturn(new DefaultChannelPromise(channel));
-        when(channel.remoteAddress()).thenReturn(localhostInetAddress(randomPort()));
+        when(channel.remoteAddress()).thenReturn(localhostInetAdress(randomPort()));
 
         RedisClient redisClient = new DefaultRedisClient(channel, redisKeeperServer);
         redisSlave= new DefaultRedisSlave(redisClient);

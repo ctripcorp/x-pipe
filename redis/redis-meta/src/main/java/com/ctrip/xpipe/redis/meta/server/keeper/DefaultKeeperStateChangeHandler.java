@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
@@ -42,7 +43,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	protected static Logger logger = LoggerFactory.getLogger(DefaultKeeperStateChangeHandler.class);
 
 	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
-	private SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool;
+	private SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool;
 
 	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
@@ -134,7 +135,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		this.dcMetaCache = dcMetaCache;
 	}
 	
-	public void setClientPool(SimpleKeyedObjectPool<InetSocketAddress, NettyClient> clientPool) {
+	public void setClientPool(SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool) {
 		this.clientPool = clientPool;
 	}
 	

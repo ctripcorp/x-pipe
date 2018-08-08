@@ -1,19 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
-import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEnabledEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
+import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
-import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.simpleserver.Server;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.Before;

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.core.proxy;
+package com.ctrip.xpipe.api.proxy;
 
 /**
  * @author chen.zhu

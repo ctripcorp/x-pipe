@@ -65,7 +65,6 @@ public class DiskLessCollectorTest {
         when(config.getReplDisklessMinRedisVersion()).thenReturn("2.8.22");
 
         HostPort hostPort = new HostPort(host, port);
-        Assert.assertTrue(collector.isReplDiskLessSync(diskLess));
         Assert.assertFalse(collector.versionMatches(hostPort));
     }
 }
