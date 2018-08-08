@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
@@ -28,7 +29,7 @@ public class PublishCommandTest extends AbstractRedisTest {
     public void before() throws Exception {
         int port = randomPort();
         publishCommand = new PublishCommand(getXpipeNettyClientKeyedObjectPool()
-                .getKeyPool(new InetSocketAddress("127.0.0.1", port)), scheduled, channel, message);
+                .getKeyPool(new DefaultEndPoint("127.0.0.1", port)), scheduled, channel, message);
         startEchoServer(port, "+OK");
     }
 
@@ -44,7 +45,7 @@ public class PublishCommandTest extends AbstractRedisTest {
     @Test
     public void testPublishCommandManully() throws Exception {
         publishCommand = new PublishCommand(getXpipeNettyClientKeyedObjectPool()
-                .getKeyPool(new InetSocketAddress("127.0.0.1", 6379)), scheduled, channel, message);
+                .getKeyPool(new DefaultEndPoint("127.0.0.1", 6379)), scheduled, channel, message);
         for(int i = 0; i < 100; i ++) {
             publishCommand.execute().get();
             Thread.sleep(1000);

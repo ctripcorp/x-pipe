@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.tunnel;
 
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
@@ -10,7 +9,6 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
-import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;

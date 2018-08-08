@@ -2,6 +2,7 @@ package com.ctrip.xpipe.pool;
 
 import java.net.InetSocketAddress;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.ObjectPoolException;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -21,13 +22,13 @@ public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObj
 	private ObjectPool<NettyClient> objectPool;
 	private NettyClientFactory factory; 
 	private GenericObjectPoolConfig  config;
-	private InetSocketAddress target;
+	private Endpoint target;
 
-	public XpipeNettyClientPool(InetSocketAddress target) {
+	public XpipeNettyClientPool(Endpoint target) {
 		this(target, new GenericObjectPoolConfig());
 	}
 
-	public XpipeNettyClientPool(InetSocketAddress target, GenericObjectPoolConfig  config) {
+	public XpipeNettyClientPool(Endpoint target, GenericObjectPoolConfig  config) {
 		this.target = target;
 		this.config = config;
 	}

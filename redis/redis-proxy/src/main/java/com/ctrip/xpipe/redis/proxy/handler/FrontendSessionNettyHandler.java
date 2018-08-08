@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.utils.ChannelUtil;

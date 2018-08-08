@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
  * <p>
  * Aug 06, 2018
  */
-public class FileBasedXPipeMetaManagerCollector implements XPipeMetaManagerCollector {
+public class FileBasedXPipeMetaManagerManager implements XPipeMetaManagerManager {
 
     private static final String KEY_XPIPE_META_FILE_PATH = "xpipe.meta.file.path";
 
@@ -18,7 +18,7 @@ public class FileBasedXPipeMetaManagerCollector implements XPipeMetaManagerColle
         return filePath;
     }
 
-    public FileBasedXPipeMetaManagerCollector setFilePath(String filePath) {
+    public FileBasedXPipeMetaManagerManager setFilePath(String filePath) {
         this.filePath = filePath;
         return this;
     }

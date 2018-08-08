@@ -1,18 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
-import com.ctrip.xpipe.redis.core.proxy.ProxyEnabled;
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.utils.StringUtil;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.Set;
 

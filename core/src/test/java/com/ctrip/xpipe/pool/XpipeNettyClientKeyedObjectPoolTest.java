@@ -2,6 +2,8 @@ package com.ctrip.xpipe.pool;
 
 import java.net.InetSocketAddress;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,7 +55,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 	public void testIdleClose() throws Exception {
 
 		Server  echoServer = startEchoServer();
-		InetSocketAddress key = new InetSocketAddress("localhost", echoServer.getPort());
+		Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 
 		pool.setKeyPooConfig(0, 200, 500, 100);
 
@@ -75,7 +77,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 	public void testKeyPoolReuse() throws Exception{
 		
 		Server echoServer = startEchoServer();
-		InetSocketAddress key = new InetSocketAddress("localhost", echoServer.getPort());
+		Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 
 		Assert.assertEquals(0, echoServer.getConnected());
 		
@@ -99,7 +101,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 
 		for (int i = 0; i < testCount; i++) {
 			
-			InetSocketAddress key = new InetSocketAddress("localhost", echoServer.getPort());
+			Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 			NettyClient client = pool.borrowObject(key);
 			sleep(10);
 			Assert.assertEquals(1, echoServer.getTotalConnected());
@@ -110,14 +112,14 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 	@Test(expected = BorrowObjectException.class)
 	public void testException() throws BorrowObjectException{
 		
-		pool.borrowObject(new InetSocketAddress("localhost", randomPort()));
+		pool.borrowObject(new DefaultEndPoint("localhost", randomPort()));
 	}
 	
 	@Test
 	public void testDispose() throws Exception{
 
 		Server echoServer = startEchoServer();
-		InetSocketAddress key = new InetSocketAddress("localhost", echoServer.getPort());
+		Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 		
 		Assert.assertEquals(0, echoServer.getConnected());
 		for(int i=0; i < maxPerKey; i++){
@@ -137,7 +139,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 	public void testMax() throws Exception{
 		
 		Server echoServer = startEchoServer();
-		InetSocketAddress key = new InetSocketAddress("localhost", echoServer.getPort());
+		Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 		
 		Assert.assertEquals(0, echoServer.getConnected());
 		for(int i=0; i < maxPerKey; i++){

@@ -4,7 +4,7 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
 import com.ctrip.xpipe.redis.proxy.session.BackendSession;

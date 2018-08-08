@@ -11,7 +11,7 @@ import java.util.List;
  * <p>
  * Aug 06, 2018
  */
-public interface XPipeMetaManagerCollector {
+public interface XPipeMetaManagerManager {
 
     XpipeMetaManager getXPipeMetaManager();
 
