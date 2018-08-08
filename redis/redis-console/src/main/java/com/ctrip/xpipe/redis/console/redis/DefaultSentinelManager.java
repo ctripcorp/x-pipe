@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.redis;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
@@ -12,6 +13,7 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import org.omg.PortableServer.REQUEST_PROCESSING_POLICY_ID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -21,6 +23,8 @@ import javax.annotation.Resource;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+
+import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.REQUEST_RESPONSE_NETTY_CLIENT_POOL;
 
 /**
  * @author chen.zhu
@@ -34,7 +38,7 @@ public class DefaultSentinelManager implements SentinelManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Resource
+    @Resource(name = REQUEST_RESPONSE_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedClientPool;
 
     @Resource(name = ConsoleContextConfig.REDIS_COMMAND_EXECUTOR)
@@ -74,7 +78,7 @@ public class DefaultSentinelManager implements SentinelManager {
     @Override
     public HostPort getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
-                .getKeyPool(new InetSocketAddress(sentinel.getIp(), sentinel.getPort()));
+                .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
         AbstractSentinelCommand.SentinelMaster sentinelMaster = new AbstractSentinelCommand
                 .SentinelMaster(clientPool, scheduled, sentinelMonitorName);
         sentinelMaster.logResponse(false);
@@ -92,7 +96,7 @@ public class DefaultSentinelManager implements SentinelManager {
     @Override
     public void removeSentinelMonitor(Sentinel sentinel, String sentinelMonitorName) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
-                .getKeyPool(new InetSocketAddress(sentinel.getIp(), sentinel.getPort()));
+                .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
 
         AbstractSentinelCommand.SentinelRemove sentinelRemove = new AbstractSentinelCommand
                 .SentinelRemove(clientPool, sentinelMonitorName, scheduled);
@@ -108,7 +112,7 @@ public class DefaultSentinelManager implements SentinelManager {
     @Override
     public String infoSentinel(Sentinel sentinel) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
-                .getKeyPool(new InetSocketAddress(sentinel.getIp(), sentinel.getPort()));
+                .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
 
         InfoCommand infoCommand = new InfoCommand(clientPool, InfoCommand.INFO_TYPE.SENTINEL, scheduled);
         infoCommand.logResponse(false);
@@ -118,6 +122,40 @@ public class DefaultSentinelManager implements SentinelManager {
             logger.error("[infoSentinel] " + sentinel, e);
         }
         return null;
+    }
+
+    @Override
+    public void monitorMaster(Sentinel sentinel, String sentinelMonitorName, HostPort master, int quorum) {
+        SimpleObjectPool<NettyClient> clientPool = keyedClientPool
+                .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
+        try {
+            new AbstractSentinelCommand.SentinelMonitor(clientPool, scheduled, sentinelMonitorName, master, quorum).execute().get();
+        } catch (Exception e) {
+            logger.error("[slaves] sentinel: {}", sentinel, e);
+        }
+    }
+
+    @Override
+    public List<HostPort> slaves(Sentinel sentinel, String sentinelMonitorName) {
+        SimpleObjectPool<NettyClient> clientPool = keyedClientPool
+                .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
+        try {
+            return new AbstractSentinelCommand.SentinelSlaves(clientPool, scheduled, sentinelMonitorName).execute().get();
+        } catch (Exception e) {
+            logger.error("[slaves] sentinel: {}", sentinel, e);
+        }
+        return null;
+    }
+
+    @Override
+    public void reset(Sentinel sentinel, String sentinelMonitorName) {
+        SimpleObjectPool<NettyClient> clientPool = keyedClientPool
+                .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
+        try {
+            new AbstractSentinelCommand.SentinelReset(clientPool, sentinelMonitorName, scheduled).execute().get();
+        } catch (Exception e) {
+            logger.error("[slaves] sentinel: {}", sentinel, e);
+        }
     }
 
     private boolean checkEmpty(String sentinelMonitorName, String allSentinels) {
@@ -141,7 +179,7 @@ public class DefaultSentinelManager implements SentinelManager {
 
         for(InetSocketAddress sentinelAddress: sentinels){
 
-            SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(sentinelAddress);
+            SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new DefaultEndPoint(sentinelAddress));
             AbstractSentinelCommand.Sentinels sentinelsCommand = new AbstractSentinelCommand
                     .Sentinels(clientPool, sentinelMonitorName, scheduled);
 

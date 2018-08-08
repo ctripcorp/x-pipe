@@ -48,7 +48,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 		
 		FakeRedisServer fakeRedisServer = startFakeRedisServer();
 		Endpoint masterEndPoint = new DefaultEndPoint("localhost", fakeRedisServer.getPort());
-		SimpleObjectPool<NettyClient> pool = NettyPoolUtil.createNettyPool(new InetSocketAddress("localhost", fakeRedisServer.getPort()));
+		SimpleObjectPool<NettyClient> pool = NettyPoolUtil.createNettyPool(new DefaultEndPoint("localhost", fakeRedisServer.getPort()));
 		
 		when(replicationStoreManager.createIfNotExist()).thenReturn(replicationStore);
 		when(replicationStore.getMetaStore()).thenReturn(metaStore);

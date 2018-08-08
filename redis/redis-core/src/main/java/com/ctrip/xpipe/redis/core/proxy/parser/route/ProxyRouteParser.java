@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy.parser.route;
 
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
 
 import java.util.List;

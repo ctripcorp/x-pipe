@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -21,7 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class RedisSessionTest extends AbstractConsoleIntegrationTest {
+public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest {
 
     private Server server;
 
@@ -49,8 +50,8 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
                 return "+OK\r\n";
             }
         });
-        redisSession = new RedisSession(createRedisClient(HOST, BLOCKED_PORT),
-                new HostPort(HOST, BLOCKED_PORT), executors, executors);
+        redisSession = new RedisSession(new DefaultEndPoint(HOST, BLOCKED_PORT), scheduled,
+                getXpipeNettyClientKeyedObjectPool(), getXpipeNettyClientKeyedObjectPool());
     }
 
     @Test

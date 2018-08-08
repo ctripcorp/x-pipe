@@ -1,9 +1,7 @@
-package com.ctrip.xpipe.redis.core.proxy;
+package com.ctrip.xpipe.api.proxy;
 
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.parser.compress.CompressAlgorithm;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
 import java.util.List;

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.simpleserver.Server;
@@ -22,7 +23,7 @@ public class PingCommandTest extends AbstractRedisTest{
 		
 		FakeRedisServer fakeRedisServer = startFakeRedisServer();
 		
-		PingCommand command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("localhost", fakeRedisServer.getPort())), scheduled);
+		PingCommand command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("localhost", fakeRedisServer.getPort())), scheduled);
 		String result = command.execute().get();
 		Assert.assertEquals(PingCommand.PONG, result);
 	}
@@ -32,7 +33,7 @@ public class PingCommandTest extends AbstractRedisTest{
 
 		Server server = startServer((String) null);
 
-		PingCommand command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("127.0.0.1",
+		PingCommand command = new PingCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1",
 				server.getPort())), scheduled);
 
 		try{

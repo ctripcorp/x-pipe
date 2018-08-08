@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.proxy;
 
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 
 import java.util.List;
 

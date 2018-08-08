@@ -1,10 +1,14 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -28,12 +32,16 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
+
+import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.REQUEST_RESPONSE_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.SUBSCRIBE_NETTY_CLIENT_POOL;
 
 /**
  * @author marsqing
@@ -45,54 +53,25 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	private ConcurrentMap<HostPort, RedisSession> sessions = new ConcurrentHashMap<>();
-
-	private ClientResources clientResources;
-
-	private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
-			XpipeThreadFactory.create(getClass().getSimpleName()));
+	private ConcurrentMap<Endpoint, RedisSession> sessions = new ConcurrentHashMap<>();
 
 	@Autowired
 	private MetaCache metaCache;
 
-	@VisibleForTesting
-	protected ExecutorService executors;
+	@Resource(name = SUBSCRIBE_NETTY_CLIENT_POOL)
+	private XpipeNettyClientKeyedObjectPool subscrNettyClientPool;
 
-	@VisibleForTesting
-	protected ExecutorService pingAndDelayExecutor;
+	@Resource(name = REQUEST_RESPONSE_NETTY_CLIENT_POOL)
+	private XpipeNettyClientKeyedObjectPool reqResNettyClientPool;
 
-	public DefaultRedisSessionManager() {
-		this(1);
-	}
+	@Resource(name = ConsoleContextConfig.REDIS_COMMAND_EXECUTOR)
+	private ScheduledExecutorService scheduled;
 
-	@VisibleForTesting
-	public DefaultRedisSessionManager(int reconnectDelaySeconds, ExecutorService executorService, ExecutorService pingAndDelayExecutor) {
-		clientResources = DefaultClientResources.builder()//
-				.reconnectDelay(Delay.constant(reconnectDelaySeconds, TimeUnit.SECONDS))//
-				.build();
-		this.executors = executorService;
-		this.pingAndDelayExecutor = pingAndDelayExecutor;
-	}
-
-	public DefaultRedisSessionManager(int reconnectDelaySeconds) {
-		clientResources = DefaultClientResources.builder()//
-				.reconnectDelay(Delay.constant(reconnectDelaySeconds, TimeUnit.SECONDS))//
-				.build();
-	}
+	@Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+	private ExecutorService executors;
 
 	@PostConstruct
 	public void postConstruct(){
-
-		int corePoolSize = 30 * OsUtils.getCpuCount();
-		int maxPoolSize =  512;
-		DefaultExecutorFactory executorFactory = new DefaultExecutorFactory("RedisSession", corePoolSize, maxPoolSize,
-				new ThreadPoolExecutor.AbortPolicy());
-		executors = executorFactory.createExecutorService();
-
-		int fixedPoolSize = OsUtils.getCpuCount();
-		pingAndDelayExecutor = new DefaultExecutorFactory("Ping-Delay-Executor", fixedPoolSize, fixedPoolSize,
-				new ThreadPoolExecutor.CallerRunsPolicy()).createExecutorService();
-
 		scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 			@Override
 			protected void doRun() throws Exception {
@@ -113,14 +92,40 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		}, 5, 5, TimeUnit.SECONDS);
 	}
 
+	@Override
+	public RedisSession findOrCreateSession(String host, int port) {
+
+		if(StringUtil.isEmpty(host) || port == 0) {
+			throw new IllegalArgumentException("Redis Host/Port can not be empty: " + host + ":" + port);
+		}
+		return findOrCreateSession(new DefaultEndPoint(host, port));
+	}
+
+    @Override
+    public RedisSession findOrCreateSession(Endpoint endpoint) {
+		RedisSession session = sessions.get(endpoint);
+
+		if (session == null) {
+			synchronized (this) {
+				session = sessions.get(endpoint);
+				if (session == null) {
+					session = new RedisSession(endpoint, scheduled, reqResNettyClientPool, subscrNettyClientPool);
+					sessions.put(endpoint, session);
+				}
+			}
+		}
+
+		return session;
+    }
+
 	@VisibleForTesting
 	protected void removeUnusedRedises() {
-		Set<HostPort> currentStoredRedises = sessions.keySet();
+		Set<Endpoint> currentStoredRedises = sessions.keySet();
 		if(currentStoredRedises.isEmpty())
 			return;
 
-		Set<HostPort> redisInUse = getInUseRedises();
-		List<HostPort> unusedRedises;
+		Set<Endpoint> redisInUse = getInUseRedises();
+		List<Endpoint> unusedRedises;
 		if(redisInUse == null || redisInUse.isEmpty()) {
 			unusedRedises = new LinkedList<>(currentStoredRedises);
 		} else {
@@ -147,8 +152,8 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	}
 
 
-	private Set<HostPort> getInUseRedises() {
-		Set<HostPort> redisInUse = new HashSet<>();
+	private Set<Endpoint> getInUseRedises() {
+		Set<Endpoint> redisInUse = new HashSet<>();
 		List<DcMeta> dcMetas = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 		if(dcMetas.isEmpty())	return null;
 		for (DcMeta dcMeta : dcMetas) {
@@ -156,50 +161,12 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
 				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 					for (RedisMeta redisMeta : shardMeta.getRedises()) {
-						redisInUse.add(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
+						redisInUse.add(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
 					}
 				}
 			}
 		}
 		return redisInUse;
-	}
-
-	@Override
-	public RedisSession findOrCreateSession(String host, int port) {
-
-		if(StringUtil.isEmpty(host) || port == 0) {
-			throw new IllegalArgumentException("Redis Host/Port can not be empty: " + host + ":" + port);
-		}
-		HostPort hostPort = new HostPort(host, port);
-		RedisSession session = sessions.get(hostPort);
-
-		if (session == null) {
-			synchronized (this) {
-				session = sessions.get(hostPort);
-				if (session == null) {
-					session = new RedisSession(findRedisConnection(host, port), hostPort, executors, pingAndDelayExecutor);
-					sessions.put(hostPort, session);
-				}
-			}
-		}
-
-		return session;
-	}
-
-	public RedisClient findRedisConnection(String host, int port) {
-		RedisURI redisUri = new RedisURI(host, port, 1, TimeUnit.SECONDS);
-		SocketOptions socketOptions = SocketOptions.builder()
-				.connectTimeout(XPipeConsoleConstant.SOCKET_TIMEOUT, TimeUnit.SECONDS)
-				.build();
-		ClientOptions clientOptions = ClientOptions.builder() //
-				.socketOptions(socketOptions)
-				.disconnectedBehavior(DisconnectedBehavior.REJECT_COMMANDS)//
-				.build();
-
-		RedisClient redis = RedisClient.create(clientResources, redisUri);
-		redis.setOptions(clientOptions);
-
-		return redis;
 	}
 
 	private void closeAllConnections() {
@@ -217,14 +184,28 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		}
 	}
 
-	public ExecutorService getExecutors() {
-		return executors;
-	}
-
 	@PreDestroy
 	public void preDestroy(){
 		closeAllConnections();
-		clientResources.shutdown();
-		executors.shutdownNow();
+	}
+
+	public DefaultRedisSessionManager setSubscrNettyClientPool(XpipeNettyClientKeyedObjectPool subscrNettyClientPool) {
+		this.subscrNettyClientPool = subscrNettyClientPool;
+		return this;
+	}
+
+	public DefaultRedisSessionManager setReqResNettyClientPool(XpipeNettyClientKeyedObjectPool reqResNettyClientPool) {
+		this.reqResNettyClientPool = reqResNettyClientPool;
+		return this;
+	}
+
+	public DefaultRedisSessionManager setScheduled(ScheduledExecutorService scheduled) {
+		this.scheduled = scheduled;
+		return this;
+	}
+
+	public DefaultRedisSessionManager setExecutors(ExecutorService executors) {
+		this.executors = executors;
+		return this;
 	}
 }

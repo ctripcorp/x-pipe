@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
-import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -14,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
 import java.util.List;
 
 /**
