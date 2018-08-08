@@ -15,6 +15,8 @@ public interface Subscribe {
 
     void addChannelListener(SubscribeListener listener);
 
+    void removeChannelListener(SubscribeListener listener);
+
     enum SUBSCRIBE_STATE {
         WAITING_RESPONSE,
         SUBSCRIBING,

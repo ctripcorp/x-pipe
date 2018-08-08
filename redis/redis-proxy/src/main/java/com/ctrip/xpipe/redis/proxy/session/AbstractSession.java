@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.model.SessionMeta;

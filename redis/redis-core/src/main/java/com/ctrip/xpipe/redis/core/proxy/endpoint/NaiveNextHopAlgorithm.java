@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy.endpoint;
 
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
+
 import java.util.List;
 import java.util.Random;
 

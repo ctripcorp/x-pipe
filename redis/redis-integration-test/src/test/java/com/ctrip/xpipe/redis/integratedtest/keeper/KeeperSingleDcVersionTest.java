@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -64,7 +65,7 @@ public class KeeperSingleDcVersionTest extends AbstractKeeperIntegratedSingleDc{
 			throw new IllegalStateException("redis(" + redisAddr +") version not right, expected:" + version);
 		}
 		
-		SimpleObjectPool<NettyClient>  clientPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(redisAddr);
+		SimpleObjectPool<NettyClient>  clientPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(redisAddr));
 		Boolean diskLess = new ConfigGetDisklessSync(clientPool, scheduled).execute().get();
 		if(diskLess){
 			int diskLessSyncDelay = new ConfigGetDisklessSyncDelay(clientPool, scheduled).execute().get();

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
@@ -36,9 +38,28 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         this.messageType = messageType;
     }
 
+    public AbstractSubscribe(String host, int port, ScheduledExecutorService scheduled, int commandTimeoutMilli,
+                             MESSAGE_TYPE messageType, String subscribeChannel) {
+        super(host, port, scheduled, commandTimeoutMilli);
+        this.messageType = messageType;
+        this.subscribeChannel = subscribeChannel;
+    }
+
+    public AbstractSubscribe(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+                             MESSAGE_TYPE messageType, String subscribeChannel) {
+        super(clientPool, scheduled);
+        this.messageType = messageType;
+        this.subscribeChannel = subscribeChannel;
+    }
+
     @Override
     public void addChannelListener(SubscribeListener listener) {
         listeners.add(listener);
+    }
+
+    @Override
+    public void removeChannelListener(SubscribeListener listener) {
+        listeners.remove(listener);
     }
 
     @Override

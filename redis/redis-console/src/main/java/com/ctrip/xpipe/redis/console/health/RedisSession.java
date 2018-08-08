@@ -91,25 +91,26 @@ public class RedisSession {
 
     public synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback) {
 
-        PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.getOrDefault(channel, null);
-        if (shouldCreateNewSub(pubSubConnectionWrapper)) {
+        PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(channel);
+        if (pubSubConnectionWrapper == null || pubSubConnectionWrapper.shouldCreateNewSession()) {
             if(pubSubConnectionWrapper != null) {
                 pubSubConnectionWrapper.closeAndClean();
             }
             SubscribeCommand command = new SubscribeCommand(subscribePool, scheduled, channel);
+            command.future().addListener(new CommandFutureListener<Object>() {
+                @Override
+                public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                    if(!commandFuture.isSuccess()) {
+                        subscribConns.remove(channel);
+                    }
+                }
+            });
             PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(command, callback);
             subscribConns.put(channel, wrapper);
         } else {
             pubSubConnectionWrapper.replace(callback);
         }
 
-    }
-
-    private boolean shouldCreateNewSub(PubSubConnectionWrapper pubSubConnectionWrapper) {
-        if(pubSubConnectionWrapper == null) {
-            return true;
-        }
-        return pubSubConnectionWrapper.getSubscribeCommandFuture().isDone();
     }
 
     public synchronized void publish(String channel, String message) {
@@ -282,6 +283,10 @@ public class RedisSession {
 
         public Long getLastActiveTime() {
             return lastActiveTime;
+        }
+
+        public boolean shouldCreateNewSession() {
+            return getSubscribeCommandFuture().isDone();
         }
     }
 

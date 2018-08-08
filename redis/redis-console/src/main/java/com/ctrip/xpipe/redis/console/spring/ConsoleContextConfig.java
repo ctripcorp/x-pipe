@@ -65,8 +65,7 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 
 	@Bean(name = REQUEST_RESPONSE_NETTY_CLIENT_POOL)
 	public XpipeNettyClientKeyedObjectPool getReqResNettyClientPool() throws Exception {
-		ProxyEnabledNettyKeyedPoolClientFactory factory = new ProxyEnabledNettyKeyedPoolClientFactory(getResourceManager());
-		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(factory);
+		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(OsUtils.getCpuCount());
 		LifecycleHelper.initializeIfPossible(keyedObjectPool);
 		LifecycleHelper.startIfPossible(keyedObjectPool);
 		return keyedObjectPool;
@@ -74,24 +73,10 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 
 	@Bean(name = SUBSCRIBE_NETTY_CLIENT_POOL)
 	public XpipeNettyClientKeyedObjectPool getSubscribeNettyClientPool() throws Exception {
-		ProxyEnabledNettyKeyedPoolClientFactory factory = new ProxyEnabledNettyKeyedPoolClientFactory(getResourceManager(), OsUtils.getCpuCount());
-		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(factory);
+		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(OsUtils.getCpuCount());
 		LifecycleHelper.initializeIfPossible(keyedObjectPool);
 		LifecycleHelper.startIfPossible(keyedObjectPool);
 		return keyedObjectPool;
-	}
-
-	private ProxyResourceManager getResourceManager() {
-		if(resourceManager == null) {
-			synchronized (this) {
-				if(resourceManager == null) {
-					ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()->2);
-					NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
-					resourceManager = new ConsoleProxyResourceManager(endpointManager, algorithm);
-				}
-			}
-		}
-		return resourceManager;
 	}
 
 	@Bean

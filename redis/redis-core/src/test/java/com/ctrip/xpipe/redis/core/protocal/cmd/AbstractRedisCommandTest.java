@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
@@ -28,7 +29,7 @@ public class AbstractRedisCommandTest extends AbstractRedisTest {
     public void testLogRequest() throws Exception {
         XpipeNettyClientKeyedObjectPool keyedObjectPool = getXpipeNettyClientKeyedObjectPool();
         SimpleObjectPool<NettyClient> clientPool = keyedObjectPool
-                .getKeyPool(new InetSocketAddress("127.0.0.1", 6379));
+                .getKeyPool(new DefaultEndPoint("127.0.0.1", 6379));
         ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
         InfoCommand infoCommand = new InfoCommand(clientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled);
         infoCommand.logResponse(false);
@@ -39,7 +40,7 @@ public class AbstractRedisCommandTest extends AbstractRedisTest {
     @Test
     public void testDoReceiveResponse() throws Exception {
         AbstractRedisCommand<Object> redisCommand = new AbstractRedisCommand<Object>(
-                getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress("127.0.0.1", randomPort())), scheduled) {
+                getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", randomPort())), scheduled) {
             @Override
             protected Object format(Object payload) {
                 return payload;

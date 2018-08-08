@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
@@ -67,7 +68,7 @@ public class AbstractSubscribeTest extends AbstractRedisTest {
     @Test
     public void testHandleResponse5() throws Exception {
         Object[] response = new Object[]{new ByteArrayOutputStreamPayload(Subscribe.SUBSCRIBE), new ByteArrayOutputStreamPayload(channel), (Long) 2L};
-        Channel nettyChannel = getXpipeNettyClientKeyedObjectPool().borrowObject(new InetSocketAddress("127.0.0.1", port)).channel();
+        Channel nettyChannel = getXpipeNettyClientKeyedObjectPool().borrowObject(new DefaultEndPoint("127.0.0.1", port)).channel();
         subscribe.handleResponse(nettyChannel, response);
         Assert.assertEquals(Subscribe.SUBSCRIBE_STATE.SUBSCRIBING, subscribe.getSubscribeState());
     }

@@ -43,8 +43,6 @@ public class RemoveUnusedRedisTest extends AbstractTest {
         // mock datas
         XpipeMeta xpipeMeta = new XpipeMeta().addDc(new DcMeta());
         when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
-        manager.executors = Executors.newFixedThreadPool(OsUtils.getCpuCount());
-        manager.pingAndDelayExecutor = Executors.newFixedThreadPool(OsUtils.getCpuCount());
 
         // random port to avoid port conflict
         port = randomPort();

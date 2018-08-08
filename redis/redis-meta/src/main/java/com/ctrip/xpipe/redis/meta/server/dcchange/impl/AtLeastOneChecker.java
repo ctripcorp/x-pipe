@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
@@ -42,7 +43,7 @@ public class AtLeastOneChecker implements HealthChecker{
 		StringBuilder sb = new StringBuilder();
 		for(Redis  redis : redises){
 			try {
-				new PingCommand(pool.getKeyPool(new InetSocketAddress(redis.getIp(), redis.getPort())), scheduled).execute().get();
+				new PingCommand(pool.getKeyPool(new DefaultEndPoint(redis.getIp(), redis.getPort())), scheduled).execute().get();
 				return SimpleErrorMessage.success();
 			} catch (InterruptedException | ExecutionException e) {
 				logger.info("[check]", e);
