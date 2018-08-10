@@ -54,12 +54,26 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 			throw new CommandExecutionException("execute " + this, e);
 		}finally{
 
-			if( nettyClient != null){
+			if(isNettyClientReturnable(nettyClient)){
 				try {
 					clientPool.returnObject(nettyClient);
 				} catch (ReturnObjectException e) {
 					logger.error("[doExecute]", e);
 				}
+			} else {
+				NettyClient finalNettyClient = nettyClient;
+				future().addListener(new CommandFutureListener<V>() {
+					@Override
+					public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
+						if(finalNettyClient != null) {
+							try {
+								clientPool.returnObject(finalNettyClient);
+							} catch (ReturnObjectException e) {
+								logger.error("[doExecute]", e);
+							}
+						}
+					}
+				});
 			}
 
 			if(poolCreated){
@@ -74,6 +88,14 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 			}
 			
 		}
+	}
+
+	private boolean isNettyClientReturnable(NettyClient nettyClient) {
+		return nettyClient != null && returnNettyClientAfterCommand();
+	}
+
+	protected boolean returnNettyClientAfterCommand() {
+		return true;
 	}
 
 	protected abstract void doSendRequest(NettyClient nettyClient, ByteBuf byteBuf);
