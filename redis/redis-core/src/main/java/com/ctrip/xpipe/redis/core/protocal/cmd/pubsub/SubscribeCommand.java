@@ -41,13 +41,13 @@ public class SubscribeCommand extends AbstractSubscribe {
 
     @Override
     protected void afterCommandExecute(NettyClient nettyClient) {
-        super.afterCommandExecute(nettyClient);
         future().addListener(new CommandFutureListener<Object>() {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
                 nettyClient.channel().close();
             }
         });
+        super.afterCommandExecute(nettyClient);
     }
 
     @Override
