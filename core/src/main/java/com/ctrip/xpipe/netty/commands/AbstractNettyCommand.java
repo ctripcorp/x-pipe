@@ -72,7 +72,7 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 					}
 				});
 			}
-			
+
 		}
 	}
 
@@ -90,6 +90,10 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 	
 	protected SimpleObjectPool<NettyClient> getClientPool() {
 		return clientPool;
+	}
+
+	protected boolean isPoolCreated() {
+		return poolCreated;
 	}
 
 	@Override

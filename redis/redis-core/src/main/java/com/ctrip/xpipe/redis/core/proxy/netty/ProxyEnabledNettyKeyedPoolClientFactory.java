@@ -60,4 +60,14 @@ public class ProxyEnabledNettyKeyedPoolClientFactory extends NettyKeyedPoolClien
     private boolean isProxyEnabled(Endpoint key) {
         return key instanceof ProxyEnabled;
     }
+
+    // TODO: Subscribe Netty Client Factory, Ping validate before use
+//    @Override
+//    public boolean validateObject(Endpoint key, PooledObject<NettyClient> p) {
+//        boolean result = super.validateObject(key, p);
+//        if(isProxyEnabled(key)) {
+//            return result &&
+//        }
+//        return result;
+//    }
 }
