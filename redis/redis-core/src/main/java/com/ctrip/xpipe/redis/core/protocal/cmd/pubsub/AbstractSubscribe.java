@@ -73,6 +73,9 @@ public abstract class AbstractSubscribe extends AbstractPersistentRedisCommand<O
     protected Object doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
 
         Object response = super.doReceiveResponse(channel, byteBuf);
+        if(response == null) {
+            return null;
+        }
 
         logger.debug("[response] {}", response);
 

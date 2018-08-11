@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
@@ -30,7 +32,23 @@ public class SubscribeCommand extends AbstractSubscribe {
     }
 
     @Override
-    public void doUnsubscribe() { }
+    public void doUnsubscribe() {
+        logger.info("[un-subscribe] set future to success");
+        if(!future().isDone()) {
+            future().setSuccess();
+        }
+    }
+
+    @Override
+    protected void afterCommandExecute(NettyClient nettyClient) {
+        super.afterCommandExecute(nettyClient);
+        future().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                nettyClient.channel().close();
+            }
+        });
+    }
 
     @Override
     public String getName() {
