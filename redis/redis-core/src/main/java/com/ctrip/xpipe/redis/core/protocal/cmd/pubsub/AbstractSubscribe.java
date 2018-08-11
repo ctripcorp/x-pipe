@@ -1,8 +1,15 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.command.CommandExecutionException;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.BorrowObjectException;
+import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPersistentRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
@@ -21,9 +28,9 @@ import java.util.concurrent.ScheduledExecutorService;
  * <p>
  * Apr 04, 2018
  */
-public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> implements Subscribe {
+public abstract class AbstractSubscribe extends AbstractPersistentRedisCommand<Object> implements Subscribe {
 
-    private SUBSCRIBE_STATE subscribeState = SUBSCRIBE_STATE.WAITING_RESPONSE;
+    private volatile SUBSCRIBE_STATE subscribeState = SUBSCRIBE_STATE.WAITING_RESPONSE;
 
     private MESSAGE_TYPE messageType;
 
@@ -162,6 +169,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         return 0;
     }
 
+
     protected String getSubscribeChannel() {
         return subscribeChannel;
     }
@@ -176,5 +184,6 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
 
     public void unSubscribe() {
         setSubscribeState(SUBSCRIBE_STATE.UNSUBSCRIBE);
+        doUnsubscribe();
     }
 }

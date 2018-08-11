@@ -220,7 +220,7 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		}
 	}
 
-	public static class SentinelReset extends AbstractSentinelCommand<String>{
+	public static class SentinelReset extends AbstractSentinelCommand<Long>{
 
 		public static String RESET = "reset";
 
@@ -232,8 +232,8 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		}
 
 		@Override
-		protected String format(Object payload) {
-			return payloadToString(payload);
+		protected Long format(Object payload) {
+			return payloadToLong(payload);
 		}
 
 		@Override
