@@ -43,8 +43,6 @@ public class RedisSession {
 
     private ConcurrentMap<String, PubSubConnectionWrapper> subscribConns = new ConcurrentHashMap<>();
 
-    private AtomicReference<StatefulRedisConnection<String, String>> nonSubscribeConn = new AtomicReference<>();
-
     private ScheduledExecutorService scheduled;
 
     private SimpleObjectPool<NettyClient> requestResponseCommandPool;
@@ -100,9 +98,7 @@ public class RedisSession {
             command.future().addListener(new CommandFutureListener<Object>() {
                 @Override
                 public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
-                    if(!commandFuture.isSuccess()) {
-                        subscribConns.remove(channel);
-                    }
+                    subscribConns.remove(channel);
                 }
             });
             PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(command, callback);
@@ -115,7 +111,6 @@ public class RedisSession {
 
     public synchronized void publish(String channel, String message) {
         PublishCommand pubCommand = new PublishCommand(requestResponseCommandPool, scheduled, channel, message);
-        pubCommand.setCommandTimeoutMilli(5000);
         pubCommand.execute().addListener(new CommandFutureListener<Object>() {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -129,7 +124,6 @@ public class RedisSession {
     public void ping(final PingCallback callback) {
         // if connect has been established
         PingCommand pingCommand = new PingCommand(requestResponseCommandPool, scheduled);
-        pingCommand.setCommandTimeoutMilli(5000);
         pingCommand.execute().addListener(new CommandFutureListener<String>() {
             @Override
             public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
@@ -236,10 +230,12 @@ public class RedisSession {
 
         private Long lastActiveTime = System.currentTimeMillis();
         private AtomicReference<SubscribeCallback> callback = new AtomicReference<>();
-
         private AtomicReference<CommandFuture> subscribeCommandFuture = new AtomicReference<>();
+        private AtomicReference<SubscribeCommand> command = new AtomicReference<>();
+
 
         public PubSubConnectionWrapper(SubscribeCommand command, SubscribeCallback callback) {
+            this.command.set(command);
             this.callback.set(callback);
             command.addChannelListener(new SubscribeListener() {
                 @Override
@@ -262,13 +258,13 @@ public class RedisSession {
         }
 
         public void closeAndClean() {
-            getSubscribeCommandFuture().setSuccess();
+            command.get().unSubscribe();
             if(!getSubscribeCommandFuture().isDone()) {
                 subscribeCommandFuture.get().cancel(true);
             }
         }
 
-        public CommandFuture<Object> getSubscribeCommandFuture() {
+        public CommandFuture getSubscribeCommandFuture() {
             return subscribeCommandFuture.get();
         }
 
@@ -295,9 +291,6 @@ public class RedisSession {
     }
 
     public void closeConnection() {
-        try {
-            nonSubscribeConn.get().close();
-        } catch (Exception ignore) {}
         for(PubSubConnectionWrapper connectionWrapper : subscribConns.values()) {
             try {
                 connectionWrapper.closeAndClean();
