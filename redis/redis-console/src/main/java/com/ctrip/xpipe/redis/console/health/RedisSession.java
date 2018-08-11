@@ -237,13 +237,14 @@ public class RedisSession {
         private Long lastActiveTime = System.currentTimeMillis();
         private AtomicReference<SubscribeCallback> callback = new AtomicReference<>();
 
-        private AtomicReference<CommandFuture<Object>> subscribeCommandFuture = new AtomicReference<>();
+        private AtomicReference<CommandFuture> subscribeCommandFuture = new AtomicReference<>();
 
         public PubSubConnectionWrapper(SubscribeCommand command, SubscribeCallback callback) {
             this.callback.set(callback);
             command.addChannelListener(new SubscribeListener() {
                 @Override
                 public void message(String channel, String message) {
+                    setLastActiveTime(System.currentTimeMillis());
                     getCallback().message(channel, message);
                 }
             });
@@ -261,7 +262,10 @@ public class RedisSession {
         }
 
         public void closeAndClean() {
-            subscribeCommandFuture.get().cancel(true);
+            getSubscribeCommandFuture().setSuccess();
+            if(!getSubscribeCommandFuture().isDone()) {
+                subscribeCommandFuture.get().cancel(true);
+            }
         }
 
         public CommandFuture<Object> getSubscribeCommandFuture() {
