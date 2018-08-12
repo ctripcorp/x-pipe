@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
+import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.utils.StringUtil;
 
 /**
@@ -7,7 +8,7 @@ import com.ctrip.xpipe.utils.StringUtil;
  * <p>
  * Apr 04, 2018
  */
-public interface Subscribe {
+public interface Subscribe extends Releasable {
 
     String PSUBSCRIBE = "psubscribe";
 
