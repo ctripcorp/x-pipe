@@ -108,7 +108,9 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 				 if(logResponse()){
 					 logger.info("[receive]{}, {}", ChannelUtil.getDesc(channel), result);
 				 }
-				 future().setSuccess(result);
+				 if(!future().isDone()) {
+					 future().setSuccess(result);
+				 }
 			 }
 
 			 if(result == null){
