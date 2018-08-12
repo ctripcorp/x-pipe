@@ -1,16 +1,9 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.command.CommandExecutionException;
-import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.BorrowObjectException;
-import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPersistentRedisCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -43,13 +36,6 @@ public abstract class AbstractSubscribe extends AbstractPersistentRedisCommand<O
         super(host, port, scheduled);
         this.subscribeChannel = subscribeChannel;
         this.messageType = messageType;
-    }
-
-    public AbstractSubscribe(String host, int port, ScheduledExecutorService scheduled, int commandTimeoutMilli,
-                             MESSAGE_TYPE messageType, String subscribeChannel) {
-        super(host, port, scheduled, commandTimeoutMilli);
-        this.messageType = messageType;
-        this.subscribeChannel = subscribeChannel;
     }
 
     public AbstractSubscribe(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
@@ -93,10 +79,9 @@ public abstract class AbstractSubscribe extends AbstractPersistentRedisCommand<O
                 break;
 
             case UNSUBSCRIBE:
-                unSubscribe();
+                doUnsubscribe();
                 return response;
         }
-        super.doReset();
         return null;
     }
 
@@ -188,5 +173,10 @@ public abstract class AbstractSubscribe extends AbstractPersistentRedisCommand<O
     public void unSubscribe() {
         setSubscribeState(SUBSCRIBE_STATE.UNSUBSCRIBE);
         doUnsubscribe();
+    }
+
+    @Override
+    public void release() {
+        this.listeners = null;
     }
 }

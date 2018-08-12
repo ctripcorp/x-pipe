@@ -22,9 +22,6 @@ public class SubscribeCommand extends AbstractSubscribe {
 
     public SubscribeCommand(Endpoint endpoint, ScheduledExecutorService scheduled, String channel) {
         super(endpoint.getHost(), endpoint.getPort(), scheduled, channel, MESSAGE_TYPE.MESSAGE);
-        if(isProxyEnabled(endpoint)) {
-            setCommandTimeoutMilli(PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI);
-        }
     }
 
     public SubscribeCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, String channel) {
@@ -41,12 +38,7 @@ public class SubscribeCommand extends AbstractSubscribe {
 
     @Override
     protected void afterCommandExecute(NettyClient nettyClient) {
-        future().addListener(new CommandFutureListener<Object>() {
-            @Override
-            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
-                nettyClient.channel().close();
-            }
-        });
+        release();
         super.afterCommandExecute(nettyClient);
     }
 
