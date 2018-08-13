@@ -1,16 +1,9 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.command.CommandExecutionException;
-import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.BorrowObjectException;
-import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPersistentRedisCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -139,6 +132,7 @@ public abstract class AbstractSubscribe extends AbstractPersistentRedisCommand<O
             throw new RedisRuntimeException(String.format("Subscribe subscribeChannel response incorrect: %s", response));
         }
 
+        //TODO: Sub-class generate message handler
         SubscribeMessageHandler handler = messageType.subscribeMessageHandler();
 
         Pair<String, String> channelAndMessage = handler.handle(payloadToStringArray(response));
