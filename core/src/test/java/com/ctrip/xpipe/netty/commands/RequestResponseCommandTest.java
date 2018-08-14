@@ -9,6 +9,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +41,7 @@ public class RequestResponseCommandTest extends AbstractTest {
 	public void beforeRequestResponseCommandTest() throws Exception {
 
 		server = startEchoServer();
-		clientPool = new XpipeNettyClientPool(new InetSocketAddress("localhost", server.getPort()));
+		clientPool = new XpipeNettyClientPool(new DefaultEndPoint("localhost", server.getPort()));
 		clientPool.initialize();
 		clientPool.start();
 	}

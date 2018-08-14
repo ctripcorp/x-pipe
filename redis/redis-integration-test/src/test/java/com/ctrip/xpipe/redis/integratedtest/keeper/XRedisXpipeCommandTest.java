@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
@@ -88,7 +89,7 @@ public class XRedisXpipeCommandTest extends AbstractKeeperIntegratedSingleDc {
 
     private Integer getSyncFull(RedisMeta redis) throws Exception {
 
-        SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(redis.getIp(), redis.getPort()));
+        SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(redis.getIp(), redis.getPort()));
         InfoCommand infoCommand = new InfoCommand(keyPool, InfoCommand.INFO_TYPE.STATS, scheduled);
         String value = infoCommand.execute().get();
         Integer sync_full = new InfoResultExtractor(value).extractAsInteger("sync_full");

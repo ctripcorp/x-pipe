@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
 import io.netty.buffer.ByteBuf;
 

@@ -5,24 +5,9 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager;
-import com.ctrip.xpipe.redis.console.alert.manager.DecoratorManager;
-import com.ctrip.xpipe.redis.console.alert.manager.SenderManager;
-import com.ctrip.xpipe.redis.console.alert.policy.timing.RecoveryTimeSlotControl;
-import com.ctrip.xpipe.redis.console.alert.policy.timing.TimeSlotControl;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu

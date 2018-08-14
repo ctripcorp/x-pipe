@@ -27,7 +27,7 @@ public class RoleCommandTest extends AbstractCommandTest{
 					+ "$4\r\n6479\r\n"
 					+ "$1\r\n0\r\n");
 		RoleCommand roleCommand = new RoleCommand(
-				getXpipeNettyClientKeyedObjectPool().getKeyPool(localhostInetAddress(master.getPort())),
+				getXpipeNettyClientKeyedObjectPool().getKeyPool(localhostEndpoint(master.getPort())),
 				2000,
 				false,
 				scheduled);
@@ -49,7 +49,7 @@ public class RoleCommandTest extends AbstractCommandTest{
 					+ "$" +masterState.getDesc().length()+ "\r\n" + masterState.getDesc()+ "\r\n"
 					+ ":477\r\n");
 			RoleCommand roleCommand = new RoleCommand(
-					getXpipeNettyClientKeyedObjectPool().getKeyPool(localhostInetAddress(slave.getPort())),
+					getXpipeNettyClientKeyedObjectPool().getKeyPool(localhostEndpoint(slave.getPort())),
 					2000, false, scheduled);
 			SlaveRole role = (SlaveRole) roleCommand.execute().get();
 			
@@ -72,7 +72,7 @@ public class RoleCommandTest extends AbstractCommandTest{
 				+ "$9\r\nconnected\r\n"
 				+ ":477\r\n");
 		RoleCommand roleCommand = new RoleCommand(
-				getXpipeNettyClientKeyedObjectPool().getKeyPool(localhostInetAddress(slave.getPort())),
+				getXpipeNettyClientKeyedObjectPool().getKeyPool(localhostEndpoint(slave.getPort())),
 				2000, false, scheduled);
 		SlaveRole role = (SlaveRole) roleCommand.execute().get();
 		

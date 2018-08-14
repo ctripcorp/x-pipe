@@ -15,8 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
  * @author chen.zhu
  * <p>
@@ -52,29 +50,12 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         });
     }
 
-    private void checkRedisDiskLess(HostPort hostPort, List<String> serverConf, String clusterId, String shardId) {
-        if(versionMatches(hostPort) && isReplDiskLessSync(serverConf)) {
+    private void checkRedisDiskLess(HostPort hostPort, boolean isDisklessSync, String clusterId, String shardId) {
+        if(versionMatches(hostPort) && isDisklessSync) {
             String message = String.format("Redis %s should not set %s as YES",
                     hostPort.toString(), DiskLessMonitor.REPL_DISKLESS_SYNC);
             alertManager.alert(clusterId, shardId, hostPort, ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR, message);
         }
-    }
-
-    @VisibleForTesting
-    protected boolean isReplDiskLessSync(List<String> serverConf) {
-        logger.debug("[isReplDiskLessSync]config is as: {}", serverConf);
-        try {
-            String key = serverConf.get(0);
-            String val = serverConf.get(1);
-            if (key != null && key.trim().equalsIgnoreCase(DiskLessMonitor.REPL_DISKLESS_SYNC)) {
-                if (val != null && val.trim().equalsIgnoreCase("yes"))
-                    return true;
-            }
-            return false;
-        } catch (Exception e) {
-            logger.error("[isReplDiskLessSync]Error analysis redis server conf: {}", serverConf);
-        }
-        return false;
     }
 
     @VisibleForTesting

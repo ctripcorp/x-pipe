@@ -8,9 +8,7 @@ import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.sender.AbstractSender;
 import com.ctrip.xpipe.redis.console.alert.sender.email.listener.AsyncEmailSenderCallback;
-import com.ctrip.xpipe.redis.console.alert.sender.email.listener.CompositeEmailSenderCallback;
 import com.ctrip.xpipe.redis.console.alert.sender.email.listener.EmailSendErrorReporter;
-import com.ctrip.xpipe.redis.console.alert.sender.email.listener.EmailSentCounter;
 import com.ctrip.xpipe.redis.console.model.EventModel;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -21,7 +19,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-
 import java.util.concurrent.ExecutorService;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;

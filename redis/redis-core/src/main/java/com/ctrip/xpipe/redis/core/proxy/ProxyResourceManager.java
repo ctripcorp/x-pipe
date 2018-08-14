@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
-
-import java.util.List;
 
 /**
  * @author chen.zhu

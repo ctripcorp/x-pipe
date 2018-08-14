@@ -123,7 +123,7 @@ public class StringUtil {
         if (ignoreCase) {
             return str1.equalsIgnoreCase(str2);
         }
-        return str1.equalsIgnoreCase(str2);
+        return str1.equals(str2);
     }
 
     public static boolean trimEquals(String str1, String str2) {

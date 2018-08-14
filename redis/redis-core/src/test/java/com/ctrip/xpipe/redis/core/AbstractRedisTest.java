@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.core;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.foundation.DefaultFoundationService;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
@@ -265,7 +266,7 @@ public abstract class AbstractRedisTest extends AbstractTest {
 
     protected SERVER_ROLE getRedisServerRole(RedisMeta slave) throws Exception {
 
-        SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(slave.getIp(), slave.getPort()));
+        SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new DefaultEndPoint(slave.getIp(), slave.getPort()));
         String info = new InfoCommand(clientPool, "replication", scheduled).execute().get();
         for (String line : info.split("\r\n")) {
             String[] parts = line.split(":");
@@ -415,7 +416,7 @@ public abstract class AbstractRedisTest extends AbstractTest {
 
     protected String getInfoKey(RedisMeta slaveMeta, String infoSection, String key) throws Exception {
 
-        SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(slaveMeta.getIp(), slaveMeta.getPort()));
+        SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(slaveMeta.getIp(), slaveMeta.getPort()));
         String info = new InfoCommand(keyPool, infoSection, scheduled).execute().get();
         return new InfoResultExtractor(info).extract(key);
     }
