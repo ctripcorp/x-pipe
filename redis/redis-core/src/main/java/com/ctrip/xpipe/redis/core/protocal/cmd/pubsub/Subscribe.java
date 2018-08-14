@@ -26,27 +26,15 @@ public interface Subscribe {
     enum MESSAGE_TYPE {
         MESSAGE {
             @Override
-            protected SubscribeMessageHandler subscribeMessageHandler() {
-                return new DefaultSubscribeMessageHandler();
-            }
-
-            @Override
             public boolean isFromSubType(String subType) {
                 return StringUtil.trimEquals(SUBSCRIBE, subType, false);
             }
         }, PMESSAGE {
             @Override
-            protected SubscribeMessageHandler subscribeMessageHandler() {
-                return new PsubscribeMessageHandler();
-            }
-
-            @Override
             public boolean isFromSubType(String subType) {
                 return StringUtil.trimEquals(PSUBSCRIBE, subType, false);
             }
         };
-
-        protected abstract SubscribeMessageHandler subscribeMessageHandler();
 
         public abstract boolean isFromSubType(String subType);
 
