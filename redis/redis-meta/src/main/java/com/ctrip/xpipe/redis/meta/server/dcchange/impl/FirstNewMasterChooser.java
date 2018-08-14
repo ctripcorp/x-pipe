@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -37,7 +38,7 @@ public class FirstNewMasterChooser extends AbstractNewMasterChooser {
 
     private boolean isAlive(RedisMeta redisMeta) {
 
-        SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new InetSocketAddress(redisMeta.getIp(), redisMeta.getPort()));
+        SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
         try {
             new PingCommand(clientPool, scheduled).execute().get();
             return true;

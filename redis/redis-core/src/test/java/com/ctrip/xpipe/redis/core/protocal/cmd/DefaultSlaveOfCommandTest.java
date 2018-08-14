@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.simpleserver.AbstractIoActionFactory;
 import com.ctrip.xpipe.simpleserver.IoAction;
@@ -57,7 +58,7 @@ public class DefaultSlaveOfCommandTest extends AbstractRedisTest {
     private void executeSlaveOf(String host, int port, String slaveofHost, int slaveOfPort) throws Exception {
 
         Command<String> command = new DefaultSlaveOfCommand(
-                getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(host, port)),
+                getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(host, port)),
                 slaveofHost, slaveOfPort,
                 scheduled);
         String result = command.execute().get();

@@ -5,8 +5,6 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -36,9 +35,11 @@ public class LongParser extends AbstractRedisClientProtocol<Long>{
 			return null;
 		}
 		if(data.charAt(0) != COLON_BYTE){
-			throw new RedisRuntimeException("expecte integer format, but:" + data);
+			logger.warn("[read] first char expected is Colon (:)");
+			return new LongParser(Long.valueOf(data.trim()));
+		} else {
+			return new LongParser(Long.valueOf(data.substring(1).trim()));
 		}
-		return new LongParser(Long.valueOf(data.substring(1).trim()));
 	}
 
 	@Override

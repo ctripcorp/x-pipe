@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.netty.commands;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.proxy.ProxyEnabled;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import org.apache.commons.pool2.KeyedPooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -29,13 +31,13 @@ import io.netty.handler.logging.LoggingHandler;
  *
  *         Jul 1, 2016
  */
-public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implements KeyedPooledObjectFactory<InetSocketAddress, NettyClient> {
+public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implements KeyedPooledObjectFactory<Endpoint, NettyClient> {
 
 	public static final int DEFAULT_KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD = Integer.parseInt(System.getProperty("KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD", "8"));
 	private int eventLoopThreads;
 	private NioEventLoopGroup eventLoopGroup;
-	private Bootstrap b = new Bootstrap();
-	private int connectTimeoutMilli = 5000;
+	protected Bootstrap b = new Bootstrap();
+	protected int connectTimeoutMilli = 5000;
 	private static Logger logger = LoggerFactory.getLogger(NettyKeyedPoolClientFactory.class);
 
 	public NettyKeyedPoolClientFactory() {
@@ -64,9 +66,9 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	}
 
 	@Override
-	public PooledObject<NettyClient> makeObject(InetSocketAddress key) throws Exception {
+	public PooledObject<NettyClient> makeObject(Endpoint key) throws Exception {
 
-		ChannelFuture f = b.connect(key);
+		ChannelFuture f = b.connect(key.getHost(), key.getPort());
 		f.get(connectTimeoutMilli, TimeUnit.MILLISECONDS);
 		Channel channel = f.channel();
 		logger.debug("[makeObject]{}", channel);
@@ -76,7 +78,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	}
 
 	@Override
-	public void destroyObject(InetSocketAddress key, PooledObject<NettyClient> p) throws Exception {
+	public void destroyObject(Endpoint key, PooledObject<NettyClient> p) throws Exception {
 
 		logger.info("[destroyObject]{}, {}", key, p.getObject());
 		p.getObject().channel().close();
@@ -84,17 +86,17 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	}
 
 	@Override
-	public boolean validateObject(InetSocketAddress key, PooledObject<NettyClient> p) {
+	public boolean validateObject(Endpoint key, PooledObject<NettyClient> p) {
 		return p.getObject().channel().isActive();
 	}
 
 	@Override
-	public void activateObject(InetSocketAddress key, PooledObject<NettyClient> p) throws Exception {
+	public void activateObject(Endpoint key, PooledObject<NettyClient> p) throws Exception {
 
 	}
 
 	@Override
-	public void passivateObject(InetSocketAddress key, PooledObject<NettyClient> p) throws Exception {
+	public void passivateObject(Endpoint key, PooledObject<NettyClient> p) throws Exception {
 
 	}
 

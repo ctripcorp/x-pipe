@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
-import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.parser.compress.CompressAlgorithm;
+import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ProxyForwardForParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.ProxyRouteParser;
-import com.ctrip.xpipe.redis.core.proxy.parser.route.RouteOptionParser;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

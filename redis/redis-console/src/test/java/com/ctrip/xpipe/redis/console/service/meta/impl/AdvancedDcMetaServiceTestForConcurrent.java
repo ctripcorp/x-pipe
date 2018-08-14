@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -8,7 +7,10 @@ import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
-import com.ctrip.xpipe.redis.core.meta.comparator.*;
+import com.ctrip.xpipe.redis.core.meta.comparator.AbstractMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.ClusterChange;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcChange;
+import com.ctrip.xpipe.redis.core.meta.comparator.ShardChange;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;

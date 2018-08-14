@@ -52,9 +52,9 @@ public class DiskLessMonitor extends AbstractRedisConfMonitor<DiskLessInstanceRe
             HostPort hostPort = entry.getKey();
             try{
                 RedisSession redisSession = findRedisSession(hostPort);
-                redisSession.conf(REPL_DISKLESS_SYNC, new Callbackable<List<String>>() {
+                redisSession.isDiskLessSync(new Callbackable<Boolean>() {
                     @Override
-                    public void success(List<String> message) {
+                    public void success(Boolean message) {
                         addInstanceSuccess(startNanoTime, hostPort, message);
                     }
 

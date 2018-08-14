@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.health.delay.DelayService;
 import com.ctrip.xpipe.redis.console.health.ping.PingService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.google.common.collect.ImmutableMap;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;

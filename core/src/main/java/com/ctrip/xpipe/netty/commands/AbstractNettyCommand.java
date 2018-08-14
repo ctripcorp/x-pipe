@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.CommandExecutionException;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.pool.BorrowObjectException;
@@ -30,7 +31,7 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 	private int port;
 
 	public AbstractNettyCommand(String host, int port){
-		this(NettyPoolUtil.createNettyPool(new InetSocketAddress(host, port)));
+		this(NettyPoolUtil.createNettyPool(new DefaultEndPoint(host, port)));
 		poolCreated = true;
 		this.host = host;
 		this.port = port;
@@ -52,26 +53,28 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 		} catch (BorrowObjectException e) {
 			throw new CommandExecutionException("execute " + this, e);
 		}finally{
+			afterCommandExecute(nettyClient);
+		}
+	}
 
-			if( nettyClient != null){
-				try {
-					clientPool.returnObject(nettyClient);
-				} catch (ReturnObjectException e) {
-					logger.error("[doExecute]", e);
+	protected void afterCommandExecute(NettyClient nettyClient) {
+		if( nettyClient != null){
+			try {
+				clientPool.returnObject(nettyClient);
+			} catch (ReturnObjectException e) {
+				logger.error("[doExecute]", e);
+			}
+		}
+
+		if(poolCreated){
+			future().addListener(new CommandFutureListener<V>() {
+
+				@Override
+				public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
+					LifecycleHelper.stopIfPossible(clientPool);
+					LifecycleHelper.disposeIfPossible(clientPool);
 				}
-			}
-
-			if(poolCreated){
-				future().addListener(new CommandFutureListener<V>() {
-
-					@Override
-					public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
-						LifecycleHelper.stopIfPossible(clientPool);
-						LifecycleHelper.disposeIfPossible(clientPool);
-					}
-				});
-			}
-			
+			});
 		}
 	}
 
@@ -83,12 +86,16 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 	@Override
 	protected void doReset() {
 		if(poolCreated){
-			this.clientPool = NettyPoolUtil.createNettyPool(new InetSocketAddress(host, port)); 
+			this.clientPool = NettyPoolUtil.createNettyPool(new DefaultEndPoint(host, port));
 		}
 	}
 	
 	protected SimpleObjectPool<NettyClient> getClientPool() {
 		return clientPool;
+	}
+
+	protected boolean isPoolCreated() {
+		return poolCreated;
 	}
 
 	@Override

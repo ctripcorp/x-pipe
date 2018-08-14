@@ -518,7 +518,11 @@ public class AbstractTest {
         return 9747;
     }
 
-    protected InetSocketAddress localhostInetAddress(int port) {
+    protected DefaultEndPoint localhostEndpoint(int port) {
+        return new DefaultEndPoint("localhost", port);
+    }
+
+    protected InetSocketAddress localhostInetAdress(int port) {
         return new InetSocketAddress("localhost", port);
     }
 

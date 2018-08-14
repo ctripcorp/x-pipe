@@ -1,9 +1,9 @@
-package com.ctrip.xpipe.redis.core.proxy.endpoint;
+package com.ctrip.xpipe.proxy;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.proxy.ProxyEnabled;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.core.proxy.ProxyEnabled;
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
 
 import java.net.InetSocketAddress;
 
@@ -34,5 +34,15 @@ public class ProxyEnabledEndpoint extends DefaultEndPoint implements Endpoint, P
     @Override
     public String toString() {
         return super.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
     }
 }

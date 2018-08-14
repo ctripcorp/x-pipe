@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
-import org.junit.Assert;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import org.junit.Test;
 
 import static com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser.WHITE_SPACE;
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

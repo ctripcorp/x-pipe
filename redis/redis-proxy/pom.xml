@@ -48,6 +48,13 @@
             <artifactId>netty-tcnative-boringssl-static</artifactId>
         </dependency>
 
+        <!--netty open ssl -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>2.0.0.Final</version>
+        </dependency>
+
         <!-- test -->
         <dependency>
             <groupId>com.ctrip.framework.xpipe</groupId>

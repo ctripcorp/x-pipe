@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
-import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;
 import com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.console.alert.policy.timing.NaiveRecoveryTimeAlgorithm;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -18,7 +17,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;

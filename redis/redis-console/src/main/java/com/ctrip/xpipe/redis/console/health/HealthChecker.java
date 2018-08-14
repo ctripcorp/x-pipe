@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -47,9 +46,6 @@ public class HealthChecker {
 	@Autowired
 	private HealthCheckVisitor healthCheckVisitor;
 
-	@Autowired
-	private DefaultRedisSessionManager sessionManager;
-
 	private Thread daemonHealthCheckThread;
 
 	@PostConstruct
@@ -69,7 +65,6 @@ public class HealthChecker {
 							TimeUnit.SECONDS.sleep(2);
 							warmup();
 							warmuped = true;
-							waitAndRetry();
 						}
 						List<DcMeta> dcsToCheck = dcsToCheck(metaCache.getXpipeMeta());
 						if(!dcsToCheck.isEmpty()){
@@ -83,22 +78,6 @@ public class HealthChecker {
 						Thread.sleep(config.getRedisReplicationHealthCheckInterval());
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
-						break;
-					}
-				}
-			}
-
-			public void waitAndRetry() {
-				int retryTimes = 4;
-				while(retryTimes > 0) {
-					retryTimes --;
-					try {
-						TimeUnit.SECONDS.sleep(6);
-					} catch (InterruptedException ignore) {
-					}
-					ThreadPoolExecutor executor = (ThreadPoolExecutor)sessionManager.getExecutors();
-					log.info("[warmup] redis connection thread pool: {}", executor.toString());
-					if(executor.getPoolSize() != 0 && executor.getQueue().size() == 0) {
 						break;
 					}
 				}

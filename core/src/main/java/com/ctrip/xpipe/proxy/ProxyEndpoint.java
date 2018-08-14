@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.core.proxy.endpoint;
+package com.ctrip.xpipe.proxy;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 
@@ -18,7 +18,7 @@ public interface ProxyEndpoint extends Endpoint {
     enum PROXY_SCHEME {
         TCP, TLS, PROXYTCP, PROXYTLS;
 
-        boolean matches(String scheme) {
+        public boolean matches(String scheme) {
             return name().equalsIgnoreCase(scheme);
         }
     }
