@@ -18,9 +18,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -166,7 +164,6 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         int taskNum = 10;
         ThreadPoolExecutor executorService = new ThreadPoolExecutor(taskNum, taskNum, 1L, TimeUnit.SECONDS,
                 new SynchronousQueue<>());
-        executorService.prestartAllCoreThreads();
         executorService.allowsCoreThreadTimeOut();
 
         for(int i = 0; i < taskNum; i++) {
@@ -202,7 +199,6 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         int taskNum = 3;
         ThreadPoolExecutor executorService = new ThreadPoolExecutor(taskNum, taskNum, 1L, TimeUnit.SECONDS,
                 new SynchronousQueue<>());
-        executorService.prestartAllCoreThreads();
         executorService.allowsCoreThreadTimeOut();
 
         for(int i = 0; i < taskNum; i++) {
