@@ -146,14 +146,15 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
             throw new RedisRuntimeException(String.format("Subscribe subscribeChannel response incorrect: %s", response));
         }
 
-        //TODO: Sub-class generate message handler
-        SubscribeMessageHandler handler = messageType.subscribeMessageHandler();
+        SubscribeMessageHandler handler = getSubscribeMessageHandler();
 
         Pair<String, String> channelAndMessage = handler.handle(payloadToStringArray(response));
         if(channelAndMessage != null) {
             notifyListeners(channelAndMessage);
         }
     }
+
+    protected abstract SubscribeMessageHandler getSubscribeMessageHandler();
 
     private void notifyListeners(Pair<String, String> channelAndMessage) {
         for(SubscribeListener listener : listeners) {
@@ -179,7 +180,6 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     public int getCommandTimeoutMilli() {
         return 0;
     }
-
 
     protected String getSubscribeChannel() {
         return subscribeChannel;

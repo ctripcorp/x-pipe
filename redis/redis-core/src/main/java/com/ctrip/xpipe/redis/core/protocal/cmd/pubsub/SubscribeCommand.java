@@ -45,6 +45,11 @@ public class SubscribeCommand extends AbstractSubscribe {
     }
 
     @Override
+    protected SubscribeMessageHandler getSubscribeMessageHandler() {
+        return new DefaultSubscribeMessageHandler();
+    }
+
+    @Override
     protected void afterCommandExecute(NettyClient nettyClient) {
         this.nettyClient = nettyClient;
         future().addListener(new CommandFutureListener<Object>() {
