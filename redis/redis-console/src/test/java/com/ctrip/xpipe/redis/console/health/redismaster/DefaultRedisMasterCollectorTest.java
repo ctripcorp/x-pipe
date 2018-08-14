@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.redis.console.health.redismaster;
 
+import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
+import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.impl.RedisServiceImpl;
@@ -49,6 +52,10 @@ public class DefaultRedisMasterCollectorTest {
 
     private RedisMasterSamplePlan plan;
 
+    private Sample<InstanceRedisMasterResult> sample;
+
+    private InstanceRedisMasterResult instanceRedisMasterResult;
+
     @Before
     public void before() {
         MockitoAnnotations.initMocks(this);
@@ -61,6 +68,12 @@ public class DefaultRedisMasterCollectorTest {
 
         RedisMeta redisMeta2 = new RedisMeta().setIp("127.0.0.1").setPort(6380).setMaster(XPipeConsoleConstant.DEFAULT_ADDRESS);
         plan.addRedis("jq", redisMeta2, new InstanceRedisMasterResult());
+
+
+        sample = spy(new Sample<>(1, 1, plan, 5));
+        instanceRedisMasterResult = new InstanceRedisMasterResult();
+        instanceRedisMasterResult.setContext(Server.SERVER_ROLE.UNKNOWN.toString());
+        sample.getSamplePlan().getHostPort2SampleResult().put(new HostPort(redisMeta.getIp(), redisMeta.getPort()), instanceRedisMasterResult);
     }
 
     @Test
@@ -111,5 +124,13 @@ public class DefaultRedisMasterCollectorTest {
     @Test
     public void testGeneratePlan() throws Exception {
         Assert.assertFalse(plan.isEmpty());
+    }
+
+    @Test
+    public void testCollect() throws Exception{
+        collector = spy(collector);
+        collector.collect(sample);
+        Thread.sleep(1000);
+        verify(collector).doCorrection(any());
     }
 }

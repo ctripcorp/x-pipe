@@ -26,6 +26,11 @@ public class InstanceRedisMasterResult extends BaseInstanceResult<String>{
         return Server.SERVER_ROLE.SLAVE.sameRole(context);
     }
 
+    public boolean roleIsUnknow(){
+
+        return Server.SERVER_ROLE.UNKNOWN.sameRole(context);
+    }
+
 
     @Override
     public String toString() {
