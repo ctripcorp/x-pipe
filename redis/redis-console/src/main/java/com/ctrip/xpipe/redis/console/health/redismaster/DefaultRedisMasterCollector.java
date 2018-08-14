@@ -58,7 +58,7 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
             correct(plan);
         }else {
             Map.Entry<HostPort, InstanceRedisMasterResult> next = hostPort2SampleResult.entrySet().iterator().next();
-            if(next.getValue().roleIsSlave() || next.getValue().roleIsUnknow()){
+            if(!next.getValue().roleIsMaster()){
                 logger.info("[collect][role not right]{}, {}", plan, next);
                 correct(plan);
             }
