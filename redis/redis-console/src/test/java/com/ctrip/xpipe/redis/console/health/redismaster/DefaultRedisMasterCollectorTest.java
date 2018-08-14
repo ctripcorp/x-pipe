@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.impl.RedisServiceImpl;
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
@@ -31,7 +32,7 @@ import static org.mockito.Mockito.*;
  * <p>
  * Feb 01, 2018
  */
-public class DefaultRedisMasterCollectorTest {
+public class DefaultRedisMasterCollectorTest extends AbstractRedisTest{
 
     @Mock
     private RedisSessionManager redisSessionManager;
@@ -125,7 +126,13 @@ public class DefaultRedisMasterCollectorTest {
     public void testCollect() throws Exception{
         collector = spy(collector);
         collector.collect(sample);
-        Thread.sleep(1000);
-        verify(collector).doCorrection(any());
+        waitConditionUntilTimeOut(()->  {
+            try {
+                verify(collector).doCorrection(any());
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }, 1000);
     }
 }
