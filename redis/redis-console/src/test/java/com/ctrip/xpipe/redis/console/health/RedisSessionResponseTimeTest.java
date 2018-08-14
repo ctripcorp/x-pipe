@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;

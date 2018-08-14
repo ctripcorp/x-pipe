@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.model.EventModel;
 import com.ctrip.xpipe.redis.console.model.EventTbl;
 import com.ctrip.xpipe.redis.console.model.EventTblEntity;
-import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +13,6 @@ import org.unidal.dal.jdbc.DalException;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

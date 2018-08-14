@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
  * <p>
  * Mar 22, 2018
  */
-public class AbstractRedisCommandTest extends AbstractRedisTest {
+public class TestAbstractRedisCommandTest extends AbstractRedisTest {
 
     //manual test
     @Test

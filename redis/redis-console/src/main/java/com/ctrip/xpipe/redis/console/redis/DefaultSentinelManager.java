@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import org.omg.PortableServer.REQUEST_PROCESSING_POLICY_ID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;

@@ -17,7 +17,6 @@ import org.mockito.MockitoAnnotations;
 import java.util.List;
 
 import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**

@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.simpleserver.Server;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import org.junit.After;
 import org.junit.Assert;
@@ -17,7 +16,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -27,7 +25,7 @@ import java.util.function.BiConsumer;
  * <p>
  * Apr 09, 2018
  */
-public class AbstractSubscribeTest extends AbstractRedisTest {
+public class TestAbstractSubscribeTest extends AbstractRedisTest {
 
     private AbstractSubscribe subscribe;
 
@@ -96,27 +94,6 @@ public class AbstractSubscribeTest extends AbstractRedisTest {
 
         subscribe.addChannelListener((ch, msg) -> {Assert.assertEquals(channel, ch); Assert.assertEquals(message, msg);});
         subscribe.handleMessage(response);
-    }
-
-    @Test
-    public void testReUseNettyClient() throws Exception {
-        Server server = startEmptyServer();
-        AtomicReference<NettyClient> clientReference = new AtomicReference<>();
-        SimpleObjectPool<NettyClient> clientPool = getXpipeNettyClientKeyedObjectPool().
-                getKeyPool(new DefaultEndPoint("localhost", server.getPort()));
-        int N = 5;
-        for(int i = 0; i < N; i++) {
-            AbstractSubscribe command = new TestNettyClientNoDupCommand(clientPool, scheduled, clientReference,
-                    (nettyClient, reference)->{
-                        NettyClient oldOne = reference.getAndSet(nettyClient);
-                        if(oldOne != null) {
-                            Assert.assertEquals(nettyClient, oldOne);
-                        }
-                    });
-            command.execute();
-            command.future().setSuccess();
-        }
-        server.stop();
     }
 
     @Test

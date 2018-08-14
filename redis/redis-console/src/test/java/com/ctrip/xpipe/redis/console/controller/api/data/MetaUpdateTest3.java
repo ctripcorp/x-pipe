@@ -7,7 +7,9 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
-import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
@@ -16,7 +18,9 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**

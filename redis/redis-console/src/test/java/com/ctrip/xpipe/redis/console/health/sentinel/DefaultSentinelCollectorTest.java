@@ -3,17 +3,13 @@ package com.ctrip.xpipe.redis.console.health.sentinel;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
-import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 
 import java.util.Set;
-import java.util.concurrent.Executors;
 
 /**
  * @author wenchao.meng

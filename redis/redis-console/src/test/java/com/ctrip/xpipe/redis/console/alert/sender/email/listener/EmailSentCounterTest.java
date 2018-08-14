@@ -18,9 +18,6 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**

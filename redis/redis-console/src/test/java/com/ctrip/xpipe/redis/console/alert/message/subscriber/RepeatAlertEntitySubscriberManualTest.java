@@ -14,8 +14,6 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>

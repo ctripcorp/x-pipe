@@ -2,16 +2,13 @@ package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 
 /**

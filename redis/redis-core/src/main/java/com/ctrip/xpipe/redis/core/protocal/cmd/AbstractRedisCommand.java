@@ -11,7 +11,6 @@ import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-import com.ctrip.xpipe.redis.core.protocal.RedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.*;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;

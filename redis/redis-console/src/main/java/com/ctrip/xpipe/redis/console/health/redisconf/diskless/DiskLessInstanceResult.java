@@ -2,8 +2,6 @@ package com.ctrip.xpipe.redis.console.health.redisconf.diskless;
 
 import com.ctrip.xpipe.redis.console.health.BaseInstanceResult;
 
-import java.util.List;
-
 /**
  * @author chen.zhu
  * <p>
