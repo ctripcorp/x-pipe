@@ -45,6 +45,11 @@ public class TestAbstractSubscribeTest extends AbstractRedisTest {
             protected void doUnsubscribe() {
 
             }
+
+            @Override
+            protected SubscribeMessageHandler getSubscribeMessageHandler() {
+                return new DefaultSubscribeMessageHandler();
+            }
         };
 
         server = startServer(port, "+OK");
@@ -132,6 +137,11 @@ public class TestAbstractSubscribeTest extends AbstractRedisTest {
         @Override
         protected void doUnsubscribe() {
 
+        }
+
+        @Override
+        protected SubscribeMessageHandler getSubscribeMessageHandler() {
+            return new DefaultSubscribeMessageHandler();
         }
     }
 
