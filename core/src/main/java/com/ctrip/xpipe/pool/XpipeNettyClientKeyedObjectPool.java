@@ -2,6 +2,7 @@ package com.ctrip.xpipe.pool;
 
 import java.net.InetSocketAddress;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.ObjectPoolException;
 import org.apache.commons.pool2.KeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
@@ -23,14 +24,14 @@ import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
  *         Jun 28, 2016
  */
 public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
-		implements TopElement, SimpleKeyedObjectPool<InetSocketAddress, NettyClient> {
+		implements TopElement, SimpleKeyedObjectPool<Endpoint, NettyClient> {
 
 	public static final long DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS = 30000;
 	public static final long DEFAULT_MIN_EVICTABLE_IDLE_TIME_MILLIS = 1000L * 60L * 30L;
 	public static final long DEFAULT_TIME_BETWEEN_EVICTION_RUNS_MILLIS = 5000L;
 
 
-	private KeyedObjectPool<InetSocketAddress, NettyClient> objectPool;
+	private KeyedObjectPool<Endpoint, NettyClient> objectPool;
 	private NettyKeyedPoolClientFactory pooledObjectFactory;
 	private GenericKeyedObjectPoolConfig config;
 
@@ -54,13 +55,20 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 
 	}
 
+	public XpipeNettyClientKeyedObjectPool(NettyKeyedPoolClientFactory pooledObjectFactory) {
+		this(createDefaultConfig(GenericKeyedObjectPoolConfig.DEFAULT_MAX_TOTAL_PER_KEY));
+		this.pooledObjectFactory = pooledObjectFactory;
+	}
+
 	@Override
 	protected void doInitialize() throws Exception {
 
-		this.pooledObjectFactory = new NettyKeyedPoolClientFactory();
+		if(this.pooledObjectFactory == null) {
+			this.pooledObjectFactory = new NettyKeyedPoolClientFactory();
+		}
 		pooledObjectFactory.start();
 
-		GenericKeyedObjectPool<InetSocketAddress, NettyClient> genericKeyedObjectPool = new GenericKeyedObjectPool<>(
+		GenericKeyedObjectPool<Endpoint, NettyClient> genericKeyedObjectPool = new GenericKeyedObjectPool<Endpoint, NettyClient>(
 				pooledObjectFactory, config);
 		genericKeyedObjectPool.setTestOnBorrow(true);
 		genericKeyedObjectPool.setTestOnCreate(true);
@@ -87,12 +95,12 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 
 
 	@Override
-	public SimpleObjectPool<NettyClient> getKeyPool(InetSocketAddress key){
-		return new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(this, key);
+	public SimpleObjectPool<NettyClient> getKeyPool(Endpoint key){
+		return new XpipeObjectPoolFromKeyed<Endpoint, NettyClient>(this, key);
 	}
 
 	@Override
-	public NettyClient borrowObject(InetSocketAddress key) throws BorrowObjectException {
+	public NettyClient borrowObject(Endpoint key) throws BorrowObjectException {
 
 		try {
 			logger.debug("[borrowObject][begin]{}", key);
@@ -106,7 +114,7 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 	}
 
 	@Override
-	public void returnObject(InetSocketAddress key, NettyClient value) throws ReturnObjectException {
+	public void returnObject(Endpoint key, NettyClient value) throws ReturnObjectException {
 
 		try {
 			logger.debug("[returnObject]{}, {}", key, value);
@@ -135,7 +143,7 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 	}
 
 	@Override
-	public void clear(InetSocketAddress key) throws ObjectPoolException {
+	public void clear(Endpoint key) throws ObjectPoolException {
 		try {
 			this.objectPool.clear(key);
 		} catch (Exception e) {
@@ -149,7 +157,7 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 	}
 	
 	//for test
-	public KeyedObjectPool<InetSocketAddress, NettyClient> getObjectPool() {
+	public KeyedObjectPool<Endpoint, NettyClient> getObjectPool() {
 		return objectPool;
 	}
 

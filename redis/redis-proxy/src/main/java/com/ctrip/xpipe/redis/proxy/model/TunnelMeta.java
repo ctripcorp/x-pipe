@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.model;
 
-import com.ctrip.xpipe.redis.core.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 
 import java.io.Serializable;

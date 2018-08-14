@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd.manual;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
@@ -35,7 +36,7 @@ public class ReplconfTest extends AbstractCommandTest {
 	@Test
 	public void testCapa() throws Exception{
 		
-		Replconf conf = new Replconf(getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(host, port)), ReplConfType.CAPA, scheduled, "eof", "psync2");
+		Replconf conf = new Replconf(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(host, port)), ReplConfType.CAPA, scheduled, "eof", "psync2");
 		logger.info("{}", conf.execute().get());		
 	}
 

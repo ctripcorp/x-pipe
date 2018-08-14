@@ -1,24 +1,19 @@
 package com.ctrip.xpipe.redis.console.alert.manager;
 
-import com.ctrip.xpipe.api.email.EmailType;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
-import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
+import com.ctrip.xpipe.redis.console.alert.sender.Sender;
 import com.ctrip.xpipe.redis.console.alert.sender.email.AsyncEmailSender;
 import com.ctrip.xpipe.redis.console.alert.sender.email.EmailSender;
-import com.ctrip.xpipe.redis.console.alert.sender.Sender;
-import io.netty.util.internal.ConcurrentSet;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author chen.zhu

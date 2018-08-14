@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
@@ -85,7 +86,7 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 		
 		executionLog.info("[make redis master]" + newMaster);
 		
-		SimpleObjectPool<NettyClient> masterPool = keyedObjectPool.getKeyPool(new InetSocketAddress(newMaster.getKey(), newMaster.getValue()));
+		SimpleObjectPool<NettyClient> masterPool = keyedObjectPool.getKeyPool(new DefaultEndPoint(newMaster.getKey(), newMaster.getValue()));
 		Command<String> command = new DefaultSlaveOfCommand(masterPool, null, 0, scheduled);
 		try {
 			String result = command.execute().get();

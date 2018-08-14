@@ -2,8 +2,6 @@ package com.ctrip.xpipe.redis.console.model;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.utils.ObjectUtils;
-import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.Objects;
 

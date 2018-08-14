@@ -1,16 +1,9 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.lambdaworks.redis.ClientOptions;
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisURI;
-import com.lambdaworks.redis.SocketOptions;
-import com.lambdaworks.redis.resource.DefaultClientResources;
-import com.lambdaworks.redis.resource.Delay;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -19,9 +12,8 @@ import org.junit.Test;
 import javax.annotation.Resource;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
-public class RedisSessionTest extends AbstractConsoleIntegrationTest {
+public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest {
 
     private Server server;
 
@@ -49,8 +41,8 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
                 return "+OK\r\n";
             }
         });
-        redisSession = new RedisSession(createRedisClient(HOST, BLOCKED_PORT),
-                new HostPort(HOST, BLOCKED_PORT), executors, executors);
+        redisSession = new RedisSession(new DefaultEndPoint(HOST, BLOCKED_PORT), scheduled,
+                getXpipeNettyClientKeyedObjectPool(), getXpipeNettyClientKeyedObjectPool());
     }
 
     @Test
@@ -135,27 +127,6 @@ public class RedisSessionTest extends AbstractConsoleIntegrationTest {
         System.out.println(begin + " : " + after);
         Assert.assertTrue(after - begin < TIMEOUT);
     }
-
-    private RedisClient createRedisClient(String host, int port) {
-        RedisURI redisUri = new RedisURI(host, port, 2, TimeUnit.SECONDS);
-        SocketOptions socketOptions = SocketOptions.builder()
-                .connectTimeout(XPipeConsoleConstant.SOCKET_TIMEOUT, TimeUnit.SECONDS)
-                .build();
-        ClientOptions clientOptions = ClientOptions.builder() //
-                .socketOptions(socketOptions)
-                .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)//
-                .build();
-
-        DefaultClientResources clientResources = DefaultClientResources.builder()//
-                .reconnectDelay(Delay.constant(1, TimeUnit.SECONDS))//
-                .build();
-        RedisClient redis = RedisClient.create(clientResources, redisUri);
-        redis.setOptions(clientOptions);
-        return redis;
-    }
-
-
-
 
     @After
     public void afterRedisSessionTest() throws Exception {
