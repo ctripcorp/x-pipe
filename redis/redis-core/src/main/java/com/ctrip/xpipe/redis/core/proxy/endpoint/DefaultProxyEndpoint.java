@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy.endpoint;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 
 import java.net.InetSocketAddress;
 

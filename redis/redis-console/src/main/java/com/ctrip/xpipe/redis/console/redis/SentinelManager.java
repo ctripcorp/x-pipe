@@ -4,6 +4,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 
+import java.util.List;
+
 /**
  * @author chen.zhu
  * <p>
@@ -18,4 +20,10 @@ public interface SentinelManager {
     HostPort getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName);
 
     String infoSentinel(Sentinel sentinel);
+
+    void monitorMaster(Sentinel sentinel, String sentinelMonitorName, HostPort master, int quorum);
+
+    List<HostPort> slaves(Sentinel sentinel, String sentinelMonitorName);
+
+    void reset(Sentinel sentinel, String sentinelMonitorName);
 }

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.pool;
 
 import java.net.InetSocketAddress;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +31,7 @@ public class XpipeNettyClientPoolTest extends AbstractTest {
 	public void testDeadBorrow() throws Exception {
 
 		XpipeNettyClientPool clientPool = new XpipeNettyClientPool(
-				new InetSocketAddress("127.0.0.1", serverPort.getPort()));
+				new DefaultEndPoint("127.0.0.1", serverPort.getPort()));
 
 		clientPool.initialize();
 		clientPool.start();

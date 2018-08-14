@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.core.proxy.parser.route;
 
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;

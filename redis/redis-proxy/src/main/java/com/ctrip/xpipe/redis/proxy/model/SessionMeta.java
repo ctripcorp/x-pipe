@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.model;
 
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpoint;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import com.ctrip.xpipe.utils.ChannelUtil;

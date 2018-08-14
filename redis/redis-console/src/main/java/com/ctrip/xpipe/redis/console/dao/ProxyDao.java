@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.ProxyTbl;
+import com.ctrip.xpipe.redis.console.model.ProxyTblDao;
+import com.ctrip.xpipe.redis.console.model.ProxyTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.stereotype.Repository;

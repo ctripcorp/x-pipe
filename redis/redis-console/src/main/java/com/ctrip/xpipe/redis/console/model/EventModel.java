@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.model;
 
 import java.util.Date;
-import java.util.Properties;
 import java.util.function.Function;
 
 /**

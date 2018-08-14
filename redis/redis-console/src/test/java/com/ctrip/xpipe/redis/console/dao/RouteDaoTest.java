@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.dao;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.RouteTbl;
 import com.ctrip.xpipe.redis.core.entity.Route;
@@ -10,8 +9,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

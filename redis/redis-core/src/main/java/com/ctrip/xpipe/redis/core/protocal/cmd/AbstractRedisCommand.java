@@ -1,15 +1,16 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.netty.commands.AbstractNettyRequestResponseCommand;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-import com.ctrip.xpipe.redis.core.protocal.RedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.*;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
@@ -25,7 +26,9 @@ import java.util.concurrent.ScheduledExecutorService;
 public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestResponseCommand<T> implements LoggableRedisCommand<T> {
 	
 	public static int DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = Integer.parseInt(System.getProperty("DEFAULT_REDIS_COMMAND_TIME_OUT_SECONDS", "500"));
-	
+
+	public static int PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI = Integer.parseInt(System.getProperty("DEFAULT_REDIS_COMMAND_TIME_OUT_SECONDS", "10000"));
+
 	private int commandTimeoutMilli = DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
 	private boolean logResponse = true;
@@ -38,6 +41,16 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 
 	public AbstractRedisCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);
+	}
+
+	public AbstractRedisCommand(String host, int port, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+		super(host, port, scheduled);
+		this.commandTimeoutMilli = commandTimeoutMilli;
+	}
+
+	public AbstractRedisCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+		super(clientPool, scheduled);
+		this.commandTimeoutMilli = commandTimeoutMilli;
 	}
 
 	public static enum COMMAND_RESPONSE_STATE{
@@ -174,6 +187,30 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		return Boolean.parseBoolean(result);
 	}
 
+	protected String[] payloadToStringArray(Object payload) {
+		if(!(payload instanceof Object[])) {
+			throw new RedisRuntimeException(String.format("payload not array: %s", payload));
+		}
+		Object[] objects = (Object[]) payload;
+		String[] result = new String[objects.length];
+
+		for(int i = 0; i < result.length; i++) {
+			result[i] = payloadToString(objects[i]);
+		}
+
+		return result;
+	}
+
+	protected Long payloadToLong(Object payload) {
+
+		if(payload instanceof Long){
+			return (Long) payload;
+		}
+
+		String result = payloadToString(payload);
+		return Long.parseLong(result);
+	}
+
 	@Override
 	public String getName() {
 		return getClass().getSimpleName();
@@ -206,5 +243,9 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 	@Override
 	public void logRequest(boolean logRequest) {
 		this.logRequest = logRequest;
+	}
+
+	protected boolean isProxyEnabled(Endpoint endpoint) {
+		return endpoint instanceof ProxyEnabled;
 	}
 }

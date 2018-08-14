@@ -115,7 +115,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		
-		SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(ip, port));
+		SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
 		NettyClient nettyClient = null;
 		
 		try{

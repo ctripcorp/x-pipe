@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.alert.sender.email;
 
-import com.ctrip.xpipe.api.email.EmailType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
@@ -14,8 +13,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

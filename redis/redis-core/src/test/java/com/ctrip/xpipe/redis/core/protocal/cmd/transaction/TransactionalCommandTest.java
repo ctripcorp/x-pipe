@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.transaction;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
@@ -42,7 +43,7 @@ public class TransactionalCommandTest extends AbstractRedisTest {
 	private TransactionalCommand createRightTransaction() throws Exception {
 
 		return new TransactionalCommand(
-				getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(ip, port)), scheduled,
+				getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port)), scheduled,
 				new SlaveOfCommand(null, scheduled), new RoleCommand(null, scheduled));
 	}
 
@@ -69,7 +70,7 @@ public class TransactionalCommandTest extends AbstractRedisTest {
 	private TransactionalCommand createWrongTransaction() throws Exception {
 
 		return new TransactionalCommand(
-				getXpipeNettyClientKeyedObjectPool().getKeyPool(new InetSocketAddress(ip, port)), scheduled,
+				getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port)), scheduled,
 				new SlaveOfCommand(null, scheduled), new WrongCommand(null));
 	}
 

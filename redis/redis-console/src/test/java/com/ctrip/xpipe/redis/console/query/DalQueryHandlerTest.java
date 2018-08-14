@@ -5,8 +5,6 @@ import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import org.junit.Test;
 import org.unidal.dal.jdbc.DalException;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>
