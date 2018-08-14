@@ -33,6 +33,8 @@ public class AlertManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
+    private static final String ALERT_TYPE = "Notification";
+
     @Autowired
     private ClusterService clusterService;
 
@@ -111,7 +113,7 @@ public class AlertManager {
 
 
         logger.warn("[alert]{}, {}, {}, {}", cluster, shard, type, message);
-        EventMonitor.DEFAULT.logAlertEvent(generateAlertMessage(dc, cluster, shard, type, message));
+        EventMonitor.DEFAULT.logEvent(ALERT_TYPE, generateAlertMessage(dc, cluster, shard, type, message));
         notifier.addAlert(dc, cluster, shard, hostPort, type, message);
     }
 
