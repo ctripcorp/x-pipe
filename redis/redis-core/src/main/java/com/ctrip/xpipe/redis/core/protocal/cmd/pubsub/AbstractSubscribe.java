@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPersistentRedisCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -21,7 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * <p>
  * Apr 04, 2018
  */
-public abstract class AbstractSubscribe extends AbstractPersistentRedisCommand<Object> implements Subscribe {
+public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> implements Subscribe {
 
     private volatile SUBSCRIBE_STATE subscribeState = SUBSCRIBE_STATE.WAITING_RESPONSE;
 
@@ -79,9 +82,6 @@ public abstract class AbstractSubscribe extends AbstractPersistentRedisCommand<O
                 break;
 
             case WAITING_RESPONSE:
-                if(response == null) {
-                    return null;
-                }
                 handleResponse(channel, response);
                 break;
 
@@ -93,6 +93,20 @@ public abstract class AbstractSubscribe extends AbstractPersistentRedisCommand<O
         return null;
     }
 
+    protected void afterCommandExecute(NettyClient nettyClient) {
+        future().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                if(nettyClient != null) {
+                    getClientPool().returnObject(nettyClient);
+                }
+                if(isPoolCreated()) {
+                    LifecycleHelper.stopIfPossible(getClientPool());
+                    LifecycleHelper.disposeIfPossible(getClientPool());
+                }
+            }
+        });
+    }
 
     @VisibleForTesting
     protected void handleResponse(Channel channel, Object response) {

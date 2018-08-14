@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.PublishCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeListener;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
-import com.lambdaworks.redis.api.StatefulRedisConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +19,6 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-
-import static com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool.DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
 
 
 /**

@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.ctrip.xpipe.utils.OsUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
 
 import static org.mockito.Mockito.when;
 

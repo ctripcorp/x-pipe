@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.alibaba.fastjson.JSON;
-
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
-import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelModel;
+import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.google.common.collect.Maps;
@@ -19,6 +18,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;

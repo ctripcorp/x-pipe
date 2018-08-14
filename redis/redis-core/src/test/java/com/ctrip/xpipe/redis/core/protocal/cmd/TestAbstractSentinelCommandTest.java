@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
  * <p>
  * Aug 11, 2018
  */
-public class AbstractSentinelCommandTest extends AbstractRedisTest {
+public class TestAbstractSentinelCommandTest extends AbstractRedisTest {
 
     private SimpleObjectPool<NettyClient> clientPool;
 
