@@ -53,7 +53,7 @@ public class MetricDelayCollector implements DelayCollector {
 
         MetricData data = new MetricData(TYPE, result.getClusterId(), result.getShardId());
         data.setValue(value/1000);
-        data.setTimestampMilli(System.currentTimeMillis());
+        data.setTimestampMilli(result.getSampleStartTime());
         data.setHostPort(hostPort);
         return data;
     }

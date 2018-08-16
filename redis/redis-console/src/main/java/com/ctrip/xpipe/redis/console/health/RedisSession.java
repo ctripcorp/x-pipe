@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
@@ -108,6 +109,9 @@ public class RedisSession {
 
     public synchronized void publish(String channel, String message) {
         PublishCommand pubCommand = new PublishCommand(requestResponseCommandPool, scheduled, channel, message);
+        if(endpoint instanceof ProxyEnabled) {
+            pubCommand.setCommandTimeoutMilli(5000);
+        }
         pubCommand.execute().addListener(new CommandFutureListener<Object>() {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -119,7 +123,6 @@ public class RedisSession {
     }
 
     public void ping(final PingCallback callback) {
-        // if connect has been established
         PingCommand pingCommand = new PingCommand(requestResponseCommandPool, scheduled);
         pingCommand.execute().addListener(new CommandFutureListener<String>() {
             @Override
