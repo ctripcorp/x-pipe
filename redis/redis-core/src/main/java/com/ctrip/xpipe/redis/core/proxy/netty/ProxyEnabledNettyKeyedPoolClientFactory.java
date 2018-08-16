@@ -9,15 +9,19 @@ import com.ctrip.xpipe.netty.commands.NettyClientHandler;
 import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
+import com.ctrip.xpipe.redis.core.proxy.ProxyedConnectionFactory;
+import com.ctrip.xpipe.redis.core.proxy.connect.DefaultProxyedConnectionFactory;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author chen.zhu
@@ -30,8 +34,11 @@ public class ProxyEnabledNettyKeyedPoolClientFactory extends NettyKeyedPoolClien
 
     private ProxyResourceManager resourceManager;
 
+    private ProxyedConnectionFactory proxyedConnectionFactory;
+
     public ProxyEnabledNettyKeyedPoolClientFactory(ProxyResourceManager resourceManager) {
         this.resourceManager = resourceManager;
+        this.proxyedConnectionFactory = new DefaultProxyedConnectionFactory(resourceManager);
     }
 
     public ProxyEnabledNettyKeyedPoolClientFactory(ProxyResourceManager resourceManager, int eventLoopThreads) {
@@ -45,29 +52,27 @@ public class ProxyEnabledNettyKeyedPoolClientFactory extends NettyKeyedPoolClien
             return super.makeObject(key);
         }
         ProxyProtocol protocol = ((ProxyEnabled) key).getProxyProtocol();
-        ProxyEndpointSelector selector = resourceManager.createProxyEndpointSelector(protocol);
-        ProxyEndpoint proxyEndpoint = selector.nextHop();
-        ChannelFuture f = b.connect(proxyEndpoint.getHost(), proxyEndpoint.getPort());
-        f.get(connectTimeoutMilli, TimeUnit.MILLISECONDS);
-        Channel channel = f.channel();
-        logger.debug("[makeObject]{}", channel);
-        channel.writeAndFlush(protocol.output());
-        NettyClient nettyClient = new DefaultNettyClient(channel);
-        channel.attr(NettyClientHandler.KEY_CLIENT).set(nettyClient);
-        return new DefaultPooledObject<NettyClient>(nettyClient);
+        ChannelFuture f = proxyedConnectionFactory.getProxyedConnectionChannelFuture(protocol, b);
+        f.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                future.channel().writeAndFlush(protocol.output());
+            }
+        });
+        NettyClient nettyClient = new ProxyedNettyClient(f);
+        f.channel().attr(NettyClientHandler.KEY_CLIENT).set(nettyClient);
+        return new DefaultPooledObject<>(nettyClient);
     }
 
     private boolean isProxyEnabled(Endpoint key) {
         return key instanceof ProxyEnabled;
     }
 
-    // TODO: Subscribe Netty Client Factory, Ping validate before use
-//    @Override
-//    public boolean validateObject(Endpoint key, PooledObject<NettyClient> p) {
-//        boolean result = super.validateObject(key, p);
-//        if(isProxyEnabled(key)) {
-//            return result &&
-//        }
-//        return result;
-//    }
+    @Override
+    public boolean validateObject(Endpoint key, PooledObject<NettyClient> p) {
+        if(isProxyEnabled(key)) {
+            return p.getObject().channel() != null;
+        }
+        return super.validateObject(key, p);
+    }
 }
