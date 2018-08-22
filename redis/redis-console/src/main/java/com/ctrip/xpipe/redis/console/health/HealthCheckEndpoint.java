@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
  */
 public interface HealthCheckEndpoint extends Endpoint {
 
-    int getDelayCheckTimeoutMilli();
+    int getHealthCheckTimeoutMilli();
 
     int getCommandTimeoutMilli();
 

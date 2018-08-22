@@ -14,7 +14,7 @@ public class DefaultHealthCheckEndpoint extends AbstractHealthCheckEndpoint {
     }
 
     @Override
-    public int getDelayCheckTimeoutMilli() {
+    public int getHealthCheckTimeoutMilli() {
         return 1500;
     }
 
