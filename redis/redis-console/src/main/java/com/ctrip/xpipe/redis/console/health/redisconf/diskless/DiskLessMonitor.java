@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -47,35 +46,33 @@ public class DiskLessMonitor extends AbstractRedisConfMonitor<DiskLessInstanceRe
     }
 
     private void sampleDiskLessOptionCheck(long startNanoTime, BaseSamplePlan<DiskLessInstanceResult> plan) {
-        for (Map.Entry<HostPort, DiskLessInstanceResult> entry : plan.getHostPort2SampleResult().entrySet()) {
+        for (Map.Entry<HealthCheckEndpoint, DiskLessInstanceResult> entry : plan.getHostPort2SampleResult().entrySet()) {
 
-            HostPort hostPort = entry.getKey();
+            HealthCheckEndpoint endpoint = entry.getKey();
             try{
-                RedisSession redisSession = findRedisSession(hostPort);
+                RedisSession redisSession = findRedisSession(endpoint);
                 redisSession.isDiskLessSync(new Callbackable<Boolean>() {
                     @Override
                     public void success(Boolean message) {
-                        addInstanceSuccess(startNanoTime, hostPort, message);
+                        addInstanceSuccess(startNanoTime, endpoint, message);
                     }
 
                     @Override
                     public void fail(Throwable throwable) {
-                        addInstanceFail(startNanoTime, hostPort, throwable);
+                        addInstanceFail(startNanoTime, endpoint, throwable);
                     }
                 });
             }catch (Exception e){
-                addInstanceFail(startNanoTime, hostPort.getHost(), hostPort.getPort(), e);
+                addInstanceFail(startNanoTime, endpoint, e);
             }
         }
     }
 
 
     @Override
-    protected void addRedis(BaseSamplePlan<DiskLessInstanceResult> plan, String dcId, RedisMeta redisMeta) {
-        HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
-
-        log.debug("[addRedis]{}", hostPort);
-        plan.addRedis(dcId, redisMeta, new DiskLessInstanceResult());
+    protected void addRedis(BaseSamplePlan<DiskLessInstanceResult> plan, String dcId, HealthCheckEndpoint endpoint) {
+        log.debug("[addRedis]{}", endpoint.getHostPort());
+        plan.addRedis(dcId, endpoint, new DiskLessInstanceResult());
     }
 
     @Override

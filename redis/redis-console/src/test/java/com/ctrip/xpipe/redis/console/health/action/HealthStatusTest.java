@@ -4,6 +4,9 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.health.DefaultHealthCheckEndpoint;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,13 +22,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class HealthStatusTest extends AbstractConsoleTest {
 
-    private HostPort hostPort;
+    private HealthCheckEndpoint hostPort;
     private int downAfterMilli = 200;
     private int healthDelayMilli = 100;
 
     @Before
     public void beforeHealthStatusTest() {
-        this.hostPort = new HostPort("127.0.0.1", randomPort());
+        this.hostPort = new DefaultHealthCheckEndpoint(new RedisMeta().setIp("127.0.0.1").setPort(randomPort()));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.action;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
@@ -7,6 +8,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.health.delay.DelayCollector;
 import com.ctrip.xpipe.redis.console.health.delay.DelaySampleResult;
@@ -41,7 +43,7 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
     private final int  THREAD_COUNT = 4;
     private final int  CORE_POOL_MONITOR_PROCESS = 100;
 
-    private Map<HostPort, HealthStatus> allHealthStatus = new ConcurrentHashMap<>();
+    private Map<Endpoint, HealthStatus> allHealthStatus = new ConcurrentHashMap<>();
 
     private ScheduledExecutorService scheduled;
 
@@ -83,7 +85,7 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
     @Override
     public void collect(PingSampleResult result) {
 
-        for (Map.Entry<HostPort, Boolean> entry : result.getSlaveHostPort2Pong().entrySet()) {
+        for (Map.Entry<HealthCheckEndpoint, Boolean> entry : result.getSlaveHostPort2Pong().entrySet()) {
 
             HealthStatus healthStatus = createOrGet(entry.getKey());
             if(entry.getValue()){
@@ -92,7 +94,7 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
         }
     }
 
-    private HealthStatus createOrGet(HostPort key) {
+    private HealthStatus createOrGet(Endpoint key) {
 
         return MapUtils.getOrCreate(allHealthStatus, key, new ObjectFactory<HealthStatus>() {
             @Override
@@ -118,11 +120,11 @@ public class AllMonitorCollector implements PingCollector, DelayCollector{
     @Override
     public void collect(DelaySampleResult result) {
         HealthStatus healthStatus;
-        if(result.getMasterHostPort() != null) {
-            healthStatus = createOrGet(result.getMasterHostPort());
+        if(result.getMasterEndpoint() != null) {
+            healthStatus = createOrGet(result.getMasterEndpoint());
             healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(result.getMasterDelayNanos()));
         }
-        for (Map.Entry<HostPort, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
+        for (Map.Entry<HealthCheckEndpoint, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
 
             healthStatus = createOrGet(entry.getKey());
             healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(entry.getValue()));

@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.health.delay;
 
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
+import com.ctrip.xpipe.redis.console.health.DefaultHealthCheckEndpoint;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
 /**
@@ -11,29 +13,35 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 public class DelaySamplePlan extends BaseSamplePlan<InstanceDelayResult> {
 
 	private String masterDcId;
-	private String masterHost;
-	private int masterPort;
+	private HealthCheckEndpoint masterEndpoint;
 
 	public DelaySamplePlan(String clusterId, String shardId) {
 		super(clusterId, shardId);
 	}
 
-	public void addRedis(String dcId, RedisMeta redisMeta) {
-		if (redisMeta.isMaster()) {
+	public void addRedis(String dcId, HealthCheckEndpoint endpoint) {
+		boolean isMaster = endpoint.getRedisMeta().isMaster();
+		if (isMaster) {
 			masterDcId = dcId;
-			masterHost = redisMeta.getIp();
-			masterPort = redisMeta.getPort();
+			masterEndpoint = endpoint;
 		}
 
-		super.addRedis(dcId, redisMeta, new InstanceDelayResult(dcId, redisMeta.isMaster()));
+		super.addRedis(dcId, endpoint, new InstanceDelayResult(dcId, isMaster));
 	}
 
-	public String getMasterHost() {
-		return masterHost;
+	public void addRedis(String dcId, RedisMeta redisMeta) {
+		boolean isMaster = redisMeta.isMaster();
+		HealthCheckEndpoint endpoint = new DefaultHealthCheckEndpoint(redisMeta);
+		if (isMaster) {
+			masterDcId = dcId;
+			masterEndpoint = endpoint;
+		}
+
+		super.addRedis(dcId, endpoint, new InstanceDelayResult(dcId, isMaster));
 	}
 
-	public int getMasterPort() {
-		return masterPort;
+	public HealthCheckEndpoint getMasterEndpoint() {
+		return masterEndpoint;
 	}
 
 	public String getMasterDcId() {

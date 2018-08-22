@@ -3,6 +3,9 @@ package com.ctrip.xpipe.redis.console.health.action;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.health.DefaultHealthCheckEndpoint;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,9 +60,9 @@ public class LogTest extends AbstractConsoleIntegrationTest {
     }
 
     private HealthStatus createHealthStatus(String host, int port) {
-        HostPort hostPort = new HostPort("10.2.75.143", 6379);
+        HealthCheckEndpoint endpoint = new DefaultHealthCheckEndpoint(new RedisMeta().setIp("10.2.75.143").setPort(6379));
         return new HealthStatus(
-                hostPort,
+                endpoint,
                 () -> consoleConfig.getDownAfterCheckNums() * consoleConfig.getRedisReplicationHealthCheckInterval(),
                 () -> consoleConfig.getHealthyDelayMilli(),
                 scheduled);

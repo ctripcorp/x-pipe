@@ -18,6 +18,10 @@ public class ConfigRewrite extends AbstractConfigCommand<String>{
 		super(clientPool, scheduled);
 	}
 
+	public ConfigRewrite(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int timeoutMilli) {
+		super(clientPool, scheduled, timeoutMilli);
+	}
+
 	@Override
 	protected String format(Object payload) {
 		return payloadToString(payload);

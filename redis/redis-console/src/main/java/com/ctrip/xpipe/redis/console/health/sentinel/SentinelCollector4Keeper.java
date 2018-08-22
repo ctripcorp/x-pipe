@@ -42,9 +42,9 @@ public class SentinelCollector4Keeper implements SentinelCollector {
         String shardId = sentinelSample.getSamplePlan().getShardId();
 
         sentinelSample.getSamplePlan().getHostPort2SampleResult()
-                .forEach(((hostPort, instanceSentinelResult) -> {
-                    if(metaCache.inBackupDc(hostPort)) {
-                        ClusterShardHostPort entry = new ClusterShardHostPort(clusterId, shardId, hostPort);
+                .forEach(((endpoint, instanceSentinelResult) -> {
+                    if(metaCache.inBackupDc(endpoint.getHostPort())) {
+                        ClusterShardHostPort entry = new ClusterShardHostPort(clusterId, shardId, endpoint.getHostPort());
                         doCollect(entry, instanceSentinelResult);
                     }
                 }));

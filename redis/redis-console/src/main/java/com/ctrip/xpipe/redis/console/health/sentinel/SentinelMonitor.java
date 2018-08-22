@@ -2,14 +2,10 @@ package com.ctrip.xpipe.redis.console.health.sentinel;
 
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
-import com.ctrip.xpipe.redis.console.health.AbstractRedisConfMonitor;
-import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
-import com.ctrip.xpipe.redis.console.health.RedisSession;
-import com.ctrip.xpipe.redis.console.health.Sample;
+import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -118,8 +114,8 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
     }
 
     @Override
-    protected void addRedis(BaseSamplePlan<InstanceSentinelResult> plan, String dcId, RedisMeta redisMeta) {
-        plan.addRedis(dcId, redisMeta, new InstanceSentinelResult());
+    protected void addRedis(BaseSamplePlan<InstanceSentinelResult> plan, String dcId, HealthCheckEndpoint endpoint) {
+        plan.addRedis(dcId, endpoint, new InstanceSentinelResult());
     }
 
     @Override
@@ -127,14 +123,19 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
         return new SentinelSamplePlan(clusterId, shardId);
     }
 
-
-    @Override
     protected Sample<InstanceSentinelResult> createSample(long nanoTime, BaseSamplePlan<InstanceSentinelResult> plan) {
 
         return new SentinelSample(System.currentTimeMillis(),
                 nanoTime,
                 plan,
                 5000);
+    }
+
+    @Override
+    protected long recordSample(BaseSamplePlan<InstanceSentinelResult> plan) {
+        long nanoTime = System.nanoTime();
+        samples.put(new SampleKey(nanoTime, 5000), createSample(nanoTime, plan));
+        return nanoTime;
     }
 }
 

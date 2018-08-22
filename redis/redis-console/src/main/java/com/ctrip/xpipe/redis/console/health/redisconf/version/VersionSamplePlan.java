@@ -12,9 +12,4 @@ public class VersionSamplePlan extends BaseSamplePlan<VersionInstanceResult> {
     public VersionSamplePlan(String clusterId, String shardId) {
         super(clusterId, shardId);
     }
-
-    @Override
-    public void addRedis(String dcId, RedisMeta redisMeta, VersionInstanceResult initSampleResult) {
-        super.addRedis(dcId, redisMeta, initSampleResult);
-    }
 }

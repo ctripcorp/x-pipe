@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.simpleserver.Server;
@@ -22,7 +24,7 @@ import static org.mockito.Mockito.when;
  * <p>
  * Jan 23, 2018
  */
-public class RemoveUnusedRedisTest extends AbstractTest {
+public class RemoveUnusedRedisTest extends AbstractConsoleH2DbTest {
 
     private Server server;
 
@@ -56,7 +58,7 @@ public class RemoveUnusedRedisTest extends AbstractTest {
     @Test
     public void testRemoveUnusedRedis() throws Exception {
         String host = "127.0.0.1";
-        RedisSession session = manager.findOrCreateSession(host, port);
+        RedisSession session = manager.findOrCreateSession(newDefaultHealthCheckEndpoint(host, port));
 
         // Build two types connection
         try {

@@ -41,16 +41,16 @@ public class DefaultBacklogActiveCollector implements BacklogActiveCollector {
         String clusterId = samplePlan.getClusterId();
         String shardId = samplePlan.getShardId();
 
-        samplePlan.getHostPort2SampleResult().forEach((hostPort, sampleResult) -> {
+        samplePlan.getHostPort2SampleResult().forEach((endpoint, sampleResult) -> {
             if(sampleResult.isSuccess()) {
 
                 String context = sampleResult.getContext();
                 if(context == null || StringUtil.isEmpty(context)) {
-                    logger.warn("[collect]Null String of Redis info, {} {} {}", clusterId, shardId, hostPort);
+                    logger.warn("[collect]Null String of Redis info, {} {} {}", clusterId, shardId, endpoint);
                     return;
                 }
                 try {
-                    analysisInfoReplication(sampleResult.getContext(), clusterId, shardId, hostPort);
+                    analysisInfoReplication(sampleResult.getContext(), clusterId, shardId, endpoint.getHostPort());
                 } catch (Exception e) {
                     logger.error("[collect]", e);
                 }
