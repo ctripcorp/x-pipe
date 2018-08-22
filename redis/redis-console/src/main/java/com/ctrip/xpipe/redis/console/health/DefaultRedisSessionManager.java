@@ -112,36 +112,36 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		if(currentStoredRedises.isEmpty())
 			return;
 
-		Set<Endpoint> redisInUse = getInUseRedises();
-		List<Endpoint> unusedRedises;
-		if(redisInUse == null || redisInUse.isEmpty()) {
-			unusedRedises = new LinkedList<>(currentStoredRedises);
-		} else {
-			unusedRedises = currentStoredRedises.stream()
-					.filter(hostPort -> !redisInUse.contains(hostPort))
-					.collect(Collectors.toList());
+		Set<HostPort> redisInUse = getInUseRedises();
+		List<Endpoint> unusedRedises = new LinkedList<>();
+
+		for(Endpoint endpoint : currentStoredRedises) {
+			if(!redisInUse.contains(new HostPort(endpoint.getHost(), endpoint.getPort()))) {
+				unusedRedises.add(endpoint);
+			}
 		}
-		if(unusedRedises == null || unusedRedises.isEmpty()) {
+
+		if(unusedRedises.isEmpty()) {
 			return;
 		}
-		unusedRedises.forEach(hostPort -> {
-			RedisSession redisSession = sessions.getOrDefault(hostPort, null);
+		unusedRedises.forEach(endpoint -> {
+			RedisSession redisSession = sessions.getOrDefault(endpoint, null);
 			if(redisSession != null) {
-				logger.info("[removeUnusedRedises]Redis: {} not in use, remove from session manager", hostPort);
+				logger.info("[removeUnusedRedises]Redis: {} not in use, remove from session manager", endpoint);
 				// add try logic to continue working on others
 				try {
 					redisSession.closeConnection();
 				} catch (Exception ignore) {
 
 				}
-				sessions.remove(hostPort);
+				sessions.remove(endpoint);
 			}
 		});
 	}
 
 
-	private Set<Endpoint> getInUseRedises() {
-		Set<Endpoint> redisInUse = new HashSet<>();
+	private Set<HostPort> getInUseRedises() {
+		Set<HostPort> redisInUse = new HashSet<>();
 		List<DcMeta> dcMetas = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 		if(dcMetas.isEmpty())	return null;
 		for (DcMeta dcMeta : dcMetas) {
@@ -149,7 +149,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
 				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 					for (RedisMeta redisMeta : shardMeta.getRedises()) {
-						redisInUse.add(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
+						redisInUse.add(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
 					}
 				}
 			}
