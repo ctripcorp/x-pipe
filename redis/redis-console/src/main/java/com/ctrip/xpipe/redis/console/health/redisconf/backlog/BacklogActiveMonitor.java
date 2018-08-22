@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.health.redisconf.backlog;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -41,17 +41,17 @@ public class BacklogActiveMonitor  extends AbstractRedisConfMonitor<InstanceInfo
     }
 
     public void sampleInfoReplication(long recordTime, BaseSamplePlan<InstanceInfoReplicationResult> plan) {
-        for(HostPort hostPort : plan.getHostPort2SampleResult().keySet()) {
-            RedisSession session = sessionManager.findOrCreateSession(hostPort.getHost(), hostPort.getPort());
+        for(HealthCheckEndpoint endpoint : plan.getHostPort2SampleResult().keySet()) {
+            RedisSession session = sessionManager.findOrCreateSession(endpoint);
             session.infoReplication(new Callbackable<String>() {
                 @Override
                 public void success(String message) {
-                    addInstanceSuccess(recordTime, hostPort.getHost(), hostPort.getPort(), message);
+                    addInstanceSuccess(recordTime, endpoint, message);
                 }
 
                 @Override
                 public void fail(Throwable throwable) {
-                    addInstanceFail(recordTime, hostPort.getHost(), hostPort.getPort(), throwable);
+                    addInstanceFail(recordTime, endpoint, throwable);
                 }
             });
         }
@@ -69,12 +69,12 @@ public class BacklogActiveMonitor  extends AbstractRedisConfMonitor<InstanceInfo
     }
 
     @Override
-    protected void addRedis(BaseSamplePlan<InstanceInfoReplicationResult> plan, String dcId, RedisMeta redisMeta) {
+    protected void addRedis(BaseSamplePlan<InstanceInfoReplicationResult> plan, String dcId, HealthCheckEndpoint endpoint) {
         // check slave only
-        if(redisMeta.isMaster()) {
+        if(endpoint.getRedisMeta().isMaster()) {
             return;
         }
-        plan.addRedis(dcId, redisMeta, new InstanceInfoReplicationResult());
+        plan.addRedis(dcId, endpoint, new InstanceInfoReplicationResult());
     }
 
     @Override

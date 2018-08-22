@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.delay;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +24,9 @@ public class EchoDelayCollector implements DelayCollector {
 	@Override
 	public void collect(DelaySampleResult result) {
 		String fmt = "{}ms ({}) {}";
-		log.info(fmt, result.getMasterDelayNanos() / 1000000, "master", result.getMasterHostPort());
+		log.info(fmt, result.getMasterDelayNanos() / 1000000, "master", result.getMasterEndpoint());
 
-		for (Entry<HostPort, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
+		for (Entry<HealthCheckEndpoint, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
 			log.info(fmt, entry.getValue() / 1000000, "slave", entry.getKey());
 		}
 	}

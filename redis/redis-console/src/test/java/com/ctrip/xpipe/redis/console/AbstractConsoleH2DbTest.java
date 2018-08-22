@@ -1,6 +1,13 @@
 package com.ctrip.xpipe.redis.console;
 
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
+import com.ctrip.xpipe.redis.console.health.DefaultHealthCheckEndpoint;
+import com.ctrip.xpipe.redis.console.health.DefaultProxyEnabledHealthCheckEndpoint;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocol;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -131,5 +138,32 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
     public String prepareDatasFromFile(String path) throws IOException {
         InputStream ins = FileUtils.getFileInputStream(path);
         return IOUtils.toString(ins);
+    }
+
+    public static HealthCheckEndpoint newDefaultHealthCheckEndpoint(String host, int port, String master) {
+        return new DefaultHealthCheckEndpoint(new RedisMeta().setIp(host).setPort(port).setMaster(master));
+    }
+
+    public static HealthCheckEndpoint newDefaultHealthCheckEndpoint(String host, int port) {
+        return new DefaultHealthCheckEndpoint(new RedisMeta().setIp(host).setPort(port).setMaster(null));
+    }
+
+    public static HealthCheckEndpoint newDefaultHealthCheckEndpoint(HostPort hostPort) {
+        return newDefaultHealthCheckEndpoint(hostPort.getHost(), hostPort.getPort(), null);
+    }
+
+    public static HealthCheckEndpoint newProxyedHealthCheckEndpoint(String host, int port, String master) {
+        return new DefaultProxyEnabledHealthCheckEndpoint(new RedisMeta().setIp(host).setPort(port).setMaster(master),
+                new DefaultProxyProtocol());
+    }
+
+    public static HealthCheckEndpoint newProxyedHealthCheckEndpoint(String host, int port) {
+        return new DefaultProxyEnabledHealthCheckEndpoint(new RedisMeta().setIp(host).setPort(port).setMaster(null),
+                new DefaultProxyProtocol());
+    }
+
+    public static HealthCheckEndpoint newProxyedHealthCheckEndpoint(String host, int port, ProxyProtocol protocol) {
+        return new DefaultProxyEnabledHealthCheckEndpoint(new RedisMeta().setIp(host).setPort(port).setMaster(null),
+                protocol);
     }
 }

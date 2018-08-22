@@ -30,7 +30,7 @@ public class GeneratePlanTest {
             }
 
             @Override
-            protected void addRedis(BaseSamplePlan plan, String dcId, RedisMeta redisMeta) {
+            protected void addRedis(BaseSamplePlan plan, String dcId, HealthCheckEndpoint redisMeta) {
 
             }
 
@@ -38,7 +38,7 @@ public class GeneratePlanTest {
             protected BaseSamplePlan createPlan(String dcId, String clusterId, String shardId) {
                 return new BaseSamplePlan(clusterId, shardId) {
                     @Override
-                    public void addRedis(String dcId, RedisMeta redisMeta, Object initSampleResult) {
+                    public void addRedis(String dcId, HealthCheckEndpoint redisMeta, Object initSampleResult) {
                         super.addRedis(dcId, redisMeta, initSampleResult);
                     }
                 };

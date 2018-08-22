@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.health;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
@@ -45,6 +46,9 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Autowired
 	private MetaCache metaCache;
 
+	@Autowired
+	private HealthCheckEndpointManager healthCheckEndpointManager;
+
 	@Resource(name = SUBSCRIBE_NETTY_CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool subscrNettyClientPool;
 
@@ -79,17 +83,8 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		}, 5, 5, TimeUnit.SECONDS);
 	}
 
-	@Override
-	public RedisSession findOrCreateSession(String host, int port) {
-
-		if(StringUtil.isEmpty(host) || port == 0) {
-			throw new IllegalArgumentException("Redis Host/Port can not be empty: " + host + ":" + port);
-		}
-		return findOrCreateSession(new DefaultEndPoint(host, port));
-	}
-
     @Override
-    public RedisSession findOrCreateSession(Endpoint endpoint) {
+    public RedisSession findOrCreateSession(HealthCheckEndpoint endpoint) {
 		RedisSession session = sessions.get(endpoint);
 
 		if (session == null) {
@@ -104,6 +99,12 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 		return session;
     }
+
+	@Override
+	public RedisSession findOrCreateSession(HostPort hostPort) {
+		HealthCheckEndpoint endpoint = healthCheckEndpointManager.getOrCreate(hostPort);
+		return findOrCreateSession(endpoint);
+	}
 
 	@VisibleForTesting
 	protected void removeUnusedRedises() {

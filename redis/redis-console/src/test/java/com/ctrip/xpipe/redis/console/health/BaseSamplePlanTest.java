@@ -31,12 +31,14 @@ public class BaseSamplePlanTest {
     private RedisMeta redis = new RedisMeta().setIp("127.0.0.1").setPort(6379)
             .setMaster(XPipeConsoleConstant.DEFAULT_ADDRESS);
 
+    private HealthCheckEndpoint endpoint = new DefaultHealthCheckEndpoint(redis);
+
     @Test
     public void isEmpty() throws Exception {
         BaseSamplePlan plan = new PingSamplePlan(clusterId, shardId);
         Assert.assertTrue(plan.isEmpty());
 
-        plan.addRedis(dcId, redis, new InstancePingResult());
+        plan.addRedis(dcId, endpoint, new InstancePingResult());
         Assert.assertFalse(plan.isEmpty());
     }
 
@@ -45,7 +47,7 @@ public class BaseSamplePlanTest {
         BaseSamplePlan plan = new DelaySamplePlan(clusterId, shardId);
         Assert.assertTrue(plan.isEmpty());
 
-        plan.addRedis(dcId, redis, new InstanceDelayResult(dcId, false));
+        plan.addRedis(dcId, endpoint, new InstanceDelayResult(dcId, false));
         Assert.assertFalse(plan.isEmpty());
     }
 
@@ -54,7 +56,7 @@ public class BaseSamplePlanTest {
         BaseSamplePlan plan = new VersionSamplePlan(clusterId, shardId);
         Assert.assertTrue(plan.isEmpty());
 
-        plan.addRedis(dcId, redis, new VersionInstanceResult());
+        plan.addRedis(dcId, endpoint, new VersionInstanceResult());
         Assert.assertFalse(plan.isEmpty());
     }
 
@@ -63,7 +65,7 @@ public class BaseSamplePlanTest {
         BaseSamplePlan plan = new DiskLessSamplePlan(clusterId, shardId);
         Assert.assertTrue(plan.isEmpty());
 
-        plan.addRedis(dcId, redis, new DiskLessInstanceResult());
+        plan.addRedis(dcId, endpoint, new DiskLessInstanceResult());
         Assert.assertFalse(plan.isEmpty());
     }
 
@@ -72,7 +74,7 @@ public class BaseSamplePlanTest {
         BaseSamplePlan plan = new RedisMasterSamplePlan(dcId, clusterId, shardId);
         Assert.assertTrue(plan.isEmpty());
 
-        plan.addRedis(dcId, redis, new InstanceRedisMasterResult());
+        plan.addRedis(dcId, endpoint, new InstanceRedisMasterResult());
         Assert.assertFalse(plan.isEmpty());
     }
 

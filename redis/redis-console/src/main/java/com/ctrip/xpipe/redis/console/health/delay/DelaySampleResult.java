@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.health.delay;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,10 +18,10 @@ public class DelaySampleResult {
 	private String clusterId;
 	private String shardId;
 
-	private HostPort masterHostPort;
+	private HealthCheckEndpoint masterEndpoint;
 	private long masterDelayNanos;
 
-	private Map<HostPort, Long> slaveHostPort2Delay = new HashMap<>();
+	private Map<HealthCheckEndpoint, Long> slaveHostPort2Delay = new HashMap<>();
 
 	public DelaySampleResult(long sampleStartTime, String clusterId, String shardId) {
 		this.sampleStartTime = sampleStartTime;
@@ -27,12 +29,12 @@ public class DelaySampleResult {
 		this.shardId = shardId;
 	}
 
-	public void setMasterDelayNanos(HostPort masterHostPort, long masterDelayNanos) {
-		this.masterHostPort = masterHostPort;
+	public void setMasterDelayNanos(HealthCheckEndpoint masterEndpoint, long masterDelayNanos) {
+		this.masterEndpoint = masterEndpoint;
 		this.masterDelayNanos = masterDelayNanos;
 	}
 
-	public void addSlaveDelayNanos(HostPort slaveHostPort, long slaveDelayNanos) {
+	public void addSlaveDelayNanos(HealthCheckEndpoint slaveHostPort, long slaveDelayNanos) {
 		slaveHostPort2Delay.put(slaveHostPort, slaveDelayNanos);
 	}
 
@@ -48,15 +50,15 @@ public class DelaySampleResult {
 		return shardId;
 	}
 
-	public HostPort getMasterHostPort() {
-		return masterHostPort;
+	public HealthCheckEndpoint getMasterEndpoint() {
+		return masterEndpoint;
 	}
 
 	public long getMasterDelayNanos() {
 		return masterDelayNanos;
 	}
 
-	public Map<HostPort, Long> getSlaveHostPort2Delay() {
+	public Map<HealthCheckEndpoint, Long> getSlaveHostPort2Delay() {
 		return slaveHostPort2Delay;
 	}
 

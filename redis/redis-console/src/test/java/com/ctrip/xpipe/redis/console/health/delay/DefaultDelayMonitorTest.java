@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.health.Sample;
+import com.ctrip.xpipe.redis.console.health.SampleKey;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.junit.Assert;
@@ -42,7 +43,7 @@ public class DefaultDelayMonitorTest extends AbstractConsoleIntegrationTest {
 
         int port1 = 10000, port2 = 20000, port3 = 30000, port4 = 40000;
 
-        Map<Long, Sample<InstanceDelayResult>> samples = new ConcurrentHashMap<>();
+        Map<SampleKey, Sample> samples = new ConcurrentHashMap<>();
 
         for (int i = 0; i < clusterCount; i++) {
             for (int j = 0; j < shardCountEach; j++) {
@@ -55,12 +56,13 @@ public class DefaultDelayMonitorTest extends AbstractConsoleIntegrationTest {
 
 
                 long nanoTime = System.nanoTime();
-                Sample<InstanceDelayResult> sample = new Sample<>(System.currentTimeMillis(), nanoTime, delaySamplePlan, 1500);
-                sample.addInstanceSuccess("127.0.0.1", port1, null);
-                sample.addInstanceSuccess("127.0.0.1", port2, null);
-                sample.addInstanceSuccess("127.0.0.1", port3, null);
-                sample.addInstanceSuccess("127.0.0.1", port4, null);
-                samples.put(System.nanoTime(), sample);
+                Sample<InstanceDelayResult> sample = new Sample<>(System.currentTimeMillis(), nanoTime, delaySamplePlan,
+                        1500, delaySamplePlan.getHostPort2SampleResult().size());
+                sample.addInstanceSuccess(newDefaultHealthCheckEndpoint("127.0.0.1", port1), null);
+                sample.addInstanceSuccess(newDefaultHealthCheckEndpoint("127.0.0.1", port2), null);
+                sample.addInstanceSuccess(newDefaultHealthCheckEndpoint("127.0.0.1", port3), null);
+                sample.addInstanceSuccess(newDefaultHealthCheckEndpoint("127.0.0.1", port4), null);
+                samples.put(new SampleKey(System.nanoTime(), 1500), sample);
 
             }
         }
@@ -78,8 +80,8 @@ public class DefaultDelayMonitorTest extends AbstractConsoleIntegrationTest {
     @Test
     public void avoidNullPointerException() {
         DelaySampleResult sampleResult = new DelaySampleResult(System.currentTimeMillis(), "cluster", "shard");
-        sampleResult.addSlaveDelayNanos(new HostPort("127.0.0.1", 6379), System.nanoTime());
-        sampleResult.addSlaveDelayNanos(new HostPort("127.0.0.1", 6380), System.nanoTime());
+        sampleResult.addSlaveDelayNanos(newDefaultHealthCheckEndpoint("127.0.0.1", 6379), System.nanoTime());
+        sampleResult.addSlaveDelayNanos(newDefaultHealthCheckEndpoint("127.0.0.1", 6380), System.nanoTime());
 
         try {
             delayMonitor.getDelayCollectors().forEach(collector -> collector.collect(sampleResult));

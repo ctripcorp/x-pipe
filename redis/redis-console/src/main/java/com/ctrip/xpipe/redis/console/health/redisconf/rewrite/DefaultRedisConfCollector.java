@@ -32,16 +32,16 @@ public class DefaultRedisConfCollector implements RedisConfCollector{
         String clusterId = samplePlan.getClusterId();
         String shardId = samplePlan.getShardId();
 
-        samplePlan.getHostPort2SampleResult().forEach((hostPort, result) -> {
+        samplePlan.getHostPort2SampleResult().forEach((endpoint, result) -> {
 
             if(result.isSuccess()){
-                logger.info("{}: success", hostPort);
+                logger.info("{}: success", endpoint);
             }else {
 
-                logger.info("{}: fail:{}", hostPort, result.getFailReason());
+                logger.info("{}: fail:{}", endpoint, result.getFailReason());
                 if(result.getFailReason() instanceof RedisConfFailException){
-                    alertManager.alert(clusterId, shardId, hostPort, ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE, String.format("%s:%s",
-                            result.getFailReason().getClass().getSimpleName(), hostPort));
+                    alertManager.alert(clusterId, shardId, endpoint.getHostPort(), ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE, String.format("%s:%s",
+                            result.getFailReason().getClass().getSimpleName(), endpoint.getHostPort()));
                 }
             }
 

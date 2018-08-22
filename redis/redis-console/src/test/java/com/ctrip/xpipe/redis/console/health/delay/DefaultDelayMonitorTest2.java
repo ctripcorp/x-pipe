@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.health.delay;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
+import com.ctrip.xpipe.redis.console.health.DefaultHealthCheckEndpoint;
 import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.health.action.AllMonitorCollector;
 import com.ctrip.xpipe.redis.console.health.ping.PingService;
@@ -44,11 +45,11 @@ public class DefaultDelayMonitorTest2 {
         MockitoAnnotations.initMocks(this);
         when(pingService.isRedisAlive(any())).thenReturn(true);
         BaseSamplePlan<InstanceDelayResult> plan = new DelaySamplePlan("cluster", "shard");
-        plan.addRedis("dc", new RedisMeta().setMaster("0.0.0.0").setIp("127.0.0.1").setPort(6380),
+        plan.addRedis("dc", new DefaultHealthCheckEndpoint(new RedisMeta().setMaster("0.0.0.0").setIp("127.0.0.1").setPort(6380)),
                 new InstanceDelayResult("dc", false));
-        plan.addRedis("dc", new RedisMeta().setMaster("0.0.0.0").setIp("127.0.0.1").setPort(6381),
+        plan.addRedis("dc", new DefaultHealthCheckEndpoint(new RedisMeta().setMaster("0.0.0.0").setIp("127.0.0.1").setPort(6381)),
                 new InstanceDelayResult("dc", false));
-        sample = new Sample<>(System.currentTimeMillis(), System.nanoTime(), plan, 100);
+        sample = new Sample<>(System.currentTimeMillis(), System.nanoTime(), plan, 100, plan.getHostPort2SampleResult().size());
         monitor.setDelayCollectors(Lists.newArrayList(collector1, collector2, collector3));
     }
 

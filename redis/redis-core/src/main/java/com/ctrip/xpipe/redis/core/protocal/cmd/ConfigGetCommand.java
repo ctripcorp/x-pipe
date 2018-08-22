@@ -18,6 +18,10 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 		super(clientPool, scheduled);
 	}
 
+	public ConfigGetCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+		super(clientPool, scheduled, commandTimeoutMilli);
+	}
+
 	@Override
 	public String getName() {
 		return getClass().getSimpleName();
@@ -65,6 +69,11 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 
 		public ConfigGetDisklessSync(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
 			super(clientPool, scheduled);
+		}
+
+		public ConfigGetDisklessSync(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+									 int commandTimeoutMilli) {
+			super(clientPool, scheduled, commandTimeoutMilli);
 		}
 
 		@Override
