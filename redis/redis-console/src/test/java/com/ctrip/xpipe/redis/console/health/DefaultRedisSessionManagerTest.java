@@ -9,6 +9,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import static com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest.newDefaultHealthCheckEndpoint;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -35,7 +37,7 @@ public class DefaultRedisSessionManagerTest extends AbstractConsoleTest{
     @Test
     public void testPubSub(){
 
-        RedisSession redisSession = redisSessionManager.findOrCreateSession(host, port);
+        RedisSession redisSession = redisSessionManager.findOrCreateSession(newDefaultHealthCheckEndpoint(host, port));
 
         for(int i=0;i<channels;i++){
             redisSession.subscribeIfAbsent(channelName(channel, i), new RedisSession.SubscribeCallback() {

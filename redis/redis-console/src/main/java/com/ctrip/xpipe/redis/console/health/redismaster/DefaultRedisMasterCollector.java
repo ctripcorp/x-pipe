@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.health.Sample;
@@ -52,12 +53,12 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
     public void collect(Sample<InstanceRedisMasterResult> sample) {
 
         RedisMasterSamplePlan plan = (RedisMasterSamplePlan) sample.getSamplePlan();
-        Map<HostPort, InstanceRedisMasterResult> hostPort2SampleResult = plan.getHostPort2SampleResult();
+        Map<HealthCheckEndpoint, InstanceRedisMasterResult> hostPort2SampleResult = plan.getHostPort2SampleResult();
         if(hostPort2SampleResult.size() == 0 || hostPort2SampleResult.size() >= 2){
             logger.warn("[collect][size wrong]{}, {}", plan);
             correct(plan);
         }else {
-            Map.Entry<HostPort, InstanceRedisMasterResult> next = hostPort2SampleResult.entrySet().iterator().next();
+            Map.Entry<HealthCheckEndpoint, InstanceRedisMasterResult> next = hostPort2SampleResult.entrySet().iterator().next();
             if(!next.getValue().roleIsMaster()){
                 logger.info("[collect][role not right]{}, {}", plan, next);
                 correct(plan);
@@ -81,19 +82,19 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
 
         //check redis master again
 
-        if(plan.getMasterHost() != null && isMaster(plan.getMasterHost(), plan.getMasterPort())){
+        if(plan.getMasterEndpoint() != null && isMaster(plan.getMasterEndpoint())){
             logger.info("[doCorrection][still master]{}", plan);
             return;
         }
 
-        for (RedisMeta redisMeta : plan.getRedises()){
+        for (HealthCheckEndpoint endpoint : plan.getRediseEndpoints()){
 
-            if(redisMeta.getIp().equals(plan.getMasterHost()) && redisMeta.getPort().equals(plan.getMasterPort())){
+            if(endpoint.equals(plan.getMasterEndpoint())){
                 continue;
             }
-            if (isMaster(redisMeta.getIp(), redisMeta.getPort())){
+            if (isMaster(endpoint)){
                 try {
-                    changeMasterRoleInDb(plan, redisMeta.getIp(), redisMeta.getPort());
+                    changeMasterRoleInDb(plan, endpoint.getRedisMeta().getIp(), endpoint.getRedisMeta().getPort());
                 } catch (ResourceNotFoundException e) {
                     logger.error("doCorrection" + plan, e);
                 }
@@ -126,15 +127,15 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
     }
 
     @VisibleForTesting
-    protected boolean isMaster(String host, int port) {
+    protected boolean isMaster(HealthCheckEndpoint endpoint) {
         try {
-            RedisSession redisSession = redisSessionManager.findOrCreateSession(host, port);
+            RedisSession redisSession = redisSessionManager.findOrCreateSession(endpoint);
             String role = redisSession.roleSync();
             if(Server.SERVER_ROLE.MASTER.sameRole(role)){
                 return true;
             }
         } catch (Exception e) {
-            logger.error(String.format("%s:%d", host, port), e);
+            logger.error("{}", endpoint, e);
         }
         return  false;
     }

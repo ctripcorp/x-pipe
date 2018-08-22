@@ -17,7 +17,11 @@ public abstract class AbstractConfigCommand<T> extends AbstractRedisCommand<T>{
 	public AbstractConfigCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);
 	}
-	
+
+	public AbstractConfigCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+		super(clientPool, scheduled, commandTimeoutMilli);
+	}
+
 	public static enum REDIS_CONFIG_TYPE{
 		
 		MIN_SLAVES_TO_WRITE("min-slaves-to-write"),

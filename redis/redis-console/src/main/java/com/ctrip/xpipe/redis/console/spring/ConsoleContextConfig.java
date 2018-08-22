@@ -10,6 +10,10 @@ import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
+import com.ctrip.xpipe.redis.core.proxy.netty.ProxyEnabledNettyKeyedPoolClientFactory;
+import com.ctrip.xpipe.redis.core.proxy.resource.ConsoleProxyResourceManager;
 import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -38,7 +42,8 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 
 	public final static String SUBSCRIBE_NETTY_CLIENT_POOL = "subscribeNettyClientPool";
 
-	private ProxyResourceManager resourceManager;
+	private ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(
+			new DefaultProxyEndpointManager(()->1), new NaiveNextHopAlgorithm());
 
 	@Bean(name = REDIS_COMMAND_EXECUTOR)
 	public ScheduledExecutorService getRedisCommandExecutor() {
@@ -59,7 +64,7 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 
 	@Bean(name = REQUEST_RESPONSE_NETTY_CLIENT_POOL)
 	public XpipeNettyClientKeyedObjectPool getReqResNettyClientPool() throws Exception {
-		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(OsUtils.getCpuCount());
+		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory());
 		LifecycleHelper.initializeIfPossible(keyedObjectPool);
 		LifecycleHelper.startIfPossible(keyedObjectPool);
 		return keyedObjectPool;
@@ -67,10 +72,14 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 
 	@Bean(name = SUBSCRIBE_NETTY_CLIENT_POOL)
 	public XpipeNettyClientKeyedObjectPool getSubscribeNettyClientPool() throws Exception {
-		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(OsUtils.getCpuCount());
+		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory());
 		LifecycleHelper.initializeIfPossible(keyedObjectPool);
 		LifecycleHelper.startIfPossible(keyedObjectPool);
 		return keyedObjectPool;
+	}
+
+	private ProxyEnabledNettyKeyedPoolClientFactory getKeyedPoolClientFactory() {
+		return new ProxyEnabledNettyKeyedPoolClientFactory(resourceManager);
 	}
 
 	@Bean

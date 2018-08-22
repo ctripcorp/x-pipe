@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.health.delay;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +33,12 @@ public class MetricDelayCollector implements DelayCollector {
         try {
             List<MetricData> data = new LinkedList<>();
 
-            for (Entry<HostPort, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
-                MetricData point = getPoint(entry.getKey(), entry.getValue(), result);
+            for (Entry<HealthCheckEndpoint, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
+                MetricData point = getPoint(entry.getKey().getHostPort(), entry.getValue(), result);
                 data.add(point);
             }
 
-            HostPort masterHostPort = result.getMasterHostPort();
+            HostPort masterHostPort = result.getMasterEndpoint().getHostPort();
             if(masterHostPort != null) {
                 MetricData point = getPoint(masterHostPort, result.getMasterDelayNanos(), result);
                 data.add(point);
@@ -53,7 +54,7 @@ public class MetricDelayCollector implements DelayCollector {
 
         MetricData data = new MetricData(TYPE, result.getClusterId(), result.getShardId());
         data.setValue(value/1000);
-        data.setTimestampMilli(System.currentTimeMillis());
+        data.setTimestampMilli(result.getSampleStartTime());
         data.setHostPort(hostPort);
         return data;
     }

@@ -28,6 +28,12 @@ public class PublishCommand extends AbstractRedisCommand<Object> {
         this.message = message;
     }
 
+    public PublishCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli, String pubChannel, String message) {
+        super(clientPool, scheduled, commandTimeoutMilli);
+        this.pubChannel = pubChannel;
+        this.message = message;
+    }
+
     @Override
     protected Object format(Object payload) {
         return payload;

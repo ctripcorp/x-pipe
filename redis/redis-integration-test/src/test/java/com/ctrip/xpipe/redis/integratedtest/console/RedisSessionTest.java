@@ -4,16 +4,25 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
-import com.ctrip.xpipe.redis.console.health.PingCallback;
-import com.ctrip.xpipe.redis.console.health.RedisSession;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
+import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.PublishCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeListener;
+import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
+import com.ctrip.xpipe.redis.core.proxy.netty.ProxyEnabledNettyKeyedPoolClientFactory;
+import com.ctrip.xpipe.redis.core.proxy.resource.ConsoleProxyResourceManager;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import org.junit.After;
 import org.junit.Assert;
@@ -34,16 +43,17 @@ public class RedisSessionTest extends AbstractIntegratedTest {
 
     private RedisSession redisSession;
 
-    private Endpoint endpoint;
+    private HealthCheckEndpoint endpoint;
 
     private static final String SUBSCRIBE_CHANNEL = "xpipe-health-check-test";
 
     @Before
     public void beforeRedisSessionTest() throws Exception {
         int redisPort = randomPort();
-        startRedis(new RedisMeta().setIp("127.0.0.1").setPort(redisPort));
-        endpoint = localhostEndpoint(redisPort);
-        redisSession = new RedisSession(endpoint, scheduled, getXpipeNettyClientKeyedObjectPool(), getXpipeNettyClientKeyedObjectPool());
+        RedisMeta redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(redisPort);
+        startRedis(redisMeta);
+        endpoint = new DefaultHealthCheckEndpoint(redisMeta);
+        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), getSubscribeNettyClientPool());
     }
 
     @Test
@@ -219,6 +229,87 @@ public class RedisSessionTest extends AbstractIntegratedTest {
             }
         });
     }
+
+
+    private ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(
+            new DefaultProxyEndpointManager(()->1), new NaiveNextHopAlgorithm());
+
+    @Test
+    public void testPingThroughProxy() throws Exception {
+        String protocolStr = "PROXY ROUTE PROXYTCP://10.5.111.148:80 TCP://10.5.111.145:6379";
+        ProxyProtocol protocol = new DefaultProxyProtocolParser().read(protocolStr);
+        endpoint = new DefaultProxyEnabledHealthCheckEndpoint(new RedisMeta().setIp("10.5.111.145").setPort(6379), protocol);
+        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), getSubscribeNettyClientPool());
+        redisSession.ping(new PingCallback() {
+            @Override
+            public void pong(String pongMsg) {
+                logger.info("[ping-call-back] {}", pongMsg);
+            }
+
+            @Override
+            public void fail(Throwable th) {
+                logger.error("[ping-call-back]", th);
+            }
+        });
+        Thread.sleep(2000);
+    }
+
+    @Test
+    public void testSubThroughProxy() throws Exception {
+        String protocolStr = "PROXY ROUTE PROXYTCP://10.5.111.148:80 TCP://10.5.111.145:6379";
+        ProxyProtocol protocol = new DefaultProxyProtocolParser().read(protocolStr);
+        endpoint = new DefaultProxyEnabledHealthCheckEndpoint(new RedisMeta().setIp("10.5.111.145").setPort(6379), protocol);
+        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), getSubscribeNettyClientPool());
+        redisSession.subscribeIfAbsent(SUBSCRIBE_CHANNEL, new RedisSession.SubscribeCallback() {
+            @Override
+            public void message(String channel, String message) {
+                logger.info("[receive] channel: {}, message: {}", channel, message);
+            }
+
+            @Override
+            public void fail(Throwable e) {
+
+            }
+        });
+        Thread.sleep(10);
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world1");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world2");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world3");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world4");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world5");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world6");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world7");
+        Thread.sleep(200);
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world8");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world9");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world10");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world11");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world12");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world13");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world14");
+        redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world15");
+        Thread.sleep(5000);
+    }
+
+    public XpipeNettyClientKeyedObjectPool getReqResNettyClientPool() throws Exception {
+        XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory());
+        LifecycleHelper.initializeIfPossible(keyedObjectPool);
+        LifecycleHelper.startIfPossible(keyedObjectPool);
+        return keyedObjectPool;
+    }
+
+    public XpipeNettyClientKeyedObjectPool getSubscribeNettyClientPool() throws Exception {
+        XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory());
+        LifecycleHelper.initializeIfPossible(keyedObjectPool);
+        LifecycleHelper.startIfPossible(keyedObjectPool);
+        return keyedObjectPool;
+    }
+
+    private ProxyEnabledNettyKeyedPoolClientFactory getKeyedPoolClientFactory() {
+        return new ProxyEnabledNettyKeyedPoolClientFactory(resourceManager);
+    }
+
 
     @Override
     protected List<RedisMeta> getRedisSlaves() {

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.health.ping;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,9 +32,9 @@ public class DefaultPingService implements PingService, PingCollector {
 
 	@Override
 	public void collect(PingSampleResult result) {
-		for (Entry<HostPort, Boolean> entry : result.getSlaveHostPort2Pong().entrySet()) {
+		for (Entry<HealthCheckEndpoint, Boolean> entry : result.getSlaveHostPort2Pong().entrySet()) {
 			if (entry.getValue()) {
-				hostPort2LastPong.put(entry.getKey(), System.currentTimeMillis());
+				hostPort2LastPong.put(entry.getKey().getHostPort(), System.currentTimeMillis());
 			}
 		}
 	}

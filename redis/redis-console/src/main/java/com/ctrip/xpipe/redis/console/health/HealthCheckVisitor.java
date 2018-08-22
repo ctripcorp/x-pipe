@@ -22,7 +22,10 @@ import static com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor.CHE
 public class HealthCheckVisitor implements IVisitor {
 
     @Autowired
-    RedisSessionManager sessionManager;
+    private RedisSessionManager sessionManager;
+
+    @Autowired
+    private HealthCheckEndpointManager healthCheckEndpointManager;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -60,7 +63,7 @@ public class HealthCheckVisitor implements IVisitor {
 
     @Override
     public void visitRedis(RedisMeta redis) {
-        RedisSession session = sessionManager.findOrCreateSession(redis.getIp(), redis.getPort());
+        RedisSession session = sessionManager.findOrCreateSession(healthCheckEndpointManager.getOrCreate(redis));
         this.executor.execute(new Runnable() {
             @Override
             public void run() {

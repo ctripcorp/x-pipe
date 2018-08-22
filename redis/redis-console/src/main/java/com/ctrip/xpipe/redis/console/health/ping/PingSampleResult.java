@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.health.ping;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,15 +16,15 @@ public class PingSampleResult {
 
 	private String clusterId;
 	private String shardId;
-	private Map<HostPort, Boolean> slaveHostPort2Pong = new HashMap<>();
+	private Map<HealthCheckEndpoint, Boolean> slaveHostPort2Pong = new HashMap<>();
 
 	public PingSampleResult(String clusterId, String shardId) {
 		this.clusterId = clusterId;
 		this.shardId = shardId;
 	}
 
-	public void addPong(HostPort hostPort, InstancePingResult pingResult) {
-		slaveHostPort2Pong.put(hostPort, pingResult.isSuccess());
+	public void addPong(HealthCheckEndpoint endpoint, InstancePingResult pingResult) {
+		slaveHostPort2Pong.put(endpoint, pingResult.isSuccess());
 	}
 
 	public String getClusterId() {
@@ -33,7 +35,7 @@ public class PingSampleResult {
 		return shardId;
 	}
 
-	public Map<HostPort, Boolean> getSlaveHostPort2Pong() {
+	public Map<HealthCheckEndpoint, Boolean> getSlaveHostPort2Pong() {
 		return slaveHostPort2Pong;
 	}
 

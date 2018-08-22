@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.delay;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 import org.springframework.stereotype.Component;
 
 import java.util.Map.Entry;
@@ -20,13 +21,13 @@ public class DefaultDelayService implements DelayService, DelayCollector{
 	
 	@Override
 	public void collect(DelaySampleResult result) {
-		if(result.getMasterHostPort() != null) {
-			hostPort2Delay.put(result.getMasterHostPort(), TimeUnit.NANOSECONDS.toMillis(result.getMasterDelayNanos()));
+		if(result.getMasterEndpoint() != null) {
+			hostPort2Delay.put(result.getMasterEndpoint().getHostPort(), TimeUnit.NANOSECONDS.toMillis(result.getMasterDelayNanos()));
 		}
 		
-		for(Entry<HostPort, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
+		for(Entry<HealthCheckEndpoint, Long> entry : result.getSlaveHostPort2Delay().entrySet()) {
 			if(entry.getValue() != null) {
-				hostPort2Delay.put(entry.getKey(), TimeUnit.NANOSECONDS.toMillis(entry.getValue()));
+				hostPort2Delay.put(entry.getKey().getHostPort(), TimeUnit.NANOSECONDS.toMillis(entry.getValue()));
 			}
 		}
 	}

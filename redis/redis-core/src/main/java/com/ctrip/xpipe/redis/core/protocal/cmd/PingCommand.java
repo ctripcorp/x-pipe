@@ -24,6 +24,10 @@ public class PingCommand extends AbstractRedisCommand<String>{
 		super(clientPool, scheduled);
 	}
 
+	public PingCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+		super(clientPool, scheduled, commandTimeoutMilli);
+	}
+
 	@Override
 	public String getName() {
 		return "ping cmd";

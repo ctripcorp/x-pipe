@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -38,7 +37,13 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 	@Autowired
 	protected RedisSessionManager redisSessionManager;
 
-	protected Map<Long, Sample<T>> samples = new ConcurrentHashMap<>();
+	@Autowired
+	protected SampleClassfier sampleClassfier;
+
+	@Autowired
+	protected HealthCheckEndpointManager healthCheckEndpointManager;
+
+	protected Map<SampleKey, Sample> samples = new ConcurrentHashMap<>();
 
 	protected Thread daemonThread;
 
@@ -59,43 +64,25 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 
 	protected long recordSample(BaseSamplePlan<T> plan) {
 		long nanoTime = System.nanoTime();
-		samples.put(nanoTime, createSample(nanoTime, plan));
+		samples.putAll(sampleClassfier.getClassifiedSamples(nanoTime, plan));
 		return nanoTime;
 	}
 
-	protected Sample<T> createSample(long nanoTime, BaseSamplePlan<T> plan){
-
-		return new Sample<>(System.currentTimeMillis(), nanoTime, plan, 1500);
+	protected RedisSession findRedisSession(HealthCheckEndpoint endpoint) {
+		return redisSessionManager.findOrCreateSession(endpoint);
 	}
 
-	protected RedisSession findRedisSession(HostPort hostPort) {
-		return redisSessionManager.findOrCreateSession(hostPort.getHost(), hostPort.getPort());
-	}
-
-	protected RedisSession findRedisSession(String host, int port) {
-		return redisSessionManager.findOrCreateSession(host, port);
-	}
-
-
-	protected <C> void addInstanceSuccess(long nanoTime, HostPort hostPort, C context) {
-		addInstanceSuccess(nanoTime, hostPort.getHost(), hostPort.getPort(), context);
-	}
-
-	protected <C> void addInstanceSuccess(long nanoTime, String host, int port, C context) {
-		Sample<T> sample = samples.get(nanoTime);
+	protected <C> void addInstanceSuccess(long nanoTime, HealthCheckEndpoint endpoint, C context) {
+		Sample sample = samples.get(new SampleKey(nanoTime, endpoint.getHealthCheckTimeoutMilli()));
 		if (sample != null) {
-			sample.addInstanceSuccess(host, port, context);
+			sample.addInstanceSuccess(endpoint, context);
 		}
 	}
 
-	protected <C> void addInstanceFail(long nanoTime, HostPort hostPort, Throwable th) {
-		addInstanceFail(nanoTime, hostPort.getHost(), hostPort.getPort(), th);
-	}
-
-	protected <C> void addInstanceFail(long nanoTime, String host, int port, Throwable th) {
-		Sample<T> sample = samples.get(nanoTime);
+	protected <C> void addInstanceFail(long nanoTime, HealthCheckEndpoint endpoint, Throwable th) {
+		Sample sample = samples.get(new SampleKey(nanoTime, endpoint.getHealthCheckTimeoutMilli()));
 		if (sample != null) {
-			sample.addInstanceFail(host, port, th);
+			sample.addInstanceFail(endpoint, th);
 		}
 	}
 
@@ -127,10 +114,10 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 				long start = System.currentTimeMillis();
 				int  count = 0;
 
-				Iterator<Entry<Long, Sample<T>>> iter = samples.entrySet().iterator();
+				Iterator<Entry<SampleKey, Sample>> iter = samples.entrySet().iterator();
 				while (iter.hasNext()) {
 					count++;
-					Sample<T> sample = iter.next().getValue();
+					Sample sample = iter.next().getValue();
 
 					if (sample.isDone() || sample.isExpired()) {
 						try {
@@ -179,7 +166,7 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 					for (RedisMeta redisMeta : shardMeta.getRedises()) {
 
 						log.debug("[generatePlan]{}", redisMeta.desc());
-						addRedis(plan, dcMeta.getId(), redisMeta);
+						addRedis(plan, dcMeta.getId(), healthCheckEndpointManager.getOrCreate(redisMeta));
 					}
 
 					if(plan.isEmpty()) {
@@ -195,12 +182,12 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 		return true;
 	}
 
-	protected abstract void addRedis(BaseSamplePlan<T> plan, String dcId, RedisMeta redisMeta);
+	protected abstract void addRedis(BaseSamplePlan<T> plan, String dcId, HealthCheckEndpoint endpoint);
 
 	protected abstract BaseSamplePlan<T> createPlan(String dcId, String clusterId, String shardId);
 
 	@VisibleForTesting
-	public void setSamples(Map<Long, Sample<T>> samples) {
+	public void setSamples(Map<SampleKey, Sample> samples) {
 		this.samples = samples;
 	}
 

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.ping;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ public class EchoPingCollector implements PingCollector {
 
 	@Override
 	public void collect(PingSampleResult result) {
-		for (Entry<HostPort, Boolean> entry : result.getSlaveHostPort2Pong().entrySet()) {
+		for (Entry<HealthCheckEndpoint, Boolean> entry : result.getSlaveHostPort2Pong().entrySet()) {
 			log.info("{} is {}", entry.getKey(), entry.getValue() ? "online" : "offline");
 		}
 	}
