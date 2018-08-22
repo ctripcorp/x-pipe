@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.google.common.collect.Maps;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -19,10 +17,10 @@ public class DefaultSampleClassfier implements SampleClassfier {
     public <T> Map<SampleKey, Sample> getClassifiedSamples(long startNano, BaseSamplePlan<T> baseSamplePlan) {
         Map<SampleKey, Sample> samples = Maps.newHashMap();
         for(HealthCheckEndpoint endpoint : baseSamplePlan.getHostPort2SampleResult().keySet()) {
-            SampleKey key = new SampleKey(startNano, endpoint.getDelayCheckTimeoutMilli());
+            SampleKey key = new SampleKey(startNano, endpoint.getHealthCheckTimeoutMilli());
             Sample sample = samples.get(key);
             if(sample == null) {
-                sample = new Sample(System.currentTimeMillis(), startNano, baseSamplePlan, endpoint.getDelayCheckTimeoutMilli(), 0);
+                sample = new Sample(System.currentTimeMillis(), startNano, baseSamplePlan, endpoint.getHealthCheckTimeoutMilli(), 0);
             }
             sample.increaseRemainingRedisCount();
             samples.put(key, sample);

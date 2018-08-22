@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -74,14 +73,14 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 	}
 
 	protected <C> void addInstanceSuccess(long nanoTime, HealthCheckEndpoint endpoint, C context) {
-		Sample sample = samples.get(new SampleKey(nanoTime, endpoint.getDelayCheckTimeoutMilli()));
+		Sample sample = samples.get(new SampleKey(nanoTime, endpoint.getHealthCheckTimeoutMilli()));
 		if (sample != null) {
 			sample.addInstanceSuccess(endpoint, context);
 		}
 	}
 
 	protected <C> void addInstanceFail(long nanoTime, HealthCheckEndpoint endpoint, Throwable th) {
-		Sample sample = samples.get(new SampleKey(nanoTime, endpoint.getDelayCheckTimeoutMilli()));
+		Sample sample = samples.get(new SampleKey(nanoTime, endpoint.getHealthCheckTimeoutMilli()));
 		if (sample != null) {
 			sample.addInstanceFail(endpoint, th);
 		}

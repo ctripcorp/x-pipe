@@ -20,7 +20,7 @@ public class DefaultProxyEnabledHealthCheckEndpoint extends AbstractHealthCheckE
     }
 
     @Override
-    public int getDelayCheckTimeoutMilli() {
+    public int getHealthCheckTimeoutMilli() {
         return 30 * 1000;
     }
 

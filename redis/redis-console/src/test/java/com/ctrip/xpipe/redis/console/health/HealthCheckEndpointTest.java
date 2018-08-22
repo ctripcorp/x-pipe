@@ -27,9 +27,9 @@ public class HealthCheckEndpointTest {
     public void testTimeoutMilli() {
         RedisMeta redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(6379);
         endpoint = new DefaultHealthCheckEndpoint(redisMeta);
-        Assert.assertEquals(1500, endpoint.getDelayCheckTimeoutMilli());
+        Assert.assertEquals(1500, endpoint.getHealthCheckTimeoutMilli());
 
         endpoint = new DefaultProxyEnabledHealthCheckEndpoint(redisMeta, null);
-        Assert.assertEquals(30 * 1000, endpoint.getDelayCheckTimeoutMilli());
+        Assert.assertEquals(30 * 1000, endpoint.getHealthCheckTimeoutMilli());
     }
 }
