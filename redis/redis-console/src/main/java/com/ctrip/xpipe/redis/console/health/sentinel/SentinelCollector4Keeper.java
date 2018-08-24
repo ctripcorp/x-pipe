@@ -43,8 +43,8 @@ public class SentinelCollector4Keeper implements SentinelCollector {
 
         sentinelSample.getSamplePlan().getHostPort2SampleResult()
                 .forEach(((endpoint, instanceSentinelResult) -> {
-                    if(metaCache.inBackupDc(endpoint.getHostPort())) {
-                        ClusterShardHostPort entry = new ClusterShardHostPort(clusterId, shardId, endpoint.getHostPort());
+                    if(metaCache.inBackupDc(new HostPort(endpoint.getHost(), endpoint.getPort()))) {
+                        ClusterShardHostPort entry = new ClusterShardHostPort(clusterId, shardId, new HostPort(endpoint.getHost(), endpoint.getPort()));
                         doCollect(entry, instanceSentinelResult);
                     }
                 }));
@@ -91,7 +91,7 @@ public class SentinelCollector4Keeper implements SentinelCollector {
 
             @Override
             public void doAction(SentinelCollector4Keeper collector, SentinelHello hello, ClusterShardHostPort entry) {
-                logger.error("[doAction] {}-{}-{} get from sentinel hello: {}",
+                logger.error("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                         entry.getClusterName(), entry.getShardName(), entry.getHostPort(), hello);
 
                 collector.sentinelManager.removeSentinelMonitor(collector.toSentinel(hello), hello.getMonitorName());
@@ -110,7 +110,7 @@ public class SentinelCollector4Keeper implements SentinelCollector {
                 HostPort masterAddr = collector.sentinelManager.getMasterOfMonitor(collector.toSentinel(hello),
                         hello.getMonitorName());
 
-                // check again, get master from sentinel monitor, see if master matches
+                // check again, findRedisHealthCheckInstance master from sentinel monitor, see if master matches
                 boolean checkAgain = false;
                 try {
                     checkAgain = ObjectUtils.equals(masterAddr,
@@ -123,7 +123,7 @@ public class SentinelCollector4Keeper implements SentinelCollector {
                     collector.alertManager.alert(entry.getClusterName(), entry.getShardName(), entry.getHostPort(),
                             ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, getMessage());
                 } else {
-                    logger.warn("[doAction] {}-{}-{} get from sentinel hello: {}",
+                    logger.warn("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                             entry.getClusterName(), entry.getShardName(), entry.getHostPort(), hello);
                 }
             }
@@ -136,7 +136,7 @@ public class SentinelCollector4Keeper implements SentinelCollector {
 
             @Override
             public void doAction(SentinelCollector4Keeper collector, SentinelHello hello, ClusterShardHostPort entry) {
-                logger.error("[doAction] {}-{}-{} get from sentinel hello: {}",
+                logger.error("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                         entry.getClusterName(), entry.getShardName(), entry.getHostPort(), hello);
                 collector.alertManager.alert(entry.getClusterName(), entry.getShardName(), entry.getHostPort(),
                         ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, getMessage());

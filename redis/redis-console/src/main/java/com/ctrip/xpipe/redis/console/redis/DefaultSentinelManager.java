@@ -62,7 +62,7 @@ public class DefaultSentinelManager implements SentinelManager {
         List<InetSocketAddress> sentinels = IpUtils.parse(allSentinels);
         List<Sentinel> realSentinels = getRealSentinels(sentinels, sentinelMonitorName);
         if(realSentinels == null) {
-            logger.warn("[removeShardSentinelMonitors]get real sentinels null");
+            logger.warn("[removeShardSentinelMonitors]findRedisHealthCheckInstance real sentinels null");
             return;
         }
 
@@ -184,7 +184,7 @@ public class DefaultSentinelManager implements SentinelManager {
 
             try {
                 realSentinels = sentinelsCommand.execute().get();
-                logger.info("[getRealSentinels]get sentinels from {} : {}", sentinelAddress, realSentinels);
+                logger.info("[getRealSentinels]findRedisHealthCheckInstance sentinels from {} : {}", sentinelAddress, realSentinels);
                 if(realSentinels.size() > 0){
                     realSentinels.add(
                             new Sentinel(sentinelAddress.toString(),
@@ -196,7 +196,7 @@ public class DefaultSentinelManager implements SentinelManager {
                     break;
                 }
             } catch (Exception e) {
-                logger.warn("[getRealSentinels]get sentinels from " + sentinelAddress, e);
+                logger.warn("[getRealSentinels]findRedisHealthCheckInstance sentinels from " + sentinelAddress, e);
             }
         }
 

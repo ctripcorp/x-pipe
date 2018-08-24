@@ -63,7 +63,7 @@ public class MigrationController extends AbstractConsoleController {
 		if (null != eventId) {
 			res = migrationService.getMigrationClusterModel(eventId);
 		} else {
-			logger.error("[GetEvent][fail]Cannot get with null event id.");
+			logger.error("[GetEvent][fail]Cannot findRedisHealthCheckInstance with null event id.");
 		}
 		return res;
 	}

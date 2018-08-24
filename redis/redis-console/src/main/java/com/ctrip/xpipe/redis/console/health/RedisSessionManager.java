@@ -9,7 +9,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
  * Dec 1, 2016 6:40:43 PM
  */
 public interface RedisSessionManager {
-	RedisSession findOrCreateSession(HealthCheckEndpoint endpoint);
+
+	RedisSession findOrCreateSession(Endpoint endpoint);
 
 	RedisSession findOrCreateSession(HostPort hostPort);
 }

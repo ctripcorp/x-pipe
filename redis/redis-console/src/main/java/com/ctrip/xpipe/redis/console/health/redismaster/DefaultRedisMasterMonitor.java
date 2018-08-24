@@ -2,8 +2,12 @@ package com.ctrip.xpipe.redis.console.health.redismaster;
 
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.health.*;
+import com.ctrip.xpipe.redis.console.health.AbstractRedisConfMonitor;
+import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
+import com.ctrip.xpipe.redis.console.health.RedisSession;
+import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -40,7 +44,7 @@ public class DefaultRedisMasterMonitor extends AbstractRedisConfMonitor<Instance
         try{
             sampleRole(startNanoTime, plan);
         }catch (Exception e){
-            addInstanceSuccess(startNanoTime, plan.getMasterEndpoint(), Server.SERVER_ROLE.UNKNOWN.toString());
+            addInstanceSuccess(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), Server.SERVER_ROLE.UNKNOWN.toString());
             log.error("[startSample]" + plan, e);
         }
 
@@ -48,18 +52,18 @@ public class DefaultRedisMasterMonitor extends AbstractRedisConfMonitor<Instance
 
     private void sampleRole(final long startNanoTime, RedisMasterSamplePlan plan) {
 
-        RedisSession session = findRedisSession(plan.getMasterEndpoint());
+        RedisSession session = findRedisSession(plan.getMasterHost(), plan.getMasterPort());
 
         session.role(new RedisSession.RollCallback() {
 
             @Override
             public void role(String role) {
-                addInstanceSuccess(startNanoTime, plan.getMasterEndpoint(), role);
+                addInstanceSuccess(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), role);
             }
 
             @Override
             public void fail(Throwable e) {
-                addInstanceSuccess(startNanoTime, plan.getMasterEndpoint(), Server.SERVER_ROLE.UNKNOWN.toString());
+                addInstanceSuccess(startNanoTime, plan.getMasterHost(), plan.getMasterPort(), Server.SERVER_ROLE.UNKNOWN.toString());
             }
         });
     }
@@ -70,7 +74,7 @@ public class DefaultRedisMasterMonitor extends AbstractRedisConfMonitor<Instance
     }
 
     @Override
-    protected void addRedis(BaseSamplePlan<InstanceRedisMasterResult> plan, String dcId, HealthCheckEndpoint redisMeta) {
+    protected void addRedis(BaseSamplePlan<InstanceRedisMasterResult> plan, String dcId, RedisMeta redisMeta) {
         plan.addRedis(dcId, redisMeta, new InstanceRedisMasterResult());
     }
 

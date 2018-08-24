@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import com.ctrip.xpipe.endpoint.HostPort;
-
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.ctrip.xpipe.endpoint.HostPort;
 
 /**
  * @author marsqing
@@ -18,17 +18,17 @@ public class Sample<T extends BaseInstanceResult> {
 	private long startNanoTime;
 	private AtomicInteger remainingRedisCount;
 
-	public Sample(long startTime, long startNanoTime, BaseSamplePlan<T> samplePlan, int expireDelayMillis, int totalInstanceCount) {
+	public Sample(long startTime, long startNanoTime, BaseSamplePlan<T> samplePlan, int expireDelayMillis) {
 		this.startTime = startTime;
 		this.samplePlan = samplePlan;
 		expireTime = startTime + expireDelayMillis;
 		this.startNanoTime = startNanoTime;
-		remainingRedisCount = new AtomicInteger(totalInstanceCount);
+		remainingRedisCount = new AtomicInteger(samplePlan.getHostPort2SampleResult().size());
 	}
 
 	@SuppressWarnings("unchecked")
-	public <C> void addInstanceSuccess(HealthCheckEndpoint endpoint, C context) {
-		BaseInstanceResult<C> instanceResult = samplePlan.findInstanceResult(endpoint);
+	public <C> void addInstanceSuccess(String host, int port, C context) {
+		BaseInstanceResult<C> instanceResult = samplePlan.findInstanceResult(new HostPort(host, port));
 
 		if (instanceResult != null && !instanceResult.isDone()) {
 			instanceResult.success(System.nanoTime(), context);
@@ -36,8 +36,8 @@ public class Sample<T extends BaseInstanceResult> {
 		}
 	}
 
-	public <C> void addInstanceFail(HealthCheckEndpoint endpoint, Throwable th) {
-		BaseInstanceResult<C> instanceResult = samplePlan.findInstanceResult(endpoint);
+	public <C> void addInstanceFail(String host, int port, Throwable th) {
+		BaseInstanceResult<C> instanceResult = samplePlan.findInstanceResult(new HostPort(host, port));
 
 		if (instanceResult != null && !instanceResult.isDone()) {
 			instanceResult.fail(System.nanoTime(), th);
@@ -65,11 +65,4 @@ public class Sample<T extends BaseInstanceResult> {
 		return remainingRedisCount.get() == 0;
 	}
 
-	protected void increaseRemainingRedisCount() {
-		remainingRedisCount.incrementAndGet();
-	}
-
-	protected int getRemainingRedisCount() {
-		return remainingRedisCount.get();
-	}
 }

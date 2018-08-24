@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.redismaster;
 
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
-import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
 import java.util.LinkedList;
@@ -14,35 +13,41 @@ import java.util.List;
  */
 public class RedisMasterSamplePlan extends BaseSamplePlan<InstanceRedisMasterResult>{
 
-    private HealthCheckEndpoint masterEndpoint;
+    private String masterHost;
+    private int masterPort;
     private String dcName;
 
-    private List<HealthCheckEndpoint> redises = new LinkedList<>();
+    private List<RedisMeta> redises = new LinkedList<>();
 
     public RedisMasterSamplePlan(String dcName, String clusterId, String shardId) {
         super(clusterId, shardId);
         this.dcName = dcName;
     }
 
-    public void addRedis(String dcId, HealthCheckEndpoint endpoint, InstanceRedisMasterResult result) {
+    public void addRedis(String dcId, RedisMeta redisMeta, InstanceRedisMasterResult result) {
 
-        if (endpoint.getRedisMeta().isMaster()) {
-            masterEndpoint = endpoint;
-            super.addRedis(dcId, endpoint, result);
+        if (redisMeta.isMaster()) {
+            masterHost = redisMeta.getIp();
+            masterPort = redisMeta.getPort();
+            super.addRedis(dcId, redisMeta, result);
         }
 
-        redises.add(endpoint);
+        redises.add(redisMeta);
     }
 
     public String getDcName() {
         return dcName;
     }
 
-    public HealthCheckEndpoint getMasterEndpoint() {
-        return masterEndpoint;
+    public int getMasterPort() {
+        return masterPort;
     }
 
-    public List<HealthCheckEndpoint> getRediseEndpoints() {
+    public String getMasterHost() {
+        return masterHost;
+    }
+
+    public List<RedisMeta> getRedises() {
         return redises;
     }
 

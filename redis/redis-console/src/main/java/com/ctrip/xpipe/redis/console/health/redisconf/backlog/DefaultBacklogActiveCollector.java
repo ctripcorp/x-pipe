@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.redisconf.backlog;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
@@ -41,16 +42,16 @@ public class DefaultBacklogActiveCollector implements BacklogActiveCollector {
         String clusterId = samplePlan.getClusterId();
         String shardId = samplePlan.getShardId();
 
-        samplePlan.getHostPort2SampleResult().forEach((endpoint, sampleResult) -> {
+        samplePlan.getHostPort2SampleResult().forEach((hostPort, sampleResult) -> {
             if(sampleResult.isSuccess()) {
 
                 String context = sampleResult.getContext();
                 if(context == null || StringUtil.isEmpty(context)) {
-                    logger.warn("[collect]Null String of Redis info, {} {} {}", clusterId, shardId, endpoint);
+                    logger.warn("[collect]Null String of Redis info, {} {} {}", clusterId, shardId, hostPort);
                     return;
                 }
                 try {
-                    analysisInfoReplication(sampleResult.getContext(), clusterId, shardId, endpoint.getHostPort());
+                    analysisInfoReplication(sampleResult.getContext(), clusterId, shardId, hostPort);
                 } catch (Exception e) {
                     logger.error("[collect]", e);
                 }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.redisconf.rewrite;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
@@ -40,8 +41,8 @@ public class DefaultRedisConfCollector implements RedisConfCollector{
 
                 logger.info("{}: fail:{}", endpoint, result.getFailReason());
                 if(result.getFailReason() instanceof RedisConfFailException){
-                    alertManager.alert(clusterId, shardId, endpoint.getHostPort(), ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE, String.format("%s:%s",
-                            result.getFailReason().getClass().getSimpleName(), endpoint.getHostPort()));
+                    alertManager.alert(clusterId, shardId, new HostPort(endpoint.getHost(), endpoint.getPort()), ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE, String.format("%s:%s",
+                            result.getFailReason().getClass().getSimpleName(), new HostPort(endpoint.getHost(), endpoint.getPort())));
                 }
             }
 
