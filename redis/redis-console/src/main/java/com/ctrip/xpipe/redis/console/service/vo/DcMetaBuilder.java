@@ -70,9 +70,10 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
     @Override
     protected void doExecute() throws Exception {
+        logger.info("[doExecute] start build DcMeta");
         SequenceCommandChain sequenceCommandChain = new SequenceCommandChain(false);
 
-        ParallelCommandChain parallelCommandChain = new ParallelCommandChain(executors);
+        ParallelCommandChain parallelCommandChain = new ParallelCommandChain(executors, false);
         parallelCommandChain.add(retry3TimesUntilSuccess(new GetAllDcClusterShardDetailCommand(dcId)));
         parallelCommandChain.add(retry3TimesUntilSuccess(new Cluster2DcClusterMapCommand()));
         parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcIdNameMapCommand()));
@@ -80,9 +81,10 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         sequenceCommandChain.add(parallelCommandChain);
         sequenceCommandChain.add(retry3TimesUntilSuccess(new BuildDcMetaCommand()));
 
-        logger.info("[doExecute] commands: {}", sequenceCommandChain);
+        logger.debug("[doExecute] commands: {}", sequenceCommandChain);
 
         sequenceCommandChain.future().addListener(commandFuture -> {
+            logger.info("[doExecute] end build DcMeta");
             if(commandFuture.isSuccess()) {
                 future().setSuccess(dcMeta);
             } else {
@@ -90,7 +92,6 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             }
         });
         sequenceCommandChain.execute(executors);
-
     }
 
     @Override
