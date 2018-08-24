@@ -7,6 +7,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
@@ -80,7 +81,7 @@ public class DefaultSentinelManager implements SentinelManager {
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
         AbstractSentinelCommand.SentinelMaster sentinelMaster = new AbstractSentinelCommand
                 .SentinelMaster(clientPool, scheduled, sentinelMonitorName);
-        sentinelMaster.logResponse(false);
+        silentCommand(sentinelMaster);
 
         HostPort result = null;
         try {
@@ -99,6 +100,7 @@ public class DefaultSentinelManager implements SentinelManager {
 
         AbstractSentinelCommand.SentinelRemove sentinelRemove = new AbstractSentinelCommand
                 .SentinelRemove(clientPool, sentinelMonitorName, scheduled);
+        silentCommand(sentinelRemove);
         try {
             String result = sentinelRemove.execute().get();
             logger.info("[removeSentinels]removeSentinelMonitor {} from {} : {}", sentinelMonitorName, sentinel, result);
@@ -114,7 +116,7 @@ public class DefaultSentinelManager implements SentinelManager {
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
 
         InfoCommand infoCommand = new InfoCommand(clientPool, InfoCommand.INFO_TYPE.SENTINEL, scheduled);
-        infoCommand.logResponse(false);
+        silentCommand(infoCommand);
         try {
             return infoCommand.execute().get();
         } catch (Exception e) {
@@ -128,7 +130,10 @@ public class DefaultSentinelManager implements SentinelManager {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
         try {
-            new AbstractSentinelCommand.SentinelMonitor(clientPool, scheduled, sentinelMonitorName, master, quorum).execute().get();
+            AbstractSentinelCommand.SentinelMonitor command = new AbstractSentinelCommand.SentinelMonitor(clientPool,
+                    scheduled, sentinelMonitorName, master, quorum);
+            silentCommand(command);
+            command.execute().get();
         } catch (Exception e) {
             logger.error("[slaves] sentinel: {}", sentinel, e);
         }
@@ -139,7 +144,10 @@ public class DefaultSentinelManager implements SentinelManager {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
         try {
-            return new AbstractSentinelCommand.SentinelSlaves(clientPool, scheduled, sentinelMonitorName).execute().get();
+            AbstractSentinelCommand.SentinelSlaves command = new AbstractSentinelCommand.SentinelSlaves(clientPool,
+                    scheduled, sentinelMonitorName);
+            silentCommand(command);
+            return command.execute().get();
         } catch (Exception e) {
             logger.error("[slaves] sentinel: {}", sentinel, e);
         }
@@ -181,7 +189,7 @@ public class DefaultSentinelManager implements SentinelManager {
             SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new DefaultEndPoint(sentinelAddress));
             AbstractSentinelCommand.Sentinels sentinelsCommand = new AbstractSentinelCommand
                     .Sentinels(clientPool, sentinelMonitorName, scheduled);
-
+            silentCommand(sentinelsCommand);
             try {
                 realSentinels = sentinelsCommand.execute().get();
                 logger.info("[getRealSentinels]get sentinels from {} : {}", sentinelAddress, realSentinels);
@@ -202,6 +210,11 @@ public class DefaultSentinelManager implements SentinelManager {
 
 
         return realSentinels;
+    }
+
+    private void silentCommand(AbstractRedisCommand command) {
+        command.logRequest(false);
+        command.logResponse(false);
     }
 
     @VisibleForTesting

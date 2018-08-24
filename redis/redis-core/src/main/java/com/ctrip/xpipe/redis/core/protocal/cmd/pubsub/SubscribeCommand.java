@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.ReturnObjectException;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 
@@ -35,7 +36,7 @@ public class SubscribeCommand extends AbstractSubscribe {
 
     @Override
     public void doUnsubscribe() {
-        logger.info("[un-subscribe] set future to success");
+        logger.debug("[un-subscribe]close channel: {}", ChannelUtil.getDesc(nettyClient.channel()));
         if(nettyClient != null && nettyClient.channel() != null) {
             nettyClient.channel().close();
         }
