@@ -85,7 +85,7 @@ public class AdvancedDcMetaService implements DcMetaService {
     @PostConstruct
     public void initService() {
         int corePoolSize = Math.min(Integer.parseInt(System.getProperty("maximum.pool.size", "20")), OsUtils.getCpuCount() * 5);
-        executors = DefaultExecutorFactory.createAllowCoreTimeout("OptimizedDcMetaService", corePoolSize).createExecutorService();
+        executors = DefaultExecutorFactory.createAllowCoreTimeout("AdvancedDcMetaService", corePoolSize).createExecutorService();
         int retryTimes = 3, retryDelayMilli = 5;
         factory = new DefaultRetryCommandFactory(retryTimes, new RetryDelay(retryDelayMilli), scheduled);
     }
@@ -96,7 +96,7 @@ public class AdvancedDcMetaService implements DcMetaService {
 
         DcMeta dcMeta = new DcMeta().setId(dcName).setLastModifiedTime(dcTbl.getDcLastModifiedTime());
 
-        ParallelCommandChain chain = new ParallelCommandChain(executors);
+        ParallelCommandChain chain = new ParallelCommandChain(executors, false);
         chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));

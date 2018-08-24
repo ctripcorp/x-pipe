@@ -35,7 +35,7 @@ public class LongParser extends AbstractRedisClientProtocol<Long>{
 			return null;
 		}
 		if(data.charAt(0) != COLON_BYTE){
-			logger.warn("[read] first char expected is Colon (:)");
+			logger.debug("[read] first char expected is Colon (:)");
 			return new LongParser(Long.valueOf(data.trim()));
 		} else {
 			return new LongParser(Long.valueOf(data.substring(1).trim()));
