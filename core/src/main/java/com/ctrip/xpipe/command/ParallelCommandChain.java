@@ -21,11 +21,21 @@ public class ParallelCommandChain extends AbstractCommandChain{
 	private Executor executors;
 	private List<CommandFuture<?>> completed = new LinkedList<>();
 
+	private boolean isLoggable = true;
+
 	public ParallelCommandChain(Executor executors){
 		this.executors = executors;
 		if(this.executors == null){
 			this.executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("ParallelCommandChain"));
 		}
+	}
+
+	public ParallelCommandChain(Executor executors, boolean loggable){
+		this.executors = executors;
+		if(this.executors == null){
+			this.executors = Executors.newCachedThreadPool(XpipeThreadFactory.create("ParallelCommandChain"));
+		}
+		isLoggable = loggable;
 	}
 
 	public ParallelCommandChain(Command<?> ...commands) {
@@ -76,7 +86,9 @@ public class ParallelCommandChain extends AbstractCommandChain{
 		}
 		
 		if(completed.size() >= commands.size()){
-			logger.info("[addComplete][all complete]{}, {}", completed.size(), getResult().size());
+			if(isLoggable) {
+				logger.info("[addComplete][all complete]{}, {}", completed.size(), getResult().size());
+			}
 			boolean fail = false;
 			for(CommandFuture<?> future : completed){
 				if(!future.isSuccess()){
