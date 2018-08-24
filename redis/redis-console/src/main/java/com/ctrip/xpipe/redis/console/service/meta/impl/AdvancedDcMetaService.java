@@ -84,8 +84,8 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @PostConstruct
     public void initService() {
-        executors = DefaultExecutorFactory.createAllowCoreTimeout("OptimizedDcMetaService", OsUtils.defaultMaxCoreThreadCount())
-                .createExecutorService();
+        int corePoolSize = Math.min(Integer.parseInt(System.getProperty("maximum.pool.size", "20")), OsUtils.getCpuCount() * 5);
+        executors = DefaultExecutorFactory.createAllowCoreTimeout("OptimizedDcMetaService", corePoolSize).createExecutorService();
         int retryTimes = 3, retryDelayMilli = 5;
         factory = new DefaultRetryCommandFactory(retryTimes, new RetryDelay(retryDelayMilli), scheduled);
     }

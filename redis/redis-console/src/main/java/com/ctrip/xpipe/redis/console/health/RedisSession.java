@@ -92,6 +92,7 @@ public class RedisSession {
                 pubSubConnectionWrapper.closeAndClean();
             }
             SubscribeCommand command = new SubscribeCommand(subscribePool, scheduled, channel);
+            silentCommand(command);
             command.future().addListener(new CommandFutureListener<Object>() {
                 @Override
                 public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -108,6 +109,7 @@ public class RedisSession {
 
     public synchronized void publish(String channel, String message) {
         PublishCommand pubCommand = new PublishCommand(requestResponseCommandPool, scheduled, channel, message);
+        silentCommand(pubCommand);
         pubCommand.execute().addListener(new CommandFutureListener<Object>() {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -121,6 +123,7 @@ public class RedisSession {
     public void ping(final PingCallback callback) {
         // if connect has been established
         PingCommand pingCommand = new PingCommand(requestResponseCommandPool, scheduled);
+        silentCommand(pingCommand);
         pingCommand.execute().addListener(new CommandFutureListener<String>() {
             @Override
             public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
@@ -147,7 +150,9 @@ public class RedisSession {
     }
 
     public void configRewrite(BiConsumer<String, Throwable> consumer) {
-        new ConfigRewrite(requestResponseCommandPool, scheduled).execute().addListener(new CommandFutureListener<String>() {
+        ConfigRewrite command = new ConfigRewrite(requestResponseCommandPool, scheduled);
+        silentCommand(command);
+        command.execute().addListener(new CommandFutureListener<String>() {
             @Override
             public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
                 if(commandFuture.isSuccess()) {
@@ -166,7 +171,9 @@ public class RedisSession {
     }
 
     public void info(final String infoSection, Callbackable<String> callback) {
-        new InfoCommand(requestResponseCommandPool, infoSection, scheduled).execute()
+        InfoCommand command = new InfoCommand(requestResponseCommandPool, infoSection, scheduled);
+        silentCommand(command);
+        command.execute()
                 .addListener(new CommandFutureListener<String>() {
                     @Override
                     public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
@@ -191,8 +198,9 @@ public class RedisSession {
     }
 
     public void isDiskLessSync(Callbackable<Boolean> callback) {
-        new ConfigGetCommand.ConfigGetDisklessSync(requestResponseCommandPool, scheduled)
-                .execute().addListener(new CommandFutureListener<Boolean>() {
+        ConfigGetCommand.ConfigGetDisklessSync command = new ConfigGetCommand.ConfigGetDisklessSync(requestResponseCommandPool, scheduled);
+        silentCommand(command);
+        command.execute().addListener(new CommandFutureListener<Boolean>() {
             @Override
             public void operationComplete(CommandFuture<Boolean> commandFuture) throws Exception {
                 if(!commandFuture.isSuccess()) {
@@ -202,6 +210,11 @@ public class RedisSession {
                 }
             }
         });
+    }
+
+    private void silentCommand(AbstractRedisCommand command) {
+        command.logRequest(false);
+        command.logResponse(false);
     }
 
     @Override
