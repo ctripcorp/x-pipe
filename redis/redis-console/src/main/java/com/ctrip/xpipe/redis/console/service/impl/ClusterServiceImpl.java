@@ -8,8 +8,8 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
-import com.ctrip.xpipe.redis.console.health.delay.DelayService;
+import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayContext;
+import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayService;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
@@ -385,7 +385,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return clusters;
 	}
 
-    // randomly get 'numOfClusters' cluster names
+    // randomly findRedisHealthCheckInstance 'numOfClusters' cluster names
 	private List<String> randomlyChosenClusters(final List<String> clusters, final int num) {
 		if(clusters == null || clusters.isEmpty() || num >= clusters.size()) return clusters;
 		if(random == null) {
@@ -481,8 +481,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 						for(RedisMeta redisMeta : shardMeta.getRedises()) {
 							HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
 							long delay = delayService.getDelay(hostPort);
-							if(delay == TimeUnit.NANOSECONDS.toMillis(DefaultDelayMonitor.SAMPLE_LOST_AND_NO_PONG)
-									|| delay == TimeUnit.NANOSECONDS.toMillis(DefaultDelayMonitor.SAMPLE_LOST_BUT_PONG)
+							if(delay == TimeUnit.NANOSECONDS.toMillis(DelayContext.SAMPLE_LOST_AND_NO_PONG)
+									|| delay == TimeUnit.NANOSECONDS.toMillis(DelayContext.SAMPLE_LOST_BUT_PONG)
 									) {
 
 								String clusterName = clusterMeta.getId();

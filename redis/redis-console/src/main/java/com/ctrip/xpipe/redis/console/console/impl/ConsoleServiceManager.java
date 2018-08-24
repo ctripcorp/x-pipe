@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.health.action.HEALTH_STATE;
+import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +43,22 @@ public class ConsoleServiceManager {
                 logger.info("[allHealthStatus]{}, {}:{}, {}", consoleService, ip, port, instanceStatus);
             }catch (Exception e){
                 logger.error("[allHealthStatus]" + consoleService + "," + ip + ":" + port, e);
+            }
+        }
+        return result;
+    }
+
+    public List<Boolean> allPingStatus(String host, int port) {
+        Map<String, ConsoleService> consoleServiceMap = loadAllConsoleServices();
+        List<Boolean> result = new LinkedList<>();
+        for(ConsoleService consoleService : consoleServiceMap.values()){
+
+            try{
+                Boolean instancePingStatus = consoleService.getInstancePingStatus(host, port);
+                result.add(instancePingStatus);
+                logger.info("[allHealthStatus]{}, {}:{}, {}", consoleService, host, port, instancePingStatus);
+            }catch (Exception e){
+                logger.error("[allHealthStatus]" + consoleService + "," + host + ":" + port, e);
             }
         }
         return result;

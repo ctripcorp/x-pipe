@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import org.junit.After;
 import org.junit.Before;
@@ -8,8 +9,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
-import static com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest.newDefaultHealthCheckEndpoint;
 
 /**
  * @author wenchao.meng
@@ -37,7 +36,7 @@ public class DefaultRedisSessionManagerTest extends AbstractConsoleTest{
     @Test
     public void testPubSub(){
 
-        RedisSession redisSession = redisSessionManager.findOrCreateSession(newDefaultHealthCheckEndpoint(host, port));
+        RedisSession redisSession = redisSessionManager.findOrCreateSession(new HostPort(host, port));
 
         for(int i=0;i<channels;i++){
             redisSession.subscribeIfAbsent(channelName(channel, i), new RedisSession.SubscribeCallback() {

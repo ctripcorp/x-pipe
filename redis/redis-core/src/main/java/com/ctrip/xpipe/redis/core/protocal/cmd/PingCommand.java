@@ -40,13 +40,7 @@ public class PingCommand extends AbstractRedisCommand<String>{
 
 	@Override
 	public ByteBuf getRequest() {
-		
 		return new RequestStringParser(PING).format();
-	}
-	
-	@Override
-	public int getCommandTimeoutMilli() {
-		return DEFAULT_PINT_TIME_OUT_MILLI;
 	}
 
 }

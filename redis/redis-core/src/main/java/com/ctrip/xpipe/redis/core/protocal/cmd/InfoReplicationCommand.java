@@ -25,6 +25,11 @@ public class InfoReplicationCommand extends AbstractRedisCommand<RedisInfo> {
         super(clientPool, scheduled);
     }
 
+    public InfoReplicationCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+                                  int commandTimeoutMilli) {
+        super(clientPool, scheduled, commandTimeoutMilli);
+    }
+
     @Override
     protected RedisInfo format(Object payload) {
 

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.config;
 
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,11 @@ public interface ConsoleConfig extends CoreConfig {
 
 	int getHealthyDelayMilli();
 
+	int getHealthyDelayMilliThroughProxy();
+
 	int getDownAfterCheckNums();
+
+	int getDownAfterCheckNumsThroughProxy();
 
 	int getCacheRefreshInterval();
 
@@ -74,4 +79,9 @@ public interface ConsoleConfig extends CoreConfig {
 	int getNoAlarmMinutesForNewCluster();
 
 	Set<String> getIgnoredHealthCheckDc();
+
+	// Pair<dcId, clusterId>
+	Set<Pair<String, String>> getDelayWontMarkDownClusters();
+
+	float getPingDownMajorityRatio();
 }

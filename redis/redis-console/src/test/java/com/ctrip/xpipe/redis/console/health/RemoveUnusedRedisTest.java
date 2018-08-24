@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
-import com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor;
+import com.ctrip.xpipe.redis.console.healthcheck.delay.DefaultDelayContext;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.simpleserver.Server;
@@ -58,7 +57,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleH2DbTest {
     @Test
     public void testRemoveUnusedRedis() throws Exception {
         String host = "127.0.0.1";
-        RedisSession session = manager.findOrCreateSession(newDefaultHealthCheckEndpoint(host, port));
+        RedisSession session = manager.findOrCreateSession(new HostPort(host, port));
 
         // Build two types connection
         try {
@@ -73,7 +72,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleH2DbTest {
 
                 }
             });
-            session.subscribeIfAbsent(DefaultDelayMonitor.CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
+            session.subscribeIfAbsent(DefaultDelayContext.CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
                 @Override
                 public void message(String channel, String message) {
 

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.proxy.netty;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
@@ -32,18 +33,14 @@ public class ProxyEnabledNettyKeyedPoolClientFactory extends NettyKeyedPoolClien
 
     private static final Logger logger = LoggerFactory.getLogger(ProxyEnabledNettyKeyedPoolClientFactory.class);
 
-    private ProxyResourceManager resourceManager;
-
     private ProxyedConnectionFactory proxyedConnectionFactory;
 
     public ProxyEnabledNettyKeyedPoolClientFactory(ProxyResourceManager resourceManager) {
-        this.resourceManager = resourceManager;
         this.proxyedConnectionFactory = new DefaultProxyedConnectionFactory(resourceManager);
     }
 
     public ProxyEnabledNettyKeyedPoolClientFactory(ProxyResourceManager resourceManager, int eventLoopThreads) {
         super(eventLoopThreads);
-        this.resourceManager = resourceManager;
     }
 
     @Override
@@ -71,8 +68,18 @@ public class ProxyEnabledNettyKeyedPoolClientFactory extends NettyKeyedPoolClien
     @Override
     public boolean validateObject(Endpoint key, PooledObject<NettyClient> p) {
         if(isProxyEnabled(key)) {
-            return p.getObject().channel() != null;
+            return validateProxyedConnctionChannel(p.getObject().channel());
         }
         return super.validateObject(key, p);
+    }
+
+    private boolean validateProxyedConnctionChannel(Channel channel) {
+        if(channel == null) {
+            return false;
+        }
+        if(!channel.isOpen()) {
+            return false;
+        }
+        return true;
     }
 }

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.health.redismaster;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -60,16 +61,16 @@ public class DefaultRedisMasterCollectorTest extends AbstractConsoleH2DbTest {
         plan = new RedisMasterSamplePlan("jq", "cluster1", "shard1");
 
         RedisMeta redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(6379).setMaster(XPipeConsoleConstant.DEFAULT_ADDRESS);
-        plan.addRedis("jq", new DefaultHealthCheckEndpoint(redisMeta), new InstanceRedisMasterResult());
+        plan.addRedis("jq", redisMeta, new InstanceRedisMasterResult());
 
         RedisMeta redisMeta2 = new RedisMeta().setIp("127.0.0.1").setPort(6380).setMaster(XPipeConsoleConstant.DEFAULT_ADDRESS);
-        plan.addRedis("jq", new DefaultHealthCheckEndpoint(redisMeta2), new InstanceRedisMasterResult());
+        plan.addRedis("jq", redisMeta2, new InstanceRedisMasterResult());
 
 
-        sample = spy(new Sample<>(1, 1, plan, 5, 1500));
+        sample = spy(new Sample<>(1, 1, plan, 5));
         instanceRedisMasterResult = new InstanceRedisMasterResult();
         instanceRedisMasterResult.setContext(Server.SERVER_ROLE.UNKNOWN.toString());
-        sample.getSamplePlan().getHostPort2SampleResult().put(new DefaultHealthCheckEndpoint(redisMeta), instanceRedisMasterResult);
+        sample.getSamplePlan().getHostPort2SampleResult().put(new HostPort(redisMeta.getIp(), redisMeta.getPort()), instanceRedisMasterResult);
     }
 
     @Test
@@ -82,7 +83,7 @@ public class DefaultRedisMasterCollectorTest extends AbstractConsoleH2DbTest {
                         .setRedisPort(6380).setMaster(false));
             }
         });
-        when(redisSessionManager.findOrCreateSession(newDefaultHealthCheckEndpoint("127.0.0.1", 6380))).thenReturn(redisSession);
+        when(redisSessionManager.findOrCreateSession(new HostPort("127.0.0.1", 6380))).thenReturn(redisSession);
         when(redisSession.roleSync()).thenReturn("master");
 
         collector.doCorrection(plan);
@@ -91,30 +92,30 @@ public class DefaultRedisMasterCollectorTest extends AbstractConsoleH2DbTest {
 
     @Test
     public void testIsMaster2() throws Exception {
-        when(redisSessionManager.findOrCreateSession(any(HealthCheckEndpoint.class))).thenReturn(null);
-        Assert.assertFalse(collector.isMaster(newDefaultHealthCheckEndpoint("127.0.0.1", 6379)));
+        when(redisSessionManager.findOrCreateSession(any(HostPort.class))).thenReturn(null);
+        Assert.assertFalse(collector.isMaster("127.0.0.1", 6379));
     }
 
     @Test
     public void testIsMaster3() throws Exception {
         when(redisSession.roleSync()).thenThrow(new IllegalStateException("Redis not response"));
-        when(redisSessionManager.findOrCreateSession(any(HealthCheckEndpoint.class))).thenReturn(redisSession);
-        Assert.assertFalse(collector.isMaster(newDefaultHealthCheckEndpoint("127.0.0.1", 6379)));
+        when(redisSessionManager.findOrCreateSession(any(HostPort.class))).thenReturn(redisSession);
+        Assert.assertFalse(collector.isMaster("127.0.0.1", 6379));
 
     }
 
     @Test
     public void testIsMaster4() throws Exception {
         when(redisSession.roleSync()).thenReturn("slave");
-        when(redisSessionManager.findOrCreateSession(any(HealthCheckEndpoint.class))).thenReturn(redisSession);
-        Assert.assertFalse(collector.isMaster(newDefaultHealthCheckEndpoint("127.0.0.1", 6379)));
+        when(redisSessionManager.findOrCreateSession(any(HostPort.class))).thenReturn(redisSession);
+        Assert.assertFalse(collector.isMaster("127.0.0.1", 6379));
     }
 
     @Test
     public void testIsMaster5() throws Exception {
         when(redisSession.roleSync()).thenReturn("master");
-        when(redisSessionManager.findOrCreateSession(any(HealthCheckEndpoint.class))).thenReturn(redisSession);
-        Assert.assertTrue(collector.isMaster(newDefaultHealthCheckEndpoint("127.0.0.1", 6379)));
+        when(redisSessionManager.findOrCreateSession(any(HostPort.class))).thenReturn(redisSession);
+        Assert.assertTrue(collector.isMaster("127.0.0.1", 6379));
     }
 
     @Test

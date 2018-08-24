@@ -4,8 +4,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.health.AbstractRedisConfMonitor;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
-import com.ctrip.xpipe.redis.console.health.HealthCheckEndpoint;
 import com.ctrip.xpipe.redis.console.health.Sample;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import io.netty.util.internal.ConcurrentSet;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,23 +51,24 @@ public class ConfigRewriteMonitor extends AbstractRedisConfMonitor<InstanceRedis
 
     private void sampleConfigRewrie(long startNanoTime, BaseSamplePlan<InstanceRedisConfResult> plan) {
 
-        for (Map.Entry<HealthCheckEndpoint, InstanceRedisConfResult> entry : plan.getHostPort2SampleResult().entrySet()) {
+        for (Map.Entry<HostPort, InstanceRedisConfResult> entry : plan.getHostPort2SampleResult().entrySet()) {
 
-            HealthCheckEndpoint endpoint = entry.getKey();
+            HostPort hostPort = entry.getKey();
             try{
-                findRedisSession(endpoint).configRewrite((result, th) -> {
+                findRedisSession(hostPort).configRewrite((result, th) -> {
 
                     if(th == null){
-                        log.info("[sampleConfigRewrie][good]{}, {}", endpoint, result);
-                        goodRedises.add(endpoint.getHostPort());
-                        addInstanceSuccess(startNanoTime, endpoint, null);
+                        log.info("[sampleConfigRewrie][good]{}, {}", hostPort, result);
+                        goodRedises.add(hostPort);
+                        addInstanceSuccess(startNanoTime, hostPort, null);
                     }else{
-                        log.info("[sampleConfigRewrie][bad]" + endpoint, th);
-                        addInstanceFail(startNanoTime, endpoint, new ConfigRewriteFail("fail:" + endpoint.getHost(), th));
+                        log.info("[sampleConfigRewrie][bad]" + hostPort, th);
+                        addInstanceFail(startNanoTime, hostPort.getHost(), hostPort.getPort(),
+                                new ConfigRewriteFail("fail:" + hostPort, th));
                     }
                 });
             }catch (Exception e){
-                addInstanceFail(startNanoTime, endpoint, e);
+                addInstanceFail(startNanoTime, hostPort.getHost(), hostPort.getPort(), e);
             }
         }
     }
@@ -79,16 +80,16 @@ public class ConfigRewriteMonitor extends AbstractRedisConfMonitor<InstanceRedis
     }
 
     @Override
-    protected void addRedis(BaseSamplePlan<InstanceRedisConfResult> plan, String dcId, HealthCheckEndpoint endpoint) {
+    protected void addRedis(BaseSamplePlan<InstanceRedisConfResult> plan, String dcId, RedisMeta redisMeta) {
 
-        HostPort hostPort = endpoint.getHostPort();
+        HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
 
         if(goodRedises.contains(hostPort)){
             return;
         }
 
         log.debug("[addRedis]{}", hostPort);
-        plan.addRedis(dcId, endpoint, new InstanceRedisConfResult());
+        plan.addRedis(dcId, redisMeta, new InstanceRedisConfResult());
     }
 
 

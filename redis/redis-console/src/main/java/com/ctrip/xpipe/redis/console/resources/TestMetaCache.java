@@ -80,4 +80,9 @@ public class TestMetaCache implements MetaCache {
     public RouteMeta getRouteIfPossible(HostPort hostPort) {
         return null;
     }
+
+    @Override
+    public int getRedisNumOfDcCluster(String dcId, String clusterId) {
+        return 0;
+    }
 }

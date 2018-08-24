@@ -1,19 +1,12 @@
 package com.ctrip.xpipe.redis.integratedtest.console;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
-import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
+import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.PublishCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeListener;
@@ -23,13 +16,10 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.netty.ProxyEnabledNettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.redis.core.proxy.resource.ConsoleProxyResourceManager;
-import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * Aug 04, 2018
  */
-public class RedisSessionTest extends AbstractIntegratedTest {
+public class RedisSessionTest extends AbstractRedisTest {
 
     private RedisSession redisSession;
 
@@ -51,7 +41,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
     public void beforeRedisSessionTest() throws Exception {
         int redisPort = randomPort();
         RedisMeta redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(redisPort);
-        startRedis(redisMeta);
+//        startRedis(redisMeta);
         endpoint = new DefaultHealthCheckEndpoint(redisMeta);
         redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), getSubscribeNettyClientPool());
     }
@@ -236,7 +226,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
 
     @Test
     public void testPingThroughProxy() throws Exception {
-        String protocolStr = "PROXY ROUTE PROXYTCP://10.5.111.148:80 TCP://10.5.111.145:6379";
+        String protocolStr = "PROXY ROUTE PROXYTCP://10.5.111.164:80 TCP://10.5.111.145:6379";
         ProxyProtocol protocol = new DefaultProxyProtocolParser().read(protocolStr);
         endpoint = new DefaultProxyEnabledHealthCheckEndpoint(new RedisMeta().setIp("10.5.111.145").setPort(6379), protocol);
         redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), getSubscribeNettyClientPool());
@@ -251,7 +241,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
                 logger.error("[ping-call-back]", th);
             }
         });
-        Thread.sleep(2000);
+        Thread.sleep(10000);
     }
 
     @Test
@@ -310,9 +300,9 @@ public class RedisSessionTest extends AbstractIntegratedTest {
         return new ProxyEnabledNettyKeyedPoolClientFactory(resourceManager);
     }
 
-
-    @Override
-    protected List<RedisMeta> getRedisSlaves() {
-        return null;
-    }
+//
+//    @Override
+//    protected List<RedisMeta> getRedisSlaves() {
+//        return null;
+//    }
 }

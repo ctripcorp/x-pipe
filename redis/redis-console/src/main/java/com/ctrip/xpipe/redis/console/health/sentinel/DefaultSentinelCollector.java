@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
-import com.ctrip.xpipe.redis.console.health.HealthCheckEndpointManager;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MasterNotFoundException;
@@ -62,9 +61,6 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
     @Autowired
     private SentinelManager sentinelManager;
-
-    @Autowired
-    private HealthCheckEndpointManager healthCheckEndpointManager;
 
     @Override
     public void collect(SentinelSample sentinelSample) {

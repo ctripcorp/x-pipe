@@ -1,17 +1,18 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.REQUEST_RESPONSE_NETTY_CLIENT_POOL;
 import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.SUBSCRIBE_NETTY_CLIENT_POOL;
@@ -47,7 +47,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	private MetaCache metaCache;
 
 	@Autowired
-	private HealthCheckEndpointManager healthCheckEndpointManager;
+	private HealthCheckEndpointFactory endpointFactory;
 
 	@Resource(name = SUBSCRIBE_NETTY_CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool subscrNettyClientPool;
@@ -84,7 +84,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	}
 
     @Override
-    public RedisSession findOrCreateSession(HealthCheckEndpoint endpoint) {
+    public RedisSession findOrCreateSession(Endpoint endpoint) {
 		RedisSession session = sessions.get(endpoint);
 
 		if (session == null) {
@@ -102,8 +102,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	@Override
 	public RedisSession findOrCreateSession(HostPort hostPort) {
-		HealthCheckEndpoint endpoint = healthCheckEndpointManager.getOrCreate(hostPort);
-		return findOrCreateSession(endpoint);
+		return findOrCreateSession(endpointFactory.getOrCreateEndpoint(hostPort));
 	}
 
 	@VisibleForTesting

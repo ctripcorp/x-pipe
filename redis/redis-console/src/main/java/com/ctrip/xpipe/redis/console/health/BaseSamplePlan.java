@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,22 +15,22 @@ public abstract class BaseSamplePlan<T> {
 
 	private String clusterId;
 	private String shardId;
-	private Map<HealthCheckEndpoint, T> hostPort2SampleResult = new HashMap<>();
+	private Map<HostPort, T> hostPort2SampleResult = new HashMap<>();
 
 	public BaseSamplePlan(String clusterId, String shardId) {
 		this.clusterId = clusterId;
 		this.shardId = shardId;
 	}
 
-	public void addRedis(String dcId, HealthCheckEndpoint redisEndpoint, T initSampleResult) {
-		hostPort2SampleResult.put(redisEndpoint, initSampleResult);
+	public void addRedis(String dcId, RedisMeta redisMeta, T initSampleResult) {
+		hostPort2SampleResult.put(new HostPort(redisMeta.getIp(), redisMeta.getPort()), initSampleResult);
 	}
 
-	public T findInstanceResult(HealthCheckEndpoint endpoint) {
-		return hostPort2SampleResult.get(endpoint);
+	public T findInstanceResult(HostPort hostPort) {
+		return hostPort2SampleResult.get(hostPort);
 	}
 
-	public Map<HealthCheckEndpoint, T> getHostPort2SampleResult() {
+	public Map<HostPort, T> getHostPort2SampleResult() {
 		return hostPort2SampleResult;
 	}
 

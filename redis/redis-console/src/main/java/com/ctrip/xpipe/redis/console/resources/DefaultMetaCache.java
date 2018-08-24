@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.resources;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
@@ -186,6 +185,21 @@ public class DefaultMetaCache implements MetaCache {
         XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
         return xpipeMetaManager
                 .consoleRandomRoute(CONSOLE_IDC, XpipeMetaManager.ORG_ID_FOR_SHARED_ROUTES, metaDesc.getDcId());
+    }
+
+    @Override
+    public int getRedisNumOfDcCluster(String dcId, String clusterId) {
+        try {
+            int count = 0;
+            ClusterMeta clusterMeta = meta.getKey().findDc(dcId).getClusters().get(clusterId);
+            for(ShardMeta shardMeta : clusterMeta.getShards().values()) {
+                count += shardMeta.getRedises().size();
+            }
+            return count;
+        } catch (Exception e) {
+            logger.error("[getRedisNumOfDcCluster]", e);
+        }
+        return 0;
     }
 
     @Override

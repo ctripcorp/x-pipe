@@ -89,7 +89,7 @@ public class JdbcDataSourceTest extends AbstractConsoleTest {
             sleep(5000);
             Connection connection = null;
             try {
-                logger.info("get Connection");
+                logger.info("findRedisHealthCheckInstance Connection");
                 connection = jdbcDataSource.getConnection();
                 executeQuery(connection);
             } catch (SQLException e) {

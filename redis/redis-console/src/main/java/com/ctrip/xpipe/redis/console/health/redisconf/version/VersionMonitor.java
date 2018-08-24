@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -45,24 +46,24 @@ public class VersionMonitor extends AbstractRedisConfMonitor<VersionInstanceResu
     }
 
     private void sampleVersionCheck(long startNanoTime, BaseSamplePlan<VersionInstanceResult> plan) {
-        for (Map.Entry<HealthCheckEndpoint, VersionInstanceResult> entry : plan.getHostPort2SampleResult().entrySet()) {
+        for (Map.Entry<HostPort, VersionInstanceResult> entry : plan.getHostPort2SampleResult().entrySet()) {
 
-            HealthCheckEndpoint endpoint = entry.getKey();
+            HostPort hostPort = entry.getKey();
             try{
-                RedisSession redisSession = findRedisSession(endpoint);
+                RedisSession redisSession = findRedisSession(hostPort);
                 redisSession.infoServer(new Callbackable<String>() {
                     @Override
                     public void success(String message) {
-                        addInstanceSuccess(startNanoTime, endpoint, message);
+                        addInstanceSuccess(startNanoTime, hostPort.getHost(), hostPort.getPort(), message);
                     }
 
                     @Override
                     public void fail(Throwable throwable) {
-                        addInstanceFail(startNanoTime, endpoint, throwable);
+                        addInstanceFail(startNanoTime, hostPort.getHost(), hostPort.getPort(), throwable);
                     }
                 });
             }catch (Exception e){
-                addInstanceFail(startNanoTime, endpoint, e);
+                addInstanceFail(startNanoTime, hostPort.getHost(), hostPort.getPort(), e);
             }
         }
     }
@@ -73,9 +74,11 @@ public class VersionMonitor extends AbstractRedisConfMonitor<VersionInstanceResu
     }
 
     @Override
-    protected void addRedis(BaseSamplePlan<VersionInstanceResult> plan, String dcId, HealthCheckEndpoint endpoint) {
-        log.debug("[addRedis]{}", endpoint.getHostPort());
-        plan.addRedis(dcId, endpoint, new VersionInstanceResult());
+    protected void addRedis(BaseSamplePlan<VersionInstanceResult> plan, String dcId, RedisMeta redisMeta) {
+        HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
+
+        log.debug("[addRedis]{}", hostPort);
+        plan.addRedis(dcId, redisMeta, new VersionInstanceResult());
     }
 
 

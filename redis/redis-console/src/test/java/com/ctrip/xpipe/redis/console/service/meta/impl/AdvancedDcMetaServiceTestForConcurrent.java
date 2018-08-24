@@ -332,7 +332,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
     protected String prepareDatas() throws IOException {
         // empty the database
         String sql = prepareDatasFromFile("src/main/resources/sql/h2/xpipedemodbtables.sql");
-        sql += "insert into dc_tbl(id, dc_name, dc_active, dc_description) values (1, 'NTGXH', 1, 'NTGXH'), (2, 'UAT', 2, 'UAT');";
+        sql += "insert into dc_tbl(zone_id, id, dc_name, dc_active, dc_description) values (1, 1, 'NTGXH', 1, 'NTGXH'), (1, 2, 'UAT', 2, 'UAT');";
         return sql;
     }
 

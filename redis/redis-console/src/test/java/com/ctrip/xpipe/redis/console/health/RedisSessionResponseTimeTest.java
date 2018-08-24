@@ -42,7 +42,7 @@ public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest
                 return "+OK\r\n";
             }
         });
-        redisSession = new RedisSession(new DefaultHealthCheckEndpoint(new RedisMeta().setIp(HOST).setPort(BLOCKED_PORT)), scheduled,
+        redisSession = new RedisSession(new DefaultEndPoint(HOST, BLOCKED_PORT), scheduled,
                 getXpipeNettyClientKeyedObjectPool(), getXpipeNettyClientKeyedObjectPool());
     }
 
