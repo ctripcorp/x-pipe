@@ -78,7 +78,7 @@ public class RedisSession {
 
         PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(channel);
         if (pubSubConnectionWrapper != null) {
-            logger.info("[closeSubscribedChannel]{}, {}", endpoint, channel);
+            logger.debug("[closeSubscribedChannel]{}, {}", endpoint, channel);
             pubSubConnectionWrapper.closeAndClean();
             subscribConns.remove(channel);
         }
@@ -137,7 +137,9 @@ public class RedisSession {
     }
 
     public void role(RollCallback callback) {
-        new RoleCommand(requestResponseCommandPool, scheduled).execute().addListener(new CommandFutureListener<Role>() {
+        RoleCommand command = new RoleCommand(requestResponseCommandPool, scheduled);
+        silentCommand(command);
+        command.execute().addListener(new CommandFutureListener<Role>() {
             @Override
             public void operationComplete(CommandFuture<Role> commandFuture) throws Exception {
                 if(commandFuture.isSuccess()) {
@@ -166,7 +168,9 @@ public class RedisSession {
 
     public String roleSync() throws InterruptedException, ExecutionException, TimeoutException {
 
-        return new RoleCommand(requestResponseCommandPool, waitResultSeconds * 1000, true, scheduled).execute().get().getServerRole().name();
+        RoleCommand command = new RoleCommand(requestResponseCommandPool, waitResultSeconds * 1000, true, scheduled);
+        silentCommand(command);
+        return command.execute().get().getServerRole().name();
 
     }
 
@@ -263,6 +267,7 @@ public class RedisSession {
                     }
                 }
             });
+            silentCommand(command);
             CommandFuture commandFuture = command.execute();
             this.subscribeCommandFuture.set(commandFuture);
         }
