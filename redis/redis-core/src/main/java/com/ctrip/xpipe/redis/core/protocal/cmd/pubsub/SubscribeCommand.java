@@ -38,7 +38,7 @@ public class SubscribeCommand extends AbstractSubscribe {
     public void doUnsubscribe() {
         logger.debug("[un-subscribe]close channel: {}",
                 nettyClient == null ? "null - already closed" : ChannelUtil.getDesc(nettyClient.channel()));
-        
+
         if(nettyClient != null && nettyClient.channel() != null) {
             nettyClient.channel().close();
         }
