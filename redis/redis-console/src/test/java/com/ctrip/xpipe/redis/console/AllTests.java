@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
 import com.ctrip.xpipe.redis.console.health.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
+import com.ctrip.xpipe.redis.console.health.sentinel.SentinelSamplePlanTest;
 import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
@@ -99,6 +100,7 @@ import org.junit.runners.Suite.SuiteClasses;
         RouteServiceImplTest.class,
         RouteServiceImplTest.class,
         ProxyServiceImplTest.class,
+        SentinelSamplePlanTest.class,
 //        RedisSessionResponseTimeTest.class
 })
 public class AllTests {
