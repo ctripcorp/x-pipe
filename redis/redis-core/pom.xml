@@ -38,6 +38,10 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-exec</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+		</dependency>
 		<!-- unit test, no scope test, for it will be dependency for redis-keeper... -->
 		<dependency>
 			<groupId>com.ctrip.framework.xpipe</groupId>
