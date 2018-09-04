@@ -21,7 +21,7 @@ public class PingCommand extends AbstractRedisCommand<String>{
 	public static final String PONG = "PONG";
 
 	public PingCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
-		super(clientPool, scheduled);
+		this(clientPool, scheduled, DEFAULT_PINT_TIME_OUT_MILLI);
 	}
 
 	public PingCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
