@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.ping;
 
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
 
@@ -8,7 +9,7 @@ import com.ctrip.xpipe.api.lifecycle.Stoppable;
  * <p>
  * Aug 24, 2018
  */
-public interface PingContext extends Startable, Stoppable {
+public interface PingContext extends Lifecycle {
 
     long lastPingTimeMilli();
 

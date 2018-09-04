@@ -83,7 +83,7 @@ public class DefaultBacklogActiveCollector implements BacklogActiveCollector {
                 String message = "Redis replication backlog not active";
                 alertManager.alert(cluster, shard, hostPort, ALERT_TYPE.REPL_BACKLOG_NOT_ACTIVE, message);
             } else {
-                logger.warn("[analysisInfoReplication]Redis {}-{}-{} backlog_active is 0, " +
+                logger.debug("[analysisInfoReplication]Redis {}-{}-{} backlog_active is 0, " +
                         "but redis is not xredis or with version greater than 4.0.0", cluster, shard, hostPort);
             }
         }

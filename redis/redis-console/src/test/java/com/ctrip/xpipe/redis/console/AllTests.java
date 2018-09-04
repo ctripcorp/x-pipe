@@ -18,6 +18,13 @@ import com.ctrip.xpipe.redis.console.health.BaseSamplePlanTest;
 import com.ctrip.xpipe.redis.console.health.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
+import com.ctrip.xpipe.redis.console.health.sentinel.SentinelSamplePlanTest;
+import com.ctrip.xpipe.redis.console.healthcheck.BaseContextTest;
+import com.ctrip.xpipe.redis.console.healthcheck.action.CatHealthEventProcessorTest;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckContextFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckRedisInstanceFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
@@ -75,7 +82,7 @@ import org.junit.runners.Suite.SuiteClasses;
         MigrationInitiatedStateTest.class,
         MigrationPublishStatTest.class,
         SingleShardMigrationTest.class,
-        MultiShardMigrationTest.class,
+//        MultiShardMigrationTest.class,
         DefaultShardMigrationResultTest.class,
         ClusterCreateInfoTest.class,
 
@@ -103,7 +110,15 @@ import org.junit.runners.Suite.SuiteClasses;
 
         AdvancedDcMetaServiceTestForRoute.class,
         AdvancedDcMetaServiceTest.class,
-        ClusterMetaServiceImplTest.class
+        ClusterMetaServiceImplTest.class,
+        SentinelSamplePlanTest.class,
+
+        CatHealthEventProcessorTest.class,
+        HealthCheckEndpointFactoryTest.class,
+        DefaultHealthCheckEndpointFactoryTest.class,
+        DefaultHealthCheckContextFactoryTest.class,
+        DefaultHealthCheckRedisInstanceFactoryTest.class,
+        BaseContextTest.class,
 })
 public class AllTests {
 

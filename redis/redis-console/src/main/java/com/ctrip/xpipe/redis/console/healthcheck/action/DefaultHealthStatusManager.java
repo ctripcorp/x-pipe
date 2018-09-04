@@ -1,18 +1,22 @@
 package com.ctrip.xpipe.redis.console.healthcheck.action;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthStatusManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author chen.zhu
@@ -41,14 +45,27 @@ public class DefaultHealthStatusManager implements HealthStatusManager {
     @Autowired
     private AlertManager alertManager;
 
+    @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+    private ExecutorService executors;
+
     @Override
     public void markDown(RedisHealthCheckInstance instance, MarkDownReason reason) {
-        getMarkDownWorker(reason).doMarkDown(instance);
+        executors.execute(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() throws Exception {
+                getMarkDownWorker(reason).doMarkDown(instance);
+            }
+        });
     }
 
     @Override
     public void markUp(RedisHealthCheckInstance instance, MarkUpReason reason) {
-        getMarkUpWorkder(reason).doMarkUp(instance);
+        executors.execute(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() throws Exception {
+                getMarkUpWorkder(reason).doMarkUp(instance);
+            }
+        });
     }
 
     private MarkDownWorker getMarkDownWorker(MarkDownReason markDownReason) {

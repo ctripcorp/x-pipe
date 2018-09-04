@@ -23,6 +23,4 @@ public interface HealthCheckContext extends Lifecycle {
 
     RedisConfContext getRedisConfContext();
 
-    HealthStatusManager.MarkDownReason lastMarkDownReason();
-
 }

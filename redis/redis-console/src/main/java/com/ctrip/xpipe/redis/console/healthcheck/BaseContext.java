@@ -48,7 +48,10 @@ public abstract class BaseContext extends AbstractLifecycle {
     }
 
     protected int getWarmupTime() {
-        int result = (Math.abs(random.nextInt()) % instance.getHealthCheckConfig().checkIntervalMilli());
+        int base = instance
+                .getHealthCheckConfig()
+                .checkIntervalMilli();
+        int result = (Math.abs(random.nextInt()) % base);
         if(result == 0) {
             result += DELTA;
         }

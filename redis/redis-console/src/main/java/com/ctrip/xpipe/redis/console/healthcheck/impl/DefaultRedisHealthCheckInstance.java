@@ -31,19 +31,6 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
 
     private HealthStatusManager healthStatusManager;
 
-    public DefaultRedisHealthCheckInstance(HealthCheckContext healthCheckContext, RedisInstanceInfo redisInstanceInfo,
-                                           HealthCheckConfig healthCheckConfig, Endpoint endpoint, RedisSession session,
-                                           HealthStatusManager healthStatusManager) {
-        this.healthCheckContext = healthCheckContext;
-        this.redisInstanceInfo = redisInstanceInfo;
-        this.healthCheckConfig = healthCheckConfig;
-        this.endpoint = endpoint;
-        this.session = session;
-        this.healthStatusManager = healthStatusManager;
-    }
-
-    public DefaultRedisHealthCheckInstance() {}
-
     public DefaultRedisHealthCheckInstance setRedisInstanceInfo(RedisInstanceInfo redisInstanceInfo) {
         this.redisInstanceInfo = redisInstanceInfo;
         return this;
@@ -61,6 +48,16 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
 
     public DefaultRedisHealthCheckInstance setHealthCheckContext(HealthCheckContext healthCheckContext) {
         this.healthCheckContext = healthCheckContext;
+        return this;
+    }
+
+    public DefaultRedisHealthCheckInstance setHealthStatusManager(HealthStatusManager healthStatusManager) {
+        this.healthStatusManager = healthStatusManager;
+        return this;
+    }
+
+    public DefaultRedisHealthCheckInstance setSession(RedisSession session) {
+        this.session = session;
         return this;
     }
 
@@ -98,7 +95,6 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
     protected void doInitialize() throws Exception {
         super.doInitialize();
         LifecycleHelper.initializeIfPossible(getHealthCheckContext());
-        LifecycleHelper.initializeIfPossible(getRedisSession());
     }
 
     @Override

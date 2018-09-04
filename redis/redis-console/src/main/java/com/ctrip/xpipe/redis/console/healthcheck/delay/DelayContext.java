@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.delay;
 
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
@@ -9,7 +10,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
  * <p>
  * Aug 24, 2018
  */
-public interface DelayContext extends Startable, Stoppable {
+public interface DelayContext extends Lifecycle {
 
     public static final long SAMPLE_LOST_AND_NO_PONG = -99999L * 1000 * 1000;
 
