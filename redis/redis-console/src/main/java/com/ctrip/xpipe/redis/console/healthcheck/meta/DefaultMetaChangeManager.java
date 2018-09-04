@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * Aug 28, 2018
  */
 @Component
-public class DefaultMetaChangeManager extends AbstractLifecycle implements MetaChangeManager {
+public class DefaultMetaChangeManager implements MetaChangeManager {
 
     @Autowired
     private HealthCheckInstanceManager instanceManager;
@@ -46,8 +46,7 @@ public class DefaultMetaChangeManager extends AbstractLifecycle implements MetaC
     private ConcurrentMap<String, DcMetaChangeManager> dcMetaChangeManagers = Maps.newConcurrentMap();
 
     @Override
-    protected void doStart() throws Exception {
-        super.doStart();
+    public void start() throws Exception {
         int interval = consoleConfig.getRedisReplicationHealthCheckInterval();
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
@@ -58,11 +57,10 @@ public class DefaultMetaChangeManager extends AbstractLifecycle implements MetaC
     }
 
     @Override
-    protected void doStop() throws Exception {
+    public void stop() throws Exception {
         if(future != null) {
             future.cancel(true);
         }
-        super.doStop();
     }
 
     private void checkDcMetaChange() {

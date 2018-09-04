@@ -26,11 +26,11 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
 
     private SubscribeCallback callback = new SubscribeCallback();
 
-    private long lastTimeDelay = HealthCheckContext.TIME_UNSET;
+    private volatile long lastTimeDelay = HealthCheckContext.TIME_UNSET;
 
-    private long lastDelayNano = HealthCheckContext.TIME_UNSET;
+    private volatile long lastDelayNano = HealthCheckContext.TIME_UNSET;
 
-    private long lastDelayPubTimeNano = HealthCheckContext.TIME_UNSET;
+    private volatile long lastDelayPubTimeNano = HealthCheckContext.TIME_UNSET;
 
     private ExecutorService executors;
 
@@ -72,6 +72,7 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
 
     @Override
     protected void doScheduledTask() {
+        recordIfExpired();
         RedisSession session = instance.getRedisSession();
         session.subscribeIfAbsent(CHECK_CHANNEL, callback);
         if(instance.getHealthCheckContext().getRedisContext().isMater()) {
@@ -102,11 +103,29 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
         super.doStop();
     }
 
+    private synchronized void recordIfExpired() {
+        int expireTime = instance.getHealthCheckConfig().getHealthyDelayMilli();
+        boolean expired = System.currentTimeMillis() - lastTimeDelayMilli() >= expireTime;
+        if(expired) {
+            if(instance.getHealthCheckContext().getPingContext().isHealthy()) {
+                lastDelayNano = DelayContext.SAMPLE_LOST_BUT_PONG;
+            } else {
+                lastDelayNano = DelayContext.SAMPLE_LOST_AND_NO_PONG;
+            }
+            lastDelayPubTimeNano = System.nanoTime();
+        }
+    }
+
     private class SubscribeCallback implements RedisSession.SubscribeCallback {
 
         @Override
         public void message(String channel, String message) {
-            doReceiveSub(message);
+            executors.execute(new AbstractExceptionLogTask() {
+                @Override
+                protected void doRun() throws Exception {
+                    doReceiveSub(message);
+                }
+            });
         }
 
         @Override
@@ -126,7 +145,7 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
         }
     }
 
-    private void doReceiveSub(String message) {
+    private synchronized void doReceiveSub(String message) {
         long currentTime = System.nanoTime();
         lastDelayPubTimeNano = Long.parseLong(message, 16);
         lastTimeDelay = System.currentTimeMillis();

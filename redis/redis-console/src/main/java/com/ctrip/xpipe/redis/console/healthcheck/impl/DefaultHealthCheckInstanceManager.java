@@ -74,7 +74,7 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     @Override
     public void stop() throws Exception {
         for(RedisHealthCheckInstance instance : instances.values()) {
-            instance.stop();
+            LifecycleHelper.stopIfPossible(instance);
         }
     }
 }

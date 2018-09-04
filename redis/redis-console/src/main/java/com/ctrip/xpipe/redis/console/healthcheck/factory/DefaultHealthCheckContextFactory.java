@@ -50,13 +50,7 @@ public class DefaultHealthCheckContextFactory implements HealthCheckContextFacto
         RedisConfContext redisConfContext = new DefaultRedisConfContext(scheduled, instance);
         PingContext pingContext = new DefaultPingContext(scheduled, instance);
         DelayContext delayContext = new DefaultDelayContext(scheduled, instance, executors, collectors);
-        HealthCheckContext context = new DefaultHealthCheckContext(instance, redisContext, redisConfContext,
-                delayContext, pingContext);
-        try {
-            LifecycleHelper.initializeIfPossible(context);
-        } catch (Exception e) {
-            logger.error("[create]", e);
-        }
+        HealthCheckContext context = new DefaultHealthCheckContext(redisContext, redisConfContext, delayContext, pingContext);
         return context;
     }
 }

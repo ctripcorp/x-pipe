@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
@@ -86,7 +85,7 @@ public class RedisSession {
 
         PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(channel);
         if (pubSubConnectionWrapper != null) {
-            logger.info("[closeSubscribedChannel]{}, {}", endpoint, channel);
+            logger.debug("[closeSubscribedChannel]{}, {}", endpoint, channel);
             pubSubConnectionWrapper.closeAndClean();
             subscribConns.remove(channel);
         }
@@ -100,6 +99,7 @@ public class RedisSession {
                 pubSubConnectionWrapper.closeAndClean();
             }
             SubscribeCommand command = new SubscribeCommand(subscribePool, scheduled, channel);
+            silentCommand(command);
             command.future().addListener(new CommandFutureListener<Object>() {
                 @Override
                 public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -115,8 +115,8 @@ public class RedisSession {
     }
 
     public synchronized void publish(String channel, String message) {
-        PublishCommand pubCommand = new PublishCommand(requestResponseCommandPool, scheduled,
-                commandTimeOut, channel, message);
+        PublishCommand pubCommand = new PublishCommand(requestResponseCommandPool, scheduled, channel, message);
+        silentCommand(pubCommand);
 
         pubCommand.execute().addListener(new CommandFutureListener<Object>() {
             @Override
@@ -129,7 +129,10 @@ public class RedisSession {
     }
 
     public CommandFuture<String> ping(final PingCallback callback) {
-        PingCommand pingCommand = new PingCommand(requestResponseCommandPool, scheduled, commandTimeOut);
+        // if connect has been established
+        PingCommand pingCommand = new PingCommand(requestResponseCommandPool, scheduled);
+        silentCommand(pingCommand);
+
         pingCommand.execute().addListener(new CommandFutureListener<String>() {
             @Override
             public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
@@ -144,43 +147,49 @@ public class RedisSession {
     }
 
     public void role(RollCallback callback) {
-        new RoleCommand(requestResponseCommandPool, commandTimeOut, true, scheduled)
-                .execute()
-                .addListener(new CommandFutureListener<Role>() {
-                    @Override
-                    public void operationComplete(CommandFuture<Role> commandFuture) throws Exception {
-                        if(commandFuture.isSuccess()) {
-                            callback.role(commandFuture.get().getServerRole().name());
-                        } else {
-                            callback.fail(commandFuture.cause());
-                        }
-                    }
-                });
+        RoleCommand command = new RoleCommand(requestResponseCommandPool, scheduled);
+        silentCommand(command);
+        command.execute().addListener(new CommandFutureListener<Role>() {
+            @Override
+            public void operationComplete(CommandFuture<Role> commandFuture) throws Exception {
+                if(commandFuture.isSuccess()) {
+                    callback.role(commandFuture.get().getServerRole().name());
+                } else {
+                    callback.fail(commandFuture.cause());
+                }
+            }
+        });
     }
 
     public void configRewrite(BiConsumer<String, Throwable> consumer) {
-        new ConfigRewrite(requestResponseCommandPool, scheduled, commandTimeOut)
-                .execute()
-                .addListener(new CommandFutureListener<String>() {
-                    @Override
-                    public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
-                        if(commandFuture.isSuccess()) {
-                            consumer.accept(commandFuture.get(), null);
-                        } else {
-                            consumer.accept(null, commandFuture.cause());
-                        }
-                    }
-                });
+        ConfigRewrite command = new ConfigRewrite(requestResponseCommandPool, scheduled);
+        silentCommand(command);
+        command.execute().addListener(new CommandFutureListener<String>() {
+            @Override
+            public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                if(commandFuture.isSuccess()) {
+                    consumer.accept(commandFuture.get(), null);
+                } else {
+                    consumer.accept(null, commandFuture.cause());
+                }
+            }
+        });
+
     }
 
     public String roleSync() throws InterruptedException, ExecutionException, TimeoutException {
 
-        return new RoleCommand(requestResponseCommandPool, waitResultSeconds * 1000, true, scheduled).execute().get().getServerRole().name();
+        RoleCommand command = new RoleCommand(requestResponseCommandPool, waitResultSeconds * 1000, true, scheduled);
+        silentCommand(command);
+        return command.execute().get().getServerRole().name();
 
     }
 
     public void info(final String infoSection, Callbackable<String> callback) {
-        new InfoCommand(requestResponseCommandPool, infoSection, scheduled, commandTimeOut).execute()
+
+        InfoCommand command = new InfoCommand(requestResponseCommandPool, infoSection, scheduled);
+        silentCommand(command);
+        command.execute()
                 .addListener(new CommandFutureListener<String>() {
                     @Override
                     public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
@@ -205,8 +214,10 @@ public class RedisSession {
     }
 
     public void isDiskLessSync(Callbackable<Boolean> callback) {
-        new ConfigGetCommand.ConfigGetDisklessSync(requestResponseCommandPool, scheduled, commandTimeOut)
-                .execute().addListener(new CommandFutureListener<Boolean>() {
+        ConfigGetCommand.ConfigGetDisklessSync command = new ConfigGetCommand.ConfigGetDisklessSync(requestResponseCommandPool, scheduled);
+        silentCommand(command);
+        command.execute().addListener(new CommandFutureListener<Boolean>() {
+
             @Override
             public void operationComplete(CommandFuture<Boolean> commandFuture) throws Exception {
                 if(!commandFuture.isSuccess()) {
@@ -218,8 +229,15 @@ public class RedisSession {
         });
     }
 
+
     public CommandFuture<RedisInfo> getRedisInfo() {
         return new InfoReplicationCommand(requestResponseCommandPool, scheduled, commandTimeOut).execute();
+    }
+
+    private void silentCommand(AbstractRedisCommand command) {
+        command.logRequest(false);
+        command.logResponse(false);
+
     }
 
     @Override
@@ -268,6 +286,7 @@ public class RedisSession {
                     }
                 }
             });
+            silentCommand(command);
             CommandFuture commandFuture = command.execute();
             this.subscribeCommandFuture.set(commandFuture);
         }
@@ -318,4 +337,7 @@ public class RedisSession {
         return this;
     }
 
+    public int getCommandTimeOut() {
+        return commandTimeOut;
+    }
 }

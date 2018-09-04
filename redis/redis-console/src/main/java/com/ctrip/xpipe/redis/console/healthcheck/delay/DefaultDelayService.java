@@ -29,7 +29,7 @@ public class DefaultDelayService implements DelayService {
         } catch (Exception e) {
             logger.error("[isRedisAlive]", e);
         }
-        return -999999L;
+        return DelayContext.SAMPLE_LOST_AND_NO_PONG;
 
     }
 }

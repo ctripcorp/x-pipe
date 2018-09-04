@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.impl;
 
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckContext;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthStatusManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
@@ -16,8 +17,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.redis.conf.RedisConfContext;
  */
 public class DefaultHealthCheckContext extends AbstractLifecycle implements HealthCheckContext {
 
-    private RedisHealthCheckInstance instance;
-
     private RedisContext redisContext;
 
     private RedisConfContext redisConfContext;
@@ -26,12 +25,9 @@ public class DefaultHealthCheckContext extends AbstractLifecycle implements Heal
 
     private PingContext pingContext;
 
-    private HealthStatusManager.MarkDownReason reason;
-
-    public DefaultHealthCheckContext(RedisHealthCheckInstance instance, RedisContext redisContext,
+    public DefaultHealthCheckContext(RedisContext redisContext,
                                      RedisConfContext redisConfContext,
                                      DelayContext delayContext, PingContext pingContext) {
-        this.instance = instance;
         this.redisContext = redisContext;
         this.redisConfContext = redisConfContext;
         this.delayContext = delayContext;
@@ -41,30 +37,28 @@ public class DefaultHealthCheckContext extends AbstractLifecycle implements Heal
     @Override
     protected void doInitialize() throws Exception {
         super.doInitialize();
-
+        LifecycleHelper.initializeIfPossible(redisConfContext);
+        LifecycleHelper.initializeIfPossible(redisConfContext);
+        LifecycleHelper.initializeIfPossible(delayContext);
+        LifecycleHelper.initializeIfPossible(pingContext);
     }
 
     @Override
     protected void doStart() throws Exception {
         super.doStart();
-        redisContext.start();
-        redisConfContext.start();
-        delayContext.start();
-        pingContext.start();
+        LifecycleHelper.startIfPossible(redisConfContext);
+        LifecycleHelper.startIfPossible(redisConfContext);
+        LifecycleHelper.startIfPossible(delayContext);
+        LifecycleHelper.startIfPossible(pingContext);
     }
 
     @Override
     protected void doStop() throws Exception {
-        redisContext.stop();
-        redisConfContext.stop();
-        delayContext.stop();
-        pingContext.stop();
+        LifecycleHelper.stopIfPossible(redisConfContext);
+        LifecycleHelper.stopIfPossible(redisConfContext);
+        LifecycleHelper.stopIfPossible(delayContext);
+        LifecycleHelper.stopIfPossible(pingContext);
         super.doStop();
-    }
-
-    @Override
-    protected void doDispose() throws Exception {
-        super.doDispose();
     }
 
     @Override
@@ -87,8 +81,4 @@ public class DefaultHealthCheckContext extends AbstractLifecycle implements Heal
         return redisConfContext;
     }
 
-    @Override
-    public HealthStatusManager.MarkDownReason lastMarkDownReason() {
-        return reason;
-    }
 }

@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -56,5 +57,11 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         String uri = String.format("%s://%s:%d", ProxyEndpoint.PROXY_SCHEME.TCP, hostPort.getHost(), hostPort.getPort());
         String protocol = String.format("%s %s %s %s;", ProxyProtocol.KEY_WORD, PROXY_OPTION.ROUTE, route.getRouteInfo(), uri);
         return new DefaultProxyProtocolParser().read(protocol);
+    }
+
+    @VisibleForTesting
+    public DefaultHealthCheckEndpointFactory setMetaCache(MetaCache metaCache) {
+        this.metaCache = metaCache;
+        return this;
     }
 }

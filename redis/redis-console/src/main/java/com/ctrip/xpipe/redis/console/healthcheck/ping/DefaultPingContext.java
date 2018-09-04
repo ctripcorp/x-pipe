@@ -23,9 +23,9 @@ public class DefaultPingContext extends BaseContext implements PingContext {
 
     private AtomicReference<PingStatus> pingStatus = new AtomicReference<>(PingStatus.Unknown);
 
-    private long lastPingTime = HealthCheckContext.TIME_UNSET;
+    private volatile long lastPingTime = HealthCheckContext.TIME_UNSET;
 
-    private long lastPongTime = HealthCheckContext.TIME_UNSET;
+    private volatile long lastPongTime = HealthCheckContext.TIME_UNSET;
 
     public DefaultPingContext(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance) {
         super(scheduled, instance);

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.health.AbstractRedisConfMonitor;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
@@ -36,6 +37,9 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
@@ -124,7 +128,7 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
     @Override
     protected BaseSamplePlan<InstanceSentinelResult> createPlan(String dcId, String clusterId, String shardId) {
-        return new SentinelSamplePlan(clusterId, shardId);
+        return new SentinelSamplePlan(clusterId, shardId, consoleConfig);
     }
 
 

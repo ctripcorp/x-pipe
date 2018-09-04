@@ -5,7 +5,9 @@ import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckContext;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthStatusManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.config.DefaultHealthCheckConfig;
@@ -40,6 +42,12 @@ public class DefaultHealthCheckRedisInstanceFactory implements HealthCheckRedisI
     @Autowired
     private HealthCheckEndpointFactory endpointFactory;
 
+    @Autowired
+    private HealthStatusManager healthStatusManager;
+
+    @Autowired
+    private RedisSessionManager redisSessionManager;
+
     private DefaultHealthCheckConfig defaultHealthCheckConfig;
 
     private ProxyEnabledHealthCheckConfig proxyEnabledHealthCheckConfig;
@@ -63,7 +71,8 @@ public class DefaultHealthCheckRedisInstanceFactory implements HealthCheckRedisI
         ((DefaultRedisHealthCheckInstance) instance).setEndpoint(endpoint)
                 .setHealthCheckConfig(config)
                 .setRedisInstanceInfo(info)
-                .setHealthCheckContext(context);
+                .setHealthCheckContext(context).setHealthStatusManager(healthStatusManager)
+                .setSession(redisSessionManager.findOrCreateSession(endpoint));
 
         try {
             LifecycleHelper.initializeIfPossible(instance);

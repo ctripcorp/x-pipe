@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
  * Aug 27, 2018
  */
 @Component
+@ConditionalOnProperty(name = { com.ctrip.xpipe.redis.console.health.HealthChecker.ENABLED }, matchIfMissing = true)
 public class DefaultHealthChecker extends AbstractLifecycle implements HealthChecker {
 
     @Autowired
@@ -101,6 +103,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                     generateHealthCheckInstances(Math.min(BACKOFF_CAP, attempt + 1));
                 }
             }, interval, TimeUnit.MILLISECONDS);
+            return;
         }
         for(DcMeta dcMeta : meta.getDcs().values()) {
             if(consoleConfig.getIgnoredHealthCheckDc().contains(dcMeta.getId())) {
