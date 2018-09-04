@@ -115,7 +115,7 @@ public class DefaultMetaCache implements MetaCache {
         try {
             return meta.getKey();
         } catch (Exception e) {
-            logger.error("[getXpipeMeta]", e);
+            logger.debug("[getXpipeMeta]", e);
         }
         return null;
     }
