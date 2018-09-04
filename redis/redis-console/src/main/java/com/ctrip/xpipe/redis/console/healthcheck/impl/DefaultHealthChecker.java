@@ -45,6 +45,21 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     @PostConstruct
     public void postConstruct() {
+        XpipeMeta meta = metaCache.getXpipeMeta();
+        if(meta == null) {
+            logger.info("[postConstruct] meta cache not ready, do it after one sec");
+            scheduled.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    postConstruct();
+                }
+            }, 1, TimeUnit.SECONDS);
+            return;
+        }
+        init();
+    }
+
+    private void init() {
         try {
             LifecycleHelper.initializeIfPossible(this);
         } catch (Exception e) {
@@ -55,7 +70,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         } catch (Exception e) {
             logger.error("[start]", e);
         }
-
     }
 
     @PreDestroy
@@ -89,22 +103,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
 
     private void generateHealthCheckInstances() {
-        generateHealthCheckInstances(0);
-    }
-
-    private void generateHealthCheckInstances(int attempt) {
-        int BACKOFF_CAP = 12;
-        int interval = Math.max(200, 2 << attempt);
         XpipeMeta meta = metaCache.getXpipeMeta();
-        if(meta == null) {
-            scheduled.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    generateHealthCheckInstances(Math.min(BACKOFF_CAP, attempt + 1));
-                }
-            }, interval, TimeUnit.MILLISECONDS);
-            return;
-        }
         for(DcMeta dcMeta : meta.getDcs().values()) {
             if(consoleConfig.getIgnoredHealthCheckDc().contains(dcMeta.getId())) {
                 continue;
