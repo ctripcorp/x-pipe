@@ -3,33 +3,37 @@ package com.ctrip.xpipe.redis.console.healthcheck.delay;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author chen.zhu
  * <p>
  * Sep 03, 2018
  */
-@Service
-public class DefaultDelayService implements DelayService {
+@Component
+public class DefaultDelayService implements DelayService, DelayCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDelayService.class);
 
-    @Autowired
-    private HealthCheckInstanceManager instanceManager;
+    private ConcurrentMap<HostPort, Long> hostPort2Delay = Maps.newConcurrentMap();
 
     @Override
     public long getDelay(HostPort hostPort) {
-        try {
-            RedisHealthCheckInstance instance = instanceManager.findRedisHealthCheckInstance(hostPort);
-            return instance.getHealthCheckContext().getDelayContext().lastDelayNano();
-        } catch (Exception e) {
-            logger.error("[isRedisAlive]", e);
-        }
-        return DelayContext.SAMPLE_LOST_AND_NO_PONG;
+        long result = hostPort2Delay.getOrDefault(hostPort, DelayContext.SAMPLE_LOST_AND_NO_PONG);
+        return TimeUnit.NANOSECONDS.toMillis(result);
+    }
 
+    @Override
+    public void collect(RedisHealthCheckInstance instance) {
+        hostPort2Delay.put(instance.getRedisInstanceInfo().getHostPort(),
+                instance.getHealthCheckContext().getDelayContext().lastDelayNano());
     }
 }
