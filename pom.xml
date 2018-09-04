@@ -389,6 +389,12 @@
                 <version>${cat.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+
             <!-- unit test -->
             <dependency>
                 <groupId>org.unidal.framework</groupId>
