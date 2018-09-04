@@ -41,7 +41,7 @@ public class MetricDelayCollector implements DelayCollector {
                 instance.getRedisInstanceInfo().getShardId());
         DelayContext context = instance.getHealthCheckContext().getDelayContext();
         data.setValue(context.lastDelayNano()/1000);
-        data.setTimestampMilli(TimeUnit.NANOSECONDS.toMillis(context.lastDelayPubTimeNano()));
+        data.setTimestampMilli(System.currentTimeMillis());
         data.setHostPort(instance.getRedisInstanceInfo().getHostPort());
         return data;
     }

@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.redis.conf.DefaultRedisConfCont
 import com.ctrip.xpipe.redis.console.healthcheck.redis.conf.RedisConfContext;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +48,9 @@ public class DefaultHealthCheckContextFactory implements HealthCheckContextFacto
     @Override
     public HealthCheckContext create(RedisHealthCheckInstance instance, RedisMeta redis) {
         RedisContext redisContext = new DefaultRedisContext(scheduled, instance);
+        if(redis.isMaster()) {
+            ((DefaultRedisContext) redisContext).setRedisInfo(new MasterInfo());
+        }
         RedisConfContext redisConfContext = new DefaultRedisConfContext(scheduled, instance);
         PingContext pingContext = new DefaultPingContext(scheduled, instance);
         DelayContext delayContext = new DefaultDelayContext(scheduled, instance, executors, collectors);
