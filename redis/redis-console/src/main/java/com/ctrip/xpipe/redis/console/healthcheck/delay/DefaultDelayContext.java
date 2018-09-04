@@ -76,6 +76,7 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
         RedisSession session = instance.getRedisSession();
         session.subscribeIfAbsent(CHECK_CHANNEL, callback);
         if(instance.getHealthCheckContext().getRedisContext().isMater()) {
+            logger.info("[doScheduledTask] master endpoint {}, pub message", instance.getEndpoint());
             session.publish(CHECK_CHANNEL, Long.toHexString(System.nanoTime()));
         }
     }
@@ -103,7 +104,7 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
         super.doStop();
     }
 
-    private synchronized void recordIfExpired() {
+    private void recordIfExpired() {
         int expireTime = instance.getHealthCheckConfig().getHealthyDelayMilli();
         boolean expired = System.currentTimeMillis() - lastTimeDelayMilli() >= expireTime;
         if(expired) {
@@ -114,18 +115,14 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
             }
             lastDelayPubTimeNano = System.nanoTime();
         }
+        notifyCollectors();
     }
 
     private class SubscribeCallback implements RedisSession.SubscribeCallback {
 
         @Override
         public void message(String channel, String message) {
-            executors.execute(new AbstractExceptionLogTask() {
-                @Override
-                protected void doRun() throws Exception {
-                    doReceiveSub(message);
-                }
-            });
+            doReceiveSub(message);
         }
 
         @Override
@@ -135,6 +132,7 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
     }
 
     private void notifyCollectors() {
+        logger.info("[notifyCollectors] {}", collectors);
         for(DelayCollector collector : collectors) {
             executors.execute(new AbstractExceptionLogTask() {
                 @Override
@@ -145,7 +143,7 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
         }
     }
 
-    private synchronized void doReceiveSub(String message) {
+    private void doReceiveSub(String message) {
         long currentTime = System.nanoTime();
         lastDelayPubTimeNano = Long.parseLong(message, 16);
         lastTimeDelay = System.currentTimeMillis();
