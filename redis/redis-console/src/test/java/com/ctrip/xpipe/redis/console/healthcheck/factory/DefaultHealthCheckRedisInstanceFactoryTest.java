@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 public class DefaultHealthCheckRedisInstanceFactoryTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
-    private DefaultHealthCheckRedisInstanceFactory factory;
+    protected DefaultHealthCheckRedisInstanceFactory factory;
 
     @Autowired
     private DefaultHealthCheckEndpointFactory endpointFactory;
@@ -96,7 +96,7 @@ public class DefaultHealthCheckRedisInstanceFactoryTest extends AbstractConsoleI
                 instance.getRedisSession().getCommandTimeOut());
     }
 
-    private DcMeta newDcMeta(String dcId) {
+    protected DcMeta newDcMeta(String dcId) {
         DcMeta dcMeta = new DcMeta().setId(dcId);
         ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta);
         dcMeta.addCluster(clusterMeta);

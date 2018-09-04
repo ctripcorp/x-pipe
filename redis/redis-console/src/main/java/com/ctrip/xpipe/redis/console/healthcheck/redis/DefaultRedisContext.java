@@ -67,11 +67,6 @@ public class DefaultRedisContext extends BaseContext implements RedisContext {
     }
 
     @Override
-    protected int getBaseCheckInterval() {
-        return instance.getHealthCheckConfig().getRedisConfCheckIntervalMilli();
-    }
-
-    @Override
     protected void doInitialize() throws Exception {
         super.doInitialize();
         scheduled.schedule(new AbstractExceptionLogTask() {
@@ -116,5 +111,10 @@ public class DefaultRedisContext extends BaseContext implements RedisContext {
             }
         });
         return future;
+    }
+
+    public DefaultRedisContext setRedisInfo(RedisInfo redisInfo) {
+        this.redisInfo = redisInfo;
+        return this;
     }
 }

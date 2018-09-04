@@ -132,7 +132,6 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
     }
 
     private void notifyCollectors() {
-        logger.info("[notifyCollectors] {}", collectors);
         for(DelayCollector collector : collectors) {
             executors.execute(new AbstractExceptionLogTask() {
                 @Override

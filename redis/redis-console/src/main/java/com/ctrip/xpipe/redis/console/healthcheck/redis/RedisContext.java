@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.redis;
 
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.api.server.Server;
@@ -10,7 +11,7 @@ import javafx.scene.paint.Stop;
  * <p>
  * Aug 27, 2018
  */
-public interface RedisContext extends Startable, Stoppable {
+public interface RedisContext extends Lifecycle {
 
     boolean isMater();
 
