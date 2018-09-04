@@ -72,7 +72,6 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
 
     @Override
     protected void doScheduledTask() {
-        recordIfExpired();
         RedisSession session = instance.getRedisSession();
         session.subscribeIfAbsent(CHECK_CHANNEL, callback);
         if(instance.getHealthCheckContext().getRedisContext().isMater()) {
@@ -104,20 +103,6 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
         super.doStop();
     }
 
-    private void recordIfExpired() {
-        int expireTime = instance.getHealthCheckConfig().getHealthyDelayMilli();
-        boolean expired = System.currentTimeMillis() - lastTimeDelayMilli() >= expireTime;
-        if(expired) {
-            if(instance.getHealthCheckContext().getPingContext().isHealthy()) {
-                lastDelayNano = DelayContext.SAMPLE_LOST_BUT_PONG;
-            } else {
-                lastDelayNano = DelayContext.SAMPLE_LOST_AND_NO_PONG;
-            }
-            lastDelayPubTimeNano = System.nanoTime();
-        }
-        notifyCollectors();
-    }
-
     private class SubscribeCallback implements RedisSession.SubscribeCallback {
 
         @Override
@@ -146,7 +131,9 @@ public class DefaultDelayContext extends BaseContext implements DelayContext {
         long currentTime = System.nanoTime();
         lastDelayPubTimeNano = Long.parseLong(message, 16);
         lastTimeDelay = System.currentTimeMillis();
-        lastDelayNano = currentTime - lastDelayPubTimeNano;
+        long delta = currentTime - lastDelayPubTimeNano;
+        long expireNano = TimeUnit.MILLISECONDS.toNanos(getBaseCheckInterval() * 2);
+        lastDelayNano = delta >= expireNano ? DelayContext.SAMPLE_LOST_BUT_PONG : delta;
         executors.execute(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
