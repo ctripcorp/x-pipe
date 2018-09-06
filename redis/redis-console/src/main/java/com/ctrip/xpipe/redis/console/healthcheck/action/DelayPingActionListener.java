@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author chen.zhu
@@ -75,7 +76,7 @@ public class DelayPingActionListener implements HealthCheckActionListener<Action
 
     private void onAction(DelayActionContext delayActionContext) {
         long delayNano = delayActionContext.getResult();
-        createOrGet(delayActionContext.instance()).delay(delayNano / 1000);
+        createOrGet(delayActionContext.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
     }
 
 
