@@ -45,7 +45,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
             logger.debug("[doScheduledTask] master endpoint {}, pub message", instance.getEndpoint());
             session.publish(CHECK_CHANNEL, message);
         }
-        markExpiration(message);
+//        markExpiration(message);
     }
 
     private void markExpiration(String message) {
@@ -77,7 +77,6 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
     }
 
     private void onMessage(String message) {
-        updated.set(System.currentTimeMillis());
         long currentTime = System.nanoTime();
         long lastDelayPubTimeNano = Long.parseLong(message, 16);
         DelayActionContext context = new DelayActionContext(instance, currentTime - lastDelayPubTimeNano);
