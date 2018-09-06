@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingService;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,8 +32,9 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     private PingService pingService;
 
-    public DelayAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, PingService pingService) {
-        super(scheduled, instance);
+    public DelayAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
+                       ExecutorService executors, PingService pingService) {
+        super(scheduled, instance, executors);
         this.pingService = pingService;
     }
 

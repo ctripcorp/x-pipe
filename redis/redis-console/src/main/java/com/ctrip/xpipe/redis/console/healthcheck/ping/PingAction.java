@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -14,8 +15,8 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class PingAction extends AbstractHealthCheckAction<PingActionContext> {
 
-    public PingAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance) {
-        super(scheduled, instance);
+    public PingAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
+        super(scheduled, instance, executors);
     }
 
     @Override
