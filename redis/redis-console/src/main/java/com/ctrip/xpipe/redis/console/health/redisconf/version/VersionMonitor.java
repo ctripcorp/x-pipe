@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +69,7 @@ public class VersionMonitor extends AbstractRedisConfMonitor<VersionInstanceResu
     }
 
     @Override
-    protected BaseSamplePlan<VersionInstanceResult> createPlan(DcMeta dcMeta, String dcId, String clusterId, String shardId) {
+    protected BaseSamplePlan<VersionInstanceResult> createPlan(String dcId, String clusterId, String shardId) {
         return new VersionSamplePlan(clusterId, shardId);
     }
 
