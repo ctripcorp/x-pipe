@@ -12,7 +12,7 @@ public interface HealthStatusManager {
     void markUp(RedisHealthCheckInstance instance, MarkUpReason reason);
 
     enum MarkDownReason {
-        PING_FAIL, LAG, NOT_YET;
+        PING_FAIL, LAG
     }
 
     enum MarkUpReason {

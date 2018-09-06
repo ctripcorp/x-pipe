@@ -83,7 +83,7 @@ public class DefaultHealthStatusManager implements HealthStatusManager {
         } else if(markUpReason.equals(MarkUpReason.PING_OK)) {
             return pingMarkUpWorker;
         }
-        throw new IllegalStateException("No mark down worker for: " + markUpReason);
+        throw new IllegalStateException("No mark up worker for: " + markUpReason);
     }
 
 
@@ -140,7 +140,7 @@ public class DefaultHealthStatusManager implements HealthStatusManager {
         @Override
         public void doMarkDown(RedisHealthCheckInstance instance) {
             long lastPongMilli = instance.getHealthCheckContext().getPingContext().lastPongTimeMilli();
-            if(lastPongMilli >= PING_DOWN_AFTER_MILLI) {
+            if(System.currentTimeMillis() - lastPongMilli >= PING_DOWN_AFTER_MILLI) {
                 for(PingHealthEventProcessor processor : pingEventProcessors) {
                     processor.markDown(instance);
                 }

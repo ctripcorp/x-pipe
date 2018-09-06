@@ -51,10 +51,7 @@ public class DefaultHealthCheckRedisInstanceFactoryTest extends AbstractConsoleI
 
     @Test
     public void testCreate() {
-        DcMeta dcMeta = new DcMeta().setId("dc");
-        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta);
-        ShardMeta shardMeta = new ShardMeta().setParent(clusterMeta).setId("shard");
-        RedisMeta redisMeta = new RedisMeta().setParent(shardMeta).setIp("localhost").setPort(randomPort());
+        RedisMeta redisMeta = normalRedisMeta();
         RedisHealthCheckInstance instance = factory.create(redisMeta);
 
         Assert.assertNotNull(instance.getEndpoint());
@@ -105,5 +102,13 @@ public class DefaultHealthCheckRedisInstanceFactoryTest extends AbstractConsoleI
         RedisMeta redisMeta = new RedisMeta().setParent(shardMeta).setIp("localhost").setPort(randomPort());
         shardMeta.addRedis(redisMeta);
         return dcMeta;
+    }
+
+    protected RedisMeta normalRedisMeta() {
+        DcMeta dcMeta = new DcMeta().setId("dc");
+        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta);
+        ShardMeta shardMeta = new ShardMeta().setParent(clusterMeta).setId("shard");
+        RedisMeta redisMeta = new RedisMeta().setParent(shardMeta).setIp("localhost").setPort(randomPort());
+        return redisMeta;
     }
 }
