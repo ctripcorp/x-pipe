@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DefaultDelayContext;
+import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayAction;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -72,7 +72,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleH2DbTest {
 
                 }
             });
-            session.subscribeIfAbsent(DefaultDelayContext.CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
+            session.subscribeIfAbsent(DelayAction.CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
                 @Override
                 public void message(String channel, String message) {
 

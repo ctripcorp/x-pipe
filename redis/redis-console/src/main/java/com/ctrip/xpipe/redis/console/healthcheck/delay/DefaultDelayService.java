@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.healthcheck.delay;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.google.common.collect.Maps;
@@ -19,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * Sep 03, 2018
  */
 @Component
-public class DefaultDelayService implements DelayService, DelayCollector {
+public class DefaultDelayService implements DelayService, HealthCheckActionListener<DelayActionContext> {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDelayService.class);
 
@@ -27,13 +29,18 @@ public class DefaultDelayService implements DelayService, DelayCollector {
 
     @Override
     public long getDelay(HostPort hostPort) {
-        long result = hostPort2Delay.getOrDefault(hostPort, DelayContext.SAMPLE_LOST_AND_NO_PONG);
+        long result = hostPort2Delay.getOrDefault(hostPort, DelayAction.SAMPLE_LOST_AND_NO_PONG);
         return TimeUnit.NANOSECONDS.toMillis(result);
     }
 
     @Override
-    public void collect(RedisHealthCheckInstance instance) {
-        hostPort2Delay.put(instance.getRedisInstanceInfo().getHostPort(),
-                instance.getHealthCheckContext().getDelayContext().lastDelayNano());
+    public void onAction(DelayActionContext delayActionContext) {
+        hostPort2Delay.put(delayActionContext.instance().getRedisInstanceInfo().getHostPort(),
+                delayActionContext.getResult());
+    }
+
+    @Override
+    public boolean suitable(ActionContext context) {
+        return context instanceof DelayActionContext;
     }
 }

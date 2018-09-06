@@ -25,9 +25,12 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
 
     private Consumer<RedisMeta> redisDelete;
 
-    public ClusterMetaComparatorVisitor(Consumer<RedisMeta> redisAdd, Consumer<RedisMeta> redisDelete) {
+    private Consumer<RedisMeta> redisChanged;
+
+    public ClusterMetaComparatorVisitor(Consumer<RedisMeta> redisAdd, Consumer<RedisMeta> redisDelete, Consumer<RedisMeta> redisChanged) {
         this.redisAdd = redisAdd;
         this.redisDelete = redisDelete;
+        this.redisChanged = redisChanged;
     }
 
     @Override
@@ -48,6 +51,13 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
             @Override
             public void visitModified(MetaComparator comparator) {
                 logger.info("[visitModified][redis] {}", comparator);
+                RedisComparator redisComparator = (RedisComparator) comparator;
+                Redis current = redisComparator.getCurrent(), future = redisComparator.getFuture();
+                if(current instanceof RedisMeta && future instanceof RedisMeta) {
+                    if(((RedisMeta) current).isMaster() ^ ((RedisMeta) future).isMaster()) {
+                        redisChanged.accept((RedisMeta) future);
+                    }
+                }
             }
 
             @Override

@@ -4,12 +4,12 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckContext;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthStatusManager;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
+import com.ctrip.xpipe.utils.ObjectUtils;
+import com.google.common.collect.Lists;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -19,7 +19,7 @@ import java.util.Objects;
  */
 public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implements RedisHealthCheckInstance {
 
-    private HealthCheckContext healthCheckContext;
+    private List<HealthCheckAction> actions = Lists.newArrayList();
 
     private RedisInstanceInfo redisInstanceInfo;
 
@@ -28,8 +28,6 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
     private Endpoint endpoint;
 
     private RedisSession session;
-
-    private HealthStatusManager healthStatusManager;
 
     public DefaultRedisHealthCheckInstance setRedisInstanceInfo(RedisInstanceInfo redisInstanceInfo) {
         this.redisInstanceInfo = redisInstanceInfo;
@@ -46,24 +44,9 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
         return this;
     }
 
-    public DefaultRedisHealthCheckInstance setHealthCheckContext(HealthCheckContext healthCheckContext) {
-        this.healthCheckContext = healthCheckContext;
-        return this;
-    }
-
-    public DefaultRedisHealthCheckInstance setHealthStatusManager(HealthStatusManager healthStatusManager) {
-        this.healthStatusManager = healthStatusManager;
-        return this;
-    }
-
     public DefaultRedisHealthCheckInstance setSession(RedisSession session) {
         this.session = session;
         return this;
-    }
-
-    @Override
-    public HealthCheckContext getHealthCheckContext() {
-        return healthCheckContext;
     }
 
     @Override
@@ -87,25 +70,36 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
     }
 
     @Override
-    public HealthStatusManager getHealthStatusManager() {
-        return healthStatusManager;
+    public void register(HealthCheckAction action) {
+        actions.add(action);
+    }
+
+    @Override
+    public void unregister(HealthCheckAction action) {
+        actions.remove(action);
     }
 
     @Override
     protected void doInitialize() throws Exception {
         super.doInitialize();
-        LifecycleHelper.initializeIfPossible(getHealthCheckContext());
+        for(HealthCheckAction action : actions) {
+            LifecycleHelper.initializeIfPossible(action);
+        }
     }
 
     @Override
     protected void doStart() throws Exception {
         super.doStart();
-        LifecycleHelper.startIfPossible(getHealthCheckContext());
+        for(HealthCheckAction action : actions) {
+            LifecycleHelper.startIfPossible(action);
+        }
     }
 
     @Override
     protected void doStop() throws Exception {
-        LifecycleHelper.stopIfPossible(getHealthCheckContext());
+        for(HealthCheckAction action : actions) {
+            LifecycleHelper.stopIfPossible(action);
+        }
         super.doStop();
     }
 
@@ -114,11 +108,12 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DefaultRedisHealthCheckInstance that = (DefaultRedisHealthCheckInstance) o;
-        return Objects.equals(redisInstanceInfo, that.redisInstanceInfo);
+        return ObjectUtils.equals(((DefaultRedisHealthCheckInstance) o).getRedisInstanceInfo().getHostPort(),
+                this.getRedisInstanceInfo().getHostPort());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(redisInstanceInfo);
+        return getRedisInstanceInfo().getHostPort().hashCode();
     }
 }

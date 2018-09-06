@@ -20,4 +20,7 @@ public interface RedisInstanceInfo {
 
     HostPort getHostPort();
 
+    boolean isMaster();
+
+    void isMaster(boolean master);
 }

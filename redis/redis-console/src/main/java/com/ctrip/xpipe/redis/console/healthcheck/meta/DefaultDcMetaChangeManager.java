@@ -56,7 +56,7 @@ public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComp
 
     @Override
     public void visitModified(MetaComparator comparator) {
-        ((ClusterMetaComparator)comparator).accept(new ClusterMetaComparatorVisitor(addConsumer, removeConsumer));
+        ((ClusterMetaComparator)comparator).accept(new ClusterMetaComparatorVisitor(addConsumer, removeConsumer, redisChanged));
     }
 
     @Override
@@ -81,6 +81,13 @@ public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComp
             } catch (Exception e) {
                 logger.error("[clusterAdded]", e);
             }
+        }
+    };
+
+    private Consumer<RedisMeta> redisChanged = new Consumer<RedisMeta>() {
+        @Override
+        public void accept(RedisMeta redisMeta) {
+            instanceManager.getOrCreate(redisMeta).getRedisInstanceInfo().isMaster(redisMeta.isMaster());
         }
     };
 }

@@ -1,15 +1,13 @@
-package com.ctrip.xpipe.redis.console.healthcheck.redis;
+package com.ctrip.xpipe.redis.console.healthcheck.factory;
 
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 
-import java.util.Objects;
-
 /**
  * @author chen.zhu
  * <p>
- * Aug 27, 2018
+ * Sep 06, 2018
  */
 public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
 
@@ -20,6 +18,8 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
     private String shardId;
 
     private HostPort hostPort;
+
+    private boolean isMaster;
 
     public DefaultRedisInstanceInfo(String dcId, String clusterId, String shardId, HostPort hostPort) {
         this.dcId = dcId;
@@ -54,23 +54,11 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
     }
 
     @Override
-    public String toString() {
-        return String.format("dc: %s, cluster: %s, shard: %s, redis: %s", dcId, clusterId, shardId, hostPort);
+    public boolean isMaster() {
+        return isMaster;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        DefaultRedisInstanceInfo that = (DefaultRedisInstanceInfo) o;
-        return Objects.equals(dcId, that.dcId) &&
-                Objects.equals(clusterId, that.clusterId) &&
-                Objects.equals(shardId, that.shardId) &&
-                Objects.equals(hostPort, that.hostPort);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(dcId, clusterId, shardId, hostPort);
+    public void isMaster(boolean master) {
+        isMaster = master;
     }
 }

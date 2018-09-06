@@ -2,8 +2,9 @@ package com.ctrip.xpipe.redis.console.healthcheck.action;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthStatusManager;
+import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +21,7 @@ import java.util.function.IntSupplier;
  *         <p>
  *         May 04, 2017
  */
-public class DelayHealthStatus {
-
-    private static final Logger logger = LoggerFactory.getLogger(DelayHealthStatus.class);
+public class HealthStatus extends AbstractObservable{
 
     private static long UNSET_TIME = -1L;
 
@@ -31,20 +30,17 @@ public class DelayHealthStatus {
 
     private AtomicReference<HEALTH_STATE> state = new AtomicReference<>(HEALTH_STATE.UNKNOWN);
 
-    private final HostPort hostPort;
+    private RedisHealthCheckInstance instance;
     private final IntSupplier downAfterMilli;
     private final IntSupplier healthyDelayMilli;
-
-    private RedisHealthCheckInstance instance;
 
     private final ScheduledExecutorService scheduled;
     private ScheduledFuture<?> future;
 
-    private static Logger delayLogger = LoggerFactory.getLogger(DelayHealthStatus.class.getName() + ".delay");
+    private static Logger delayLogger = LoggerFactory.getLogger(HealthStatus.class.getName() + ".delay");
 
-    public DelayHealthStatus(RedisHealthCheckInstance instance, ScheduledExecutorService scheduled){
+    public HealthStatus(RedisHealthCheckInstance instance, ScheduledExecutorService scheduled){
         this.instance = instance;
-        this.hostPort = instance.getRedisInstanceInfo().getHostPort();
         this.downAfterMilli = ()->instance.getHealthCheckConfig().downAfterMilli();
         this.healthyDelayMilli = ()->instance.getHealthCheckConfig().getHealthyDelayMilli();
         this.scheduled = scheduled;
@@ -62,7 +58,7 @@ public class DelayHealthStatus {
             protected void doRun() throws Exception {
 
                 if(lastHealthDelayTime.get() < 0){
-                    logger.debug("[last unhealthy time < 0, break]{}, {}", hostPort, lastHealthDelayTime);
+                    logger.debug("[last unhealthy time < 0, break]{}, {}", instance, lastHealthDelayTime);
                     return;
                 }
 
@@ -81,12 +77,16 @@ public class DelayHealthStatus {
         }, 0, downAfterMilli.getAsInt()/5, TimeUnit.MILLISECONDS);
     }
 
-    public void delay(long delayMilli){
+    void pong(){
+        lastPongTime.set(System.currentTimeMillis());
+    }
+
+    void delay(long delayMilli){
 
         //first time
         lastHealthDelayTime.compareAndSet(UNSET_TIME, System.currentTimeMillis());
 
-        delayLogger.debug("{}, {}", hostPort, delayMilli);
+        delayLogger.debug("{}, {}", instance.getRedisInstanceInfo().getHostPort(), delayMilli);
         if(delayMilli >= 0 && delayMilli <= healthyDelayMilli.getAsInt()){
             lastHealthDelayTime.set(System.currentTimeMillis());
             setUp();
@@ -100,7 +100,7 @@ public class DelayHealthStatus {
 
         if(preState.isToUpNotify()){
             logger.info("[setUp]{}", this);
-            instance.markUp(HealthStatusManager.MarkUpReason.DELAY_HEALTHY);
+            notifyObservers(new InstanceUp(instance));
         }
     }
 
@@ -114,25 +114,23 @@ public class DelayHealthStatus {
 
     private void setDown() {
 
-        HEALTH_STATE preState = state.getAndSet(HEALTH_STATE.DOWN);
+        HEALTH_STATE preState = state.get();
+        state.set(HEALTH_STATE.DOWN);
+
         if(preState.isToDownNotify()){
             logger.info("[setDown]{}", this);
-            instance.markDown(HealthStatusManager.MarkDownReason.LAG);
+            notifyObservers(new InstanceDown(instance));
         }
     }
 
     @Override
     public String toString() {
-        return String.format("%s lastPong:%s lastHealthDelay:%s", hostPort,
+        return String.format("%s lastPong:%s lastHealthDelay:%s", instance,
                 DateTimeUtils.timeAsString(lastPongTime.get()),
                 DateTimeUtils.timeAsString(lastHealthDelayTime.get()));
     }
 
     public HEALTH_STATE getState() {
         return state.get();
-    }
-
-    public RedisHealthCheckInstance getRedisHealthCheckInstance() {
-        return instance;
     }
 }

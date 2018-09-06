@@ -6,15 +6,17 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckContext;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthStatusManager;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.config.ProxyEnabledHealthCheckConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayAction;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.redis.DefaultRedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.healthcheck.ping.PingAction;
+import com.ctrip.xpipe.redis.console.healthcheck.ping.PingService;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author chen.zhu
@@ -34,19 +39,22 @@ public class DefaultHealthCheckRedisInstanceFactory implements HealthCheckRedisI
     private static final Logger logger = LoggerFactory.getLogger(DefaultHealthCheckRedisInstanceFactory.class);
 
     @Autowired
-    private HealthCheckContextFactory healthCheckContextFactory;
-
-    @Autowired
     private ConsoleConfig consoleConfig;
 
     @Autowired
     private HealthCheckEndpointFactory endpointFactory;
 
     @Autowired
-    private HealthStatusManager healthStatusManager;
+    private RedisSessionManager redisSessionManager;
+
+    @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
+    private ScheduledExecutorService scheduled;
 
     @Autowired
-    private RedisSessionManager redisSessionManager;
+    private PingService pingService;
+
+    @Autowired
+    private List<HealthCheckActionListener> listeners;
 
     private DefaultHealthCheckConfig defaultHealthCheckConfig;
 
@@ -64,15 +72,14 @@ public class DefaultHealthCheckRedisInstanceFactory implements HealthCheckRedisI
         RedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
 
         RedisInstanceInfo info = createRedisInstanceInfo(redisMeta);
-        HealthCheckContext context = createHealthCheckContext(instance, redisMeta);
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redisMeta);
         HealthCheckConfig config = isEndpointProxyEnabled(endpoint) ? proxyEnabledHealthCheckConfig : defaultHealthCheckConfig;
 
         ((DefaultRedisHealthCheckInstance) instance).setEndpoint(endpoint)
                 .setHealthCheckConfig(config)
                 .setRedisInstanceInfo(info)
-                .setHealthCheckContext(context).setHealthStatusManager(healthStatusManager)
                 .setSession(redisSessionManager.findOrCreateSession(endpoint));
+        initActions(instance);
 
         try {
             LifecycleHelper.initializeIfPossible(instance);
@@ -82,19 +89,22 @@ public class DefaultHealthCheckRedisInstanceFactory implements HealthCheckRedisI
         return instance;
     }
 
-    private HealthCheckContext createHealthCheckContext(RedisHealthCheckInstance instance, RedisMeta redisMeta) {
-        return healthCheckContextFactory.create(instance, redisMeta);
-    }
-
     private RedisInstanceInfo createRedisInstanceInfo(RedisMeta redisMeta) {
-        return new DefaultRedisInstanceInfo(
+        RedisInstanceInfo info =  new DefaultRedisInstanceInfo(
                 redisMeta.parent().parent().parent().getId(),
                 redisMeta.parent().parent().getId(),
                 redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()));
+        info.isMaster(redisMeta.isMaster());
+        return info;
     }
 
     private boolean isEndpointProxyEnabled(Endpoint endpoint) {
         return endpoint instanceof ProxyEnabled;
+    }
+
+    private void initActions(RedisHealthCheckInstance instance) {
+        new PingAction(scheduled, instance).addListeners(listeners);
+        new DelayAction(scheduled, instance, pingService).addListeners(listeners);
     }
 }

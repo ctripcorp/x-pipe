@@ -19,7 +19,7 @@ import java.util.Map;
  * <p>
  * Sep 03, 2018
  */
-@Component
+
 public class DefaultPingDownStrategy implements PingDownStrategy {
 
     @Autowired

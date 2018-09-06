@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.console.healthcheck.ping;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import org.slf4j.Logger;
@@ -8,27 +11,40 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 /**
  * @author chen.zhu
  * <p>
  * Sep 03, 2018
  */
 @Service
-public class DefaultPingService implements PingService {
+public class DefaultPingService implements PingService, HealthCheckActionListener<PingActionContext> {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultPingService.class);
 
     @Autowired
-    private HealthCheckInstanceManager instanceManager;
+    private ConsoleConfig config;
+
+    private ConcurrentMap<HostPort, Long> hostPort2LastPong = new ConcurrentHashMap<>();
 
     @Override
     public boolean isRedisAlive(HostPort hostPort) {
-        try {
-            RedisHealthCheckInstance instance = instanceManager.findRedisHealthCheckInstance(hostPort);
-            return instance.getHealthCheckContext().getPingContext().getPingStatus().isHealthy();
-        } catch (Exception e) {
-            logger.error("[isRedisAlive]", e);
+        Long lastPongTime = hostPort2LastPong.get(hostPort);
+        long maxNoPongTime = 2 * config.getRedisReplicationHealthCheckInterval();
+        return lastPongTime != null && System.currentTimeMillis() - lastPongTime < maxNoPongTime;
+    }
+
+    @Override
+    public void onAction(PingActionContext pingActionContext) {
+        if(pingActionContext.getResult()) {
+            hostPort2LastPong.put(pingActionContext.instance().getRedisInstanceInfo().getHostPort(), System.currentTimeMillis());
         }
-        return false;
+    }
+
+    @Override
+    public boolean suitable(ActionContext t) {
+        return t instanceof PingActionContext;
     }
 }

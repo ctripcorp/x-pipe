@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DefaultDelayContext;
+import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayAction;
 import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayService;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
@@ -49,7 +49,7 @@ public class ClusterServiceImplTest2 {
     @Test
     public void testFindUnhealthyClusters() throws Exception {
         when(delayService.getDelay(any())).thenReturn(10L);
-        when(delayService.getDelay(new HostPort("127.0.0.2", 6379))).thenReturn(DefaultDelayContext.SAMPLE_LOST_BUT_PONG);
+        when(delayService.getDelay(new HostPort("127.0.0.2", 6379))).thenReturn(DelayAction.SAMPLE_LOST_BUT_PONG);
         when(clusterDao.findClustersWithName(Lists.newArrayList("cluster1")))
                 .thenReturn(Lists.newArrayList(new ClusterTbl().setClusterName("cluster1")));
 
@@ -64,8 +64,8 @@ public class ClusterServiceImplTest2 {
     @Test
     public void testFindUnhealthyClusters2() throws Exception {
         when(delayService.getDelay(any())).thenReturn(10L);
-        when(delayService.getDelay(new HostPort("127.0.0.2", 6379))).thenReturn(DefaultDelayContext.SAMPLE_LOST_BUT_PONG);
-        when(delayService.getDelay(new HostPort("127.0.0.4", 6380))).thenReturn(DefaultDelayContext.SAMPLE_LOST_AND_NO_PONG);
+        when(delayService.getDelay(new HostPort("127.0.0.2", 6379))).thenReturn(DelayAction.SAMPLE_LOST_BUT_PONG);
+        when(delayService.getDelay(new HostPort("127.0.0.4", 6380))).thenReturn(DelayAction.SAMPLE_LOST_AND_NO_PONG);
         when(clusterDao.findClustersWithName(anyList())).then(new Answer<List<ClusterTbl>>() {
             @Override
             public List<ClusterTbl> answer(InvocationOnMock invocation) throws Throwable {
