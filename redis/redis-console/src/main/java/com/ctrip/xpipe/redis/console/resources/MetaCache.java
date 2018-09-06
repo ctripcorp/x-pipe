@@ -32,4 +32,6 @@ public interface MetaCache {
     String getDc(HostPort hostPort);
 
     Pair<String, String> findClusterShardBySentinelMonitor(String monitor);
+
+    String getActiveDc(String clusterId, String shardId);
 }

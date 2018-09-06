@@ -273,4 +273,10 @@ public class DefaultMetaCache implements MetaCache {
         }
         return null;
     }
+
+    @Override
+    public String getActiveDc(String clusterId, String shardId){
+        XpipeMetaManager xpipeMetaManager  =  meta.getValue();
+        return xpipeMetaManager.getActiveDc(clusterId, shardId);
+    }
 }

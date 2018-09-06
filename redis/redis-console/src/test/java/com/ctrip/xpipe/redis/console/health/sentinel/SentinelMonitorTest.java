@@ -1,18 +1,14 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
-import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.utils.IpUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.HashSet;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -39,8 +35,7 @@ public class SentinelMonitorTest extends AbstractConsoleIntegrationTest {
     @Before
     public void beforeSentinelMonitorTest(){
         MockitoAnnotations.initMocks(this);
-        sentinelSamplePlan = new SentinelSamplePlan("cluster2", "shard1", consoleConfig,
-                new HashSet<>(IpUtils.parseAsHostPorts("127.0.0.1:17172,127.0.0.1:17172")));
+        sentinelSamplePlan = new SentinelSamplePlan("cluster2", "shard1", consoleConfig, "oy");
         sentinelSample     = new SentinelSample(System.currentTimeMillis(), System.nanoTime(), sentinelSamplePlan, 5000);
 
         sentinelCollector = spy(sentinelCollector);
