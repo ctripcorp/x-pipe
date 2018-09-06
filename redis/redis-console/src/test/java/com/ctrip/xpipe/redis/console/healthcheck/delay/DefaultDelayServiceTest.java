@@ -28,7 +28,7 @@ public class DefaultDelayServiceTest extends AbstractConsoleIntegrationTest {
 
     @Test(expected = NullPointerException.class)
     public void testOnActionWithPing() {
-        PingAction action = new PingAction(scheduled, null);
+        PingAction action = new PingAction(scheduled, null, executors);
 //        action.
     }
 }
