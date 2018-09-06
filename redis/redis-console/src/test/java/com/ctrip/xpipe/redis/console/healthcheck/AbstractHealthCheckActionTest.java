@@ -38,7 +38,7 @@ public class AbstractHealthCheckActionTest extends AbstractConsoleIntegrationTes
         clusterMeta.addShard(shardMeta);
         dcMeta.addCluster(clusterMeta);
         RedisHealthCheckInstance instance = instanceManager.getOrCreate(redisMeta);
-        PingAction action = new PingAction(scheduled, instance);
+        PingAction action = new PingAction(scheduled, instance, executors);
         action.addListeners(listeners);
         action.notifyListeners(new PingActionContext(instance, true));
     }
