@@ -5,9 +5,10 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 /**
  * @author chen.zhu
  * <p>
- * Sep 03, 2018
+ * Sep 06, 2018
  */
-public interface HealthEventProcessor {
-
-    void onEvent(AbstractInstanceEvent event) throws HealthEventProcessorException;
+public class InstanceUp extends AbstractInstanceEvent {
+    public InstanceUp(RedisHealthCheckInstance instance) {
+        super(instance);
+    }
 }

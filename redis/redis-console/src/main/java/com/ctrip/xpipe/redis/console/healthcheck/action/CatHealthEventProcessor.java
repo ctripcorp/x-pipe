@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.action;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,17 +9,13 @@ import org.springframework.stereotype.Component;
  *         May 05, 2017
  */
 @Component
-public class CatHealthEventProcessor implements DelayHealthEventProcessor, PingHealthEventProcessor {
+public class CatHealthEventProcessor implements HealthEventProcessor{
 
     private static final String TYPE = "HealthEvent";
 
     @Override
-    public void markDown(RedisHealthCheckInstance instance) {
-        EventMonitor.DEFAULT.logEvent(TYPE, String.format("InstanceDown-%s", instance.getRedisInstanceInfo().getHostPort()));
-    }
-
-    @Override
-    public void markUp(RedisHealthCheckInstance instance) {
-        EventMonitor.DEFAULT.logEvent(TYPE, String.format("InstanceUp-%s", instance.getRedisInstanceInfo().getHostPort()));
+    public void onEvent(AbstractInstanceEvent instanceEvent) throws HealthEventProcessorException {
+        EventMonitor.DEFAULT.logEvent(TYPE, String.format("%s-%s", instanceEvent.getClass().getSimpleName(),
+                instanceEvent.getInstance()));
     }
 }

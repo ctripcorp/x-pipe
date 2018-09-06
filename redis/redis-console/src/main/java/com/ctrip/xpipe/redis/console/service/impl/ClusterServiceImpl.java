@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayContext;
+import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayAction;
 import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayService;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -481,8 +481,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 						for(RedisMeta redisMeta : shardMeta.getRedises()) {
 							HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
 							long delay = delayService.getDelay(hostPort);
-							if(delay == TimeUnit.NANOSECONDS.toMillis(DelayContext.SAMPLE_LOST_AND_NO_PONG)
-									|| delay == TimeUnit.NANOSECONDS.toMillis(DelayContext.SAMPLE_LOST_BUT_PONG)
+							if(delay == TimeUnit.NANOSECONDS.toMillis(DelayAction.SAMPLE_LOST_AND_NO_PONG)
+									|| delay == TimeUnit.NANOSECONDS.toMillis(DelayAction.SAMPLE_LOST_BUT_PONG)
 									) {
 
 								String clusterName = clusterMeta.getId();

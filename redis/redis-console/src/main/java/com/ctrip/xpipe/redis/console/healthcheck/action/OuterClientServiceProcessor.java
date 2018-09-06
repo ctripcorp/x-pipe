@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
@@ -31,7 +30,7 @@ import java.util.concurrent.Executor;
  */
 @Component
 @Lazy
-public class DelayOuterClientServiceProcessor implements DelayHealthEventProcessor {
+public class OuterClientServiceProcessor implements HealthEventProcessor {
 
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
 
@@ -48,6 +47,9 @@ public class DelayOuterClientServiceProcessor implements DelayHealthEventProcess
 
     @Autowired
     private ConsoleServiceManager consoleServiceManager;
+
+    @Autowired
+    private DelayPingActionListener delayPingActionListener;
 
     @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
     private Executor executors;
@@ -84,27 +86,26 @@ public class DelayOuterClientServiceProcessor implements DelayHealthEventProcess
     }
 
     @Override
-    public void markDown(RedisHealthCheckInstance instance) {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
-        if(!instanceInBackupDc(info.getHostPort())) {
-            logger.info("[onEvent][instance not in backupDc] {}", info);
-            return;
-        }
-        if(masterUp(info.getClusterShardHostport())) {
-            quorumMarkInstanceDown(info.getClusterShardHostport());
-        } else {
-            logger.info("[onEvent][master down, do not call client service]{}", info);
-        }
-    }
+    public void onEvent(AbstractInstanceEvent instanceEvent) throws HealthEventProcessorException {
 
-    @Override
-    public void markUp(RedisHealthCheckInstance instance) {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instanceEvent.getInstance().getRedisInstanceInfo();
         if(!instanceInBackupDc(info.getHostPort())) {
             logger.info("[onEvent][instance not in backupDc] {}", info);
             return;
         }
-        finalStateSetterManager.set(info.getClusterShardHostport(), true);
+
+        if (instanceEvent instanceof InstanceUp) {
+            finalStateSetterManager.set(info.getClusterShardHostport(), true);
+        } else if (instanceEvent instanceof InstanceDown) {
+
+            if (masterUp(info.getClusterShardHostport())) {
+                quorumMarkInstanceDown(info.getClusterShardHostport());
+            } else {
+                logger.info("[onEvent][master down, do not call client service]{}", instanceEvent);
+            }
+        } else {
+            throw new IllegalStateException("unknown event:" + instanceEvent);
+        }
     }
 
     private void quorumMarkInstanceDown(ClusterShardHostPort clusterShardHostPort) {
@@ -140,8 +141,7 @@ public class DelayOuterClientServiceProcessor implements DelayHealthEventProcess
 
         //master up
         HostPort redisMaster = metaCache.findMasterInSameShard(clusterShardHostPort.getHostPort());
-        boolean masterUp = instanceManager.findRedisHealthCheckInstance(redisMaster)
-                .getHealthCheckContext().getDelayContext().isHealthy();
+        boolean masterUp = delayPingActionListener.getState(redisMaster) == HEALTH_STATE.UP;
         //allMonitorCollector.getState(redisMaster) == HEALTH_STATE.UP;
         if (!masterUp) {
             logger.info("[masterUp][master down instance:{}, master:{}]", clusterShardHostPort, redisMaster);

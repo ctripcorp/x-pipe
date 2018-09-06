@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
+import com.ctrip.xpipe.redis.console.healthcheck.action.DelayPingActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,22 +24,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class HealthController extends AbstractConsoleController{
 
     @Autowired
-    private HealthCheckInstanceManager instanceManager;
+    private DelayPingActionListener delayPingActionListener;
 
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {
 
-        HEALTH_STATE state = instanceManager.findRedisHealthCheckInstance(new HostPort(ip, port)).getHealthCheckContext()
-                .getDelayContext().getHealthState();
-        return state;
-    }
-
-    @RequestMapping(value = "/ping/{ip}/{port}", method = RequestMethod.GET)
-    public Boolean getPingStatus(@PathVariable String ip, @PathVariable int port) {
-
-        Boolean result = instanceManager.findRedisHealthCheckInstance(new HostPort(ip, port)).getHealthCheckContext()
-                .getPingContext().isHealthy();
-        return result;
+        return delayPingActionListener.getState(new HostPort(ip, port));
     }
 
 }

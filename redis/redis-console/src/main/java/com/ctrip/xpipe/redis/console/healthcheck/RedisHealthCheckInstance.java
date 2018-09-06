@@ -12,8 +12,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
  */
 public interface RedisHealthCheckInstance extends Lifecycle {
 
-    HealthCheckContext getHealthCheckContext();
-
     RedisInstanceInfo getRedisInstanceInfo();
 
     HealthCheckConfig getHealthCheckConfig();
@@ -22,14 +20,8 @@ public interface RedisHealthCheckInstance extends Lifecycle {
 
     RedisSession getRedisSession();
 
-    HealthStatusManager getHealthStatusManager();
+    void register(HealthCheckAction action);
 
-    default void markDown(HealthStatusManager.MarkDownReason markDownReason) {
-        getHealthStatusManager().markDown(this, markDownReason);
-    }
-
-    default void markUp(HealthStatusManager.MarkUpReason markUpReason) {
-        getHealthStatusManager().markUp(this, markUpReason);
-    }
+    void unregister(HealthCheckAction action);
 
 }

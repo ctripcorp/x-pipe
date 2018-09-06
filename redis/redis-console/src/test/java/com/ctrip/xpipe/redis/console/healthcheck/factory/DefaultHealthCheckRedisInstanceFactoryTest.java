@@ -56,8 +56,6 @@ public class DefaultHealthCheckRedisInstanceFactoryTest extends AbstractConsoleI
 
         Assert.assertNotNull(instance.getEndpoint());
         Assert.assertNotNull(instance.getHealthCheckConfig());
-        Assert.assertNotNull(instance.getHealthCheckContext());
-        Assert.assertNotNull(instance.getHealthStatusManager());
         Assert.assertNotNull(instance.getRedisInstanceInfo());
         Assert.assertNotNull(instance.getRedisSession());
 
