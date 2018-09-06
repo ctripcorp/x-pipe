@@ -87,11 +87,11 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
             protected void doRun() {
                 doScheduledTask();
             }
-        }, checkInterval, checkInterval, TimeUnit.MILLISECONDS);
+        }, checkInterval, baseInterval, TimeUnit.MILLISECONDS);
     }
 
     private int getCheckTimeInterval(int baseInterval) {
-        return baseInterval + (((Math.abs(random.nextInt()) * DELTA) % baseInterval) >> 1);
+        return baseInterval + (((Math.abs(random.nextInt())) % DELTA));
     }
 
     protected int getWarmupTime() {
