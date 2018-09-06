@@ -56,9 +56,9 @@ public class ConsoleServiceManager {
             try{
                 Boolean instancePingStatus = consoleService.getInstancePingStatus(host, port);
                 result.add(instancePingStatus);
-                logger.info("[allHealthStatus]{}, {}:{}, {}", consoleService, host, port, instancePingStatus);
+                logger.info("[allPingStatus]{}, {}:{}, {}", consoleService, host, port, instancePingStatus);
             }catch (Exception e){
-                logger.error("[allHealthStatus]" + consoleService + "," + host + ":" + port, e);
+                logger.error("[allPingStatus]" + consoleService + "," + host + ":" + port, e);
             }
         }
         return result;
