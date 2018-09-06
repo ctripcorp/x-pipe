@@ -68,8 +68,13 @@ public class DefaultSentinelCollector implements SentinelCollector {
         Set<SentinelHello> hellos = sentinelSample.getHellos();
         String clusterId = sentinelSample.getSamplePlan().getClusterId();
         String shardId = sentinelSample.getSamplePlan().getShardId();
+        String clusterActiveDc = ((SentinelSamplePlan)sentinelSample.getSamplePlan()).getClusterActiveDc();
         String sentinelMonitorName = metaCache.getSentinelMonitorName(clusterId, shardId);
         Set<HostPort> masterDcSentinels = metaCache.getActiveDcSentinels(clusterId, shardId);
+        if (!clusterActiveDc.equals(metaCache.getActiveDc(clusterId, shardId))){
+            logger.debug("[collect][active_dc of cluster is change!]{}, {}", clusterId, shardId);
+            return;
+        }
         QuorumConfig quorumConfig = consoleConfig.getDefaultSentinelQuorumConfig();
         HostPort masterAddr = null;
         try{
@@ -360,5 +365,8 @@ public class DefaultSentinelCollector implements SentinelCollector {
     public void setAlertManager(AlertManager alertManager) {
         this.alertManager = alertManager;
     }
+
+    @VisibleForTesting
+    public MetaCache getMetaCache(){return this.metaCache;}
 
 }
