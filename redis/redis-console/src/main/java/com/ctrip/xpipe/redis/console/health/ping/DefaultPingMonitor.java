@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.health.ping;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.*;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -85,7 +86,7 @@ public class DefaultPingMonitor extends BaseSampleMonitor<InstancePingResult> im
 	}
 
 	@Override
-	protected BaseSamplePlan<InstancePingResult> createPlan(String dcId, String clusterId, String shardId) {
+	protected BaseSamplePlan<InstancePingResult> createPlan(DcMeta dcMeta, String dcId, String clusterId, String shardId) {
 
 		return new PingSamplePlan(clusterId, shardId);
 	}
