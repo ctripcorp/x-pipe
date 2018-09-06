@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -49,6 +50,9 @@ public class DefaultHealthCheckRedisInstanceFactory implements HealthCheckRedisI
 
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
+
+    @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+    private ExecutorService executors;
 
     @Autowired
     private PingService pingService;
@@ -104,7 +108,7 @@ public class DefaultHealthCheckRedisInstanceFactory implements HealthCheckRedisI
     }
 
     private void initActions(RedisHealthCheckInstance instance) {
-        new PingAction(scheduled, instance).addListeners(listeners);
-        new DelayAction(scheduled, instance, pingService).addListeners(listeners);
+        new PingAction(scheduled, instance, executors).addListeners(listeners);
+        new DelayAction(scheduled, instance, executors, pingService).addListeners(listeners);
     }
 }

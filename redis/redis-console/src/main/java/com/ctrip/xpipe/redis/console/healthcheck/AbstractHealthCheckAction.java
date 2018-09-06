@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -26,13 +27,17 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     private ScheduledFuture future;
 
+    private ExecutorService executors;
+
     private static Random random = new Random();
 
     protected static int DELTA = 100;
 
-    public AbstractHealthCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance) {
+    public AbstractHealthCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
+                                     ExecutorService executors) {
         this.scheduled = scheduled;
         this.instance = instance;
+        this.executors = executors;
         instance.register(this);
     }
 
@@ -74,7 +79,12 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     protected void notifyListeners(ActionContext context) {
         for(HealthCheckActionListener listener : listeners) {
             if(listener.suitable(context)) {
-                listener.onAction(context);
+                executors.execute(new AbstractExceptionLogTask() {
+                    @Override
+                    protected void doRun() throws Exception {
+                        listener.onAction(context);
+                    }
+                });
             }
         }
     }
