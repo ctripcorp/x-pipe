@@ -74,4 +74,7 @@ public class TestMetaCache implements MetaCache {
     public Pair<String, String> findClusterShardBySentinelMonitor(String monitor) {
         return null;
     }
+
+    @Override
+    public String getActiveDc(String clusterId, String shardId){return null;}
 }

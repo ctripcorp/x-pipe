@@ -11,9 +11,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**
@@ -31,7 +29,7 @@ public class SentinelSamplePlanTest extends AbstractRedisTest {
     @Before
     public void beforeSentinelSamplePlanTest() {
         MockitoAnnotations.initMocks(this);
-        plan = new SentinelSamplePlan("cluster", "shard", consoleConfig);
+        plan = new SentinelSamplePlan("cluster", "shard", consoleConfig, "");
     }
 
     @Test
