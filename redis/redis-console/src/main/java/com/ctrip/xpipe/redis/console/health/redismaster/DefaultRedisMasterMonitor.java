@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,7 +79,7 @@ public class DefaultRedisMasterMonitor extends AbstractRedisConfMonitor<Instance
     }
 
     @Override
-    protected BaseSamplePlan<InstanceRedisMasterResult> createPlan(DcMeta dcMeta, String dcId, String clusterId, String shardId) {
+    protected BaseSamplePlan<InstanceRedisMasterResult> createPlan(String dcId, String clusterId, String shardId) {
         return new RedisMasterSamplePlan(dcId, clusterId, shardId);
     }
 

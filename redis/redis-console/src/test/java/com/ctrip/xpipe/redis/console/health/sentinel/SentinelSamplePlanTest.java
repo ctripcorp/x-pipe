@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.utils.IpUtils;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -12,11 +11,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.HashSet;
-
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**
@@ -34,8 +29,7 @@ public class SentinelSamplePlanTest extends AbstractRedisTest {
     @Before
     public void beforeSentinelSamplePlanTest() {
         MockitoAnnotations.initMocks(this);
-        plan = new SentinelSamplePlan("cluster", "shard", consoleConfig,
-                new HashSet<>(IpUtils.parseAsHostPorts("127.0.0.1:17172,127.0.0.1:17172")));
+        plan = new SentinelSamplePlan("cluster", "shard", consoleConfig, "");
     }
 
     @Test

@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.health.*;
 import com.ctrip.xpipe.redis.console.health.ping.PingService;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -122,7 +121,7 @@ public class DefaultDelayMonitor extends BaseSampleMonitor<InstanceDelayResult> 
 	}
 
 	@Override
-	protected BaseSamplePlan<InstanceDelayResult> createPlan(DcMeta dcMeta, String dcId, String clusterId, String shardId) {
+	protected BaseSamplePlan<InstanceDelayResult> createPlan(String dcId, String clusterId, String shardId) {
 		return new DelaySamplePlan(clusterId, shardId);
 	}
 
