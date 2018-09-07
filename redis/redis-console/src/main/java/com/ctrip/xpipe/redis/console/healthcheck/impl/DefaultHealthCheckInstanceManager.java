@@ -5,7 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckRedisInstanceFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.RedisHealthCheckInstanceFactory;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.google.common.collect.Lists;
@@ -31,7 +31,7 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     private ConcurrentMap<HostPort, RedisHealthCheckInstance> instances = Maps.newConcurrentMap();
 
     @Autowired
-    private HealthCheckRedisInstanceFactory instanceFactory;
+    private RedisHealthCheckInstanceFactory instanceFactory;
 
     @Override
     public RedisHealthCheckInstance getOrCreate(RedisMeta redis) {

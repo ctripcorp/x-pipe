@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.action.HealthStatus;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingService;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -55,7 +56,9 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
         if(updated.get() == HealthStatus.UNSET_TIME) {
             return;
         }
-        if(System.currentTimeMillis() - updated.get() > instance.getHealthCheckConfig().getHealthyDelayMilli()) {
+        long expireInterval = instance.getHealthCheckConfig().getHealthyDelayMilli() + DELTA * 2;
+        if(System.currentTimeMillis() - updated.get() >= expireInterval) {
+            logger.info("[expire] last update time: {}", DateTimeUtils.timeAsString(updated.get()));
             long result = SAMPLE_LOST_AND_NO_PONG;
             if(pingService.isRedisAlive(instance.getRedisInstanceInfo().getHostPort())) {
                 result = SAMPLE_LOST_BUT_PONG;

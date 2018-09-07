@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.factory;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -16,17 +17,18 @@ import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayAction;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingAction;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingService;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -35,9 +37,9 @@ import java.util.concurrent.ScheduledExecutorService;
  * Aug 27, 2018
  */
 @Component
-public class DefaultHealthCheckRedisInstanceFactory implements HealthCheckRedisInstanceFactory {
+public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckInstanceFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultHealthCheckRedisInstanceFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultRedisHealthCheckInstanceFactory.class);
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -48,10 +50,8 @@ public class DefaultHealthCheckRedisInstanceFactory implements HealthCheckRedisI
     @Autowired
     private RedisSessionManager redisSessionManager;
 
-    @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
-    @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
     private ExecutorService executors;
 
     @Autowired
@@ -68,6 +68,8 @@ public class DefaultHealthCheckRedisInstanceFactory implements HealthCheckRedisI
     public void init() {
         defaultHealthCheckConfig = new DefaultHealthCheckConfig(consoleConfig);
         proxyEnabledHealthCheckConfig = new ProxyEnabledHealthCheckConfig(consoleConfig);
+        executors = DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("RedisHealthCheckInstance-").createExecutorService();
+        scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create("RedisHealthCheckInstance-Scheduled-"));
     }
 
     @Override

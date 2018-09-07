@@ -8,6 +8,6 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
  * <p>
  * Aug 27, 2018
  */
-public interface HealthCheckRedisInstanceFactory {
+public interface RedisHealthCheckInstanceFactory {
     RedisHealthCheckInstance create(RedisMeta redisMeta);
 }
