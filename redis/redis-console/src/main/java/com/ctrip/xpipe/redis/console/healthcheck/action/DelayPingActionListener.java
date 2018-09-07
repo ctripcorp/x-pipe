@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingActionContext;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -20,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +62,7 @@ public class DelayPingActionListener implements HealthCheckActionListener<Action
     }
 
     @Override
-    public boolean suitable(ActionContext t) {
+    public boolean worksfor(ActionContext t) {
         return t instanceof DelayActionContext || t instanceof PingActionContext;
     }
 
@@ -71,6 +71,13 @@ public class DelayPingActionListener implements HealthCheckActionListener<Action
             return allHealthStatus.get(instanceManager.findRedisHealthCheckInstance(hostPort)).getState();
         } catch (Exception e) {
             return HEALTH_STATE.UNKNOWN;
+        }
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        for(HealthStatus healthStatus : allHealthStatus.values()) {
+            healthStatus.stop();
         }
     }
 
@@ -100,6 +107,7 @@ public class DelayPingActionListener implements HealthCheckActionListener<Action
                         onInstanceStateChange((AbstractInstanceEvent) args);
                     }
                 });
+                healthStatus.start();
                 return healthStatus;
             }
         });

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.action;
 
+import com.ctrip.xpipe.api.lifecycle.Startable;
+import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.observer.AbstractObservable;
@@ -21,9 +23,9 @@ import java.util.function.IntSupplier;
  *         <p>
  *         May 04, 2017
  */
-public class HealthStatus extends AbstractObservable{
+public class HealthStatus extends AbstractObservable implements Startable, Stoppable {
 
-    private static long UNSET_TIME = -1L;
+    public static long UNSET_TIME = -1L;
 
     private AtomicLong lastPongTime = new AtomicLong(UNSET_TIME);
     private AtomicLong lastHealthDelayTime = new AtomicLong(UNSET_TIME);
@@ -44,7 +46,18 @@ public class HealthStatus extends AbstractObservable{
         this.downAfterMilli = ()->instance.getHealthCheckConfig().downAfterMilli();
         this.healthyDelayMilli = ()->instance.getHealthCheckConfig().getHealthyDelayMilli();
         this.scheduled = scheduled;
+    }
+
+    @Override
+    public void start() {
         checkDown();
+    }
+
+    @Override
+    public void stop() {
+        if(future != null) {
+            future.cancel(true);
+        }
     }
 
     private void checkDown() {
@@ -125,7 +138,7 @@ public class HealthStatus extends AbstractObservable{
 
     @Override
     public String toString() {
-        return String.format("%s lastPong:%s lastHealthDelay:%s", instance,
+        return String.format("%s lastPong:%s lastHealthDelay:%s", instance.getRedisInstanceInfo(),
                 DateTimeUtils.timeAsString(lastPongTime.get()),
                 DateTimeUtils.timeAsString(lastHealthDelayTime.get()));
     }

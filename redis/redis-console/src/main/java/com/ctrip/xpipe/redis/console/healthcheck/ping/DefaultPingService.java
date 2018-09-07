@@ -44,7 +44,7 @@ public class DefaultPingService implements PingService, HealthCheckActionListene
     }
 
     @Override
-    public boolean suitable(ActionContext t) {
+    public boolean worksfor(ActionContext t) {
         return t instanceof PingActionContext;
     }
 }

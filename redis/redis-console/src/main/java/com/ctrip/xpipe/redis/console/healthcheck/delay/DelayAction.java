@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.action.HealthStatus;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingService;
 
 import java.util.concurrent.ExecutorService;
@@ -28,7 +29,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     private SubscribeCallback callback = new SubscribeCallback();
 
-    private AtomicLong updated = new AtomicLong(System.currentTimeMillis());
+    private AtomicLong updated = new AtomicLong(-1L);
 
     private PingService pingService;
 
@@ -40,6 +41,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     @Override
     protected void doScheduledTask() {
+        markExpiration();
         RedisSession session = instance.getRedisSession();
         session.subscribeIfAbsent(CHECK_CHANNEL, callback);
         String message = Long.toHexString(System.nanoTime());
@@ -47,22 +49,20 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
             logger.debug("[doScheduledTask] master endpoint {}, pub message", instance.getEndpoint());
             session.publish(CHECK_CHANNEL, message);
         }
-//        markExpiration(message);
     }
 
-    private void markExpiration(String message) {
-        scheduled.schedule(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() throws Exception {
-                if(System.currentTimeMillis() - updated.get() >= instance.getHealthCheckConfig().getHealthyDelayMilli()) {
-                    long result = SAMPLE_LOST_AND_NO_PONG;
-                    if(pingService.isRedisAlive(instance.getRedisInstanceInfo().getHostPort())) {
-                        result = SAMPLE_LOST_BUT_PONG;
-                    }
-                    notifyListeners(new DelayActionContext(instance, result));
-                }
+    private void markExpiration() {
+        if(updated.get() == HealthStatus.UNSET_TIME) {
+            return;
+        }
+        if(System.currentTimeMillis() - updated.get() > instance.getHealthCheckConfig().getHealthyDelayMilli()) {
+            long result = SAMPLE_LOST_AND_NO_PONG;
+            if(pingService.isRedisAlive(instance.getRedisInstanceInfo().getHostPort())) {
+                result = SAMPLE_LOST_BUT_PONG;
             }
-        }, instance.getHealthCheckConfig().getHealthyDelayMilli(), TimeUnit.MILLISECONDS);
+            notifyListeners(new DelayActionContext(instance, result));
+        }
+
     }
 
     private class SubscribeCallback implements RedisSession.SubscribeCallback {
@@ -79,6 +79,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
     }
 
     private void onMessage(String message) {
+        updated.set(System.currentTimeMillis());
         long currentTime = System.nanoTime();
         long lastDelayPubTimeNano = Long.parseLong(message, 16);
         DelayActionContext context = new DelayActionContext(instance, currentTime - lastDelayPubTimeNano);

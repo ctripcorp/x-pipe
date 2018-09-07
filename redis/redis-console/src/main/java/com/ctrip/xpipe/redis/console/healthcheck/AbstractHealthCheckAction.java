@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.healthcheck;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayActionContext;
 import com.google.common.collect.Lists;
 
 import java.util.List;
@@ -78,7 +77,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     protected void notifyListeners(ActionContext context) {
         for(HealthCheckActionListener listener : listeners) {
-            if(listener.suitable(context)) {
+            if(listener.worksfor(context)) {
                 executors.execute(new AbstractExceptionLogTask() {
                     @Override
                     protected void doRun() throws Exception {

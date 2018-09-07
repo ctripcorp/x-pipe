@@ -40,7 +40,7 @@ public class DefaultDelayService implements DelayService, HealthCheckActionListe
     }
 
     @Override
-    public boolean suitable(ActionContext context) {
+    public boolean worksfor(ActionContext context) {
         return context instanceof DelayActionContext;
     }
 }
