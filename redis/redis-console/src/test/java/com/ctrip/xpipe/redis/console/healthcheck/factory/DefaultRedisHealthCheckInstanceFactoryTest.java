@@ -9,21 +9,14 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.config.ProxyEnabledHealthCheckConfig;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
-import com.ctrip.xpipe.spring.AbstractProfile;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -33,10 +26,10 @@ import static org.mockito.Mockito.when;
  * <p>
  * Sep 04, 2018
  */
-public class DefaultHealthCheckRedisInstanceFactoryTest extends AbstractConsoleIntegrationTest {
+public class DefaultRedisHealthCheckInstanceFactoryTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
-    protected DefaultHealthCheckRedisInstanceFactory factory;
+    protected DefaultRedisHealthCheckInstanceFactory factory;
 
     @Autowired
     private DefaultHealthCheckEndpointFactory endpointFactory;
