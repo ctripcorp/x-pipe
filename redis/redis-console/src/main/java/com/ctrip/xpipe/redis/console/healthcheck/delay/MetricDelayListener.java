@@ -46,7 +46,7 @@ public class MetricDelayListener implements HealthCheckActionListener<DelayActio
     }
 
     @Override
-    public boolean suitable(ActionContext t) {
+    public boolean worksfor(ActionContext t) {
         return t instanceof DelayActionContext;
     }
 }

@@ -108,7 +108,7 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DefaultRedisHealthCheckInstance that = (DefaultRedisHealthCheckInstance) o;
-        return ObjectUtils.equals(((DefaultRedisHealthCheckInstance) o).getRedisInstanceInfo().getHostPort(),
+        return ObjectUtils.equals(that.getRedisInstanceInfo().getHostPort(),
                 this.getRedisInstanceInfo().getHostPort());
     }
 

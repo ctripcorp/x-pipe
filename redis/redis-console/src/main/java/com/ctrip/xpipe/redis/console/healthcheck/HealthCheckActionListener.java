@@ -9,5 +9,5 @@ public interface HealthCheckActionListener<T extends ActionContext> {
 
     void onAction(T t);
 
-    boolean suitable(ActionContext t);
+    boolean worksfor(ActionContext t);
 }
