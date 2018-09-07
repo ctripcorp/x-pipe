@@ -16,6 +16,6 @@ public class CatHealthEventProcessor implements HealthEventProcessor{
     @Override
     public void onEvent(AbstractInstanceEvent instanceEvent) throws HealthEventProcessorException {
         EventMonitor.DEFAULT.logEvent(TYPE, String.format("%s-%s", instanceEvent.getClass().getSimpleName(),
-                instanceEvent.getInstance()));
+                instanceEvent.getInstance().getRedisInstanceInfo().getHostPort()));
     }
 }
