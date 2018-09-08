@@ -9,8 +9,7 @@ import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -40,6 +39,8 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
     @Autowired
     private ConsoleConfig consoleConfig;
+
+    private String clusterActiveDc;
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
@@ -118,6 +119,7 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
             log.info("[addCluster][false]{}, {}, {}", clusterMeta.getId(), dcName, clusterStatus);
             return false;
         }
+        this.clusterActiveDc = clusterMeta.getActiveDc();
         return true;
     }
 
@@ -128,7 +130,7 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
     @Override
     protected BaseSamplePlan<InstanceSentinelResult> createPlan(String dcId, String clusterId, String shardId) {
-        return new SentinelSamplePlan(clusterId, shardId, consoleConfig);
+        return new SentinelSamplePlan(clusterId, shardId, consoleConfig, this.clusterActiveDc);
     }
 
 

@@ -85,4 +85,7 @@ public class TestMetaCache implements MetaCache {
     public int getRedisNumOfDcCluster(String dcId, String clusterId) {
         return 0;
     }
+
+    public String getActiveDc(String clusterId, String shardId){return null;}
+
 }
