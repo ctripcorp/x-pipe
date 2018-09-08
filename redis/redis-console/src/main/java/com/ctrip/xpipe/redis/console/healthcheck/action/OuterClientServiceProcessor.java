@@ -7,11 +7,13 @@ import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,9 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
 
     @Autowired
     private HealthCheckInstanceManager instanceManager;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     @Autowired
     private ConsoleServiceManager consoleServiceManager;
@@ -97,7 +102,12 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
         if (instanceEvent instanceof InstanceUp) {
             finalStateSetterManager.set(info.getClusterShardHostport(), true);
         } else if (instanceEvent instanceof InstanceDown) {
-
+            if(consoleConfig.getDelayWontMarkDownClusters().contains(new Pair<>(info.getDcId(), info.getClusterId()))) {
+                logger.warn("[markdown] configured, not markdown");
+                alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(),
+                        ALERT_TYPE.INSTANCE_LAG_NOT_MARK_DOWN, info.getDcId());
+                return;
+            }
             if (masterUp(info.getClusterShardHostport())) {
                 quorumMarkInstanceDown(info.getClusterShardHostport());
             } else {

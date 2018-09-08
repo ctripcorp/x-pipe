@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.action;
 
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 
 /**
  * @author chen.zhu
