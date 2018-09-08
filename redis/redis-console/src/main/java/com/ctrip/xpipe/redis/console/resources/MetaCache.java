@@ -37,4 +37,7 @@ public interface MetaCache {
     RouteMeta getRouteIfPossible(HostPort hostPort);
 
     int getRedisNumOfDcCluster(String dcId, String clusterId);
+
+    String getActiveDc(String clusterId, String shardId);
+
 }
