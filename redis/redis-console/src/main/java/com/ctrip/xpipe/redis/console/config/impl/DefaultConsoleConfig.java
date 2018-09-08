@@ -62,7 +62,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     public static final String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
 
-    private static final String KEY_DC_CLUSTER_WONT_MARK_DOWN = "dc.cluster.pairs.wont.mark.down";
+    protected static final String KEY_DC_CLUSTER_WONT_MARK_DOWN = "dc.cluster.pairs.wont.mark.down";
 
     private static final String KEY_HEALTHY_DELAY_THROUGH_PROXY = "console.healthy.delay.through.proxy";
 
