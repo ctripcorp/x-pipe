@@ -5,15 +5,16 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import com.ctrip.framework.foundation.Foundation;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.*;
 import com.ctrip.xpipe.service.foundation.CtripFoundationService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import io.netty.util.HashedWheelTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,11 @@ public class HickwallMetric implements MetricProxy {
 
 	private HickwallClient client;
 
+	private ArrayList<DataPoint> dataToSend = null;
+
 	private static final int NUM_MESSAGES_PER_SEND = 100;
+
+	private static final int HICKWALL_SEND_INTERVAL = 2000;
 	
 	public HickwallMetric() {
 		start();
@@ -46,40 +51,39 @@ public class HickwallMetric implements MetricProxy {
 		logger.info("Hickwall proxy started.");
 		
 		datas = new ArrayBlockingQueue<>(config.getHickwallQueueSize());
-		
-		XpipeThreadFactory.create("HickwallSender", true).newThread(new Runnable() {
+
+		ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
+				XpipeThreadFactory.create("HickwallSender", true));
+
+		scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 			@Override
-			public void run() {
+			protected void doRun() throws Exception {
 				tryUntilConnected();
-				
-				ArrayList<DataPoint> data = null;
-				while (!Thread.currentThread().isInterrupted()) {
-					if (data == null && datas.size() >= NUM_MESSAGES_PER_SEND) {
-						data = new ArrayList<>();
-						datas.drainTo(data, NUM_MESSAGES_PER_SEND);
+
+				while(datas.size() >= NUM_MESSAGES_PER_SEND) {
+					if (dataToSend == null) {
+						dataToSend = new ArrayList<>();
+						datas.drainTo(dataToSend, NUM_MESSAGES_PER_SEND);
 					}
 
 					try {
-						if(data == null) {
-							continue;
-						}
-						client.send(data);
-						data = null;
+						client.send(dataToSend);
+						dataToSend = null;
 					} catch (IOException e) {
 						logger.error("Error write data to metric server{}", config.getHickwallHostPort(), e);
 						tryUntilConnected();
-					}catch(Exception e){
+					} catch (Exception e) {
 						logger.error("Error write data to metric server{}", config.getHickwallHostPort(), e);
 						try {
 							TimeUnit.SECONDS.sleep(10);
 						} catch (InterruptedException e1) {
 							Thread.currentThread().interrupt();
-							break;
 						}
 					}
 				}
+
 			}
-		}).start();
+		}, HICKWALL_SEND_INTERVAL, HICKWALL_SEND_INTERVAL, TimeUnit.MILLISECONDS);
 	}
 	
 	private void tryUntilConnected() {
