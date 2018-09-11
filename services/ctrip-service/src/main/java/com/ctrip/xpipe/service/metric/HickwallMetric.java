@@ -35,6 +35,8 @@ public class HickwallMetric implements MetricProxy {
 	private BlockingQueue<DataPoint> datas;
 
 	private HickwallClient client;
+
+	private static final int NUM_MESSAGES_PER_SEND = 100;
 	
 	public HickwallMetric() {
 		start();
@@ -52,12 +54,15 @@ public class HickwallMetric implements MetricProxy {
 				
 				ArrayList<DataPoint> data = null;
 				while (!Thread.currentThread().isInterrupted()) {
-					if (data == null) {
+					if (data == null && datas.size() >= NUM_MESSAGES_PER_SEND) {
 						data = new ArrayList<>();
-						datas.drainTo(data, 100);
+						datas.drainTo(data, NUM_MESSAGES_PER_SEND);
 					}
 
 					try {
+						if(data == null) {
+							continue;
+						}
 						client.send(data);
 						data = null;
 					} catch (IOException e) {
@@ -66,7 +71,7 @@ public class HickwallMetric implements MetricProxy {
 					}catch(Exception e){
 						logger.error("Error write data to metric server{}", config.getHickwallHostPort(), e);
 						try {
-							TimeUnit.SECONDS.sleep(5);
+							TimeUnit.SECONDS.sleep(10);
 						} catch (InterruptedException e1) {
 							Thread.currentThread().interrupt();
 							break;
