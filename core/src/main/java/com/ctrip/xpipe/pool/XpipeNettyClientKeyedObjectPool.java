@@ -3,7 +3,6 @@ package com.ctrip.xpipe.pool;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.ObjectPoolException;
-import com.ctrip.xpipe.pool.object.SimpleReturnPolicyKeyedObjectPool;
 import org.apache.commons.pool2.KeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
@@ -68,7 +67,7 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 		}
 		pooledObjectFactory.start();
 
-		SimpleReturnPolicyKeyedObjectPool<Endpoint, NettyClient> genericKeyedObjectPool = new SimpleReturnPolicyKeyedObjectPool<Endpoint, NettyClient>(
+		GenericKeyedObjectPool<Endpoint, NettyClient> genericKeyedObjectPool = new GenericKeyedObjectPool<Endpoint, NettyClient>(
 				pooledObjectFactory, config);
 		genericKeyedObjectPool.setTestOnBorrow(true);
 		genericKeyedObjectPool.setTestOnCreate(true);
@@ -80,9 +79,9 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 
 	public final void setKeyPooConfig(int minIdlePerKey, long softMinEvictableIdleTimeMillis, long minEvictableIdleTimeMillis, long timeBetweenEvictionRunsMillis) {
 
-		if(objectPool instanceof SimpleReturnPolicyKeyedObjectPool){
+		if(objectPool instanceof GenericKeyedObjectPool){
 			logger.info("[setKeyPooConfig]{}, {}, {}, {}", minIdlePerKey, softMinEvictableIdleTimeMillis, minEvictableIdleTimeMillis, timeBetweenEvictionRunsMillis);
-			SimpleReturnPolicyKeyedObjectPool genericKeyedObjectPool = (SimpleReturnPolicyKeyedObjectPool) objectPool;
+			GenericKeyedObjectPool genericKeyedObjectPool = (GenericKeyedObjectPool) objectPool;
 			genericKeyedObjectPool.setMinIdlePerKey(minIdlePerKey);
 			genericKeyedObjectPool.setSoftMinEvictableIdleTimeMillis(softMinEvictableIdleTimeMillis);
 			genericKeyedObjectPool.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
