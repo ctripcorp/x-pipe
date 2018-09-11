@@ -58,7 +58,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
         }
         long expireInterval = instance.getHealthCheckConfig().getHealthyDelayMilli() + DELTA * 2;
         if(System.currentTimeMillis() - updated.get() >= expireInterval) {
-            logger.info("[expire] last update time: {}", DateTimeUtils.timeAsString(updated.get()));
+            logger.info("[expire][{}] last update time: {}", instance.getRedisInstanceInfo().getHostPort(), DateTimeUtils.timeAsString(updated.get()));
             long result = SAMPLE_LOST_AND_NO_PONG;
             if(pingService.isRedisAlive(instance.getRedisInstanceInfo().getHostPort())) {
                 result = SAMPLE_LOST_BUT_PONG;

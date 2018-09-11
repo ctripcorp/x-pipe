@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.pool;
 
-import java.net.InetSocketAddress;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.ObjectPoolException;
+import com.ctrip.xpipe.pool.object.SimpleReturnPolicyKeyedObjectPool;
 import org.apache.commons.pool2.KeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
@@ -68,7 +68,7 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 		}
 		pooledObjectFactory.start();
 
-		GenericKeyedObjectPool<Endpoint, NettyClient> genericKeyedObjectPool = new GenericKeyedObjectPool<Endpoint, NettyClient>(
+		SimpleReturnPolicyKeyedObjectPool<Endpoint, NettyClient> genericKeyedObjectPool = new SimpleReturnPolicyKeyedObjectPool<Endpoint, NettyClient>(
 				pooledObjectFactory, config);
 		genericKeyedObjectPool.setTestOnBorrow(true);
 		genericKeyedObjectPool.setTestOnCreate(true);

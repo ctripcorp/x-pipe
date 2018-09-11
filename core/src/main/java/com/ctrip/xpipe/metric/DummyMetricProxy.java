@@ -17,7 +17,7 @@ public class DummyMetricProxy implements MetricProxy {
 	}
 
 	@Override
-	public void writeBinMultiDataPoint(List<MetricData> datas) throws MetricProxyException {
+	public void writeBinMultiDataPoint(MetricData data) throws MetricProxyException {
 
 	}
 }
