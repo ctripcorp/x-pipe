@@ -39,7 +39,7 @@ public class MetricDelayListener implements HealthCheckActionListener<DelayActio
     @Override
     public void onAction(DelayActionContext delayActionContext) {
         try {
-            proxy.writeBinMultiDataPoint(Lists.newArrayList(getPoint(delayActionContext)));
+            proxy.writeBinMultiDataPoint(getPoint(delayActionContext));
         } catch (Exception e) {
             logger.error("Error send metrics to metric", e);
         }

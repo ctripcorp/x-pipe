@@ -92,7 +92,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
          * - this Node, meaning the predecessor is tail
          * - null, meaning there is no predecessor
          */
-        LinkedBlockingDeque.Node<E> prev;
+        Node<E> prev;
 
         /**
          * One of:
@@ -100,7 +100,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
          * - this Node, meaning the successor is head
          * - null, meaning there is no successor
          */
-        LinkedBlockingDeque.Node<E> next;
+        Node<E> next;
 
         /**
          * Create a new list node.
@@ -109,7 +109,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
          * @param p Previous item
          * @param n Next item
          */
-        Node(E x, LinkedBlockingDeque.Node<E> p, LinkedBlockingDeque.Node<E> n) {
+        Node(E x, Node<E> p, Node<E> n) {
             item = x;
             prev = p;
             next = n;
@@ -121,14 +121,14 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
      * Invariant: (first == null && last == null) ||
      *            (first.prev == null && first.item != null)
      */
-    private transient LinkedBlockingDeque.Node<E> first; // @GuardedBy("lock")
+    private transient Node<E> first; // @GuardedBy("lock")
 
     /**
      * Pointer to last node.
      * Invariant: (first == null && last == null) ||
      *            (last.next == null && last.item != null)
      */
-    private transient LinkedBlockingDeque.Node<E> last; // @GuardedBy("lock")
+    private transient Node<E> last; // @GuardedBy("lock")
 
     /** Number of items in the deque */
     private transient int count; // @GuardedBy("lock")
@@ -234,8 +234,8 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
         if (count >= capacity) {
             return false;
         }
-        LinkedBlockingDeque.Node<E> f = first;
-        LinkedBlockingDeque.Node<E> x = new LinkedBlockingDeque.Node<E>(e, null, f);
+        Node<E> f = first;
+        Node<E> x = new Node<E>(e, null, f);
         first = x;
         if (last == null) {
             last = x;
@@ -259,8 +259,8 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
         if (count >= capacity) {
             return false;
         }
-        LinkedBlockingDeque.Node<E> l = last;
-        LinkedBlockingDeque.Node<E> x = new LinkedBlockingDeque.Node<E>(e, l, null);
+        Node<E> l = last;
+        Node<E> x = new Node<E>(e, l, null);
         last = x;
         if (first == null) {
             first = x;
@@ -279,11 +279,11 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
      */
     private E unlinkFirst() {
         // assert lock.isHeldByCurrentThread();
-        LinkedBlockingDeque.Node<E> f = first;
+        Node<E> f = first;
         if (f == null) {
             return null;
         }
-        LinkedBlockingDeque.Node<E> n = f.next;
+        Node<E> n = f.next;
         E item = f.item;
         f.item = null;
         f.next = f; // help GC
@@ -305,11 +305,11 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
      */
     private E unlinkLast() {
         // assert lock.isHeldByCurrentThread();
-        LinkedBlockingDeque.Node<E> l = last;
+        Node<E> l = last;
         if (l == null) {
             return null;
         }
-        LinkedBlockingDeque.Node<E> p = l.prev;
+        Node<E> p = l.prev;
         E item = l.item;
         l.item = null;
         l.prev = l; // help GC
@@ -329,10 +329,10 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
      *
      * @param x The node to unlink
      */
-    private void unlink(LinkedBlockingDeque.Node<E> x) {
+    private void unlink(Node<E> x) {
         // assert lock.isHeldByCurrentThread();
-        LinkedBlockingDeque.Node<E> p = x.prev;
-        LinkedBlockingDeque.Node<E> n = x.next;
+        Node<E> p = x.prev;
+        Node<E> n = x.next;
         if (p == null) {
             unlinkFirst();
         } else if (n == null) {
@@ -705,7 +705,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
         }
         lock.lock();
         try {
-            for (LinkedBlockingDeque.Node<E> p = first; p != null; p = p.next) {
+            for (Node<E> p = first; p != null; p = p.next) {
                 if (o.equals(p.item)) {
                     unlink(p);
                     return true;
@@ -724,7 +724,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
         }
         lock.lock();
         try {
-            for (LinkedBlockingDeque.Node<E> p = last; p != null; p = p.prev) {
+            for (Node<E> p = last; p != null; p = p.prev) {
                 if (o.equals(p.item)) {
                     unlink(p);
                     return true;
@@ -999,7 +999,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
         }
         lock.lock();
         try {
-            for (LinkedBlockingDeque.Node<E> p = first; p != null; p = p.next) {
+            for (Node<E> p = first; p != null; p = p.next) {
                 if (o.equals(p.item)) {
                     return true;
                 }
@@ -1070,7 +1070,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
         try {
             Object[] a = new Object[count];
             int k = 0;
-            for (LinkedBlockingDeque.Node<E> p = first; p != null; p = p.next) {
+            for (Node<E> p = first; p != null; p = p.next) {
                 a[k++] = p.item;
             }
             return a;
@@ -1092,7 +1092,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
                         (a.getClass().getComponentType(), count);
             }
             int k = 0;
-            for (LinkedBlockingDeque.Node<E> p = first; p != null; p = p.next) {
+            for (Node<E> p = first; p != null; p = p.next) {
                 a[k++] = (T)p.item;
             }
             if (a.length > k) {
@@ -1122,9 +1122,9 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
     public void clear() {
         lock.lock();
         try {
-            for (LinkedBlockingDeque.Node<E> f = first; f != null; ) {
+            for (Node<E> f = first; f != null; ) {
                 f.item = null;
-                LinkedBlockingDeque.Node<E> n = f.next;
+                Node<E> n = f.next;
                 f.prev = null;
                 f.next = null;
                 f = n;
@@ -1151,7 +1151,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
      */
     @Override
     public Iterator<E> iterator() {
-        return new LinkedBlockingDeque.Itr();
+        return new Itr();
     }
 
     /**
@@ -1159,7 +1159,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
      */
     @Override
     public Iterator<E> descendingIterator() {
-        return new LinkedBlockingDeque.DescendingItr();
+        return new DescendingItr();
     }
 
     /**
@@ -1169,7 +1169,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
         /**
          * The next node to return in next()
          */
-        LinkedBlockingDeque.Node<E> next;
+        Node<E> next;
 
         /**
          * nextItem holds on to item fields because once we claim that
@@ -1183,14 +1183,14 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
          * Node returned by most recent call to next. Needed by remove.
          * Reset to null if this element is deleted by a call to remove.
          */
-        private LinkedBlockingDeque.Node<E> lastRet;
+        private Node<E> lastRet;
 
         /**
          * Obtain the first node to be returned by the iterator.
          *
          * @return first node
          */
-        abstract LinkedBlockingDeque.Node<E> firstNode();
+        abstract Node<E> firstNode();
 
         /**
          * For a given node, obtain the next node to be returned by the
@@ -1200,7 +1200,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
          *
          * @return next node
          */
-        abstract LinkedBlockingDeque.Node<E> nextNode(LinkedBlockingDeque.Node<E> n);
+        abstract Node<E> nextNode(Node<E> n);
 
         /**
          * Create a new iterator. Sets the initial position.
@@ -1223,11 +1223,11 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
          * @param n node whose successor is sought
          * @return successor node
          */
-        private LinkedBlockingDeque.Node<E> succ(LinkedBlockingDeque.Node<E> n) {
+        private Node<E> succ(Node<E> n) {
             // Chains of deleted nodes ending in null or self-links
             // are possible if multiple interior nodes are removed.
             for (;;) {
-                LinkedBlockingDeque.Node<E> s = nextNode(n);
+                Node<E> s = nextNode(n);
                 if (s == null)
                     return null;
                 else if (s.item != null)
@@ -1271,7 +1271,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
 
         @Override
         public void remove() {
-            LinkedBlockingDeque.Node<E> n = lastRet;
+            Node<E> n = lastRet;
             if (n == null) {
                 throw new IllegalStateException();
             }
@@ -1288,19 +1288,19 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
     }
 
     /** Forward iterator */
-    private class Itr extends LinkedBlockingDeque.AbstractItr {
+    private class Itr extends AbstractItr {
         @Override
-        LinkedBlockingDeque.Node<E> firstNode() { return first; }
+        Node<E> firstNode() { return first; }
         @Override
-        LinkedBlockingDeque.Node<E> nextNode(LinkedBlockingDeque.Node<E> n) { return n.next; }
+        Node<E> nextNode(Node<E> n) { return n.next; }
     }
 
     /** Descending iterator */
-    private class DescendingItr extends LinkedBlockingDeque.AbstractItr {
+    private class DescendingItr extends AbstractItr {
         @Override
-        LinkedBlockingDeque.Node<E> firstNode() { return last; }
+        Node<E> firstNode() { return last; }
         @Override
-        LinkedBlockingDeque.Node<E> nextNode(LinkedBlockingDeque.Node<E> n) { return n.prev; }
+        Node<E> nextNode(Node<E> n) { return n.prev; }
     }
 
     /**
@@ -1317,7 +1317,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
             // Write out capacity and any hidden stuff
             s.defaultWriteObject();
             // Write out all elements in the proper order.
-            for (LinkedBlockingDeque.Node<E> p = first; p != null; p = p.next) {
+            for (Node<E> p = first; p != null; p = p.next) {
                 s.writeObject(p.item);
             }
             // Use trailing null as sentinel

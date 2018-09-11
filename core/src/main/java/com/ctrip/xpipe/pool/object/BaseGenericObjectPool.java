@@ -671,7 +671,7 @@ public abstract class BaseGenericObjectPool<T> {
                 evictionIterator = null;
             }
             if (delay > 0) {
-                evictor = new org.apache.commons.pool2.impl.BaseGenericObjectPool.Evictor();
+                evictor = new Evictor();
                 EvictionTimer.schedule(evictor, delay, delay);
             }
         }
