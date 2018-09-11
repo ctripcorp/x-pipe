@@ -32,7 +32,7 @@ public class HickwallMetric implements MetricProxy {
 	
 	private HickwallConfig config = new HickwallConfig();
 	
-	private BlockingQueue<ArrayList<DataPoint>> datas;
+	private BlockingQueue<DataPoint> datas;
 
 	private HickwallClient client;
 	
@@ -53,12 +53,8 @@ public class HickwallMetric implements MetricProxy {
 				ArrayList<DataPoint> data = null;
 				while (!Thread.currentThread().isInterrupted()) {
 					if (data == null) {
-						try {
-							data = datas.take();
-						} catch (InterruptedException e) {
-							Thread.currentThread().interrupt();
-							break;
-						}
+						data = new ArrayList<>();
+						datas.drainTo(data, 100);
 					}
 
 					try {
@@ -103,33 +99,27 @@ public class HickwallMetric implements MetricProxy {
 	}
 	
 	@Override
-	public void writeBinMultiDataPoint(List<MetricData> rawData) throws MetricProxyException {
-		ArrayList<DataPoint> bmp = convertToHickwallFormat(rawData);
+	public void writeBinMultiDataPoint(MetricData rawData) throws MetricProxyException {
+		DataPoint bmp = convertToHickwallFormat(rawData);
 
 		if (!datas.offer(bmp)) {
 			logger.error("Hickwall queue overflow, will drop data");
 		}
 	}
 	
-	private ArrayList<DataPoint> convertToHickwallFormat(List<MetricData> datas) {
+	private DataPoint convertToHickwallFormat(MetricData md) {
 
-		ArrayList<DataPoint> dps = new ArrayList<>(datas.size());
-		
-		for(MetricData md : datas) {
-			DataPoint dp = new DataPoint(metricName(md), (double) md.getValue(), md.getTimestampMilli() * 1000000);
-			// cluster.shard.10_2_2_2_6379.10_28_142_142 (cluster.shard.redis+port.console)
-			dp.setEndpoint(getEndpoint(md));
-			dp.getMeta().put("measurement", "fx.xpipe.delay");
-			dp.getTag().put("cluster", md.getClusterName());
-			dp.getTag().put("shard", md.getShardName());
-			dp.getTag().put("address", md.getHostPort().toString());
-			dp.getTag().put("srcaddr", getLocalIP());
-			dp.getTag().put("app", "fx");
+		DataPoint dp = new DataPoint(metricName(md), (double) md.getValue(), md.getTimestampMilli() * 1000000);
+		// cluster.shard.10_2_2_2_6379.10_28_142_142 (cluster.shard.redis+port.console)
+		dp.setEndpoint(getEndpoint(md));
+		dp.getMeta().put("measurement", "fx.xpipe.delay");
+		dp.getTag().put("cluster", md.getClusterName());
+		dp.getTag().put("shard", md.getShardName());
+		dp.getTag().put("address", md.getHostPort().toString());
+		dp.getTag().put("srcaddr", getLocalIP());
+		dp.getTag().put("app", "fx");
 
-			dps.add(dp);
-		}
-		
-		return dps;
+		return dp;
 	}
 
 	private String metricName(MetricData md) {
