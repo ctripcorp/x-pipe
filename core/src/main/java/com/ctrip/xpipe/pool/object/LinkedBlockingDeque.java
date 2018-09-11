@@ -1232,7 +1232,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
                     return null;
                 else if (s.item != null)
                     return s;
-                else if (s == n)
+                else if (s.equals(n))
                     return firstNode();
                 else
                     n = s;
