@@ -80,9 +80,9 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 
 	public final void setKeyPooConfig(int minIdlePerKey, long softMinEvictableIdleTimeMillis, long minEvictableIdleTimeMillis, long timeBetweenEvictionRunsMillis) {
 
-		if(objectPool instanceof GenericKeyedObjectPool){
+		if(objectPool instanceof SimpleReturnPolicyKeyedObjectPool){
 			logger.info("[setKeyPooConfig]{}, {}, {}, {}", minIdlePerKey, softMinEvictableIdleTimeMillis, minEvictableIdleTimeMillis, timeBetweenEvictionRunsMillis);
-			GenericKeyedObjectPool genericKeyedObjectPool = (GenericKeyedObjectPool) objectPool;
+			SimpleReturnPolicyKeyedObjectPool genericKeyedObjectPool = (SimpleReturnPolicyKeyedObjectPool) objectPool;
 			genericKeyedObjectPool.setMinIdlePerKey(minIdlePerKey);
 			genericKeyedObjectPool.setSoftMinEvictableIdleTimeMillis(softMinEvictableIdleTimeMillis);
 			genericKeyedObjectPool.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
