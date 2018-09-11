@@ -41,7 +41,7 @@ public class HickwallMetric implements MetricLog {
         metricData.setValue(delayNanos);
 
         try {
-            metricProxy.writeBinMultiDataPoint(Lists.newArrayList(metricData));
+            metricProxy.writeBinMultiDataPoint(metricData);
         } catch (MetricProxyException e) {
             logger.error("[log]", e);
         }
