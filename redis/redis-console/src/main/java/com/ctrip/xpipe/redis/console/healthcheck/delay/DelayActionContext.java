@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
  */
 public class DelayActionContext extends AbstractActionContext<Long> {
 
-    public DelayActionContext(RedisHealthCheckInstance instance, Long delayNano) {
-        super(instance, delayNano);
+    public DelayActionContext(RedisHealthCheckInstance instance, Long delay) {
+        super(instance, delay);
     }
 }

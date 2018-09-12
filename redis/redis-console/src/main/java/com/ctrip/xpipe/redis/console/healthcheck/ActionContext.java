@@ -11,5 +11,5 @@ public interface ActionContext<C> {
 
     C getResult();
 
-    long nanoTimestamp();
+    long getRecvTimeNano();
 }
