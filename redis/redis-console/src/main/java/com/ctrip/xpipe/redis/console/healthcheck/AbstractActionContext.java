@@ -1,5 +1,9 @@
 package com.ctrip.xpipe.redis.console.healthcheck;
 
+import com.ctrip.xpipe.utils.ObjectUtils;
+
+import java.util.Objects;
+
 /**
  * @author chen.zhu
  * <p>
@@ -9,14 +13,14 @@ public class AbstractActionContext<C> implements ActionContext<C> {
 
     protected C c;
 
-    private long nanoTimestamp;
+    private long recvTime;
 
     protected RedisHealthCheckInstance instance;
 
     public AbstractActionContext(RedisHealthCheckInstance instance, C c) {
         this.instance = instance;
         this.c = c;
-        this.nanoTimestamp = System.nanoTime();
+        this.recvTime = System.nanoTime();
     }
 
     @Override
@@ -30,7 +34,22 @@ public class AbstractActionContext<C> implements ActionContext<C> {
     }
 
     @Override
-    public long nanoTimestamp() {
-        return nanoTimestamp;
+    public long getRecvTimeNano() {
+        return recvTime;
+    }
+
+    @Override
+    public int hashCode() {
+        return ObjectUtils.hashCode(instance, c);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AbstractActionContext<?> that = (AbstractActionContext<?>) o;
+        return recvTime == that.recvTime &&
+                Objects.equals(c, that.c) &&
+                Objects.equals(instance, that.instance);
     }
 }
