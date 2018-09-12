@@ -54,11 +54,11 @@ public class HickwallMetric implements MetricProxy {
 
 		ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
 				XpipeThreadFactory.create("HickwallSender", true));
+		tryUntilConnected();
 
 		scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 			@Override
 			protected void doRun() throws Exception {
-				tryUntilConnected();
 
 				while(datas.size() >= NUM_MESSAGES_PER_SEND) {
 					if (dataToSend == null) {
