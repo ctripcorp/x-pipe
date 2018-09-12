@@ -44,11 +44,11 @@ public class CachedNettyClientPool implements SimpleObjectPool<NettyClient> {
 
     @Override
     public void returnObject(NettyClient client) throws ReturnObjectException {
-        if(semaphore.availablePermits() == permits) {
+        if(objRef.get().equals(client)) {
+            semaphore.release();
+        } else {
             objectPool.returnObject(client);
-            return;
         }
-        semaphore.release();
     }
 
     private NettyClient doBorrowObject () throws BorrowObjectException {
