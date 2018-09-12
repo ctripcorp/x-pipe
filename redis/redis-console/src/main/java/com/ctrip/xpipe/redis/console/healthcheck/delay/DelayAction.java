@@ -91,8 +91,8 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
     }
 
     private boolean isExpired() {
-        long recvMilli = TimeUnit.NANOSECONDS.toMillis(context.get().getRecvTimeNano());
-        return System.currentTimeMillis() - recvMilli >= expireInterval;
+        long lastDelay = System.nanoTime() - context.get().getRecvTimeNano();
+        return TimeUnit.NANOSECONDS.toMillis(lastDelay) >= expireInterval;
     }
 
 }
