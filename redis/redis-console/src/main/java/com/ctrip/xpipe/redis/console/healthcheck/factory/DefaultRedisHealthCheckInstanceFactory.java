@@ -69,7 +69,7 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
         defaultHealthCheckConfig = new DefaultHealthCheckConfig(consoleConfig);
         proxyEnabledHealthCheckConfig = new ProxyEnabledHealthCheckConfig(consoleConfig);
         executors = DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("RedisHealthCheckInstance-").createExecutorService();
-        scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create("RedisHealthCheckInstance-Scheduled-"));
+        scheduled = Executors.newScheduledThreadPool(Math.min(OsUtils.getCpuCount(), 4), XpipeThreadFactory.create("RedisHealthCheckInstance-Scheduled-"));
     }
 
     @Override
