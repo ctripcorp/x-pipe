@@ -73,8 +73,8 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     @Override
     public void removeListener(HealthCheckActionListener listener) {
+        listener.stopWatch(this);
         listeners.remove(listener);
-
     }
 
     @Override
@@ -108,12 +108,6 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     private int getCheckTimeInterval(int baseInterval) {
         return baseInterval + (((Math.abs(random.nextInt())) % DELTA));
-    }
-
-    protected int getWarmupTime() {
-        int base = Math.min(getBaseCheckInterval(), 1000);
-        int result = (Math.abs(random.nextInt()) % base);
-        return result == 0 ? DELTA : (result == base ? result - DELTA : result);
     }
 
     protected abstract void doScheduledTask();
