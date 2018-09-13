@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
+import com.ctrip.xpipe.api.lifecycle.Startable;
+import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 
 /**
@@ -7,7 +9,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
  * <p>
  * Aug 27, 2018
  */
-public interface DcMetaChangeManager {
+public interface DcMetaChangeManager extends Startable, Stoppable {
 
     void compare(DcMeta future);
 

@@ -66,6 +66,14 @@ public class DelayPingActionListener implements HealthCheckActionListener<Action
         return t instanceof DelayActionContext || t instanceof PingActionContext;
     }
 
+    @Override
+    public void stopWatch(RedisHealthCheckInstance instance) {
+        HealthStatus healthStatus = allHealthStatus.remove(instance);
+        if(healthStatus != null) {
+            healthStatus.stop();
+        }
+    }
+
     public HEALTH_STATE getState(HostPort hostPort) {
         try {
             return allHealthStatus.get(instanceManager.findRedisHealthCheckInstance(hostPort)).getState();

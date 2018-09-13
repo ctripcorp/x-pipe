@@ -26,10 +26,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * @author chen.zhu
@@ -70,6 +72,14 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
         proxyEnabledHealthCheckConfig = new ProxyEnabledHealthCheckConfig(consoleConfig);
         executors = DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("RedisHealthCheckInstance-").createExecutorService();
         scheduled = Executors.newScheduledThreadPool(Math.min(OsUtils.getCpuCount(), 4), XpipeThreadFactory.create("RedisHealthCheckInstance-Scheduled-"));
+        ((ScheduledThreadPoolExecutor)scheduled).setRemoveOnCancelPolicy(true);
+        ((ScheduledThreadPoolExecutor)scheduled).setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        scheduled.shutdownNow();
+        executors.shutdownNow();
     }
 
     @Override

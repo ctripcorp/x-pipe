@@ -10,4 +10,9 @@ import com.ctrip.xpipe.api.lifecycle.Stoppable;
  */
 public interface MetaChangeManager extends Startable, Stoppable {
 
+    DcMetaChangeManager getOrCreate(String dcId);
+
+    void ignore(String dcId);
+
+    void startIfPossible(String dcId);
 }

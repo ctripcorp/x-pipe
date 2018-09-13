@@ -59,6 +59,9 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
         if(future != null) {
             future.cancel(true);
         }
+        for(HealthCheckActionListener listener : listeners) {
+            removeListener(listener);
+        }
         instance.unregister(this);
         super.doStop();
     }
@@ -71,6 +74,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     @Override
     public void removeListener(HealthCheckActionListener listener) {
         listeners.remove(listener);
+
     }
 
     @Override

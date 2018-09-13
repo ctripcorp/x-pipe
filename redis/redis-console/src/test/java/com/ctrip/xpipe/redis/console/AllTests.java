@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.console.health.sentinel.SentinelSamplePlanTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisHealthCheckInstanceFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
@@ -112,6 +113,7 @@ import org.junit.runners.Suite.SuiteClasses;
         HealthCheckEndpointFactoryTest.class,
         DefaultHealthCheckEndpointFactoryTest.class,
         DefaultRedisHealthCheckInstanceFactoryTest.class,
+        DcIgnoredConfigListenerTest.class,
 })
 public class AllTests {
 
