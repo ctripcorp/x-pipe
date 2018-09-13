@@ -3,10 +3,10 @@ package com.ctrip.xpipe.redis.console.healthcheck.delay;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.utils.ServicesUtil;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -51,7 +51,7 @@ public class MetricDelayListener implements HealthCheckActionListener<DelayActio
     }
 
     @Override
-    public void stopWatch(RedisHealthCheckInstance instance) {
+    public void stopWatch(HealthCheckAction action) {
         //do nothing
     }
 }

@@ -3,12 +3,12 @@ package com.ctrip.xpipe.redis.console.healthcheck.ping;
 import com.ctrip.xpipe.redis.console.health.PingCallback;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -67,7 +67,7 @@ public class PingActionTest extends AbstractRedisTest {
             }
 
             @Override
-            public void stopWatch(RedisHealthCheckInstance instance) {
+            public void stopWatch(HealthCheckAction action) {
 
             }
         });

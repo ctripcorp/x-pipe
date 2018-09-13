@@ -55,7 +55,7 @@ public class CachedNettyClientPool implements SimpleObjectPool<NettyClient> {
         if(objRef.get() == null) {
             synchronized (this) {
                 if(objRef.get() == null) {
-                    NettyClient client =objectPool.borrowObject();
+                    NettyClient client = objectPool.borrowObject();
                     client.channel().closeFuture().addListener(new ChannelFutureListener() {
                         @Override
                         public void operationComplete(ChannelFuture future) throws Exception {

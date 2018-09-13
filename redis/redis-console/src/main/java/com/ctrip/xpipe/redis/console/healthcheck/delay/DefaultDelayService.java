@@ -1,16 +1,11 @@
 package com.ctrip.xpipe.redis.console.healthcheck.delay;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +40,7 @@ public class DefaultDelayService implements DelayService, HealthCheckActionListe
     }
 
     @Override
-    public void stopWatch(RedisHealthCheckInstance instance) {
-        hostPort2Delay.remove(instance.getRedisInstanceInfo().getHostPort());
+    public void stopWatch(HealthCheckAction action) {
+        hostPort2Delay.remove(action.getActionInstance().getRedisInstanceInfo().getHostPort());
     }
 }

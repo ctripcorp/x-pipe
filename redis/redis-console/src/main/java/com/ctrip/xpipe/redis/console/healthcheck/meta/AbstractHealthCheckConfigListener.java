@@ -35,7 +35,7 @@ public abstract class AbstractHealthCheckConfigListener<T> implements ConsoleCon
     public void onChange(String key, String oldValue, String newValue) {
         T oldVal = convert(oldValue);
         T newVal = convert(newValue);
-        logger.info("[onChange] key: {}, oldValue: {}, newValue: {}", oldVal, newVal);
+        logger.info("[onChange] key: {}, oldValue: {}, newValue: {}", key, oldVal, newVal);
         doOnChange(oldVal, newVal);
     }
 

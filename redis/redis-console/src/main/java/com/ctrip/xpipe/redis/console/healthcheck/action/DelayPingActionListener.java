@@ -5,10 +5,7 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingActionContext;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
@@ -67,8 +64,8 @@ public class DelayPingActionListener implements HealthCheckActionListener<Action
     }
 
     @Override
-    public void stopWatch(RedisHealthCheckInstance instance) {
-        HealthStatus healthStatus = allHealthStatus.remove(instance);
+    public void stopWatch(HealthCheckAction action) {
+        HealthStatus healthStatus = allHealthStatus.remove(action.getActionInstance());
         if(healthStatus != null) {
             healthStatus.stop();
         }

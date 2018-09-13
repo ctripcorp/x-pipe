@@ -106,6 +106,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
 
     @Override
     public void startIfPossible(String dcId) {
+        logger.info("[startIfPossible] dcId: {}", dcId);
         if(metaCache.getXpipeMeta().findDc(dcId) == null) {
             logger.info("[startIfPossible] not found dcId: {}", dcId);
             return;

@@ -100,9 +100,10 @@ public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComp
     @Override
     public void start() {
         if(started.compareAndSet(false, true)) {
-
+            logger.info("[start] {}", current.getId());
             if (current == null) {
                 logger.error("[start] cannot start without a DcMeta");
+                return;
             }
             for (ClusterMeta cluster : current.getClusters().values()) {
                 visitAdded(cluster);
@@ -113,10 +114,10 @@ public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComp
     @Override
     public void stop() {
         if(started.compareAndSet(true, false)) {
-            for (ClusterMeta cluster : current.getClusters().values()) {
+            logger.info("[stop] {}", current.getId());
+            for(ClusterMeta cluster : current.getClusters().values()) {
                 visitRemoved(cluster);
             }
-            current = null;
         }
     }
 }

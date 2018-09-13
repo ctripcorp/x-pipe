@@ -11,5 +11,5 @@ public interface HealthCheckActionListener<T extends ActionContext> {
 
     boolean worksfor(ActionContext t);
 
-    void stopWatch(RedisHealthCheckInstance instance);
+    void stopWatch(HealthCheckAction action);
 }

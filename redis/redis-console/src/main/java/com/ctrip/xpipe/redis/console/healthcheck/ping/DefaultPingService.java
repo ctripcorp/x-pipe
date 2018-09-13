@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.ping;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +46,7 @@ public class DefaultPingService implements PingService, HealthCheckActionListene
     }
 
     @Override
-    public void stopWatch(RedisHealthCheckInstance instance) {
-        hostPort2LastPong.remove(instance.getRedisInstanceInfo().getHostPort());
+    public void stopWatch(HealthCheckAction action) {
+        hostPort2LastPong.remove(action.getActionInstance().getRedisInstanceInfo().getHostPort());
     }
 }
