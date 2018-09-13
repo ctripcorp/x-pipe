@@ -84,4 +84,6 @@ public interface ConsoleConfig extends CoreConfig {
 	Set<Pair<String, String>> getDelayWontMarkDownClusters();
 
 	float getPingDownMajorityRatio();
+
+	void register(ConsoleConfigListener listener);
 }

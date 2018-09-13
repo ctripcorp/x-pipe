@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.api.lifecycle.LifecycleState;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.lifecycle.DefaultLifecycleState;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
@@ -11,6 +13,8 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class DefaultMetaChangeManager implements MetaChangeManager {
 
+    private static final Logger logger = LoggerFactory.getLogger(DefaultMetaChangeManager.class);
+
     @Autowired
     private HealthCheckInstanceManager instanceManager;
 
@@ -46,7 +52,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
     private ConcurrentMap<String, DcMetaChangeManager> dcMetaChangeManagers = Maps.newConcurrentMap();
 
     @Override
-    public void start() throws Exception {
+    public void start() {
         int interval = consoleConfig.getRedisReplicationHealthCheckInterval();
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
@@ -57,7 +63,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         if(future != null) {
             future.cancel(true);
         }
@@ -66,20 +72,50 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
     private void checkDcMetaChange() {
         XpipeMeta meta = metaCache.getXpipeMeta();
         for(Map.Entry<String, DcMeta> entry : meta.getDcs().entrySet()) {
-            String key = entry.getKey();
-            if(consoleConfig.getIgnoredHealthCheckDc().contains(key)) {
+            String dcId = entry.getKey();
+            if(consoleConfig.getIgnoredHealthCheckDc().contains(dcId)) {
+                ignore(dcId);
                 continue;
             }
-            getOrCreate(key).compare(entry.getValue());
+            getOrCreate(dcId).compare(entry.getValue());
         }
     }
 
-    private DcMetaChangeManager getOrCreate(String key) {
-        return MapUtils.getOrCreate(dcMetaChangeManagers, key, new ObjectFactory<DcMetaChangeManager>() {
+    @Override
+    public DcMetaChangeManager getOrCreate(String dcId) {
+        return MapUtils.getOrCreate(dcMetaChangeManagers, dcId, new ObjectFactory<DcMetaChangeManager>() {
                     @Override
                     public DcMetaChangeManager create() {
                         return new DefaultDcMetaChangeManager(instanceManager);
                     }
                 });
+    }
+
+    @Override
+    public void ignore(String dcId) {
+        if(!dcMetaChangeManagers.containsKey(dcId)) {
+            logger.info("[ignore] not found dcId: {}", dcId);
+            return;
+        }
+        try {
+            dcMetaChangeManagers.get(dcId).stop();
+        } catch (Exception e) {
+            logger.error("[ignore]", e);
+        }
+    }
+
+    @Override
+    public void startIfPossible(String dcId) {
+        if(metaCache.getXpipeMeta().findDc(dcId) == null) {
+            logger.info("[startIfPossible] not found dcId: {}", dcId);
+            return;
+        }
+        try {
+            DcMetaChangeManager manager = getOrCreate(dcId);
+            manager.compare(metaCache.getXpipeMeta().findDc(dcId));
+            manager.start();
+        } catch (Exception e) {
+            logger.error("[start]", e);
+        }
     }
 }

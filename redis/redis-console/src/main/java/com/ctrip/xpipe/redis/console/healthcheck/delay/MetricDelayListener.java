@@ -31,7 +31,7 @@ public class MetricDelayListener implements HealthCheckActionListener<DelayActio
         MetricData data = new MetricData(TYPE, instance.getRedisInstanceInfo().getClusterId(),
                 instance.getRedisInstanceInfo().getShardId());
         data.setValue(context.getResult() / 1000);
-        data.setTimestampMilli(System.currentTimeMillis());
+        data.setTimestampMilli(context.getRecvTimeMilli());
         data.setHostPort(instance.getRedisInstanceInfo().getHostPort());
         return data;
     }
@@ -48,5 +48,10 @@ public class MetricDelayListener implements HealthCheckActionListener<DelayActio
     @Override
     public boolean worksfor(ActionContext t) {
         return t instanceof DelayActionContext;
+    }
+
+    @Override
+    public void stopWatch(RedisHealthCheckInstance instance) {
+        //do nothing
     }
 }

@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -28,6 +29,8 @@ public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComp
     private DcMeta current;
 
     private HealthCheckInstanceManager instanceManager;
+
+    private AtomicBoolean started = new AtomicBoolean(true);
 
     public DefaultDcMetaChangeManager(HealthCheckInstanceManager instanceManager) {
         this.instanceManager = instanceManager;
@@ -68,6 +71,7 @@ public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComp
     private Consumer<RedisMeta> removeConsumer = new Consumer<RedisMeta>() {
         @Override
         public void accept(RedisMeta redisMeta) {
+            logger.info("[Redis-Deleted] {}", redisMeta);
             instanceManager.remove(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
         }
     };
@@ -75,6 +79,7 @@ public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComp
     private Consumer<RedisMeta> addConsumer = new Consumer<RedisMeta>() {
         @Override
         public void accept(RedisMeta redisMeta) {
+            logger.info("[Redis-Add] {}", redisMeta);
             RedisHealthCheckInstance instance = instanceManager.getOrCreate(redisMeta);
             try {
                 LifecycleHelper.startIfPossible(instance);
@@ -87,7 +92,31 @@ public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComp
     private Consumer<RedisMeta> redisChanged = new Consumer<RedisMeta>() {
         @Override
         public void accept(RedisMeta redisMeta) {
+            logger.info("[Redis-Change] {}, master: {}", redisMeta, redisMeta.isMaster());
             instanceManager.getOrCreate(redisMeta).getRedisInstanceInfo().isMaster(redisMeta.isMaster());
         }
     };
+
+    @Override
+    public void start() {
+        if(started.compareAndSet(false, true)) {
+
+            if (current == null) {
+                logger.error("[start] cannot start without a DcMeta");
+            }
+            for (ClusterMeta cluster : current.getClusters().values()) {
+                visitAdded(cluster);
+            }
+        }
+    }
+
+    @Override
+    public void stop() {
+        if(started.compareAndSet(true, false)) {
+            for (ClusterMeta cluster : current.getClusters().values()) {
+                visitRemoved(cluster);
+            }
+            current = null;
+        }
+    }
 }

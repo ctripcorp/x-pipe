@@ -43,4 +43,9 @@ public class DefaultDelayService implements DelayService, HealthCheckActionListe
     public boolean worksfor(ActionContext context) {
         return context instanceof DelayActionContext;
     }
+
+    @Override
+    public void stopWatch(RedisHealthCheckInstance instance) {
+        hostPort2Delay.remove(instance.getRedisInstanceInfo().getHostPort());
+    }
 }

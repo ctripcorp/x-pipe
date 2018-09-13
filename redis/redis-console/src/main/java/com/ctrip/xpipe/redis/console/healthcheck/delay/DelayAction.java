@@ -10,7 +10,6 @@ import com.ctrip.xpipe.utils.DateTimeUtils;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -59,7 +58,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
         }
         if(isExpired()) {
             logger.warn("[expire][{}] last update time: {}", instance.getRedisInstanceInfo().getHostPort(),
-                    DateTimeUtils.timeAsString(TimeUnit.NANOSECONDS.toMillis(context.get().getRecvTimeNano())));
+                    DateTimeUtils.timeAsString(context.get().getRecvTimeMilli()));
 
             long result = SAMPLE_LOST_AND_NO_PONG;
             if(pingService.isRedisAlive(instance.getRedisInstanceInfo().getHostPort())) {
@@ -91,8 +90,8 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
     }
 
     private boolean isExpired() {
-        long lastDelay = System.nanoTime() - context.get().getRecvTimeNano();
-        return TimeUnit.NANOSECONDS.toMillis(lastDelay) >= expireInterval;
+        long lastDelay = System.currentTimeMillis() - context.get().getRecvTimeMilli();
+        return lastDelay >= expireInterval;
     }
 
 }

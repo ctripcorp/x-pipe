@@ -13,14 +13,14 @@ public class AbstractActionContext<C> implements ActionContext<C> {
 
     protected C c;
 
-    private long recvTime;
+    private long recvTimeMilli;
 
     protected RedisHealthCheckInstance instance;
 
     public AbstractActionContext(RedisHealthCheckInstance instance, C c) {
         this.instance = instance;
         this.c = c;
-        this.recvTime = System.nanoTime();
+        this.recvTimeMilli = System.currentTimeMillis();
     }
 
     @Override
@@ -34,8 +34,8 @@ public class AbstractActionContext<C> implements ActionContext<C> {
     }
 
     @Override
-    public long getRecvTimeNano() {
-        return recvTime;
+    public long getRecvTimeMilli() {
+        return recvTimeMilli;
     }
 
     @Override
@@ -48,7 +48,7 @@ public class AbstractActionContext<C> implements ActionContext<C> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AbstractActionContext<?> that = (AbstractActionContext<?>) o;
-        return recvTime == that.recvTime &&
+        return recvTimeMilli == that.recvTimeMilli &&
                 Objects.equals(c, that.c) &&
                 Objects.equals(instance, that.instance);
     }

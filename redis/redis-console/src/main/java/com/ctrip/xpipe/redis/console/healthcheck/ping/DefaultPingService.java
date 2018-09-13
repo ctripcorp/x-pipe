@@ -47,4 +47,9 @@ public class DefaultPingService implements PingService, HealthCheckActionListene
     public boolean worksfor(ActionContext t) {
         return t instanceof PingActionContext;
     }
+
+    @Override
+    public void stopWatch(RedisHealthCheckInstance instance) {
+        hostPort2LastPong.remove(instance.getRedisInstanceInfo().getHostPort());
+    }
 }

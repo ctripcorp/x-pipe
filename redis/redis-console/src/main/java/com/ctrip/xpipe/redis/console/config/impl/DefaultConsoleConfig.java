@@ -2,16 +2,15 @@ package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author shyin
@@ -62,13 +61,15 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     public static final String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
 
-    protected static final String KEY_DC_CLUSTER_WONT_MARK_DOWN = "dc.cluster.pairs.wont.mark.down";
+    public static final String KEY_DC_CLUSTER_WONT_MARK_DOWN = "dc.cluster.pairs.wont.mark.down";
 
     private static final String KEY_HEALTHY_DELAY_THROUGH_PROXY = "console.healthy.delay.through.proxy";
 
     private static final String KEY_DOWN_AFTER_CHECK_NUMS_THROUGH_PROXY = "console.down.after.checknums.through.proxy";
 
     private static final String KEY_PING_DOWN_MAJORITY_RATIO = "console.ping.down.majority.ratio";
+
+    private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
     public int getAlertSystemRecoverMinute() {
@@ -277,6 +278,24 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
             return Float.parseFloat(getProperty(KEY_PING_DOWN_MAJORITY_RATIO, "0.6"));
         } catch (Exception e) {
             return 0.6f;
+        }
+    }
+
+    @Override
+    public void onChange(String key, String oldValue, String newValue) {
+        if(!listeners.containsKey(key)) {
+            return;
+        }
+        for(ConsoleConfigListener listener : listeners.get(key)) {
+            listener.onChange(key, oldValue, newValue);
+        }
+    }
+
+    @Override
+    public void register(ConsoleConfigListener consoleConfigListener) {
+        for(String key : consoleConfigListener.supportsKeys()) {
+            listeners.putIfAbsent(key, new LinkedList<>());
+            listeners.get(key).add(consoleConfigListener);
         }
     }
 }
