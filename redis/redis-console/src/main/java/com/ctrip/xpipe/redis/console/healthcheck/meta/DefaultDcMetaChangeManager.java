@@ -90,11 +90,11 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     @Override
     protected void doStart() {
-        logger.info("[start] {}", current.getId());
         if (current == null) {
             logger.error("[start] cannot start without a DcMeta");
             return;
         }
+        logger.info("[start] {}", current.getId());
         for (ClusterMeta cluster : current.getClusters().values()) {
             visitAdded(cluster);
         }
