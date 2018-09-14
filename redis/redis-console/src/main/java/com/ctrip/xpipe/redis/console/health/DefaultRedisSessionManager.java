@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
@@ -12,7 +11,6 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 
-import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.REQUEST_RESPONSE_NETTY_CLIENT_POOL;
-import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.SUBSCRIBE_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.KEYED_NETTY_CLIENT_POOL;
 
 /**
  * @author marsqing
@@ -49,11 +46,8 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Autowired
 	private HealthCheckEndpointFactory endpointFactory;
 
-	@Resource(name = SUBSCRIBE_NETTY_CLIENT_POOL)
-	private XpipeNettyClientKeyedObjectPool subscrNettyClientPool;
-
-	@Resource(name = REQUEST_RESPONSE_NETTY_CLIENT_POOL)
-	private XpipeNettyClientKeyedObjectPool reqResNettyClientPool;
+	@Resource(name = KEYED_NETTY_CLIENT_POOL)
+	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
 	@Resource(name = ConsoleContextConfig.REDIS_COMMAND_EXECUTOR)
 	private ScheduledExecutorService scheduled;
@@ -91,7 +85,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			synchronized (this) {
 				session = sessions.get(endpoint);
 				if (session == null) {
-					session = new RedisSession(endpoint, scheduled, reqResNettyClientPool, subscrNettyClientPool);
+					session = new RedisSession(endpoint, scheduled, keyedObjectPool);
 					sessions.put(endpoint, session);
 				}
 			}
@@ -176,13 +170,8 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		closeAllConnections();
 	}
 
-	public DefaultRedisSessionManager setSubscrNettyClientPool(XpipeNettyClientKeyedObjectPool subscrNettyClientPool) {
-		this.subscrNettyClientPool = subscrNettyClientPool;
-		return this;
-	}
-
-	public DefaultRedisSessionManager setReqResNettyClientPool(XpipeNettyClientKeyedObjectPool reqResNettyClientPool) {
-		this.reqResNettyClientPool = reqResNettyClientPool;
+	public DefaultRedisSessionManager setKeyedObjectPool(XpipeNettyClientKeyedObjectPool keyedObjectPool) {
+		this.keyedObjectPool = keyedObjectPool;
 		return this;
 	}
 

@@ -4,7 +4,10 @@ import java.net.InetSocketAddress;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.ObjectPoolException;
+import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.apache.commons.pool2.ObjectPool;
+import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
@@ -20,7 +23,7 @@ import com.ctrip.xpipe.netty.commands.NettyClientFactory;
 public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObjectPool<NettyClient>{
 	
 	private ObjectPool<NettyClient> objectPool;
-	private NettyClientFactory factory; 
+	private PooledObjectFactory<NettyClient> factory;
 	private GenericObjectPoolConfig  config;
 	private Endpoint target;
 
@@ -32,12 +35,20 @@ public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObj
 		this.target = target;
 		this.config = config;
 	}
-	
+
+	public XpipeNettyClientPool(Endpoint target, GenericObjectPoolConfig config, PooledObjectFactory<NettyClient> factory) {
+		this.factory = factory;
+		this.config = config;
+		this.target = target;
+	}
+
 	@Override
 	protected void doInitialize() throws Exception {
-		
-		this.factory = new NettyClientFactory(target);
-		this.factory.start();
+		if(factory == null) {
+			NettyClientFactory factory = new NettyClientFactory(target);
+			factory.start();
+			this.factory = factory;
+		}
 		
 		GenericObjectPool<NettyClient> genericObjectPool = new GenericObjectPool<>(factory, config);
 		genericObjectPool.setTestOnBorrow(true);
@@ -67,8 +78,9 @@ public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObj
 	
 	@Override
 	protected void doDispose() throws Exception {
-		
-		this.factory.stop();
+		if(this.factory instanceof NettyClientFactory) {
+			((NettyClientFactory)this.factory).stop();
+		}
 		objectPool.close();
 	}
 
@@ -84,5 +96,10 @@ public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObj
 	@Override
 	public String desc() {
 		return factory.toString();
+	}
+
+	@VisibleForTesting
+	public ObjectPool getObjectPool() {
+		return objectPool;
 	}
 }

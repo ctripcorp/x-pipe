@@ -45,19 +45,15 @@ public class RedisSession {
 
     private ScheduledExecutorService scheduled;
 
-    private SimpleObjectPool<NettyClient> requestResponseCommandPool;
-
-    private SimpleObjectPool<NettyClient> subscribePool;
+    private SimpleObjectPool<NettyClient> clientPool;
 
     private int commandTimeOut = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
     public RedisSession(Endpoint endpoint, ScheduledExecutorService scheduled,
-                        XpipeNettyClientKeyedObjectPool requestResponseNettyClientPool,
-                        XpipeNettyClientKeyedObjectPool subscribeNettyClientPool) {
+                        XpipeNettyClientKeyedObjectPool keyedObjectPool) {
         this.endpoint = endpoint;
         this.scheduled = scheduled;
-        this.requestResponseCommandPool = new CachedNettyClientPool(requestResponseNettyClientPool.getKeyPool(endpoint), 2);
-        this.subscribePool = subscribeNettyClientPool.getKeyPool(endpoint);
+        this.clientPool = keyedObjectPool.getKeyPool(endpoint);
         if(endpoint instanceof ProxyEnabled) {
             commandTimeOut = AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
         }
@@ -99,7 +95,7 @@ public class RedisSession {
             if(pubSubConnectionWrapper != null) {
                 pubSubConnectionWrapper.closeAndClean();
             }
-            SubscribeCommand command = new SubscribeCommand(subscribePool, scheduled, channel);
+            SubscribeCommand command = new SubscribeCommand(clientPool, scheduled, channel);
             silentCommand(command);
             command.future().addListener(new CommandFutureListener<Object>() {
                 @Override
@@ -116,7 +112,7 @@ public class RedisSession {
     }
 
     public synchronized void publish(String channel, String message) {
-        PublishCommand pubCommand = new PublishCommand(requestResponseCommandPool, scheduled, channel, message);
+        PublishCommand pubCommand = new PublishCommand(clientPool, scheduled, channel, message);
         silentCommand(pubCommand);
 
         pubCommand.execute().addListener(new CommandFutureListener<Object>() {
@@ -131,7 +127,7 @@ public class RedisSession {
 
     public CommandFuture<String> ping(final PingCallback callback) {
         // if connect has been established
-        PingCommand pingCommand = new PingCommand(requestResponseCommandPool, scheduled);
+        PingCommand pingCommand = new PingCommand(clientPool, scheduled);
         silentCommand(pingCommand);
 
         pingCommand.execute().addListener(new CommandFutureListener<String>() {
@@ -148,7 +144,7 @@ public class RedisSession {
     }
 
     public void role(RollCallback callback) {
-        RoleCommand command = new RoleCommand(requestResponseCommandPool, scheduled);
+        RoleCommand command = new RoleCommand(clientPool, scheduled);
         silentCommand(command);
         command.execute().addListener(new CommandFutureListener<Role>() {
             @Override
@@ -163,7 +159,7 @@ public class RedisSession {
     }
 
     public void configRewrite(BiConsumer<String, Throwable> consumer) {
-        ConfigRewrite command = new ConfigRewrite(requestResponseCommandPool, scheduled);
+        ConfigRewrite command = new ConfigRewrite(clientPool, scheduled);
         silentCommand(command);
         command.execute().addListener(new CommandFutureListener<String>() {
             @Override
@@ -180,7 +176,7 @@ public class RedisSession {
 
     public String roleSync() throws InterruptedException, ExecutionException, TimeoutException {
 
-        RoleCommand command = new RoleCommand(requestResponseCommandPool, waitResultSeconds * 1000, true, scheduled);
+        RoleCommand command = new RoleCommand(clientPool, waitResultSeconds * 1000, true, scheduled);
         silentCommand(command);
         return command.execute().get().getServerRole().name();
 
@@ -188,7 +184,7 @@ public class RedisSession {
 
     public void info(final String infoSection, Callbackable<String> callback) {
 
-        InfoCommand command = new InfoCommand(requestResponseCommandPool, infoSection, scheduled);
+        InfoCommand command = new InfoCommand(clientPool, infoSection, scheduled);
         silentCommand(command);
         command.execute()
                 .addListener(new CommandFutureListener<String>() {
@@ -215,7 +211,7 @@ public class RedisSession {
     }
 
     public void isDiskLessSync(Callbackable<Boolean> callback) {
-        ConfigGetCommand.ConfigGetDisklessSync command = new ConfigGetCommand.ConfigGetDisklessSync(requestResponseCommandPool, scheduled);
+        ConfigGetCommand.ConfigGetDisklessSync command = new ConfigGetCommand.ConfigGetDisklessSync(clientPool, scheduled);
         silentCommand(command);
         command.execute().addListener(new CommandFutureListener<Boolean>() {
 
@@ -232,7 +228,7 @@ public class RedisSession {
 
 
     public CommandFuture<RedisInfo> getRedisInfo() {
-        return new InfoReplicationCommand(requestResponseCommandPool, scheduled, commandTimeOut).execute();
+        return new InfoReplicationCommand(clientPool, scheduled, commandTimeOut).execute();
     }
 
     private void silentCommand(AbstractRedisCommand command) {
@@ -334,7 +330,7 @@ public class RedisSession {
     }
 
     public RedisSession setKeyedNettyClientPool(XpipeNettyClientKeyedObjectPool keyedNettyClientPool) {
-        this.requestResponseCommandPool = keyedNettyClientPool.getKeyPool(endpoint);
+        this.clientPool = keyedNettyClientPool.getKeyPool(endpoint);
         return this;
     }
 

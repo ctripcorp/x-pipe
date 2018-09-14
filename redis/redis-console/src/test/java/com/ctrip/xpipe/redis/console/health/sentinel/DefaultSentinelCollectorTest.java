@@ -30,8 +30,7 @@ public class DefaultSentinelCollectorTest extends AbstractConsoleTest{
         sentinelCollector = new DefaultSentinelCollector();
         sentinelCollector.setSessionManager(new DefaultRedisSessionManager()
                 .setExecutors(executors).setScheduled(scheduled)
-                .setReqResNettyClientPool(getXpipeNettyClientKeyedObjectPool())
-                .setSubscrNettyClientPool(getXpipeNettyClientKeyedObjectPool()));
+                .setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()));
         masterSentinels = Sets.newHashSet(
                 new HostPort("127.0.0.1", 5000),
                 new HostPort("127.0.0.1", 5001),

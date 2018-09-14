@@ -19,10 +19,12 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.netty.ProxyEnabledNettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.redis.core.proxy.resource.ConsoleProxyResourceManager;
+import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * Aug 04, 2018
  */
-public class RedisSessionTest extends AbstractRedisTest {
+public class RedisSessionTest extends AbstractIntegratedTest {
 
     private RedisSession redisSession;
 
@@ -44,9 +46,9 @@ public class RedisSessionTest extends AbstractRedisTest {
     public void beforeRedisSessionTest() throws Exception {
         int redisPort = randomPort();
         RedisMeta redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(redisPort);
-//        startRedis(redisMeta);
+        startRedis(redisMeta);
         endpoint = new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort());
-        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), getSubscribeNettyClientPool());
+        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool());
     }
 
     @Test
@@ -232,7 +234,7 @@ public class RedisSessionTest extends AbstractRedisTest {
         String protocolStr = "PROXY ROUTE PROXYTCP://10.5.111.164:80 TCP://10.5.111.145:6379";
         ProxyProtocol protocol = new DefaultProxyProtocolParser().read(protocolStr);
         endpoint = new ProxyEnabledEndpoint("10.5.111.145", 6379, protocol);
-        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), getSubscribeNettyClientPool());
+        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool());
         redisSession.ping(new PingCallback() {
             @Override
             public void pong(String pongMsg) {
@@ -252,7 +254,7 @@ public class RedisSessionTest extends AbstractRedisTest {
         String protocolStr = "PROXY ROUTE PROXYTCP://10.5.111.148:80 TCP://10.5.111.145:6379";
         ProxyProtocol protocol = new DefaultProxyProtocolParser().read(protocolStr);
         endpoint = new ProxyEnabledEndpoint("10.5.111.145", 6379, protocol);
-        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), getSubscribeNettyClientPool());
+        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool());
         redisSession.subscribeIfAbsent(SUBSCRIBE_CHANNEL, new RedisSession.SubscribeCallback() {
             @Override
             public void message(String channel, String message) {
@@ -301,6 +303,11 @@ public class RedisSessionTest extends AbstractRedisTest {
 
     private ProxyEnabledNettyKeyedPoolClientFactory getKeyedPoolClientFactory() {
         return new ProxyEnabledNettyKeyedPoolClientFactory(resourceManager);
+    }
+
+    @Override
+    protected List<RedisMeta> getRedisSlaves() {
+        return null;
     }
 
 //
