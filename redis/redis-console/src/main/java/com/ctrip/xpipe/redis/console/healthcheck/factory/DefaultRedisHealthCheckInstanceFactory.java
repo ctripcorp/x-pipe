@@ -102,6 +102,12 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
         } catch (Exception e) {
             logger.error("[create]", e);
         }
+
+        try {
+            LifecycleHelper.startIfPossible(instance);
+        } catch (Exception e) {
+            logger.error("[clusterAdded]", e);
+        }
         return instance;
     }
 

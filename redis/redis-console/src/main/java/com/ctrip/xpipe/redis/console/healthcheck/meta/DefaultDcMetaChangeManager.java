@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -14,7 +13,6 @@ import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -22,15 +20,13 @@ import java.util.function.Consumer;
  * <p>
  * Aug 28, 2018
  */
-public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComparatorVisitor<ClusterMeta> {
+public class DefaultDcMetaChangeManager extends AbstractStartStoppable implements DcMetaChangeManager, MetaComparatorVisitor<ClusterMeta> {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDcMetaChangeManager.class);
 
     private DcMeta current;
 
     private HealthCheckInstanceManager instanceManager;
-
-    private AtomicBoolean started = new AtomicBoolean(true);
 
     public DefaultDcMetaChangeManager(HealthCheckInstanceManager instanceManager) {
         this.instanceManager = instanceManager;
@@ -80,12 +76,7 @@ public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComp
         @Override
         public void accept(RedisMeta redisMeta) {
             logger.info("[Redis-Add] {}", redisMeta);
-            RedisHealthCheckInstance instance = instanceManager.getOrCreate(redisMeta);
-            try {
-                LifecycleHelper.startIfPossible(instance);
-            } catch (Exception e) {
-                logger.error("[clusterAdded]", e);
-            }
+            instanceManager.getOrCreate(redisMeta);
         }
     };
 
@@ -98,26 +89,22 @@ public class DefaultDcMetaChangeManager implements DcMetaChangeManager, MetaComp
     };
 
     @Override
-    public void start() {
-        if(started.compareAndSet(false, true)) {
-            logger.info("[start] {}", current.getId());
-            if (current == null) {
-                logger.error("[start] cannot start without a DcMeta");
-                return;
-            }
-            for (ClusterMeta cluster : current.getClusters().values()) {
-                visitAdded(cluster);
-            }
+    protected void doStart() {
+        logger.info("[start] {}", current.getId());
+        if (current == null) {
+            logger.error("[start] cannot start without a DcMeta");
+            return;
+        }
+        for (ClusterMeta cluster : current.getClusters().values()) {
+            visitAdded(cluster);
         }
     }
 
     @Override
-    public void stop() {
-        if(started.compareAndSet(true, false)) {
-            logger.info("[stop] {}", current.getId());
-            for(ClusterMeta cluster : current.getClusters().values()) {
-                visitRemoved(cluster);
-            }
+    protected void doStop() {
+        logger.info("[stop] {}", current.getId());
+        for(ClusterMeta cluster : current.getClusters().values()) {
+            visitRemoved(cluster);
         }
     }
 }

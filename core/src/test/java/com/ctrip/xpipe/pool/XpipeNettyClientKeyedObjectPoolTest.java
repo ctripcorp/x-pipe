@@ -156,6 +156,29 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 			
 		}
 	}
+
+	// testOnBorrow = true, testOnReturn = false
+	@Test
+	public void testReturnWithConnectClose() throws Exception {
+		Server server = startEchoServer();
+		Endpoint key = localhostEndpoint(server.getPort());
+
+		Assert.assertEquals(0, server.getConnected());
+		NettyClient client1 = pool.borrowObject(key);
+
+		Assert.assertEquals(1, pool.getObjectPool(key).getNumActive());
+		client1.channel().close();
+		pool.returnObject(key, client1);
+		Assert.assertEquals(1, pool.getObjectPool(key).getNumIdle());
+		Assert.assertEquals(0, pool.getObjectPool(key).getNumActive());
+
+		waitConditionUntilTimeOut(()->!client1.channel().isActive(), 1000);
+		Assert.assertEquals(1, pool.getObjectPool(key).getNumIdle());
+		NettyClient client2 = pool.borrowObject(key);
+		Assert.assertNotEquals(client1.channel(), client2.channel());
+	}
+
+	
 	
 	@Override
 	protected void doAfterAbstractTest() throws Exception {

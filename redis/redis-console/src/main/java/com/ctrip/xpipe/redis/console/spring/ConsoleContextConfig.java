@@ -40,9 +40,6 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 
 	public final static String KEYED_NETTY_CLIENT_POOL = "keyedClientPool";
 
-	private ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(
-			new DefaultProxyEndpointManager(()->1), new NaiveNextHopAlgorithm());
-
 	@Bean(name = REDIS_COMMAND_EXECUTOR)
 	public ScheduledExecutorService getRedisCommandExecutor() {
 		int corePoolSize = OsUtils.getCpuCount();
@@ -69,6 +66,8 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 	}
 
 	private ProxyEnabledNettyKeyedPoolClientFactory getKeyedPoolClientFactory() {
+		ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(
+				new DefaultProxyEndpointManager(()->1), new NaiveNextHopAlgorithm());
 		return new ProxyEnabledNettyKeyedPoolClientFactory(resourceManager);
 	}
 

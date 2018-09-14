@@ -6,7 +6,6 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.CachedNettyClientPool;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.health.redisconf.Callbackable;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
