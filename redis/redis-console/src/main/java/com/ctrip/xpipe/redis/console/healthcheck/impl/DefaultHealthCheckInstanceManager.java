@@ -64,17 +64,4 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
         return Lists.newLinkedList(instances.values());
     }
 
-    @Override
-    public void start() throws Exception {
-        for(RedisHealthCheckInstance instance : instances.values()) {
-            LifecycleHelper.startIfPossible(instance);
-        }
-    }
-
-    @Override
-    public void stop() throws Exception {
-        for(RedisHealthCheckInstance instance : instances.values()) {
-            LifecycleHelper.stopIfPossible(instance);
-        }
-    }
 }

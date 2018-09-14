@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck;
 
-import com.ctrip.xpipe.api.lifecycle.Startable;
-import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
@@ -12,7 +10,7 @@ import java.util.List;
  * <p>
  * Aug 27, 2018
  */
-public interface HealthCheckInstanceManager extends Startable, Stoppable {
+public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance getOrCreate(RedisMeta redis);
 
