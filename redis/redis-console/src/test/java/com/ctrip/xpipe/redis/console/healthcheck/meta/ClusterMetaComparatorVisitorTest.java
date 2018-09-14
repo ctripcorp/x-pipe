@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.console.healthcheck.meta;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>

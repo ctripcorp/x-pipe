@@ -1,13 +1,8 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

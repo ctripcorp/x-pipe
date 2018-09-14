@@ -4,13 +4,14 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
-import com.ctrip.xpipe.redis.console.healthcheck.*;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.google.common.collect.Lists;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author chen.zhu
