@@ -68,8 +68,13 @@ public class DefaultSentinelCollector implements SentinelCollector {
         Set<SentinelHello> hellos = sentinelSample.getHellos();
         String clusterId = sentinelSample.getSamplePlan().getClusterId();
         String shardId = sentinelSample.getSamplePlan().getShardId();
+        String clusterActiveDc = ((SentinelSamplePlan)sentinelSample.getSamplePlan()).getClusterActiveDc();
         String sentinelMonitorName = metaCache.getSentinelMonitorName(clusterId, shardId);
         Set<HostPort> masterDcSentinels = metaCache.getActiveDcSentinels(clusterId, shardId);
+        if (!clusterActiveDc.equals(metaCache.getActiveDc(clusterId, shardId))){
+            logger.debug("[collect][active_dc of cluster is change!]{}, {}", clusterId, shardId);
+            return;
+        }
         QuorumConfig quorumConfig = consoleConfig.getDefaultSentinelQuorumConfig();
         HostPort masterAddr = null;
         try{
@@ -111,7 +116,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
                     Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
                     if (clusterShard == null) {
-                        if (isKeeperOrDead(currentSlave.getHost(), currentSlave.getPort())) {
+                        if (isKeeperOrDead(currentSlave)) {
                             shoudReset = true;
                             reason = String.format("[%s]keeper or dead, current:%s,%s, but no clustershard", currentSlave, clusterId, shardId);
                         } else {
@@ -145,13 +150,13 @@ public class DefaultSentinelCollector implements SentinelCollector {
     }
 
     @VisibleForTesting
-    protected boolean isKeeperOrDead(String host, int port) {
+    protected boolean isKeeperOrDead(HostPort hostPort) {
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Object> role = new AtomicReference<>();
 
         try {
-            RedisSession redisSession = sessionManager.findOrCreateSession(host, port);
+            RedisSession redisSession = sessionManager.findOrCreateSession(hostPort);
             redisSession.role(new RedisSession.RollCallback() {
                 @Override
                 public void role(String roleDesc) {
@@ -161,14 +166,14 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
                 @Override
                 public void fail(Throwable e) {
-                    logger.error("[isKeeperOrDead][fail]" + host + ":" + port, e);
+                    logger.error("[isKeeperOrDead][fail]" + hostPort, e);
                     role.set(e);
                     latch.countDown();
                 }
             });
         } catch (Exception e) {
             role.set(e);
-            logger.error("[isKeeperOrDead]" + host + ":" + port, e);
+            logger.error("[isKeeperOrDead]" + hostPort, e);
         }
 
         try {
@@ -360,5 +365,8 @@ public class DefaultSentinelCollector implements SentinelCollector {
     public void setAlertManager(AlertManager alertManager) {
         this.alertManager = alertManager;
     }
+
+    @VisibleForTesting
+    public MetaCache getMetaCache(){return this.metaCache;}
 
 }

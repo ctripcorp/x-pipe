@@ -2,14 +2,15 @@ package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author shyin
@@ -59,6 +60,16 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_NO_ALARM_MUNITE_FOR_NEW_CLUSTER = "no.alarm.minute.for.new.cluster";
 
     public static final String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
+
+    public static final String KEY_DC_CLUSTER_WONT_MARK_DOWN = "dc.cluster.pairs.wont.mark.down";
+
+    private static final String KEY_HEALTHY_DELAY_THROUGH_PROXY = "console.healthy.delay.through.proxy";
+
+    private static final String KEY_DOWN_AFTER_CHECK_NUMS_THROUGH_PROXY = "console.down.after.checknums.through.proxy";
+
+    private static final String KEY_PING_DOWN_MAJORITY_RATIO = "console.ping.down.majority.ratio";
+
+    private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
     public int getAlertSystemRecoverMinute() {
@@ -147,8 +158,18 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getHealthyDelayMilliThroughProxy() {
+        return getIntProperty(KEY_HEALTHY_DELAY_THROUGH_PROXY, 30 * 1000);
+    }
+
+    @Override
     public int getDownAfterCheckNums() {
         return getIntProperty(KEY_DOWN_AFTER_CHECK_NUMS, 5);
+    }
+
+    @Override
+    public int getDownAfterCheckNumsThroughProxy() {
+        return getIntProperty(KEY_DOWN_AFTER_CHECK_NUMS_THROUGH_PROXY, 10);
     }
 
     @Override
@@ -238,5 +259,43 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public Set<String> getIgnoredHealthCheckDc() {
         return getSplitStringSet(getProperty(KEY_IGNORED_DC_FOR_HEALTH_CHECK, ""));
+    }
+
+    @Override
+    public Set<Pair<String, String>> getDelayWontMarkDownClusters() {
+        Set<Pair<String, String>> result = Sets.newHashSet();
+        Set<String> dcClusters = getSplitStringSet(getProperty(KEY_DC_CLUSTER_WONT_MARK_DOWN, ""));
+        for(String dcCluster : dcClusters) {
+            String[] pair = StringUtil.splitRemoveEmpty("\\s*:\\s*", dcCluster);
+            result.add(new Pair<>(pair[0], pair[1]));
+        }
+        return result;
+    }
+
+    @Override
+    public float getPingDownMajorityRatio() {
+        try {
+            return Float.parseFloat(getProperty(KEY_PING_DOWN_MAJORITY_RATIO, "0.6"));
+        } catch (Exception e) {
+            return 0.6f;
+        }
+    }
+
+    @Override
+    public void onChange(String key, String oldValue, String newValue) {
+        if(!listeners.containsKey(key)) {
+            return;
+        }
+        for(ConsoleConfigListener listener : listeners.get(key)) {
+            listener.onChange(key, oldValue, newValue);
+        }
+    }
+
+    @Override
+    public void register(ConsoleConfigListener consoleConfigListener) {
+        for(String key : consoleConfigListener.supportsKeys()) {
+            listeners.putIfAbsent(key, new LinkedList<>());
+            listeners.get(key).add(consoleConfigListener);
+        }
     }
 }

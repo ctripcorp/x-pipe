@@ -42,7 +42,7 @@ public class BacklogActiveMonitor  extends AbstractRedisConfMonitor<InstanceInfo
 
     public void sampleInfoReplication(long recordTime, BaseSamplePlan<InstanceInfoReplicationResult> plan) {
         for(HostPort hostPort : plan.getHostPort2SampleResult().keySet()) {
-            RedisSession session = sessionManager.findOrCreateSession(hostPort.getHost(), hostPort.getPort());
+            RedisSession session = sessionManager.findOrCreateSession(hostPort);
             session.infoReplication(new Callbackable<String>() {
                 @Override
                 public void success(String message) {

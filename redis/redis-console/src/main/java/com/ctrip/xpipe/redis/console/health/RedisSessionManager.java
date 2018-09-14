@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.HostPort;
 
 /**
  * @author marsqing
@@ -9,7 +10,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
  */
 public interface RedisSessionManager {
 
-	RedisSession findOrCreateSession(String host, int port);
-
 	RedisSession findOrCreateSession(Endpoint endpoint);
+
+	RedisSession findOrCreateSession(HostPort hostPort);
 }

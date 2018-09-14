@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.health.action.HEALTH_STATE;
+import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 
 /**
@@ -15,6 +15,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String healthStatusUrl;
 
+    private final String pingStatusUrl;
+
     public DefaultConsoleService(String address){
 
         this.address = address;
@@ -22,11 +24,17 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
             this.address = "http://" + this.address;
         }
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
+        pingStatusUrl = String.format("%s/api/ping/{ip}/{port}", this.address);
     }
 
     @Override
     public HEALTH_STATE getInstanceStatus(String ip, int port) {
         return restTemplate.getForObject(healthStatusUrl, HEALTH_STATE.class, ip, port);
+    }
+
+    @Override
+    public Boolean getInstancePingStatus(String ip, int port) {
+        return restTemplate.getForObject(pingStatusUrl, Boolean.class, ip, port);
     }
 
     @Override

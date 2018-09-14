@@ -1,17 +1,12 @@
 package com.ctrip.xpipe.redis.proxy.spring;
 
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.NextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
-import com.ctrip.xpipe.redis.core.proxy.resource.ProxyProxyResourceManager;
 import com.ctrip.xpipe.redis.proxy.config.DefaultProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
-import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;

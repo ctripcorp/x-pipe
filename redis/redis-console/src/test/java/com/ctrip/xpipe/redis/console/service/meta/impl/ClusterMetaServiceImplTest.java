@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
-import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -9,9 +9,9 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.mockito.Mockito.when;
 
@@ -21,9 +21,9 @@ import static org.mockito.Mockito.when;
  *
  * Mar 17, 2017
  */
-@RunWith(MockitoJUnitRunner.class)
-public class ClusterMetaServiceImplTest extends AbstractConsoleTest{
-	
+public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
+
+	@Autowired
 	private ClusterMetaServiceImpl  clusterMetaServiceImpl;
 	
 	@Mock
@@ -33,7 +33,8 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleTest{
 	
 	@Before
 	public void beforeClusterMetaServiceImplTest(){
-		clusterMetaServiceImpl = new ClusterMetaServiceImpl();
+		MockitoAnnotations.initMocks(this);
+//		clusterMetaServiceImpl = new ClusterMetaServiceImpl();
 		clusterMetaServiceImpl.setMigrationService(migrationService);
 	}
 	

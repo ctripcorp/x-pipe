@@ -40,14 +40,13 @@ public class HickwallMetricTest extends AbstractServiceTest{
             @Override
             protected void doRun() throws Exception {
 
-                List<MetricData> data = new LinkedList<>();
                 HostPort hostPort = new HostPort("127.0.0.1", port);
                 MetricData metricData = new MetricData("delay", "cluster", "shard");
                 metricData.setValue(1000);
                 metricData.setHostPort(hostPort);
                 metricData.setTimestampMilli(System.currentTimeMillis());
-                data.add(metricData);
-                hickwallMetricProxy.writeBinMultiDataPoint(data);
+
+                hickwallMetricProxy.writeBinMultiDataPoint(metricData);
             }
         }, 0, 2, TimeUnit.SECONDS);
 

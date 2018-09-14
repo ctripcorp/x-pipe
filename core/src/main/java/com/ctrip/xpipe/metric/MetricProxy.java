@@ -11,6 +11,6 @@ import java.util.List;
  */
 public interface MetricProxy extends Ordered {
 
-	void writeBinMultiDataPoint(List<MetricData> datas) throws MetricProxyException;
+	void writeBinMultiDataPoint(MetricData data) throws MetricProxyException;
 
 }

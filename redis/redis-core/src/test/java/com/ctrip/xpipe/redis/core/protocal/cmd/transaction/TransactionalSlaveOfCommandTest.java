@@ -7,8 +7,6 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
-
 /**
  * manual test for local redis
  * @author wenchao.meng
@@ -37,8 +35,8 @@ public class TransactionalSlaveOfCommandTest extends AbstractRedisTest{
 			Object []result = command.execute().get();
 			logger.info("{}", (Object)result);
 			
-			Assert.assertEquals(0, pool.getObjectPool().getNumActive());
-			Assert.assertEquals(1, pool.getObjectPool().getNumIdle());
+			Assert.assertEquals(0, pool.getObjectPool(new DefaultEndPoint(ip, port)).getNumActive());
+			Assert.assertEquals(1, pool.getObjectPool(new DefaultEndPoint(ip, port)).getNumIdle());
 		}
 		
 	}

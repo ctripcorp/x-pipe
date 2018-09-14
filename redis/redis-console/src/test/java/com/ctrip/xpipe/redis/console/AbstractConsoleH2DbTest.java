@@ -132,4 +132,6 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
         InputStream ins = FileUtils.getFileInputStream(path);
         return IOUtils.toString(ins);
     }
+
+
 }

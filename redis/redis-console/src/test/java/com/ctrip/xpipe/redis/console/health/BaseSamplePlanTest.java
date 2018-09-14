@@ -1,10 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
-import com.ctrip.xpipe.redis.console.health.delay.DelaySamplePlan;
-import com.ctrip.xpipe.redis.console.health.delay.InstanceDelayResult;
-import com.ctrip.xpipe.redis.console.health.ping.InstancePingResult;
-import com.ctrip.xpipe.redis.console.health.ping.PingSamplePlan;
 import com.ctrip.xpipe.redis.console.health.redisconf.diskless.DiskLessInstanceResult;
 import com.ctrip.xpipe.redis.console.health.redisconf.diskless.DiskLessSamplePlan;
 import com.ctrip.xpipe.redis.console.health.redisconf.version.VersionInstanceResult;
@@ -30,24 +26,6 @@ public class BaseSamplePlanTest {
 
     private RedisMeta redis = new RedisMeta().setIp("127.0.0.1").setPort(6379)
             .setMaster(XPipeConsoleConstant.DEFAULT_ADDRESS);
-
-    @Test
-    public void isEmpty() throws Exception {
-        BaseSamplePlan plan = new PingSamplePlan(clusterId, shardId);
-        Assert.assertTrue(plan.isEmpty());
-
-        plan.addRedis(dcId, redis, new InstancePingResult());
-        Assert.assertFalse(plan.isEmpty());
-    }
-
-    @Test
-    public void isEmpty2() throws Exception {
-        BaseSamplePlan plan = new DelaySamplePlan(clusterId, shardId);
-        Assert.assertTrue(plan.isEmpty());
-
-        plan.addRedis(dcId, redis, new InstanceDelayResult(dcId, false));
-        Assert.assertFalse(plan.isEmpty());
-    }
 
     @Test
     public void isEmpty3() throws Exception {

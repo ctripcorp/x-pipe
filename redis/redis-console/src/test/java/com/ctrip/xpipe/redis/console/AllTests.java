@@ -14,13 +14,15 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoT
 import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
-import com.ctrip.xpipe.redis.console.health.RedisSessionResponseTimeTest;
-import com.ctrip.xpipe.redis.console.health.action.HealthStatusTest;
+import com.ctrip.xpipe.redis.console.health.BaseSamplePlanTest;
 import com.ctrip.xpipe.redis.console.health.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.SentinelSamplePlanTest;
-import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisHealthCheckInstanceFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
@@ -36,6 +38,8 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.*;
+import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
+import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTestForRoute;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -51,7 +55,6 @@ import org.junit.runners.Suite.SuiteClasses;
         SentinelHelloTest.class,
         DefaultSentinelCollectorTest.class,
         ConsoleCrossDcServerTest.class,
-        HealthStatusTest.class,
 
         ClusterServiceImplTest.class,
         RedisServiceImplTest.class,
@@ -76,7 +79,7 @@ import org.junit.runners.Suite.SuiteClasses;
         MigrationInitiatedStateTest.class,
         MigrationPublishStatTest.class,
         SingleShardMigrationTest.class,
-        MultiShardMigrationTest.class,
+//        MultiShardMigrationTest.class,
         DefaultShardMigrationResultTest.class,
         ClusterCreateInfoTest.class,
 
@@ -100,8 +103,17 @@ import org.junit.runners.Suite.SuiteClasses;
         RouteServiceImplTest.class,
         RouteServiceImplTest.class,
         ProxyServiceImplTest.class,
+        BaseSamplePlanTest.class,
+
+        AdvancedDcMetaServiceTestForRoute.class,
+        AdvancedDcMetaServiceTest.class,
+        ClusterMetaServiceImplTest.class,
         SentinelSamplePlanTest.class,
-//        RedisSessionResponseTimeTest.class
+
+        HealthCheckEndpointFactoryTest.class,
+        DefaultHealthCheckEndpointFactoryTest.class,
+        DefaultRedisHealthCheckInstanceFactoryTest.class,
+        DcIgnoredConfigListenerTest.class,
 })
 public class AllTests {
 

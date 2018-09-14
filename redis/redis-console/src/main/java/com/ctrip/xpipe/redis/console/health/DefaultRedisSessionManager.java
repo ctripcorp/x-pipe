@@ -2,15 +2,15 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,10 +25,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
-import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.REQUEST_RESPONSE_NETTY_CLIENT_POOL;
-import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.SUBSCRIBE_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.KEYED_NETTY_CLIENT_POOL;
 
 /**
  * @author marsqing
@@ -45,11 +43,11 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Autowired
 	private MetaCache metaCache;
 
-	@Resource(name = SUBSCRIBE_NETTY_CLIENT_POOL)
-	private XpipeNettyClientKeyedObjectPool subscrNettyClientPool;
+	@Autowired
+	private HealthCheckEndpointFactory endpointFactory;
 
-	@Resource(name = REQUEST_RESPONSE_NETTY_CLIENT_POOL)
-	private XpipeNettyClientKeyedObjectPool reqResNettyClientPool;
+	@Resource(name = KEYED_NETTY_CLIENT_POOL)
+	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
 	@Resource(name = ConsoleContextConfig.REDIS_COMMAND_EXECUTOR)
 	private ScheduledExecutorService scheduled;
@@ -79,15 +77,6 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		}, 5, 5, TimeUnit.SECONDS);
 	}
 
-	@Override
-	public RedisSession findOrCreateSession(String host, int port) {
-
-		if(StringUtil.isEmpty(host) || port == 0) {
-			throw new IllegalArgumentException("Redis Host/Port can not be empty: " + host + ":" + port);
-		}
-		return findOrCreateSession(new DefaultEndPoint(host, port));
-	}
-
     @Override
     public RedisSession findOrCreateSession(Endpoint endpoint) {
 		RedisSession session = sessions.get(endpoint);
@@ -96,7 +85,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			synchronized (this) {
 				session = sessions.get(endpoint);
 				if (session == null) {
-					session = new RedisSession(endpoint, scheduled, reqResNettyClientPool, subscrNettyClientPool);
+					session = new RedisSession(endpoint, scheduled, keyedObjectPool);
 					sessions.put(endpoint, session);
 				}
 			}
@@ -105,42 +94,47 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		return session;
     }
 
+	@Override
+	public RedisSession findOrCreateSession(HostPort hostPort) {
+		return findOrCreateSession(endpointFactory.getOrCreateEndpoint(hostPort));
+	}
+
 	@VisibleForTesting
 	protected void removeUnusedRedises() {
 		Set<Endpoint> currentStoredRedises = sessions.keySet();
 		if(currentStoredRedises.isEmpty())
 			return;
 
-		Set<Endpoint> redisInUse = getInUseRedises();
-		List<Endpoint> unusedRedises;
-		if(redisInUse == null || redisInUse.isEmpty()) {
-			unusedRedises = new LinkedList<>(currentStoredRedises);
-		} else {
-			unusedRedises = currentStoredRedises.stream()
-					.filter(hostPort -> !redisInUse.contains(hostPort))
-					.collect(Collectors.toList());
+		Set<HostPort> redisInUse = getInUseRedises();
+		List<Endpoint> unusedRedises = new LinkedList<>();
+
+		for(Endpoint endpoint : currentStoredRedises) {
+			if(!redisInUse.contains(new HostPort(endpoint.getHost(), endpoint.getPort()))) {
+				unusedRedises.add(endpoint);
+			}
 		}
-		if(unusedRedises == null || unusedRedises.isEmpty()) {
+
+		if(unusedRedises.isEmpty()) {
 			return;
 		}
-		unusedRedises.forEach(hostPort -> {
-			RedisSession redisSession = sessions.getOrDefault(hostPort, null);
+		unusedRedises.forEach(endpoint -> {
+			RedisSession redisSession = sessions.getOrDefault(endpoint, null);
 			if(redisSession != null) {
-				logger.info("[removeUnusedRedises]Redis: {} not in use, remove from session manager", hostPort);
+				logger.info("[removeUnusedRedises]Redis: {} not in use, remove from session manager", endpoint);
 				// add try logic to continue working on others
 				try {
 					redisSession.closeConnection();
 				} catch (Exception ignore) {
 
 				}
-				sessions.remove(hostPort);
+				sessions.remove(endpoint);
 			}
 		});
 	}
 
 
-	private Set<Endpoint> getInUseRedises() {
-		Set<Endpoint> redisInUse = new HashSet<>();
+	private Set<HostPort> getInUseRedises() {
+		Set<HostPort> redisInUse = new HashSet<>();
 		List<DcMeta> dcMetas = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 		if(dcMetas.isEmpty())	return null;
 		for (DcMeta dcMeta : dcMetas) {
@@ -148,7 +142,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
 				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 					for (RedisMeta redisMeta : shardMeta.getRedises()) {
-						redisInUse.add(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
+						redisInUse.add(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
 					}
 				}
 			}
@@ -176,13 +170,8 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		closeAllConnections();
 	}
 
-	public DefaultRedisSessionManager setSubscrNettyClientPool(XpipeNettyClientKeyedObjectPool subscrNettyClientPool) {
-		this.subscrNettyClientPool = subscrNettyClientPool;
-		return this;
-	}
-
-	public DefaultRedisSessionManager setReqResNettyClientPool(XpipeNettyClientKeyedObjectPool reqResNettyClientPool) {
-		this.reqResNettyClientPool = reqResNettyClientPool;
+	public DefaultRedisSessionManager setKeyedObjectPool(XpipeNettyClientKeyedObjectPool keyedObjectPool) {
+		this.keyedObjectPool = keyedObjectPool;
 		return this;
 	}
 

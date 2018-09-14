@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigSetCommand.ConfigSetMinSlav
 import com.ctrip.xpipe.redis.core.protocal.cmd.transaction.TransactionalCommand;
 import com.ctrip.xpipe.redis.meta.server.dcchange.RedisReadonly;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**

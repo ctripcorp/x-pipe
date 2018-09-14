@@ -26,4 +26,12 @@ public class RedisComparator extends AbstractMetaComparator<Object, RedisChange>
 	public String idDesc() {
 		return current.desc();
 	}
+
+	public Redis getCurrent() {
+		return current;
+	}
+
+	public Redis getFuture() {
+		return future;
+	}
 }

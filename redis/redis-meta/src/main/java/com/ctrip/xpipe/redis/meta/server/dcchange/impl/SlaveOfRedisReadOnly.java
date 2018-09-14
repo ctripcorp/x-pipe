@@ -7,7 +7,6 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultSlaveOfCommand;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**

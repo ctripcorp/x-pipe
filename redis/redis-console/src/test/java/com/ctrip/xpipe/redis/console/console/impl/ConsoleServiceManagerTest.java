@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.health.action.HEALTH_STATE;
+import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;

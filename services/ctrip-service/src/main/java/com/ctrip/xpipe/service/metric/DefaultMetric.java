@@ -33,20 +33,19 @@ public class DefaultMetric implements MetricProxy{
     }
 
     @Override
-    public void writeBinMultiDataPoint(List<MetricData> datas) throws MetricProxyException {
+    public void writeBinMultiDataPoint(MetricData data) throws MetricProxyException {
 
         for(MetricProxy metricProxy : metricProxies){
 
             try{
-
                 executors.execute(new AbstractExceptionLogTask() {
                     @Override
                     protected void doRun() throws Exception {
-                        metricProxy.writeBinMultiDataPoint(datas);
+                        metricProxy.writeBinMultiDataPoint(data);
                     }
                 });
             }catch (Exception e){
-                logger.error("[writeBinMultiDataPoint]" + datas, e);
+                logger.error("[writeBinMultiDataPoint]" + data, e);
             }
         }
     }
