@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingAction;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingActionContext;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -12,8 +11,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

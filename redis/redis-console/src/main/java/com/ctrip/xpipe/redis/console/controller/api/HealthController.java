@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.controller.api;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.health.HealthChecker;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.action.DelayPingActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
 import org.springframework.beans.factory.annotation.Autowired;

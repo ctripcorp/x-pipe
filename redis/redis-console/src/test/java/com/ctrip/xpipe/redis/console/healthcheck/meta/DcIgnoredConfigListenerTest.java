@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
-import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
@@ -12,7 +11,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
-import static org.junit.Assert.*;
+
 import static org.mockito.Matchers.anyString;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 

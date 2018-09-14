@@ -1,13 +1,10 @@
 package com.ctrip.xpipe.redis.console.healthcheck;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.ObjectPoolException;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.pool.BorrowObjectException;
 import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.pool.XpipeObjectPoolFromKeyed;

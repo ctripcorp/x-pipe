@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -10,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
-import java.util.Arrays;
 import java.util.Set;
 
 /**

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.redisconf.version;
 
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
 /**
  * @author chen.zhu

@@ -3,9 +3,6 @@ package com.ctrip.xpipe.redis.console.healthcheck;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.google.common.collect.Lists;
-import io.netty.util.HashedWheelTimer;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 
 import java.util.List;
 import java.util.Random;
