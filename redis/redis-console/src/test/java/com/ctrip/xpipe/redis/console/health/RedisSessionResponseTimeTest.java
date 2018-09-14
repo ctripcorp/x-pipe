@@ -42,8 +42,7 @@ public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest
                 return "+OK\r\n";
             }
         });
-        redisSession = new RedisSession(new DefaultEndPoint(HOST, BLOCKED_PORT), scheduled,
-                getXpipeNettyClientKeyedObjectPool(), getXpipeNettyClientKeyedObjectPool());
+        redisSession = new RedisSession(new DefaultEndPoint(HOST, BLOCKED_PORT), scheduled, getXpipeNettyClientKeyedObjectPool());
     }
 
     @Test

@@ -56,7 +56,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 		b.group(eventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
 				.handler(new ChannelInitializer<SocketChannel>() {
 					@Override
-					public void initChannel(SocketChannel ch) throws Exception {
+					public void initChannel(SocketChannel ch) {
 						ChannelPipeline p = ch.pipeline();
 						p.addLast(new LoggingHandler());
 						p.addLast(new NettySimpleMessageHandler());

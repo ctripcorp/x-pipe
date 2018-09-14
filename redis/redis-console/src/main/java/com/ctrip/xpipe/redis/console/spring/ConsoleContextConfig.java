@@ -38,9 +38,7 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 
 	public final static String REDIS_COMMAND_EXECUTOR = "redisCommandExecutor";
 
-	public final static String REQUEST_RESPONSE_NETTY_CLIENT_POOL = "reqResNettyClientPool";
-
-	public final static String SUBSCRIBE_NETTY_CLIENT_POOL = "subscribeNettyClientPool";
+	public final static String KEYED_NETTY_CLIENT_POOL = "keyedClientPool";
 
 	private ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(
 			new DefaultProxyEndpointManager(()->1), new NaiveNextHopAlgorithm());
@@ -62,16 +60,8 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 		return new DefaultMetaServerConsoleServiceManagerWrapper();
 	}
 
-	@Bean(name = REQUEST_RESPONSE_NETTY_CLIENT_POOL)
+	@Bean(name = KEYED_NETTY_CLIENT_POOL)
 	public XpipeNettyClientKeyedObjectPool getReqResNettyClientPool() throws Exception {
-		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory());
-		LifecycleHelper.initializeIfPossible(keyedObjectPool);
-		LifecycleHelper.startIfPossible(keyedObjectPool);
-		return keyedObjectPool;
-	}
-
-	@Bean(name = SUBSCRIBE_NETTY_CLIENT_POOL)
-	public XpipeNettyClientKeyedObjectPool getSubscribeNettyClientPool() throws Exception {
 		XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory());
 		LifecycleHelper.initializeIfPossible(keyedObjectPool);
 		LifecycleHelper.startIfPossible(keyedObjectPool);

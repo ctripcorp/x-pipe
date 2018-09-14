@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
@@ -11,11 +10,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

@@ -24,7 +24,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.REQUEST_RESPONSE_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.KEYED_NETTY_CLIENT_POOL;
 
 /**
  * @author chen.zhu
@@ -38,7 +38,7 @@ public class DefaultSentinelManager implements SentinelManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Resource(name = REQUEST_RESPONSE_NETTY_CLIENT_POOL)
+    @Resource(name = KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedClientPool;
 
     @Resource(name = ConsoleContextConfig.REDIS_COMMAND_EXECUTOR)

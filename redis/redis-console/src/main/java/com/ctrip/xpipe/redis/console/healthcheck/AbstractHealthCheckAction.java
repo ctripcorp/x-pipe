@@ -67,6 +67,11 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     }
 
     @Override
+    public RedisHealthCheckInstance getActionInstance() {
+        return instance;
+    }
+
+    @Override
     public void addListener(HealthCheckActionListener listener) {
         listeners.add(listener);
     }
