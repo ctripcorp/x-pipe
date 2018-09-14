@@ -45,9 +45,6 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
     private AlertManager alertManager;
 
     @Autowired
-    private HealthCheckInstanceManager instanceManager;
-
-    @Autowired
     private ConsoleConfig consoleConfig;
 
     @Autowired

@@ -90,13 +90,11 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     @Override
     protected void doStart() throws Exception {
         super.doStart();
-        instanceManager.start();
         metaChangeManager.start();
     }
 
     @Override
     protected void doStop() throws Exception {
-        instanceManager.stop();
         metaChangeManager.stop();
         super.doStop();
     }

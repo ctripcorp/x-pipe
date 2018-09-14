@@ -52,7 +52,7 @@ public class DefaultRedisHealthCheckInstanceFactoryTest extends AbstractConsoleI
         Assert.assertNotNull(instance.getRedisSession());
 
         Assert.assertEquals(instance.getEndpoint(), new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
-        Assert.assertTrue(instance.getLifecycleState().canStart());
+        Assert.assertTrue(instance.getLifecycleState().isStarted());
     }
 
     @Test
