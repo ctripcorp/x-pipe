@@ -22,7 +22,6 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
-import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;

@@ -17,9 +17,12 @@ public class SentinelSamplePlan extends BaseSamplePlan<InstanceSentinelResult>{
 
     private ConsoleConfig consoleConfig;
 
-    public SentinelSamplePlan(String clusterId, String shardId, ConsoleConfig consoleConfig) {
+    private String clusterActiveDc;
+
+    public SentinelSamplePlan(String clusterId, String shardId, ConsoleConfig consoleConfig, String clusterActiveDc) {
         super(clusterId, shardId);
         this.consoleConfig = consoleConfig;
+        this.clusterActiveDc = clusterActiveDc;
     }
 
     @Override
@@ -48,5 +51,7 @@ public class SentinelSamplePlan extends BaseSamplePlan<InstanceSentinelResult>{
         }
         return count == backupDcArr.length;
     }
+
+    public String getClusterActiveDc(){return this.clusterActiveDc;}
 
 }

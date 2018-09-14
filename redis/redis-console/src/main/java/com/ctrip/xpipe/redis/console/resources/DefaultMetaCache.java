@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -43,6 +44,8 @@ public class DefaultMetaCache implements MetaCache {
     private int refreshIntervalMilli = 2000;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static final String CONSOLE_IDC = FoundationService.DEFAULT.getDataCenter();
 
     @Autowired
     private DcMetaService dcMetaService;
@@ -112,7 +115,7 @@ public class DefaultMetaCache implements MetaCache {
         try {
             return meta.getKey();
         } catch (Exception e) {
-            logger.error("[getXpipeMeta]", e);
+            logger.debug("[getXpipeMeta]", e);
         }
         return null;
     }
@@ -174,6 +177,29 @@ public class DefaultMetaCache implements MetaCache {
         }
 
         return new Pair<>(metaDesc.getClusterId(), metaDesc.getShardId());
+    }
+
+    @Override
+    public RouteMeta getRouteIfPossible(HostPort hostPort) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
+        return xpipeMetaManager
+                .consoleRandomRoute(CONSOLE_IDC, XpipeMetaManager.ORG_ID_FOR_SHARED_ROUTES, metaDesc.getDcId());
+    }
+
+    @Override
+    public int getRedisNumOfDcCluster(String dcId, String clusterId) {
+        try {
+            int count = 0;
+            ClusterMeta clusterMeta = meta.getKey().findDc(dcId).getClusters().get(clusterId);
+            for(ShardMeta shardMeta : clusterMeta.getShards().values()) {
+                count += shardMeta.getRedises().size();
+            }
+            return count;
+        } catch (Exception e) {
+            logger.error("[getRedisNumOfDcCluster]", e);
+        }
+        return 0;
     }
 
     @Override
@@ -272,5 +298,11 @@ public class DefaultMetaCache implements MetaCache {
             logger.error("[findClusterShardBySentinelMonitor]", e);
         }
         return null;
+    }
+
+    @Override
+    public String getActiveDc(String clusterId, String shardId){
+        XpipeMetaManager xpipeMetaManager  =  meta.getValue();
+        return xpipeMetaManager.getActiveDc(clusterId, shardId);
     }
 }

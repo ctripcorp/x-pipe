@@ -39,7 +39,7 @@ public class RedisInfoUtils {
         String backlogActive = getValueByKey(infoReplication, "repl_backlog_active");
         try {
             if(StringUtil.isEmpty(backlogActive)) {
-                logger.warn("Did not get 'repl_backlog_active'");
+                logger.warn("Did not findRedisHealthCheckInstance 'repl_backlog_active'");
             }
             int result = Integer.valueOf(backlogActive);
             if(result != 1) {
@@ -63,7 +63,7 @@ public class RedisInfoUtils {
         String syncInProgress = getValueByKey(infoReplication, "master_sync_in_progress");
         try {
             if(StringUtil.isEmpty(syncInProgress)) {
-                logger.warn("[isMasterSyncInProgress]Did not get 'repl_backlog_active'");
+                logger.warn("[isMasterSyncInProgress]Did not findRedisHealthCheckInstance 'repl_backlog_active'");
             }
             int result = Integer.valueOf(syncInProgress);
             if(result != 1) {
@@ -79,7 +79,7 @@ public class RedisInfoUtils {
         String num = getValueByKey(infoSentinel, "sentinel_masters");
         try {
             if(StringUtil.isEmpty(num)) {
-                logger.warn("[isMasterSyncInProgress]Did not get 'repl_backlog_active'");
+                logger.warn("[isMasterSyncInProgress]Did not findRedisHealthCheckInstance 'repl_backlog_active'");
                 return 0;
             }
             return Integer.parseInt(num);

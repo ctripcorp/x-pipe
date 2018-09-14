@@ -15,7 +15,6 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 
-import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;

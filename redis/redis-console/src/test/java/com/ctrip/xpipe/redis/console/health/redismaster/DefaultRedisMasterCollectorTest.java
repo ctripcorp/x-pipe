@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.health.redismaster;
 
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
@@ -9,7 +10,6 @@ import com.ctrip.xpipe.redis.console.health.Sample;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.impl.RedisServiceImpl;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
@@ -24,7 +24,6 @@ import org.mockito.stubbing.Answer;
 import java.util.List;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
 
 /**
@@ -32,7 +31,7 @@ import static org.mockito.Mockito.*;
  * <p>
  * Feb 01, 2018
  */
-public class DefaultRedisMasterCollectorTest extends AbstractRedisTest{
+public class DefaultRedisMasterCollectorTest extends AbstractConsoleH2DbTest {
 
     @Mock
     private RedisSessionManager redisSessionManager;
@@ -82,7 +81,7 @@ public class DefaultRedisMasterCollectorTest extends AbstractRedisTest{
                         .setRedisPort(6380).setMaster(false));
             }
         });
-        when(redisSessionManager.findOrCreateSession("127.0.0.1", 6380)).thenReturn(redisSession);
+        when(redisSessionManager.findOrCreateSession(new HostPort("127.0.0.1", 6380))).thenReturn(redisSession);
         when(redisSession.roleSync()).thenReturn("master");
 
         collector.doCorrection(plan);
@@ -91,14 +90,14 @@ public class DefaultRedisMasterCollectorTest extends AbstractRedisTest{
 
     @Test
     public void testIsMaster2() throws Exception {
-        when(redisSessionManager.findOrCreateSession(any(), anyInt())).thenReturn(null);
+        when(redisSessionManager.findOrCreateSession(any(HostPort.class))).thenReturn(null);
         Assert.assertFalse(collector.isMaster("127.0.0.1", 6379));
     }
 
     @Test
     public void testIsMaster3() throws Exception {
         when(redisSession.roleSync()).thenThrow(new IllegalStateException("Redis not response"));
-        when(redisSessionManager.findOrCreateSession(any(), anyInt())).thenReturn(redisSession);
+        when(redisSessionManager.findOrCreateSession(any(HostPort.class))).thenReturn(redisSession);
         Assert.assertFalse(collector.isMaster("127.0.0.1", 6379));
 
     }
@@ -106,14 +105,14 @@ public class DefaultRedisMasterCollectorTest extends AbstractRedisTest{
     @Test
     public void testIsMaster4() throws Exception {
         when(redisSession.roleSync()).thenReturn("slave");
-        when(redisSessionManager.findOrCreateSession(any(), anyInt())).thenReturn(redisSession);
+        when(redisSessionManager.findOrCreateSession(any(HostPort.class))).thenReturn(redisSession);
         Assert.assertFalse(collector.isMaster("127.0.0.1", 6379));
     }
 
     @Test
     public void testIsMaster5() throws Exception {
         when(redisSession.roleSync()).thenReturn("master");
-        when(redisSessionManager.findOrCreateSession(any(), anyInt())).thenReturn(redisSession);
+        when(redisSessionManager.findOrCreateSession(any(HostPort.class))).thenReturn(redisSession);
         Assert.assertTrue(collector.isMaster("127.0.0.1", 6379));
     }
 

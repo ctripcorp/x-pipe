@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.redisconf.rewrite;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
@@ -32,16 +33,16 @@ public class DefaultRedisConfCollector implements RedisConfCollector{
         String clusterId = samplePlan.getClusterId();
         String shardId = samplePlan.getShardId();
 
-        samplePlan.getHostPort2SampleResult().forEach((hostPort, result) -> {
+        samplePlan.getHostPort2SampleResult().forEach((endpoint, result) -> {
 
             if(result.isSuccess()){
-                logger.info("{}: success", hostPort);
+                logger.info("{}: success", endpoint);
             }else {
 
-                logger.info("{}: fail:{}", hostPort, result.getFailReason());
+                logger.info("{}: fail:{}", endpoint, result.getFailReason());
                 if(result.getFailReason() instanceof RedisConfFailException){
-                    alertManager.alert(clusterId, shardId, hostPort, ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE, String.format("%s:%s",
-                            result.getFailReason().getClass().getSimpleName(), hostPort));
+                    alertManager.alert(clusterId, shardId, new HostPort(endpoint.getHost(), endpoint.getPort()), ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE, String.format("%s:%s",
+                            result.getFailReason().getClass().getSimpleName(), new HostPort(endpoint.getHost(), endpoint.getPort())));
                 }
             }
 

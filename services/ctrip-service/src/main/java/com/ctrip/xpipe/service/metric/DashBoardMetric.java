@@ -35,15 +35,14 @@ public class DashBoardMetric implements MetricProxy{
 
 
     @Override
-    public void writeBinMultiDataPoint(List<MetricData> datas) throws MetricProxyException {
+    public void writeBinMultiDataPoint(MetricData metricData) throws MetricProxyException {
 
-        for(MetricData metricData : datas){
-            aggregator.add(metricData.getValue(),
-                    metricData.getClusterName(),
-                    metricData.getShardName(),
-                    metricData.getHostPort().getHost(),
-                    String.valueOf(metricData.getHostPort().getPort()));
-        }
+        aggregator.add(metricData.getValue(),
+                metricData.getClusterName(),
+                metricData.getShardName(),
+                metricData.getHostPort().getHost(),
+                String.valueOf(metricData.getHostPort().getPort()));
+
     }
 
     @Override

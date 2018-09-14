@@ -41,9 +41,9 @@ public class DefaultDiskLessCollector implements DiskLessCollector {
         String clusterId = samplePlan.getClusterId();
         String shardId = samplePlan.getShardId();
 
-        samplePlan.getHostPort2SampleResult().forEach((hostPort, sampleResult) -> {
+        samplePlan.getHostPort2SampleResult().forEach((endpoint, sampleResult) -> {
             if(sampleResult.isSuccess()) {
-                checkRedisDiskLess(hostPort, sampleResult.getContext(), clusterId, shardId);
+                checkRedisDiskLess(new HostPort(endpoint.getHost(), endpoint.getPort()), sampleResult.getContext(), clusterId, shardId);
             } else {
                 logger.error("Getting Redis info and conf, execution error: {}", sampleResult.getFailReason());
             }

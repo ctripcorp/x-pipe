@@ -406,7 +406,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 try {
                     redisService.deleteKeepers(dcId, clusterId, shardTbl.getShardName());
                 } catch (ResourceNotFoundException ignore) {
-                    // should not catch this, as we already get keepers
+                    // should not catch this, as we already findRedisHealthCheckInstance keepers
                 }
             } else {
                 // if size == 2, do nothing

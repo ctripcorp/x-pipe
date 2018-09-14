@@ -5,15 +5,16 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import com.ctrip.framework.foundation.Foundation;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.*;
 import com.ctrip.xpipe.service.foundation.CtripFoundationService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import io.netty.util.HashedWheelTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +33,15 @@ public class HickwallMetric implements MetricProxy {
 	
 	private HickwallConfig config = new HickwallConfig();
 	
-	private BlockingQueue<ArrayList<DataPoint>> datas;
+	private BlockingQueue<DataPoint> datas;
 
 	private HickwallClient client;
+
+	private ArrayList<DataPoint> dataToSend = null;
+
+	private static final int NUM_MESSAGES_PER_SEND = 100;
+
+	private static final int HICKWALL_SEND_INTERVAL = 2000;
 	
 	public HickwallMetric() {
 		start();
@@ -44,41 +51,39 @@ public class HickwallMetric implements MetricProxy {
 		logger.info("Hickwall proxy started.");
 		
 		datas = new ArrayBlockingQueue<>(config.getHickwallQueueSize());
-		
-		XpipeThreadFactory.create("HickwallSender", true).newThread(new Runnable() {
+
+		ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
+				XpipeThreadFactory.create("HickwallSender", true));
+		tryUntilConnected();
+
+		scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 			@Override
-			public void run() {
-				tryUntilConnected();
-				
-				ArrayList<DataPoint> data = null;
-				while (!Thread.currentThread().isInterrupted()) {
-					if (data == null) {
-						try {
-							data = datas.take();
-						} catch (InterruptedException e) {
-							Thread.currentThread().interrupt();
-							break;
-						}
+			protected void doRun() throws Exception {
+
+				while(datas.size() >= NUM_MESSAGES_PER_SEND) {
+					if (dataToSend == null) {
+						dataToSend = new ArrayList<>();
+						datas.drainTo(dataToSend, NUM_MESSAGES_PER_SEND);
 					}
 
 					try {
-						client.send(data);
-						data = null;
+						client.send(dataToSend);
+						dataToSend = null;
 					} catch (IOException e) {
 						logger.error("Error write data to metric server{}", config.getHickwallHostPort(), e);
 						tryUntilConnected();
-					}catch(Exception e){
+					} catch (Exception e) {
 						logger.error("Error write data to metric server{}", config.getHickwallHostPort(), e);
 						try {
-							TimeUnit.SECONDS.sleep(5);
+							TimeUnit.SECONDS.sleep(10);
 						} catch (InterruptedException e1) {
 							Thread.currentThread().interrupt();
-							break;
 						}
 					}
 				}
+
 			}
-		}).start();
+		}, HICKWALL_SEND_INTERVAL, HICKWALL_SEND_INTERVAL, TimeUnit.MILLISECONDS);
 	}
 	
 	private void tryUntilConnected() {
@@ -103,33 +108,27 @@ public class HickwallMetric implements MetricProxy {
 	}
 	
 	@Override
-	public void writeBinMultiDataPoint(List<MetricData> rawData) throws MetricProxyException {
-		ArrayList<DataPoint> bmp = convertToHickwallFormat(rawData);
+	public void writeBinMultiDataPoint(MetricData rawData) throws MetricProxyException {
+		DataPoint bmp = convertToHickwallFormat(rawData);
 
 		if (!datas.offer(bmp)) {
 			logger.error("Hickwall queue overflow, will drop data");
 		}
 	}
 	
-	private ArrayList<DataPoint> convertToHickwallFormat(List<MetricData> datas) {
+	private DataPoint convertToHickwallFormat(MetricData md) {
 
-		ArrayList<DataPoint> dps = new ArrayList<>(datas.size());
-		
-		for(MetricData md : datas) {
-			DataPoint dp = new DataPoint(metricName(md), (double) md.getValue(), md.getTimestampMilli() * 1000000);
-			// cluster.shard.10_2_2_2_6379.10_28_142_142 (cluster.shard.redis+port.console)
-			dp.setEndpoint(getEndpoint(md));
-			dp.getMeta().put("measurement", "fx.xpipe.delay");
-			dp.getTag().put("cluster", md.getClusterName());
-			dp.getTag().put("shard", md.getShardName());
-			dp.getTag().put("address", md.getHostPort().toString());
-			dp.getTag().put("srcaddr", getLocalIP());
-			dp.getTag().put("app", "fx");
+		DataPoint dp = new DataPoint(metricName(md), (double) md.getValue(), md.getTimestampMilli() * 1000000);
+		// cluster.shard.10_2_2_2_6379.10_28_142_142 (cluster.shard.redis+port.console)
+		dp.setEndpoint(getEndpoint(md));
+		dp.getMeta().put("measurement", "fx.xpipe.delay");
+		dp.getTag().put("cluster", md.getClusterName());
+		dp.getTag().put("shard", md.getShardName());
+		dp.getTag().put("address", md.getHostPort().toString());
+		dp.getTag().put("srcaddr", getLocalIP());
+		dp.getTag().put("app", "fx");
 
-			dps.add(dp);
-		}
-		
-		return dps;
+		return dp;
 	}
 
 	private String metricName(MetricData md) {

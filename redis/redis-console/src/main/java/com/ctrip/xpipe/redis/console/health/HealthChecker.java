@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author marsqing
@@ -43,9 +42,6 @@ public class HealthChecker {
 	@Autowired
 	private ConsoleConfig config;
 
-	@Autowired
-	private HealthCheckVisitor healthCheckVisitor;
-
 	private Thread daemonHealthCheckThread;
 
 	@PostConstruct
@@ -54,18 +50,18 @@ public class HealthChecker {
 
 		daemonHealthCheckThread = XpipeThreadFactory.create("RedisHealthChecker", true).newThread(new Runnable() {
 
-			private boolean warmuped = false;
-
 			@Override
 			public void run() {
 
 				while (!Thread.currentThread().isInterrupted()) {
 					try {
-						if(!warmuped) {
-							TimeUnit.SECONDS.sleep(2);
-							warmup();
-							warmuped = true;
-						}
+						Thread.sleep(config.getRedisReplicationHealthCheckInterval());
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						break;
+					}
+
+					try {
 						List<DcMeta> dcsToCheck = dcsToCheck(metaCache.getXpipeMeta());
 						if(!dcsToCheck.isEmpty()){
 							sampleAll(dcsToCheck);
@@ -73,42 +69,11 @@ public class HealthChecker {
 					} catch (Throwable e) {
 						log.error("Unexpected error when sample all", e);
 					}
-
-					try {
-						Thread.sleep(config.getRedisReplicationHealthCheckInterval());
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
-						break;
-					}
 				}
 			}
 
 		});
 		daemonHealthCheckThread.start();
-	}
-
-	@VisibleForTesting
-	protected void warmup() {
-		int period = 1000;
-		XpipeMeta xpipeMeta = null;
-		while(xpipeMeta == null) {
-			log.info("[warmup] waiting for metaCache initialized");
-			try {
-				Thread.sleep(period);
-				xpipeMeta = metaCache.getXpipeMeta();
-				Thread.sleep(period);
-			} catch (Exception e) {
-				log.error("[warmup]", e);
-			}
-		}
-		try {
-			List<DcMeta> dcsToCheck = dcsToCheck(xpipeMeta);
-			for(DcMeta dc : dcsToCheck) {
-				dc.accept(healthCheckVisitor);
-			}
-		} catch (Exception e) {
-			log.error("[warmup] error: {}", e);
-		}
 	}
 
 	@VisibleForTesting

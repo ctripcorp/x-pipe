@@ -41,6 +41,8 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
     @Autowired
     private ConsoleConfig consoleConfig;
 
+    private String clusterActiveDc;
+
     @Override
     protected List<ALERT_TYPE> alertTypes() {
         return Lists.newArrayList(ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS);
@@ -118,6 +120,7 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
             log.info("[addCluster][false]{}, {}, {}", clusterMeta.getId(), dcName, clusterStatus);
             return false;
         }
+        this.clusterActiveDc = clusterMeta.getActiveDc();
         return true;
     }
 
@@ -128,7 +131,7 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
     @Override
     protected BaseSamplePlan<InstanceSentinelResult> createPlan(String dcId, String clusterId, String shardId) {
-        return new SentinelSamplePlan(clusterId, shardId, consoleConfig);
+        return new SentinelSamplePlan(clusterId, shardId, consoleConfig, this.clusterActiveDc);
     }
 
 

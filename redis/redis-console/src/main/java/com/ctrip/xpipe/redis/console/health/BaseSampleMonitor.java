@@ -69,11 +69,11 @@ public abstract class BaseSampleMonitor<T extends BaseInstanceResult> implements
 	}
 
 	protected RedisSession findRedisSession(HostPort hostPort) {
-		return redisSessionManager.findOrCreateSession(hostPort.getHost(), hostPort.getPort());
+		return redisSessionManager.findOrCreateSession(hostPort);
 	}
 
 	protected RedisSession findRedisSession(String host, int port) {
-		return redisSessionManager.findOrCreateSession(host, port);
+		return redisSessionManager.findOrCreateSession(new HostPort(host, port));
 	}
 
 

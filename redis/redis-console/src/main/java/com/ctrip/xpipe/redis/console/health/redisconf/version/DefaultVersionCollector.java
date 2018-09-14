@@ -46,15 +46,15 @@ public class DefaultVersionCollector implements VersionCollector {
         String clusterId = samplePlan.getClusterId();
         String shardId = samplePlan.getShardId();
 
-        samplePlan.getHostPort2SampleResult().forEach((hostPort, sampleResult) -> {
+        samplePlan.getHostPort2SampleResult().forEach((endpoint, sampleResult) -> {
             if(sampleResult.isSuccess()) {
                 String context = sampleResult.getContext();
                 if(context == null || StringUtil.isEmpty(context)) {
-                    logger.warn("[collect]Null String of Redis info, {} {} {}", clusterId, shardId, hostPort);
+                    logger.warn("[collect]Null String of Redis info, {} {} {}", clusterId, shardId, endpoint);
                     return;
                 }
-                cacheRedisInfo(hostPort, context);
-                checkRedisVersion(hostPort, context, clusterId, shardId);
+                cacheRedisInfo(new HostPort(endpoint.getHost(), endpoint.getPort()), context);
+                checkRedisVersion(new HostPort(endpoint.getHost(), endpoint.getPort()), context, clusterId, shardId);
             } else {
                 logger.error("[collect]Getting Redis Version, execution error: {}", sampleResult.getFailReason());
             }

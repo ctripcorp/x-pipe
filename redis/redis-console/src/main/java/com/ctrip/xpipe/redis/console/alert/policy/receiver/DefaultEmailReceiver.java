@@ -40,7 +40,7 @@ public class DefaultEmailReceiver extends AbstractEmailReceiver {
         for(EmailReceiverParam param : params) {
             recipients.addAll(param.param());
         }
-        // make sure xpipe admin always get the alert email
+        // make sure xpipe admin always findRedisHealthCheckInstance the alert email
         List<String> ccers = params.contains(xpipeAdminReceiver()) ? null : getXPipeAdminEmails();
 
         return new EmailReceiverModel(recipients, ccers);
