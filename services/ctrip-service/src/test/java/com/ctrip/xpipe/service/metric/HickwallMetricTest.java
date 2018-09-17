@@ -41,7 +41,7 @@ public class HickwallMetricTest extends AbstractServiceTest{
             protected void doRun() throws Exception {
 
                 HostPort hostPort = new HostPort("127.0.0.1", port);
-                MetricData metricData = new MetricData("delay", "cluster", "shard");
+                MetricData metricData = new MetricData("delay", "dc", "cluster", "shard");
                 metricData.setValue(1000);
                 metricData.setHostPort(hostPort);
                 metricData.setTimestampMilli(System.currentTimeMillis());
