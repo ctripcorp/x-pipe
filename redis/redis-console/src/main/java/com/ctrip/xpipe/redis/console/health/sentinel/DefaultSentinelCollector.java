@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.health.sentinel;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
@@ -185,7 +186,7 @@ public class DefaultSentinelCollector implements SentinelCollector {
         if (role.get() instanceof String && Server.SERVER_ROLE.KEEPER.sameRole((String) role.get())) {
             return true;
         }
-        if (role.get() instanceof RedisConnectionException) {
+        if (role.get() instanceof CommandExecutionException) {
             return true;
         }
         logger.info("[isKeeperOrDead] role: {}", role.get());
