@@ -254,4 +254,33 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         targetKeepers.get(0).setId(11111L);
         redisService.validateKeepers(targetKeepers);
     }
+
+    @Test
+    public void testAddDuplicateRedis() throws ResourceNotFoundException, DalException {
+        List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
+        logger.info("[Redis-Tbls]{}", redisTbls);
+        try {
+            redisService.insertRedises(dcName, clusterName, shardNames[1], Lists.transform(redisTbls,
+                    (redisTbl) -> new Pair<String, Integer>(redisTbl.getRedisIp(), redisTbl.getRedisPort())));
+            Assert.fail();
+        } catch (Exception e) {
+//            Assert.assertEquals("Redis already exists, localhost:6379", e.getMessage());
+            logger.error("", e);
+        }
+    }
+
+    @Test
+    public void testUpdateWithDuplicateRedis() throws ResourceNotFoundException, DalException {
+        List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
+        logger.info("[Redis-Tbls]{}", redisTbls);
+        RedisTbl redis = new RedisTbl().setRedisIp("localhost").setRedisPort(6379);
+        try {
+            redisService.insertRedises(dcName, clusterName, shardNames[1], Lists.newArrayList(new Pair<>(redis.getRedisIp(), redis.getRedisPort())));
+            redisService.updateRedises(dcName, clusterName, shardName, new ShardModel().addRedis(redis));
+            Assert.fail();
+        } catch (Exception e) {
+            Assert.assertEquals("Redis already exists, localhost:6379", e.getMessage());
+            logger.error("", e);
+        }
+    }
 }

@@ -63,10 +63,11 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
     }
 
     @DalTransaction
-    public void createRedisesBatch(List<RedisTbl> redises) throws DalException {
+    public int[] createRedisesBatch(List<RedisTbl> redises) {
         if (null != redises) {
             Map<Long, String> cache = new HashMap<Long, String>();
             for (RedisTbl redis : redises) {
+                checkRedisNotExist(redis);
                 if (redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)) {
                     if (null == cache.get(redis.getDcClusterShardId())) {
                         String newKeeperId = getToCreateKeeperId(redis);
@@ -77,13 +78,27 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
                     }
                 }
             }
-            queryHandler.handleBatchInsert(new DalQuery<int[]>() {
+
+            return queryHandler.handleBatchInsert(new DalQuery<int[]>() {
                 @Override
                 public int[] doQuery() throws DalException {
                     return redisTblDao.insertBatch(redises.toArray(new RedisTbl[redises.size()]));
                 }
             });
 
+        }
+        return null;
+    }
+
+    private void checkRedisNotExist(RedisTbl redisTbl) {
+        RedisTbl otherRedis = queryHandler.handleQuery(new DalQuery<RedisTbl>() {
+            @Override
+            public RedisTbl doQuery() throws DalException {
+                return redisTblDao.findWithIpPort(redisTbl.getRedisIp(), redisTbl.getRedisPort(), RedisTblEntity.READSET_IP_AND_PORT);
+            }
+        });
+        if(otherRedis != null) {
+            throw new IllegalArgumentException("Redis already exists, " + otherRedis.getRedisIp() + ":" + otherRedis.getRedisPort());
         }
     }
 
