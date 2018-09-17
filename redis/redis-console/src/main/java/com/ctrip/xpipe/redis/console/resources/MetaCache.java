@@ -39,5 +39,4 @@ public interface MetaCache {
     int getRedisNumOfDcCluster(String dcId, String clusterId);
 
     String getActiveDc(String clusterId, String shardId);
-
 }

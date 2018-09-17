@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
+import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.MasterNotFoundException;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -69,11 +70,11 @@ public class DefaultSentinelCollector implements SentinelCollector {
         Set<SentinelHello> hellos = sentinelSample.getHellos();
         String clusterId = sentinelSample.getSamplePlan().getClusterId();
         String shardId = sentinelSample.getSamplePlan().getShardId();
-        String clusterActiveDc = ((SentinelSamplePlan)sentinelSample.getSamplePlan()).getClusterActiveDc();
+        Set<HostPort> sentinelsAddress = ((SentinelSamplePlan)sentinelSample.getSamplePlan()).getSentinelsAddress();
         String sentinelMonitorName = metaCache.getSentinelMonitorName(clusterId, shardId);
         Set<HostPort> masterDcSentinels = metaCache.getActiveDcSentinels(clusterId, shardId);
-        if (!clusterActiveDc.equals(metaCache.getActiveDc(clusterId, shardId))){
-            logger.debug("[collect][active_dc of cluster is change!]{}, {}", clusterId, shardId);
+        if (!masterDcSentinels.containsAll(sentinelsAddress)){
+            logger.debug("[collect][cluster is not Migrating status]{},{}", clusterId, shardId);
             return;
         }
         QuorumConfig quorumConfig = consoleConfig.getDefaultSentinelQuorumConfig();
