@@ -1,15 +1,25 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpointFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.Set;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author wenchao.meng
@@ -28,8 +38,16 @@ public class DefaultSentinelCollectorTest extends AbstractConsoleTest{
     @Before
     public void beforeDefaultSentinelCollectorTest() throws Exception {
         sentinelCollector = new DefaultSentinelCollector();
+        HealthCheckEndpointFactory endpointFactory = mock(HealthCheckEndpointFactory.class);
+        when(endpointFactory.getOrCreateEndpoint(any(HostPort.class))).thenAnswer(new Answer<Endpoint>() {
+            @Override
+            public Endpoint answer(InvocationOnMock invocation) throws Throwable {
+                HostPort hostPort = invocation.getArgumentAt(0, HostPort.class);
+                return new DefaultEndPoint(hostPort.getHost(), hostPort.getPort());
+            }
+        });
         sentinelCollector.setSessionManager(new DefaultRedisSessionManager()
-                .setExecutors(executors).setScheduled(scheduled)
+                .setExecutors(executors).setScheduled(scheduled).setEndpointFactory(endpointFactory)
                 .setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()));
         masterSentinels = Sets.newHashSet(
                 new HostPort("127.0.0.1", 5000),
@@ -90,9 +108,9 @@ public class DefaultSentinelCollectorTest extends AbstractConsoleTest{
 
     @Test
     public void testIsKeeperOrDead() {
-//        boolean result = sentinelCollector.isKeeperOrDead("127.0.0.1", 6380);
-//        logger.info("{}", result);
-//        Assert.assertTrue(result);
+        boolean result = sentinelCollector.isKeeperOrDead(localHostport(0));
+        logger.info("{}", result);
+        Assert.assertTrue(result);
     }
 
 }
