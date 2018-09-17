@@ -530,4 +530,15 @@ public abstract class AbstractRedisTest extends AbstractTest {
         }
         return result;
     }
+
+    protected RedisMeta newRandomFakeRedisMeta() {
+        DcMeta dcMeta = new DcMeta("dc");
+        ClusterMeta clusterMeta = new ClusterMeta("cluster");
+        ShardMeta shardMeta = new ShardMeta("shard");
+        RedisMeta redis = new RedisMeta().setIp("local").setPort(6379);
+        shardMeta.addRedis(redis);
+        clusterMeta.addShard(shardMeta);
+        dcMeta.addCluster(clusterMeta);
+        return redis;
+    }
 }

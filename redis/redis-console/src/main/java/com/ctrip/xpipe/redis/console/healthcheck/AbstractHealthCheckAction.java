@@ -57,9 +57,9 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
             future.cancel(true);
         }
         for(HealthCheckActionListener listener : listeners) {
-            removeListener(listener);
+            listener.stopWatch(this);
         }
-        instance.unregister(this);
+        listeners.clear();
         super.doStop();
     }
 

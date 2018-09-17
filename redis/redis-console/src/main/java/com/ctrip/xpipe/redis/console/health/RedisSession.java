@@ -118,7 +118,7 @@ public class RedisSession {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
                 if(!commandFuture.isSuccess()) {
-                    logger.warn("Error publish to redis {}", endpoint);
+                    logger.error("Error publish to redis {}, {}", endpoint, commandFuture.cause());
                 }
             }
         });
