@@ -98,7 +98,7 @@ public class DalQueryHandler {
 		}
 	}
 
-	public void handleBatchInsert(DalQuery<int[]> query) {
+	public int[] handleBatchInsert(DalQuery<int[]> query) {
 		try {
 			int[] result = query.doQuery();
 
@@ -112,6 +112,7 @@ public class DalQueryHandler {
 			if(changeSum == 0) {
 				throw new DalInsertException("No rows insert");
 			}
+			return result;
 		} catch (Exception e) {
 			throw new DalInsertException("Insert failed." + e.getMessage(), e);
 		}

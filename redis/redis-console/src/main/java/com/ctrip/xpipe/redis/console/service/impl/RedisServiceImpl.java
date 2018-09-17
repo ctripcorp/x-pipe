@@ -13,6 +13,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MathUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -125,16 +126,12 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         return redisTbls;
     }
 
-    protected int[] insert(RedisTbl... redises) {
+    protected int[] insert(List<RedisTbl> redises) {
+        return redisDao.createRedisesBatch(redises);
 
-        return queryHandler.handleQuery(new DalQuery<int[]>() {
-            @Override
-            public int[] doQuery() throws DalException {
-                return dao.insertBatch(redises);
-            }
-        });
-
-
+    }
+    protected int[] insert(RedisTbl redis) {
+        return redisDao.createRedisesBatch(Lists.newArrayList(redis));
     }
 
     @Override
@@ -169,7 +166,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
         validateKeepers(insertKeepers);
 
-        int[] insert = insert(insertKeepers.toArray(new RedisTbl[0]));
+        int[] insert = insert(insertKeepers);
         notifier.notifyClusterUpdate(dcId, clusterId);
         return MathUtil.sum(insert);
     }
