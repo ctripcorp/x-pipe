@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.delay;
 
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
-import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +24,12 @@ public class MetricDelayListener implements HealthCheckActionListener<DelayActio
     private MetricProxy proxy = ServicesUtil.getMetricProxy();
 
     private MetricData getPoint(DelayActionContext context) {
-        RedisHealthCheckInstance instance = context.instance();
-        MetricData data = new MetricData(TYPE, instance.getRedisInstanceInfo().getClusterId(),
-                instance.getRedisInstanceInfo().getShardId());
+        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+
+        MetricData data = new MetricData(TYPE, info.getDcId(), info.getClusterId(), info.getShardId());
         data.setValue(context.getResult() / 1000);
         data.setTimestampMilli(context.getRecvTimeMilli());
-        data.setHostPort(instance.getRedisInstanceInfo().getHostPort());
+        data.setHostPort(info.getHostPort());
         return data;
     }
 
