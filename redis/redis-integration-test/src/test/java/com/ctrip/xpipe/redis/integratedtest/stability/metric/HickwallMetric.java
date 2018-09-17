@@ -36,7 +36,7 @@ public class HickwallMetric implements MetricLog {
             return;
         }
 
-        MetricData metricData = new MetricData(desc, clusterKey, metricSub);
+        MetricData metricData = new MetricData(desc, "dc", clusterKey, metricSub);
         metricData.setTimestampMilli(System.currentTimeMillis());
         metricData.setValue(delayNanos);
 
