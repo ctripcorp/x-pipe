@@ -184,4 +184,9 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 		this.executors = executors;
 		return this;
 	}
+
+	public DefaultRedisSessionManager setEndpointFactory(HealthCheckEndpointFactory endpointFactory) {
+		this.endpointFactory = endpointFactory;
+		return this;
+	}
 }
