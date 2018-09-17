@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
@@ -11,11 +12,14 @@ import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.utils.IpUtils;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -40,8 +44,6 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
 
     @Autowired
     private ConsoleConfig consoleConfig;
-
-    private String clusterActiveDc;
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
@@ -120,7 +122,6 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
             log.info("[addCluster][false]{}, {}, {}", clusterMeta.getId(), dcName, clusterStatus);
             return false;
         }
-        this.clusterActiveDc = clusterMeta.getActiveDc();
         return true;
     }
 
@@ -130,8 +131,8 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
     }
 
     @Override
-    protected BaseSamplePlan<InstanceSentinelResult> createPlan(String dcId, String clusterId, String shardId) {
-        return new SentinelSamplePlan(clusterId, shardId, consoleConfig, this.clusterActiveDc);
+    protected BaseSamplePlan<InstanceSentinelResult> createPlan(DcMeta dcMeta, String dcId, String clusterId, String shardId) {
+        return new SentinelSamplePlan(clusterId, shardId, consoleConfig, getSentinelsFromDcMeta(dcMeta, clusterId, shardId));
     }
 
 
@@ -142,6 +143,18 @@ public class SentinelMonitor extends AbstractRedisConfMonitor<InstanceSentinelRe
                 nanoTime,
                 plan,
                 5000);
+    }
+
+    private HashSet<HostPort> getSentinelsFromDcMeta(DcMeta dcMeta, String clusterId, String shardId){
+
+        log.info("[getSentinelsFromDcMeta]{}, {}", clusterId, shardId);
+
+        ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+        ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
+        Long sentinelId = shardMeta.getSentinelId();
+        SentinelMeta sentinelMeta = dcMeta.getSentinels().get(sentinelId);
+
+        return new HashSet<>(IpUtils.parseAsHostPorts(sentinelMeta.getAddress()));
     }
 }
 

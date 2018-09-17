@@ -35,7 +35,7 @@ public class GeneratePlanTest {
             }
 
             @Override
-            protected BaseSamplePlan createPlan(String dcId, String clusterId, String shardId) {
+            protected BaseSamplePlan createPlan(DcMeta dcMeta, String dcId, String clusterId, String shardId) {
                 return new BaseSamplePlan(clusterId, shardId) {
                     @Override
                     public void addRedis(String dcId, RedisMeta redisMeta, Object initSampleResult) {

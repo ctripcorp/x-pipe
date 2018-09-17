@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.health.sentinel;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.health.BaseSamplePlan;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -17,12 +19,12 @@ public class SentinelSamplePlan extends BaseSamplePlan<InstanceSentinelResult>{
 
     private ConsoleConfig consoleConfig;
 
-    private String clusterActiveDc;
+    private Set<HostPort>  sentinelsAddress;
 
-    public SentinelSamplePlan(String clusterId, String shardId, ConsoleConfig consoleConfig, String clusterActiveDc) {
+    public SentinelSamplePlan(String clusterId, String shardId, ConsoleConfig consoleConfig, Set<HostPort> sentinelsAddress) {
         super(clusterId, shardId);
         this.consoleConfig = consoleConfig;
-        this.clusterActiveDc = clusterActiveDc;
+        this.sentinelsAddress = sentinelsAddress;
     }
 
     @Override
@@ -52,6 +54,6 @@ public class SentinelSamplePlan extends BaseSamplePlan<InstanceSentinelResult>{
         return count == backupDcArr.length;
     }
 
-    public String getClusterActiveDc(){return this.clusterActiveDc;}
+    public Set<HostPort> getSentinelsAddress(){return sentinelsAddress;}
 
 }
