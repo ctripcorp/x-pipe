@@ -20,7 +20,7 @@ public class DashBoardMetric implements MetricProxy{
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static MetricsAggregator aggregator = MetricsAggregatorFactory.createAggregator("fx.xpipe.delay", "cluster", "shard", "ip", "port");
+    private static MetricsAggregator aggregator = MetricsAggregatorFactory.createAggregator("fx.xpipe.delay", "dc", "cluster", "shard", "ip", "port");
 
     public DashBoardMetric(){
 
