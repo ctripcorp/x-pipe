@@ -143,8 +143,15 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             public void operationComplete(CommandFuture<Boolean> commandFuture) throws Exception {
                 boolean siteReliable = commandFuture.get();
                 if(siteReliable) {
-                    if(!configedNotMarkDown(event) && stateNotUp(event)) {
-                        finalStateSetterManager.set(info.getClusterShardHostport(), false);
+                    if(!configedNotMarkDown(event)) {
+                        if(stateUpNow(event)) {
+                            logger.warn("[markdown] instance state up now, do not mark down, {}",
+                                    event.getInstance().getRedisInstanceInfo());
+                            return;
+                        } else {
+                            logger.info("[markdown] mark down redis, {}", event.getInstance().getRedisInstanceInfo());
+                            finalStateSetterManager.set(info.getClusterShardHostport(), false);
+                        }
                     }
                 } else {
                     logger.warn("[site-down][not-mark-down] {}", info);
@@ -153,13 +160,9 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
         });
     }
 
-    private boolean stateNotUp(AbstractInstanceEvent event) {
-        boolean result = !delayPingActionListener.getState(event.getInstance().getRedisInstanceInfo().getHostPort())
+    private boolean stateUpNow(AbstractInstanceEvent event) {
+        return delayPingActionListener.getState(event.getInstance().getRedisInstanceInfo().getHostPort())
                 .equals(HEALTH_STATE.UP);
-        if(result) {
-            logger.warn("[stateNotUp] instance state up, do not mark down, {}", event.getInstance().getRedisInstanceInfo());
-        }
-        return result;
     }
 
     protected boolean masterUp(AbstractInstanceEvent instanceEvent) {
