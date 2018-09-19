@@ -138,7 +138,7 @@ public enum HEALTH_STATE {
 
         @Override
         protected HEALTH_STATE afterDelayHalfFail() {
-            return SICK;
+            return UNHEALTHY;
         }
 
         @Override
