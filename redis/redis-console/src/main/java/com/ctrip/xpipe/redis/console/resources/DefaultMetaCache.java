@@ -188,16 +188,17 @@ public class DefaultMetaCache implements MetaCache {
     }
 
     @Override
-    public int getRedisNumOfDcCluster(String dcId, String clusterId) {
+    public int getRedisNumOfDc(String dcId) {
         try {
             int count = 0;
-            ClusterMeta clusterMeta = meta.getKey().findDc(dcId).getClusters().get(clusterId);
-            for(ShardMeta shardMeta : clusterMeta.getShards().values()) {
-                count += shardMeta.getRedises().size();
+            for(ClusterMeta clusterMeta : meta.getKey().findDc(dcId).getClusters().values()) {
+                for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+                    count += shardMeta.getRedises().size();
+                }
             }
             return count;
         } catch (Exception e) {
-            logger.error("[getRedisNumOfDcCluster]", e);
+            logger.error("[getRedisNumOfDc]", e);
         }
         return 0;
     }

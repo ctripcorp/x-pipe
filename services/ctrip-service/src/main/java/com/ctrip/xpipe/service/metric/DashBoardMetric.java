@@ -38,6 +38,7 @@ public class DashBoardMetric implements MetricProxy{
     public void writeBinMultiDataPoint(MetricData metricData) throws MetricProxyException {
 
         aggregator.add(metricData.getValue(),
+                metricData.getDcName(),
                 metricData.getClusterName(),
                 metricData.getShardName(),
                 metricData.getHostPort().getHost(),

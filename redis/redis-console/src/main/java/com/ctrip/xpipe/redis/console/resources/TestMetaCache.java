@@ -82,7 +82,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public int getRedisNumOfDcCluster(String dcId, String clusterId) {
+    public int getRedisNumOfDc(String dcId) {
         return 0;
     }
 

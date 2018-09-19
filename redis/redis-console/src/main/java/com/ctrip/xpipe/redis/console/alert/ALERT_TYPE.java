@@ -25,8 +25,7 @@ public enum ALERT_TYPE {
     REPL_BACKLOG_NOT_ACTIVE("repl_backlog_not_active", EMAIL_DBA | EMAIL_XPIPE_ADMIN, true),
     SENTINEL_MONITOR_REDUNDANT_REDIS("sentinel_monitors_redundant_redis", EMAIL_XPIPE_ADMIN, false),
     SENTINEL_MONITOR_INCONSIS("sentinel_monitor_incosis", EMAIL_XPIPE_ADMIN, false),
-    PING_DOWN_TOO_MUCH("ping_down_too_much", EMAIL_XPIPE_ADMIN, false),
-    INSTANCE_LAG_NOT_MARK_DOWN("instance_lag_not_mark_down", EMAIL_XPIPE_ADMIN, false)
+    INSTANCE_SICK_BUT_NOT_MARK_DOWN("instance_lag_not_mark_down", EMAIL_XPIPE_ADMIN, false)
     ;
 
     private String simpleDesc;
