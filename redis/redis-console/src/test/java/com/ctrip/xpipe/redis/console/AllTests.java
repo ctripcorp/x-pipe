@@ -19,6 +19,10 @@ import com.ctrip.xpipe.redis.console.health.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
 import com.ctrip.xpipe.redis.console.health.sentinel.SentinelSamplePlanTest;
+import com.ctrip.xpipe.redis.console.healthcheck.action.DefaultSiteReliabilityCheckerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.action.HealthStatusTest;
+import com.ctrip.xpipe.redis.console.healthcheck.action.OuterClientServiceProcessorTest;
+import com.ctrip.xpipe.redis.console.healthcheck.action.handler.TestAbstractHealthEventHandlerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisHealthCheckInstanceFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactoryTest;
@@ -114,6 +118,11 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultHealthCheckEndpointFactoryTest.class,
         DefaultRedisHealthCheckInstanceFactoryTest.class,
         DcIgnoredConfigListenerTest.class,
+
+        DefaultSiteReliabilityCheckerTest.class,
+        HealthStatusTest.class,
+        OuterClientServiceProcessorTest.class,
+        TestAbstractHealthEventHandlerTest.class,
 })
 public class AllTests {
 

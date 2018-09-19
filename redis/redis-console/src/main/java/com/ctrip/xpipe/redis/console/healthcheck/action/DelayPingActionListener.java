@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.healthcheck.*;
+import com.ctrip.xpipe.redis.console.healthcheck.action.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingActionContext;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
