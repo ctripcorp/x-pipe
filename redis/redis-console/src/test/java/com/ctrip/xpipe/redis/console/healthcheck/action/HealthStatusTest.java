@@ -48,6 +48,7 @@ public class HealthStatusTest extends AbstractRedisTest {
 
         healthStatus = new HealthStatus(instance, scheduled);
         System.gc();
+        sleep(10);
     }
 
     @Test
@@ -259,7 +260,7 @@ public class HealthStatusTest extends AbstractRedisTest {
         }, 0, baseInterval, TimeUnit.MILLISECONDS);
 
         //todo: set sleep more to test when do test manually
-        Thread.sleep(1000);
+        Thread.sleep(500);
         Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
         logger.info("[markup][count] {}", markup.get());
         logger.info("[markdown][count] {}", markdown.get());
@@ -268,7 +269,7 @@ public class HealthStatusTest extends AbstractRedisTest {
 
         routine.cancel(true);
         waitConditionUntilTimeOut(()->routine.isCancelled(), 30);
-        Thread.sleep(Math.max(HealthStatus.PING_DOWN_AFTER_MILLI, baseInterval) + 10);
+        Thread.sleep(50);
         Assert.assertEquals(HEALTH_STATE.DOWN, healthStatus.getState());
         Assert.assertEquals(1, markdown.get());
         Assert.assertEquals(0, markup.get());

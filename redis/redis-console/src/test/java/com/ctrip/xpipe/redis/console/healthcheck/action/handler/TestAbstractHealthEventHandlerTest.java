@@ -82,6 +82,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         when(instance.getRedisInstanceInfo()).thenReturn(info);
 
         when(checker.check(any(AbstractInstanceEvent.class))).thenReturn(future);
+        when(delayPingActionListener.getState(any())).thenReturn(HEALTH_STATE.DOWN);
         doNothing().when(finalStateSetterManager).set(any(ClusterShardHostPort.class), anyBoolean());
     }
 
@@ -160,6 +161,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         future.setSuccess(true);
         when(consoleServiceManager.quorumSatisfy(anyList(), any())).thenReturn(true);
         when(delayPingActionListener.getState(any())).thenReturn(HEALTH_STATE.UP);
+        when(delayPingActionListener.getState(instance.getRedisInstanceInfo().getHostPort())).thenReturn(HEALTH_STATE.DOWN);
 
         AbstractInstanceEvent event = new InstanceUp(instance);
         upHandler.handle(event);

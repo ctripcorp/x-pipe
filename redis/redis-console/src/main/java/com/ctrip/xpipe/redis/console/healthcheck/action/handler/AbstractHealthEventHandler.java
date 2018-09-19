@@ -154,8 +154,12 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     private boolean stateNotUp(AbstractInstanceEvent event) {
-        return !delayPingActionListener.getState(event.getInstance().getRedisInstanceInfo().getHostPort())
+        boolean result = !delayPingActionListener.getState(event.getInstance().getRedisInstanceInfo().getHostPort())
                 .equals(HEALTH_STATE.UP);
+        if(result) {
+            logger.warn("[stateNotUp] instance state up, do not mark down, {}", event.getInstance().getRedisInstanceInfo());
+        }
+        return result;
     }
 
     protected boolean masterUp(AbstractInstanceEvent instanceEvent) {
