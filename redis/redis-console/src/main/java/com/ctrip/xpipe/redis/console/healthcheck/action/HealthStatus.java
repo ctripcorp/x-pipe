@@ -79,7 +79,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
                 }
                 healthStatusUpdate();
             }
-        }, 0, PING_DOWN_AFTER_MILLI / 5, TimeUnit.MILLISECONDS);
+        }, 0, PING_DOWN_AFTER_MILLI / 10, TimeUnit.MILLISECONDS);
     }
 
     void pong(){
@@ -105,9 +105,8 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
         // check ping down first, as ping has highest priority
         long pingDownTime = currentTime - lastPongTime.get();
-        if(pingDownTime > PING_DOWN_AFTER_MILLI) {
+        if(pingDownTime >= PING_DOWN_AFTER_MILLI) {
             setPingDown();
-            return;
         }
 
         // check delay then
@@ -123,18 +122,17 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private void setDelayUp() {
         HEALTH_STATE preState = state.get();
-        state.set(preState.afterDelaySuccess());
+        state.compareAndSet(preState, preState.afterDelaySuccess());
         markUpIfNecessary(preState, state.get());
     }
 
     private void setPingUp() {
         HEALTH_STATE preState = state.get();
-        state.set(preState.afterPingSuccess());
+        state.compareAndSet(preState, preState.afterPingSuccess());
         markUpIfNecessary(preState, state.get());
     }
 
     private void setDelayHalfDown() {
-
         HEALTH_STATE preState = state.get();
         state.set(preState.afterDelayHalfFail());
         if(preState != HEALTH_STATE.UNHEALTHY && state.get() == HEALTH_STATE.UNHEALTHY){
@@ -143,21 +141,20 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
     }
 
     private void setDelayDown() {
-
+        logger.warn("[delay-down] {}", instance.getRedisInstanceInfo());
         HEALTH_STATE preState = state.get();
-        state.set(preState.afterDelayFail());
-
+        state.compareAndSet(preState, preState.afterDelayFail());
         if(state.get().markDown() && preState.isToDownNotify()){
-            logger.info("[setDelayDown]{}", this);
+            logger.info("[setSick]{}", this);
             notifyObservers(new InstanceSick(instance));
         }
     }
 
     private void setPingDown() {
         HEALTH_STATE preState = state.get();
-        state.set(preState.afterPingFail());
+        state.compareAndSet(preState, preState.afterPingFail());
         if(state.get().markDown() && preState.isToDownNotify()) {
-            logger.info("[setPingDown] {}", this);
+            logger.info("[setDown] {}", this);
             notifyObservers(new InstanceDown(instance));
         }
     }
