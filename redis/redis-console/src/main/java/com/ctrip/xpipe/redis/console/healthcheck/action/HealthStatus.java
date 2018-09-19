@@ -141,9 +141,10 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
     }
 
     private void setDelayDown() {
-        logger.warn("[delay-down] {}", instance.getRedisInstanceInfo());
         HEALTH_STATE preState = state.get();
         state.compareAndSet(preState, preState.afterDelayFail());
+        logger.warn("[setDelayDown] pre->cur, {}, {}; cur.markdown, {}; pre.todownnotify, {}", preState, state.get(),
+                state.get().markDown(), preState.isToDownNotify());
         if(state.get().markDown() && preState.isToDownNotify()){
             logger.info("[setSick]{}", this);
             notifyObservers(new InstanceSick(instance));
