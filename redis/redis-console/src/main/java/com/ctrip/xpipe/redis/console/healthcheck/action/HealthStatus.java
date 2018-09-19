@@ -79,7 +79,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
                 }
                 healthStatusUpdate();
             }
-        }, 0, PING_DOWN_AFTER_MILLI / 5, TimeUnit.MILLISECONDS);
+        }, 0, PING_DOWN_AFTER_MILLI / 10, TimeUnit.MILLISECONDS);
     }
 
     void pong(){
@@ -105,9 +105,8 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
         // check ping down first, as ping has highest priority
         long pingDownTime = currentTime - lastPongTime.get();
-        if(pingDownTime > PING_DOWN_AFTER_MILLI) {
+        if(pingDownTime >= PING_DOWN_AFTER_MILLI) {
             setPingDown();
-            return;
         }
 
         // check delay then
