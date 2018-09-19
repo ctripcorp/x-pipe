@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.mock;
@@ -271,6 +272,52 @@ public class HealthStatusTest extends AbstractRedisTest {
         Assert.assertEquals(HEALTH_STATE.DOWN, healthStatus.getState());
         Assert.assertEquals(1, markdown.get());
         Assert.assertEquals(0, markup.get());
+    }
+
+    @Test
+    public void testMarkUpMarkDownSequenceMultiThreadBug() throws Exception {
+        int baseInterval = 20;
+
+        HealthStatus.PING_DOWN_AFTER_MILLI = 50;
+        when(config.getHealthyDelayMilli()).thenReturn(1000);
+        when(config.downAfterMilli()).thenReturn(baseInterval);
+
+        AtomicInteger markup = new AtomicInteger(0);
+        AtomicInteger markdown = new AtomicInteger(0);
+        AtomicBoolean status = new AtomicBoolean(false);
+
+        healthStatus.addObserver(new Observer() {
+            @Override
+            public void update(Object args, Observable observable) {
+                if(args instanceof InstanceUp) {
+                    markup.incrementAndGet();
+                    status.set(true);
+                } else {
+                    markdown.incrementAndGet();
+                    scheduled.schedule(new AbstractExceptionLogTask() {
+                        @Override
+                        protected void doRun() throws Exception {
+                            if(!healthStatus.getState().equals(HEALTH_STATE.UP)) {
+                                status.set(false);
+                            }
+                        }
+                    }, HealthStatus.PING_DOWN_AFTER_MILLI/5, TimeUnit.MILLISECONDS);
+                }
+            }
+        });
+        markup();
+        Assert.assertTrue(status.get());
+
+        Thread.sleep(baseInterval + 5);
+        healthStatus.healthStatusUpdate();
+        Assert.assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
+
+        healthStatus.delay(10);
+        Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
+        Assert.assertTrue(status.get());
+
+        Thread.sleep(100);
+        Assert.assertTrue(status.get());
     }
 
     private void markup() {

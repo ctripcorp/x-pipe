@@ -143,7 +143,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             public void operationComplete(CommandFuture<Boolean> commandFuture) throws Exception {
                 boolean siteReliable = commandFuture.get();
                 if(siteReliable) {
-                    if(!configedNotMarkDown(event)) {
+                    if(!configedNotMarkDown(event) && stateNotUp(event)) {
                         finalStateSetterManager.set(info.getClusterShardHostport(), false);
                     }
                 } else {
@@ -151,6 +151,11 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
                 }
             }
         });
+    }
+
+    private boolean stateNotUp(AbstractInstanceEvent event) {
+        return !delayPingActionListener.getState(event.getInstance().getRedisInstanceInfo().getHostPort())
+                .equals(HEALTH_STATE.UP);
     }
 
     protected boolean masterUp(AbstractInstanceEvent instanceEvent) {
