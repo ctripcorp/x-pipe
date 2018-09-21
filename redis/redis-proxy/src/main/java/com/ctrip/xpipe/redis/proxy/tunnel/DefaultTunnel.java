@@ -5,6 +5,8 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
+import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
@@ -99,7 +101,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     @VisibleForTesting
     protected void setState(TunnelState newState) {
-        if(!tunnelState.get().isValidNext(newState)) {
+        if (!tunnelState.get().isValidNext(newState)) {
             logger.debug("[setState] Set state failed, state relationship not match, old: {}, new: {}",
                     tunnelState.get().name(), newState.name());
             return;
@@ -122,18 +124,19 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     /**
      * Observe for session change, see @DefaultSessionStore frontend() & backend()
-     * receives SessionStateChangeEvent | TunnelStateChangeEvent*/
+     * receives SessionStateChangeEvent | TunnelStateChangeEvent
+     */
     @Override
     public void update(Object args, Observable observable) {
-        if(!(observable instanceof Session)) {
+        if (!(observable instanceof Session)) {
             logger.error("[update] Tunnel should only observe session, not {}", observable.getClass().getName());
             return;
         }
         Session session = (Session) observable;
         SessionStateChangeEvent event = (SessionStateChangeEvent) args;
-        if(event.getCurrent() instanceof SessionClosed) {
+        if (event.getCurrent() instanceof SessionClosed) {
             onSessionClosed(session);
-        } else if(event.getCurrent() instanceof SessionEstablished) {
+        } else if (event.getCurrent() instanceof SessionEstablished) {
             onSessionEstablished(session);
         } else {
             logger.info("[update] un-recognised event: {}", event);
@@ -142,7 +145,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private void onSessionClosed(Session session) {
         // tunnel-established -> BACKEND/FRONTEND-CLOSED -> tunnel-closing(close other session) -> tunnel-closed
-        if(getState().equals(new TunnelClosing(this))) {
+        if (getState().equals(new TunnelClosing(this))) {
             setState(new TunnelClosed(this));
             return;
         }
@@ -166,30 +169,39 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     }
 
     private void onSessionEstablished(Session session) {
-        if(!(getState() instanceof TunnelHalfEstablished)) {
+        if (!(getState() instanceof TunnelHalfEstablished)) {
             logger.info("[doHandle] tunnel state {}, not able transfer to established", getState().name());
             return;
         }
-        if(session.getSessionType() == SESSION_TYPE.BACKEND) {
+        if (session.getSessionType() == SESSION_TYPE.BACKEND) {
             setState(new TunnelEstablished(this));
         }
     }
 
     @Override
     public int hashCode() {
-       return identity.hashCode();
+        return identity.hashCode();
     }
 
     /**
-     * Lifecycle corresponding*/
+     * Lifecycle corresponding
+     */
     @Override
     protected void doInitialize() throws Exception {
         super.doInitialize();
 
         frontend = new DefaultFrontendSession(this, frontendChannel, config.getTrafficReportIntervalMillis());
         // share the nio event loop to avoid oom
-        backend = new DefaultBackendSession(this, frontend.getChannel().eventLoop(),
-                config.getTrafficReportIntervalMillis(), proxyResourceManager);
+
+        ProxyEndpoint endpoint = proxyResourceManager.createProxyEndpointSelector(protocol).nextHop();
+        if (endpoint.getScheme().equals(ProxyEndpoint.PROXY_SCHEME.PROXYSOCKS5.name())) { // 下一跳是socks5
+            protocol = new DefaultProxyProtocolParser().read(protocol.output());          // 获取下下跳
+            backend = new Socks5BackEndSession(this, frontend.getChannel().eventLoop(),
+                    config.getTrafficReportIntervalMillis(), proxyResourceManager, endpoint);
+        } else {
+            backend = new DefaultBackendSession(this, frontend.getChannel().eventLoop(),
+                    config.getTrafficReportIntervalMillis(), proxyResourceManager);
+        }
 
         registerSessionEventHandlers();
         frontend.addObserver(this);
@@ -219,15 +231,15 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     @Override
     public void release() throws Exception {
-        if(getState().equals(new TunnelClosed(this))) {
+        if (getState().equals(new TunnelClosed(this))) {
             logger.debug("already closed, no need to release again");
             return;
         }
         setState(new TunnelClosed(this));
-        if(frontend != null) {
+        if (frontend != null) {
             frontend.release();
         }
-        if(backend != null) {
+        if (backend != null) {
             backend.release();
         }
     }

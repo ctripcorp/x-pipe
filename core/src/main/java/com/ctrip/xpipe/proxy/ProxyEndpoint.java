@@ -16,7 +16,7 @@ public interface ProxyEndpoint extends Endpoint {
     String getUri();
 
     enum PROXY_SCHEME {
-        TCP, TLS, PROXYTCP, PROXYTLS;
+        TCP, TLS, PROXYTCP, PROXYTLS, PROXYSOCKS5;
 
         public boolean matches(String scheme) {
             return name().equalsIgnoreCase(scheme);

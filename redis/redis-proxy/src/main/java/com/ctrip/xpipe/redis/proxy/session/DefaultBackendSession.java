@@ -36,17 +36,17 @@ import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MAR
  */
 public class DefaultBackendSession extends AbstractSession implements BackendSession {
 
-    private ProxyEndpointSelector selector;
+    protected ProxyEndpointSelector selector;
 
     private ByteBuf sendAfterProtocol = null;
 
-    private EventLoopGroup nioEventLoopGroup;
+    protected EventLoopGroup nioEventLoopGroup;
 
-    private NettySslHandlerFactory sslHandlerFactory;
+    protected NettySslHandlerFactory sslHandlerFactory;
 
-    private AtomicReference<SessionState> sessionState;
+    protected AtomicReference<SessionState> sessionState;
 
-    private ResourceManager resourceManager;
+    protected ResourceManager resourceManager;
 
     public DefaultBackendSession(Tunnel tunnel, EventLoopGroup eventLoopGroup, long trafficReportIntervalMillis,
                                  ResourceManager resourceManager) {
