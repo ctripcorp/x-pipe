@@ -41,6 +41,11 @@
 
 			<div class="navbar-buttons navbar-header pull-right" role="navigation">
 				<ul class="nav ace-nav">
+					<li class="orange">
+						<a ui-sref="dc_list({dcName:''})" title="DC列表">
+							<i class="ace-icon fa fa-archive"></i> <span>DC列表</span>
+						</a>
+					</li>
 					<li class="grey">
 						<a ui-sref="cluster_list({clusterName:''})" title="Cluster列表"> 
 							<i class="ace-icon fa fa-info-circle"></i> <span>Cluster列表</span>
@@ -209,6 +214,7 @@
 	<script src="scripts/controllers/ActiveDcMigrationEventListCtl.js"></script>
 	<script src="scripts/controllers/ActiveDcMigrationEventDetailsCtl.js"></script>
 	<script src="scripts/controllers/ActiveDcMigrationEventDetailsContentCtl.js"></script>
+	<script src="scripts/controllers/DcListCtl.js"></script>
 
 </body>
 </html>

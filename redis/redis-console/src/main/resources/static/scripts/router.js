@@ -24,6 +24,13 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/cluster_dc_shards.html',
             controller: 'ClusterCtl'
         })
+        .state(
+            'dc_list',{
+                url: '/dc_list?dcName',
+                templateUrl: 'views/index/dc_list.html',
+                controller: 'DcListCtl'
+            }
+        )
         .state('cluster_dc_shard_update', {
         	url: '/cluster_dc_shard_update?clusterName&shardName&currentDcName',
         	templateUrl: 'views/index/cluster_dc_shard_update.html',
