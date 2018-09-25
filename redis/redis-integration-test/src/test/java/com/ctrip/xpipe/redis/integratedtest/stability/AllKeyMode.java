@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AllKeyMode extends AbstractTestMode {
 
-    private boolean startValueCheck = Boolean.parseBoolean(System.getProperty("start-value-isSiteHealthy", "true"));
+    private boolean startValueCheck = Boolean.parseBoolean(System.getProperty("start-value-check", "true"));
     private ValueCheck valueCheck;
     private int valueCheckThreadNum = Integer.parseInt(System.getProperty("valueCheckThread", "8"));
     protected ConcurrentHashMap<String, String> records = new ConcurrentHashMap<>(20000);
@@ -112,7 +112,7 @@ public class AllKeyMode extends AbstractTestMode {
         try {
             valueCheck.stop();
         } catch (Exception e) {
-            logger.error("[value isSiteHealthy error]", e);
+            logger.error("[value check error]", e);
         }
     }
 }

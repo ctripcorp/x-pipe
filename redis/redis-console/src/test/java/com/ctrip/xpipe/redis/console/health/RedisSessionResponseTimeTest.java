@@ -23,7 +23,7 @@ public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest
 
     private static final int TIMEOUT = 1000;
 
-    private static final String CHECK_CHANNEL = "xpipe-health-isSiteHealthy";
+    private static final String CHECK_CHANNEL = "xpipe-health-check";
 
     @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
     private ExecutorService executors;

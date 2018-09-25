@@ -67,7 +67,7 @@ public class RedisSession {
 
             if (System.currentTimeMillis() - pubSubConnectionWrapper.getLastActiveTime() > subscribConnsTimeoutSeconds * 1000) {
 
-                logger.info("[isSiteHealthy][connectin inactive for a long time, force reconnect]{}, {}", subscribConns, endpoint);
+                logger.info("[check][connectin inactive for a long time, force reconnect]{}, {}", subscribConns, endpoint);
                 pubSubConnectionWrapper.closeAndClean();
                 subscribConns.remove(channel);
 

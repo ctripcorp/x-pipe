@@ -226,7 +226,7 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
     private String generateUniqueKeeperId(final RedisTbl redis) {
         final String runId = idGenerator.generateRunid();
 
-        // isSiteHealthy for unique runId
+        // check for unique runId
         DcClusterShardTbl targetDcClusterShard = queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>() {
             @Override
             public DcClusterShardTbl doQuery() throws DalException {
