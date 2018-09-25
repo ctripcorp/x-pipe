@@ -44,7 +44,7 @@ public class ConfigCheck extends AbstractIntegratedTest {
 
         XpipeMeta xpipeMeta = getXpipeMetaFromConsole();
 
-        logger.info("[check][cluster]{}", checkCluster);
+        logger.info("[isSiteHealthy][cluster]{}", checkCluster);
 
         CRedisMeta cRedisMeta = getCRedisMeta(checkCluster);
 
@@ -56,7 +56,7 @@ public class ConfigCheck extends AbstractIntegratedTest {
 
         Assert.assertEquals(checkCredis, checkXpipe);
 
-        logger.info("[check][successful]{}", checkCluster);
+        logger.info("[isSiteHealthy][successful]{}", checkCluster);
     }
 
     private CRedisMeta getCRedisMeta(String checkCluster) {
@@ -302,7 +302,7 @@ public class ConfigCheck extends AbstractIntegratedTest {
         public void check() {
 
             if (rule != READ_ACTIVE_SLAVES) {
-                throw new IllegalStateException(String.format("[check][rule error]cluster:%s, rule:%s", name, ruleName));
+                throw new IllegalStateException(String.format("[isSiteHealthy][rule error]cluster:%s, rule:%s", name, ruleName));
             }
             if (groups != null) {
                 groups.forEach(groupMeta -> groupMeta.check());

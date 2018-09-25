@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.config;
 
+import com.ctrip.xpipe.redis.console.healthcheck.action.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
-import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.Map;
 import java.util.Set;
@@ -80,10 +80,11 @@ public interface ConsoleConfig extends CoreConfig {
 
 	Set<String> getIgnoredHealthCheckDc();
 
-	// Pair<dcId, clusterId>
-	Set<Pair<String, String>> getDelayWontMarkDownClusters();
+	Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters();
 
-	float getPingDownMajorityRatio();
+	int getPingDownAfterMilli();
+
+	int getPingDownAfterMilliThroughProxy();
 
 	void register(ConsoleConfigListener listener);
 }

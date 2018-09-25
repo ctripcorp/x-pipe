@@ -46,7 +46,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
 
         try {
             OuterClientService.ClusterInfo clusterInfo = outerClientService.getClusterInfo(clusterName);
-            //simple check
+            //simple isSiteHealthy
             if(clusterInfo != null && clusterInfo.getGroups() != null && clusterInfo.getGroups().size() > 0){
                 return true;
             }
@@ -86,10 +86,10 @@ public class MigrationCheckingState extends AbstractMigrationState {
 
 		if(clusterStepResult.isStepFinish()){
 			if(clusterStepResult.isStepSuccess()){
-				logger.debug("[refresh][check success]{}", this);
+				logger.debug("[refresh][isSiteHealthy success]{}", this);
 				updateAndProcess(nextAfterSuccess());
 			}else {
-				logger.debug("[refresh][check fail]{}", this);
+				logger.debug("[refresh][isSiteHealthy fail]{}", this);
 				updateAndStop(nextAfterFail());
 			}
 		}

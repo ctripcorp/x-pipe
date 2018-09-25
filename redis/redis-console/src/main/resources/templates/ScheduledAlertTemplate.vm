@@ -354,6 +354,36 @@ XPipe相关事宜请联系 [$xpipeAdminEmails]
         </tbody>
     </table>
     #end
+    #if(${INSTANCE_SICK_BUT_NOT_MARK_DOWN})
+        -------------------
+        <h4>其他类型错误</h4>
+        <table border="1">
+            <thead>
+            <tr>
+                <th>报错类型</th>
+                <th>Redis DC</th>
+                <th>Redis集群</th>
+                <th>Redis分片</th>
+                <th>机器IP</th>
+                <th>Redis端口</th>
+                <th>错误信息</th>
+            </tr>
+            </thead>
+            <tbody>
+                #foreach($redisAlert in $redisAlerts.get(${INSTANCE_SICK_BUT_NOT_MARK_DOWN}))
+                <tr>
+                    <td>$!redisAlert.getAlertType()</td>
+                    <td>$!redisAlert.getDc()</td>
+                    <td>$!redisAlert.getClusterId()</td>
+                    <td>$!redisAlert.getShardId()</td>
+                    <td>$!redisAlert.getHostPort().getHost()</td>
+                    <td>$!redisAlert.getHostPort().getPort()</td>
+                    <td>$!redisAlert.getMessage()</td>
+                </tr>
+                #end
+            </tbody>
+        </table>
+    #end
 </div>
 
 </body>

@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.console.healthcheck.action;
 
-
 import com.ctrip.xpipe.redis.console.healthcheck.action.event.AbstractInstanceEvent;
 
 /**
  * @author chen.zhu
  * <p>
- * Sep 03, 2018
+ * Sep 18, 2018
  */
-public interface HealthEventProcessor {
+public interface SiteReliabilityChecker {
 
-    void onEvent(AbstractInstanceEvent event) throws HealthEventProcessorException;
+    boolean isSiteHealthy(AbstractInstanceEvent event);
 }

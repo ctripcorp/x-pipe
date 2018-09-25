@@ -70,7 +70,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 					try{
 						redisSession.check();
 					}catch (Exception e){
-						logger.error("[check]" + redisSession, e);
+						logger.error("[isSiteHealthy]" + redisSession, e);
 					}
 				}
 			}

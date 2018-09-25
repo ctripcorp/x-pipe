@@ -366,7 +366,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                 throw new BadRequestException("Keeper's ip should be equal to keepercontainer's ip");
             }
 
-            // port check
+            // port isSiteHealthy
             RedisTbl redisWithSameConfiguration = queryHandler.handleQuery(new DalQuery<RedisTbl>() {
                 @Override
                 public RedisTbl doQuery() throws DalException {
@@ -379,7 +379,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                         + String.valueOf(redisWithSameConfiguration.getRedisPort()));
             }
 
-            // keepercontainer check
+            // keepercontainer isSiteHealthy
             for (RedisTbl originalKeeper : originalKeepers) {
                 if (originalKeeper.getKeepercontainerId() == keeper.getKeepercontainerId()
                         && !originalKeeper.getId().equals(keeper.getId())) {
