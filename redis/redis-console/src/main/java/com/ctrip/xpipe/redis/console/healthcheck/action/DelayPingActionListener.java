@@ -122,9 +122,6 @@ public class DelayPingActionListener implements HealthCheckActionListener<Action
     protected void onInstanceStateChange(Object args) {
 
         logger.info("[onInstanceStateChange]{}", args);
-
-        //TODO delete instance not exist
-
         for (HealthEventProcessor processor : healthEventProcessors) {
 
             executors.execute(new AbstractExceptionLogTask() {

@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.action.handler;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
@@ -105,10 +103,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
         return Collections.EMPTY_LIST;
     }
 
-    protected boolean configedNotMarkDown(AbstractInstanceEvent event) {
-        return false;
-    }
-
     protected void tryMarkDown(AbstractInstanceEvent event) {
         if(!masterUp(event)) {
             logger.info("[onEvent][master down, do not call client service]{}", event);
@@ -138,37 +132,38 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     @VisibleForTesting
     protected void markdown(final AbstractInstanceEvent event) {
         final RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
-        checker.check(event).addListener(new CommandFutureListener<Boolean>() {
-            @Override
-            public void operationComplete(CommandFuture<Boolean> commandFuture) throws Exception {
-                boolean siteReliable = commandFuture.get();
-                if(siteReliable) {
-                    if(!configedNotMarkDown(event)) {
-                        if(stateUpNow(event)) {
-                            logger.warn("[markdown] instance state up now, do not mark down, {}",
-                                    event.getInstance().getRedisInstanceInfo());
-                            return;
-                        } else {
-                            logger.info("[markdown] mark down redis, {}", event.getInstance().getRedisInstanceInfo());
-                            finalStateSetterManager.set(info.getClusterShardHostport(), false);
-                        }
-                    }
-                } else {
-                    logger.warn("[site-down][not-mark-down] {}", info);
-                }
-            }
-        });
+        boolean siteReliable = checker.isSiteHealthy(event);
+        if(siteReliable) {
+            doMarkDown(event);
+        } else {
+            logger.warn("[site-down][not-mark-down] {}", info);
+        }
+
+    }
+
+    protected void doMarkDown(final AbstractInstanceEvent event) {
+        //doNothing
+    }
+
+    protected void doRealMarkDown(final AbstractInstanceEvent event) {
+        final RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
+        if(stateUpNow(event)) {
+            logger.warn("[markdown] instance state up now, do not mark down, {}", info);
+        } else {
+            logger.info("[markdown] mark down redis, {}", event.getInstance().getRedisInstanceInfo());
+            finalStateSetterManager.set(info.getClusterShardHostport(), false);
+        }
     }
 
     private boolean stateUpNow(AbstractInstanceEvent event) {
         return delayPingActionListener.getState(event.getInstance().getRedisInstanceInfo().getHostPort())
-                .equals(HEALTH_STATE.UP);
+                .equals(HEALTH_STATE.HEALTHY);
     }
 
     protected boolean masterUp(AbstractInstanceEvent instanceEvent) {
         RedisInstanceInfo info = instanceEvent.getInstance().getRedisInstanceInfo();
         HostPort redisMaster = metaCache.findMasterInSameShard(info.getHostPort());
-        boolean masterUp = delayPingActionListener.getState(redisMaster) == HEALTH_STATE.UP;
+        boolean masterUp = delayPingActionListener.getState(redisMaster) == HEALTH_STATE.HEALTHY;
         if (!masterUp) {
             logger.info("[masterUp][master down instance:{}, master:{}]", info, redisMaster);
         }
@@ -189,4 +184,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     public void setChecker(SiteReliabilityChecker checker) {
         this.checker = checker;
     }
+
+
 }

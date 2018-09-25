@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.action.handler;
 
 import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
+import com.ctrip.xpipe.redis.console.healthcheck.action.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.console.healthcheck.action.event.InstanceDown;
 import com.google.common.collect.Lists;
 import org.springframework.stereotype.Component;
@@ -15,7 +16,7 @@ import java.util.List;
 @Component
 public class DefaultInstanceDownHandler extends AbstractHealthEventHandler<InstanceDown> implements InstanceDownHandler {
 
-    private static final List<HEALTH_STATE> satisfiedStates = Lists.newArrayList(HEALTH_STATE.DOWN);
+    private static final List<HEALTH_STATE> satisfiedStates = Lists.newArrayList(HEALTH_STATE.DOWN, HEALTH_STATE.UNHEALTHY);
 
     @Override
     protected void doHandle(InstanceDown instanceDown) {
@@ -27,4 +28,8 @@ public class DefaultInstanceDownHandler extends AbstractHealthEventHandler<Insta
         return satisfiedStates;
     }
 
+    @Override
+    protected void doMarkDown(final AbstractInstanceEvent event) {
+        doRealMarkDown(event);
+    }
 }

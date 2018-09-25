@@ -17,7 +17,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.action.event.InstanceUp;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Random;
+import java.util.concurrent.Executors;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -81,86 +81,52 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()));
         when(instance.getRedisInstanceInfo()).thenReturn(info);
 
-        when(checker.check(any(AbstractInstanceEvent.class))).thenReturn(future);
+        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
         when(delayPingActionListener.getState(any())).thenReturn(HEALTH_STATE.DOWN);
         doNothing().when(finalStateSetterManager).set(any(ClusterShardHostPort.class), anyBoolean());
+        ((DefaultInstanceSickHandler) sickHandler).setScheduled(Executors.newScheduledThreadPool(1));
     }
 
     @Test
     public void testMarkDown() {
-        future.setSuccess(false);
+        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(false);
         sickHandler.markdown(new InstanceSick(instance));
         verify(finalStateSetterManager, never()).set(any(ClusterShardHostPort.class), anyBoolean());
 
-        CommandFuture<Boolean> future = new DefaultCommandFuture<>();
-        future.setSuccess(true);
-
+        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
         RedisInstanceInfo info = instance.getRedisInstanceInfo();
-        when(consoleConfig.getDelayWontMarkDownClusters()).thenReturn(Sets.newHashSet(new Pair<>(info.getDcId(), info.getClusterId())));
+        when(consoleConfig.getDelayedMarkDownDcClusters()).thenReturn(Sets.newHashSet(new DcClusterDelayMarkDown()
+                .setDcId(info.getDcId()).setClusterId(info.getClusterId()).setDelaySecond(1)));
         sickHandler.markdown(new InstanceSick(instance));
-        verify(finalStateSetterManager, never()).set(any(), any());
+        sleep(1500);
+        verify(finalStateSetterManager, times(1)).set(any(), any());
 
-        when(consoleConfig.getDelayWontMarkDownClusters()).thenReturn(null);
-        when(checker.check(any(AbstractInstanceEvent.class))).thenReturn(future);
+        when(consoleConfig.getDelayedMarkDownDcClusters()).thenReturn(null);
+        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
         sickHandler.markdown(new InstanceSick(instance));
-        verify(finalStateSetterManager, times(1)).set(any(ClusterShardHostPort.class), anyBoolean());
+        verify(finalStateSetterManager, times(2)).set(any(ClusterShardHostPort.class), anyBoolean());
     }
 
     @Test
     public void testMarkDownForInstanceDown() {
-        future.setSuccess(false);
+        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(false);
         downHandler.markdown(new InstanceDown(instance));
         verify(finalStateSetterManager, never()).set(any(), anyBoolean());
 
-        CommandFuture<Boolean> future = new DefaultCommandFuture<>();
-        future.setSuccess(true);
-        when(checker.check(any(AbstractInstanceEvent.class))).thenReturn(future);
+        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
 
         downHandler.markdown(new InstanceDown(instance));
         verify(finalStateSetterManager, times(1)).set(any(), anyBoolean());
     }
 
-    @Test
-    public void testMarkDownMultiple() {
-        int N = 100;
-        DefaultSiteReliabilityChecker checker = new DefaultSiteReliabilityChecker();
-        checker.setScheduled(scheduled);
-        checker.setMetaCache(metaCache);
-        when(metaCache.getRedisNumOfDc(anyString())).thenReturn(N);
-
-        downHandler.setChecker(checker);
-        sickHandler.setChecker(checker);
-
-        HealthStatus.PING_DOWN_AFTER_MILLI = 30 * 5;
-        int sleepInterval = HealthStatus.PING_DOWN_AFTER_MILLI / 5 + 10;
-        for(int i = 0; i < N/4; i++) {
-            downHandler.markdown(new InstanceDown(randomInstance("dc0")));
-            sickHandler.markdown(new InstanceSick(randomInstance("dc0")));
-        }
-        sleep(sleepInterval);
-
-        verify(finalStateSetterManager, never()).set(any(), anyBoolean());
-
-        logger.info("=================================== I'm the splitter================================");
-        sleep(sleepInterval);
-        for(int i = 0; i < N/4; i++) {
-            downHandler.markdown(new InstanceDown(randomInstance()));
-            sickHandler.markdown(new InstanceSick(randomInstance()));
-        }
-        sleep(sleepInterval * 2);
-        verify(finalStateSetterManager, atLeast(1)).set(any(ClusterShardHostPort.class), anyBoolean());
-        sleep(1000);
-
-    }
-
     @SuppressWarnings("unchecked")
     @Test
     public void testHandle() {
-        when(consoleConfig.getDelayWontMarkDownClusters()).thenReturn(null);
+        when(consoleConfig.getDelayedMarkDownDcClusters()).thenReturn(null);
         when(metaCache.inBackupDc(any())).thenReturn(true);
         future.setSuccess(true);
         when(consoleServiceManager.quorumSatisfy(anyList(), any())).thenReturn(true);
-        when(delayPingActionListener.getState(any())).thenReturn(HEALTH_STATE.UP);
+        when(delayPingActionListener.getState(any())).thenReturn(HEALTH_STATE.HEALTHY);
         when(delayPingActionListener.getState(instance.getRedisInstanceInfo().getHostPort())).thenReturn(HEALTH_STATE.DOWN);
 
         AbstractInstanceEvent event = new InstanceUp(instance);
