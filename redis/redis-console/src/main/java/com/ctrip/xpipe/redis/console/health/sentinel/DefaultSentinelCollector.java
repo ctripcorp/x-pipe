@@ -81,11 +81,11 @@ public class DefaultSentinelCollector implements SentinelCollector {
 
         logger.debug("[collect]{},{},{}", clusterId, shardId, hellos);
 
-        //isSiteHealthy delete
+        //check delete
         Set<SentinelHello> toDelete = checkAndDelete(sentinelMonitorName, masterDcSentinels, hellos, quorumConfig);
         //checkReset
         checkReset(clusterId, shardId, sentinelMonitorName, hellos);
-        //isSiteHealthy add
+        //check add
         Set<SentinelHello> toAdd = checkToAdd(clusterId, shardId, sentinelMonitorName, masterDcSentinels, hellos, masterAddr, quorumConfig);
 
         doAction(toDelete, toAdd, quorumConfig);
