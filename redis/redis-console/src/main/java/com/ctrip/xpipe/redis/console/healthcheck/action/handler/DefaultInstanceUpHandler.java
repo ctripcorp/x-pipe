@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.healthcheck.action.handler;
 import com.ctrip.xpipe.redis.console.healthcheck.action.event.InstanceUp;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+
 /**
  * @author chen.zhu
  * <p>
@@ -10,6 +12,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class DefaultInstanceUpHandler extends AbstractHealthEventHandler<InstanceUp> implements InstanceUpHandler {
+
+    @PostConstruct
+    public void postConstruct() {
+        setUpFinalStateSetterManager();
+    }
 
     @Override
     protected void doHandle(InstanceUp instanceUp) {
