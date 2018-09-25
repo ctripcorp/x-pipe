@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.action.handler;
 
-import com.ctrip.xpipe.api.migration.OuterClientException;
-import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -14,18 +12,13 @@ import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.healthcheck.action.SiteReliabilityChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.action.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Executor;
-
 /**
  * @author chen.zhu
  * <p>
@@ -47,43 +40,8 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     @Autowired
     private ConsoleServiceManager consoleServiceManager;
 
-    @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
-    private Executor executors;
-
     @Autowired
     private SiteReliabilityChecker checker;
-
-    private OuterClientService outerClientService = OuterClientService.DEFAULT;
-
-    protected FinalStateSetterManager<ClusterShardHostPort, Boolean> finalStateSetterManager;
-
-    protected void setUpFinalStateSetterManager() {
-
-        finalStateSetterManager = new FinalStateSetterManager<>(executors, (clusterShardHostPort) -> {
-
-            try {
-                return outerClientService.isInstanceUp(clusterShardHostPort);
-            } catch (OuterClientException e) {
-                throw new IllegalStateException("findRedisHealthCheckInstance error:" + clusterShardHostPort, e);
-            }
-        }, ((clusterShardHostPort, result) -> {
-            try {
-                if (result) {
-                    alertManager.alert(clusterShardHostPort.getClusterName(), clusterShardHostPort.getShardName(),
-                            clusterShardHostPort.getHostPort(), ALERT_TYPE.MARK_INSTANCE_UP, "Mark Instance Up");
-                    outerClientService.markInstanceUp(clusterShardHostPort);
-                } else {
-                    alertManager.alert(clusterShardHostPort.getClusterName(), clusterShardHostPort.getShardName(),
-                            clusterShardHostPort.getHostPort(), ALERT_TYPE.MARK_INSTANCE_DOWN, "Mark Instance Down");
-                    outerClientService.markInstanceDown(clusterShardHostPort);
-                }
-            } catch (OuterClientException e) {
-                throw new IllegalStateException("set error:" + clusterShardHostPort + "," + result, e);
-            }
-        })
-        );
-
-    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -144,13 +102,17 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
         //doNothing
     }
 
+    protected void doRealMarkUp(final AbstractInstanceEvent event) {
+        getHealthStateSetterManager().set(event.getInstance().getRedisInstanceInfo().getClusterShardHostport(), true);
+    }
+
     protected void doRealMarkDown(final AbstractInstanceEvent event) {
         final RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
         if(stateUpNow(event)) {
             logger.warn("[markdown] instance state up now, do not mark down, {}", info);
         } else {
             logger.info("[markdown] mark down redis, {}", event.getInstance().getRedisInstanceInfo());
-            finalStateSetterManager.set(info.getClusterShardHostport(), false);
+            getHealthStateSetterManager().set(info.getClusterShardHostport(), false);
         }
     }
 
@@ -175,14 +137,11 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     @VisibleForTesting
-    public void setFinalStateSetterManager(FinalStateSetterManager<ClusterShardHostPort, Boolean> finalStateSetterManager) {
-        this.finalStateSetterManager = finalStateSetterManager;
-    }
-
-    @VisibleForTesting
     public void setChecker(SiteReliabilityChecker checker) {
         this.checker = checker;
     }
 
-
+    private FinalStateSetterManager<ClusterShardHostPort, Boolean> getHealthStateSetterManager() {
+        return delayPingActionListener.getHealthStateSetterManager();
+    }
 }

@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.action.event.InstanceDown;
 import com.google.common.collect.Lists;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 /**
@@ -18,11 +17,6 @@ import java.util.List;
 public class DefaultInstanceDownHandler extends AbstractHealthEventHandler<InstanceDown> implements InstanceDownHandler {
 
     private static final List<HEALTH_STATE> satisfiedStates = Lists.newArrayList(HEALTH_STATE.DOWN, HEALTH_STATE.UNHEALTHY);
-
-    @PostConstruct
-    public void postConstruct() {
-        setUpFinalStateSetterManager();
-    }
 
     @Override
     protected void doHandle(InstanceDown instanceDown) {
