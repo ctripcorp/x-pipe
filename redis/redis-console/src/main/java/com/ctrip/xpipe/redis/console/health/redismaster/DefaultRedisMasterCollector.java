@@ -79,7 +79,7 @@ public class DefaultRedisMasterCollector implements RedisMasterCollector{
     protected void doCorrection(RedisMasterSamplePlan plan) {
         logger.info("[doCorrection]{}", plan);
 
-        //check redis master again
+        //isSiteHealthy redis master again
 
         if(plan.getMasterHost() != null && isMaster(plan.getMasterHost(), plan.getMasterPort())){
             logger.info("[doCorrection][still master]{}", plan);

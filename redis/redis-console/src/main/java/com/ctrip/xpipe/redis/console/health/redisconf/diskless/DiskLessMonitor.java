@@ -85,7 +85,7 @@ public class DiskLessMonitor extends AbstractRedisConfMonitor<DiskLessInstanceRe
 
     @Override
     protected boolean addCluster(String dcName, ClusterMeta clusterMeta) {
-        // check both primary and recovery site
+        // isSiteHealthy both primary and recovery site
         return true;
     }
 }

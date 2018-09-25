@@ -116,7 +116,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
 
   @RequestMapping(value = "/keepers/check", method = RequestMethod.POST)
   public RetMessage isKeeper(@RequestBody HostPort hostPort) {
-    logger.info("[isKeeper] check {} keeper or not", hostPort);
+    logger.info("[isKeeper] isSiteHealthy {} keeper or not", hostPort);
     try {
         boolean result = keeperService.isKeeper(hostPort);
         return GenericRetMessage.createGenericRetMessage(result);
