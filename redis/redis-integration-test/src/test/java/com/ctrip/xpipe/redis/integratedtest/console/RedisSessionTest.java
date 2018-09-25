@@ -40,7 +40,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
 
     private Endpoint endpoint;
 
-    private static final String SUBSCRIBE_CHANNEL = "xpipe-health-isSiteHealthy-test";
+    private static final String SUBSCRIBE_CHANNEL = "xpipe-health-check-test";
 
     @Before
     public void beforeRedisSessionTest() throws Exception {
