@@ -14,7 +14,6 @@ import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Set;
@@ -40,11 +39,6 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
     @Override
     protected List<HEALTH_STATE> getSatisfiedStates() {
         return satisfiedStates;
-    }
-
-    @PostConstruct
-    public void postConstruct() {
-        setUpFinalStateSetterManager();
     }
 
     protected DcClusterDelayMarkDown getDelayMarkDownIfConfiged(AbstractInstanceEvent event) {
