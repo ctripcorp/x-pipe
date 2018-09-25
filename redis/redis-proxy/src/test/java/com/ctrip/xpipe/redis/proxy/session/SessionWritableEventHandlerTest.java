@@ -54,7 +54,7 @@ public class SessionWritableEventHandlerTest extends AbstractProxyIntegrationTes
     public void testOnNotWritable() {
         when(config.getCloseChannelAfterReadCloseMilli()).thenReturn(0);
         handler.onNotWritable();
-        sleep(5);
+        sleep(20);
         verify(session, times(1)).release();
     }
 }
