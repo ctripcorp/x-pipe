@@ -110,7 +110,7 @@ public class SentinelCollector4Keeper implements SentinelCollector {
                 HostPort masterAddr = collector.sentinelManager.getMasterOfMonitor(collector.toSentinel(hello),
                         hello.getMonitorName());
 
-                // isSiteHealthy again, findRedisHealthCheckInstance master from sentinel monitor, see if master matches
+                // check again, findRedisHealthCheckInstance master from sentinel monitor, see if master matches
                 boolean checkAgain = false;
                 try {
                     checkAgain = ObjectUtils.equals(masterAddr,

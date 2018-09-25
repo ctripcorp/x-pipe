@@ -110,7 +110,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
     protected void healthStatusUpdate() {
         long currentTime = System.currentTimeMillis();
 
-        // isSiteHealthy ping down first, as ping has highest priority
+        // check ping down first, as ping has highest priority
         long pingDownTime = currentTime - lastPongTime.get();
         final int pingDownAfter = pingDownAfterMilli.getAsInt();
         if(pingDownTime > pingDownAfter) {
@@ -119,7 +119,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
             setPingHalfDown();
         }
 
-        // isSiteHealthy delay then
+        // check delay then
         long delayDownTime = currentTime - lastHealthDelayTime.get();
         final int delayDownAfter = delayDownAfterMilli.getAsInt();
 

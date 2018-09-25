@@ -70,7 +70,7 @@ public class BacklogActiveMonitor  extends AbstractRedisConfMonitor<InstanceInfo
 
     @Override
     protected void addRedis(BaseSamplePlan<InstanceInfoReplicationResult> plan, String dcId, RedisMeta redisMeta) {
-        // isSiteHealthy slave only
+        // check slave only
         if(redisMeta.isMaster()) {
             return;
         }

@@ -41,7 +41,7 @@ public class XRedisPartialTest extends AbstractKeeperIntegratedSingleDc {
         RedisMeta slaveMeta = getRedisSlaves().get(0);
         String xRedisVersion = getXRedisVersion(slaveMeta);
         if (!VersionUtils.ge(xRedisVersion, versionCheckContinueMin)) {
-            logger.info("do not isSiteHealthy xredis version below than {}", versionCheckContinueMin);
+            logger.info("do not check xredis version below than {}", versionCheckContinueMin);
             return;
         }
 
