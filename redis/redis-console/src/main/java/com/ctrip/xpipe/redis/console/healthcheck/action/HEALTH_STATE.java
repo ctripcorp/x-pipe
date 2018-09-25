@@ -10,7 +10,12 @@ public enum HEALTH_STATE {
     UNKNOWN(false, false) {
         @Override
         protected HEALTH_STATE afterPingSuccess() {
-            return INSTANCEOK;
+            return INSTANCEUP;
+        }
+
+        @Override
+        protected HEALTH_STATE afterPingHalfFail() {
+            return UNKNOWN;
         }
 
         @Override
@@ -34,19 +39,24 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean markUp() {
+        protected boolean shouldNotifyMarkup() {
             return false;
         }
 
         @Override
-        protected boolean markDown() {
+        protected boolean shouldNotifyMarkDown() {
             return false;
         }
     },
-    INSTANCEOK(true, true) {
+    INSTANCEUP(true, true) {
         @Override
         protected HEALTH_STATE afterPingSuccess() {
-            return INSTANCEOK;
+            return INSTANCEUP;
+        }
+
+        @Override
+        protected HEALTH_STATE afterPingHalfFail() {
+            return UNHEALTHY;
         }
 
         @Override
@@ -56,7 +66,7 @@ public enum HEALTH_STATE {
 
         @Override
         protected HEALTH_STATE afterDelaySuccess() {
-            return UP;
+            return HEALTHY;
         }
 
         @Override
@@ -70,19 +80,24 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean markUp() {
+        protected boolean shouldNotifyMarkup() {
             return false;
         }
 
         @Override
-        protected boolean markDown() {
+        protected boolean shouldNotifyMarkDown() {
             return false;
         }
     },
-    UP(false, true){
+    HEALTHY(false, true){
         @Override
         protected HEALTH_STATE afterPingSuccess() {
-            return UP;
+            return HEALTHY;
+        }
+
+        @Override
+        protected HEALTH_STATE afterPingHalfFail() {
+            return UNHEALTHY;
         }
 
         @Override
@@ -92,7 +107,7 @@ public enum HEALTH_STATE {
 
         @Override
         protected HEALTH_STATE afterDelaySuccess() {
-            return UP;
+            return HEALTHY;
         }
 
         @Override
@@ -106,12 +121,12 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean markUp() {
+        protected boolean shouldNotifyMarkup() {
             return true;
         }
 
         @Override
-        protected boolean markDown() {
+        protected boolean shouldNotifyMarkDown() {
             return false;
         }
     },
@@ -122,13 +137,18 @@ public enum HEALTH_STATE {
         }
 
         @Override
+        protected HEALTH_STATE afterPingHalfFail() {
+            return UNHEALTHY;
+        }
+
+        @Override
         protected HEALTH_STATE afterPingFail() {
             return DOWN;
         }
 
         @Override
         protected HEALTH_STATE afterDelaySuccess() {
-            return UP;
+            return HEALTHY;
         }
 
         @Override
@@ -142,12 +162,12 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean markUp() {
+        protected boolean shouldNotifyMarkup() {
             return false;
         }
 
         @Override
-        protected boolean markDown() {
+        protected boolean shouldNotifyMarkDown() {
             return false;
         }
     },
@@ -158,13 +178,18 @@ public enum HEALTH_STATE {
         }
 
         @Override
+        protected HEALTH_STATE afterPingHalfFail() {
+            return SICK;
+        }
+
+        @Override
         protected HEALTH_STATE afterPingFail() {
             return DOWN;
         }
 
         @Override
         protected HEALTH_STATE afterDelaySuccess() {
-            return UP;
+            return HEALTHY;
         }
 
         @Override
@@ -178,19 +203,24 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean markUp() {
+        protected boolean shouldNotifyMarkup() {
             return false;
         }
 
         @Override
-        protected boolean markDown() {
+        protected boolean shouldNotifyMarkDown() {
             return true;
         }
     },
     DOWN(true, false) {
         @Override
         protected HEALTH_STATE afterPingSuccess() {
-            return INSTANCEOK;
+            return INSTANCEUP;
+        }
+
+        @Override
+        protected HEALTH_STATE afterPingHalfFail() {
+            return DOWN;
         }
 
         @Override
@@ -214,12 +244,12 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean markUp() {
+        protected boolean shouldNotifyMarkup() {
             return false;
         }
 
         @Override
-        protected boolean markDown() {
+        protected boolean shouldNotifyMarkDown() {
             return true;
         }
     };
@@ -242,6 +272,8 @@ public enum HEALTH_STATE {
 
     protected abstract HEALTH_STATE afterPingSuccess();
 
+    protected abstract HEALTH_STATE afterPingHalfFail();
+
     protected abstract HEALTH_STATE afterPingFail();
 
     protected abstract HEALTH_STATE afterDelaySuccess();
@@ -250,7 +282,7 @@ public enum HEALTH_STATE {
 
     protected abstract HEALTH_STATE afterDelayHalfFail();
 
-    protected abstract boolean markUp();
+    protected abstract boolean shouldNotifyMarkup();
 
-    protected abstract boolean markDown();
+    protected abstract boolean shouldNotifyMarkDown();
 }

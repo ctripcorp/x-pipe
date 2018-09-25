@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -82,8 +83,8 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public int getRedisNumOfDc(String dcId) {
-        return 0;
+    public List<HostPort> getAllRedisOfDc(String dcId) {
+        return null;
     }
 
     public String getActiveDc(String clusterId, String shardId){return null;}

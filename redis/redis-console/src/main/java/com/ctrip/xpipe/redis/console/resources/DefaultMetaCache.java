@@ -16,6 +16,7 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,19 +189,20 @@ public class DefaultMetaCache implements MetaCache {
     }
 
     @Override
-    public int getRedisNumOfDc(String dcId) {
+    public List<HostPort> getAllRedisOfDc(String dcId) {
+        List<HostPort> result = Lists.newLinkedList();
         try {
-            int count = 0;
             for(ClusterMeta clusterMeta : meta.getKey().findDc(dcId).getClusters().values()) {
                 for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
-                    count += shardMeta.getRedises().size();
+                    for(RedisMeta redis : shardMeta.getRedises()) {
+                        result.add(new HostPort(redis.getIp(), redis.getPort()));
+                    }
                 }
             }
-            return count;
         } catch (Exception e) {
             logger.error("[getRedisNumOfDc]", e);
         }
-        return 0;
+        return result;
     }
 
     @Override

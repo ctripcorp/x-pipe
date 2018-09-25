@@ -83,7 +83,7 @@ public class AsyncEmailSender extends AbstractSender {
         try {
             emailCheckInfo = JsonCodec.INSTANCE.encode(response.getProperties());
         } catch (Exception e) {
-            logger.error("[createEventModel] Error encode check info");
+            logger.error("[createEventModel] Error encode isSiteHealthy info");
         }
         model.setEventProperty(emailCheckInfo);
         return model;

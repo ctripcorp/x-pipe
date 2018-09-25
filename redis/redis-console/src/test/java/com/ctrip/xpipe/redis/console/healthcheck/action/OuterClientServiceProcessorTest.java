@@ -15,7 +15,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.action.handler.*;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -76,9 +75,9 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         MockitoAnnotations.initMocks(this);
         CommandFuture<Boolean> future = new DefaultCommandFuture<>();
         future.setSuccess(true);
-        when(checker.check(any())).thenReturn(future);
+        when(checker.isSiteHealthy(any())).thenReturn(true);
         HostPort master = new HostPort();
-        when(delayPingActionListener.getState(master)).thenReturn(HEALTH_STATE.UP);
+        when(delayPingActionListener.getState(master)).thenReturn(HEALTH_STATE.HEALTHY);
         when(metaCache.findMasterInSameShard(any())).thenReturn(master);
         when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(true);
         when(consoleServiceManager.allHealthStatus(anyString(), anyInt())).thenReturn(
@@ -98,11 +97,12 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
     @Test
     public void testOnEventConfiguredNotMarkDown() throws HealthEventProcessorException {
 
-        when(consoleConfig.getDelayWontMarkDownClusters()).thenReturn(Sets.newHashSet(new Pair<>(dc, cluster)));
+        when(consoleConfig.getDelayedMarkDownDcClusters()).thenReturn(
+                Sets.newHashSet(new DcClusterDelayMarkDown().setDcId(dc).setClusterId(cluster)));
         when(metaCache.inBackupDc(hostPort)).thenReturn(true);
-        when(metaCache.getRedisNumOfDc(anyString())).thenReturn(10);
+        when(checker.isSiteHealthy(any())).thenReturn(true);
         processor.onEvent(new InstanceSick(instance));
-        verify(alertManager, atLeastOnce()).alert(cluster, shard, hostPort, ALERT_TYPE.INSTANCE_SICK_BUT_NOT_MARK_DOWN, dc);
+        verify(alertManager, atLeastOnce()).alert(cluster, shard, hostPort, ALERT_TYPE.INSTANCE_SICK_BUT_DELAY_MARK_DOWN, dc);
     }
 
     @Test

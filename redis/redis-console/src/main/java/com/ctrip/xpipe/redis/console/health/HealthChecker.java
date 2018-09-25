@@ -29,7 +29,7 @@ import java.util.Set;
 @ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class HealthChecker {
 
-	public final static String ENABLED = "redis.health.check.enabled";
+	public final static String ENABLED = "redis.health.isSiteHealthy.enabled";
 
 	private static Logger log = LoggerFactory.getLogger(HealthChecker.class);
 

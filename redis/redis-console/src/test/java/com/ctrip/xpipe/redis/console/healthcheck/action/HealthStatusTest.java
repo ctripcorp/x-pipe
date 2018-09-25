@@ -42,7 +42,8 @@ public class HealthStatusTest extends AbstractRedisTest {
 
         config = mock(HealthCheckConfig.class);
         when(config.getHealthyDelayMilli()).thenReturn(2000);
-        when(config.downAfterMilli()).thenReturn(2000 * 8);
+        when(config.delayDownAfterMilli()).thenReturn(2000 * 8);
+        when(config.pingDownAfterMilli()).thenReturn(12 * 1000);
         when(instance.getHealthCheckConfig()).thenReturn(config);
         healthStatus = new HealthStatus(instance, scheduled);
 
@@ -62,58 +63,58 @@ public class HealthStatusTest extends AbstractRedisTest {
         for(int i = 0; i < N; i++) {
             healthStatus.pong();
         }
-        Assert.assertEquals(HEALTH_STATE.INSTANCEOK, healthStatus.getState());
+        Assert.assertEquals(HEALTH_STATE.INSTANCEUP, healthStatus.getState());
 
         healthStatus.delay(1000);
-        Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
+        Assert.assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
     }
 
     @Test
     public void testStateSwitchFromUpToDown() throws Exception {
         markup();
 
-        HealthStatus.PING_DOWN_AFTER_MILLI = 10;
+        when(config.pingDownAfterMilli()).thenReturn(10);
         Thread.sleep(10);
         healthStatus.healthStatusUpdate();
         Assert.assertEquals(HEALTH_STATE.DOWN, healthStatus.getState());
 
         healthStatus.pong();
-        Assert.assertEquals(HEALTH_STATE.INSTANCEOK, healthStatus.getState());
+        Assert.assertEquals(HEALTH_STATE.INSTANCEUP, healthStatus.getState());
 
-        healthStatus.delay(3000);
-        Assert.assertEquals(HEALTH_STATE.INSTANCEOK, healthStatus.getState());
+        healthStatus.delay(config.getHealthyDelayMilli() + 1);
+        Assert.assertEquals(HEALTH_STATE.INSTANCEUP, healthStatus.getState());
 
-        healthStatus.delay(1000);
-        Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
+        healthStatus.delay(config.getHealthyDelayMilli()/2);
+        Assert.assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
 
     }
 
     @Test
     public void testStateSwitchFromUpToUnhealthyToSick() throws Exception {
         markup();
-        when(config.downAfterMilli()).thenReturn(10);
+        when(config.delayDownAfterMilli()).thenReturn(10);
 
-        healthStatus.delay(1000);
-        Thread.sleep(5);
+        healthStatus.delay(config.getHealthyDelayMilli()/2);
+        Thread.sleep(config.delayDownAfterMilli()/2);
         healthStatus.pong();
         healthStatus.healthStatusUpdate();
         Assert.assertEquals(HEALTH_STATE.UNHEALTHY, healthStatus.getState());
 
-        Thread.sleep(5);
+        Thread.sleep(config.getHealthyDelayMilli()/2);
         healthStatus.pong();
         healthStatus.healthStatusUpdate();
         Assert.assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
 
-        healthStatus.delay(1000);
+        healthStatus.delay(config.getHealthyDelayMilli()/2);
         healthStatus.healthStatusUpdate();
-        Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
+        Assert.assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
     }
 
     @Test
     public void testMarkUpMarkDown() throws Exception {
         AtomicInteger markup = new AtomicInteger(0);
         AtomicInteger markdown = new AtomicInteger(0);
-        HealthStatus.PING_DOWN_AFTER_MILLI = 30 * 1000;
+        when(config.pingDownAfterMilli()).thenReturn(30 * 1000);
 
         healthStatus.addObserver(new Observer() {
             @Override
@@ -128,7 +129,7 @@ public class HealthStatusTest extends AbstractRedisTest {
 
         int N = 100;
         for(int i = 0; i < N; i++) {
-            healthStatus.delay(1000);
+            healthStatus.delay(config.getHealthyDelayMilli()/2);
         }
         Assert.assertEquals(0, markup.get());
         Assert.assertEquals(0, markdown.get());
@@ -137,27 +138,27 @@ public class HealthStatusTest extends AbstractRedisTest {
         Assert.assertEquals(0, markup.get());
         Assert.assertEquals(0, markdown.get());
 
-        healthStatus.delay(1000);
+        healthStatus.delay(config.getHealthyDelayMilli()/2);
         Assert.assertEquals(1, markup.get());
         Assert.assertEquals(0, markdown.get());
 
-        when(config.downAfterMilli()).thenReturn(10);
-        Thread.sleep(15);
+        when(config.delayDownAfterMilli()).thenReturn(10);
+        Thread.sleep(12);
         healthStatus.healthStatusUpdate();
 
         Assert.assertEquals(1, markup.get());
         Assert.assertEquals(1, markdown.get());
-        logger.info("[ping-down-time] {}", HealthStatus.PING_DOWN_AFTER_MILLI);
+        logger.info("[ping-down-time] {}", config.pingDownAfterMilli());
         Assert.assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
 
         healthStatus.delay(1000);
-        Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
+        Assert.assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
         Assert.assertEquals(2, markup.get());
         Assert.assertEquals(1, markdown.get());
 
-        HealthStatus.PING_DOWN_AFTER_MILLI = 10;
+        when(config.pingDownAfterMilli()).thenReturn(10);
         Thread.sleep(10);
-        logger.info("[ping-down-time] {}", HealthStatus.PING_DOWN_AFTER_MILLI);
+        logger.info("[ping-down-time] {}", config.pingDownAfterMilli());
         healthStatus.healthStatusUpdate();
         Assert.assertEquals(HEALTH_STATE.DOWN, healthStatus.getState());
         Assert.assertEquals(2, markup.get());
@@ -181,9 +182,9 @@ public class HealthStatusTest extends AbstractRedisTest {
         Assert.assertEquals(2, markup.get());
         Assert.assertEquals(2, markdown.get());
 
-        HealthStatus.PING_DOWN_AFTER_MILLI = 30 * 1000;
+        when(config.pingDownAfterMilli()).thenReturn(30 * 1000);
         healthStatus.pong();
-        Assert.assertEquals(HEALTH_STATE.INSTANCEOK, healthStatus.getState());
+        Assert.assertEquals(HEALTH_STATE.INSTANCEUP, healthStatus.getState());
         Assert.assertEquals(2, markup.get());
         Assert.assertEquals(2, markdown.get());
 
@@ -198,7 +199,7 @@ public class HealthStatusTest extends AbstractRedisTest {
             });
         }
         Thread.sleep(2);
-        Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
+        Assert.assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
         Assert.assertEquals(3, markup.get());
         Assert.assertEquals(2, markdown.get());
 
@@ -206,11 +207,11 @@ public class HealthStatusTest extends AbstractRedisTest {
         healthStatus.healthStatusUpdate();
         Assert.assertEquals(3, markup.get());
         Assert.assertEquals(3, markdown.get());
-        logger.info("[ping-down-time] {}", HealthStatus.PING_DOWN_AFTER_MILLI);
+        logger.info("[ping-down-time] {}", config.pingDownAfterMilli());
         Assert.assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
 
-        HealthStatus.PING_DOWN_AFTER_MILLI = 10;
-        logger.info("[ping-down-time] {}", HealthStatus.PING_DOWN_AFTER_MILLI);
+        when(config.pingDownAfterMilli()).thenReturn(10);
+        logger.info("[ping-down-time] {}", config.pingDownAfterMilli());
         healthStatus.healthStatusUpdate();
 
         Assert.assertEquals(3, markup.get());
@@ -224,9 +225,9 @@ public class HealthStatusTest extends AbstractRedisTest {
 
         int baseInterval = 20;
 
-        HealthStatus.PING_DOWN_AFTER_MILLI = 30;
+        when(config.pingDownAfterMilli()).thenReturn(20);
         when(config.getHealthyDelayMilli()).thenReturn(baseInterval);
-        when(config.downAfterMilli()).thenReturn(baseInterval * 5);
+        when(config.delayDownAfterMilli()).thenReturn(baseInterval * 5);
 
         AtomicInteger markup = new AtomicInteger(0);
         AtomicInteger markdown = new AtomicInteger(0);
@@ -250,18 +251,18 @@ public class HealthStatusTest extends AbstractRedisTest {
                 healthStatus.pong();
                 healthStatus.delay(baseInterval/2);
             }
-        }, 0, baseInterval, TimeUnit.MILLISECONDS);
+        }, 0, 5, TimeUnit.MILLISECONDS);
 
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
                 healthStatus.healthStatusUpdate();
             }
-        }, 0, baseInterval, TimeUnit.MILLISECONDS);
+        }, 0, 5, TimeUnit.MILLISECONDS);
 
         //todo: set sleep more to test when do test manually
         Thread.sleep(500);
-        Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
+        Assert.assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
         logger.info("[markup][count] {}", markup.get());
         logger.info("[markdown][count] {}", markdown.get());
         Assert.assertEquals(0, markdown.get());
@@ -279,9 +280,9 @@ public class HealthStatusTest extends AbstractRedisTest {
     public void testMarkUpMarkDownSequenceMultiThreadBug() throws Exception {
         int baseInterval = 20;
 
-        HealthStatus.PING_DOWN_AFTER_MILLI = 50;
+        when(config.pingDownAfterMilli()).thenReturn(50);
         when(config.getHealthyDelayMilli()).thenReturn(1000);
-        when(config.downAfterMilli()).thenReturn(baseInterval);
+        when(config.delayDownAfterMilli()).thenReturn(baseInterval);
 
         AtomicInteger markup = new AtomicInteger(0);
         AtomicInteger markdown = new AtomicInteger(0);
@@ -298,11 +299,11 @@ public class HealthStatusTest extends AbstractRedisTest {
                     scheduled.schedule(new AbstractExceptionLogTask() {
                         @Override
                         protected void doRun() throws Exception {
-                            if(!healthStatus.getState().equals(HEALTH_STATE.UP)) {
+                            if(!healthStatus.getState().equals(HEALTH_STATE.HEALTHY)) {
                                 status.set(false);
                             }
                         }
-                    }, HealthStatus.PING_DOWN_AFTER_MILLI/5, TimeUnit.MILLISECONDS);
+                    }, config.pingDownAfterMilli()/5, TimeUnit.MILLISECONDS);
                 }
             }
         });
@@ -310,21 +311,84 @@ public class HealthStatusTest extends AbstractRedisTest {
         Assert.assertTrue(status.get());
 
         Thread.sleep(baseInterval + 5);
+        healthStatus.pong();
         healthStatus.healthStatusUpdate();
         Assert.assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
 
         healthStatus.delay(10);
-        Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
+        Assert.assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
         Assert.assertTrue(status.get());
 
         Thread.sleep(100);
         Assert.assertTrue(status.get());
     }
 
+
+    @Test
+    public void testHealthyHalfDown() {
+        when(config.pingDownAfterMilli()).thenReturn(50);
+        when(config.delayDownAfterMilli()).thenReturn(100);
+        when(config.getHealthyDelayMilli()).thenReturn(50);
+        markup();
+
+        sleep(config.pingDownAfterMilli()/2);
+        healthStatus.healthStatusUpdate();
+        Assert.assertEquals(HEALTH_STATE.UNHEALTHY, healthStatus.getState());
+    }
+
+    @Test
+    public void testUnhealthyToHalfDown() {
+        when(config.pingDownAfterMilli()).thenReturn(50);
+        when(config.delayDownAfterMilli()).thenReturn(100);
+        when(config.getHealthyDelayMilli()).thenReturn(50);
+        markup();
+
+        sleep(config.delayDownAfterMilli()/2);
+        healthStatus.pong();
+        healthStatus.healthStatusUpdate();
+        Assert.assertEquals(HEALTH_STATE.UNHEALTHY, healthStatus.getState());
+
+        sleep(config.pingDownAfterMilli()/2);
+        healthStatus.healthStatusUpdate();
+        Assert.assertEquals(HEALTH_STATE.UNHEALTHY, healthStatus.getState());
+    }
+
+    @Test
+    public void testSickDownThenDownSendOnceNotify() {
+        when(config.pingDownAfterMilli()).thenReturn(40);
+        when(config.delayDownAfterMilli()).thenReturn(10);
+        when(config.getHealthyDelayMilli()).thenReturn(10);
+        markup();
+
+        AtomicInteger markdownCount = new AtomicInteger(0);
+        healthStatus.addObserver(new Observer() {
+            @Override
+            public void update(Object args, Observable observable) {
+                if(!(args instanceof InstanceUp)) {
+                    markdownCount.incrementAndGet();
+                }
+            }
+        });
+        healthStatus.pong();
+        sleep(11);
+        healthStatus.healthStatusUpdate();
+        Assert.assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
+        Assert.assertEquals(1, markdownCount.get());
+
+        sleep(15);
+        healthStatus.healthStatusUpdate();
+        Assert.assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
+
+        sleep(15);
+        healthStatus.healthStatusUpdate();
+        Assert.assertEquals(HEALTH_STATE.DOWN, healthStatus.getState());
+        Assert.assertEquals(1, markdownCount.get());
+    }
+
     private void markup() {
         healthStatus.pong();
-        healthStatus.delay(1000);
-        Assert.assertEquals(HEALTH_STATE.UP, healthStatus.getState());
+        healthStatus.delay(config.getHealthyDelayMilli()/2);
+        Assert.assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
     }
 
 }

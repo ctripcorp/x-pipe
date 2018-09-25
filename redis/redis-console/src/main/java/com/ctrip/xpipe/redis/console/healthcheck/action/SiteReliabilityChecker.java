@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.action;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.console.healthcheck.action.event.AbstractInstanceEvent;
 
 /**
@@ -10,5 +9,5 @@ import com.ctrip.xpipe.redis.console.healthcheck.action.event.AbstractInstanceEv
  */
 public interface SiteReliabilityChecker {
 
-    CommandFuture<Boolean> check(AbstractInstanceEvent event);
+    boolean isSiteHealthy(AbstractInstanceEvent event);
 }

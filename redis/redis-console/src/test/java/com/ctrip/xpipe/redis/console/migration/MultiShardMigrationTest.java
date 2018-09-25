@@ -182,7 +182,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		int failPos = randomInt(1, TEST_SHARD_CNT);
 		for(int cnt = 1 ; cnt != TEST_SHARD_CNT + 1; ++ cnt) {
 			if (cnt == failPos) {
-				mockFailCheckCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcB, new Throwable("mocked check fail"));
+				mockFailCheckCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcB, new Throwable("mocked isSiteHealthy fail"));
 			} else {
 				mockSuccessCheckCommand(migrationCommandBuilder,clusterName, getShardName(cnt), dcB, dcB);
 			}

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.tuple.Pair;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -36,7 +37,7 @@ public interface MetaCache {
 
     RouteMeta getRouteIfPossible(HostPort hostPort);
 
-    int getRedisNumOfDc(String dcId);
+    List<HostPort> getAllRedisOfDc(String dcId);
 
     String getActiveDc(String clusterId, String shardId);
 }
