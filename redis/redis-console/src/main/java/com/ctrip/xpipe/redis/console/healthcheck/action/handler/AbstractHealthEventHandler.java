@@ -57,8 +57,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
 
     protected FinalStateSetterManager<ClusterShardHostPort, Boolean> finalStateSetterManager;
 
-    @PostConstruct
-    public void postConstruct() {
+    protected void setUpFinalStateSetterManager() {
 
         finalStateSetterManager = new FinalStateSetterManager<>(executors, (clusterShardHostPort) -> {
 
@@ -70,13 +69,13 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
         }, ((clusterShardHostPort, result) -> {
             try {
                 if (result) {
-                    outerClientService.markInstanceUp(clusterShardHostPort);
                     alertManager.alert(clusterShardHostPort.getClusterName(), clusterShardHostPort.getShardName(),
                             clusterShardHostPort.getHostPort(), ALERT_TYPE.MARK_INSTANCE_UP, "Mark Instance Up");
+                    outerClientService.markInstanceUp(clusterShardHostPort);
                 } else {
-                    outerClientService.markInstanceDown(clusterShardHostPort);
                     alertManager.alert(clusterShardHostPort.getClusterName(), clusterShardHostPort.getShardName(),
                             clusterShardHostPort.getHostPort(), ALERT_TYPE.MARK_INSTANCE_DOWN, "Mark Instance Down");
+                    outerClientService.markInstanceDown(clusterShardHostPort);
                 }
             } catch (OuterClientException e) {
                 throw new IllegalStateException("set error:" + clusterShardHostPort + "," + result, e);
