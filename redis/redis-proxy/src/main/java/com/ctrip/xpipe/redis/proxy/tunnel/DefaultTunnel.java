@@ -221,6 +221,11 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     private void registerSessionEventHandlers() {
         frontend.addSessionEventHandler(new FrontendSessionEventHandler());
         backend.addSessionEventHandler(new BackendSessionEventHandler());
+
+        frontend.addSessionEventHandler(new SessionWritableEventHandler(frontend,
+                proxyResourceManager.getGlobalSharedScheduled(), config));
+        backend.addSessionEventHandler(new SessionWritableEventHandler(backend,
+                proxyResourceManager.getGlobalSharedScheduled(), config));
     }
 
     @Override
@@ -230,8 +235,8 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     }
 
     @Override
-    public void release() throws Exception {
-        if (getState().equals(new TunnelClosed(this))) {
+    public void release() {
+        if(getState().equals(new TunnelClosed(this))) {
             logger.debug("already closed, no need to release again");
             return;
         }

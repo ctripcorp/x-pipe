@@ -3,9 +3,9 @@ package com.ctrip.xpipe.redis.console.config.impl;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
+import com.ctrip.xpipe.redis.console.healthcheck.action.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -61,13 +61,17 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     public static final String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
 
-    public static final String KEY_DC_CLUSTER_WONT_MARK_DOWN = "dc.cluster.pairs.wont.mark.down";
+    public static final String KEY_DC_CLUSTER_WONT_MARK_DOWN = "console.dc.cluster.pairs.delay.mark.down";
 
     private static final String KEY_HEALTHY_DELAY_THROUGH_PROXY = "console.healthy.delay.through.proxy";
 
     private static final String KEY_DOWN_AFTER_CHECK_NUMS_THROUGH_PROXY = "console.down.after.checknums.through.proxy";
 
-    private static final String KEY_PING_DOWN_MAJORITY_RATIO = "console.ping.down.majority.ratio";
+    private static final String KEY_PING_DOWN_AFTER_MILLI = "console.ping.down.after.milli";
+
+    private static final String KEY_PING_DOWN_AFTER_MILLI_THROUGH_PROXY = "console.ping.down.after.milli.through.proxy";
+
+    private static final String KEY_DEFAULT_MARK_DOWN_DELAY_SEC = "console.default.mark.down.delay.sec";
 
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
@@ -261,24 +265,31 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getSplitStringSet(getProperty(KEY_IGNORED_DC_FOR_HEALTH_CHECK, ""));
     }
 
+    private int getDefaultMarkDownDelaySecond() {
+        return getIntProperty(KEY_DEFAULT_MARK_DOWN_DELAY_SEC, 60 * 60);
+    }
+
     @Override
-    public Set<Pair<String, String>> getDelayWontMarkDownClusters() {
-        Set<Pair<String, String>> result = Sets.newHashSet();
+    public Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters() {
+        Set<DcClusterDelayMarkDown> result = Sets.newHashSet();
         Set<String> dcClusters = getSplitStringSet(getProperty(KEY_DC_CLUSTER_WONT_MARK_DOWN, ""));
         for(String dcCluster : dcClusters) {
             String[] pair = StringUtil.splitRemoveEmpty("\\s*:\\s*", dcCluster);
-            result.add(new Pair<>(pair[0], pair[1]));
+            DcClusterDelayMarkDown instance = new DcClusterDelayMarkDown().setDcId(pair[0]).setClusterId(pair[1]);
+            int delaySec = pair.length > 2 ? Integer.parseInt(pair[2]) : getDefaultMarkDownDelaySecond();
+            result.add(instance.setDelaySecond(delaySec));
         }
         return result;
     }
 
     @Override
-    public float getPingDownMajorityRatio() {
-        try {
-            return Float.parseFloat(getProperty(KEY_PING_DOWN_MAJORITY_RATIO, "0.6"));
-        } catch (Exception e) {
-            return 0.6f;
-        }
+    public int getPingDownAfterMilli() {
+        return getIntProperty(KEY_PING_DOWN_AFTER_MILLI, 12 * 1000);
+    }
+
+    @Override
+    public int getPingDownAfterMilliThroughProxy() {
+        return getIntProperty(KEY_PING_DOWN_AFTER_MILLI_THROUGH_PROXY, 30 * 1000);
     }
 
     @Override

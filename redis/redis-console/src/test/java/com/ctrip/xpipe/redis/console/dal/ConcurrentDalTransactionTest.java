@@ -45,7 +45,7 @@ public class ConcurrentDalTransactionTest {
 		List<Future<Integer>> futures = fixedThreadPool.invokeAll(tasks);
 		
 		List<Integer> results = new ArrayList<Integer>(futures.size());
-		// check for exceptions 
+		// check for exceptions
 		for(Future<Integer> future : futures) {
 			results.add(future.get());
 		}
@@ -90,7 +90,7 @@ public class ConcurrentDalTransactionTest {
 		
 		private void validateRecursiveLayer(int source, int target) {
 			if (source != target) {
-				throw new AssertionError("RecursiveLayer check failed."); 
+				throw new AssertionError("RecursiveLayer check failed.");
 			}
 		}
 		

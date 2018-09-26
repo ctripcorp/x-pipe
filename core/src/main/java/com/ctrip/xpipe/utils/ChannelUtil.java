@@ -35,7 +35,7 @@ public class ChannelUtil {
 	}
 
 	public static String getRemoteAddr(Channel channel) {
-		
+
 		String remoteIpLocalPort = "unknown";
 		try {
 			SocketAddress remoteAddr = channel.remoteAddress();
@@ -55,7 +55,7 @@ public class ChannelUtil {
 		if(remoteAddr instanceof InetSocketAddress){
 			
 			InetSocketAddress addr = (InetSocketAddress) remoteAddr;
-			return String.format("%s:%d", addr.getHostString(), addr.getPort());
+			return String.format("%s:%d", addr.getAddress().getHostAddress(), addr.getPort());
 		}
 		return remoteAddr.toString();
 	}
