@@ -17,12 +17,16 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.ByteBuf;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.OK;
@@ -38,6 +42,8 @@ public class NettyKeyedPoolClientFactoryTest extends AbstractRedisTest {
     private NettyKeyedPoolClientFactory factory = new NettyKeyedPoolClientFactory(1);
 
     private XpipeNettyClientKeyedObjectPool objectPool;
+
+    private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("scheduled"));
 
     private static final int CHECK_INTERVAL = 100;
 
@@ -64,36 +70,55 @@ public class NettyKeyedPoolClientFactoryTest extends AbstractRedisTest {
     }
 
     @Test
+    public void testTimeoutWhenBorrow() {
+        PingCommand command = new PingCommand(objectPool.getKeyPool(new DefaultEndPoint("10.0.0.1", randomPort())), scheduled, CHECK_INTERVAL);
+        command.execute();
+        sleep(1000 * 10);
+    }
+
+    @Test
     public void testMakeObject() throws Exception {
         Server server = startServer("+OK\r\n");
         Endpoint endpoint = new DefaultEndPoint("127.0.0.1", server.getPort());
+        AtomicBoolean result = new AtomicBoolean(true);
+
         AtomicLong lastUpdateMilli = new AtomicLong(-1);
         scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                PingCommand command = new PingCommand(objectPool.getKeyPool(new DefaultEndPoint("127.0.0.1", randomPort())), scheduled, CHECK_INTERVAL);
+                PingCommand command = new PingCommand(objectPool.getKeyPool(new DefaultEndPoint("10.0.0.1", randomPort())), scheduled, CHECK_INTERVAL);
                 command.execute();
             }
         }, randomInt(1000, 2000), CHECK_INTERVAL, TimeUnit.MILLISECONDS);
-        for(int i = 0; i < 2000 / CHECK_INTERVAL + 100; i ++) {
-            OkCommand command = new OkCommand(objectPool.getKeyPool(endpoint), scheduled, CHECK_INTERVAL);
-            command.future().addListener(new CommandFutureListener<String>() {
-                @Override
-                public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
-                    long last = lastUpdateMilli.getAndSet(System.currentTimeMillis());
-                    checkout(last);
-                }
-            });
-            command.execute();
-            sleep(CHECK_INTERVAL);
-        }
+        scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() throws Exception {
+                OkCommand command = new OkCommand(objectPool.getKeyPool(endpoint), scheduled, CHECK_INTERVAL);
+                command.future().addListener(new CommandFutureListener<String>() {
+                    @Override
+                    public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                        long last = lastUpdateMilli.getAndSet(System.currentTimeMillis());
+                        try {
+                            checkout(last);
+                        } catch (Exception e) {
+                            logger.error("[checkout]", e);
+                            result.set(false);
+                        }
+                    }
+                });
+                command.execute();
+            }
+        }, 0, CHECK_INTERVAL, TimeUnit.MILLISECONDS);
+
+        sleep(10 * 1000);
+        Assert.assertTrue(result.get());
     }
 
     private void checkout(long lastUpdate) {
         if(lastUpdate > 0) {
             long delta = System.currentTimeMillis() - lastUpdate;
             logger.info("[delta] {}", delta);
-            if(delta > CHECK_INTERVAL + CHECK_INTERVAL/2) {
+            if(delta > CHECK_INTERVAL + 200) {
                 throw new IllegalStateException("last time update: " + DateTimeUtils.timeAsString(lastUpdate));
             }
         }
