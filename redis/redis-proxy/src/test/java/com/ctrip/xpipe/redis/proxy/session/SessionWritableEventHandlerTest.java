@@ -2,8 +2,10 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
 import com.ctrip.xpipe.redis.proxy.Session;
+import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
+import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,6 +55,9 @@ public class SessionWritableEventHandlerTest extends AbstractProxyIntegrationTes
     @Test
     public void testOnNotWritable() {
         when(config.getCloseChannelAfterReadCloseMilli()).thenReturn(0);
+        Tunnel tunnel = mock(Tunnel.class);
+        when(session.tunnel()).thenReturn(tunnel);
+        when(tunnel.identity()).thenReturn(mock(TunnelIdentity.class));
         handler.onNotWritable();
         sleep(20);
         verify(session, times(1)).release();
