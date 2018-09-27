@@ -76,7 +76,8 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         CommandFuture<Boolean> future = new DefaultCommandFuture<>();
         future.setSuccess(true);
         when(checker.isSiteHealthy(any())).thenReturn(true);
-        HostPort master = new HostPort();
+        when(delayPingActionListener.getState(any())).thenReturn(HEALTH_STATE.DOWN);
+        HostPort master = localHostport(randomPort());
         when(delayPingActionListener.getState(master)).thenReturn(HEALTH_STATE.HEALTHY);
         when(metaCache.findMasterInSameShard(any())).thenReturn(master);
         when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(true);
@@ -89,9 +90,8 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo(dc, cluster, shard, hostPort));
 
         FinalStateSetterManager<ClusterShardHostPort, Boolean> manager = mock(FinalStateSetterManager.class);
-        ((AbstractHealthEventHandler)instanceUpHandler).setFinalStateSetterManager(manager);
-        ((AbstractHealthEventHandler)instanceDownHandler).setFinalStateSetterManager(manager);
-        ((AbstractHealthEventHandler)instanceSickHandler).setFinalStateSetterManager(manager);
+        when(delayPingActionListener.getHealthStateSetterManager()).thenReturn(manager);
+        ((DefaultInstanceSickHandler)instanceSickHandler).setScheduled(scheduled);
     }
 
     @Test
@@ -110,9 +110,11 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         instanceDownHandler = spy(instanceDownHandler);
         instanceSickHandler = spy(instanceSickHandler);
         instanceUpHandler = spy(instanceUpHandler);
+        processor.setEventHandlers(Lists.newArrayList(instanceUpHandler, instanceDownHandler, instanceSickHandler));
         processor.onEvent(new InstanceSick(instance));
-        verify(instanceDownHandler, never()).handle(any());
-        verify(instanceUpHandler, never()).handle(any());
+        verify(instanceDownHandler, times(1)).handle(any());
+        verify(instanceUpHandler, times(1)).handle(any());
+        verify(instanceSickHandler, times(1)).handle(any());
     }
 
 }

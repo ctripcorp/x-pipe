@@ -1,10 +1,6 @@
 package com.ctrip.xpipe.netty.commands;
 
-import java.util.concurrent.TimeUnit;
-
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import org.apache.commons.pool2.KeyedPooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -37,7 +33,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	private int eventLoopThreads;
 	private NioEventLoopGroup eventLoopGroup;
 	protected Bootstrap b = new Bootstrap();
-	protected int connectTimeoutMilli = 5000;
+	protected int connectTimeoutMilli = 2000;
 	private static Logger logger = LoggerFactory.getLogger(NettyKeyedPoolClientFactory.class);
 
 	public NettyKeyedPoolClientFactory() {
@@ -53,7 +49,9 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	protected void doStart() throws Exception {
 		
 		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads, XpipeThreadFactory.create("NettyKeyedPoolClientFactory"));
-		b.group(eventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
+		b.group(eventLoopGroup).channel(NioSocketChannel.class)
+				.option(ChannelOption.TCP_NODELAY, true)
+				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMilli)
 				.handler(new ChannelInitializer<SocketChannel>() {
 					@Override
 					public void initChannel(SocketChannel ch) {
@@ -69,11 +67,8 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	public PooledObject<NettyClient> makeObject(Endpoint key) throws Exception {
 
 		ChannelFuture f = b.connect(key.getHost(), key.getPort());
-		f.get(connectTimeoutMilli, TimeUnit.MILLISECONDS);
-		Channel channel = f.channel();
-		logger.debug("[makeObject]{}", channel);
-		NettyClient nettyClient = new DefaultNettyClient(channel);
-		channel.attr(NettyClientHandler.KEY_CLIENT).set(nettyClient);
+		NettyClient nettyClient = new AsyncNettyClient(f, key);
+		f.channel().attr(NettyClientHandler.KEY_CLIENT).set(nettyClient);
 		return new DefaultPooledObject<NettyClient>(nettyClient);
 	}
 
@@ -87,7 +82,11 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 
 	@Override
 	public boolean validateObject(Endpoint key, PooledObject<NettyClient> p) {
-		return p.getObject().channel().isActive();
+		Channel channel = p.getObject().channel();
+		if(channel == null) {
+			return false;
+		}
+		return channel.isOpen();
 	}
 
 	@Override

@@ -35,7 +35,7 @@ public abstract class AbstractSentinelMonitorsCheck extends AbstractIntervalChec
 
     @Override
     public void doCheck() {
-        logger.debug("[doCheck] isSiteHealthy sentinel monitors");
+        logger.debug("[doCheck] check sentinel monitors");
         Collection<DcMeta> dcMetas = dcsToCheck();
         for(DcMeta dcMeta : dcMetas) {
             Collection<SentinelMeta> sentinelMetas = dcMeta.getSentinels().values();
