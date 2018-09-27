@@ -133,7 +133,7 @@ public enum HEALTH_STATE {
     UNHEALTHY(false, true) {
         @Override
         protected HEALTH_STATE afterPingSuccess() {
-            return UNHEALTHY;
+            return INSTANCEUP;
         }
 
         @Override
@@ -148,7 +148,7 @@ public enum HEALTH_STATE {
 
         @Override
         protected HEALTH_STATE afterDelaySuccess() {
-            return HEALTHY;
+            return UNHEALTHY;
         }
 
         @Override

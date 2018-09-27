@@ -49,6 +49,11 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public int getCloseChannelAfterReadCloseMilli() {
+        return 1000;
+    }
+
+    @Override
     public String getServerCertChainFilePath() {
         return "/opt/cert/server.crt";
     }

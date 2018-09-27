@@ -83,6 +83,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
         when(delayPingActionListener.getState(any())).thenReturn(HEALTH_STATE.DOWN);
+        when(delayPingActionListener.getHealthStateSetterManager()).thenReturn(finalStateSetterManager);
         doNothing().when(finalStateSetterManager).set(any(ClusterShardHostPort.class), anyBoolean());
         ((DefaultInstanceSickHandler) sickHandler).setScheduled(Executors.newScheduledThreadPool(1));
     }

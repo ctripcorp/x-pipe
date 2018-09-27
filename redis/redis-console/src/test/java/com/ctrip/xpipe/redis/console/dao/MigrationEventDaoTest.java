@@ -78,7 +78,7 @@ public class MigrationEventDaoTest extends AbstractConsoleIntegrationTest {
 
         MigrationEvent event = migrationEventDao.buildMigrationEvent(2);
 
-        // update isSiteHealthy
+        // update check
         MigrationCluster migrationCluster = event.getMigrationClusters().get(0);
         List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
         migrationShards.forEach(migrationShard -> {

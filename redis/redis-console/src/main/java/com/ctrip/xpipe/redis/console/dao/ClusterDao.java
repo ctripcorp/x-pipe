@@ -51,7 +51,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public ClusterTbl createCluster(final ClusterTbl cluster) throws DalException {
-		// isSiteHealthy for unique cluster name
+		// check for unique cluster name
 		ClusterTbl clusterWithSameName = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
 			public ClusterTbl doQuery() throws DalException {

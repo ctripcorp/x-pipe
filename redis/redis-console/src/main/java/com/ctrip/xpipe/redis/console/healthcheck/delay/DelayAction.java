@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
-    public static final String CHECK_CHANNEL = "xpipe-health-isSiteHealthy-" + FoundationService.DEFAULT.getLocalIp();
+    public static final String CHECK_CHANNEL = "xpipe-health-check-" + FoundationService.DEFAULT.getLocalIp();
 
     private static final DelayActionContext INIT_CONTEXT = new DelayActionContext(null, HealthStatus.UNSET_TIME);
 

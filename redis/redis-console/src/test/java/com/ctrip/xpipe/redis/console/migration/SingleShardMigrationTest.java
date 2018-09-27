@@ -160,7 +160,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 	@Test
 	@DirtiesContext
 	public void testCheckExceptionFail() {
-		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB, new Throwable("mocked isSiteHealthy fail"));
+		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB, new Throwable("mocked check fail"));
 		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
 		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
 		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
