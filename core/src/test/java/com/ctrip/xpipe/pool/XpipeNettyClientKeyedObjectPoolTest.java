@@ -36,7 +36,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		
 	}
 
-	//	@Test
+//		@Test
 	// try xmx32m and run
 	public void testGc() throws Exception {
 
@@ -109,7 +109,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		}
 	}
 	
-	@Test(expected = BorrowObjectException.class)
+//	@Test(expected = BorrowObjectException.class)
 	public void testException() throws BorrowObjectException{
 		
 		pool.borrowObject(new DefaultEndPoint("localhost", randomPort()));

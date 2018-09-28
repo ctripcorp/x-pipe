@@ -285,6 +285,8 @@ public class RedisSessionTest extends AbstractIntegratedTest {
         redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world14");
         redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world15");
         Thread.sleep(5000);
+        redisSession.closeSubscribedChannel(SUBSCRIBE_CHANNEL);
+        Thread.sleep(1000);
     }
 
     public XpipeNettyClientKeyedObjectPool getReqResNettyClientPool() throws Exception {
