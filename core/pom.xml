@@ -67,10 +67,5 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.dianping.cat</groupId>
-			<artifactId>cat-client</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 </project>
