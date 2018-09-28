@@ -1,22 +1,20 @@
 package com.ctrip.xpipe.utils.log;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
-import java.util.concurrent.TimeUnit;
-
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestOperations;
 
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
-
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

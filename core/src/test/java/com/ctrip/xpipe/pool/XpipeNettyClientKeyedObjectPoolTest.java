@@ -1,18 +1,15 @@
 package com.ctrip.xpipe.pool;
 
-import java.net.InetSocketAddress;
-
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.simpleserver.Server;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

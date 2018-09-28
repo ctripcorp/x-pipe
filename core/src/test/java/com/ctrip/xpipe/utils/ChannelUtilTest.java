@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.utils;
 
+import com.ctrip.xpipe.AbstractTest;
+import io.netty.channel.Channel;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractTest;
-
-import io.netty.channel.Channel;
-
-import static org.mockito.Mockito.*;
-
 import java.net.InetSocketAddress;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author wenchao.meng

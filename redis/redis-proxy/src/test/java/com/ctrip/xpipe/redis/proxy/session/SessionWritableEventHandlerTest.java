@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**

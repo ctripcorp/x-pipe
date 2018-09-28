@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.exception;
 
-import org.junit.Test;
-
 import com.ctrip.xpipe.AbstractTest;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

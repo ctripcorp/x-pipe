@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.simple;
 
-import java.io.IOException;
-
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.monitor.CatConfig;
+import com.dianping.cat.Cat;
 import org.apache.commons.lang3.SerializationException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.monitor.CatConfig;
-import com.dianping.cat.Cat;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

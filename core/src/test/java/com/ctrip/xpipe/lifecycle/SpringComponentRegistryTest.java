@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.lifecycle;
 
-import java.util.Map;
-
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -9,11 +11,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-import com.ctrip.xpipe.api.lifecycle.TopElement;
-import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import java.util.Map;
 
 /**
  * @author wenchao.meng

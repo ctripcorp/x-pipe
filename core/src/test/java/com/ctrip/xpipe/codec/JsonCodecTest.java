@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.codec;
 
-import org.junit.Test;
-
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
+import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.HashSet;

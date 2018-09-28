@@ -12,8 +12,6 @@ import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 
-import java.net.InetSocketAddress;
-
 /**
  * @author marsqing
  *

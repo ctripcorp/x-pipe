@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
@@ -14,7 +13,6 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
-import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -30,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.OK;
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

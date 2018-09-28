@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.zk.usage;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.junit.Before;
-
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.zk.ZkConfig;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
+import org.apache.curator.framework.CuratorFramework;
+import org.junit.Before;
 
 /**
  * @author wenchao.meng

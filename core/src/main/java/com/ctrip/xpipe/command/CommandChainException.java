@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.command;
 
 
-import java.util.LinkedList;
-import java.util.List;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.exception.XpipeException;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author wenchao.meng

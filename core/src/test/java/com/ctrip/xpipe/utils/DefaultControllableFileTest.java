@@ -1,5 +1,13 @@
 package com.ctrip.xpipe.utils;
 
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.utils.ControllableFile;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -8,15 +16,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.ctrip.xpipe.api.utils.ControllableFile;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 
 /**
  * @author wenchao.meng

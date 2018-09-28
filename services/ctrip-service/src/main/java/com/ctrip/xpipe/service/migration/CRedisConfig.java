@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.service.migration;
 
-import java.util.Map;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.config.Config;
+
+import java.util.Map;
 
 /**
  * @author shyin

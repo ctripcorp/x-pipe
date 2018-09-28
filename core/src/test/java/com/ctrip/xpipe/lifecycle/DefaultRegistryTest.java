@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.lifecycle;
 
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -7,9 +9,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 
 
 /**

@@ -6,7 +6,6 @@ import com.ctrip.soa.platform.basesystem.emailservice.v1.SendEmailResponse;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.email.Email;
-import com.ctrip.xpipe.api.email.EmailType;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.utils.FileUtils;
 import org.apache.commons.io.IOUtils;

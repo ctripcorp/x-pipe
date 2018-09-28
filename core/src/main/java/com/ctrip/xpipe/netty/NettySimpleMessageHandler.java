@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.netty;
 
-import java.nio.charset.Charset;
-
 import com.ctrip.xpipe.api.codec.Codec;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+
+import java.nio.charset.Charset;
 
 /**
  * @author wenchao.meng

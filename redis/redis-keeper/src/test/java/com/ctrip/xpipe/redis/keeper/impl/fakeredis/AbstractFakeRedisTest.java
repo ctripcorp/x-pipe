@@ -20,7 +20,6 @@ import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

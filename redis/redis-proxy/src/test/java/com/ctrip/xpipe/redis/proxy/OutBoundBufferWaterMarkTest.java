@@ -7,8 +7,6 @@ import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import com.dianping.cat.Cat;
-import io.netty.channel.AbstractChannel;
 import io.netty.util.ResourceLeakDetector;
 import org.junit.Assert;
 import org.junit.Before;
@@ -16,7 +14,6 @@ import org.junit.Test;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author chen.zhu

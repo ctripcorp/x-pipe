@@ -1,13 +1,15 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
 import com.ctrip.xpipe.redis.core.exception.NoResourceException;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointSelector;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.SelectOneCycle;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
-import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
@@ -25,7 +27,6 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import sun.net.spi.DefaultProxySelector;
 
 import static org.mockito.Mockito.*;
 

@@ -5,8 +5,6 @@ import com.ctrip.xpipe.api.email.EmailService;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>

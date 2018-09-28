@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.netty;
 
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;

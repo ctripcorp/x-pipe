@@ -4,8 +4,6 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
-
 /**
  * @author wenchao.meng
  *         <p>

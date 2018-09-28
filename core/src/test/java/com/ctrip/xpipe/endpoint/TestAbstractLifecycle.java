@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.endpoint;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

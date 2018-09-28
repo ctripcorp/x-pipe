@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy.parser.path;
 
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
-import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
 

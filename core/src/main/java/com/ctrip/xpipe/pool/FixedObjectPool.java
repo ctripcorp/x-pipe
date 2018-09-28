@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.pool;
 
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 
 /**
  * @author wenchao.meng

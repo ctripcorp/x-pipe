@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
-import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
-import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
 import org.springframework.boot.SpringApplication;
