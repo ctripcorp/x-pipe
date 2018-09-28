@@ -291,57 +291,5 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>${maven-enforcer-plugin_version}</version>
-				<executions>
-					<execution>
-						<id>framework-parent-check</id>
-						<phase>validate</phase>
-						<goals>
-							<goal>enforce</goal>
-						</goals>
-						<configuration>
-							<rules>
-								<evaluateBeanshell>
-									<condition>
-										print("[INFO] [Framework] framework-parent enforcer");1==1
-									</condition>
-								</evaluateBeanshell>
-								<requireMavenVersion>
-									<version>[3.2.5,)</version>
-									<message>** projects must use Maven 3.2.5 or later version.
-									</message>
-								</requireMavenVersion>
-								<requireJavaVersion>
-									<version>[1.7.0,)</version>
-									<message>** Projects must use Java 7 or later version</message>
-								</requireJavaVersion>
-								<requireFilesDontExist>
-									<files>
-										<file>src/java</file>
-										<file>src/java.test</file>
-										<file>src/conf</file>
-										<file>src/conf.test</file>
-									</files>
-									<message>** projects must use standard Maven directory
-										layout(src/main/java etc.)
-									</message>
-								</requireFilesDontExist>
-								<bannedDependencies>
-									<excludes>
-										<exclude>javax.servlet:servlet-api</exclude>
-										<exclude>org.mortbay.jetty:servlet-api-2.5</exclude>
-									</excludes>
-									<message>** prefer javax.servlet:javax.servlet-api</message>
-								</bannedDependencies>
-							</rules>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
 	</build>
 </project>
