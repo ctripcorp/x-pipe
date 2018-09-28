@@ -26,7 +26,7 @@ public class ChannelUtilTest extends AbstractTest{
 
 		when(channel.localAddress()).thenReturn(new InetSocketAddress("localhost", 1234));
 		
-		Assert.assertEquals("L(localhost:1234)->R(null)", ChannelUtil.getDesc(channel));
+		Assert.assertEquals("L(127.0.0.1:1234)->R(null)", ChannelUtil.getDesc(channel));
 	}
 
 }
