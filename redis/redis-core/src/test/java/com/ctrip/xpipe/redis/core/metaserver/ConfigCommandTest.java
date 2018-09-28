@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand.ConfigGetMinSlav
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigSetCommand.ConfigSetMinSlavesToWrite;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 
 /**

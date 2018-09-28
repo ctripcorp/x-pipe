@@ -10,7 +10,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.ssl.NotSslRecordException;
 
 import static io.netty.util.internal.StringUtil.NEWLINE;
-import static io.netty.util.internal.StringUtil.substringAfter;
 
 /**
  * @author chen.zhu

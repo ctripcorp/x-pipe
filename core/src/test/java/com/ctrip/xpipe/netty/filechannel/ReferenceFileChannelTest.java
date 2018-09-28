@@ -1,5 +1,12 @@
 package com.ctrip.xpipe.netty.filechannel;
 
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.utils.DefaultControllableFile;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -9,14 +16,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.utils.DefaultControllableFile;
 
 /**
  * @author wenchao.meng

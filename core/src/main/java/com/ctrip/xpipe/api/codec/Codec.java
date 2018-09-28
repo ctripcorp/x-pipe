@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.api.codec;
 
-import java.nio.charset.Charset;
-
 import com.ctrip.xpipe.codec.JsonCodec;
+
+import java.nio.charset.Charset;
 
 /**
  * @author wenchao.meng

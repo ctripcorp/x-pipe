@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.lifecycle;
 
+import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.exception.LifecycleLogPassRuntimeException;
+import com.ctrip.xpipe.exception.LifecycleLogpassException;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-import com.ctrip.xpipe.exception.LifecycleLogpassException;
-import com.ctrip.xpipe.exception.LifecycleLogPassRuntimeException;
-import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 
 /**
  * @author wenchao.meng

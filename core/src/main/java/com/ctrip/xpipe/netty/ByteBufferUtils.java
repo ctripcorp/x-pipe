@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.netty;
 
-import java.nio.ByteBuffer;
-
 import com.ctrip.xpipe.api.codec.Codec;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author wenchao.meng

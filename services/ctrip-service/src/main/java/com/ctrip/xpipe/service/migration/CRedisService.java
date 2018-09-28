@@ -1,10 +1,5 @@
 package com.ctrip.xpipe.service.migration;
 
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Callable;
-
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.api.migration.OuterClientException;
@@ -13,11 +8,15 @@ import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.web.client.RestOperations;
 
-import com.ctrip.xpipe.spring.RestTemplateFactory;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
 
 /**
  * @author shyin

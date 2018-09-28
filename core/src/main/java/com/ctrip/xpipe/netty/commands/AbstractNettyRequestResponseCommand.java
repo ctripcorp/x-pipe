@@ -1,11 +1,5 @@
 package com.ctrip.xpipe.netty.commands;
 
-import java.net.SocketException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
@@ -14,9 +8,14 @@ import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.utils.ChannelUtil;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+
+import java.net.SocketException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

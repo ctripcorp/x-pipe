@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.migration;
 
 import com.ctrip.xpipe.api.migration.OuterClientException;
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.api.migration.OuterClientService;
 
 import java.net.InetSocketAddress;
 import java.util.List;

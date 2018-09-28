@@ -1,19 +1,15 @@
 package com.ctrip.xpipe.monitor;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
-import com.ctrip.xpipe.utils.OsUtils;
+import com.dianping.cat.Cat;
+import com.dianping.cat.message.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.dianping.cat.Cat;
-import com.dianping.cat.message.Transaction;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author wenchao.meng

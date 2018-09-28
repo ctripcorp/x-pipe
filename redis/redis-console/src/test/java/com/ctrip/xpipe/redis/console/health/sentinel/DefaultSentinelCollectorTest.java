@@ -5,7 +5,6 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.health.DefaultRedisSessionManager;
-import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.google.common.collect.Sets;

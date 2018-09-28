@@ -10,7 +10,6 @@ import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.ProxyedConnectionFactory;
 import com.ctrip.xpipe.redis.core.proxy.connect.DefaultProxyedConnectionFactory;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.apache.commons.pool2.PooledObject;

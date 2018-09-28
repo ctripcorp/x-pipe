@@ -9,7 +9,6 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 

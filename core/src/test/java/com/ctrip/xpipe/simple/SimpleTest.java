@@ -1,19 +1,17 @@
 package com.ctrip.xpipe.simple;
 
 
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.dianping.cat.configuration.client.entity.ClientConfig;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

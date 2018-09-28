@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.config;
 
+import com.ctrip.xpipe.api.config.Config;
+
 import java.util.LinkedList;
 import java.util.List;
-
-import com.ctrip.xpipe.api.config.Config;
 
 /**
  * @author wenchao.meng

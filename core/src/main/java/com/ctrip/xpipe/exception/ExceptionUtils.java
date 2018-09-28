@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.exception;
 
-import java.net.SocketException;
-
 import org.springframework.web.client.HttpStatusCodeException;
+
+import java.net.SocketException;
 
 /**
  * @author wenchao.meng

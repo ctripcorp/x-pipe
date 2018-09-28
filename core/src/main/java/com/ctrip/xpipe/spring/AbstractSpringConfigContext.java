@@ -15,7 +15,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import javax.annotation.PreDestroy;
 import java.util.concurrent.*;
 
 /**

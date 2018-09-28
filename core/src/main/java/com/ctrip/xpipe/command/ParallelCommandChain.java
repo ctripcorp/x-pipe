@@ -1,15 +1,15 @@
 package com.ctrip.xpipe.command;
 
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 
 /**
  * @author wenchao.meng

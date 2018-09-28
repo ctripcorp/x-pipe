@@ -1,14 +1,14 @@
 package com.ctrip.xpipe.codec;
 
-import java.io.IOException;
-
 import com.ctrip.xpipe.api.codec.GenericTypeReference;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

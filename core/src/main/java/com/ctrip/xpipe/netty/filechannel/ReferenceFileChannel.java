@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.netty.filechannel;
 
+import com.ctrip.xpipe.api.lifecycle.Releasable;
+import com.ctrip.xpipe.api.utils.ControllableFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.api.lifecycle.Releasable;
-import com.ctrip.xpipe.api.utils.ControllableFile;
 
 /**
  * @author wenchao.meng

@@ -2,7 +2,8 @@ package com.ctrip.xpipe.sso;
 
 import com.ctrip.xpipe.api.sso.SsoConfig;
 
-import javax.servlet.*;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 
 /**

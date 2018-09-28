@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.cluster;
 
+import com.ctrip.xpipe.api.cluster.LeaderElector;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
-
-import com.ctrip.xpipe.api.cluster.LeaderElector;
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 
 /**
  * @author marsqing

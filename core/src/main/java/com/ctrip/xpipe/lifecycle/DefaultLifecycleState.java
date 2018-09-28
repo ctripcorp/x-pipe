@@ -1,17 +1,10 @@
 package com.ctrip.xpipe.lifecycle;
 
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.ctrip.xpipe.api.lifecycle.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.api.lifecycle.Disposable;
-import com.ctrip.xpipe.api.lifecycle.Initializable;
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-import com.ctrip.xpipe.api.lifecycle.LifecycleController;
-import com.ctrip.xpipe.api.lifecycle.LifecycleState;
-import com.ctrip.xpipe.api.lifecycle.Startable;
-import com.ctrip.xpipe.api.lifecycle.Stoppable;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author wenchao.meng
