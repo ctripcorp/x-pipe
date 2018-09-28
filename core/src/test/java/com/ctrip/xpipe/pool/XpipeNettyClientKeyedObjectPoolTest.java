@@ -167,6 +167,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		NettyClient client1 = pool.borrowObject(key);
 
 		Assert.assertEquals(1, pool.getObjectPool(key).getNumActive());
+		waitConditionUntilTimeOut(()->client1.channel().isActive(), 1000);
 		client1.channel().close();
 		pool.returnObject(key, client1);
 		Assert.assertEquals(1, pool.getObjectPool(key).getNumIdle());
