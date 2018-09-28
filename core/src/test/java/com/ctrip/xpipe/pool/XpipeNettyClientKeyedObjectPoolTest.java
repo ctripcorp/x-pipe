@@ -61,6 +61,8 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		NettyClient nettyClient1 = objectPool.borrowObject();
 		NettyClient nettyClient2 = objectPool.borrowObject();
 
+		waitConditionUntilTimeOut(()->nettyClient1.channel().isActive()
+				&& nettyClient2.channel().isActive(), 1000);
 		waitConditionUntilTimeOut(() -> echoServer.getConnected() == 2);
 
 		objectPool.returnObject(nettyClient1);
@@ -83,7 +85,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		for (int i = 0; i < testCount; i++) {
 			
 			NettyClient client = objectPool.borrowObject();
-			sleep(10);
+			waitConditionUntilTimeOut(()->client.channel().isActive(), 1000);
 			Assert.assertEquals(1, echoServer.getTotalConnected());
 			objectPool.returnObject(client);
 		}
@@ -100,7 +102,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 			
 			Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 			NettyClient client = pool.borrowObject(key);
-			sleep(10);
+			waitConditionUntilTimeOut(()->client.channel().isActive(), 1000);
 			Assert.assertEquals(1, echoServer.getTotalConnected());
 			pool.returnObject(key, client);
 		}
