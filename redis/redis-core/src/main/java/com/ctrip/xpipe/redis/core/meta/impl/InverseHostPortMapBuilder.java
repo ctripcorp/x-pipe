@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

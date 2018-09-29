@@ -1,17 +1,15 @@
 package com.ctrip.xpipe.netty;
 
+import com.ctrip.xpipe.api.codec.Codec;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.api.codec.Codec;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 
 /**
  * @author wenchao.meng

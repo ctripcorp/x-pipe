@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.lifecycle;
 
+import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.utils.MapUtils;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.ctrip.xpipe.api.factory.ObjectFactory;
-import com.ctrip.xpipe.utils.MapUtils;
 
 /**
  * @author wenchao.meng

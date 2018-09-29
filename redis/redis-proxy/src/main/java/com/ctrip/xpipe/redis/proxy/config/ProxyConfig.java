@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.proxy.config;
 
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
 
-import java.net.InetSocketAddress;
-
 /**
  * @author chen.zhu
  * <p>

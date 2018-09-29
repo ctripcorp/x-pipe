@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.endpoint;
 
+import com.alibaba.fastjson.annotation.JSONField;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import com.alibaba.fastjson.annotation.JSONField;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 
 @SuppressWarnings("serial")
 public class DefaultEndPoint implements Endpoint, Serializable{

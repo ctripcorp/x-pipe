@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.organization;
 
-import com.ctrip.xpipe.api.organization.OrganizationModel;
 import com.ctrip.xpipe.api.organization.Organization;
+import com.ctrip.xpipe.api.organization.OrganizationModel;
 
 import java.util.LinkedList;
 import java.util.List;

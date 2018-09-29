@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
 /**
  * @author wenchao.meng

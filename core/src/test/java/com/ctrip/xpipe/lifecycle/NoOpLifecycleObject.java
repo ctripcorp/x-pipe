@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.lifecycle;
 
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-
 /**
  * @author wenchao.meng
  *

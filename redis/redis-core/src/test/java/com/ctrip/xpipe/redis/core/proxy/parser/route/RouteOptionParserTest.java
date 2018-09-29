@@ -1,11 +1,8 @@
 package com.ctrip.xpipe.redis.core.proxy.parser.route;
 
-import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

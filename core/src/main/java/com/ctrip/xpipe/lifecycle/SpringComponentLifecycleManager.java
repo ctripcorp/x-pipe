@@ -1,18 +1,13 @@
 package com.ctrip.xpipe.lifecycle;
 
+import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.ApplicationEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.*;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
-
-import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 
 /**
  * @author wenchao.meng

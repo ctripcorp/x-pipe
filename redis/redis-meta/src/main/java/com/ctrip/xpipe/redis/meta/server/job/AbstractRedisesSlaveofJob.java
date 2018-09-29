@@ -19,7 +19,6 @@ import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.utils.StringUtil;
 
-import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;

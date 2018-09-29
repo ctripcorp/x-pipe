@@ -3,15 +3,12 @@ package com.ctrip.xpipe.service.metric;
 import com.ctrip.framework.clogging.agent.MessageManager;
 import com.ctrip.framework.clogging.agent.metrics.aggregator.MetricsAggregator;
 import com.ctrip.framework.clogging.agent.metrics.aggregator.MetricsAggregatorFactory;
-import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MetricProxyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * @author wenchao.meng

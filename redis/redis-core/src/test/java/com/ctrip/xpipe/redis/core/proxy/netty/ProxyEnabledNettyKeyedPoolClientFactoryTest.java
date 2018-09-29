@@ -1,33 +1,21 @@
 package com.ctrip.xpipe.redis.core.proxy.netty;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.netty.ByteBufUtils;
-import com.ctrip.xpipe.netty.commands.ByteBufReceiver;
 import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
-import com.ctrip.xpipe.redis.core.proxy.connect.DefaultProxyedConnectionFactory;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.resource.ConsoleProxyResourceManager;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.simpleserver.Server;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import sun.net.ResourceManager;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

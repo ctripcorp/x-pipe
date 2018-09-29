@@ -8,7 +8,6 @@ import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.After;
 
-import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 

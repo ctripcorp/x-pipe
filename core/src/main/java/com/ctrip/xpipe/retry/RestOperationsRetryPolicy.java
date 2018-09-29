@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.retry;
 
+import com.ctrip.xpipe.api.retry.RetryPolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
-
-import com.ctrip.xpipe.api.retry.RetryPolicy;
 
 /**
  * @author shyin

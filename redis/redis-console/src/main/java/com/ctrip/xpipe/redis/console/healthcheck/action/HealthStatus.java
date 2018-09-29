@@ -86,7 +86,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
                 }
                 healthStatusUpdate();
             }
-        }, 0, pingDownAfterMilli.getAsInt() / 5, TimeUnit.MILLISECONDS);
+        }, 0, instance.getHealthCheckConfig().checkIntervalMilli(), TimeUnit.MILLISECONDS);
     }
 
     void pong(){
@@ -144,8 +144,9 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private void setDelayHalfDown() {
         HEALTH_STATE preState = state.get();
-        state.set(preState.afterDelayHalfFail());
-        logUnhealthy(preState, state.get());
+        if(state.compareAndSet(preState, preState.afterDelayHalfFail())) {
+            logUnhealthy(preState, state.get());
+        }
     }
 
     private void setDelayDown() {
@@ -159,8 +160,9 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private void setPingHalfDown() {
         HEALTH_STATE preState = state.get();
-        state.compareAndSet(preState, preState.afterPingHalfFail());
-        logUnhealthy(preState, state.get());
+        if(state.compareAndSet(preState, preState.afterPingHalfFail())) {
+            logUnhealthy(preState, state.get());
+        }
     }
 
     private void logUnhealthy(HEALTH_STATE preState, HEALTH_STATE curState) {

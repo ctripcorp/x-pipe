@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.payload;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
-
-import io.netty.buffer.ByteBuf;
 
 
 /**

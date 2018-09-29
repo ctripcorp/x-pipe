@@ -40,10 +40,10 @@ public class DefaultProxyEndpointSelector implements ProxyEndpointSelector {
         if(strategy != null && !strategy.select()) {
             throw new NoResourceException(String.format("No resource for strategy: %s", strategy.getClass().getSimpleName()));
         }
-        logger.info("[candidates][before]{}", candidates);
+        logger.debug("[candidates][before]{}", candidates);
         List<ProxyEndpoint> toBeSelected = Lists.newArrayList(candidates);
         toBeSelected.retainAll(endpointManager.getAllProxyEndpoints());
-        logger.info("[candidates][after]{}", toBeSelected);
+        logger.debug("[candidates][after]{}", toBeSelected);
 
         ProxyEndpoint endpoint = algorithm.nextHop(toBeSelected);
         if(endpoint == null) {
@@ -56,7 +56,7 @@ public class DefaultProxyEndpointSelector implements ProxyEndpointSelector {
 
     @Override
     public void setNextHopAlgorithm(NextHopAlgorithm algorithm) {
-        logger.info("[setNextHopAlgorithm] algorithm: {}", algorithm.getClass());
+        logger.debug("[setNextHopAlgorithm] algorithm: {}", algorithm.getClass());
         this.algorithm = algorithm;
     }
 
@@ -72,7 +72,7 @@ public class DefaultProxyEndpointSelector implements ProxyEndpointSelector {
 
     @Override
     public void setSelectStrategy(SelectStrategy strategy) {
-        logger.info("[setSelectStrategy] strategy: {}", strategy);
+        logger.debug("[setSelectStrategy] strategy: {}", strategy);
         this.strategy = strategy;
     }
 }

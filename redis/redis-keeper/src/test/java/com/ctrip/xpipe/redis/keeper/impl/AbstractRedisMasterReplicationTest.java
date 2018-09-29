@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;

@@ -1,35 +1,23 @@
 package com.ctrip.xpipe.service.email;
 
-import com.ctrip.soa.platform.basesystem.emailservice.v1.EmailServiceClient;
-import com.ctrip.soa.platform.basesystem.emailservice.v1.GetEmailStatusResponse;
-import com.ctrip.soa.platform.basesystem.emailservice.v1.SendEmailResponse;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.email.EmailResponse;
-import com.ctrip.xpipe.api.email.EmailType;
 import com.ctrip.xpipe.api.email.Email;
-import com.ctrip.xpipe.api.email.EmailService;
-import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu

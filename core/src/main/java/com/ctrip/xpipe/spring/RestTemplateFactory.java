@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.spring;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-
+import com.ctrip.xpipe.api.retry.RetryPolicy;
+import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.retry.RetryNTimes;
+import com.ctrip.xpipe.retry.RetryPolicyFactories;
+import com.ctrip.xpipe.retry.RetryPolicyFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -17,13 +20,9 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 
-import com.ctrip.xpipe.api.retry.RetryPolicy;
-import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.retry.RetryNTimes;
-import com.ctrip.xpipe.retry.RetryPolicyFactories;
-import com.ctrip.xpipe.retry.RetryPolicyFactory;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 /**
  * @author wenchao.meng

@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.zk;
 
-import org.apache.curator.test.TestingServer;
-
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import org.apache.curator.test.TestingServer;
 
 /**
  * @author wenchao.meng

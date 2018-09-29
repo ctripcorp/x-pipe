@@ -24,7 +24,11 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
         this.channel = channel;
         this.sessionState = new AtomicReference<>(new SessionEstablished(this));
         try {
-            this.endpoint = new DefaultProxyEndpoint((InetSocketAddress) channel.remoteAddress());
+            if(channel.remoteAddress() instanceof InetSocketAddress) {
+                this.endpoint = new DefaultProxyEndpoint((InetSocketAddress) channel.remoteAddress());
+            } else {
+                this.endpoint = new DefaultProxyEndpoint("0.0.0.0", -1);
+            }
         } catch (Exception e) {
             this.endpoint = new DefaultProxyEndpoint("0.0.0.0", -1);
             logger.error("[construct]", e);

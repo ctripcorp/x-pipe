@@ -4,7 +4,6 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 import com.ctrip.xpipe.redis.core.BaseEntity;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;

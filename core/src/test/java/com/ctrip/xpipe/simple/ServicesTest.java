@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.simple;
 
-import java.util.ServiceLoader;
+import org.junit.Test;
 
 import javax.annotation.processing.Processor;
-
-import org.junit.Test;
+import java.util.ServiceLoader;
 
 /**
  * @author wenchao.meng

@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.utils;
 
+import com.ctrip.xpipe.api.utils.FileSize;
+
 import java.io.File;
 import java.io.IOException;
-
-import com.ctrip.xpipe.api.utils.FileSize;
 
 /**
  * @author wenchao.meng

@@ -1,17 +1,16 @@
 package com.ctrip.xpipe.concurrent;
 
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.Executor;
-
-import org.jboss.netty.util.internal.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.utils.MapUtils;
+import org.jboss.netty.util.internal.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.Executor;
 
 /**
  * @author wenchao.meng

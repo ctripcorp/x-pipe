@@ -1,12 +1,10 @@
 package com.ctrip.xpipe.netty.commands;
 
-import java.io.IOException;
-
+import com.ctrip.xpipe.AbstractTest;
+import io.netty.buffer.ByteBuf;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractTest;
-
-import io.netty.buffer.ByteBuf;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.utils;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.foundation.DefaultFoundationService;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @author wenchao.meng

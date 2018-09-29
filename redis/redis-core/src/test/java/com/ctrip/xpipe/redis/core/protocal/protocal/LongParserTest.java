@@ -4,8 +4,6 @@ import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>
