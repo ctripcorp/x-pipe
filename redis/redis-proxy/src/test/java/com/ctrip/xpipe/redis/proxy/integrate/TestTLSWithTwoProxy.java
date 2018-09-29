@@ -86,7 +86,8 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
         Assert.assertEquals(0, ByteBufUtil.compare(expected, byteBufAtomicReference.get()));
     }
 
-    @Test
+//    @Test
+    //Manullay test
     public void testStabilityWithN() throws TimeoutException, InterruptedException {
         int N = 50;
         int[] port = new int[N];

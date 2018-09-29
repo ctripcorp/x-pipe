@@ -57,8 +57,7 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
         session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, resourceManager);
 
     }
-
-    @Test(expected = IllegalAccessException.class)
+    
     public void testSendImmdiateAfterProtocol() throws Exception {
         session.sendAfterProtocol(testByteBuf());
         session.sendAfterProtocol(testByteBuf());
