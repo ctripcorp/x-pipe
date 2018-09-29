@@ -1,15 +1,15 @@
 package com.ctrip.xpipe.netty;
 
-import java.net.SocketAddress;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.FileRegion;
 import io.netty.util.concurrent.ScheduledFuture;
+
+import java.net.SocketAddress;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author leoliang

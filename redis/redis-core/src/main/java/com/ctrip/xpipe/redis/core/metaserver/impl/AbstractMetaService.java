@@ -4,12 +4,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerService;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
-import com.ctrip.xpipe.retry.RetryPolicyFactories;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.google.common.base.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.client.RestOperations;
 
 import java.util.List;
 

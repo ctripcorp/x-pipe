@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.lifecycle;
 
-import java.util.Comparator;
-
 import com.ctrip.xpipe.api.lifecycle.Ordered;
+
+import java.util.Comparator;
 
 /**
  * @author wenchao.meng

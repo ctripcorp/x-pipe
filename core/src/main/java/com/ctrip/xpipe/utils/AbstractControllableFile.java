@@ -1,6 +1,11 @@
 package com.ctrip.xpipe.utils;
 
 
+import com.ctrip.xpipe.api.utils.ControllableFile;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -8,12 +13,6 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.api.utils.ControllableFile;
 
 /**
  * @author wenchao.meng

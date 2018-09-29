@@ -1,18 +1,17 @@
 package com.ctrip.xpipe.service.migration;
 
-import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
-
+import com.ctrip.xpipe.AbstractServiceTest;
+import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractServiceTest;
-import com.ctrip.xpipe.api.migration.OuterClientService;
-import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author shyin

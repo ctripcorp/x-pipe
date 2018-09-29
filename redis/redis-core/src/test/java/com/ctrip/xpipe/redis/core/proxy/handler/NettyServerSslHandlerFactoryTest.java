@@ -1,11 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy.handler;
 
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

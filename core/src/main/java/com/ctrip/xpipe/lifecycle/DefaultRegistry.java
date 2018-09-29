@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.lifecycle;
 
+import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 
 /**
  * @author wenchao.meng

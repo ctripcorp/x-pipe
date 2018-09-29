@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.simple;
 
-import org.junit.Test;
 import com.ctrip.xpipe.AbstractTest;
+import org.junit.Test;
 
 /**
  * @author shyin

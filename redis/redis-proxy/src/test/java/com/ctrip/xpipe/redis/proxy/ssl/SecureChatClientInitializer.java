@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.proxy.ssl;
 
-import com.ctrip.xpipe.netty.commands.NettyClientHandler;
-import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
-import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -11,7 +8,6 @@ import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.Delimiters;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
-import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 
 import javax.net.ssl.SSLContext;

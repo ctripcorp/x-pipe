@@ -1,24 +1,23 @@
 package com.ctrip.xpipe.utils.log;
 
-import java.io.PrintWriter;
-import java.io.Serializable;
-import java.io.StringWriter;
-
+import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.utils.StringUtil;
+import com.dianping.cat.Cat;
+import com.dianping.cat.message.Trace;
+import com.dianping.cat.message.spi.MessageManager;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 
-import com.ctrip.xpipe.exception.ExceptionUtils;
-import com.ctrip.xpipe.utils.StringUtil;
-import com.dianping.cat.Cat;
-import com.dianping.cat.message.Trace;
-import com.dianping.cat.message.spi.MessageManager;
+import java.io.PrintWriter;
+import java.io.Serializable;
+import java.io.StringWriter;
 
 /**
  * @author shyin

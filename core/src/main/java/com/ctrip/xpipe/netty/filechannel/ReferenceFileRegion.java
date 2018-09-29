@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.netty.filechannel;
 
-import java.nio.channels.FileChannel;
-
+import io.netty.channel.DefaultFileRegion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.channel.DefaultFileRegion;
+import java.nio.channels.FileChannel;
 
 /**
  * @author wenchao.meng

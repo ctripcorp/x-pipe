@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.payload;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
+import com.ctrip.xpipe.AbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractTest;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 
 /**

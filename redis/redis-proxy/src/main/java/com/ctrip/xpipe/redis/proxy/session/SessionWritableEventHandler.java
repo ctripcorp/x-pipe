@@ -50,8 +50,8 @@ public class SessionWritableEventHandler implements SessionEventHandler {
         closeTask = schedued.schedule(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                logger.info("[onNotWritable] close session as not writable for {} milli-sec",
-                        proxyConfig.getCloseChannelAfterReadCloseMilli());
+                logger.info("[onNotWritable] close session as not writable for {} milli-sec, {}",
+                        proxyConfig.getCloseChannelAfterReadCloseMilli(), session.tunnel().identity().toString());
                 session.release();
             }
         }, proxyConfig.getCloseChannelAfterReadCloseMilli(), TimeUnit.MILLISECONDS);

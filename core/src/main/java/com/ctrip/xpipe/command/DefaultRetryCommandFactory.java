@@ -1,18 +1,14 @@
 package com.ctrip.xpipe.command;
 
 import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.retry.RetryDelay;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
-import org.springframework.web.client.RestOperations;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
 
 /**
  * @author wenchao.meng

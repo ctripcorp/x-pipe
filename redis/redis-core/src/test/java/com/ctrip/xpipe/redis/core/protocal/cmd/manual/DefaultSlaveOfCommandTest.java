@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultSlaveOfCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 
 /**

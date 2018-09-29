@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.utils;
 
 
+import com.ctrip.xpipe.AbstractTest;
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.ctrip.xpipe.AbstractTest;
 
 /**
  * @author wenchao.meng

@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.lifecycle;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import com.ctrip.xpipe.api.lifecycle.Startable;
+import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.api.lifecycle.Startable;
-import com.ctrip.xpipe.api.lifecycle.Stoppable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng

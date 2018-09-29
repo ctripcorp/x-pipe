@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.zk.impl;
 
-import org.apache.curator.framework.CuratorFramework;
-
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.ZkConfig;
+import org.apache.curator.framework.CuratorFramework;
 
 /**
  * @author marsqing

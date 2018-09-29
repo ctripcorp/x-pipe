@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.api.utils.ControllableFile;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 
 import java.io.File;

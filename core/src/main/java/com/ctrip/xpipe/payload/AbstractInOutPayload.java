@@ -1,15 +1,13 @@
 package com.ctrip.xpipe.payload;
 
+import com.ctrip.xpipe.api.payload.InOutPayload;
+import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-
-import com.ctrip.xpipe.api.payload.InOutPayload;
-
-import io.netty.buffer.ByteBuf;
 
 /**
  * @author wenchao.meng

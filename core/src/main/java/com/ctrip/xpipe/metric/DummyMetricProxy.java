@@ -2,8 +2,6 @@ package com.ctrip.xpipe.metric;
 
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 
-import java.util.List;
-
 /**
  * @author marsqing
  *

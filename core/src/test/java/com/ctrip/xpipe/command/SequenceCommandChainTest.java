@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.command;
 
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.api.command.CommandFuture;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 /**
  * @author wenchao.meng
  *

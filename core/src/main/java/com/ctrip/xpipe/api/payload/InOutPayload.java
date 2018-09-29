@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.api.payload;
 
 
+import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
-
-import io.netty.buffer.ByteBuf;
 
 /**
  * @author wenchao.meng

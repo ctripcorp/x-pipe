@@ -1,9 +1,5 @@
 package com.ctrip.xpipe.api.migration;
 
-import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
-
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
@@ -11,6 +7,10 @@ import com.ctrip.xpipe.utils.ServicesUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * for client router system

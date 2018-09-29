@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.zk.usage;
 
-import java.io.IOException;
-
 import org.apache.curator.framework.recipes.nodes.PersistentNode;
 import org.apache.zookeeper.CreateMode;
 import org.junit.Test;
+
+import java.io.IOException;
 
 
 /**

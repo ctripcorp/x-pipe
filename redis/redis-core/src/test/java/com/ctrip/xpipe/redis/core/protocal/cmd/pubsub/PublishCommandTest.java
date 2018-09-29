@@ -2,15 +2,11 @@ package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

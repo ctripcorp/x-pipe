@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.utils;
 
-import java.util.concurrent.ThreadFactory;
-
 import com.ctrip.xpipe.utils.log.MDCUtil;
+
+import java.util.concurrent.ThreadFactory;
 
 /**
  * @author marsqing

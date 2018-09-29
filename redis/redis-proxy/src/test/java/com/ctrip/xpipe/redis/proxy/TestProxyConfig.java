@@ -2,8 +2,6 @@ package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 
-import java.net.InetSocketAddress;
-
 /**
  * @author chen.zhu
  * <p>

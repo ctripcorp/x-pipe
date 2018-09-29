@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;

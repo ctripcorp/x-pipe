@@ -8,7 +8,6 @@ import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 
 /**

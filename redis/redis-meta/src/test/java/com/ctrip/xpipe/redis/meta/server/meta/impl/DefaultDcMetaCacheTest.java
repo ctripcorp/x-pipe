@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;

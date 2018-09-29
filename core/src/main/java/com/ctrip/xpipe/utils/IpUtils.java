@@ -1,21 +1,15 @@
 package com.ctrip.xpipe.utils;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.regex.Pattern;
-
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.*;
+import java.util.Enumeration;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * @author wenchao.meng

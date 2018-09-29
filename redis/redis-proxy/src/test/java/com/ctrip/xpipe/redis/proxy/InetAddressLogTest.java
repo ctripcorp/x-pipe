@@ -1,12 +1,8 @@
 package com.ctrip.xpipe.redis.proxy;
 
-import com.ctrip.framework.foundation.Foundation;
-import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.utils.ChannelUtil;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.net.spi.nameservice.dns.DNSNameService;
 
 import java.net.InetSocketAddress;
 

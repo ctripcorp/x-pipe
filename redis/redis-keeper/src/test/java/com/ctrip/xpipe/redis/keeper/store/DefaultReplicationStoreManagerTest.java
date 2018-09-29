@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
-import com.ctrip.xpipe.redis.core.protocal.cmd.transaction.TransactionalCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.MetaStore;

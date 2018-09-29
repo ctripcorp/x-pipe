@@ -1,26 +1,21 @@
 package com.ctrip.xpipe.service.metric;
 
-import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
-
 import com.ctrip.framework.foundation.Foundation;
+import com.ctrip.hickwall.proxy.HickwallClient;
+import com.ctrip.hickwall.proxy.common.DataPoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.metric.*;
-import com.ctrip.xpipe.service.foundation.CtripFoundationService;
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
+import com.ctrip.xpipe.metric.MetricProxyException;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import io.netty.util.HashedWheelTimer;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.hickwall.proxy.HickwallClient;
-import com.ctrip.hickwall.proxy.common.DataPoint;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.concurrent.*;
 
 /**
  * @author shyin

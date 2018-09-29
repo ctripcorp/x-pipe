@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.simple;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Test;
+
+import java.net.InetSocketAddress;
 
 /**
  * @author shyin

@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.netty.commands;
 
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -12,7 +10,6 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.pool.BorrowObjectException;
 import com.ctrip.xpipe.pool.ReturnObjectException;
-
 import io.netty.buffer.ByteBuf;
 
 /**
