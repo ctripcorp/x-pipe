@@ -4,6 +4,8 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;

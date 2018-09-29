@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.console.healthcheck.factory;
 
+import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.health.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
@@ -17,6 +17,8 @@ import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayAction;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingAction;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingService;
+import com.ctrip.xpipe.redis.console.healthcheck.redisconf.CrossDcLeaderAwareHealthCheckManager;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -52,15 +54,21 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
     @Autowired
     private RedisSessionManager redisSessionManager;
 
-    private ScheduledExecutorService scheduled;
-
-    private ExecutorService executors;
-
     @Autowired
     private PingService pingService;
 
     @Autowired
     private List<HealthCheckActionListener> listeners;
+
+    @Autowired
+    private CrossDcLeaderAwareHealthCheckManager crossDcLeaderAwareHealthCheckManager;
+
+    @Autowired(required = false)
+    private CrossDcClusterServer clusterServer;
+
+    private ScheduledExecutorService scheduled;
+
+    private ExecutorService executors;
 
     private DefaultHealthCheckConfig defaultHealthCheckConfig;
 
@@ -85,13 +93,13 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
     @Override
     public RedisHealthCheckInstance create(RedisMeta redisMeta) {
 
-        RedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
+        DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
 
         RedisInstanceInfo info = createRedisInstanceInfo(redisMeta);
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redisMeta);
         HealthCheckConfig config = isEndpointProxyEnabled(endpoint) ? proxyEnabledHealthCheckConfig : defaultHealthCheckConfig;
 
-        ((DefaultRedisHealthCheckInstance) instance).setEndpoint(endpoint)
+        instance.setEndpoint(endpoint)
                 .setHealthCheckConfig(config)
                 .setRedisInstanceInfo(info)
                 .setSession(redisSessionManager.findOrCreateSession(endpoint));
@@ -125,8 +133,19 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
         return endpoint instanceof ProxyEnabled;
     }
 
-    private void initActions(RedisHealthCheckInstance instance) {
-        new PingAction(scheduled, instance, executors).addListeners(listeners);
-        new DelayAction(scheduled, instance, executors, pingService).addListeners(listeners);
+    @SuppressWarnings("unchecked")
+    private void initActions(DefaultRedisHealthCheckInstance instance) {
+        PingAction pingAction = new PingAction(scheduled, instance, executors);
+        pingAction.addListeners(listeners);
+        pingAction.addListener(instance.createPingListener());
+
+        DelayAction delayAction = new DelayAction(scheduled, instance, executors, pingService);
+        delayAction.addListeners(listeners);
+        delayAction.addListener(instance.createDelayListener());
+
+        if(clusterServer != null && clusterServer.amILeader()) {
+            crossDcLeaderAwareHealthCheckManager.registerTo(instance);
+        }
     }
+
 }

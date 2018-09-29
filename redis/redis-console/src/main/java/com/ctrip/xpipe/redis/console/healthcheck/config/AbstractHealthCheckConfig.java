@@ -40,4 +40,13 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
         return consoleConfig.getRedisConfCheckIntervalMilli();
     }
 
+    @Override
+    public String getMinXRedisVersion() {
+        return consoleConfig.getXRedisMinimumRequestVersion();
+    }
+
+    @Override
+    public String getMinDiskLessReplVersion() {
+        return consoleConfig.getReplDisklessMinRedisVersion();
+    }
 }

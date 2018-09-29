@@ -112,7 +112,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public String getXRedisMinimumRequestVersion() {
-        return getProperty(KEY_XREDIS_REQUEST_MINI_VERSION, "0.0.1");
+        return getProperty(KEY_XREDIS_REQUEST_MINI_VERSION, "0.0.3");
     }
 
     @Override

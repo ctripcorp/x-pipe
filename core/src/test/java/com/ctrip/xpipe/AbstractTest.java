@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * @author wenchao.meng
@@ -693,6 +694,10 @@ public class AbstractTest {
     }
 
     protected Server startServer(final String result) throws Exception {
+        return startServer(randomPort(), result);
+    }
+
+    protected Server startServerWithFlexibleResult(Callable<String> result) throws Exception {
         return startServer(randomPort(), result);
     }
 

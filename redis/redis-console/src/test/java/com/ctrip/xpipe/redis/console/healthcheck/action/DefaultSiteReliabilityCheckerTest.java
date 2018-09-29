@@ -40,7 +40,7 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
     private MetaCache metaCache;
 
     @Mock
-    private DelayPingActionListener delayPingActionListener;
+    private DelayPingActionCollector delayPingActionCollector;
 
     private RedisHealthCheckInstance instance;
 
@@ -60,7 +60,7 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
     @Test
     public void testCheckWithSiteDown() throws Exception {
 
-        when(delayPingActionListener.getState(any(HostPort.class))).thenReturn(HEALTH_STATE.DOWN);
+        when(delayPingActionCollector.getState(any(HostPort.class))).thenReturn(HEALTH_STATE.DOWN);
         boolean result = checker.isSiteHealthy(new InstanceDown(instance));
         Assert.assertFalse(result);
 
@@ -68,7 +68,7 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
 
     @Test
     public void testCheckWithSiteOk() {
-        when(delayPingActionListener.getState(any(HostPort.class))).thenReturn(HEALTH_STATE.HEALTHY);
+        when(delayPingActionCollector.getState(any(HostPort.class))).thenReturn(HEALTH_STATE.HEALTHY);
         Assert.assertTrue(checker.isSiteHealthy(new InstanceDown(instance)));
     }
 
@@ -76,7 +76,7 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
     public void testCheckMultipleEventsDown() throws Exception {
         int N = 100;
         List<HostPort> dcHostPort = hostPorts(N);
-        when(delayPingActionListener.getState(any(HostPort.class))).thenAnswer(new Answer<HEALTH_STATE>() {
+        when(delayPingActionCollector.getState(any(HostPort.class))).thenAnswer(new Answer<HEALTH_STATE>() {
             @Override
             public HEALTH_STATE answer(InvocationOnMock invocation) throws Throwable {
                 HostPort hostPort = invocation.getArgumentAt(0, HostPort.class);

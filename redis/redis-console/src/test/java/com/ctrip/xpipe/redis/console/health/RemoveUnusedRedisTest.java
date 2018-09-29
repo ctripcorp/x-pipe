@@ -3,6 +3,9 @@ package com.ctrip.xpipe.redis.console.health;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayAction;
+import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
+import com.ctrip.xpipe.redis.console.healthcheck.session.PingCallback;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -91,7 +94,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleH2DbTest {
         Assert.assertEquals(2, server.getConnected());
 
         // Call remove redis session method
-        manager.removeUnusedRedises();
+//        manager.removeUnusedRedises();
 
         // Check if all connections are closed
         waitConditionUntilTimeOut(() -> server.getConnected() == 0, 3000);

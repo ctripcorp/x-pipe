@@ -14,11 +14,9 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoT
 import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
-import com.ctrip.xpipe.redis.console.health.BaseSamplePlanTest;
 import com.ctrip.xpipe.redis.console.health.clientconfig.CheckClusterTest;
-import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
-import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
-import com.ctrip.xpipe.redis.console.health.sentinel.SentinelSamplePlanTest;
+import com.ctrip.xpipe.redis.console.healthcheck.redismaster.RedisMasterCheckActionFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.sentinel.*;
 import com.ctrip.xpipe.redis.console.healthcheck.action.DefaultSiteReliabilityCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.action.HealthStatusTest;
 import com.ctrip.xpipe.redis.console.healthcheck.action.OuterClientServiceProcessorTest;
@@ -27,6 +25,10 @@ import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpo
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisHealthCheckInstanceFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.redisconf.DefaultCrossDcLeaderAwareHealthCheckManagerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.redisconf.diskless.DiskLessReplCheckActionTest;
+import com.ctrip.xpipe.redis.console.healthcheck.redisconf.version.VersionCheckActionTest;
+import com.ctrip.xpipe.redis.console.healthcheck.redismaster.RedisMasterCheckActionTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
@@ -57,7 +59,8 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
         SentinelHelloTest.class,
-        DefaultSentinelCollectorTest.class,
+        DefaultSentinelHelloCollectorTest.class,
+        SentinelCollector4KeeperTest.class,
         ConsoleCrossDcServerTest.class,
 
         ClusterServiceImplTest.class,
@@ -107,12 +110,10 @@ import org.junit.runners.Suite.SuiteClasses;
         RouteServiceImplTest.class,
         RouteServiceImplTest.class,
         ProxyServiceImplTest.class,
-        BaseSamplePlanTest.class,
 
         AdvancedDcMetaServiceTestForRoute.class,
         AdvancedDcMetaServiceTest.class,
         ClusterMetaServiceImplTest.class,
-        SentinelSamplePlanTest.class,
 
         HealthCheckEndpointFactoryTest.class,
         DefaultHealthCheckEndpointFactoryTest.class,
@@ -123,6 +124,13 @@ import org.junit.runners.Suite.SuiteClasses;
         HealthStatusTest.class,
         OuterClientServiceProcessorTest.class,
         TestAbstractHealthEventHandlerTest.class,
+        DefaultCrossDcLeaderAwareHealthCheckManagerTest.class,
+        VersionCheckActionTest.class,
+        DiskLessReplCheckActionTest.class,
+        RedisMasterCheckActionTest.class,
+        SentinelHelloCheckActionFactoryTest.class,
+        RedisMasterCheckActionFactoryTest.class,
+        SentinelHelloCheckActionTest.class
 })
 public class AllTests {
 

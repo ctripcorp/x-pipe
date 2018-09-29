@@ -3,15 +3,16 @@ package com.ctrip.xpipe.redis.console.healthcheck.impl;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
-import com.ctrip.xpipe.redis.console.health.RedisSession;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.ping.PingActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.utils.ObjectUtils;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
-import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author chen.zhu
@@ -20,7 +21,7 @@ import java.util.List;
  */
 public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implements RedisHealthCheckInstance {
 
-    private List<HealthCheckAction> actions = Lists.newArrayList();
+    private ConcurrentMap<Class<? extends HealthCheckAction>, HealthCheckAction> actions = Maps.newConcurrentMap();
 
     private RedisInstanceInfo redisInstanceInfo;
 
@@ -29,6 +30,8 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
     private Endpoint endpoint;
 
     private RedisSession session;
+
+    private volatile long lastPongTime = -1, lastDelayTime = -1, lastDelayNano = -1;
 
     public DefaultRedisHealthCheckInstance setRedisInstanceInfo(RedisInstanceInfo redisInstanceInfo) {
         this.redisInstanceInfo = redisInstanceInfo;
@@ -72,18 +75,23 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
 
     @Override
     public void register(HealthCheckAction action) {
-        actions.add(action);
+        actions.put(action.getClass(), action);
     }
 
     @Override
     public void unregister(HealthCheckAction action) {
-        actions.remove(action);
+        actions.remove(action.getClass());
+    }
+
+    @Override
+    public Map<Class<? extends HealthCheckAction>, HealthCheckAction> getHealthCheckActions() {
+        return actions;
     }
 
     @Override
     protected void doInitialize() throws Exception {
         super.doInitialize();
-        for(HealthCheckAction action : actions) {
+        for(HealthCheckAction action : actions.values()) {
             LifecycleHelper.initializeIfPossible(action);
         }
     }
@@ -91,14 +99,14 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
     @Override
     protected void doStart() throws Exception {
         super.doStart();
-        for(HealthCheckAction action : actions) {
+        for(HealthCheckAction action : actions.values()) {
             LifecycleHelper.startIfPossible(action);
         }
     }
 
     @Override
     protected void doStop() throws Exception {
-       for(HealthCheckAction action : actions) {
+       for(HealthCheckAction action : actions.values()) {
            try {
                LifecycleHelper.stopIfPossible(action);
            } catch (Exception e) {
@@ -125,6 +133,55 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
 
     @Override
     public String toString() {
-        return String.format("DefaultRedisHealthCheckInstance{endpoint=%s}", endpoint);
+        return String.format("HealthCheckInstance{endpoint=%s, lastPongTime=%d, lastDelayTime=%d, lastDelayNano=%d}",
+                endpoint, lastPongTime, lastDelayTime, lastDelayNano);
+    }
+
+    public HealthCheckActionListener createPingListener() {
+        return new PingPresentListener();
+    }
+
+    public HealthCheckActionListener createDelayListener() {
+        return new DelayPresentListener();
+    }
+
+
+    private class PingPresentListener implements HealthCheckActionListener<PingActionContext> {
+
+        @Override
+        public void onAction(PingActionContext context) {
+            if(context.getResult()) {
+                lastPongTime = context.getRecvTimeMilli();
+            }
+        }
+
+        @Override
+        public boolean worksfor(ActionContext t) {
+            return t instanceof PingActionContext;
+        }
+
+        @Override
+        public void stopWatch(HealthCheckAction action) {
+
+        }
+    }
+
+    private class DelayPresentListener implements HealthCheckActionListener<DelayActionContext> {
+
+        @Override
+        public void onAction(DelayActionContext context) {
+            lastDelayTime = context.getRecvTimeMilli();
+            lastDelayNano = context.getResult();
+        }
+
+        @Override
+        public boolean worksfor(ActionContext t) {
+            return t instanceof DelayActionContext;
+        }
+
+        @Override
+        public void stopWatch(HealthCheckAction action) {
+
+        }
     }
 }

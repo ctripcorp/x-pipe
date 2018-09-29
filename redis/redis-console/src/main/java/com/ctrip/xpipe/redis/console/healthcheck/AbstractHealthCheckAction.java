@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 
 import java.util.List;
@@ -26,9 +27,9 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     private ScheduledFuture future;
 
-    private ExecutorService executors;
+    protected ExecutorService executors;
 
-    private static Random random = new Random();
+    protected static Random random = new Random();
 
     protected static int DELTA = 500;
 
@@ -46,8 +47,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     }
 
     @Override
-    public void doStart() throws Exception {
-        super.doStart();
+    public void doStart() {
         scheduleTask(getBaseCheckInterval());
     }
 
@@ -84,6 +84,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
         listeners.addAll(list);
     }
 
+    @SuppressWarnings("unchecked")
     protected void notifyListeners(ActionContext context) {
         for(HealthCheckActionListener listener : listeners) {
             if(listener.worksfor(context)) {
@@ -97,7 +98,11 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
         }
     }
 
-    protected void scheduleTask(int baseInterval) {
+    protected ScheduledFuture scheduledFuture() {
+        return future;
+    }
+
+    private void scheduleTask(int baseInterval) {
         long checkInterval = getCheckTimeInterval(baseInterval);
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
@@ -108,7 +113,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
         }, checkInterval, baseInterval, TimeUnit.MILLISECONDS);
     }
 
-    private int getCheckTimeInterval(int baseInterval) {
+    protected int getCheckTimeInterval(int baseInterval) {
         return baseInterval + (((Math.abs(random.nextInt())) % DELTA));
     }
 
@@ -119,4 +124,8 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     }
 
 
+    @VisibleForTesting
+    public List<HealthCheckActionListener<T>> getListeners() {
+        return listeners;
+    }
 }
