@@ -129,6 +129,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         if(endpoint.isProxyProtocolSupported()) {
             getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
         }
+
         if(sendAfterProtocol != null) {
             while(!sendAfterProtocol.isEmpty()) {
                 getChannel().writeAndFlush(sendAfterProtocol.poll());
