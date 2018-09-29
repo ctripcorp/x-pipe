@@ -16,6 +16,7 @@ import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -23,6 +24,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,7 +41,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     private ProxyEndpointSelector selector;
 
-    private ByteBuf sendAfterProtocol = null;
+    private Queue<ByteBuf> sendAfterProtocol;
 
     private EventLoopGroup nioEventLoopGroup;
 
@@ -114,10 +117,10 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
     @Override
     public void sendAfterProtocol(ByteBuf byteBuf) throws Exception {
         if(sendAfterProtocol == null) {
-            sendAfterProtocol = byteBuf.retain();
-            return;
+            sendAfterProtocol = new LinkedList<>();
         }
-        throw new IllegalAccessException("ByteBuf send after protocol has been valued");
+        logger.debug("[sendAfterProtocol] {}", ByteBufUtil.prettyHexDump(byteBuf));
+        sendAfterProtocol.offer(byteBuf.retain());
     }
 
     protected void onChannelEstablished(Channel channel) {
@@ -127,7 +130,9 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
         }
         if(sendAfterProtocol != null) {
-            getChannel().writeAndFlush(sendAfterProtocol);
+            while(!sendAfterProtocol.isEmpty()) {
+                getChannel().writeAndFlush(sendAfterProtocol.poll());
+            }
         }
         setSessionState(new SessionEstablished(DefaultBackendSession.this));
         onSessionEstablished();
