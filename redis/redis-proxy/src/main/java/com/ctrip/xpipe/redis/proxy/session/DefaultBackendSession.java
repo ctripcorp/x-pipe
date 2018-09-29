@@ -23,6 +23,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,7 +40,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     protected ProxyEndpointSelector selector;
 
-    private ByteBuf sendAfterProtocol = null;
+    private List<ByteBuf> sendAfterProtocol = new ArrayList<>();
 
     protected EventLoopGroup nioEventLoopGroup;
 
@@ -113,11 +115,11 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     @Override
     public void sendAfterProtocol(ByteBuf byteBuf) throws Exception {
-        if(sendAfterProtocol == null) {
-            sendAfterProtocol = byteBuf.retain();
-            return;
-        }
-        throw new IllegalAccessException("ByteBuf send after protocol has been valued");
+//        if(sendAfterProtocol == null) {
+            sendAfterProtocol.add(byteBuf.retain());
+//            return;
+//        }
+//        throw new IllegalAccessException("ByteBuf send after protocol has been valued");
     }
 
     protected void onChannelEstablished(Channel channel) {
@@ -126,8 +128,8 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         if(endpoint.isProxyProtocolSupported()) {
             getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
         }
-        if(sendAfterProtocol != null) {
-            getChannel().writeAndFlush(sendAfterProtocol);
+        for (ByteBuf buf : sendAfterProtocol) {
+            getChannel().writeAndFlush(buf);
         }
         setSessionState(new SessionEstablished(DefaultBackendSession.this));
         onSessionEstablished();
