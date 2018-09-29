@@ -13,6 +13,11 @@ services.service('DcService', ['$resource', '$q', function ($resource, $q) {
         add_dc: {
             method: 'POST',
             url: '/console/clusters/:clusterName/dcs/:dcName'
+        },
+        find_all_dc_rich_info:{
+            method: 'GET',
+            url: '/console/dcs/all/richInformation',
+            isArray: true
         }
     });
 
@@ -54,10 +59,24 @@ services.service('DcService', ['$resource', '$q', function ($resource, $q) {
             });
         return d.promise;
     }
+
+    function findAllDcsRichInfo() {
+        var d = $q.defer();
+        resource.find_all_dc_rich_info({},
+                function (result) {
+                    d.resolve(result);
+                },
+                function (result) {
+                    d.reject(result);
+                }
+            );
+        return d.promise;
+    }
    
     return {
     	loadAllDcs : loadAllDcs,
     	deleteDc : deleteDc,
-    	addDc : addDc
+    	addDc : addDc,
+        findAllDcsRichInfo: findAllDcsRichInfo
     }
 }]);
