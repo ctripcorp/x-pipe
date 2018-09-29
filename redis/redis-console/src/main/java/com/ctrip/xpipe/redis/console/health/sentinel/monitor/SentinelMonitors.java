@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.health.sentinel.monitor;
 
-import com.ctrip.xpipe.redis.console.health.redisconf.RedisInfoUtils;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 
@@ -17,6 +17,8 @@ public class SentinelMonitors {
 
     private static final String COMMA_SPLITTER = "\\s*,\\s*";
 
+    private static final String SENTINEL_MASTERS = "sentinel_masters";
+
     private int num;
 
     private List<String> monitors;
@@ -32,7 +34,8 @@ public class SentinelMonitors {
 
     public static SentinelMonitors parseFromString(String infoSentinel) {
 
-        int monitorNumbers = RedisInfoUtils.getMonitorNumber(infoSentinel);
+        InfoResultExtractor extractor = new InfoResultExtractor(infoSentinel);
+        int monitorNumbers = extractor.extractAsInteger(SENTINEL_MASTERS);
 
         String key = "master";
 

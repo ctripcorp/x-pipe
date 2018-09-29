@@ -22,7 +22,7 @@ public class DefaultSiteReliabilityChecker implements SiteReliabilityChecker {
     private MetaCache metaCache;
 
     @Autowired
-    private DelayPingActionListener delayPingActionListener;
+    private DelayPingActionCollector delayPingActionCollector;
 
     @Override
     public boolean isSiteHealthy(AbstractInstanceEvent event) {
@@ -35,7 +35,7 @@ public class DefaultSiteReliabilityChecker implements SiteReliabilityChecker {
     private int getErrorRedis(List<HostPort> totalRedis) {
         int count = 0;
         for(HostPort redis : totalRedis) {
-            HEALTH_STATE state = delayPingActionListener.getState(redis);
+            HEALTH_STATE state = delayPingActionCollector.getState(redis);
             if(!state.equals(HEALTH_STATE.INSTANCEUP) && !state.equals(HEALTH_STATE.HEALTHY)) {
                 count ++;
             }

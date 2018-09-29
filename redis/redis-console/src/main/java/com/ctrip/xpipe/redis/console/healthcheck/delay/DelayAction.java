@@ -1,12 +1,14 @@
 package com.ctrip.xpipe.redis.console.healthcheck.delay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.action.HealthStatus;
 import com.ctrip.xpipe.redis.console.healthcheck.ping.PingService;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -18,6 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * Sep 06, 2018
  */
 public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
+
+    private static final Logger logger = LoggerFactory.getLogger(DelayAction.class);
 
     public static final String CHECK_CHANNEL = "xpipe-health-check-" + FoundationService.DEFAULT.getLocalIp();
 

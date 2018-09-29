@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.action.DcClusterDelayMarkDown;
-import com.ctrip.xpipe.redis.console.healthcheck.action.DelayPingActionListener;
+import com.ctrip.xpipe.redis.console.healthcheck.action.DelayPingActionCollector;
 import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.healthcheck.action.SiteReliabilityChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.action.event.AbstractInstanceEvent;
@@ -56,7 +56,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
     protected AlertManager alertManager;
 
     @Mock
-    protected DelayPingActionListener delayPingActionListener;
+    protected DelayPingActionCollector delayPingActionCollector;
 
     @Mock
     private ConsoleServiceManager consoleServiceManager;
@@ -85,8 +85,8 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         when(instance.getRedisInstanceInfo()).thenReturn(info);
 
         when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
-        when(delayPingActionListener.getState(any())).thenReturn(HEALTH_STATE.DOWN);
-        when(delayPingActionListener.getHealthStateSetterManager()).thenReturn(finalStateSetterManager);
+        when(delayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
+        when(delayPingActionCollector.getHealthStateSetterManager()).thenReturn(finalStateSetterManager);
         doNothing().when(finalStateSetterManager).set(any(ClusterShardHostPort.class), anyBoolean());
         ((DefaultInstanceSickHandler) sickHandler).setScheduled(Executors.newScheduledThreadPool(1));
     }
@@ -130,8 +130,8 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         when(metaCache.inBackupDc(any())).thenReturn(true);
         future.setSuccess(true);
         when(consoleServiceManager.quorumSatisfy(anyList(), any())).thenReturn(true);
-        when(delayPingActionListener.getState(any())).thenReturn(HEALTH_STATE.HEALTHY);
-        when(delayPingActionListener.getState(instance.getRedisInstanceInfo().getHostPort())).thenReturn(HEALTH_STATE.DOWN);
+        when(delayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.HEALTHY);
+        when(delayPingActionCollector.getState(instance.getRedisInstanceInfo().getHostPort())).thenReturn(HEALTH_STATE.DOWN);
 
         AbstractInstanceEvent event = new InstanceUp(instance);
         upHandler.handle(event);

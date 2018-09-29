@@ -27,6 +27,8 @@ import java.util.function.IntSupplier;
  */
 public class HealthStatus extends AbstractObservable implements Startable, Stoppable {
 
+    private static final Logger logger = LoggerFactory.getLogger(HealthStatus.class);
+
     public static long UNSET_TIME = -1L;
 
     private AtomicLong lastPongTime = new AtomicLong(UNSET_TIME);

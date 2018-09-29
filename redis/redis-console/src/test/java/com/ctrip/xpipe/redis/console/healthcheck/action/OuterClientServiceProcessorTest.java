@@ -51,7 +51,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
     private ConsoleServiceManager consoleServiceManager;
 
     @Mock
-    protected DelayPingActionListener delayPingActionListener;
+    protected DelayPingActionCollector delayPingActionCollector;
 
     @InjectMocks
     private InstanceSickHandler instanceSickHandler = new DefaultInstanceSickHandler();
@@ -76,9 +76,9 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         CommandFuture<Boolean> future = new DefaultCommandFuture<>();
         future.setSuccess(true);
         when(checker.isSiteHealthy(any())).thenReturn(true);
-        when(delayPingActionListener.getState(any())).thenReturn(HEALTH_STATE.DOWN);
+        when(delayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
         HostPort master = localHostport(randomPort());
-        when(delayPingActionListener.getState(master)).thenReturn(HEALTH_STATE.HEALTHY);
+        when(delayPingActionCollector.getState(master)).thenReturn(HEALTH_STATE.HEALTHY);
         when(metaCache.findMasterInSameShard(any())).thenReturn(master);
         when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(true);
         when(consoleServiceManager.allHealthStatus(anyString(), anyInt())).thenReturn(
@@ -90,7 +90,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo(dc, cluster, shard, hostPort));
 
         FinalStateSetterManager<ClusterShardHostPort, Boolean> manager = mock(FinalStateSetterManager.class);
-        when(delayPingActionListener.getHealthStateSetterManager()).thenReturn(manager);
+        when(delayPingActionCollector.getHealthStateSetterManager()).thenReturn(manager);
         ((DefaultInstanceSickHandler)instanceSickHandler).setScheduled(scheduled);
     }
 

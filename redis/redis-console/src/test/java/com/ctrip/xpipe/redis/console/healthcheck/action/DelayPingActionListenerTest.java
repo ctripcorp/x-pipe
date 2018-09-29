@@ -1,10 +1,11 @@
 package com.ctrip.xpipe.redis.console.healthcheck.action;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayActionContext;
-import com.ctrip.xpipe.redis.console.healthcheck.ping.PingActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -13,16 +14,27 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class DelayPingActionListenerTest extends AbstractConsoleIntegrationTest {
 
+//    @Autowired
+//    private DelayPingActionCollector listener;
+
     @Autowired
-    private DelayPingActionListener listener;
+    private List<HealthCheckActionListener> listeners;
 
-    @Test(expected = NullPointerException.class)
-    public void testOnDelayAction() {
-        listener.onAction(new DelayActionContext(null, System.currentTimeMillis()));
+//    @Test(expected = NullPointerException.class)
+//    public void testOnDelayAction() {
+//        listener.onAction(new DelayActionContext(null, System.currentTimeMillis()));
+//    }
+//
+//    @Test(expected = NullPointerException.class)
+//    public void testOnPingAction() {
+//        listener.onAction(new PingActionContext(null, true));
+//    }
+
+    @Test
+    public void testListeners() {
+        for(HealthCheckActionListener listener : listeners) {
+            logger.info("[listener] {}", listener.getClass().getName());
+        }
     }
 
-    @Test(expected = NullPointerException.class)
-    public void testOnPingAction() {
-        listener.onAction(new PingActionContext(null, true));
-    }
 }

@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.healthcheck.session.PingCallback;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;

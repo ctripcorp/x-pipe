@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.ping;
 
-import com.ctrip.xpipe.redis.console.health.PingCallback;
-import com.ctrip.xpipe.redis.console.health.RedisSession;
+import com.ctrip.xpipe.redis.console.healthcheck.session.PingCallback;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;

@@ -232,8 +232,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             queryHandler.handleQuery(new DalQuery<Integer>() {
                 @Override
                 public Integer doQuery() throws DalException {
-                    dao.updateByPK(redis, RedisTblEntity.UPDATESET_FULL);
-                    return 0;
+                    return dao.updateByPK(redis, RedisTblEntity.UPDATESET_FULL);
                 }
             });
         }
