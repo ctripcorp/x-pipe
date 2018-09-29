@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.api.codec;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * @author wenchao.meng

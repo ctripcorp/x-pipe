@@ -1,10 +1,6 @@
 package com.ctrip.xpipe.lifecycle;
 
-import com.ctrip.xpipe.api.lifecycle.Disposable;
-import com.ctrip.xpipe.api.lifecycle.Initializable;
-import com.ctrip.xpipe.api.lifecycle.LifecycleController;
-import com.ctrip.xpipe.api.lifecycle.Startable;
-import com.ctrip.xpipe.api.lifecycle.Stoppable;
+import com.ctrip.xpipe.api.lifecycle.*;
 
 /**
  * @author wenchao.meng

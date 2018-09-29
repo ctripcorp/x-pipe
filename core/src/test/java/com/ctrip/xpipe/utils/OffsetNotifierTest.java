@@ -1,15 +1,13 @@
 package com.ctrip.xpipe.utils;
 
 
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import com.ctrip.xpipe.AbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.utils.OffsetNotifier;
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng

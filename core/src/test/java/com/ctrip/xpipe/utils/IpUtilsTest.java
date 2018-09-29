@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.utils;
 
-import java.net.Inet6Address;
-import java.net.InetSocketAddress;
-import java.util.LinkedList;
-
+import com.ctrip.xpipe.AbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractTest;
+import java.net.Inet6Address;
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
 
 /**
  * @author wenchao.meng

@@ -2,9 +2,7 @@ package com.ctrip.xpipe.service.organization;
 
 import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.organization.OrganizationModel;
-
 import com.ctrip.xpipe.spring.RestTemplateFactory;
-
 import org.springframework.web.client.RestOperations;
 
 import java.util.Comparator;

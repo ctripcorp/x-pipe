@@ -13,9 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.spy;
-
 /**
  * @author chen.zhu
  * <p>

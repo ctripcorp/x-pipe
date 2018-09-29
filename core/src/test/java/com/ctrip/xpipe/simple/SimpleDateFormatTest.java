@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.simple;
 
-import java.util.Date;
-
+import com.ctrip.xpipe.AbstractTest;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractTest;
+import java.util.Date;
 
 /**
  * @author wenchao.meng

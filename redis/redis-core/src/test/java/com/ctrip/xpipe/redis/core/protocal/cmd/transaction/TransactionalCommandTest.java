@@ -12,8 +12,6 @@ import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
-
 /**
  * manual test with redis
  * @author wenchao.meng

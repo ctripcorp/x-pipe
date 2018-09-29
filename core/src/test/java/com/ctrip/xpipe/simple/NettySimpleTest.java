@@ -1,15 +1,13 @@
 package com.ctrip.xpipe.simple;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Test;
-
 import com.ctrip.xpipe.AbstractTest;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng

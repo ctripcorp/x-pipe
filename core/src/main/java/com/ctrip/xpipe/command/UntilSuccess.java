@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.command;
 
-import java.util.List;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+
+import java.util.List;
 
 /**
  * @author wenchao.meng

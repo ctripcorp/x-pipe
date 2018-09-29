@@ -1,27 +1,24 @@
 package com.ctrip.xpipe.retry;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
-import static org.mockito.Matchers.any;
-
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.retry.RetryPolicy;
+import com.ctrip.xpipe.simpleserver.SimpleTestSpringServer;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.Banner.Mode;
+import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestOperations;
 
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.retry.RetryPolicy;
-import com.ctrip.xpipe.simpleserver.SimpleTestSpringServer;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 /**
  * @author shyin

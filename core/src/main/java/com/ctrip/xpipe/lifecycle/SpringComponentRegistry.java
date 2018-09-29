@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.lifecycle;
 
 
+import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
+import org.springframework.context.ConfigurableApplicationContext;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.springframework.context.ConfigurableApplicationContext;
-
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-import com.ctrip.xpipe.api.lifecycle.TopElement;
 
 /**
  * @author wenchao.meng

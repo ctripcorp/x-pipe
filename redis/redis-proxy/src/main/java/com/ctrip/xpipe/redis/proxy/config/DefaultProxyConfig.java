@@ -2,24 +2,15 @@ package com.ctrip.xpipe.redis.proxy.config;
 
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.config.CompositeConfig;
 import com.ctrip.xpipe.config.DefaultFileConfig;
-import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.IpUtils;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +46,8 @@ public class DefaultProxyConfig implements ProxyConfig {
     private static final String KEY_INTERNAL_NETWORK_PREFIX = "proxy.internal.network.prefix";
 
     private static final String KEY_RECV_BUFFER_SIZE = "proxy.recv.buffer.size";
+
+    private static final String KEY_SESSION_CLOSE_AFTER_READ_CLOSE_MILLI = "proxy.session.close.after.read.close.milli";
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
@@ -122,6 +115,11 @@ public class DefaultProxyConfig implements ProxyConfig {
     public String[] getInternalNetworkPrefix() {
         String internalNetworkPrefix = getProperty(KEY_INTERNAL_NETWORK_PREFIX, "10");
         return IpUtils.splitIpAddr(internalNetworkPrefix);
+    }
+
+    @Override
+    public int getCloseChannelAfterReadCloseMilli() {
+        return getIntProperty(KEY_SESSION_CLOSE_AFTER_READ_CLOSE_MILLI, 30 * 1000);
     }
 
 

@@ -67,7 +67,7 @@ public class RedisSession {
 
             if (System.currentTimeMillis() - pubSubConnectionWrapper.getLastActiveTime() > subscribConnsTimeoutSeconds * 1000) {
 
-                logger.info("[check][connectin inactive for a long time, force reconnect]{}, {}", subscribConns, endpoint);
+                logger.info("[check][connectin inactive for a long time, force reconnect]{}, {}", channel, endpoint);
                 pubSubConnectionWrapper.closeAndClean();
                 subscribConns.remove(channel);
 
@@ -111,7 +111,7 @@ public class RedisSession {
     }
 
     public synchronized void publish(String channel, String message) {
-        PublishCommand pubCommand = new PublishCommand(clientPool, scheduled, channel, message);
+        PublishCommand pubCommand = new PublishCommand(clientPool, scheduled, commandTimeOut, channel, message);
         silentCommand(pubCommand);
 
         pubCommand.execute().addListener(new CommandFutureListener<Object>() {
@@ -126,7 +126,7 @@ public class RedisSession {
 
     public CommandFuture<String> ping(final PingCallback callback) {
         // if connect has been established
-        PingCommand pingCommand = new PingCommand(clientPool, scheduled);
+        PingCommand pingCommand = new PingCommand(clientPool, scheduled, commandTimeOut);
         silentCommand(pingCommand);
 
         pingCommand.execute().addListener(new CommandFutureListener<String>() {
@@ -143,7 +143,7 @@ public class RedisSession {
     }
 
     public void role(RollCallback callback) {
-        RoleCommand command = new RoleCommand(clientPool, scheduled);
+        RoleCommand command = new RoleCommand(clientPool, commandTimeOut, false, scheduled);
         silentCommand(command);
         command.execute().addListener(new CommandFutureListener<Role>() {
             @Override
@@ -158,7 +158,7 @@ public class RedisSession {
     }
 
     public void configRewrite(BiConsumer<String, Throwable> consumer) {
-        ConfigRewrite command = new ConfigRewrite(clientPool, scheduled);
+        ConfigRewrite command = new ConfigRewrite(clientPool, scheduled, commandTimeOut);
         silentCommand(command);
         command.execute().addListener(new CommandFutureListener<String>() {
             @Override
@@ -183,7 +183,7 @@ public class RedisSession {
 
     public void info(final String infoSection, Callbackable<String> callback) {
 
-        InfoCommand command = new InfoCommand(clientPool, infoSection, scheduled);
+        InfoCommand command = new InfoCommand(clientPool, infoSection, scheduled, commandTimeOut);
         silentCommand(command);
         command.execute()
                 .addListener(new CommandFutureListener<String>() {
@@ -210,7 +210,7 @@ public class RedisSession {
     }
 
     public void isDiskLessSync(Callbackable<Boolean> callback) {
-        ConfigGetCommand.ConfigGetDisklessSync command = new ConfigGetCommand.ConfigGetDisklessSync(clientPool, scheduled);
+        ConfigGetCommand.ConfigGetDisklessSync command = new ConfigGetCommand.ConfigGetDisklessSync(clientPool, scheduled, commandTimeOut);
         silentCommand(command);
         command.execute().addListener(new CommandFutureListener<Boolean>() {
 

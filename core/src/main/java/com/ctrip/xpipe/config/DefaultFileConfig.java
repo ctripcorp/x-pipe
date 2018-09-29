@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.config;
 
+import com.ctrip.xpipe.utils.FileUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
-
-
-import com.ctrip.xpipe.utils.FileUtils;import java.util.Properties;
+import java.util.Properties;
 
 /**
  * @author wenchao.meng

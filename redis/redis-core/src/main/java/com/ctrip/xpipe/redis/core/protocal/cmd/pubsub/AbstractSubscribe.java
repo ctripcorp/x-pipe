@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.netty.commands.NettyClientHandler;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
@@ -111,12 +112,12 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     @VisibleForTesting
     protected void handleResponse(Channel channel, Object response) {
 
-        validateResponse(response);
+        validateResponse(channel, response);
 
         setSubscribeState(SUBSCRIBE_STATE.SUBSCRIBING);
     }
 
-    private void validateResponse(Object response) {
+    private void validateResponse(Channel channel, Object response) {
         if(!(response instanceof Object[])) {
             throw new RedisRuntimeException(String.format("Subscribe channel response incorrect: %s", response));
         }
@@ -134,7 +135,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
             logger.error("[handleResponse]{}", message);
             throw new RedisRuntimeException(message);
         }
-        logger.info("[handleResponse] channel subscriber numbers: {} - {}", monitorChannel, payloadToLong(objects[2]));
+        logger.info("[handleResponse][subscribe success], {}", channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
 
     }
 

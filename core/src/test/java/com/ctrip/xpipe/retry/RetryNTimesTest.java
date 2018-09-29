@@ -1,20 +1,19 @@
 package com.ctrip.xpipe.retry;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.concurrent.ExecutionException;
-
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.retry.RetryPolicy;
+import com.ctrip.xpipe.command.AbstractCommand;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.retry.RetryPolicy;
-import com.ctrip.xpipe.command.AbstractCommand;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.ExecutionException;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author wenchao.meng

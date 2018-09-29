@@ -1,20 +1,16 @@
 package com.ctrip.xpipe.pool;
 
-import java.net.InetSocketAddress;
-
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.ObjectPoolException;
-import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.netty.commands.NettyClientFactory;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-
-import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.netty.commands.NettyClientFactory;
 /**
  * @author wenchao.meng
  *

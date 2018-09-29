@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.healthcheck.action;
+package com.ctrip.xpipe.redis.console.healthcheck.action.event;
 
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 

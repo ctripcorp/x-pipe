@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.source;
 
 
-
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-
 import com.ctrip.xpipe.api.source.Source;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractSource implements Source{
 	

@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.concurrent;
 
+import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.command.ParallelCommandChain;
+import com.ctrip.xpipe.command.TestCommand;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.command.TestCommand;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;

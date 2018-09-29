@@ -1,28 +1,22 @@
 package com.ctrip.xpipe.utils;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.concurrent.ConcurrentHashMap;
-
-import com.ctrip.xpipe.api.email.Email;
-import com.ctrip.xpipe.api.email.EmailService;
-import com.ctrip.xpipe.api.migration.DcMapper;
-import com.ctrip.xpipe.api.organization.Organization;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
+import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.lifecycle.OrderedComparator;
 import com.ctrip.xpipe.metric.MetricProxy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author wenchao.meng

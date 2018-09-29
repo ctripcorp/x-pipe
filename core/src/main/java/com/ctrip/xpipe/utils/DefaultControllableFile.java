@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.utils;
-import java.io.File;
 
+import java.io.File;
 import java.io.IOException;
 
 /**

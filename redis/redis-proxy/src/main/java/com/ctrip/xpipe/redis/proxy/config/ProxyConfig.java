@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.proxy.config;
 
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
 
-import java.net.InetSocketAddress;
-
 /**
  * @author chen.zhu
  * <p>
@@ -26,4 +24,6 @@ public interface ProxyConfig extends TLSConfig {
 
     // to avoid any connect outside internal network
     String[] getInternalNetworkPrefix();
+
+    int getCloseChannelAfterReadCloseMilli();
 }

@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.monitor;
 
-import java.io.IOException;
-
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.monitor.Task;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.monitor.Task;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng

@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.concurrent;
 
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import org.junit.Assert;
@@ -9,25 +13,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.internal.verification.AtLeast;
-
-import static org.mockito.Mockito.*;
-
 import org.mockito.runners.MockitoJUnitRunner;
-
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.retry.RetryTemplate;
-import com.ctrip.xpipe.command.DefaultCommandFuture;
-import com.ctrip.xpipe.retry.RetryDelay;
-import com.ctrip.xpipe.retry.RetryNTimes;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author wenchao.meng

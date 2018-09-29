@@ -1,19 +1,16 @@
 package com.ctrip.xpipe.command;
 
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.retry.RetryDelay;
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.exception.XpipeException;
-import com.ctrip.xpipe.retry.RetryDelay;
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.ctrip.xpipe.api.command.CommandFuture;
 
 /**
  * @author wenchao.meng

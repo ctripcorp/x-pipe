@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.utils;
 
-import java.util.Map;
-
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+
+import java.util.Map;
 
 /**
  * @author wenchao.meng

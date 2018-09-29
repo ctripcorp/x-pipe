@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.codec;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.api.codec.Codec;
 
 /**
  * @author wenchao.meng
