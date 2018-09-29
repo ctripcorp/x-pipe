@@ -1,7 +1,7 @@
 index_module.config(function ($stateProvider, $urlRouterProvider) {
 
 
-    $urlRouterProvider.otherwise("/cluster_list");
+    $urlRouterProvider.otherwise("/dc_list");
 
     $stateProvider
         .state('cluster_shards', {
@@ -43,6 +43,11 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
         })
         .state('cluster_list', {
             url: '/cluster_list?clusterName',
+            templateUrl: 'views/index/cluster_list.html',
+            controller: 'ClusterListCtl'
+        })
+        .state('dc_cluster_list',{
+            url:'/cluster_list/:dcName',
             templateUrl: 'views/index/cluster_list.html',
             controller: 'ClusterListCtl'
         })

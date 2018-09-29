@@ -6,9 +6,13 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +32,9 @@ public class ClusterController extends AbstractConsoleController {
     private ClusterService clusterService;
     @Autowired
     private DcClusterService dcClusterService;
+
+    @Autowired
+    private MetaCache metaCache;
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs", method = RequestMethod.GET)
     public List<DcTbl> findClusterDcs(@PathVariable String clusterName) {
@@ -117,6 +124,25 @@ public class ClusterController extends AbstractConsoleController {
     public void unbindDc(@PathVariable String clusterName, @PathVariable String dcName) {
         logger.info("[unbindDc]{}, {}", clusterName, dcName);
         clusterService.unbindDc(clusterName, dcName);
+    }
+
+    @RequestMapping(value = "/clusters/allBind/{dcName}", method = RequestMethod.GET)
+    public List<ClusterTbl> findClustersByDcName(@PathVariable String dcName){
+        logger.info("[findClustersByDcName]dcName: {}", dcName);
+        if (StringUtil.isEmpty(dcName))
+            return Collections.emptyList();
+
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null)
+            return Collections.emptyList();
+
+        List<ClusterTbl>  result = new LinkedList<>();
+        DcMeta dcMeta = xpipeMeta.findDc(dcName);
+        for (ClusterMeta clusterMeta: dcMeta.getClusters().values()){
+            result.add(clusterService.find(clusterMeta.getId()));
+        }
+
+        return result;
     }
 
 }

@@ -10,6 +10,18 @@
             </div>
         </header>
 
+        <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
+            <tr ng-repeat="dc in $data">
+                <td data-title="'dc'" filter="{ dcName : 'text' }">
+                    <a href="/#/cluster_list/{{dc.dcName}}">{{ dc.dcName }}</a>
+                </td>
+                <td ng-if="true" data-title="'cluster总数'" ng-bind="dc.clusterCount | limitTo:50"></td>
+                <td ng-if="true" data-title="'redis总数'" ng-bind="dc.redisCount | limitTo:50"></td>
+                <td ng-if="true" data-title="'keeper总数'" ng-bind="dc.keeperCount | limitTo:50"></td>
+                </td>
+            </tr>
+        </table>
+
     </div>
 </div>
 
