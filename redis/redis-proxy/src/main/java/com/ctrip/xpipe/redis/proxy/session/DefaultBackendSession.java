@@ -132,6 +132,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         if(sendAfterProtocol != null) {
             while(!sendAfterProtocol.isEmpty()) {
                 getChannel().writeAndFlush(sendAfterProtocol.poll());
+                sendAfterProtocol = null;
             }
         }
         setSessionState(new SessionEstablished(DefaultBackendSession.this));
