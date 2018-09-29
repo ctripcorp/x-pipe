@@ -83,7 +83,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	}
 
 	@Override
-	public List<DcClusterTbl>  findByDcId(final long dcId){
+	public List<DcClusterTbl>  findAllByDcId(final long dcId){
 		return queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
 			@Override
 			public List<DcClusterTbl> doQuery() throws DalException {
