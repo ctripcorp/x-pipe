@@ -5,7 +5,11 @@ import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.action.event.InstanceDown;
+import com.ctrip.xpipe.redis.console.healthcheck.action.event.InstanceSick;
+import com.ctrip.xpipe.redis.console.healthcheck.action.event.InstanceUp;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +35,8 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
     private AtomicReference<HEALTH_STATE> state = new AtomicReference<>(HEALTH_STATE.UNKNOWN);
 
     private RedisHealthCheckInstance instance;
-    private final IntSupplier downAfterMilli;
+    private final IntSupplier delayDownAfterMilli;
+    private final IntSupplier pingDownAfterMilli;
     private final IntSupplier healthyDelayMilli;
 
     private final ScheduledExecutorService scheduled;
@@ -41,9 +46,17 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     public HealthStatus(RedisHealthCheckInstance instance, ScheduledExecutorService scheduled){
         this.instance = instance;
-        this.downAfterMilli = ()->instance.getHealthCheckConfig().downAfterMilli();
-        this.healthyDelayMilli = ()->instance.getHealthCheckConfig().getHealthyDelayMilli();
         this.scheduled = scheduled;
+        this.pingDownAfterMilli = ()->instance.getHealthCheckConfig().pingDownAfterMilli();
+        this.delayDownAfterMilli = ()->instance.getHealthCheckConfig().delayDownAfterMilli();
+        this.healthyDelayMilli = ()->instance.getHealthCheckConfig().getHealthyDelayMilli();
+        checkParam();
+    }
+
+    private void checkParam() {
+        if(this.delayDownAfterMilli.getAsInt() < this.pingDownAfterMilli.getAsInt()) {
+            logger.error("Ping-Down-After-Milli must smaller than Delay-Down-After-Milli");
+        }
     }
 
     @Override
@@ -67,29 +80,18 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-
-                if(lastHealthDelayTime.get() < 0){
+                if(lastHealthDelayTime.get() < 0 || lastPongTime.get() < 0){
                     logger.debug("[last unhealthy time < 0, break]{}, {}", instance, lastHealthDelayTime);
                     return;
                 }
-
-                long currentTime = System.currentTimeMillis();
-                logger.trace("[checkDown]{} - {} = {} > {}", currentTime, lastHealthDelayTime, currentTime - lastHealthDelayTime.get(), downAfterMilli.getAsInt());
-                long downTime = currentTime - lastHealthDelayTime.get();
-                final int  downAfter = downAfterMilli.getAsInt();
-
-                if ( downTime > downAfter) {
-                    setDown();
-                }else if(downTime >= downAfter/2){
-                    setUnhealthy();
-                }
-
+                healthStatusUpdate();
             }
-        }, 0, downAfterMilli.getAsInt()/5, TimeUnit.MILLISECONDS);
+        }, 0, instance.getHealthCheckConfig().checkIntervalMilli(), TimeUnit.MILLISECONDS);
     }
 
     void pong(){
         lastPongTime.set(System.currentTimeMillis());
+        setPingUp();
     }
 
     void delay(long delayMilli){
@@ -100,37 +102,88 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         delayLogger.debug("{}, {}", instance.getRedisInstanceInfo().getHostPort(), delayMilli);
         if(delayMilli >= 0 && delayMilli <= healthyDelayMilli.getAsInt()){
             lastHealthDelayTime.set(System.currentTimeMillis());
-            setUp();
+            setDelayUp();
         }
     }
 
-    private void setUp() {
+    @VisibleForTesting
+    protected void healthStatusUpdate() {
+        long currentTime = System.currentTimeMillis();
 
+        // check ping down first, as ping has highest priority
+        long pingDownTime = currentTime - lastPongTime.get();
+        final int pingDownAfter = pingDownAfterMilli.getAsInt();
+        if(pingDownTime > pingDownAfter) {
+            setPingDown();
+        } else if(pingDownTime >= pingDownAfter/2) {
+            setPingHalfDown();
+        }
+
+        // check delay then
+        long delayDownTime = currentTime - lastHealthDelayTime.get();
+        final int delayDownAfter = delayDownAfterMilli.getAsInt();
+
+        if ( delayDownTime > delayDownAfter) {
+            setDelayDown();
+        }else if(delayDownTime >= delayDownAfter/2){
+            setDelayHalfDown();
+        }
+    }
+
+    private void setDelayUp() {
         HEALTH_STATE preState = state.get();
-        state.set(HEALTH_STATE.UP);
-
-        if(preState.isToUpNotify()){
-            logger.info("[setUp]{}", this);
-            notifyObservers(new InstanceUp(instance));
-        }
+        state.compareAndSet(preState, preState.afterDelaySuccess());
+        markUpIfNecessary(preState, state.get());
     }
 
-    private void setUnhealthy() {
-
-        HEALTH_STATE previous = state.getAndSet(HEALTH_STATE.UNHEALTHY);
-        if(previous != HEALTH_STATE.UNHEALTHY){
-            logger.info("[setUnhealthy]{}, {}", this, previous);
-        }
-    }
-
-    private void setDown() {
-
+    private void setPingUp() {
         HEALTH_STATE preState = state.get();
-        state.set(HEALTH_STATE.DOWN);
+        state.compareAndSet(preState, preState.afterPingSuccess());
+        markUpIfNecessary(preState, state.get());
+    }
 
-        if(preState.isToDownNotify()){
-            logger.info("[setDown]{}", this);
+    private void setDelayHalfDown() {
+        HEALTH_STATE preState = state.get();
+        if(state.compareAndSet(preState, preState.afterDelayHalfFail())) {
+            logUnhealthy(preState, state.get());
+        }
+    }
+
+    private void setDelayDown() {
+        HEALTH_STATE preState = state.get();
+        state.compareAndSet(preState, preState.afterDelayFail());
+        if(state.get().shouldNotifyMarkDown() && preState.isToDownNotify()){
+            logger.info("[setSick]{}", this);
+            notifyObservers(new InstanceSick(instance));
+        }
+    }
+
+    private void setPingHalfDown() {
+        HEALTH_STATE preState = state.get();
+        if(state.compareAndSet(preState, preState.afterPingHalfFail())) {
+            logUnhealthy(preState, state.get());
+        }
+    }
+
+    private void logUnhealthy(HEALTH_STATE preState, HEALTH_STATE curState) {
+        if(!preState.equals(HEALTH_STATE.UNHEALTHY) && curState.equals(HEALTH_STATE.UNHEALTHY)){
+            logger.info("[unhealthy]{}, {}", this, preState);
+        }
+    }
+
+    private void setPingDown() {
+        HEALTH_STATE preState = state.get();
+        state.compareAndSet(preState, preState.afterPingFail());
+        if(state.get().shouldNotifyMarkDown() && preState.isToDownNotify()) {
+            logger.info("[setDown] {}", this);
             notifyObservers(new InstanceDown(instance));
+        }
+    }
+
+    private void markUpIfNecessary(HEALTH_STATE pre, HEALTH_STATE cur) {
+        if(cur.shouldNotifyMarkup() && pre.isToUpNotify()) {
+            logger.info("[shouldNotifyMarkup]{}", this);
+            notifyObservers(new InstanceUp(instance));
         }
     }
 

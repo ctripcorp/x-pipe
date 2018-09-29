@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.config;
 
-import java.util.LinkedList;
-import java.util.List;
-
+import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.xpipe.api.config.Config;
-import com.ctrip.xpipe.api.config.ConfigChangeListener;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author wenchao.meng

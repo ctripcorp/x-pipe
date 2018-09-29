@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.keeper;
 
-import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
@@ -26,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;

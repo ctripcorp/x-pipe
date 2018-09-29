@@ -1,14 +1,14 @@
 package com.ctrip.xpipe.retry;
 
-import static org.junit.Assert.*;
-
-import java.io.IOException;
-
+import com.ctrip.xpipe.AbstractTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.web.client.ResourceAccessException;
 
-import com.ctrip.xpipe.AbstractTest;
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * @author shyin

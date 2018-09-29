@@ -1,15 +1,10 @@
 package com.ctrip.xpipe.redis.proxy.ssl;
 
-import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 /**
  * @author chen.zhu

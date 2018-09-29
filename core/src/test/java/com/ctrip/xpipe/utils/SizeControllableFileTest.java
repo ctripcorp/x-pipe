@@ -1,19 +1,18 @@
 package com.ctrip.xpipe.utils;
 
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.LongSupplier;
-
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.utils.FileSize;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.utils.FileSize;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.LongSupplier;
 
 /**
  * @author wenchao.meng

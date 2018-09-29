@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.utils;
 
+import com.ctrip.xpipe.AbstractTest;
+import io.netty.channel.Channel;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctrip.xpipe.AbstractTest;
-
-import io.netty.channel.Channel;
-
-import static org.mockito.Mockito.*;
-
 import java.net.InetSocketAddress;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author wenchao.meng
@@ -26,7 +25,7 @@ public class ChannelUtilTest extends AbstractTest{
 
 		when(channel.localAddress()).thenReturn(new InetSocketAddress("localhost", 1234));
 		
-		Assert.assertEquals("L(localhost:1234)->R(null)", ChannelUtil.getDesc(channel));
+		Assert.assertEquals("L(127.0.0.1:1234)->R(null)", ChannelUtil.getDesc(channel));
 	}
 
 }

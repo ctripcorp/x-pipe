@@ -5,12 +5,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslHandler;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.boot.context.embedded.Ssl;
 
 import java.lang.reflect.Field;
-import java.security.KeyStore;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

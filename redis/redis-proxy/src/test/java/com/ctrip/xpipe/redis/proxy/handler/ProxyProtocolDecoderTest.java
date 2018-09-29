@@ -1,14 +1,11 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
-import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.nio.channels.ClosedChannelException;
 
 /**
  * @author chen.zhu

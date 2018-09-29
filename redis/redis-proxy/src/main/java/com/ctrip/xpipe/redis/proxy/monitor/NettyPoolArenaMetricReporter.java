@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.proxy.monitor;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
-import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.PoolArenaMetric;

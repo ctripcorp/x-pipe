@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.monitor;
 
-import javax.servlet.DispatcherType;
-
+import com.ctrip.xpipe.spring.AbstractProfile;
+import com.dianping.cat.servlet.CatFilter;
+import com.dianping.cat.servlet.CatListener;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.embedded.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-import com.ctrip.xpipe.spring.AbstractProfile;
-import com.dianping.cat.servlet.CatFilter;
-import com.dianping.cat.servlet.CatListener;
+import javax.servlet.DispatcherType;
 
 /**
  * @author wenchao.meng

@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.command;
 
+import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.command.CommandFuture;
 
 /**
  * @author wenchao.meng

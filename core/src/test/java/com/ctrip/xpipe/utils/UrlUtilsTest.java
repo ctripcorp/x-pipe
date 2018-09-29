@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.utils;
 
+import com.ctrip.xpipe.AbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.ctrip.xpipe.AbstractTest;
 
 /**
  * @author wenchao.meng

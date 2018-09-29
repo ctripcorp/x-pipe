@@ -8,10 +8,6 @@ import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelClosed;
 import com.ctrip.xpipe.simpleserver.Server;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.internal.tcnative.SSL;
-import io.netty.util.internal.NativeLibraryLoader;
-import jdk.nashorn.internal.runtime.linker.Bootstrap;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -20,9 +16,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.TimeoutException;
 
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 
 /**
  * @author chen.zhu

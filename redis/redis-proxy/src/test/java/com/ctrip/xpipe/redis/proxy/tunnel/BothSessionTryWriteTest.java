@@ -32,9 +32,7 @@ import java.util.Queue;
 import java.util.concurrent.TimeoutException;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu

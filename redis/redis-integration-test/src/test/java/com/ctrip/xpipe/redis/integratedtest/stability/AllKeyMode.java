@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.integratedtest.stability;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.dianping.cat.Cat;
 import org.apache.commons.lang3.tuple.Pair;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPubSub;
 
 import java.util.Date;
 import java.util.List;

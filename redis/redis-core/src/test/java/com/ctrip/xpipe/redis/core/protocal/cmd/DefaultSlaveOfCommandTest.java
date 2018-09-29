@@ -4,15 +4,9 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.simpleserver.AbstractIoActionFactory;
-import com.ctrip.xpipe.simpleserver.IoAction;
-import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 
 /**
  * @author wenchao.meng

@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.utils;
 
+import com.ctrip.xpipe.spring.AbstractProfile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ctrip.xpipe.spring.AbstractProfile;
 
 /**
  * @author Leo Liang(jhliang@ctrip.com)

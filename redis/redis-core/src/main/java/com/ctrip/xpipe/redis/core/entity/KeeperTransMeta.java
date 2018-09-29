@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.entity;
 
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 /**

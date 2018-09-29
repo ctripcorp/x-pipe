@@ -1,31 +1,28 @@
 package com.ctrip.xpipe.netty.commands;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.pool.BorrowObjectException;
 import com.ctrip.xpipe.pool.XpipeNettyClientPool;
 import com.ctrip.xpipe.simpleserver.Server;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author wenchao.meng

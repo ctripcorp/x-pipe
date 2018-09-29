@@ -18,9 +18,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.*;
 
 /**
  * @author wenchao.meng

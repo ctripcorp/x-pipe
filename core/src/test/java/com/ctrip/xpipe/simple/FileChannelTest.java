@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.simple;
 
+import com.ctrip.xpipe.AbstractTest;
+import org.junit.After;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
-
-import org.junit.After;
-import org.junit.Test;
-
-import com.ctrip.xpipe.AbstractTest;
 
 /**
  * @author wenchao.meng

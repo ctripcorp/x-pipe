@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.config.ConfigChangeListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author wenchao.meng

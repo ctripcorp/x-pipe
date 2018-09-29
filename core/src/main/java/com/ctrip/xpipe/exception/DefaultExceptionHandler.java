@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.exception;
 
-import java.lang.Thread.UncaughtExceptionHandler;
-
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.Thread.UncaughtExceptionHandler;
 
 /**
  * @author wenchao.meng

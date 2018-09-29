@@ -7,7 +7,9 @@ package com.ctrip.xpipe.redis.console.healthcheck.config;
  */
 public interface HealthCheckConfig {
 
-    int downAfterMilli();
+    int delayDownAfterMilli();
+
+    int pingDownAfterMilli();
 
     int checkIntervalMilli();
 

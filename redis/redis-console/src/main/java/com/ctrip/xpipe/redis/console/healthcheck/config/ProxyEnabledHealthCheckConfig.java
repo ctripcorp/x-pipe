@@ -14,8 +14,13 @@ public class ProxyEnabledHealthCheckConfig extends AbstractHealthCheckConfig {
     }
 
     @Override
-    public int downAfterMilli() {
+    public int delayDownAfterMilli() {
         return consoleConfig.getDownAfterCheckNumsThroughProxy() * consoleConfig.getHealthyDelayMilliThroughProxy();
+    }
+
+    @Override
+    public int pingDownAfterMilli() {
+        return consoleConfig.getPingDownAfterMilliThroughProxy();
     }
 
     @Override

@@ -1,11 +1,12 @@
 package com.ctrip.xpipe.simple;
 
-import java.util.List;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import java.util.List;
+
 import static org.mockito.Mockito.*;
 
 /**

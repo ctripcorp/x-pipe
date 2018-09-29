@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.impl;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.health.RedisSession;
@@ -12,7 +11,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.google.common.collect.Lists;
 
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -127,8 +125,6 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
 
     @Override
     public String toString() {
-        return "DefaultRedisHealthCheckInstance{" +
-                "endpoint=" + endpoint +
-                '}';
+        return String.format("DefaultRedisHealthCheckInstance{endpoint=%s}", endpoint);
     }
 }

@@ -1,14 +1,14 @@
 package com.ctrip.xpipe.retry;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.api.retry.RetryTemplate;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng

@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.endpoint;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

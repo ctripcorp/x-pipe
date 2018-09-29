@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.cluster;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.zk.ZkConfig;
 import com.ctrip.xpipe.zk.ZkTestServer;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
+import org.apache.curator.framework.CuratorFramework;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 
 /**

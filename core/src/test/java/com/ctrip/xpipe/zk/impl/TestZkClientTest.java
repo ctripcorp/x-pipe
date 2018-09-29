@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.zk.impl;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.zk.ZkTestServer;
+import org.junit.Assert;
+import org.junit.Test;
 
 
 /**

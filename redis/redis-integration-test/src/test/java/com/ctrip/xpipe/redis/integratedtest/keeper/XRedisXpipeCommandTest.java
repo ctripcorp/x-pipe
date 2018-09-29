@@ -15,7 +15,6 @@ import org.junit.Test;
 import redis.clients.jedis.Jedis;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 

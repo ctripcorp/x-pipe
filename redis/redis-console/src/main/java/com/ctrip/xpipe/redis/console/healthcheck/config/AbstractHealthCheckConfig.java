@@ -16,8 +16,13 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
-    public int downAfterMilli() {
+    public int delayDownAfterMilli() {
         return consoleConfig.getDownAfterCheckNums() * consoleConfig.getHealthyDelayMilli();
+    }
+
+    @Override
+    public int pingDownAfterMilli() {
+        return consoleConfig.getPingDownAfterMilli();
     }
 
     @Override

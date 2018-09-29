@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
