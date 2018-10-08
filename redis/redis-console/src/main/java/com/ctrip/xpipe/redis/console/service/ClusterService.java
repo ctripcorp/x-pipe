@@ -31,4 +31,5 @@ public interface ClusterService {
 	void reBalanceClusterSentinels(List<String> clusterNames);
 
 	List<ClusterListClusterModel> findUnhealthyClusters();
+	List<ClusterTbl> findAllClusterByDcName(String dcName);
 }

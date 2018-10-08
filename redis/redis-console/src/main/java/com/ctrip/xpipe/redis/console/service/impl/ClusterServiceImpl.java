@@ -543,4 +543,22 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	protected void setClusterDao(ClusterDao clusterDao) {
 		this.clusterDao = clusterDao;
 	}
+
+	@Override
+	public List<ClusterTbl> findAllClusterByDcName(String dcName){
+		if (StringUtil.isEmpty(dcName))
+			return Collections.emptyList();
+
+		XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+		if (xpipeMeta == null || xpipeMeta.getDcs() == null)
+			return Collections.emptyList();
+
+		List<ClusterTbl>  result = new LinkedList<>();
+		DcMeta dcMeta = xpipeMeta.findDc(dcName);
+		for (ClusterMeta clusterMeta: dcMeta.getClusters().values()){
+			result.add(find(clusterMeta.getId()));
+		}
+
+		return result;
+	}
 }
