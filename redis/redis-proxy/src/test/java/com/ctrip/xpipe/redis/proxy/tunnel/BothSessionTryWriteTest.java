@@ -76,7 +76,6 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
         MockitoAnnotations.initMocks(this);
         when(tunnelManager.create(frontChannel, proxyProtocol)).thenReturn(tunnel);
         frontChannel = new EmbeddedChannel(new LineBasedFrameDecoder(2048), new StringDecoder());
-        spy(frontChannel);
 
         proxyProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
         tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config, proxyResourceManager);
@@ -108,8 +107,18 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
     }
 
     @Test
+    public void preTestTryWrite() {
+        frontChannel.writeAndFlush(getByteBuf("hello"));
+        logger.info("[outboundMessage] {}", frontChannel.outboundMessages());
+        ByteBuf buf = frontChannel.readOutbound();
+        backendChannel.writeInbound(buf);
+        logger.info("[inboundMessages] {}", backendChannel.inboundMessages());
+        logger.info("[outboundMessage] {}", frontChannel.outboundMessages().isEmpty());
+    }
+
+    @Test
     public void testTryWriteBothSide() throws TimeoutException {
-        int N = 10000;
+        int N = 1000;
         Queue<String> sample = Lists.newLinkedList();
         while(N-- > 0) {
             String str = randomString();
@@ -117,24 +126,17 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
             tunnel.forwardToFrontend(getByteBuf(str));
             tunnel.forwardToBackend(getByteBuf(str));
         }
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while(!frontChannel.outboundMessages().isEmpty()) {
-                    frontChannel.writeInbound(frontChannel.readOutbound());
-                }
-            }
-        }).start();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while(!backendChannel.outboundMessages().isEmpty()) {
-                    backendChannel.writeInbound(backendChannel.readOutbound());
-                }
-            }
-        }).start();
+
+        while(!frontChannel.outboundMessages().isEmpty()) {
+            ByteBuf buf = frontChannel.readOutbound();
+            backendChannel.writeInbound(buf);
+        }
+        while(!backendChannel.outboundMessages().isEmpty()) {
+            ByteBuf buf = backendChannel.readOutbound();
+            frontChannel.writeInbound(buf);
+        }
         waitConditionUntilTimeOut(()-> backendChannel.outboundMessages().isEmpty()
-                && frontChannel.outboundMessages().isEmpty(), 1500);
+                && frontChannel.outboundMessages().isEmpty(), 500);
 
         Assert.assertEquals(backendChannel.inboundMessages().size(), frontChannel.inboundMessages().size());
         Assert.assertEquals(sample.size(), frontChannel.inboundMessages().size());
