@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisInstanceInf
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ScheduledFuture;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.when;
  * @author chen.zhu
  * <p>
  * Sep 18, 2018
+ * testStateSwitchFromUpToDown() and testMarkUpMarkDown() manual test
  */
 public class HealthStatusTest extends AbstractRedisTest {
 
@@ -69,6 +71,7 @@ public class HealthStatusTest extends AbstractRedisTest {
         Assert.assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
     }
 
+    @Ignore
     @Test
     public void testStateSwitchFromUpToDown() throws Exception {
         markup();
@@ -110,6 +113,7 @@ public class HealthStatusTest extends AbstractRedisTest {
         Assert.assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
     }
 
+    @Ignore
     @Test
     public void testMarkUpMarkDown() throws Exception {
         AtomicInteger markup = new AtomicInteger(0);
