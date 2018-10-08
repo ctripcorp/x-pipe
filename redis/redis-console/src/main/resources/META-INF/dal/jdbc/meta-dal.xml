@@ -373,6 +373,17 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-all-by-dc-id" type="SELECT" multiple="true">
+				<param name="dc-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-id' /> = ${dc-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
