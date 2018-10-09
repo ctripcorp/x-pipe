@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.healthcheck.redisconf.version;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Assert;
 import org.junit.Before;
@@ -32,7 +34,9 @@ public class VersionCheckActionTest extends AbstractRedisTest {
         when(instance.getEndpoint()).thenReturn(localHostEndpoint(randomPort()));
         when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort())));
         when(instance.getRedisSession()).thenReturn(new RedisSession(localHostEndpoint(randomPort()), scheduled, getXpipeNettyClientKeyedObjectPool()));
-        action = new VersionCheckAction(scheduled, instance, executors, alertManager);
+        MetaCache metaCache = mock(MetaCache.class);
+        when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(true);
+        action = new VersionCheckAction(scheduled, instance, executors, alertManager, metaCache);
     }
 
     @Test

@@ -3,8 +3,10 @@ package com.ctrip.xpipe.redis.console.healthcheck.redisconf.version;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.redisconf.RedisConfigCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.session.Callbackable;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -27,13 +29,21 @@ public class VersionCheckAction extends RedisConfigCheckAction {
 
     private String info;
 
+    private MetaCache metaCache;
+
     public VersionCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
-                              ExecutorService executors, AlertManager alertManager) {
+                              ExecutorService executors, AlertManager alertManager, MetaCache metaCache) {
         super(scheduled, instance, executors, alertManager);
+        this.metaCache = metaCache;
     }
 
     @Override
     protected void doScheduledTask0() {
+        RedisInstanceInfo instanceInfo = getActionInstance().getRedisInstanceInfo();
+        if(!metaCache.inBackupDc(instanceInfo.getHostPort())) {
+            checkPassed();
+            return;
+        }
         if(checkVersion()) {
             checkPassed();
             return;
