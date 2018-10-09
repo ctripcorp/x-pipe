@@ -5,7 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.health.AbstractIntervalCheck;
-import com.ctrip.xpipe.redis.console.health.HealthChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;

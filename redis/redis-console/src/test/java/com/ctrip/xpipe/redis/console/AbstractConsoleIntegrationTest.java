@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console;
 
 
-import com.ctrip.xpipe.redis.console.health.HealthChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

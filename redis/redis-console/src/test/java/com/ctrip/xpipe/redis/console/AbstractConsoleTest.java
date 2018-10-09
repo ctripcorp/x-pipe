@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
-import com.ctrip.xpipe.redis.console.health.HealthChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisInstanceInfo;
