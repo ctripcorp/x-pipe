@@ -1,20 +1,29 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.DcTblDao;
 import com.ctrip.xpipe.redis.console.model.DcTblEntity;
+import com.ctrip.xpipe.redis.console.model.consoleportal.DcListDcModel;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements DcService {
+
+	@Autowired
+	private MetaCache metaCache;
 
 	@Override
 	public DcTbl find(final String dcName) {
@@ -123,6 +132,44 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 
 		allDcs.forEach(dcTbl -> result.put(dcTbl.getId(), dcTbl.getDcName()));
 		return result;
+	}
+
+	@Override
+	public List<DcListDcModel> findAllDcsRichInfo(){
+		try {
+			XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+			if (xpipeMeta == null || xpipeMeta.getDcs() == null)
+                return Collections.emptyList();
+
+			List<DcListDcModel> result = new LinkedList<>();
+
+			for (DcMeta dcMeta : xpipeMeta.getDcs().values()){
+                DcListDcModel dcModel = new DcListDcModel();
+                Integer countRedisNums = 0, countKeeperNums = 0;
+                dcModel.setClusterCount(dcMeta.getClusters().values().size());
+                dcModel.setDcName(dcMeta.getId());
+                for (ClusterMeta clusterMeta: dcMeta.getClusters().values()){
+                    for (ShardMeta shardMeta: clusterMeta.getShards().values()){
+                        if (-countRedisNums <= Integer.MIN_VALUE || -countRedisNums - shardMeta.getRedises().size() <= Integer.MIN_VALUE){
+                            throw new XpipeRuntimeException(String.format("redis numbers overflow: %d", countRedisNums));
+                        }else if (-countKeeperNums <= Integer.MIN_VALUE || -countKeeperNums - shardMeta.getKeepers().size() <= Integer.MIN_VALUE){
+                            throw new XpipeRuntimeException(String.format("keeper numbers overflow: %d", countKeeperNums));
+                        }else{
+                            countRedisNums  += shardMeta.getRedises().size();
+                            countKeeperNums += shardMeta.getKeepers().size();
+                        }
+
+                    }
+                }
+                dcModel.setRedisCount(countRedisNums);
+                dcModel.setKeeperCount(countKeeperNums);
+                result.add(dcModel);
+            }
+
+			return result;
+		} catch (Exception e) {
+			return Collections.emptyList();
+		}
 	}
 
 }

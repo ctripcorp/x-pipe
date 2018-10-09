@@ -58,7 +58,6 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
 
     }
 
-    @Test(expected = IllegalAccessException.class)
     public void testSendImmdiateAfterProtocol() throws Exception {
         session.sendAfterProtocol(testByteBuf());
         session.sendAfterProtocol(testByteBuf());
