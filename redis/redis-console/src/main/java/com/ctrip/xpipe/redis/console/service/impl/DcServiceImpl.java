@@ -8,7 +8,10 @@ import com.ctrip.xpipe.redis.console.model.consoleportal.DcListDcModel;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
+import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -23,7 +26,7 @@ import java.util.*;
 public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements DcService {
 
 	@Autowired
-	private MetaCache metaCache;
+	private DcMetaService dcMetaService;
 
 	@Override
 	public DcTbl find(final String dcName) {
@@ -137,34 +140,42 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	@Override
 	public List<DcListDcModel> findAllDcsRichInfo(){
 		try {
-			XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-			if (xpipeMeta == null || xpipeMeta.getDcs() == null)
+			List<DcTbl> dcTbls = findAllDcs();
+			if (dcTbls == null || dcTbls.size() == 0)
                 return Collections.emptyList();
 
 			List<DcListDcModel> result = new LinkedList<>();
 
-			for (DcMeta dcMeta : xpipeMeta.getDcs().values()){
-                DcListDcModel dcModel = new DcListDcModel();
-                Integer countRedisNums = 0, countKeeperNums = 0;
-                dcModel.setClusterCount(dcMeta.getClusters().values().size());
-                dcModel.setDcName(dcMeta.getId());
-                for (ClusterMeta clusterMeta: dcMeta.getClusters().values()){
-                    for (ShardMeta shardMeta: clusterMeta.getShards().values()){
-                        if (-countRedisNums <= Integer.MIN_VALUE || -countRedisNums - shardMeta.getRedises().size() <= Integer.MIN_VALUE){
-                            throw new XpipeRuntimeException(String.format("redis numbers overflow: %d", countRedisNums));
-                        }else if (-countKeeperNums <= Integer.MIN_VALUE || -countKeeperNums - shardMeta.getKeepers().size() <= Integer.MIN_VALUE){
-                            throw new XpipeRuntimeException(String.format("keeper numbers overflow: %d", countKeeperNums));
-                        }else{
-                            countRedisNums  += shardMeta.getRedises().size();
-                            countKeeperNums += shardMeta.getKeepers().size();
-                        }
+			dcTbls.forEach(dcTbl -> {
+				DcMeta dcMeta = dcMetaService.getDcMeta(dcTbl.getDcName());
 
-                    }
-                }
-                dcModel.setRedisCount(countRedisNums);
-                dcModel.setKeeperCount(countKeeperNums);
-                result.add(dcModel);
-            }
+				DcListDcModel dcModel = new DcListDcModel();
+				Integer countRedisNums = 0, countKeeperNums = 0, countClusterInActiveDc = 0;
+				dcModel.setDcId(dcTbl.getId());
+				dcModel.setClusterCount(dcMeta.getClusters().values().size());
+				dcModel.setDcName(dcMeta.getId());
+				dcModel.setKeeperContainerCount(dcMeta.getKeeperContainers().size());
+				for (ClusterMeta clusterMeta: dcMeta.getClusters().values()){
+					if (clusterMeta.getActiveDc() == dcTbl.getDcName())
+						countClusterInActiveDc++;
+
+					for (ShardMeta shardMeta: clusterMeta.getShards().values()){
+						if (-countRedisNums <= Integer.MIN_VALUE || -countRedisNums - shardMeta.getRedises().size() <= Integer.MIN_VALUE){
+							throw new XpipeRuntimeException(String.format("redis numbers overflow: %d", countRedisNums));
+						}else if (-countKeeperNums <= Integer.MIN_VALUE || -countKeeperNums - shardMeta.getKeepers().size() <= Integer.MIN_VALUE){
+							throw new XpipeRuntimeException(String.format("keeper numbers overflow: %d", countKeeperNums));
+						}else{
+							countRedisNums  += shardMeta.getRedises().size();
+							countKeeperNums += shardMeta.getKeepers().size();
+						}
+
+					}
+				}
+				dcModel.setRedisCount(countRedisNums);
+				dcModel.setKeeperCount(countKeeperNums);
+				dcModel.setClusterInActiveDcCount(countClusterInActiveDc);
+				result.add(dcModel);
+			});
 
 			return result;
 		} catch (Exception e) {

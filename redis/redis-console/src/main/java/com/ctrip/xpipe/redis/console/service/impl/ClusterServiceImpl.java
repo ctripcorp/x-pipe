@@ -72,6 +72,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 
+	@Autowired
+	private DcClusterService dcClusterService;
+
 	@Override
 	public ClusterTbl find(final String clusterName) {
 		return queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
@@ -545,20 +548,31 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public List<ClusterTbl> findAllClusterByDcName(String dcName){
-		if (StringUtil.isEmpty(dcName))
-			return Collections.emptyList();
-
-		XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-		if (xpipeMeta == null || xpipeMeta.getDcs() == null)
+	public List<ClusterTbl> findAllClusterByDcId(long dcId){
+		if (dcId <= 0)
 			return Collections.emptyList();
 
 		List<ClusterTbl>  result = new LinkedList<>();
-		DcMeta dcMeta = xpipeMeta.findDc(dcName);
-		for (ClusterMeta clusterMeta: dcMeta.getClusters().values()){
-			result.add(find(clusterMeta.getId()));
-		}
+		List<DcClusterTbl> dcClusterTbls = dcClusterService.findAllByDcId(dcId);
+		if (dcClusterTbls == null || dcClusterTbls.size() == 0)
+			return Collections.emptyList();
+
+		dcClusterTbls.forEach(dcClusterTbl -> result.add(find(dcClusterTbl.getClusterId())));
 
 		return result;
+	}
+
+	@Override
+	public List<ClusterTbl> findAllClustersByDcName(String dcName){
+		if (StringUtil.isEmpty(dcName))
+			return Collections.emptyList();
+
+		long dcId = dcService.find(dcName).getId();
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return dao.findClustersByActiveDcId(dcId, ClusterTblEntity.READSET_FULL);
+			}
+		});
 	}
 }

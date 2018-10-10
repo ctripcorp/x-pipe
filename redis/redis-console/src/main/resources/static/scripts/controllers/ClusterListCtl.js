@@ -9,6 +9,7 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         $scope.deleteCluster = deleteCluster;
         $scope.showUnhealthyClusterOnly = false;
         $scope.dcName = $stateParams.dcName;
+        $scope.dcId = $stateParams.dcId;
         
         var sourceClusters = [], copedClusters = [];
         if($scope.clusterName) {
@@ -41,9 +42,12 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                     }
                 });
             });
-        } else if($scope.dcName){
-            showClustersBindDc($scope.dcName);
-        }else {
+        } else if($scope.dcId){
+            showClustersBindDc($scope.dcId);
+        }else if ($scope.dcName){
+            showClustersByActiveDc($scope.dcName);
+        }
+        else {
             showClusters();
         }
         
@@ -84,8 +88,10 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         function showClusters() {
             if ($scope.showUnhealthyClusterOnly === true) {
                 showUnhealthyClusters();
-            } else if($scope.dcName){
-                showClustersBindDc($scope.dcName)
+            } else if($scope.dcId){
+                showClustersBindDc($scope.dcId);
+            }else if ($scope.dcName){
+                showClustersByActiveDc($scope.dcName);
             }
             else {
                 showAllClusters();
@@ -158,7 +164,41 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                 });
         }
 
-        function showClustersBindDc(dcName) {
+        function showClustersBindDc(dcId) {
+            ClusterService.findClustersByDcId(dcId).then(
+                function (data) {
+                    sourceClusters = data;
+                    copedClusters = _.clone(sourceClusters);
+                    $scope.tableParams = new NgTableParams({
+                        page : $rootScope.historyPage,
+                        count : 10
+                    }, {
+                        filterDelay:100,
+                        getData : function(params) {
+                            var filter_text = params.filter().clusterName;
+
+                            if(filter_text) {
+                                var filtered_data = [];
+                                for(var i = 0 ; i < sourceClusters.length ; i++) {
+                                    var cluster = sourceClusters[i];
+                                    if(cluster.clusterName.search(filter_text) !== -1) {
+                                        filtered_data.push(cluster);
+                                    }
+                                }
+                                copedClusters = filtered_data;
+                            }else {
+                                copedClusters = sourceClusters;
+                            }
+
+                            params.total(copedClusters.length);
+                            return copedClusters.slice((params.page() - 1) * params.count(), params.page() * params.count());
+                        }
+                    });
+                }
+            );
+        }
+
+        function showClustersByActiveDc(dcName) {
             ClusterService.findClustersByDcName(dcName).then(
                 function (data) {
                     sourceClusters = data;
