@@ -232,10 +232,10 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
-    public void testFindClustersByDcName(){
+    public void testFindClustersByDcId(){
         try {
             Thread.sleep(3000);
-            List<ClusterTbl> result = clusterService.findAllClusterByDcName("jq");
+            List<ClusterTbl> result = clusterService.findAllClusterByDcId(1);
             Assert.assertEquals(1, result.size());
         } catch (InterruptedException e) {
             e.printStackTrace();
