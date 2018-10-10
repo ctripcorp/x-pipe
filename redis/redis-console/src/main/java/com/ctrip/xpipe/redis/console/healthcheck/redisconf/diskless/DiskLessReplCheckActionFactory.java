@@ -1,9 +1,13 @@
 package com.ctrip.xpipe.redis.console.healthcheck.redisconf.diskless;
 
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.redisconf.AbstractCDLAHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.redisconf.CrossDcLeaderAwareHealthCheckAction;
+import com.google.common.collect.Lists;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -22,5 +26,10 @@ public class DiskLessReplCheckActionFactory extends AbstractCDLAHealthCheckActio
     @Override
     public Class<? extends CrossDcLeaderAwareHealthCheckAction> support() {
         return DiskLessReplCheckAction.class;
+    }
+
+    @Override
+    protected List<ALERT_TYPE> alertTypes() {
+        return Lists.newArrayList(ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR);
     }
 }
