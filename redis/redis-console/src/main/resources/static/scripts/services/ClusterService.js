@@ -63,9 +63,14 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
             url: '/console/clusters/unhealthy',
             isArray: true
         },
-        find_clusters_by_dc_name :{
+        find_clusters_by_dc_id :{
             method: 'GET',
-            url: '/console/clusters/allBind/:dcName',
+            url: '/console/clusters/allBind/:dcId',
+            isArray: true
+        },
+        find_clusters_by_dc_name:{
+            method: 'GET',
+            url: '/console/clusters/activeDc/:dcName',
             isArray: true
         }
     });
@@ -244,6 +249,18 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         return d.promise;
     }
 
+    function findClustersByDcId(dcId) {
+        var d = $q.defer();
+        resource.find_clusters_by_dc_id(
+            {dcId: dcId},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     function findClustersByDcName(dcName) {
         var d = $q.defer();
         resource.find_clusters_by_dc_name(
@@ -255,6 +272,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
             });
         return d.promise;
     }
+
     return {
         load_cluster: loadCluster,
         findClusterDCs: findClusterDCs,
@@ -270,6 +288,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         getOrganizations: getOrganizations,
         getInvolvedOrgs: getInvolvedOrgs,
         getUnhealthyClusters: getUnhealthyClusters,
-        findClustersByDcName: findClustersByDcName
+        findClustersByDcId: findClustersByDcId,
+        findClustersByDcName : findClustersByDcName
     }
 }]);
