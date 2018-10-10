@@ -5,12 +5,14 @@ import com.ctrip.xpipe.redis.console.model.consoleportal.DcListDcModel;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
@@ -24,8 +26,13 @@ public class DcServiceImplTest extends AbstractConsoleIntegrationTest{
     @Mock
     private MetaCache metaCache;
 
-    @InjectMocks
-    private DcService dcService = new DcServiceImpl();
+    @Autowired
+    private DcService dcService;
+
+    @BeforeClass
+    public static void beforeSetup(){
+        System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_PRODUCTION);
+    }
 
     @Before
     public void beforeDcServiceImplTest(){
@@ -98,14 +105,17 @@ public class DcServiceImplTest extends AbstractConsoleIntegrationTest{
     @Test
     public void testFindAllDcsRichinfo(){
         List<DcListDcModel> result = dcService.findAllDcsRichInfo();
-        Assert.assertEquals(2, result.size());
+        Assert.assertEquals(3, result.size());
         result.forEach(dcListDcModel -> {
-            Assert.assertEquals(2, (long)dcListDcModel.getClusterCount());
-            Assert.assertEquals(0, (long)dcListDcModel.getKeeperCount());
             if (dcListDcModel.getDcName() == "jq"){
-                Assert.assertEquals(2, (long)dcListDcModel.getRedisCount());
+                Assert.assertEquals(4, (long)dcListDcModel.getRedisCount());
+                Assert.assertEquals(1, (long)dcListDcModel.getClusterCount());
             }else if (dcListDcModel.getDcName() == "oy"){
-                Assert.assertEquals(6, (long)dcListDcModel.getRedisCount());
+                Assert.assertEquals(4, (long)dcListDcModel.getRedisCount());
+                Assert.assertEquals(1, (long)dcListDcModel.getClusterCount());
+            }else if (dcListDcModel.getDcName() == "fra"){
+                Assert.assertEquals(0, (long)dcListDcModel.getRedisCount());
+                Assert.assertEquals(0, (long)dcListDcModel.getClusterCount());
             }
 
         });

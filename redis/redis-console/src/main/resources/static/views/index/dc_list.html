@@ -12,11 +12,17 @@
 
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
             <tr ng-repeat="dc in $data">
-                <td data-title="'dc'" filter="{ dcName : 'text' }">
-                    <a href="/#/cluster_list/{{dc.dcName}}">{{ dc.dcName }}</a>
+                <td data-title="'dc'" filter="{ dcName : 'text' }" ng-bind="dc.dcName | limitTo:50">
+
                 </td>
-                <td ng-if="true" data-title="'cluster总数'" ng-bind="dc.clusterCount | limitTo:50"></td>
+                <td data-title="'以该DC为主DC的cluster总数'">
+                    <a href="/#/cluster_list/{{dc.dcName}}">{{dc.clusterInActiveDcCount}}</a>
+                </td>
+                <td ng-if="true" data-title="'cluster总数'" >
+                    <a href="/#/cluster_list/{{dc.dcId}}/{{dc.dcName}}">{{ dc.clusterCount }}</a>
+                </td>
                 <td ng-if="true" data-title="'redis总数'" ng-bind="dc.redisCount | limitTo:50"></td>
+                <td ng-if="true" data-title="'keeperContainer总数'" ng-bind="dc.keeperContainerCount | limitTo:50"></td>
                 <td ng-if="true" data-title="'keeper总数'" ng-bind="dc.keeperCount | limitTo:50"></td>
                 </td>
             </tr>
