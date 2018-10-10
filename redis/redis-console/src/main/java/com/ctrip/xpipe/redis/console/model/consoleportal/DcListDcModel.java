@@ -12,15 +12,19 @@ public class DcListDcModel {
     protected Integer clusterCount;
     protected Integer redisCount;
     protected Integer keeperCount;
+    protected Integer keeperContainerCount;
+    protected Integer clusterInActiveDcCount;
 
     public DcListDcModel(Long dcId, String dcName, String dcDescription, Integer clusterCount,
-                         Integer redisCount, Integer keeperCount){
+                         Integer redisCount, Integer keeperCount, Integer keeperContainerCount, Integer clusterInActiveDcCount){
         this.dcId = dcId;
         this.dcName = dcName;
         this.dcDescription = dcDescription;
         this.clusterCount = clusterCount;
         this.redisCount = redisCount;
         this.keeperCount = keeperCount;
+        this.keeperContainerCount = keeperContainerCount;
+        this.clusterInActiveDcCount = clusterInActiveDcCount;
     }
 
     public DcListDcModel(){}
@@ -75,6 +79,20 @@ public class DcListDcModel {
 
     public DcListDcModel setKeeperCount(Integer keeperCount){
         this.keeperCount = keeperCount;
+        return this;
+    }
+
+    public Integer getKeeperContainerCount(){return this.keeperContainerCount;}
+
+    public DcListDcModel setKeeperContainerCount(Integer keeperContainerCount){
+        this.keeperContainerCount = keeperContainerCount;
+        return this;
+    }
+
+    public Integer getClusterInActiveDcCount(){return this.clusterInActiveDcCount;}
+
+    public DcListDcModel setClusterInActiveDcCount(Integer clusterInActiveDcCount){
+        this.clusterInActiveDcCount = clusterInActiveDcCount;
         return this;
     }
 
