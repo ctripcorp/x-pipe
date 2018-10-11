@@ -91,7 +91,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
     @Override
     public void ignore(String dcId) {
         if(!dcMetaChangeManagers.containsKey(dcId)) {
-            logger.info("[ignore] not found dcId: {}", dcId);
+            logger.warn("[ignore] not found dcId: {}", dcId);
             return;
         }
         try {

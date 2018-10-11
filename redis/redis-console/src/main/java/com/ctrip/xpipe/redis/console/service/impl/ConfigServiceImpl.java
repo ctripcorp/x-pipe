@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
-import com.ctrip.xpipe.redis.console.health.console.AlertSystemOffChecker;
-import com.ctrip.xpipe.redis.console.health.console.SentinelAutoProcessChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOffChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.redis.console.service.ConfigService;

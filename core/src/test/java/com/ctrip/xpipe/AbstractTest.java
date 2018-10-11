@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * @author wenchao.meng
@@ -190,7 +191,7 @@ public class AbstractTest {
                 return;
             }
             if (System.currentTimeMillis() >= maxTime) {
-                throw new TimeoutException("timtout still false:" + waitTimeMilli);
+                throw new TimeoutException("timeout still false:" + waitTimeMilli);
             }
             sleep(intervalMilli);
         }
@@ -693,6 +694,10 @@ public class AbstractTest {
     }
 
     protected Server startServer(final String result) throws Exception {
+        return startServer(randomPort(), result);
+    }
+
+    protected Server startServerWithFlexibleResult(Callable<String> result) throws Exception {
         return startServer(randomPort(), result);
     }
 

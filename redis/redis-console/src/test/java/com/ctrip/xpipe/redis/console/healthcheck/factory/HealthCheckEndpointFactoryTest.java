@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.healthcheck.factory;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultHealthCheckEndpointFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.HealthCheckEndpointFactory;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;

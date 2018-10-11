@@ -279,9 +279,12 @@ public class DefaultMetaCache implements MetaCache {
         if(StringUtil.isEmpty(monitor)) {
             return null;
         }
-        if(monitor2ClusterShard.containsKey(monitor)) {
-            return monitor2ClusterShard.get(monitor);
+
+        Pair<String, String> clusterShard = monitor2ClusterShard.get(monitor);
+        if(clusterShard != null) {
+            return clusterShard;
         }
+
         try {
             XpipeMeta xpipeMeta = meta.getKey();
             for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
@@ -291,16 +294,13 @@ public class DefaultMetaCache implements MetaCache {
                         monitor2ClusterShard.put(shardMeta.getSentinelMonitorName(),
                                 new Pair<>(clusterMeta.getId(), shardMeta.getId()));
 
-                        if (shardMeta.getSentinelMonitorName().equals(monitor)) {
-                            return new Pair<>(clusterMeta.getId(), shardMeta.getId());
-                        }
                     }
                 }
             }
         } catch (Exception e) {
             logger.error("[findClusterShardBySentinelMonitor]", e);
         }
-        return null;
+        return monitor2ClusterShard.get(monitor);
     }
 
     @Override

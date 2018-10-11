@@ -5,7 +5,6 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.factory.RedisHealthCheckInstanceFactory;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.google.common.collect.Lists;

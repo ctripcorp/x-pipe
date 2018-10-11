@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.junit.Before;
 import org.junit.Test;

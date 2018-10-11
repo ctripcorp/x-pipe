@@ -7,6 +7,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.config.ProxyEnabledHealthCheckConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultHealthCheckEndpointFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstanceFactory;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -78,7 +80,6 @@ public class DefaultRedisHealthCheckInstanceFactoryTest extends AbstractConsoleI
         RedisHealthCheckInstance instance = factory.create(redisMeta);
 
         Assert.assertTrue(instance.getEndpoint() instanceof ProxyEnabled);
-        Assert.assertTrue(instance.getHealthCheckConfig() instanceof ProxyEnabledHealthCheckConfig);
         Assert.assertEquals(AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI,
                 instance.getRedisSession().getCommandTimeOut());
     }

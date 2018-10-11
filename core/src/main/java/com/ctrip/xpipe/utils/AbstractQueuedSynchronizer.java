@@ -669,7 +669,7 @@ public abstract class AbstractQueuedSynchronizer
     }
 
     /**
-     * Release action for shared mode -- signal successor and ensure
+     * Release interaction for shared mode -- signal successor and ensure
      * propagation. (Note: For exclusive mode, release just amounts
      * to calling unparkSuccessor of head if it needs signal.)
      */
@@ -757,7 +757,7 @@ public abstract class AbstractQueuedSynchronizer
 
         // predNext is the apparent node to unsplice. CASes below will
         // fail if not, in which case, we lost race vs another cancel
-        // or signal, so no further action is necessary.
+        // or signal, so no further interaction is necessary.
         Node predNext = pred.next;
 
         // Can use unconditional write instead of CAS here.
